@@ -1,0 +1,177 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0",
+  "title": "HDF Common Primitives",
+  "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
+  "definitions": {
+    "Requirement_Group": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "requirements"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the group. Example: the relative path to the file specifying the requirements."
+        },
+        "title": {
+          "type": ["string", "null"],
+          "description": "The title of the group - should be human readable."
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The set of requirements as specified by their ids in this group. Example: 'SV-238196'."
+        }
+      },
+      "description": "Describes a group of requirements, such as those defined in a single file.",
+      "title": "Requirement Group"
+    },
+    "Dependency": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [],
+      "properties": {
+        "name": {
+          "type": ["string", "null"],
+          "description": "The name or assigned alias."
+        },
+        "url": {
+          "type": ["string", "null"],
+          "description": "The address of the dependency."
+        },
+        "branch": {
+          "type": ["string", "null"],
+          "description": "The branch name for a git repo."
+        },
+        "path": {
+          "type": ["string", "null"],
+          "description": "The relative path if the dependency is locally available."
+        },
+        "status_message": {
+          "type": ["string", "null"],
+          "description": "The reason for the status if it is 'failed' or 'skipped'."
+        },
+        "status": {
+          "type": ["string", "null"],
+          "description": "The status. Should be: 'loaded', 'failed', or 'skipped'."
+        },
+        "git": {
+          "type": ["string", "null"],
+          "description": "The location of the git repo. Example: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'."
+        },
+        "supermarket": {
+          "type": ["string", "null"],
+          "description": "The 'user/profilename' attribute for a Supermarket server."
+        },
+        "compliance": {
+          "type": ["string", "null"],
+          "description": "The 'user/profilename' attribute for an Automate server."
+        }
+      },
+      "description": "A dependency for a baseline. Can include relative paths or URLs for where to find the dependency.",
+      "title": "Dependency"
+    },
+    "Reference": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["ref"],
+          "properties": {
+            "ref": {
+              "type": "string"
+            }
+          },
+          "description": "A human readable/meaningful reference. Example: a book title."
+        },
+        {
+          "type": "object",
+          "required": ["url"],
+          "properties": {
+            "url": {
+              "type": "string"
+            }
+          },
+          "description": "A URL pointing at the reference."
+        },
+        {
+          "type": "object",
+          "required": ["uri"],
+          "properties": {
+            "uri": {
+              "type": "string"
+            }
+          },
+          "description": "A URI pointing at the reference."
+        },
+        {
+          "type": "object",
+          "required": ["ref"],
+          "properties": {
+            "ref": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          },
+          "description": "An array of reference objects."
+        }
+      ],
+      "description": "A reference to an external document.",
+      "title": "Reference"
+    },
+    "Source_Location": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [],
+      "properties": {
+        "ref": {
+          "type": ["string", "null"],
+          "description": "Path to the file that this requirement originates from."
+        },
+        "line": {
+          "type": ["number", "null"],
+          "description": "The line on which this requirement is located."
+        }
+      },
+      "description": "The explicit location of a requirement within source code.",
+      "title": "Source Location"
+    },
+    "Supported_Platform": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [],
+      "properties": {
+        "platform-family": {
+          "type": ["string", "null"],
+          "description": "The platform family. Example: 'redhat'."
+        },
+        "platform-name": {
+          "type": ["string", "null"],
+          "description": "The platform name - can include wildcards. Example: 'debian'."
+        },
+        "platform": {
+          "type": ["string", "null"],
+          "description": "The location of the platform. Can be: 'os', 'aws', 'azure', or 'gcp'."
+        },
+        "release": {
+          "type": ["string", "null"],
+          "description": "The release of the platform. Example: '20.04' for 'ubuntu'."
+        },
+        "os-family": {
+          "type": ["string", "null"],
+          "description": "Deprecated in favor of platform-family."
+        },
+        "os-name": {
+          "type": ["string", "null"],
+          "description": "Deprecated in favor of platform-name."
+        }
+      },
+      "description": "A supported platform target. Example: the platform name being 'ubuntu'.",
+      "title": "Supported Platform"
+    }
+  }
+}
