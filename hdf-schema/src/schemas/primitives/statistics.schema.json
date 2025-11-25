@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v1.0.0",
+  "title": "HDF Statistics Primitives",
+  "description": "Statistics types for tracking assessment run metrics.",
+  "definitions": {
+    "Statistic_Block": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["total"],
+      "properties": {
+        "total": {
+          "type": "number",
+          "description": "The total count. Example: the total number of requirements in a given category for a run."
+        }
+      },
+      "description": "Statistics for a given item, such as the total count.",
+      "title": "Statistic Block"
+    },
+    "Statistic_Hash": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [],
+      "properties": {
+        "passed": {
+          "anyOf": [
+            { "$ref": "#/definitions/Statistic_Block" },
+            { "type": "null" }
+          ],
+          "description": "Statistics for requirements that passed."
+        },
+        "failed": {
+          "anyOf": [
+            { "$ref": "#/definitions/Statistic_Block" },
+            { "type": "null" }
+          ],
+          "description": "Statistics for requirements that failed."
+        },
+        "not_applicable": {
+          "anyOf": [
+            { "$ref": "#/definitions/Statistic_Block" },
+            { "type": "null" }
+          ],
+          "description": "Statistics for requirements that are not applicable to the target."
+        },
+        "not_reviewed": {
+          "anyOf": [
+            { "$ref": "#/definitions/Statistic_Block" },
+            { "type": "null" }
+          ],
+          "description": "Statistics for requirements that were not reviewed (manual check required)."
+        },
+        "error": {
+          "anyOf": [
+            { "$ref": "#/definitions/Statistic_Block" },
+            { "type": "null" }
+          ],
+          "description": "Statistics for requirements that encountered an error during assessment."
+        }
+      },
+      "description": "Statistics for requirement results, grouped by status.",
+      "title": "Statistic Hash"
+    },
+    "Statistics": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [],
+      "properties": {
+        "duration": {
+          "type": ["number", "null"],
+          "description": "How long (in seconds) this assessment run took."
+        },
+        "controls": {
+          "anyOf": [
+            { "$ref": "#/definitions/Statistic_Hash" },
+            { "type": "null" }
+          ],
+          "description": "Breakdowns of requirement statistics by result status."
+        }
+      },
+      "description": "Statistics for the assessment run(s) such as duration and result counts.",
+      "title": "Statistics"
+    }
+  }
+}

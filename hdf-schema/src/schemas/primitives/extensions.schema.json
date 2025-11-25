@@ -1,0 +1,119 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0",
+  "title": "HDF Extension Primitives",
+  "description": "Extension types for waivers, attestations, generators, and integrity.",
+  "definitions": {
+    "Waiver_Data": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [],
+      "properties": {
+        "expiration_date": {
+          "type": ["string", "null"],
+          "description": "The date when this waiver expires."
+        },
+        "justification": {
+          "type": ["string", "null"],
+          "description": "The justification for the waiver."
+        },
+        "message": {
+          "type": ["string", "null"],
+          "description": "A message associated with the waiver."
+        },
+        "run": {
+          "type": ["boolean", "null"],
+          "description": "Whether to run the requirement despite the waiver."
+        },
+        "skipped_due_to_waiver": {
+          "type": ["boolean", "string", "null"],
+          "description": "Indicates if the requirement was skipped due to this waiver."
+        }
+      },
+      "description": "Data associated with a waiver that exempts a requirement from assessment.",
+      "title": "Waiver Data"
+    },
+    "Attestation_Status": {
+      "type": "string",
+      "enum": ["passed", "failed"],
+      "description": "The attested status of a requirement. Only 'passed' or 'failed' are valid for attestations.",
+      "title": "Attestation Status"
+    },
+    "Attestation_Data": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["control_id", "explanation", "frequency", "status", "updated", "updated_by"],
+      "properties": {
+        "control_id": {
+          "type": "string",
+          "description": "The ID of the requirement being attested."
+        },
+        "explanation": {
+          "type": "string",
+          "description": "Explanation of the attestation."
+        },
+        "frequency": {
+          "type": "string",
+          "description": "How often this attestation should be reviewed. Example: 'annually', 'quarterly'."
+        },
+        "status": {
+          "$ref": "#/definitions/Attestation_Status",
+          "description": "The attested status."
+        },
+        "updated": {
+          "type": "string",
+          "description": "When this attestation was last updated."
+        },
+        "updated_by": {
+          "type": "string",
+          "description": "Who last updated this attestation."
+        }
+      },
+      "description": "Data for a manual attestation that overrides automated assessment results.",
+      "title": "Attestation Data"
+    },
+    "Generator": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the tool that generated this file. Example: 'Chef InSpec'."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the tool. Example: '5.22.3'."
+        }
+      },
+      "description": "Information about the tool that generated this HDF file.",
+      "title": "Generator"
+    },
+    "Integrity": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [],
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "enum": ["sha256", "sha384", "sha512"],
+          "description": "The hash algorithm used for the checksum."
+        },
+        "checksum": {
+          "type": "string",
+          "description": "The checksum value."
+        },
+        "signature": {
+          "type": ["string", "null"],
+          "description": "Optional cryptographic signature."
+        },
+        "signed_by": {
+          "type": ["string", "null"],
+          "description": "Identifier of who signed this file."
+        }
+      },
+      "description": "Cryptographic integrity information for verifying the HDF file has not been tampered with.",
+      "title": "Integrity"
+    }
+  }
+}

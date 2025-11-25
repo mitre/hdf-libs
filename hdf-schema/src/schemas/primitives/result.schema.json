@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0",
+  "title": "HDF Result Primitives",
+  "description": "Types for representing assessment results and statuses.",
+  "definitions": {
+    "Result_Status": {
+      "type": "string",
+      "enum": ["passed", "failed", "not_applicable", "not_reviewed", "error"],
+      "description": "The status of an individual test result. 'not_applicable' indicates the requirement does not apply to the target. 'not_reviewed' indicates the requirement was not assessed (e.g., requires manual verification).",
+      "title": "Result Status"
+    },
+    "Overall_Status": {
+      "type": "string",
+      "enum": ["passed", "failed", "not_applicable", "not_reviewed", "error"],
+      "description": "The final status of a requirement after all post-processing (attestations, waivers) is applied.",
+      "title": "Overall Status"
+    },
+    "Requirement_Result": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["code_desc", "start_time"],
+      "properties": {
+        "status": {
+          "anyOf": [
+            { "$ref": "#/definitions/Result_Status" },
+            { "type": "null" }
+          ],
+          "description": "The status of this test within the requirement. Example: 'failed'."
+        },
+        "code_desc": {
+          "type": "string",
+          "description": "A description of this test. Example: 'limits.conf * is expected to include [\"hard\", \"maxlogins\", \"10\"]'."
+        },
+        "run_time": {
+          "type": ["number", "null"],
+          "description": "The execution time in seconds for the test."
+        },
+        "start_time": {
+          "type": "string",
+          "description": "The time at which the test started."
+        },
+        "resource": {
+          "type": ["string", "null"],
+          "description": "The resource used in the test. Example: 'file', 'command', 'service'."
+        },
+        "resource_id": {
+          "type": ["string", "null"],
+          "description": "The unique identifier of the resource. Example: '/etc/passwd'."
+        },
+        "message": {
+          "type": ["string", "null"],
+          "description": "An explanation of the test status - usually only provided when the test fails."
+        },
+        "skip_message": {
+          "type": ["string", "null"],
+          "description": "An explanation of why the test was not reviewed or not applicable."
+        },
+        "exception": {
+          "type": ["string", "null"],
+          "description": "The type of exception if an exception was thrown."
+        },
+        "backtrace": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            { "type": "null" }
+          ],
+          "description": "The stacktrace/backtrace of the exception if one occurred."
+        }
+      },
+      "description": "A test within a requirement and its results and findings such as how long it took to run.",
+      "title": "Requirement Result"
+    },
+    "Requirement_Description": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["label", "data"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "The type of description. Examples: 'fix', 'check', 'rationale'."
+        },
+        "data": {
+          "type": "string",
+          "description": "The text of the description."
+        }
+      },
+      "description": "A labeled description for a requirement, such as fix text or check instructions.",
+      "title": "Requirement Description"
+    }
+  }
+}
