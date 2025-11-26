@@ -6,8 +6,8 @@
   "definitions": {
     "Result_Status": {
       "type": "string",
-      "enum": ["passed", "failed", "not_applicable", "not_reviewed", "error"],
-      "description": "The status of an individual test result. 'not_applicable' indicates the requirement does not apply to the target. 'not_reviewed' indicates the requirement was not assessed (e.g., requires manual verification).",
+      "enum": ["passed", "failed", "not_applicable", "not_reviewed", "error", "skipped"],
+      "description": "The status of an individual test result. 'not_applicable' indicates the requirement does not apply to the target. 'not_reviewed' indicates the requirement was not assessed (e.g., requires manual verification). 'skipped' is deprecated; use 'not_applicable' (impact=0) or 'not_reviewed' (impact>0) instead.",
       "title": "Result Status"
     },
     "Overall_Status": {

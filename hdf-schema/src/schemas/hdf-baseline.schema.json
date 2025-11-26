@@ -1,0 +1,167 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v1.0.0",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["name", "supports", "controls", "groups", "sha256"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name - must be unique."
+    },
+    "title": {
+      "type": ["string", "null"],
+      "description": "The title - should be human readable."
+    },
+    "maintainer": {
+      "type": ["string", "null"],
+      "description": "The maintainer(s)."
+    },
+    "copyright": {
+      "type": ["string", "null"],
+      "description": "The copyright holder(s)."
+    },
+    "copyright_email": {
+      "type": ["string", "null"],
+      "description": "The email address or other contact information of the copyright holder(s)."
+    },
+    "license": {
+      "type": ["string", "null"],
+      "description": "The copyright license. Example: 'Apache-2.0'."
+    },
+    "summary": {
+      "type": ["string", "null"],
+      "description": "The summary. Example: the Security Technical Implementation Guide (STIG) header."
+    },
+    "version": {
+      "type": ["string", "null"],
+      "description": "The version of the baseline."
+    },
+    "supports": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Supported_Platform"
+      },
+      "description": "The set of supported platform targets."
+    },
+    "controls": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Baseline_Requirement"
+      },
+      "description": "The set of requirements - contains no findings as the assessment has not yet occurred."
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Requirement_Group"
+      },
+      "description": "A set of descriptions for the requirement groups."
+    },
+    "inputs": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "An input or attribute used in the run."
+      },
+      "description": "The input(s) or attribute(s) to be used in the run."
+    },
+    "sha256": {
+      "type": "string",
+      "description": "The SHA-256 checksum of the baseline."
+    },
+    "sha512": {
+      "type": ["string", "null"],
+      "description": "The SHA-512 checksum of the baseline (optional)."
+    },
+    "status": {
+      "type": ["string", "null"],
+      "description": "The status. Example: 'loaded'."
+    },
+    "depends": {
+      "type": ["array", "null"],
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Dependency"
+      },
+      "description": "The set of dependencies this baseline depends on."
+    },
+    "generator": {
+      "anyOf": [
+        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Generator" },
+        { "type": "null" }
+      ],
+      "description": "The tool that generated this file."
+    }
+  },
+  "description": "Information on the set of requirements that can be assessed. Example: it can include the name of the InSpec profile.",
+  "title": "HDF Baseline",
+  "definitions": {
+    "Baseline_Requirement": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "impact", "tags", "code"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The requirement identifier. Example: 'SV-238196'."
+        },
+        "title": {
+          "type": ["null", "string"],
+          "description": "The title - is nullable."
+        },
+        "desc": {
+          "type": ["null", "string"],
+          "description": "The description for the overarching requirement."
+        },
+        "descriptions": {
+          "anyOf": [
+            { "$ref": "#/definitions/Baseline_Requirement_Descriptions" },
+            { "type": "null" }
+          ],
+          "description": "A set of additional descriptions. Example: the 'fix' text."
+        },
+        "impact": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "The impactfulness or severity (0.0 to 1.0)."
+        },
+        "refs": {
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Reference"
+          },
+          "description": "The set of references to external documents."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "A set of tags - usually metadata like CCI, STIG ID, severity."
+        },
+        "code": {
+          "type": "string",
+          "description": "The raw source code of the requirement. Note that if this is an overlay, it does not include the underlying source code."
+        },
+        "source_location": {
+          "anyOf": [
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Source_Location" },
+            { "type": "null" }
+          ],
+          "description": "The explicit location of the requirement within the source code."
+        }
+      },
+      "description": "A requirement definition without assessment results.",
+      "title": "Baseline Requirement"
+    },
+    "Baseline_Requirement_Descriptions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "required": [],
+      "description": "An arbitrary set of descriptions for a requirement. Common keys: 'default', 'check', 'fix', 'rationale'.",
+      "title": "Baseline Requirement Descriptions"
+    }
+  }
+}

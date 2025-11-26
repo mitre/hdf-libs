@@ -7,7 +7,11 @@
     "Requirement_Group": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["id", "requirements"],
+      "required": ["id"],
+      "anyOf": [
+        { "required": ["requirements"] },
+        { "required": ["controls"] }
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -23,6 +27,13 @@
             "type": "string"
           },
           "description": "The set of requirements as specified by their ids in this group. Example: 'SV-238196'."
+        },
+        "controls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Deprecated: use 'requirements' instead. The set of controls as specified by their ids in this group."
         }
       },
       "description": "Describes a group of requirements, such as those defined in a single file.",
