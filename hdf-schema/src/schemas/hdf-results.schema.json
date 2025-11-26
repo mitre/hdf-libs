@@ -1,0 +1,255 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v1.0.0",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["platform", "profiles", "statistics", "version"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this assessment run."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this assessment was executed."
+    },
+    "platform": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/platform/v1.0.0#/definitions/Platform",
+      "description": "Information on the platform the run from the tool that generated the findings was from."
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v1.0.0#/definitions/Target"
+      },
+      "description": "The target systems that were assessed. Supports multiple targets of different types."
+    },
+    "profiles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Evaluated_Baseline"
+      },
+      "description": "Information on the baselines that were evaluated, including findings."
+    },
+    "statistics": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v1.0.0#/definitions/Statistics",
+      "description": "Statistics for the assessment run, including duration and result counts."
+    },
+    "version": {
+      "type": "string",
+      "description": "Version number of the tool that generated the findings. Example: '5.22.3' is a version of Chef InSpec."
+    },
+    "generator": {
+      "anyOf": [
+        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Generator" },
+        { "type": "null" }
+      ],
+      "description": "Information about the tool that generated this file."
+    },
+    "integrity": {
+      "anyOf": [
+        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Integrity" },
+        { "type": "null" }
+      ],
+      "description": "Cryptographic integrity information for verifying this file."
+    }
+  },
+  "description": "The top level value containing all assessment results.",
+  "title": "HDF Results",
+  "definitions": {
+    "Evaluated_Baseline": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["name", "sha256", "supports", "attributes", "groups", "controls"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name - must be unique."
+        },
+        "title": {
+          "type": ["string", "null"],
+          "description": "The title - should be human readable."
+        },
+        "maintainer": {
+          "type": ["string", "null"],
+          "description": "The maintainer(s)."
+        },
+        "copyright": {
+          "type": ["string", "null"],
+          "description": "The copyright holder(s)."
+        },
+        "copyright_email": {
+          "type": ["string", "null"],
+          "description": "The email address or other contact information of the copyright holder(s)."
+        },
+        "depends": {
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Dependency"
+          },
+          "description": "The set of dependencies this baseline depends on."
+        },
+        "parent_profile": {
+          "type": ["string", "null"],
+          "description": "The name of the parent baseline if this is a dependency of another."
+        },
+        "license": {
+          "type": ["string", "null"],
+          "description": "The copyright license. Example: 'Apache-2.0'."
+        },
+        "summary": {
+          "type": ["string", "null"],
+          "description": "The summary. Example: the Security Technical Implementation Guide (STIG) header."
+        },
+        "version": {
+          "type": ["string", "null"],
+          "description": "The version of the baseline."
+        },
+        "supports": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Supported_Platform"
+          },
+          "description": "The set of supported platform targets."
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "The description - should be more detailed than the summary."
+        },
+        "inspec_version": {
+          "type": ["string", "null"],
+          "description": "The version of InSpec used to execute this baseline."
+        },
+        "sha256": {
+          "type": "string",
+          "description": "The SHA-256 checksum of the baseline."
+        },
+        "sha512": {
+          "type": ["string", "null"],
+          "description": "The SHA-512 checksum of the baseline (optional)."
+        },
+        "status": {
+          "type": ["string", "null"],
+          "description": "The status. Example: 'loaded'."
+        },
+        "status_message": {
+          "type": ["string", "null"],
+          "description": "The reason for the status. Example: why it was skipped or failed to load."
+        },
+        "skip_message": {
+          "type": ["string", "null"],
+          "description": "The reason for skipping if it was skipped."
+        },
+        "controls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Evaluated_Requirement"
+          },
+          "description": "The set of requirements including any findings."
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Requirement_Group"
+          },
+          "description": "A set of descriptions for the requirement groups."
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "An input or attribute used in the run."
+          },
+          "description": "The input(s) or attribute(s) used in the run."
+        }
+      },
+      "description": "Information on a baseline that was evaluated, including any findings.",
+      "title": "Evaluated Baseline"
+    },
+    "Evaluated_Requirement": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "impact", "refs", "tags", "source_location", "results"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The requirement identifier. Example: 'SV-238196'."
+        },
+        "title": {
+          "type": ["null", "string"],
+          "description": "The title - is nullable."
+        },
+        "desc": {
+          "type": ["null", "string"],
+          "description": "The description for the overarching requirement."
+        },
+        "descriptions": {
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/definitions/Requirement_Description"
+          },
+          "description": "A set of additional descriptions. Example: the 'fix' text."
+        },
+        "impact": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "The impactfulness or severity (0.0 to 1.0)."
+        },
+        "refs": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Reference"
+          },
+          "description": "The set of references to external documents."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "A set of tags - usually metadata like CCI, STIG ID, severity."
+        },
+        "code": {
+          "type": ["string", "null"],
+          "description": "The raw source code of the requirement. Note that if this is an overlay, it does not include the underlying source code."
+        },
+        "source_location": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Source_Location",
+          "description": "The explicit location of the requirement within the source code."
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/definitions/Requirement_Result"
+          },
+          "description": "The set of all tests within the requirement and their results."
+        },
+        "overall_status": {
+          "anyOf": [
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/definitions/Overall_Status" },
+            { "type": "null" }
+          ],
+          "description": "The final status of this requirement after all post-processing (attestations, waivers) is applied."
+        },
+        "waiver_data": {
+          "anyOf": [
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Waiver_Data" },
+            { "type": "null" }
+          ],
+          "description": "Waiver information if this requirement has been waived."
+        },
+        "attestation_data": {
+          "anyOf": [
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Attestation_Data" },
+            { "type": "null" }
+          ],
+          "description": "Attestation information if this requirement has been manually attested."
+        }
+      },
+      "description": "A requirement that has been evaluated, including any findings.",
+      "title": "Evaluated Requirement"
+    }
+  }
+}

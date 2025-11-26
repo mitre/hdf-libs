@@ -56,6 +56,13 @@
             { "type": "null" }
           ],
           "description": "Statistics for requirements that encountered an error during assessment."
+        },
+        "skipped": {
+          "anyOf": [
+            { "$ref": "#/definitions/Statistic_Block" },
+            { "type": "null" }
+          ],
+          "description": "Deprecated: use 'not_applicable' or 'not_reviewed' instead. Statistics for requirements that were skipped."
         }
       },
       "description": "Statistics for requirement results, grouped by status.",
