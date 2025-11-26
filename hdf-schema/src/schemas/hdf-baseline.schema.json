@@ -3,7 +3,11 @@
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v1.0.0",
   "type": "object",
   "additionalProperties": true,
-  "required": ["name", "supports", "controls", "groups", "sha256"],
+  "required": ["name", "supports", "controls", "groups"],
+  "anyOf": [
+    { "required": ["sha256"] },
+    { "required": ["sha512"] }
+  ],
   "properties": {
     "name": {
       "type": "string",
