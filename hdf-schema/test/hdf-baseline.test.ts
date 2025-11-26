@@ -27,9 +27,36 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate.errors).not.toBeNull();
     });
 
-    it('should accept optional sha512 field', () => {
+    it('should accept sha256 only', () => {
+      const doc = createMinimalBaselineDoc({ sha256: 'abc123', sha512: undefined });
+      delete (doc as Record<string, unknown>).sha512;
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept sha512 only', () => {
+      const doc = {
+        name: 'test-baseline',
+        supports: [],
+        controls: [],
+        groups: [],
+        sha512: 'longer-sha512-hash-value',
+      };
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept both sha256 and sha512', () => {
       const doc = createMinimalBaselineDoc({ sha512: 'longer-sha512-hash-value' });
       expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject document with neither sha256 nor sha512', () => {
+      const doc = {
+        name: 'test-baseline',
+        supports: [],
+        controls: [],
+        groups: [],
+      };
+      expect(validate(doc)).toBe(false);
     });
 
     it('should accept optional generator field', () => {

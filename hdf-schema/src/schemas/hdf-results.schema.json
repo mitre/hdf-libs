@@ -62,7 +62,11 @@
     "Evaluated_Baseline": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["name", "sha256", "supports", "attributes", "groups", "controls"],
+      "required": ["name", "supports", "attributes", "groups", "controls"],
+      "anyOf": [
+        { "required": ["sha256"] },
+        { "required": ["sha512"] }
+      ],
       "properties": {
         "name": {
           "type": "string",

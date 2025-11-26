@@ -101,11 +101,43 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate profile with optional sha512 field', () => {
+    it('should validate profile with sha256 only', () => {
+      const doc = createMinimalResultsDoc({
+        profiles: [createMinimalEvaluatedBaseline()],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate profile with sha512 only', () => {
+      const profile = {
+        name: 'test-baseline',
+        supports: [],
+        attributes: [],
+        groups: [],
+        controls: [],
+        sha512: 'longer-sha512-hash-value',
+      };
+      const doc = createMinimalResultsDoc({ profiles: [profile] });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate profile with both sha256 and sha512', () => {
       const doc = createMinimalResultsDoc({
         profiles: [createMinimalEvaluatedBaseline({ sha512: 'def456789' })],
       });
       expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject profile with neither sha256 nor sha512', () => {
+      const profile = {
+        name: 'test-baseline',
+        supports: [],
+        attributes: [],
+        groups: [],
+        controls: [],
+      };
+      const doc = createMinimalResultsDoc({ profiles: [profile] });
+      expect(validate(doc)).toBe(false);
     });
 
     it('should validate profile with full metadata', () => {
