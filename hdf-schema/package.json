@@ -17,7 +17,8 @@
     "src/schemas"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsx src/bundle-schemas.ts",
+    "build:schemas": "tsx src/bundle-schemas.ts",
     "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -38,7 +39,9 @@
     "ajv-formats": "^3.0.0"
   },
   "devDependencies": {
-    "quicktype-core": "^23.0.0"
+    "@apidevtools/json-schema-ref-parser": "^15.1.2",
+    "quicktype-core": "^23.0.0",
+    "tsx": "^4.20.6"
   },
   "engines": {
     "node": ">=20.0.0"
