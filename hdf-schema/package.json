@@ -17,15 +17,15 @@
     "src/schemas"
   ],
   "scripts": {
-    "build": "tsc && tsx src/bundle-schemas.ts",
+    "build": "tsc && tsx src/bundle-schemas.ts && tsx src/generate-types.ts",
     "build:schemas": "tsx src/bundle-schemas.ts",
+    "build:types": "tsx src/generate-types.ts",
     "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src test",
-    "lint:fix": "eslint src test --fix",
-    "generate:types": "./scripts/generate-types.sh"
+    "lint:fix": "eslint src test --fix"
   },
   "repository": {
     "type": "git",
