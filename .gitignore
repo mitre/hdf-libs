@@ -40,3 +40,4 @@ coverage/
 
 # Generated files
 *.log
+hdf-cli/hdf
