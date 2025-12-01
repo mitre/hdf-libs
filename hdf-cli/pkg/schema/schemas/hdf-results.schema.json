@@ -1,0 +1,1514 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v1.0.0",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "platform",
+    "profiles",
+    "statistics",
+    "version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this assessment run."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this assessment was executed."
+    },
+    "platform": {
+      "description": "Information on the platform the run from the tool that generated the findings was from.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "name",
+        "release"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the platform this was run on."
+        },
+        "release": {
+          "type": "string",
+          "description": "The version of the platform this was run on."
+        },
+        "target_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The id of the target. Example: the name and version of the operating system were not sufficient to identify the platform so a release identifier can additionally be provided like '21H2' for the release version of MS Windows 10."
+        }
+      },
+      "title": "Platform"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "description": "A scan target. Uses discriminated union pattern with 'type' field as discriminator.",
+        "title": "Target",
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "const": "host",
+                "description": "Target type discriminator."
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name for this target."
+              },
+              "fqdn": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Fully qualified domain name."
+              },
+              "ip_address": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "IP address of the host."
+              },
+              "mac_address": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "MAC address of the host."
+              },
+              "os_name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Operating system name."
+              },
+              "os_version": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Operating system version."
+              }
+            },
+            "description": "A physical or virtual server, workstation, or network device.",
+            "title": "Host Target"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "const": "container_image",
+                "description": "Target type discriminator."
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name for this target."
+              },
+              "image_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Container image ID."
+              },
+              "registry": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Container registry. Example: 'docker.io'."
+              },
+              "repository": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Repository name. Example: 'library/nginx'."
+              },
+              "tag": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Image tag. Example: '1.25'."
+              },
+              "digest": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Image digest for immutable reference. Example: 'sha256:abc123...'."
+              }
+            },
+            "description": "A static container image (not running).",
+            "title": "Container Image Target"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "const": "container_instance",
+                "description": "Target type discriminator."
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name for this target."
+              },
+              "container_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Running container ID."
+              },
+              "image": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Image the container was started from."
+              },
+              "runtime": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Container runtime. Example: 'docker', 'containerd', 'cri-o'."
+              }
+            },
+            "description": "A running container instance.",
+            "title": "Container Instance Target"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "const": "container_platform",
+                "description": "Target type discriminator."
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name for this target."
+              },
+              "platform_type": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
+              },
+              "cluster_name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Cluster name."
+              },
+              "namespace": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Namespace within the cluster, if applicable."
+              },
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Platform version."
+              }
+            },
+            "description": "A container orchestration platform (Kubernetes, OpenShift, ECS, etc.) or workloads running on it.",
+            "title": "Container Platform Target"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "const": "cloud_account",
+                "description": "Target type discriminator."
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name for this target."
+              },
+              "provider": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "aws",
+                  "azure",
+                  "gcp",
+                  "oci",
+                  "other",
+                  null
+                ],
+                "description": "Cloud provider."
+              },
+              "account_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Cloud account identifier. Example: AWS account ID, Azure subscription ID."
+              },
+              "region": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Cloud region, if applicable."
+              }
+            },
+            "description": "A cloud provider account (AWS account, Azure subscription, GCP project).",
+            "title": "Cloud Account Target"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "const": "cloud_resource",
+                "description": "Target type discriminator."
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name for this target."
+              },
+              "provider": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "aws",
+                  "azure",
+                  "gcp",
+                  "oci",
+                  "other",
+                  null
+                ],
+                "description": "Cloud provider."
+              },
+              "resource_type": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Type of cloud resource. Example: 'ec2:instance', 's3:bucket'."
+              },
+              "resource_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Provider-specific resource identifier."
+              },
+              "arn": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Amazon Resource Name (AWS only)."
+              },
+              "region": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Cloud region where the resource resides."
+              }
+            },
+            "description": "A specific cloud resource (EC2 instance, S3 bucket, Azure VM, etc.).",
+            "title": "Cloud Resource Target"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "const": "repository",
+                "description": "Target type discriminator."
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name for this target."
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Repository URL."
+              },
+              "branch": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Branch that was scanned."
+              },
+              "commit": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Commit SHA that was scanned."
+              }
+            },
+            "description": "A code repository (for SAST tools).",
+            "title": "Repository Target"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "const": "application",
+                "description": "Target type discriminator."
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name for this target."
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Application URL (for DAST tools)."
+              },
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Application version."
+              },
+              "environment": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Environment. Example: 'production', 'staging', 'development'."
+              }
+            },
+            "description": "A running application or API (for DAST tools).",
+            "title": "Application Target"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "const": "artifact",
+                "description": "Target type discriminator."
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name for this target."
+              },
+              "package_manager": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
+              },
+              "package_name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Package name."
+              },
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Package version."
+              },
+              "checksum": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Package checksum for verification."
+              }
+            },
+            "description": "A software artifact or dependency (for SCA tools).",
+            "title": "Artifact Target"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "const": "network",
+                "description": "Target type discriminator."
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name for this target."
+              },
+              "cidr": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Network CIDR block."
+              },
+              "gateway": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Network gateway address."
+              }
+            },
+            "description": "A network segment or network device.",
+            "title": "Network Target"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "name"
+            ],
+            "properties": {
+              "type": {
+                "const": "database",
+                "description": "Target type discriminator."
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name for this target."
+              },
+              "engine": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'."
+              },
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Database version."
+              },
+              "host": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Database host."
+              },
+              "port": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Database port."
+              }
+            },
+            "description": "A database instance.",
+            "title": "Database Target"
+          }
+        ]
+      },
+      "description": "The target systems that were assessed. Supports multiple targets of different types."
+    },
+    "profiles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Evaluated_Baseline"
+      },
+      "description": "Information on the baselines that were evaluated, including findings."
+    },
+    "statistics": {
+      "description": "Statistics for the assessment run, including duration and result counts.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [],
+      "properties": {
+        "duration": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "How long (in seconds) this assessment run took."
+        },
+        "controls": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": true,
+              "required": [],
+              "properties": {
+                "passed": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/statistics/properties/controls/anyOf/0/properties/error/anyOf/0"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Statistics for requirements that passed."
+                },
+                "failed": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/statistics/properties/controls/anyOf/0/properties/error/anyOf/0"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Statistics for requirements that failed."
+                },
+                "not_applicable": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/statistics/properties/controls/anyOf/0/properties/error/anyOf/0"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Statistics for requirements that are not applicable to the target."
+                },
+                "not_reviewed": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/statistics/properties/controls/anyOf/0/properties/error/anyOf/0"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Statistics for requirements that were not reviewed (manual check required)."
+                },
+                "error": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "required": [
+                        "total"
+                      ],
+                      "properties": {
+                        "total": {
+                          "type": "number",
+                          "description": "The total count. Example: the total number of requirements in a given category for a run."
+                        }
+                      },
+                      "description": "Statistics for a given item, such as the total count.",
+                      "title": "Statistic Block"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Statistics for requirements that encountered an error during assessment."
+                },
+                "skipped": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/statistics/properties/controls/anyOf/0/properties/error/anyOf/0"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Deprecated: use 'not_applicable' or 'not_reviewed' instead. Statistics for requirements that were skipped."
+                }
+              },
+              "description": "Statistics for requirement results, grouped by status.",
+              "title": "Statistic Hash"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Breakdowns of requirement statistics by result status."
+        }
+      },
+      "title": "Statistics"
+    },
+    "version": {
+      "type": "string",
+      "description": "Version number of the tool that generated the findings. Example: '5.22.3' is a version of Chef InSpec."
+    },
+    "generator": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "name",
+            "version"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the tool that generated this file. Example: 'Chef InSpec'."
+            },
+            "version": {
+              "type": "string",
+              "description": "The version of the tool. Example: '5.22.3'."
+            }
+          },
+          "description": "Information about the tool that generated this HDF file.",
+          "title": "Generator"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Information about the tool that generated this file."
+    },
+    "integrity": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "dependencies": {
+            "algorithm": [
+              "checksum"
+            ],
+            "checksum": [
+              "algorithm"
+            ]
+          },
+          "properties": {
+            "algorithm": {
+              "type": "string",
+              "enum": [
+                "sha256",
+                "sha384",
+                "sha512"
+              ],
+              "description": "The hash algorithm used for the checksum."
+            },
+            "checksum": {
+              "type": "string",
+              "description": "The checksum value."
+            },
+            "signature": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional cryptographic signature."
+            },
+            "signed_by": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Identifier of who signed this file."
+            }
+          },
+          "description": "Cryptographic integrity information for verifying the HDF file has not been tampered with. If algorithm is provided, checksum must also be provided, and vice versa.",
+          "title": "Integrity"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Cryptographic integrity information for verifying this file."
+    }
+  },
+  "description": "The top level value containing all assessment results.",
+  "title": "HDF Results",
+  "definitions": {
+    "Evaluated_Baseline": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "name",
+        "supports",
+        "attributes",
+        "groups",
+        "controls"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "sha256"
+          ]
+        },
+        {
+          "required": [
+            "sha512"
+          ]
+        }
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name - must be unique."
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The title - should be human readable."
+        },
+        "maintainer": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The maintainer(s)."
+        },
+        "copyright": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The copyright holder(s)."
+        },
+        "copyright_email": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The email address or other contact information of the copyright holder(s)."
+        },
+        "depends": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [],
+            "properties": {
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The name or assigned alias."
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The address of the dependency."
+              },
+              "branch": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The branch name for a git repo."
+              },
+              "path": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The relative path if the dependency is locally available."
+              },
+              "status_message": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The reason for the status if it is 'failed' or 'skipped'."
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The status. Should be: 'loaded', 'failed', or 'skipped'."
+              },
+              "git": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The location of the git repo. Example: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'."
+              },
+              "supermarket": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The 'user/profilename' attribute for a Supermarket server."
+              },
+              "compliance": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The 'user/profilename' attribute for an Automate server."
+              }
+            },
+            "description": "A dependency for a baseline. Can include relative paths or URLs for where to find the dependency.",
+            "title": "Dependency"
+          },
+          "description": "The set of dependencies this baseline depends on."
+        },
+        "parent_profile": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The name of the parent baseline if this is a dependency of another."
+        },
+        "license": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The copyright license. Example: 'Apache-2.0'."
+        },
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The summary. Example: the Security Technical Implementation Guide (STIG) header."
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The version of the baseline."
+        },
+        "supports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [],
+            "properties": {
+              "platform-family": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The platform family. Example: 'redhat'."
+              },
+              "platform-name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The platform name - can include wildcards. Example: 'debian'."
+              },
+              "platform": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The location of the platform. Can be: 'os', 'aws', 'azure', or 'gcp'."
+              },
+              "release": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The release of the platform. Example: '20.04' for 'ubuntu'."
+              },
+              "os-family": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Deprecated in favor of platform-family."
+              },
+              "os-name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Deprecated in favor of platform-name."
+              }
+            },
+            "description": "A supported platform target. Example: the platform name being 'ubuntu'.",
+            "title": "Supported Platform"
+          },
+          "description": "The set of supported platform targets."
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The description - should be more detailed than the summary."
+        },
+        "inspec_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The version of InSpec used to execute this baseline."
+        },
+        "sha256": {
+          "type": "string",
+          "description": "The SHA-256 checksum of the baseline."
+        },
+        "sha512": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The SHA-512 checksum of the baseline (optional)."
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The status. Example: 'loaded'."
+        },
+        "status_message": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The reason for the status. Example: why it was skipped or failed to load."
+        },
+        "skip_message": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The reason for skipping if it was skipped."
+        },
+        "controls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Evaluated_Requirement"
+          },
+          "description": "The set of requirements including any findings."
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "id"
+            ],
+            "anyOf": [
+              {
+                "required": [
+                  "requirements"
+                ]
+              },
+              {
+                "required": [
+                  "controls"
+                ]
+              }
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The unique identifier for the group. Example: the relative path to the file specifying the requirements."
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The title of the group - should be human readable."
+              },
+              "requirements": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The set of requirements as specified by their ids in this group. Example: 'SV-238196'."
+              },
+              "controls": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Deprecated: use 'requirements' instead. The set of controls as specified by their ids in this group."
+              }
+            },
+            "description": "Describes a group of requirements, such as those defined in a single file.",
+            "title": "Requirement Group"
+          },
+          "description": "A set of descriptions for the requirement groups."
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "An input or attribute used in the run."
+          },
+          "description": "The input(s) or attribute(s) used in the run."
+        }
+      },
+      "description": "Information on a baseline that was evaluated, including any findings.",
+      "title": "Evaluated Baseline"
+    },
+    "Evaluated_Requirement": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "impact",
+        "tags",
+        "source_location",
+        "results"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The requirement identifier. Example: 'SV-238196'."
+        },
+        "title": {
+          "type": [
+            "null",
+            "string"
+          ],
+          "description": "The title - is nullable."
+        },
+        "desc": {
+          "type": [
+            "null",
+            "string"
+          ],
+          "description": "The description for the overarching requirement."
+        },
+        "descriptions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "label",
+              "data"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "The type of description. Examples: 'fix', 'check', 'rationale'."
+              },
+              "data": {
+                "type": "string",
+                "description": "The text of the description."
+              }
+            },
+            "description": "A labeled description for a requirement, such as fix text or check instructions.",
+            "title": "Requirement Description"
+          },
+          "description": "A set of additional descriptions. Example: the 'fix' text."
+        },
+        "impact": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "The impactfulness or severity (0.0 to 1.0)."
+        },
+        "refs": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "ref"
+                ],
+                "properties": {
+                  "ref": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "A human readable/meaningful reference. Example: a book title."
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": true
+                        },
+                        "description": "An array of reference objects."
+                      }
+                    ]
+                  }
+                },
+                "description": "A reference using the 'ref' field."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "url"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "description": "A URL pointing at the reference."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "uri"
+                ],
+                "properties": {
+                  "uri": {
+                    "type": "string"
+                  }
+                },
+                "description": "A URI pointing at the reference."
+              }
+            ],
+            "description": "A reference to an external document.",
+            "title": "Reference"
+          },
+          "description": "The set of references to external documents."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "A set of tags - usually metadata like CCI, STIG ID, severity."
+        },
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The raw source code of the requirement. Note that if this is an overlay, it does not include the underlying source code."
+        },
+        "source_location": {
+          "description": "The explicit location of the requirement within the source code.",
+          "type": "object",
+          "additionalProperties": true,
+          "required": [],
+          "properties": {
+            "ref": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Path to the file that this requirement originates from."
+            },
+            "line": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "The line on which this requirement is located."
+            }
+          },
+          "title": "Source Location"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "code_desc",
+              "start_time"
+            ],
+            "properties": {
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "passed",
+                      "failed",
+                      "not_applicable",
+                      "not_reviewed",
+                      "error",
+                      "skipped"
+                    ],
+                    "description": "The status of an individual test result. 'not_applicable' indicates the requirement does not apply to the target. 'not_reviewed' indicates the requirement was not assessed (e.g., requires manual verification). 'skipped' is deprecated; use 'not_applicable' (impact=0) or 'not_reviewed' (impact>0) instead.",
+                    "title": "Result Status"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The status of this test within the requirement. Example: 'failed'."
+              },
+              "code_desc": {
+                "type": "string",
+                "description": "A description of this test. Example: 'limits.conf * is expected to include [\"hard\", \"maxlogins\", \"10\"]'."
+              },
+              "run_time": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "The execution time in seconds for the test."
+              },
+              "start_time": {
+                "type": "string",
+                "description": "The time at which the test started."
+              },
+              "resource": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The resource used in the test. Example: 'file', 'command', 'service'."
+              },
+              "resource_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The unique identifier of the resource. Example: '/etc/passwd'."
+              },
+              "message": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "An explanation of the test status - usually only provided when the test fails."
+              },
+              "skip_message": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "An explanation of why the test was not reviewed or not applicable."
+              },
+              "exception": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The type of exception if an exception was thrown."
+              },
+              "backtrace": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The stacktrace/backtrace of the exception if one occurred."
+              }
+            },
+            "description": "A test within a requirement and its results and findings such as how long it took to run.",
+            "title": "Requirement Result"
+          },
+          "description": "The set of all tests within the requirement and their results."
+        },
+        "overall_status": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "passed",
+                "failed",
+                "not_applicable",
+                "not_reviewed",
+                "error"
+              ],
+              "description": "The final status of a requirement after all post-processing (attestations, waivers) is applied.",
+              "title": "Overall Status"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The final status of this requirement after all post-processing (attestations, waivers) is applied."
+        },
+        "waiver_data": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": true,
+              "required": [],
+              "properties": {
+                "expiration_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The date when this waiver expires."
+                },
+                "justification": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The justification for the waiver."
+                },
+                "message": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "A message associated with the waiver."
+                },
+                "run": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
+                  "description": "Whether to run the requirement despite the waiver."
+                },
+                "skipped_due_to_waiver": {
+                  "type": [
+                    "boolean",
+                    "string",
+                    "null"
+                  ],
+                  "description": "Indicates if the requirement was skipped due to this waiver."
+                }
+              },
+              "description": "Data associated with a waiver that exempts a requirement from assessment.",
+              "title": "Waiver Data"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Waiver information if this requirement has been waived."
+        },
+        "attestation_data": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": true,
+              "required": [
+                "control_id",
+                "explanation",
+                "frequency",
+                "status",
+                "updated",
+                "updated_by"
+              ],
+              "properties": {
+                "control_id": {
+                  "type": "string",
+                  "description": "The ID of the requirement being attested."
+                },
+                "explanation": {
+                  "type": "string",
+                  "description": "Explanation of the attestation."
+                },
+                "frequency": {
+                  "type": "string",
+                  "description": "How often this attestation should be reviewed. Example: 'annually', 'quarterly'."
+                },
+                "status": {
+                  "description": "The attested status.",
+                  "type": "string",
+                  "enum": [
+                    "passed",
+                    "failed"
+                  ],
+                  "title": "Attestation Status"
+                },
+                "updated": {
+                  "type": "string",
+                  "description": "When this attestation was last updated."
+                },
+                "updated_by": {
+                  "type": "string",
+                  "description": "Who last updated this attestation."
+                }
+              },
+              "description": "Data for a manual attestation that overrides automated assessment results.",
+              "title": "Attestation Data"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Attestation information if this requirement has been manually attested."
+        }
+      },
+      "description": "A requirement that has been evaluated, including any findings.",
+      "title": "Evaluated Requirement"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+# Gitleaks configuration
+# https://github.com/gitleaks/gitleaks
+
+title = "hdf-cli gitleaks config"
+
+[allowlist]
+  description = "Allowlisted files and patterns"
+  paths = [
+    # Test fixtures may contain example data
+    '''test/fixtures/.*\.json$''',
+    # Generated files
+    '''pkg/hdf/hdf_results\.go$''',
+    '''pkg/hdf/hdf_baseline\.go$''',
+  ]
+
+# Use default rules from gitleaks
+# Additional custom rules can be added here if needed
+
+[[rules]]
+  id = "hdf-api-key"
+  description = "HDF API Key"
+  regex = '''(?i)hdf[_-]?api[_-]?key['":\s]*[=:]\s*['"]?([a-zA-Z0-9]{32,})['"]?'''
+  tags = ["key", "hdf"]
+
+[[rules]]
+  id = "generic-credential"
+  description = "Generic Credential"
+  regex = '''(?i)(password|passwd|pwd|secret|token|apikey|api_key|auth)['":\s]*[=:]\s*['"]([^'"]{8,})['"]'''
+  tags = ["credential", "generic"]
+  [rules.allowlist]
+    regexes = [
+      # Allow common test/example values
+      '''(?i)(password|passwd|pwd|secret|token).*example''',
+      '''(?i)(password|passwd|pwd|secret|token).*test''',
+      '''(?i)(password|passwd|pwd|secret|token).*dummy''',
+    ]
