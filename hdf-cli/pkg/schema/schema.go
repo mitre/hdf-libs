@@ -4,6 +4,8 @@ package schema
 import (
 	"embed"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
@@ -11,6 +13,25 @@ import (
 
 //go:embed schemas/*.schema.json
 var schemaFS embed.FS
+
+// schemaDir is an optional directory to load schemas from instead of embedded.
+// When set, schemas are loaded from disk for development/testing workflows.
+var schemaDir string
+
+// SetSchemaDir configures the package to load schemas from the specified
+// directory instead of using embedded schemas. Pass empty string to revert
+// to embedded schemas. This also clears any cached schemas.
+func SetSchemaDir(dir string) {
+	schemaDir = dir
+	// Clear cached schemas so they reload from new source
+	resultsSchema = nil
+	baselineSchema = nil
+}
+
+// GetSchemaDir returns the current schema directory, or empty if using embedded.
+func GetSchemaDir() string {
+	return schemaDir
+}
 
 // Type represents the type of HDF schema.
 type Type string
@@ -59,17 +80,34 @@ var (
 	baselineSchema *gojsonschema.Schema
 )
 
-// loadSchema loads and compiles a schema from the embedded filesystem.
+// loadSchema loads and compiles a schema from either the filesystem (if schemaDir
+// is set) or from embedded schemas.
 func loadSchema(filename string) (*gojsonschema.Schema, error) {
-	data, err := schemaFS.ReadFile("schemas/" + filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read embedded schema %s: %w", filename, err)
+	var data []byte
+	var err error
+	var source string
+
+	if schemaDir != "" {
+		// Load from filesystem
+		path := filepath.Join(schemaDir, filename)
+		data, err = os.ReadFile(path) // #nosec G304 -- intentional for dev workflow
+		if err != nil {
+			return nil, fmt.Errorf("failed to read schema from %s: %w", path, err)
+		}
+		source = path
+	} else {
+		// Load from embedded filesystem
+		data, err = schemaFS.ReadFile("schemas/" + filename)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read embedded schema %s: %w", filename, err)
+		}
+		source = "embedded:" + filename
 	}
 
 	loader := gojsonschema.NewBytesLoader(data)
 	schema, err := gojsonschema.NewSchema(loader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compile schema %s: %w", filename, err)
+		return nil, fmt.Errorf("failed to compile schema %s: %w", source, err)
 	}
 
 	return schema, nil
