@@ -932,6 +932,20 @@ describe('Primitive Schema Validation', () => {
         };
         expect(validate(invalid)).toBe(false);
       });
+
+      it('should reject Integrity with algorithm but no checksum', () => {
+        const invalid = {
+          algorithm: 'sha256',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Integrity with checksum but no algorithm', () => {
+        const invalid = {
+          checksum: 'abc123def456',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
     });
   });
 });

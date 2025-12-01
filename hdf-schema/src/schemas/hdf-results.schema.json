@@ -176,7 +176,7 @@
     "Evaluated_Requirement": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["id", "impact", "refs", "tags", "source_location", "results"],
+      "required": ["id", "impact", "tags", "source_location", "results"],
       "properties": {
         "id": {
           "type": "string",
@@ -204,7 +204,7 @@
           "description": "The impactfulness or severity (0.0 to 1.0)."
         },
         "refs": {
-          "type": "array",
+          "type": ["array", "null"],
           "items": {
             "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Reference"
           },
