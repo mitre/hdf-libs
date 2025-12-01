@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mitre/hdf-cli/pkg/schema"
 	"github.com/spf13/cobra"
 )
 
@@ -30,6 +31,7 @@ var (
 	debug            bool
 	maxSizeMB        int
 	noFollowSymlinks bool
+	schemaDirFlag    string
 )
 
 // rootCmd represents the base command.
@@ -66,6 +68,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug output")
 	rootCmd.PersistentFlags().IntVar(&maxSizeMB, "max-size", 50, "Maximum file size in MB")
 	rootCmd.PersistentFlags().BoolVar(&noFollowSymlinks, "no-follow-symlinks", false, "Refuse to read symlinked files")
+	rootCmd.PersistentFlags().StringVar(&schemaDirFlag, "schema-dir", "", "Load schemas from directory instead of embedded (for development)")
 }
 
 func initConfig() {
@@ -77,6 +80,14 @@ func initConfig() {
 	// Check TERM=dumb
 	if os.Getenv("TERM") == "dumb" {
 		noColor = true
+	}
+
+	// Configure schema directory if specified
+	if schemaDirFlag != "" {
+		schema.SetSchemaDir(schemaDirFlag)
+		if debug {
+			printDebug("Using schemas from: %s", schemaDirFlag)
+		}
 	}
 }
 
