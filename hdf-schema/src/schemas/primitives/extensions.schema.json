@@ -92,7 +92,10 @@
     "Integrity": {
       "type": "object",
       "additionalProperties": true,
-      "required": [],
+      "dependencies": {
+        "algorithm": ["checksum"],
+        "checksum": ["algorithm"]
+      },
       "properties": {
         "algorithm": {
           "type": "string",
@@ -112,7 +115,7 @@
           "description": "Identifier of who signed this file."
         }
       },
-      "description": "Cryptographic integrity information for verifying the HDF file has not been tampered with.",
+      "description": "Cryptographic integrity information for verifying the HDF file has not been tampered with. If algorithm is provided, checksum must also be provided, and vice versa.",
       "title": "Integrity"
     }
   }

@@ -164,6 +164,37 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
+    it('should validate control without refs (refs is optional)', () => {
+      const control = createMinimalControl();
+      expect(control).not.toHaveProperty('refs');
+      const doc = createMinimalResultsDoc({
+        profiles: [createMinimalEvaluatedBaseline({ controls: [control] })],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate control with refs array', () => {
+      const doc = createMinimalResultsDoc({
+        profiles: [
+          createMinimalEvaluatedBaseline({
+            controls: [createMinimalControl({ refs: [{ url: 'https://example.com' }] })],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate control with null refs', () => {
+      const doc = createMinimalResultsDoc({
+        profiles: [
+          createMinimalEvaluatedBaseline({
+            controls: [createMinimalControl({ refs: null })],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
     it('should validate control with overall_status field', () => {
       const doc = createMinimalResultsDoc({
         profiles: [

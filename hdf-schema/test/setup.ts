@@ -100,7 +100,6 @@ export function createMinimalControl(overrides: object = {}): object {
   return {
     id: 'SV-238196',
     impact: 0.7,
-    refs: [],
     tags: {},
     source_location: {},
     results: [],

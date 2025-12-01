@@ -91,10 +91,13 @@
           "required": ["ref"],
           "properties": {
             "ref": {
-              "type": "string"
+              "anyOf": [
+                { "type": "string", "description": "A human readable/meaningful reference. Example: a book title." },
+                { "type": "array", "items": { "type": "object", "additionalProperties": true }, "description": "An array of reference objects." }
+              ]
             }
           },
-          "description": "A human readable/meaningful reference. Example: a book title."
+          "description": "A reference using the 'ref' field."
         },
         {
           "type": "object",
@@ -115,20 +118,6 @@
             }
           },
           "description": "A URI pointing at the reference."
-        },
-        {
-          "type": "object",
-          "required": ["ref"],
-          "properties": {
-            "ref": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          },
-          "description": "An array of reference objects."
         }
       ],
       "description": "A reference to an external document.",
