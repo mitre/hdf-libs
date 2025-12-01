@@ -1,0 +1,494 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v1.0.0",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "name",
+    "supports",
+    "controls",
+    "groups"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "sha256"
+      ]
+    },
+    {
+      "required": [
+        "sha512"
+      ]
+    }
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name - must be unique."
+    },
+    "title": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The title - should be human readable."
+    },
+    "maintainer": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The maintainer(s)."
+    },
+    "copyright": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The copyright holder(s)."
+    },
+    "copyright_email": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The email address or other contact information of the copyright holder(s)."
+    },
+    "license": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The copyright license. Example: 'Apache-2.0'."
+    },
+    "summary": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The summary. Example: the Security Technical Implementation Guide (STIG) header."
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The version of the baseline."
+    },
+    "supports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [],
+        "properties": {
+          "platform-family": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The platform family. Example: 'redhat'."
+          },
+          "platform-name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The platform name - can include wildcards. Example: 'debian'."
+          },
+          "platform": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The location of the platform. Can be: 'os', 'aws', 'azure', or 'gcp'."
+          },
+          "release": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The release of the platform. Example: '20.04' for 'ubuntu'."
+          },
+          "os-family": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Deprecated in favor of platform-family."
+          },
+          "os-name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Deprecated in favor of platform-name."
+          }
+        },
+        "description": "A supported platform target. Example: the platform name being 'ubuntu'.",
+        "title": "Supported Platform"
+      },
+      "description": "The set of supported platform targets."
+    },
+    "controls": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Baseline_Requirement"
+      },
+      "description": "The set of requirements - contains no findings as the assessment has not yet occurred."
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "requirements"
+            ]
+          },
+          {
+            "required": [
+              "controls"
+            ]
+          }
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier for the group. Example: the relative path to the file specifying the requirements."
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The title of the group - should be human readable."
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The set of requirements as specified by their ids in this group. Example: 'SV-238196'."
+          },
+          "controls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Deprecated: use 'requirements' instead. The set of controls as specified by their ids in this group."
+          }
+        },
+        "description": "Describes a group of requirements, such as those defined in a single file.",
+        "title": "Requirement Group"
+      },
+      "description": "A set of descriptions for the requirement groups."
+    },
+    "inputs": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "An input or attribute used in the run."
+      },
+      "description": "The input(s) or attribute(s) to be used in the run."
+    },
+    "sha256": {
+      "type": "string",
+      "description": "The SHA-256 checksum of the baseline."
+    },
+    "sha512": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The SHA-512 checksum of the baseline (optional)."
+    },
+    "status": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The status. Example: 'loaded'."
+    },
+    "depends": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [],
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name or assigned alias."
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The address of the dependency."
+          },
+          "branch": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The branch name for a git repo."
+          },
+          "path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The relative path if the dependency is locally available."
+          },
+          "status_message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The reason for the status if it is 'failed' or 'skipped'."
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The status. Should be: 'loaded', 'failed', or 'skipped'."
+          },
+          "git": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The location of the git repo. Example: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'."
+          },
+          "supermarket": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The 'user/profilename' attribute for a Supermarket server."
+          },
+          "compliance": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The 'user/profilename' attribute for an Automate server."
+          }
+        },
+        "description": "A dependency for a baseline. Can include relative paths or URLs for where to find the dependency.",
+        "title": "Dependency"
+      },
+      "description": "The set of dependencies this baseline depends on."
+    },
+    "generator": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "name",
+            "version"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the tool that generated this file. Example: 'Chef InSpec'."
+            },
+            "version": {
+              "type": "string",
+              "description": "The version of the tool. Example: '5.22.3'."
+            }
+          },
+          "description": "Information about the tool that generated this HDF file.",
+          "title": "Generator"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The tool that generated this file."
+    }
+  },
+  "description": "Information on the set of requirements that can be assessed. Example: it can include the name of the InSpec profile.",
+  "title": "HDF Baseline",
+  "definitions": {
+    "Baseline_Requirement": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "impact",
+        "tags",
+        "code"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The requirement identifier. Example: 'SV-238196'."
+        },
+        "title": {
+          "type": [
+            "null",
+            "string"
+          ],
+          "description": "The title - is nullable."
+        },
+        "desc": {
+          "type": [
+            "null",
+            "string"
+          ],
+          "description": "The description for the overarching requirement."
+        },
+        "descriptions": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Baseline_Requirement_Descriptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A set of additional descriptions. Example: the 'fix' text."
+        },
+        "impact": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "The impactfulness or severity (0.0 to 1.0)."
+        },
+        "refs": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "ref"
+                ],
+                "properties": {
+                  "ref": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "A human readable/meaningful reference. Example: a book title."
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": true
+                        },
+                        "description": "An array of reference objects."
+                      }
+                    ]
+                  }
+                },
+                "description": "A reference using the 'ref' field."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "url"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "description": "A URL pointing at the reference."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "uri"
+                ],
+                "properties": {
+                  "uri": {
+                    "type": "string"
+                  }
+                },
+                "description": "A URI pointing at the reference."
+              }
+            ],
+            "description": "A reference to an external document.",
+            "title": "Reference"
+          },
+          "description": "The set of references to external documents."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "A set of tags - usually metadata like CCI, STIG ID, severity."
+        },
+        "code": {
+          "type": "string",
+          "description": "The raw source code of the requirement. Note that if this is an overlay, it does not include the underlying source code."
+        },
+        "source_location": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": true,
+              "required": [],
+              "properties": {
+                "ref": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Path to the file that this requirement originates from."
+                },
+                "line": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "The line on which this requirement is located."
+                }
+              },
+              "description": "The explicit location of a requirement within source code.",
+              "title": "Source Location"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The explicit location of the requirement within the source code."
+        }
+      },
+      "description": "A requirement definition without assessment results.",
+      "title": "Baseline Requirement"
+    },
+    "Baseline_Requirement_Descriptions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "required": [],
+      "description": "An arbitrary set of descriptions for a requirement. Common keys: 'default', 'check', 'fix', 'rationale'.",
+      "title": "Baseline Requirement Descriptions"
+    }
+  }
+}
