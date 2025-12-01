@@ -17,7 +17,7 @@ const MAIN_SCHEMAS = ['hdf-results.schema.json', 'hdf-baseline.schema.json'];
  * Load all primitive schemas and create a resolver that maps
  * our custom URIs to local file contents.
  */
-function createResolver(): $RefParser.ResolverOptions {
+function createResolver() {
   const primitiveSchemas = new Map<string, object>();
 
   // Load all primitive schemas
@@ -35,15 +35,14 @@ function createResolver(): $RefParser.ResolverOptions {
     canRead: /^https:\/\/hdf\.aesirsystems\.com\/schemas\//,
     read: (file: { url: string }) => {
       // Extract the base URL (without fragment)
-      const url = file.url.split('#')[0];
+      const url = file.url.split('#')[0] ?? file.url;
 
       // Find matching schema by $id
       const schema = primitiveSchemas.get(url);
-      if (schema) {
-        return JSON.stringify(schema);
+      if (!schema) {
+        throw new Error(`Could not resolve schema: ${url}`);
       }
-
-      throw new Error(`Could not resolve schema: ${url}`);
+      return JSON.stringify(schema);
     },
   };
 }

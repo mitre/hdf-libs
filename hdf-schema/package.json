@@ -17,7 +17,7 @@
     "src/schemas"
   ],
   "scripts": {
-    "build": "tsc && tsx src/bundle-schemas.ts && tsx src/generate-types.ts",
+    "build": "pnpm clean && tsc && tsx src/bundle-schemas.ts && tsx src/generate-types.ts",
     "build:schemas": "tsx src/bundle-schemas.ts",
     "build:types": "tsx src/generate-types.ts",
     "clean": "rm -rf dist",
@@ -40,6 +40,7 @@
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^15.1.2",
+    "@types/node": "^24.10.1",
     "quicktype-core": "^23.0.0",
     "tsx": "^4.20.6"
   },
