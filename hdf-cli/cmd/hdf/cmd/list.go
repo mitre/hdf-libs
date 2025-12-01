@@ -128,14 +128,14 @@ func listControls(results hdf.HdfResults) error {
 			}
 			fmt.Printf("%s (%d):\n", strings.ToUpper(status), len(byStatus[status]))
 			for _, c := range byStatus[status] {
-				title := c.Title
+				title := sanitizeOutput(c.Title)
 				if len(title) > 50 {
 					title = title[:47] + "..."
 				}
 				if title == "" {
 					title = noTitlePlaceholder
 				}
-				fmt.Printf("  %-15s %s\n", c.ID, title)
+				fmt.Printf("  %-15s %s\n", sanitizeOutput(c.ID), title)
 			}
 			fmt.Println()
 		}
@@ -143,14 +143,14 @@ func listControls(results hdf.HdfResults) error {
 		// Show flat list
 		for _, c := range controls {
 			statusSymbol := statusToSymbol(c.Status)
-			title := c.Title
+			title := sanitizeOutput(c.Title)
 			if len(title) > 60 {
 				title = title[:57] + "..."
 			}
 			if title == "" {
 				title = noTitlePlaceholder
 			}
-			fmt.Printf("%s %-15s %s\n", statusSymbol, c.ID, title)
+			fmt.Printf("%s %-15s %s\n", statusSymbol, sanitizeOutput(c.ID), title)
 		}
 	}
 
@@ -193,13 +193,13 @@ func listProfiles(results hdf.HdfResults) error {
 
 	fmt.Printf("Profiles: %d\n\n", len(profiles))
 	for _, p := range profiles {
-		name := p.Name
+		name := sanitizeOutput(p.Name)
 		if p.Title != "" && p.Title != p.Name {
-			name = fmt.Sprintf("%s (%s)", p.Title, p.Name)
+			name = fmt.Sprintf("%s (%s)", sanitizeOutput(p.Title), sanitizeOutput(p.Name))
 		}
 		version := ""
 		if p.Version != "" {
-			version = fmt.Sprintf(" v%s", p.Version)
+			version = fmt.Sprintf(" v%s", sanitizeOutput(p.Version))
 		}
 		fmt.Printf("  %s%s: %d controls\n", name, version, p.ControlCount)
 	}
@@ -250,14 +250,14 @@ func listTargets(results hdf.HdfResults) error {
 	for _, t := range targets {
 		details := ""
 		if t.FQDN != "" {
-			details = t.FQDN
+			details = sanitizeOutput(t.FQDN)
 		} else if t.IP != "" {
-			details = t.IP
+			details = sanitizeOutput(t.IP)
 		}
 		if details != "" {
 			details = fmt.Sprintf(" (%s)", details)
 		}
-		fmt.Printf("  [%s] %s%s\n", t.Type, t.Name, details)
+		fmt.Printf("  [%s] %s%s\n", t.Type, sanitizeOutput(t.Name), details)
 	}
 
 	return nil

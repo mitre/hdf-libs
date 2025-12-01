@@ -121,13 +121,13 @@ func outputInfoJSON(results hdf.HdfResults, filename string) error {
 }
 
 func outputInfoHuman(results hdf.HdfResults, filename string) error {
-	fmt.Printf("File: %s\n", filename)
-	fmt.Printf("Version: %s\n", results.Version)
+	fmt.Printf("File: %s\n", sanitizeOutput(filename))
+	fmt.Printf("Version: %s\n", sanitizeOutput(results.Version))
 	fmt.Println()
 
 	// Generator
 	if results.Generator != nil {
-		fmt.Printf("Generator: %s %s\n", results.Generator.Name, results.Generator.Version)
+		fmt.Printf("Generator: %s %s\n", sanitizeOutput(results.Generator.Name), sanitizeOutput(results.Generator.Version))
 	}
 
 	// Timestamp
@@ -138,8 +138,8 @@ func outputInfoHuman(results hdf.HdfResults, filename string) error {
 
 	// Platform
 	fmt.Println("Platform:")
-	fmt.Printf("  Name:    %s\n", results.Platform.Name)
-	fmt.Printf("  Release: %s\n", results.Platform.Release)
+	fmt.Printf("  Name:    %s\n", sanitizeOutput(results.Platform.Name))
+	fmt.Printf("  Release: %s\n", sanitizeOutput(results.Platform.Release))
 	fmt.Println()
 
 	// Profiles
@@ -151,9 +151,9 @@ func outputInfoHuman(results hdf.HdfResults, filename string) error {
 		}
 		version := ""
 		if p.Version != nil {
-			version = fmt.Sprintf(" (v%s)", *p.Version)
+			version = fmt.Sprintf(" (v%s)", sanitizeOutput(*p.Version))
 		}
-		fmt.Printf("  - %s%s: %d controls\n", name, version, len(p.Controls))
+		fmt.Printf("  - %s%s: %d controls\n", sanitizeOutput(name), version, len(p.Controls))
 	}
 
 	// Targets
@@ -163,15 +163,15 @@ func outputInfoHuman(results hdf.HdfResults, filename string) error {
 		for _, t := range results.Targets {
 			details := []string{}
 			if t.FQDN != nil {
-				details = append(details, *t.FQDN)
+				details = append(details, sanitizeOutput(*t.FQDN))
 			} else if t.IPAddress != nil {
-				details = append(details, *t.IPAddress)
+				details = append(details, sanitizeOutput(*t.IPAddress))
 			}
 			detailStr := ""
 			if len(details) > 0 {
 				detailStr = fmt.Sprintf(" (%s)", strings.Join(details, ", "))
 			}
-			fmt.Printf("  - [%s] %s%s\n", t.Type, t.Name, detailStr)
+			fmt.Printf("  - [%s] %s%s\n", t.Type, sanitizeOutput(t.Name), detailStr)
 		}
 	}
 

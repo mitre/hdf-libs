@@ -59,6 +59,20 @@ func readFromStdin() ([]byte, error) {
 
 // readFromFile reads a file with security validations.
 func readFromFile(path string) ([]byte, error) {
+	// Check for symlinks if --no-follow-symlinks is set
+	if noFollowSymlinks {
+		linkInfo, err := os.Lstat(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil, fmt.Errorf("file not found: %s", path)
+			}
+			return nil, fmt.Errorf("cannot stat file: %w", err)
+		}
+		if linkInfo.Mode()&os.ModeSymlink != 0 {
+			return nil, fmt.Errorf("refusing to follow symlink: %s (use without --no-follow-symlinks to allow)", path)
+		}
+	}
+
 	// Open file first to get handle
 	f, err := os.Open(path) // #nosec G304 -- CLI intentionally reads user-provided paths
 	if err != nil {
