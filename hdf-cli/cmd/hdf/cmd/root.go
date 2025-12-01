@@ -28,6 +28,7 @@ var (
 	jsonOutput bool
 	noColor    bool
 	debug      bool
+	maxSizeMB  int
 )
 
 // rootCmd represents the base command.
@@ -62,6 +63,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Output in JSON format")
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug output")
+	rootCmd.PersistentFlags().IntVar(&maxSizeMB, "max-size", 50, "Maximum file size in MB")
 }
 
 func initConfig() {

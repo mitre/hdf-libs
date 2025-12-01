@@ -13,10 +13,18 @@ import (
 )
 
 const (
-	// MaxHDFFileSize is the maximum allowed HDF file size (50MB).
-	// Most HDF files are under 5MB; this provides headroom for large scans.
-	MaxHDFFileSize = 50 * 1024 * 1024
+	// DefaultMaxSizeMB is the default maximum file size in megabytes.
+	DefaultMaxSizeMB = 50
 )
+
+// getMaxFileSize returns the maximum allowed file size in bytes.
+// Uses the --max-size flag if set, otherwise defaults to 50MB.
+func getMaxFileSize() int64 {
+	if maxSizeMB > 0 {
+		return int64(maxSizeMB) * 1024 * 1024
+	}
+	return DefaultMaxSizeMB * 1024 * 1024
+}
 
 // readInputFile reads from a file path or stdin with security validations.
 // It enforces size limits and validates the input is a regular file.
@@ -31,14 +39,15 @@ func readInputFile(path string) ([]byte, error) {
 
 // readFromStdin reads from stdin with a size limit.
 func readFromStdin() ([]byte, error) {
-	limited := io.LimitReader(os.Stdin, MaxHDFFileSize+1)
+	maxSize := getMaxFileSize()
+	limited := io.LimitReader(os.Stdin, maxSize+1)
 	data, err := io.ReadAll(limited)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read stdin: %w", err)
 	}
 
-	if len(data) > MaxHDFFileSize {
-		return nil, fmt.Errorf("input too large: exceeds %d MB limit", MaxHDFFileSize/(1024*1024))
+	if int64(len(data)) > maxSize {
+		return nil, fmt.Errorf("input too large: exceeds %d MB limit (use --max-size to increase)", maxSizeMB)
 	}
 
 	if len(data) == 0 {
@@ -81,13 +90,14 @@ func readFromFile(path string) ([]byte, error) {
 		return nil, fmt.Errorf("file is empty: %s", path)
 	}
 
-	if info.Size() > MaxHDFFileSize {
-		return nil, fmt.Errorf("file too large: %d bytes (max %d MB)",
-			info.Size(), MaxHDFFileSize/(1024*1024))
+	maxSize := getMaxFileSize()
+	if info.Size() > maxSize {
+		return nil, fmt.Errorf("file too large: %d bytes (max %d MB, use --max-size to increase)",
+			info.Size(), maxSizeMB)
 	}
 
 	// Read with limit as defense-in-depth
-	data, err := io.ReadAll(io.LimitReader(f, MaxHDFFileSize))
+	data, err := io.ReadAll(io.LimitReader(f, maxSize))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
