@@ -111,10 +111,11 @@ func TestParseHDFBaseline_InvalidJSON(t *testing.T) {
 	}
 }
 
-func TestMaxHDFFileSize(t *testing.T) {
-	// Verify the constant is set to 50MB
+func TestGetMaxFileSize(t *testing.T) {
+	// Verify default max size is 50MB
 	expected := int64(50 * 1024 * 1024)
-	if MaxHDFFileSize != expected {
-		t.Errorf("MaxHDFFileSize = %d, want %d", MaxHDFFileSize, expected)
+	actual := getMaxFileSize()
+	if actual != expected {
+		t.Errorf("getMaxFileSize() = %d, want %d", actual, expected)
 	}
 }
