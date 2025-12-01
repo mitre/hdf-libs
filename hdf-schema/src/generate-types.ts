@@ -58,7 +58,7 @@ async function generateForLanguage(
 
   const result = await quicktype({
     inputData,
-    lang: language,
+    lang: language as 'typescript' | 'go' | 'python',
     rendererOptions: options as Record<string, string>,
   });
 
