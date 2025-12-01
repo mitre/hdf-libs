@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -44,6 +43,7 @@ var (
 	querySearch   string
 	queryProfile  string
 	queryCount    bool
+	queryLimit    int
 )
 
 func init() {
@@ -59,6 +59,7 @@ func init() {
 	queryCmd.Flags().StringVar(&querySearch, "search", "", "Search in title and description")
 	queryCmd.Flags().StringVarP(&queryProfile, "profile", "p", "", "Filter by profile name")
 	queryCmd.Flags().BoolVarP(&queryCount, "count", "c", false, "Show only the count of matching controls")
+	queryCmd.Flags().IntVarP(&queryLimit, "limit", "l", 0, "Limit number of results (0 = unlimited)")
 }
 
 type queryResult struct {
@@ -90,11 +91,18 @@ func runQuery(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Build filter chain
+	// Build filter chain and find matches
 	filters := buildFilters()
+	matches := findMatches(results, filters)
 
-	// Apply filters
+	// Output results
+	return outputQueryResults(matches)
+}
+
+// findMatches applies filters to all controls and returns matching results.
+func findMatches(results hdf.HdfResults, filters []filterFunc) []queryResult {
 	var matches []queryResult
+
 	for _, profile := range results.Profiles {
 		// Profile filter
 		if queryProfile != "" && !matchesGlob(profile.Name, queryProfile) {
@@ -102,6 +110,11 @@ func runQuery(_ *cobra.Command, args []string) error {
 		}
 
 		for _, control := range profile.Controls {
+			// Check limit (unless counting)
+			if queryLimit > 0 && len(matches) >= queryLimit && !queryCount {
+				return matches
+			}
+
 			status := determineControlStatus(control)
 			severity := impactToSeverity(control.Impact)
 
@@ -126,7 +139,11 @@ func runQuery(_ *cobra.Command, args []string) error {
 		}
 	}
 
-	// Output results
+	return matches
+}
+
+// outputQueryResults formats and prints query results.
+func outputQueryResults(matches []queryResult) error {
 	if queryCount {
 		if jsonOutput {
 			output, _ := json.Marshal(map[string]int{"count": len(matches)})
@@ -154,14 +171,14 @@ func runQuery(_ *cobra.Command, args []string) error {
 	for _, m := range matches {
 		symbol := statusToSymbol(m.Status)
 		severityLabel := severityToLabel(m.Severity)
-		title := m.Title
+		title := sanitizeOutput(m.Title)
 		if len(title) > 55 {
 			title = title[:52] + "..."
 		}
 		if title == "" {
 			title = "(no title)"
 		}
-		fmt.Printf("%s %-15s [%s] %s\n", symbol, m.ID, severityLabel, title)
+		fmt.Printf("%s %-15s [%s] %s\n", symbol, sanitizeOutput(m.ID), severityLabel, title)
 	}
 
 	return nil
@@ -377,28 +394,21 @@ func tagMatchesGlob(tags map[string]interface{}, key, pattern string) bool {
 		return false
 	}
 
-	// Convert glob pattern to regex
-	regexPattern := globToRegex(pattern)
-	re, err := regexp.Compile("(?i)" + regexPattern)
-	if err != nil {
-		return false
-	}
-
-	// Handle different tag value types
+	// Handle different tag value types with safe regex matching
 	switch v := tagVal.(type) {
 	case string:
-		return re.MatchString(v)
+		return safeGlobMatch(v, pattern)
 	case []interface{}:
 		for _, item := range v {
 			if str, ok := item.(string); ok {
-				if re.MatchString(str) {
+				if safeGlobMatch(str, pattern) {
 					return true
 				}
 			}
 		}
 	case []string:
 		for _, str := range v {
-			if re.MatchString(str) {
+			if safeGlobMatch(str, pattern) {
 				return true
 			}
 		}
@@ -408,12 +418,7 @@ func tagMatchesGlob(tags map[string]interface{}, key, pattern string) bool {
 }
 
 func matchesGlob(s, pattern string) bool {
-	regexPattern := globToRegex(pattern)
-	re, err := regexp.Compile("(?i)" + regexPattern)
-	if err != nil {
-		return false
-	}
-	return re.MatchString(s)
+	return safeGlobMatch(s, pattern)
 }
 
 func globToRegex(glob string) string {

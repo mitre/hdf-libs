@@ -25,10 +25,11 @@ var (
 	date    = "unknown"
 
 	// Global flags.
-	jsonOutput bool
-	noColor    bool
-	debug      bool
-	maxSizeMB  int
+	jsonOutput       bool
+	noColor          bool
+	debug            bool
+	maxSizeMB        int
+	noFollowSymlinks bool
 )
 
 // rootCmd represents the base command.
@@ -64,6 +65,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug output")
 	rootCmd.PersistentFlags().IntVar(&maxSizeMB, "max-size", 50, "Maximum file size in MB")
+	rootCmd.PersistentFlags().BoolVar(&noFollowSymlinks, "no-follow-symlinks", false, "Refuse to read symlinked files")
 }
 
 func initConfig() {
