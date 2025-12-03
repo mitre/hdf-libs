@@ -9,10 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var infoCmd = &cobra.Command{
-	Use:   "info <file>",
-	Short: "Display summary information about an HDF file",
-	Long: `Display summary information about an HDF results file including:
+// NewInfoCmd creates a new info command with fresh state.
+func NewInfoCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "info <file>",
+		Short: "Display summary information about an HDF file",
+		Long: `Display summary information about an HDF results file including:
 - Generator tool and version
 - Platform information
 - Profile/baseline names and versions
@@ -22,12 +24,9 @@ var infoCmd = &cobra.Command{
 Examples:
   hdf info results.json
   hdf info results.json --json`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: runInfo,
-}
-
-func init() {
-	rootCmd.AddCommand(infoCmd)
+		Args: cobra.MaximumNArgs(1),
+		RunE: runInfo,
+	}
 }
 
 func runInfo(_ *cobra.Command, args []string) error {

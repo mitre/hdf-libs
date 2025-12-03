@@ -10,29 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var queryCmd = &cobra.Command{
-	Use:   "query <file>",
-	Short: "Search and filter controls in an HDF file",
-	Long: `Search and filter controls based on status, severity, tags, and text.
-
-Filters can be combined (AND logic). Use multiple flags to narrow results.
-
-Examples:
-  hdf query results.json --status failed
-  hdf query results.json --status failed --severity high
-  hdf query results.json --cci CCI-000366
-  hdf query results.json --nist "AC-2"
-  hdf query results.json --stig-id V-230221
-  hdf query results.json --tag "severity:high"
-  hdf query results.json --search "password"
-  hdf query results.json --impact ">0.5" --status failed
-  hdf query results.json --status failed --count`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: runQuery,
-}
-
+// Global flag variables for query command (used by runQuery).
 var (
-	// Filter flags.
 	queryStatus   string
 	querySeverity string
 	queryImpact   string
@@ -46,20 +25,71 @@ var (
 	queryLimit    int
 )
 
-func init() {
-	rootCmd.AddCommand(queryCmd)
+// NewQueryCmd creates a new query command with fresh state.
+func NewQueryCmd() *cobra.Command {
+	// Local flag variables for this command instance
+	var (
+		localQueryStatus   string
+		localQuerySeverity string
+		localQueryImpact   string
+		localQueryCCI      string
+		localQueryNIST     string
+		localQuerySTIGID   string
+		localQueryTag      string
+		localQuerySearch   string
+		localQueryProfile  string
+		localQueryCount    bool
+		localQueryLimit    int
+	)
 
-	queryCmd.Flags().StringVarP(&queryStatus, "status", "s", "", "Filter by status (passed, failed, error, not_applicable, not_reviewed)")
-	queryCmd.Flags().StringVar(&querySeverity, "severity", "", "Filter by severity (high, medium, low, none)")
-	queryCmd.Flags().StringVarP(&queryImpact, "impact", "i", "", "Filter by impact (e.g., \">0.5\", \">=0.7\", \"0.5\")")
-	queryCmd.Flags().StringVar(&queryCCI, "cci", "", "Filter by CCI identifier (e.g., CCI-000366)")
-	queryCmd.Flags().StringVar(&queryNIST, "nist", "", "Filter by NIST control (e.g., AC-2, CM-6*)")
-	queryCmd.Flags().StringVar(&querySTIGID, "stig-id", "", "Filter by STIG ID (e.g., V-230221)")
-	queryCmd.Flags().StringVarP(&queryTag, "tag", "t", "", "Filter by tag key:value (e.g., severity:high)")
-	queryCmd.Flags().StringVar(&querySearch, "search", "", "Search in title and description")
-	queryCmd.Flags().StringVarP(&queryProfile, "profile", "p", "", "Filter by profile name")
-	queryCmd.Flags().BoolVarP(&queryCount, "count", "c", false, "Show only the count of matching controls")
-	queryCmd.Flags().IntVarP(&queryLimit, "limit", "l", 0, "Limit number of results (0 = unlimited)")
+	cmd := &cobra.Command{
+		Use:   "query <file>",
+		Short: "Search and filter controls in an HDF file",
+		Long: `Search and filter controls based on status, severity, tags, and text.
+
+Filters can be combined (AND logic). Use multiple flags to narrow results.
+
+Examples:
+  hdf query results.json --status failed
+  hdf query results.json --status failed --severity high
+  hdf query results.json --cci CCI-000366
+  hdf query results.json --nist "AC-2"
+  hdf query results.json --stig-id V-230221
+  hdf query results.json --tag "severity:high"
+  hdf query results.json --search "password"
+  hdf query results.json --impact ">0.5" --status failed
+  hdf query results.json --status failed --count`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Sync local flags to global variables for runQuery
+			queryStatus = localQueryStatus
+			querySeverity = localQuerySeverity
+			queryImpact = localQueryImpact
+			queryCCI = localQueryCCI
+			queryNIST = localQueryNIST
+			querySTIGID = localQuerySTIGID
+			queryTag = localQueryTag
+			querySearch = localQuerySearch
+			queryProfile = localQueryProfile
+			queryCount = localQueryCount
+			queryLimit = localQueryLimit
+			return runQuery(cmd, args)
+		},
+	}
+
+	cmd.Flags().StringVarP(&localQueryStatus, "status", "s", "", "Filter by status (passed, failed, error, not_applicable, not_reviewed)")
+	cmd.Flags().StringVar(&localQuerySeverity, "severity", "", "Filter by severity (high, medium, low, none)")
+	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by impact (e.g., \">0.5\", \">=0.7\", \"0.5\")")
+	cmd.Flags().StringVar(&localQueryCCI, "cci", "", "Filter by CCI identifier (e.g., CCI-000366)")
+	cmd.Flags().StringVar(&localQueryNIST, "nist", "", "Filter by NIST control (e.g., AC-2, CM-6*)")
+	cmd.Flags().StringVar(&localQuerySTIGID, "stig-id", "", "Filter by STIG ID (e.g., V-230221)")
+	cmd.Flags().StringVarP(&localQueryTag, "tag", "t", "", "Filter by tag key:value (e.g., severity:high)")
+	cmd.Flags().StringVar(&localQuerySearch, "search", "", "Search in title and description")
+	cmd.Flags().StringVarP(&localQueryProfile, "profile", "p", "", "Filter by profile name")
+	cmd.Flags().BoolVarP(&localQueryCount, "count", "c", false, "Show only the count of matching controls")
+	cmd.Flags().IntVarP(&localQueryLimit, "limit", "l", 0, "Limit number of results (0 = unlimited)")
+
+	return cmd
 }
 
 type queryResult struct {
@@ -89,6 +119,11 @@ func runQuery(_ *cobra.Command, args []string) error {
 	if err != nil {
 		printError(fmt.Sprintf("Failed to parse HDF file: %v", err))
 		return err
+	}
+
+	// Interactive mode
+	if interactive {
+		return runInteractiveQuery(results)
 	}
 
 	// Build filter chain and find matches
@@ -284,26 +319,34 @@ func applyFilters(control hdf.EvaluatedRequirement, status, severity string, fil
 	return true
 }
 
+// Severity constants.
+const (
+	SeverityHigh   = "high"
+	SeverityMedium = "medium"
+	SeverityLow    = "low"
+	SeverityNone   = "none"
+)
+
 func impactToSeverity(impact float64) string {
 	switch {
 	case impact >= 0.7:
-		return "high"
+		return SeverityHigh
 	case impact >= 0.4:
-		return "medium"
+		return SeverityMedium
 	case impact > 0:
-		return "low"
+		return SeverityLow
 	default:
-		return "none"
+		return SeverityNone
 	}
 }
 
 func severityToLabel(severity string) string {
 	switch severity {
-	case "high":
+	case SeverityHigh:
 		return "HIGH"
-	case "medium":
+	case SeverityMedium:
 		return "MED "
-	case "low":
+	case SeverityLow:
 		return "LOW "
 	default:
 		return "NONE"

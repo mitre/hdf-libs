@@ -9,10 +9,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var listCmd = &cobra.Command{
-	Use:   "list <what> <file>",
-	Short: "List controls, profiles, or targets from an HDF file",
-	Long: `List items from an HDF results file.
+// Global flag variables for list command (used by runList).
+var (
+	statusFilter string
+	showAll      bool
+)
+
+// NewListCmd creates a new list command with fresh state.
+func NewListCmd() *cobra.Command {
+	// Local flag variables for this command instance
+	var (
+		localStatusFilter string
+		localShowAll      bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "list <what> <file>",
+		Short: "List controls, profiles, or targets from an HDF file",
+		Long: `List items from an HDF results file.
 
 Available list types:
   controls   List all controls/requirements with their status
@@ -24,20 +38,19 @@ Examples:
   hdf list controls results.json --status failed
   hdf list profiles results.json
   hdf list targets results.json --json`,
-	Args: cobra.ExactArgs(2),
-	RunE: runList,
-}
+		Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Sync local flags to global variables for runList
+			statusFilter = localStatusFilter
+			showAll = localShowAll
+			return runList(cmd, args)
+		},
+	}
 
-var (
-	statusFilter string
-	showAll      bool
-)
+	cmd.Flags().StringVarP(&localStatusFilter, "status", "s", "", "Filter by status (passed, failed, error, not_applicable, not_reviewed)")
+	cmd.Flags().BoolVarP(&localShowAll, "all", "a", false, "Show all details")
 
-func init() {
-	rootCmd.AddCommand(listCmd)
-
-	listCmd.Flags().StringVarP(&statusFilter, "status", "s", "", "Filter by status (passed, failed, error, not_applicable, not_reviewed)")
-	listCmd.Flags().BoolVarP(&showAll, "all", "a", false, "Show all details")
+	return cmd
 }
 
 func runList(_ *cobra.Command, args []string) error {

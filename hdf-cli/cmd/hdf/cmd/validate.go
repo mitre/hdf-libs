@@ -7,10 +7,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var validateCmd = &cobra.Command{
-	Use:   "validate <file>",
-	Short: "Validate an HDF file against the schema",
-	Long: `Validate an HDF results or baseline file against the JSON schema.
+// Global flag variables for validate command (used by runValidate).
+var (
+	schemaType string // "results" or "baseline"
+	quiet      bool
+)
+
+// NewValidateCmd creates a new validate command with fresh state.
+func NewValidateCmd() *cobra.Command {
+	// Local flag variables for this command instance
+	var (
+		localSchemaType string
+		localQuiet      bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "validate <file>",
+		Short: "Validate an HDF file against the schema",
+		Long: `Validate an HDF results or baseline file against the JSON schema.
 
 Reads from stdin if file is '-' or omitted.
 
@@ -19,20 +33,19 @@ Examples:
   hdf validate baseline.json --type baseline
   cat results.json | hdf validate -
   curl -s https://example.com/scan.json | hdf validate`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: runValidate,
-}
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Sync local flags to global variables for runValidate
+			schemaType = localSchemaType
+			quiet = localQuiet
+			return runValidate(cmd, args)
+		},
+	}
 
-var (
-	schemaType string // "results" or "baseline"
-	quiet      bool
-)
+	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "results", "Schema type: 'results' or 'baseline'")
+	cmd.Flags().BoolVarP(&localQuiet, "quiet", "q", false, "Suppress output on success (exit code only)")
 
-func init() {
-	rootCmd.AddCommand(validateCmd)
-
-	validateCmd.Flags().StringVarP(&schemaType, "type", "t", "results", "Schema type: 'results' or 'baseline'")
-	validateCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress output on success (exit code only)")
+	return cmd
 }
 
 func runValidate(_ *cobra.Command, args []string) error {
