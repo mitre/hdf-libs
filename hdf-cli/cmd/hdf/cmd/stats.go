@@ -8,10 +8,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var statsCmd = &cobra.Command{
-	Use:   "stats <file>",
-	Short: "Display assessment statistics from an HDF file",
-	Long: `Display statistics from an HDF results file including:
+// NewStatsCmd creates a new stats command with fresh state.
+func NewStatsCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "stats <file>",
+		Short: "Display assessment statistics from an HDF file",
+		Long: `Display statistics from an HDF results file including:
 - Total controls/requirements
 - Pass/fail/error/not_applicable/not_reviewed counts
 - Duration
@@ -19,12 +21,9 @@ var statsCmd = &cobra.Command{
 Examples:
   hdf stats results.json
   hdf stats results.json --json`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: runStats,
-}
-
-func init() {
-	rootCmd.AddCommand(statsCmd)
+		Args: cobra.MaximumNArgs(1),
+		RunE: runStats,
+	}
 }
 
 type controlStats struct {

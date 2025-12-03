@@ -24,21 +24,39 @@ var (
 	version = "dev"
 	commit  = "none"
 	date    = "unknown"
+)
 
-	// Global flags.
+// GlobalFlags holds the global command-line flags.
+type GlobalFlags struct {
+	JSONOutput       bool
+	NoColor          bool
+	Debug            bool
+	MaxSizeMB        int
+	NoFollowSymlinks bool
+	SchemaDirFlag    string
+	Interactive      bool
+}
+
+// Global flag variables (used by legacy code and helper functions).
+var (
 	jsonOutput       bool
 	noColor          bool
 	debug            bool
 	maxSizeMB        int
 	noFollowSymlinks bool
 	schemaDirFlag    string
+	interactive      bool
 )
 
-// rootCmd represents the base command.
-var rootCmd = &cobra.Command{
-	Use:   "hdf",
-	Short: "Work with Heimdall Data Format (HDF) files",
-	Long: `hdf is a CLI tool for working with Heimdall Data Format (HDF) files.
+// NewRootCmd creates a new root command with fresh state.
+func NewRootCmd() *cobra.Command {
+	// Create local flag variables for this command instance
+	var gf GlobalFlags
+
+	cmd := &cobra.Command{
+		Use:   "hdf",
+		Short: "Work with Heimdall Data Format (HDF) files",
+		Long: `hdf is a CLI tool for working with Heimdall Data Format (HDF) files.
 
 HDF is a standardized format for security assessment results, designed to work
 with compliance tools like Chef InSpec, AWS Security Hub, and more.
@@ -50,25 +68,45 @@ Examples:
   hdf list controls results.json      List all controls/requirements
 
 For more information: https://github.com/mitre/hdf-libs`,
-	SilenceUsage:  true,
-	SilenceErrors: true,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			// Sync local flags to global variables for helper functions
+			jsonOutput = gf.JSONOutput
+			noColor = gf.NoColor
+			debug = gf.Debug
+			maxSizeMB = gf.MaxSizeMB
+			noFollowSymlinks = gf.NoFollowSymlinks
+			schemaDirFlag = gf.SchemaDirFlag
+			interactive = gf.Interactive
+
+			initConfig()
+		},
+	}
+
+	// Global persistent flags
+	cmd.PersistentFlags().BoolVar(&gf.JSONOutput, "json", false, "Output in JSON format")
+	cmd.PersistentFlags().BoolVar(&gf.NoColor, "no-color", false, "Disable colored output")
+	cmd.PersistentFlags().BoolVarP(&gf.Debug, "debug", "d", false, "Enable debug output")
+	cmd.PersistentFlags().IntVar(&gf.MaxSizeMB, "max-size", 50, "Maximum file size in MB")
+	cmd.PersistentFlags().BoolVar(&gf.NoFollowSymlinks, "no-follow-symlinks", false, "Refuse to read symlinked files")
+	cmd.PersistentFlags().StringVar(&gf.SchemaDirFlag, "schema-dir", "", "Load schemas from directory instead of embedded (for development)")
+	cmd.PersistentFlags().BoolVarP(&gf.Interactive, "interactive", "i", false, "Launch interactive TUI mode")
+
+	// Add subcommands
+	cmd.AddCommand(NewValidateCmd())
+	cmd.AddCommand(NewInfoCmd())
+	cmd.AddCommand(NewStatsCmd())
+	cmd.AddCommand(NewListCmd())
+	cmd.AddCommand(NewQueryCmd())
+	cmd.AddCommand(NewVersionCmd())
+
+	return cmd
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() error {
-	return rootCmd.Execute()
-}
-
-func init() {
-	cobra.OnInitialize(initConfig)
-
-	// Global persistent flags
-	rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Output in JSON format")
-	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output")
-	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug output")
-	rootCmd.PersistentFlags().IntVar(&maxSizeMB, "max-size", 50, "Maximum file size in MB")
-	rootCmd.PersistentFlags().BoolVar(&noFollowSymlinks, "no-follow-symlinks", false, "Refuse to read symlinked files")
-	rootCmd.PersistentFlags().StringVar(&schemaDirFlag, "schema-dir", "", "Load schemas from directory instead of embedded (for development)")
+	return NewRootCmd().Execute()
 }
 
 func initConfig() {
