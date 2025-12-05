@@ -56,7 +56,7 @@ export function loadFixture(filename: string): object {
  */
 export function createMinimalResultsDoc(overrides: object = {}): object {
   return {
-    profiles: [],
+    baselines: [],
     statistics: {},
     ...overrides,
   };
