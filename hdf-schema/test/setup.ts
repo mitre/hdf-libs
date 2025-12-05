@@ -55,10 +55,8 @@ export function loadFixture(filename: string): object {
  */
 export function createMinimalResultsDoc(overrides: object = {}): object {
   return {
-    platform: { name: 'ubuntu', release: '20.04' },
     profiles: [],
     statistics: {},
-    version: '5.22.3',
     ...overrides,
   };
 }
@@ -103,6 +101,9 @@ export function createMinimalControl(overrides: object = {}): object {
     tags: {},
     source_location: {},
     results: [],
+    descriptions: [
+      { label: 'default', data: 'Minimal test control description' }
+    ],
     ...overrides,
   };
 }
@@ -116,6 +117,9 @@ export function createMinimalBaselineControl(overrides: object = {}): object {
     impact: 0.7,
     tags: {},
     code: 'control "SV-238196" do\nend',
+    descriptions: [
+      { label: 'default', data: 'Minimal baseline control description' }
+    ],
     ...overrides,
   };
 }
