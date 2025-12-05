@@ -70,7 +70,7 @@ export function createMinimalBaselineDoc(overrides: object = {}): object {
   return {
     name: 'test-baseline',
     supports: [],
-    controls: [],
+    requirements: [],
     groups: [],
     checksum: { algorithm: 'sha256', value: 'abc123def456' },
     ...overrides,
@@ -87,7 +87,7 @@ export function createMinimalEvaluatedBaseline(overrides: object = {}): object {
     supports: [],
     attributes: [],
     groups: [],
-    controls: [],
+    requirements: [],
     ...overrides,
   };
 }

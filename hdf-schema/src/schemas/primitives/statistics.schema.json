@@ -77,7 +77,7 @@
           "type": ["number", "null"],
           "description": "How long (in seconds) this assessment run took."
         },
-        "controls": {
+        "requirements": {
           "anyOf": [
             { "$ref": "#/definitions/Statistic_Hash" },
             { "type": "null" }

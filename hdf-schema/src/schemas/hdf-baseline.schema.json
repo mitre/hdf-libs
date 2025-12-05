@@ -3,7 +3,7 @@
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v1.0.0",
   "type": "object",
   "additionalProperties": true,
-  "required": ["name", "supports", "controls", "groups", "checksum"],
+  "required": ["name", "supports", "requirements", "groups", "checksum"],
   "properties": {
     "name": {
       "type": "string",
@@ -44,7 +44,7 @@
       },
       "description": "The set of supported platform targets."
     },
-    "controls": {
+    "requirements": {
       "type": "array",
       "items": {
         "$ref": "#/definitions/Baseline_Requirement"

@@ -135,7 +135,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         supports: [],
         attributes: [],
         groups: [],
-        controls: [],
+        requirements: [],
         checksum: { algorithm: 'sha512', value: 'longer-sha512-hash-value' },
       };
       const doc = createMinimalResultsDoc({ profiles: [profile] });
@@ -157,7 +157,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         supports: [],
         attributes: [],
         groups: [],
-        controls: [],
+        requirements: [],
       };
       const doc = createMinimalResultsDoc({ profiles: [profile] });
       expect(validate(doc)).toBe(false);
@@ -179,10 +179,10 @@ describe('hdf-results.schema.json (refactored)', () => {
     });
   });
 
-  describe('controls array (Evaluated_Requirement)', () => {
+  describe('requirements array (Evaluated_Requirement)', () => {
     it('should validate control with minimal required fields', () => {
       const doc = createMinimalResultsDoc({
-        profiles: [createMinimalEvaluatedBaseline({ controls: [createMinimalControl()] })],
+        profiles: [createMinimalEvaluatedBaseline({ requirements: [createMinimalControl()] })],
       });
       expect(validate(doc)).toBe(true);
     });
@@ -197,7 +197,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         // Missing descriptions array
       };
       const doc = createMinimalResultsDoc({
-        profiles: [createMinimalEvaluatedBaseline({ controls: [control] })],
+        profiles: [createMinimalEvaluatedBaseline({ requirements: [control] })],
       });
       expect(validate(doc)).toBe(false);
       expect(validate.errors).toMatchObject([
@@ -211,7 +211,7 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should reject control with empty descriptions array', () => {
       const control = createMinimalControl({ descriptions: [] });
       const doc = createMinimalResultsDoc({
-        profiles: [createMinimalEvaluatedBaseline({ controls: [control] })],
+        profiles: [createMinimalEvaluatedBaseline({ requirements: [control] })],
       });
       expect(validate(doc)).toBe(false);
       expect(validate.errors).toBeDefined();
@@ -224,7 +224,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         descriptions: [{ label: 'default', data: 'This is the main description' }],
       });
       const doc = createMinimalResultsDoc({
-        profiles: [createMinimalEvaluatedBaseline({ controls: [control] })],
+        profiles: [createMinimalEvaluatedBaseline({ requirements: [control] })],
       });
       expect(validate(doc)).toBe(true);
     });
@@ -239,7 +239,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         ],
       });
       const doc = createMinimalResultsDoc({
-        profiles: [createMinimalEvaluatedBaseline({ controls: [control] })],
+        profiles: [createMinimalEvaluatedBaseline({ requirements: [control] })],
       });
       expect(validate(doc)).toBe(true);
     });
@@ -253,7 +253,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         ],
       });
       const doc = createMinimalResultsDoc({
-        profiles: [createMinimalEvaluatedBaseline({ controls: [control] })],
+        profiles: [createMinimalEvaluatedBaseline({ requirements: [control] })],
       });
       expect(validate(doc)).toBe(true);
     });
@@ -262,7 +262,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const control = createMinimalControl();
       expect(control).not.toHaveProperty('refs');
       const doc = createMinimalResultsDoc({
-        profiles: [createMinimalEvaluatedBaseline({ controls: [control] })],
+        profiles: [createMinimalEvaluatedBaseline({ requirements: [control] })],
       });
       expect(validate(doc)).toBe(true);
     });
@@ -271,7 +271,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
-            controls: [createMinimalControl({ refs: [{ url: 'https://example.com' }] })],
+            requirements: [createMinimalControl({ refs: [{ url: 'https://example.com' }] })],
           }),
         ],
       });
@@ -282,7 +282,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
-            controls: [createMinimalControl({ refs: null })],
+            requirements: [createMinimalControl({ refs: null })],
           }),
         ],
       });
@@ -293,7 +293,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
-            controls: [
+            requirements: [
               createMinimalControl({
                 results: [createMinimalResult({ status: 'passed' })],
                 overall_status: 'passed',
@@ -309,7 +309,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
-            controls: [
+            requirements: [
               createMinimalControl({
                 waiver_data: { expiration_date: '2026-01-01', justification: 'Compensating control' },
               }),
@@ -324,7 +324,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
-            controls: [
+            requirements: [
               createMinimalControl({
                 attestation_data: {
                   control_id: 'SV-238196',
@@ -347,7 +347,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
-            controls: [createMinimalControl({ severity: 'high' })],
+            requirements: [createMinimalControl({ severity: 'high' })],
           }),
         ],
       });
@@ -360,7 +360,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         const doc = createMinimalResultsDoc({
           profiles: [
             createMinimalEvaluatedBaseline({
-              controls: [createMinimalControl({ severity })],
+              requirements: [createMinimalControl({ severity })],
             }),
           ],
         });
@@ -372,7 +372,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
-            controls: [createMinimalControl({ severity: 'unknown' })],
+            requirements: [createMinimalControl({ severity: 'unknown' })],
           }),
         ],
       });
@@ -385,7 +385,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
-            controls: [createMinimalControl({ results: [createMinimalResult()] })],
+            requirements: [createMinimalControl({ results: [createMinimalResult()] })],
           }),
         ],
       });
@@ -398,7 +398,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         const doc = createMinimalResultsDoc({
           profiles: [
             createMinimalEvaluatedBaseline({
-              controls: [createMinimalControl({ results: [createMinimalResult({ status })] })],
+              requirements: [createMinimalControl({ results: [createMinimalResult({ status })] })],
             }),
           ],
         });
@@ -410,7 +410,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
-            controls: [createMinimalControl({ results: [createMinimalResult({ status: 'skipped' })] })],
+            requirements: [createMinimalControl({ results: [createMinimalResult({ status: 'skipped' })] })],
           }),
         ],
       });
@@ -423,7 +423,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
-            controls: [createMinimalControl({ results: [createMinimalResult({ status: 'unknown' })] })],
+            requirements: [createMinimalControl({ results: [createMinimalResult({ status: 'unknown' })] })],
           }),
         ],
       });
@@ -434,7 +434,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
-            controls: [
+            requirements: [
               createMinimalControl({
                 results: [
                   createMinimalResult({
@@ -443,7 +443,7 @@ describe('hdf-results.schema.json (refactored)', () => {
                     message: 'expected "MaxAuthTries 6" to match /MaxAuthTries\\s+4/',
                     resource: 'file',
                     resource_id: '/etc/ssh/sshd_config',
-                  }),
+                    }),
                 ],
               }),
             ],
@@ -459,7 +459,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         statistics: {
           duration: 45.5,
-          controls: {
+          requirements: {
             passed: { total: 50 },
             failed: { total: 5 },
             not_applicable: { total: 10 },
