@@ -27,34 +27,50 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate.errors).not.toBeNull();
     });
 
-    it('should accept sha256 only', () => {
-      const doc = createMinimalBaselineDoc({ sha256: 'abc123', sha512: undefined });
-      delete (doc as Record<string, unknown>).sha512;
+    it('should accept checksum with sha256 algorithm', () => {
+      const doc = createMinimalBaselineDoc({
+        checksum: { algorithm: 'sha256', value: 'abc123def456' }
+      });
+      delete (doc as Record<string, unknown>).sha256;
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept sha512 only', () => {
+    it('should accept checksum with sha512 algorithm', () => {
       const doc = {
         name: 'test-baseline',
         supports: [],
         controls: [],
         groups: [],
-        sha512: 'longer-sha512-hash-value',
+        checksum: { algorithm: 'sha512', value: 'longer-sha512-hash-value' }
       };
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept both sha256 and sha512', () => {
-      const doc = createMinimalBaselineDoc({ sha512: 'longer-sha512-hash-value' });
+    it('should accept checksum with sha384 algorithm', () => {
+      const doc = createMinimalBaselineDoc({
+        checksum: { algorithm: 'sha384', value: 'sha384-hash-value' }
+      });
+      delete (doc as Record<string, unknown>).sha256;
       expect(validate(doc)).toBe(true);
     });
 
-    it('should reject document with neither sha256 nor sha512', () => {
+    it('should reject document without checksum', () => {
       const doc = {
         name: 'test-baseline',
         supports: [],
         controls: [],
         groups: [],
+      };
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('should reject checksum with invalid algorithm', () => {
+      const doc = {
+        name: 'test-baseline',
+        supports: [],
+        controls: [],
+        groups: [],
+        checksum: { algorithm: 'md5', value: 'bad-algorithm' }
       };
       expect(validate(doc)).toBe(false);
     });

@@ -172,6 +172,24 @@
       },
       "description": "A supported platform target. Example: the platform name being 'ubuntu'.",
       "title": "Supported Platform"
+    },
+    "Checksum": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "enum": ["sha256", "sha384", "sha512"],
+          "description": "The hash algorithm used for the checksum."
+        },
+        "value": {
+          "type": "string",
+          "description": "The checksum value."
+        }
+      },
+      "description": "Cryptographic checksum for baseline integrity verification.",
+      "title": "Checksum"
     }
   }
 }

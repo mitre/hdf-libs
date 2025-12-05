@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v1.0.0",
+  "title": "HDF Runner Primitive",
+  "description": "Information about the test execution environment where the security tool/scanner was executed.",
+  "definitions": {
+    "Runner": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the operating system running the test tool. Example: 'ubuntu', 'macos', 'windows'."
+        },
+        "release": {
+          "type": "string",
+          "description": "The version/release of the operating system. Example: '20.04', '13.2', '11'."
+        },
+        "architecture": {
+          "type": "string",
+          "description": "The CPU architecture of the runner system. Example: 'x86_64', 'arm64', 'aarch64'."
+        },
+        "hostname": {
+          "type": "string",
+          "description": "The hostname of the runner system. Example: 'ci-runner-01', 'jenkins-agent-03'."
+        }
+      },
+      "description": "Information about the test execution environment. This is distinct from the target being scanned - the runner is where the security tool executes, while targets are what is being assessed.",
+      "title": "Runner"
+    }
+  }
+}

@@ -20,6 +20,7 @@ export function createAjvWithPrimitives(): Ajv {
     'common.schema.json',
     'platform.schema.json',
     'target.schema.json',
+    'runner.schema.json',
     'statistics.schema.json',
     'result.schema.json',
     'extensions.schema.json',
@@ -71,7 +72,7 @@ export function createMinimalBaselineDoc(overrides: object = {}): object {
     supports: [],
     controls: [],
     groups: [],
-    sha256: 'abc123def456',
+    checksum: { algorithm: 'sha256', value: 'abc123def456' },
     ...overrides,
   };
 }
@@ -82,7 +83,7 @@ export function createMinimalBaselineDoc(overrides: object = {}): object {
 export function createMinimalEvaluatedBaseline(overrides: object = {}): object {
   return {
     name: 'test-baseline',
-    sha256: 'abc123',
+    checksum: { algorithm: 'sha256', value: 'abc123' },
     supports: [],
     attributes: [],
     groups: [],
