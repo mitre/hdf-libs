@@ -3,11 +3,7 @@
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v1.0.0",
   "type": "object",
   "additionalProperties": true,
-  "required": ["name", "supports", "controls", "groups"],
-  "anyOf": [
-    { "required": ["sha256"] },
-    { "required": ["sha512"] }
-  ],
+  "required": ["name", "supports", "controls", "groups", "checksum"],
   "properties": {
     "name": {
       "type": "string",
@@ -71,13 +67,9 @@
       },
       "description": "The input(s) or attribute(s) to be used in the run."
     },
-    "sha256": {
-      "type": "string",
-      "description": "The SHA-256 checksum of the baseline."
-    },
-    "sha512": {
-      "type": ["string", "null"],
-      "description": "The SHA-512 checksum of the baseline (optional)."
+    "checksum": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Checksum",
+      "description": "Cryptographic checksum for baseline integrity verification."
     },
     "status": {
       "type": ["string", "null"],

@@ -46,6 +46,13 @@
         { "type": "null" }
       ],
       "description": "Cryptographic integrity information for verifying this file."
+    },
+    "runner": {
+      "anyOf": [
+        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v1.0.0#/definitions/Runner" },
+        { "type": "null" }
+      ],
+      "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
     }
   },
   "description": "The top level value containing all assessment results.",
@@ -54,11 +61,7 @@
     "Evaluated_Baseline": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["name", "supports", "attributes", "groups", "controls"],
-      "anyOf": [
-        { "required": ["sha256"] },
-        { "required": ["sha512"] }
-      ],
+      "required": ["name", "supports", "attributes", "groups", "controls", "checksum"],
       "properties": {
         "name": {
           "type": "string",
@@ -118,13 +121,9 @@
           "type": ["string", "null"],
           "description": "The version of InSpec used to execute this baseline."
         },
-        "sha256": {
-          "type": "string",
-          "description": "The SHA-256 checksum of the baseline."
-        },
-        "sha512": {
-          "type": ["string", "null"],
-          "description": "The SHA-512 checksum of the baseline (optional)."
+        "checksum": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Checksum",
+          "description": "Cryptographic checksum for baseline integrity verification."
         },
         "status": {
           "type": ["string", "null"],

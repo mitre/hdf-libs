@@ -4,6 +4,7 @@ import addFormats from 'ajv-formats';
 import commonSchema from '../src/schemas/primitives/common.schema.json';
 import platformSchema from '../src/schemas/primitives/platform.schema.json';
 import targetSchema from '../src/schemas/primitives/target.schema.json';
+import runnerSchema from '../src/schemas/primitives/runner.schema.json';
 import statisticsSchema from '../src/schemas/primitives/statistics.schema.json';
 import resultSchema from '../src/schemas/primitives/result.schema.json';
 import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
@@ -16,6 +17,7 @@ describe('Primitive Schema Validation', () => {
   ajv.addSchema(commonSchema);
   ajv.addSchema(platformSchema);
   ajv.addSchema(targetSchema);
+  ajv.addSchema(runnerSchema);
   ajv.addSchema(statisticsSchema);
   ajv.addSchema(resultSchema);
   ajv.addSchema(extensionsSchema);
@@ -459,6 +461,53 @@ describe('Primitive Schema Validation', () => {
         };
         expect(validate(invalid)).toBe(false);
       });
+    });
+  });
+
+  describe('runner.schema.json', () => {
+    const validate = ajv.compile({
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/runner/v1.0.0#/definitions/Runner',
+    });
+
+    it('should validate a minimal runner with only name', () => {
+      const valid = {
+        name: 'ubuntu',
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate a full runner with all fields', () => {
+      const valid = {
+        name: 'ubuntu',
+        release: '20.04',
+        architecture: 'x86_64',
+        hostname: 'ci-runner-01',
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate runner with release only', () => {
+      const valid = {
+        name: 'macos',
+        release: '13.2',
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate runner with architecture', () => {
+      const valid = {
+        name: 'ubuntu',
+        architecture: 'arm64',
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should reject runner missing required name', () => {
+      const invalid = {
+        release: '20.04',
+        architecture: 'x86_64',
+      };
+      expect(validate(invalid)).toBe(false);
     });
   });
 

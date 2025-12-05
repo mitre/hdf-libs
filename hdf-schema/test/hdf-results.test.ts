@@ -55,6 +55,27 @@ describe('hdf-results.schema.json (refactored)', () => {
       });
       expect(validate(doc)).toBe(true);
     });
+
+    it('should accept optional runner field', () => {
+      const doc = createMinimalResultsDoc({
+        runner: { name: 'ubuntu', release: '20.04', architecture: 'x86_64' },
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept minimal runner with only name', () => {
+      const doc = createMinimalResultsDoc({
+        runner: { name: 'ubuntu' },
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept runner with hostname', () => {
+      const doc = createMinimalResultsDoc({
+        runner: { name: 'ubuntu', hostname: 'ci-runner-01' },
+      });
+      expect(validate(doc)).toBe(true);
+    });
   });
 
   describe('targets array (new field)', () => {
@@ -108,27 +129,29 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate profile with sha512 only', () => {
+    it('should validate profile with sha512 checksum', () => {
       const profile = {
         name: 'test-baseline',
         supports: [],
         attributes: [],
         groups: [],
         controls: [],
-        sha512: 'longer-sha512-hash-value',
+        checksum: { algorithm: 'sha512', value: 'longer-sha512-hash-value' },
       };
       const doc = createMinimalResultsDoc({ profiles: [profile] });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate profile with both sha256 and sha512', () => {
+    it('should validate profile with sha384 checksum', () => {
       const doc = createMinimalResultsDoc({
-        profiles: [createMinimalEvaluatedBaseline({ sha512: 'def456789' })],
+        profiles: [createMinimalEvaluatedBaseline({
+          checksum: { algorithm: 'sha384', value: 'sha384-value' }
+        })],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should reject profile with neither sha256 nor sha512', () => {
+    it('should reject profile without checksum', () => {
       const profile = {
         name: 'test-baseline',
         supports: [],
