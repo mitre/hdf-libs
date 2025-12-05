@@ -39,7 +39,7 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       const doc = {
         name: 'test-baseline',
         supports: [],
-        controls: [],
+        requirements: [],
         groups: [],
         checksum: { algorithm: 'sha512', value: 'longer-sha512-hash-value' }
       };
@@ -147,15 +147,15 @@ describe('hdf-baseline.schema.json (refactored)', () => {
     });
   });
 
-  describe('controls array (Baseline_Requirement)', () => {
-    it('should validate control with minimal required fields', () => {
-      const doc = createMinimalBaselineDoc({ controls: [createMinimalBaselineControl()] });
+  describe('requirements array (Baseline_Requirement)', () => {
+    it('should validate requirement with minimal required fields', () => {
+      const doc = createMinimalBaselineDoc({ requirements: [createMinimalBaselineControl()] });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with full metadata', () => {
+    it('should validate requirement with full metadata', () => {
       const doc = createMinimalBaselineDoc({
-        controls: [
+        requirements: [
           createMinimalBaselineControl({
             title: 'SSH MaxAuthTries must be set to 4 or less',
             desc: 'The SSH server must limit authentication attempts.',
@@ -168,9 +168,9 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with descriptions array', () => {
+    it('should validate requirement with descriptions array', () => {
       const doc = createMinimalBaselineDoc({
-        controls: [
+        requirements: [
           createMinimalBaselineControl({
             descriptions: [
               { label: 'default', data: 'SSH authentication must be configured properly' },
@@ -183,19 +183,19 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with impact at boundaries', () => {
+    it('should validate requirement with impact at boundaries', () => {
       expect(validate(createMinimalBaselineDoc({
-        controls: [createMinimalBaselineControl({ impact: 0.0 })],
+        requirements: [createMinimalBaselineControl({ impact: 0.0 })],
       }))).toBe(true);
 
       expect(validate(createMinimalBaselineDoc({
-        controls: [createMinimalBaselineControl({ impact: 1.0 })],
+        requirements: [createMinimalBaselineControl({ impact: 1.0 })],
       }))).toBe(true);
     });
 
-    it('should reject control with impact out of range', () => {
+    it('should reject requirement with impact out of range', () => {
       const doc = createMinimalBaselineDoc({
-        controls: [createMinimalBaselineControl({ impact: 1.5 })],
+        requirements: [createMinimalBaselineControl({ impact: 1.5 })],
       });
       expect(validate(doc)).toBe(false);
     });
