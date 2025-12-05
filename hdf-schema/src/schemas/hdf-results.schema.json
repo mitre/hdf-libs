@@ -3,7 +3,7 @@
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v1.0.0",
   "type": "object",
   "additionalProperties": true,
-  "required": ["profiles", "statistics"],
+  "required": ["baselines", "statistics"],
   "properties": {
     "id": {
       "type": "string",
@@ -22,7 +22,7 @@
       },
       "description": "The target systems that were assessed. Supports multiple targets of different types."
     },
-    "profiles": {
+    "baselines": {
       "type": "array",
       "items": {
         "$ref": "#/definitions/Evaluated_Baseline"
