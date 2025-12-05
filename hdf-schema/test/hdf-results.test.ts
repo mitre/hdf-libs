@@ -164,6 +164,77 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
+    it('should reject control without descriptions array', () => {
+      const control = {
+        id: 'SV-238196',
+        impact: 0.7,
+        tags: {},
+        source_location: {},
+        results: [],
+        // Missing descriptions array
+      };
+      const doc = createMinimalResultsDoc({
+        profiles: [createMinimalEvaluatedBaseline({ controls: [control] })],
+      });
+      expect(validate(doc)).toBe(false);
+      expect(validate.errors).toMatchObject([
+        expect.objectContaining({
+          message: expect.stringMatching(/required|missing/i),
+          params: expect.objectContaining({ missingProperty: 'descriptions' }),
+        }),
+      ]);
+    });
+
+    it('should reject control with empty descriptions array', () => {
+      const control = createMinimalControl({ descriptions: [] });
+      const doc = createMinimalResultsDoc({
+        profiles: [createMinimalEvaluatedBaseline({ controls: [control] })],
+      });
+      expect(validate(doc)).toBe(false);
+      expect(validate.errors).toBeDefined();
+      expect(validate.errors?.[0].keyword).toBe('minItems');
+      expect(validate.errors?.[0].message).toMatch(/must NOT have fewer than 1 items/i);
+    });
+
+    it('should validate control with descriptions array containing default label', () => {
+      const control = createMinimalControl({
+        descriptions: [{ label: 'default', data: 'This is the main description' }],
+      });
+      const doc = createMinimalResultsDoc({
+        profiles: [createMinimalEvaluatedBaseline({ controls: [control] })],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate control with multiple labeled descriptions', () => {
+      const control = createMinimalControl({
+        descriptions: [
+          { label: 'default', data: 'Main vulnerability discussion' },
+          { label: 'check', data: 'Verification steps...' },
+          { label: 'fix', data: 'Remediation steps...' },
+          { label: 'rationale', data: 'Why this matters...' },
+        ],
+      });
+      const doc = createMinimalResultsDoc({
+        profiles: [createMinimalEvaluatedBaseline({ controls: [control] })],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate custom description labels', () => {
+      const control = createMinimalControl({
+        descriptions: [
+          { label: 'default', data: 'Main description' },
+          { label: 'custom_label', data: 'Tool-specific description' },
+          { label: 'another-label', data: 'Another custom description' },
+        ],
+      });
+      const doc = createMinimalResultsDoc({
+        profiles: [createMinimalEvaluatedBaseline({ controls: [control] })],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
     it('should validate control without refs (refs is optional)', () => {
       const control = createMinimalControl();
       expect(control).not.toHaveProperty('refs');
@@ -249,23 +320,40 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with descriptions array', () => {
+    it('should validate control with severity field', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
-            controls: [
-              createMinimalControl({
-                title: 'SSH MaxAuthTries must be set to 4 or less',
-                descriptions: [
-                  { label: 'fix', data: 'Set MaxAuthTries to 4' },
-                  { label: 'check', data: 'Verify MaxAuthTries' },
-                ],
-              }),
-            ],
+            controls: [createMinimalControl({ severity: 'high' })],
           }),
         ],
       });
       expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate all severity values', () => {
+      const severities = ['critical', 'high', 'medium', 'low', 'informational'];
+      for (const severity of severities) {
+        const doc = createMinimalResultsDoc({
+          profiles: [
+            createMinimalEvaluatedBaseline({
+              controls: [createMinimalControl({ severity })],
+            }),
+          ],
+        });
+        expect(validate(doc)).toBe(true);
+      }
+    });
+
+    it('should reject invalid severity value', () => {
+      const doc = createMinimalResultsDoc({
+        profiles: [
+          createMinimalEvaluatedBaseline({
+            controls: [createMinimalControl({ severity: 'unknown' })],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
     });
   });
 
@@ -295,7 +383,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       }
     });
 
-    it('should accept deprecated skipped status for backward compatibility', () => {
+    it('should reject skipped status', () => {
       const doc = createMinimalResultsDoc({
         profiles: [
           createMinimalEvaluatedBaseline({
@@ -303,7 +391,9 @@ describe('hdf-results.schema.json (refactored)', () => {
           }),
         ],
       });
-      expect(validate(doc)).toBe(true);
+      expect(validate(doc)).toBe(false);
+      expect(validate.errors).toBeDefined();
+      expect(validate.errors?.[0].message).toMatch(/must be equal to one of the allowed values/i);
     });
 
     it('should reject invalid status value', () => {
@@ -359,8 +449,9 @@ describe('hdf-results.schema.json (refactored)', () => {
     });
   });
 
-  describe('backward compatibility', () => {
-    it('should accept legacy InSpec output structure (inline)', () => {
+  describe('backward compatibility (v1 format)', () => {
+    // NOTE: v1 files must be converted
+    it.skip('should accept legacy InSpec output structure (inline) - REQUIRES CONVERTER', () => {
       const legacyDoc = {
         platform: { name: 'ubuntu', release: '20.04', target_id: 'web-server-01' },
         profiles: [
@@ -390,8 +481,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(legacyDoc)).toBe(true);
     });
 
-    it('should validate real InSpec exec-json file from heimdall2', () => {
-      // This is an actual InSpec output file from the heimdall2 sample data
+    it.skip('should validate real InSpec exec-json file from heimdall2 - REQUIRES CONVERTER', () => {
       const realInspecOutput = loadFixture('legacy-inspec-exec.json');
       const isValid = validate(realInspecOutput);
       if (!isValid) {

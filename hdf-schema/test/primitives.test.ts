@@ -602,8 +602,8 @@ describe('Primitive Schema Validation', () => {
         expect(validate('error')).toBe(true);
       });
 
-      it('should accept deprecated skipped status for backward compatibility', () => {
-        expect(validate('skipped')).toBe(true);
+      it('should reject skipped status', () => {
+        expect(validate('skipped')).toBe(false);
       });
 
       it('should reject invalid status', () => {

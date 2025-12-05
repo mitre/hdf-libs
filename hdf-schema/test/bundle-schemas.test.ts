@@ -59,9 +59,8 @@ describe('bundle-schemas', () => {
       expect(content).not.toContain('https://mitre.github.io/hdf-libs/schemas/primitives');
     });
 
-    it('should be self-contained (contain platform definition inline)', () => {
-      // The bundler inlines definitions where they're used
-      // Check that platform properties are present (not a $ref)
+    it.skip('should be self-contained (contain platform definition inline) - REMOVED IN v2', () => {
+      // platform field removed, use targets array instead
       const properties = schema.properties as Record<string, unknown>;
       const platform = properties.platform as Record<string, unknown>;
       expect(platform).toHaveProperty('properties');
@@ -71,15 +70,14 @@ describe('bundle-schemas', () => {
     it('should validate a minimal results document', () => {
       const validate = ajv.compile(schema);
       const doc = {
-        platform: { name: 'ubuntu', release: '20.04' },
         profiles: [{ name: 'test-baseline', sha256: 'abc123', supports: [], attributes: [], groups: [], controls: [] }],
         statistics: { duration: 1.0 },
-        version: '1.0.0',
       };
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate legacy InSpec output', () => {
+    it.skip('should validate legacy InSpec output - REQUIRES CONVERTER', () => {
+      // v1 InSpec files must be converted
       const validate = ajv.compile(schema);
       const legacyDoc = loadFixture('legacy-inspec-exec.json');
       const isValid = validate(legacyDoc);
