@@ -223,26 +223,27 @@
           },
           "description": "The set of all tests within the requirement and their results."
         },
-        "overall_status": {
+        "overrides": {
           "anyOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/definitions/Overall_Status" },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Override"
+              }
+            },
             { "type": "null" }
           ],
-          "description": "The final status of this requirement after all post-processing (attestations, waivers) is applied."
+          "description": "Chronological history of all status overrides applied to this requirement. Most recent override should be first in array. Preserves full audit trail."
         },
-        "waiver_data": {
+        "effective_status": {
           "anyOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Waiver_Data" },
+            {
+              "type": "string",
+              "enum": ["passed", "failed", "not_applicable", "not_reviewed", "error"]
+            },
             { "type": "null" }
           ],
-          "description": "Waiver information if this requirement has been waived."
-        },
-        "attestation_data": {
-          "anyOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Attestation_Data" },
-            { "type": "null" }
-          ],
-          "description": "Attestation information if this requirement has been manually attested."
+          "description": "The current effective status of this requirement after applying the most recent non-expired override, or computed from results if no overrides exist."
         }
       },
       "description": "A requirement that has been evaluated, including any findings.",

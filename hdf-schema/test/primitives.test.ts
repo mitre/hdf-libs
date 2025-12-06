@@ -660,24 +660,6 @@ describe('Primitive Schema Validation', () => {
       });
     });
 
-    describe('Overall_Status', () => {
-      const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/definitions/Overall_Status',
-      });
-
-      it('should validate all Overall_Status values', () => {
-        expect(validate('passed')).toBe(true);
-        expect(validate('failed')).toBe(true);
-        expect(validate('not_applicable')).toBe(true);
-        expect(validate('not_reviewed')).toBe(true);
-        expect(validate('error')).toBe(true);
-      });
-
-      it('should reject invalid Overall_Status', () => {
-        expect(validate('skipped')).toBe(false);
-      });
-    });
-
     describe('Requirement_Result', () => {
       const validate = ajv.compile({
         $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/definitions/Requirement_Result',
@@ -791,110 +773,115 @@ describe('Primitive Schema Validation', () => {
   });
 
   describe('extensions.schema.json', () => {
-    describe('Waiver_Data', () => {
+    describe('Override', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Waiver_Data',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Override',
       });
 
-      it('should validate a full Waiver_Data', () => {
+      it('should validate a waiver override with all required fields', () => {
         const valid = {
-          expiration_date: '2025-12-31',
-          justification: 'Risk accepted by ISSO pending system upgrade',
-          message: 'Waiver applied',
-          run: true,
-          skipped_due_to_waiver: true,
+          type: 'waiver',
+          status: 'not_applicable',
+          reason: 'Risk accepted by ISSO pending system upgrade',
+          applied_by: 'isso@example.com',
+          applied_at: '2025-12-05T20:30:00Z',
+          expires_at: '2026-12-05T20:30:00Z',
         };
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Waiver_Data with null values', () => {
+      it('should validate an attestation override with all required fields', () => {
         const valid = {
-          expiration_date: null,
-          justification: null,
-          message: null,
-          run: null,
-          skipped_due_to_waiver: null,
-        };
-        expect(validate(valid)).toBe(true);
-      });
-
-      it('should validate empty Waiver_Data', () => {
-        const valid = {};
-        expect(validate(valid)).toBe(true);
-      });
-
-      it('should validate Waiver_Data with string skipped_due_to_waiver', () => {
-        const valid = {
-          skipped_due_to_waiver: 'yes',
-        };
-        expect(validate(valid)).toBe(true);
-      });
-    });
-
-    describe('Attestation_Status', () => {
-      const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Attestation_Status',
-      });
-
-      it('should validate "passed" attestation status', () => {
-        expect(validate('passed')).toBe(true);
-      });
-
-      it('should validate "failed" attestation status', () => {
-        expect(validate('failed')).toBe(true);
-      });
-
-      it('should reject invalid attestation status', () => {
-        expect(validate('skipped')).toBe(false);
-        expect(validate('not_applicable')).toBe(false);
-      });
-    });
-
-    describe('Attestation_Data', () => {
-      const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Attestation_Data',
-      });
-
-      it('should validate a full Attestation_Data', () => {
-        const valid = {
-          control_id: 'SV-238196',
-          explanation: 'Verified manually by security team during audit',
-          frequency: 'annually',
+          type: 'attestation',
           status: 'passed',
-          updated: '2025-01-15T10:30:00Z',
-          updated_by: 'john.doe@example.com',
+          reason: 'Manually verified by security team during audit',
+          applied_by: 'security-team@example.com',
+          applied_at: '2025-12-05T15:30:00Z',
+          expires_at: '2026-12-05T15:30:00Z',
         };
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Attestation_Data with failed status', () => {
+      it('should validate override with optional signature field', () => {
         const valid = {
-          control_id: 'SV-238197',
-          explanation: 'Manual review found non-compliance',
-          frequency: 'quarterly',
-          status: 'failed',
-          updated: '2025-01-15T10:30:00Z',
-          updated_by: 'jane.smith@example.com',
+          type: 'waiver',
+          status: 'not_applicable',
+          reason: 'Compensating controls in place',
+          applied_by: 'ciso@example.com',
+          applied_at: '2025-12-05T20:30:00Z',
+          expires_at: '2027-12-05T20:30:00Z',
+          signature: 'base64-encoded-signature-data',
         };
         expect(validate(valid)).toBe(true);
       });
 
-      it('should reject Attestation_Data missing required fields', () => {
+      it('should validate override with all valid status values', () => {
+        const statuses = ['passed', 'failed', 'not_applicable', 'not_reviewed'];
+        statuses.forEach(status => {
+          const valid = {
+            type: 'attestation',
+            status,
+            reason: 'Test override',
+            applied_by: 'test@example.com',
+            applied_at: '2025-12-05T20:30:00Z',
+            expires_at: '2026-12-05T20:30:00Z',
+          };
+          expect(validate(valid)).toBe(true);
+        });
+      });
+
+      it('should reject override missing expires_at (no permanent overrides)', () => {
         const invalid = {
-          control_id: 'SV-238196',
-          // missing: explanation, frequency, status, updated, updated_by
+          type: 'waiver',
+          status: 'not_applicable',
+          reason: 'Test',
+          applied_by: 'test@example.com',
+          applied_at: '2025-12-05T20:30:00Z',
+          // missing: expires_at
         };
         expect(validate(invalid)).toBe(false);
       });
 
-      it('should reject Attestation_Data with invalid status', () => {
+      it('should reject override with null expires_at (no permanent overrides)', () => {
         const invalid = {
-          control_id: 'SV-238196',
-          explanation: 'Test',
-          frequency: 'annually',
-          status: 'skipped',
-          updated: '2025-01-15T10:30:00Z',
-          updated_by: 'test@example.com',
+          type: 'waiver',
+          status: 'not_applicable',
+          reason: 'Test',
+          applied_by: 'test@example.com',
+          applied_at: '2025-12-05T20:30:00Z',
+          expires_at: null,
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject override missing required fields', () => {
+        const invalid = {
+          type: 'waiver',
+          // missing: status, reason, applied_by, applied_at, expires_at
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject override with invalid type', () => {
+        const invalid = {
+          type: 'exception', // invalid - only waiver/attestation allowed
+          status: 'not_applicable',
+          reason: 'Test',
+          applied_by: 'test@example.com',
+          applied_at: '2025-12-05T20:30:00Z',
+          expires_at: '2026-12-05T20:30:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject override with invalid status', () => {
+        const invalid = {
+          type: 'waiver',
+          status: 'skipped', // invalid - skipped was removed
+          reason: 'Test',
+          applied_by: 'test@example.com',
+          applied_at: '2025-12-05T20:30:00Z',
+          expires_at: '2026-12-05T20:30:00Z',
         };
         expect(validate(invalid)).toBe(false);
       });
