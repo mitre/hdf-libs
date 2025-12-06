@@ -815,8 +815,8 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate override with all valid status values', () => {
-        const statuses = ['passed', 'failed', 'notApplicable', 'notReviewed'];
+      it('should validate override with all valid status values (including error)', () => {
+        const statuses = ['passed', 'failed', 'notApplicable', 'notReviewed', 'error'];
         statuses.forEach(status => {
           const valid = {
             type: 'attestation',
