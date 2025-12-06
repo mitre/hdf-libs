@@ -60,7 +60,7 @@
           "type": ["string", "null"],
           "description": "The relative path if the dependency is locally available."
         },
-        "status_message": {
+        "statusMessage": {
           "type": ["string", "null"],
           "description": "The reason for the status if it is 'failed' or 'skipped'."
         },

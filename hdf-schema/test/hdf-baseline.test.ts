@@ -161,7 +161,7 @@ describe('hdf-baseline.schema.json (refactored)', () => {
             desc: 'The SSH server must limit authentication attempts.',
             refs: [{ url: 'https://nvd.nist.gov/vuln/detail/CVE-2021-1234' }],
             tags: { severity: 'medium', cci: ['CCI-000044'] },
-            source_location: { ref: 'controls/ssh.rb', line: 15 },
+            sourceLocation: { ref: 'controls/ssh.rb', line: 15 },
           }),
         ],
       });
@@ -262,7 +262,7 @@ describe('hdf-baseline.schema.json (refactored)', () => {
             refs: [],
             tags: { severity: 'medium' },
             code: 'control "SV-238196" do\nend',
-            source_location: { ref: 'controls/ssh.rb', line: 10 },
+            sourceLocation: { ref: 'controls/ssh.rb', line: 10 },
           },
         ],
         groups: [{ id: 'controls/ssh.rb', controls: ['SV-238196'] }],

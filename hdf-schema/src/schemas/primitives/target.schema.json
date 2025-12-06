@@ -38,19 +38,19 @@
           "type": ["string", "null"],
           "description": "Fully qualified domain name."
         },
-        "ip_address": {
+        "ipAddress": {
           "type": ["string", "null"],
           "description": "IP address of the host."
         },
-        "mac_address": {
+        "macAddress": {
           "type": ["string", "null"],
           "description": "MAC address of the host."
         },
-        "os_name": {
+        "osName": {
           "type": ["string", "null"],
           "description": "Operating system name."
         },
-        "os_version": {
+        "osVersion": {
           "type": ["string", "null"],
           "description": "Operating system version."
         }
@@ -64,14 +64,14 @@
       "required": ["type", "name"],
       "properties": {
         "type": {
-          "const": "container_image",
+          "const": "containerImage",
           "description": "Target type discriminator."
         },
         "name": {
           "type": "string",
           "description": "Human-readable name for this target."
         },
-        "image_id": {
+        "imageId": {
           "type": ["string", "null"],
           "description": "Container image ID."
         },
@@ -101,14 +101,14 @@
       "required": ["type", "name"],
       "properties": {
         "type": {
-          "const": "container_instance",
+          "const": "containerInstance",
           "description": "Target type discriminator."
         },
         "name": {
           "type": "string",
           "description": "Human-readable name for this target."
         },
-        "container_id": {
+        "containerId": {
           "type": ["string", "null"],
           "description": "Running container ID."
         },
@@ -130,18 +130,18 @@
       "required": ["type", "name"],
       "properties": {
         "type": {
-          "const": "container_platform",
+          "const": "containerPlatform",
           "description": "Target type discriminator."
         },
         "name": {
           "type": "string",
           "description": "Human-readable name for this target."
         },
-        "platform_type": {
+        "platformType": {
           "type": ["string", "null"],
           "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
         },
-        "cluster_name": {
+        "clusterName": {
           "type": ["string", "null"],
           "description": "Cluster name."
         },
@@ -163,7 +163,7 @@
       "required": ["type", "name"],
       "properties": {
         "type": {
-          "const": "cloud_account",
+          "const": "cloudAccount",
           "description": "Target type discriminator."
         },
         "name": {
@@ -175,7 +175,7 @@
           "enum": ["aws", "azure", "gcp", "oci", "other", null],
           "description": "Cloud provider."
         },
-        "account_id": {
+        "accountId": {
           "type": ["string", "null"],
           "description": "Cloud account identifier. Example: AWS account ID, Azure subscription ID."
         },
@@ -193,7 +193,7 @@
       "required": ["type", "name"],
       "properties": {
         "type": {
-          "const": "cloud_resource",
+          "const": "cloudResource",
           "description": "Target type discriminator."
         },
         "name": {
@@ -205,11 +205,11 @@
           "enum": ["aws", "azure", "gcp", "oci", "other", null],
           "description": "Cloud provider."
         },
-        "resource_type": {
+        "resourceType": {
           "type": ["string", "null"],
           "description": "Type of cloud resource. Example: 'ec2:instance', 's3:bucket'."
         },
-        "resource_id": {
+        "resourceId": {
           "type": ["string", "null"],
           "description": "Provider-specific resource identifier."
         },
@@ -296,11 +296,11 @@
           "type": "string",
           "description": "Human-readable name for this target."
         },
-        "package_manager": {
+        "packageManager": {
           "type": ["string", "null"],
           "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
         },
-        "package_name": {
+        "packageName": {
           "type": ["string", "null"],
           "description": "Package name."
         },

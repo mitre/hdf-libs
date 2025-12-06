@@ -100,7 +100,7 @@ export function createMinimalControl(overrides: object = {}): object {
     id: 'SV-238196',
     impact: 0.7,
     tags: {},
-    source_location: {},
+    sourceLocation: {},
     results: [],
     descriptions: [
       { label: 'default', data: 'Minimal test control description' }
@@ -130,8 +130,8 @@ export function createMinimalBaselineControl(overrides: object = {}): object {
  */
 export function createMinimalResult(overrides: object = {}): object {
   return {
-    code_desc: 'Test description',
-    start_time: '2025-11-25T12:00:00Z',
+    codeDesc: 'Test description',
+    startTime: '2025-11-25T12:00:00Z',
     ...overrides,
   };
 }

@@ -79,7 +79,7 @@
           "type": ["string", "null"],
           "description": "The copyright holder(s)."
         },
-        "copyright_email": {
+        "copyrightEmail": {
           "type": ["string", "null"],
           "description": "The email address or other contact information of the copyright holder(s)."
         },
@@ -90,7 +90,7 @@
           },
           "description": "The set of dependencies this baseline depends on."
         },
-        "parent_profile": {
+        "parentProfile": {
           "type": ["string", "null"],
           "description": "The name of the parent baseline if this is a dependency of another."
         },
@@ -117,7 +117,7 @@
           "type": ["string", "null"],
           "description": "The description - should be more detailed than the summary."
         },
-        "inspec_version": {
+        "inspecVersion": {
           "type": ["string", "null"],
           "description": "The version of InSpec used to execute this baseline."
         },
@@ -129,11 +129,11 @@
           "type": ["string", "null"],
           "description": "The status. Example: 'loaded'."
         },
-        "status_message": {
+        "statusMessage": {
           "type": ["string", "null"],
           "description": "The reason for the status. Example: why it was skipped or failed to load."
         },
-        "skip_message": {
+        "skipMessage": {
           "type": ["string", "null"],
           "description": "The reason for skipping if it was skipped."
         },
@@ -167,7 +167,7 @@
     "Evaluated_Requirement": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["id", "impact", "tags", "source_location", "results", "descriptions"],
+      "required": ["id", "impact", "tags", "sourceLocation", "results", "descriptions"],
       "properties": {
         "id": {
           "type": "string",
@@ -212,7 +212,7 @@
           "type": ["string", "null"],
           "description": "The raw source code of the requirement. Note that if this is an overlay, it does not include the underlying source code."
         },
-        "source_location": {
+        "sourceLocation": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Source_Location",
           "description": "The explicit location of the requirement within the source code."
         },
@@ -235,11 +235,11 @@
           ],
           "description": "Chronological history of all status overrides applied to this requirement. Most recent override should be first in array. Preserves full audit trail."
         },
-        "effective_status": {
+        "effectiveStatus": {
           "anyOf": [
             {
               "type": "string",
-              "enum": ["passed", "failed", "not_applicable", "not_reviewed", "error"]
+              "enum": ["passed", "failed", "notApplicable", "notReviewed", "error"]
             },
             { "type": "null" }
           ],

@@ -7,7 +7,7 @@
     "Override": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["type", "status", "reason", "applied_by", "applied_at", "expires_at"],
+      "required": ["type", "status", "reason", "appliedBy", "appliedAt", "expiresAt"],
       "properties": {
         "type": {
           "type": "string",
@@ -16,22 +16,22 @@
         },
         "status": {
           "type": "string",
-          "enum": ["passed", "failed", "not_applicable", "not_reviewed"],
+          "enum": ["passed", "failed", "notApplicable", "notReviewed"],
           "description": "The status this override sets for the requirement."
         },
         "reason": {
           "type": "string",
           "description": "Explanation for why this override was applied."
         },
-        "applied_by": {
+        "appliedBy": {
           "type": "string",
           "description": "Identifier of who applied this override. Example: 'user@example.com' or system identifier."
         },
-        "applied_at": {
+        "appliedAt": {
           "type": "string",
           "description": "Timestamp when this override was applied. ISO 8601 format."
         },
-        "expires_at": {
+        "expiresAt": {
           "type": "string",
           "description": "Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no permanent overrides allowed. ISO 8601 format."
         },
@@ -81,7 +81,7 @@
           "type": ["string", "null"],
           "description": "Optional cryptographic signature."
         },
-        "signed_by": {
+        "signedBy": {
           "type": ["string", "null"],
           "description": "Identifier of who signed this file."
         }
