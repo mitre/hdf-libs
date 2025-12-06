@@ -4,73 +4,44 @@
   "title": "HDF Extension Primitives",
   "description": "Extension types for waivers, attestations, generators, and integrity.",
   "definitions": {
-    "Waiver_Data": {
+    "Override": {
       "type": "object",
       "additionalProperties": true,
-      "required": [],
+      "required": ["type", "status", "reason", "applied_by", "applied_at", "expires_at"],
       "properties": {
-        "expiration_date": {
-          "type": ["string", "null"],
-          "description": "The date when this waiver expires."
-        },
-        "justification": {
-          "type": ["string", "null"],
-          "description": "The justification for the waiver."
-        },
-        "message": {
-          "type": ["string", "null"],
-          "description": "A message associated with the waiver."
-        },
-        "run": {
-          "type": ["boolean", "null"],
-          "description": "Whether to run the requirement despite the waiver."
-        },
-        "skipped_due_to_waiver": {
-          "type": ["boolean", "string", "null"],
-          "description": "Indicates if the requirement was skipped due to this waiver."
-        }
-      },
-      "description": "Data associated with a waiver that exempts a requirement from assessment.",
-      "title": "Waiver Data"
-    },
-    "Attestation_Status": {
-      "type": "string",
-      "enum": ["passed", "failed"],
-      "description": "The attested status of a requirement. Only 'passed' or 'failed' are valid for attestations.",
-      "title": "Attestation Status"
-    },
-    "Attestation_Data": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["control_id", "explanation", "frequency", "status", "updated", "updated_by"],
-      "properties": {
-        "control_id": {
+        "type": {
           "type": "string",
-          "description": "The ID of the requirement being attested."
-        },
-        "explanation": {
-          "type": "string",
-          "description": "Explanation of the attestation."
-        },
-        "frequency": {
-          "type": "string",
-          "description": "How often this attestation should be reviewed. Example: 'annually', 'quarterly'."
+          "enum": ["waiver", "attestation"],
+          "description": "The type of override. 'waiver' indicates risk acceptance. 'attestation' indicates manual verification."
         },
         "status": {
-          "$ref": "#/definitions/Attestation_Status",
-          "description": "The attested status."
-        },
-        "updated": {
           "type": "string",
-          "description": "When this attestation was last updated."
+          "enum": ["passed", "failed", "not_applicable", "not_reviewed"],
+          "description": "The status this override sets for the requirement."
         },
-        "updated_by": {
+        "reason": {
           "type": "string",
-          "description": "Who last updated this attestation."
+          "description": "Explanation for why this override was applied."
+        },
+        "applied_by": {
+          "type": "string",
+          "description": "Identifier of who applied this override. Example: 'user@example.com' or system identifier."
+        },
+        "applied_at": {
+          "type": "string",
+          "description": "Timestamp when this override was applied. ISO 8601 format."
+        },
+        "expires_at": {
+          "type": "string",
+          "description": "Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no permanent overrides allowed. ISO 8601 format."
+        },
+        "signature": {
+          "type": ["string", "null"],
+          "description": "Optional digital signature for enhanced trust and non-repudiation."
         }
       },
-      "description": "Data for a manual attestation that overrides automated assessment results.",
-      "title": "Attestation Data"
+      "description": "A status override applied to a requirement, such as a waiver or attestation. All overrides must have an expiration date to enforce periodic review.",
+      "title": "Override"
     },
     "Generator": {
       "type": "object",

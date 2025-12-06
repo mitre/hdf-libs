@@ -289,14 +289,14 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with overall_status field', () => {
+    it('should validate control with effective_status field', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
               createMinimalControl({
-                results: [createMinimalResult({ status: 'passed' })],
-                overall_status: 'passed',
+                results: [createMinimalResult({ status: 'failed' })],
+                effective_status: 'not_applicable',
               }),
             ],
           }),
@@ -305,13 +305,24 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with waiver_data', () => {
+    it('should validate control with single waiver override', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
               createMinimalControl({
-                waiver_data: { expiration_date: '2026-01-01', justification: 'Compensating control' },
+                results: [createMinimalResult({ status: 'failed' })],
+                overrides: [
+                  {
+                    type: 'waiver',
+                    status: 'not_applicable',
+                    reason: 'Compensating controls in place',
+                    applied_by: 'isso@example.com',
+                    applied_at: '2025-12-05T10:00:00Z',
+                    expires_at: '2026-12-05T10:00:00Z',
+                  },
+                ],
+                effective_status: 'not_applicable',
               }),
             ],
           }),
@@ -320,21 +331,87 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with attestation_data', () => {
+    it('should validate control with single attestation override', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
               createMinimalControl({
-                attestation_data: {
-                  control_id: 'SV-238196',
-                  explanation: 'Manually verified',
-                  frequency: 'annually',
-                  status: 'passed',
-                  updated: '2025-11-25',
-                  updated_by: 'security-team@example.com',
-                },
-                overall_status: 'passed',
+                results: [createMinimalResult({ status: 'not_reviewed' })],
+                overrides: [
+                  {
+                    type: 'attestation',
+                    status: 'passed',
+                    reason: 'Manually verified by security team during audit',
+                    applied_by: 'security-team@example.com',
+                    applied_at: '2025-11-25T15:30:00Z',
+                    expires_at: '2026-11-25T15:30:00Z',
+                  },
+                ],
+                effective_status: 'passed',
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate control with multiple overrides (chronological history)', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalControl({
+                results: [createMinimalResult({ status: 'failed' })],
+                overrides: [
+                  // Most recent override first
+                  {
+                    type: 'attestation',
+                    status: 'failed',
+                    reason: 'Re-evaluated, confirmed failure',
+                    applied_by: 'auditor@example.com',
+                    applied_at: '2025-12-10T14:00:00Z',
+                    expires_at: '2026-12-10T14:00:00Z',
+                  },
+                  // Earlier override
+                  {
+                    type: 'waiver',
+                    status: 'not_applicable',
+                    reason: 'Initially thought to be false positive',
+                    applied_by: 'engineer@example.com',
+                    applied_at: '2025-12-01T10:00:00Z',
+                    expires_at: '2026-12-01T10:00:00Z',
+                  },
+                ],
+                effective_status: 'failed', // Most recent override wins
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate control with override containing digital signature', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalControl({
+                results: [createMinimalResult({ status: 'failed' })],
+                overrides: [
+                  {
+                    type: 'waiver',
+                    status: 'not_applicable',
+                    reason: 'Risk accepted by CISO',
+                    applied_by: 'ciso@example.com',
+                    applied_at: '2025-12-05T16:00:00Z',
+                    expires_at: '2027-12-05T16:00:00Z',
+                    signature: 'base64-encoded-digital-signature',
+                  },
+                ],
+                effective_status: 'not_applicable',
               }),
             ],
           }),

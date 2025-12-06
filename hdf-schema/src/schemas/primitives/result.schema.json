@@ -10,12 +10,6 @@
       "description": "The status of an individual test result. 'not_applicable' indicates the requirement does not apply to the target. 'not_reviewed' indicates the requirement was not assessed (e.g., requires manual verification).",
       "title": "Result Status"
     },
-    "Overall_Status": {
-      "type": "string",
-      "enum": ["passed", "failed", "not_applicable", "not_reviewed", "error"],
-      "description": "The final status of a requirement after all post-processing (attestations, waivers) is applied.",
-      "title": "Overall Status"
-    },
     "Requirement_Result": {
       "type": "object",
       "additionalProperties": true,
