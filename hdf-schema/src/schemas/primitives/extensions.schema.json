@@ -15,8 +15,7 @@
           "description": "The type of override. 'waiver' indicates risk acceptance. 'attestation' indicates manual verification."
         },
         "status": {
-          "type": "string",
-          "enum": ["passed", "failed", "notApplicable", "notReviewed"],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/$defs/Result_Status",
           "description": "The status this override sets for the requirement."
         },
         "reason": {
@@ -69,8 +68,7 @@
       },
       "properties": {
         "algorithm": {
-          "type": "string",
-          "enum": ["sha256", "sha384", "sha512"],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Hash_Algorithm",
           "description": "The hash algorithm used for the checksum."
         },
         "checksum": {

@@ -237,10 +237,7 @@
         },
         "effectiveStatus": {
           "anyOf": [
-            {
-              "type": "string",
-              "enum": ["passed", "failed", "notApplicable", "notReviewed", "error"]
-            },
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/$defs/Result_Status" },
             { "type": "null" }
           ],
           "description": "The current effective status of this requirement after applying the most recent non-expired override, or computed from results if no overrides exist."

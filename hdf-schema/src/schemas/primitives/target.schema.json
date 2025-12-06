@@ -4,6 +4,23 @@
   "title": "HDF Target Primitives",
   "description": "Polymorphic target system supporting diverse scan targets from 35+ security tools.",
   "$defs": {
+    "Base_Target": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["type", "name"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Target type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name for this target."
+        }
+      },
+      "description": "Base properties shared by all target types.",
+      "title": "Base Target"
+    },
     "Target": {
       "description": "A scan target. Uses discriminated union pattern with 'type' field as discriminator.",
       "title": "Target",
@@ -22,355 +39,333 @@
       ]
     },
     "Host_Target": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["type", "name"],
-      "properties": {
-        "type": {
-          "const": "host",
-          "description": "Target type discriminator."
-        },
-        "name": {
-          "type": "string",
-          "description": "Human-readable name for this target."
-        },
-        "fqdn": {
-          "type": ["string", "null"],
-          "description": "Fully qualified domain name."
-        },
-        "ipAddress": {
-          "type": ["string", "null"],
-          "description": "IP address of the host."
-        },
-        "macAddress": {
-          "type": ["string", "null"],
-          "description": "MAC address of the host."
-        },
-        "osName": {
-          "type": ["string", "null"],
-          "description": "Operating system name."
-        },
-        "osVersion": {
-          "type": ["string", "null"],
-          "description": "Operating system version."
+      "allOf": [
+        { "$ref": "#/$defs/Base_Target" },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "host"
+            },
+            "fqdn": {
+              "type": ["string", "null"],
+              "description": "Fully qualified domain name."
+            },
+            "ipAddress": {
+              "type": ["string", "null"],
+              "description": "IP address of the host."
+            },
+            "macAddress": {
+              "type": ["string", "null"],
+              "description": "MAC address of the host."
+            },
+            "osName": {
+              "type": ["string", "null"],
+              "description": "Operating system name."
+            },
+            "osVersion": {
+              "type": ["string", "null"],
+              "description": "Operating system version."
+            }
+          }
         }
-      },
+      ],
       "description": "A physical or virtual server, workstation, or network device.",
       "title": "Host Target"
     },
     "Container_Image_Target": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["type", "name"],
-      "properties": {
-        "type": {
-          "const": "containerImage",
-          "description": "Target type discriminator."
-        },
-        "name": {
-          "type": "string",
-          "description": "Human-readable name for this target."
-        },
-        "imageId": {
-          "type": ["string", "null"],
-          "description": "Container image ID."
-        },
-        "registry": {
-          "type": ["string", "null"],
-          "description": "Container registry. Example: 'docker.io'."
-        },
-        "repository": {
-          "type": ["string", "null"],
-          "description": "Repository name. Example: 'library/nginx'."
-        },
-        "tag": {
-          "type": ["string", "null"],
-          "description": "Image tag. Example: '1.25'."
-        },
-        "digest": {
-          "type": ["string", "null"],
-          "description": "Image digest for immutable reference. Example: 'sha256:abc123...'."
+      "allOf": [
+        { "$ref": "#/$defs/Base_Target" },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "containerImage"
+            },
+            "imageId": {
+              "type": ["string", "null"],
+              "description": "Container image ID."
+            },
+            "registry": {
+              "type": ["string", "null"],
+              "description": "Container registry. Example: 'docker.io'."
+            },
+            "repository": {
+              "type": ["string", "null"],
+              "description": "Repository name. Example: 'library/nginx'."
+            },
+            "tag": {
+              "type": ["string", "null"],
+              "description": "Image tag. Example: '1.25'."
+            },
+            "digest": {
+              "type": ["string", "null"],
+              "description": "Image digest for immutable reference. Example: 'sha256:abc123...'."
+            }
+          }
         }
-      },
+      ],
       "description": "A static container image (not running).",
       "title": "Container Image Target"
     },
     "Container_Instance_Target": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["type", "name"],
-      "properties": {
-        "type": {
-          "const": "containerInstance",
-          "description": "Target type discriminator."
-        },
-        "name": {
-          "type": "string",
-          "description": "Human-readable name for this target."
-        },
-        "containerId": {
-          "type": ["string", "null"],
-          "description": "Running container ID."
-        },
-        "image": {
-          "type": ["string", "null"],
-          "description": "Image the container was started from."
-        },
-        "runtime": {
-          "type": ["string", "null"],
-          "description": "Container runtime. Example: 'docker', 'containerd', 'cri-o'."
+      "allOf": [
+        { "$ref": "#/$defs/Base_Target" },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "containerInstance"
+            },
+            "containerId": {
+              "type": ["string", "null"],
+              "description": "Running container ID."
+            },
+            "image": {
+              "type": ["string", "null"],
+              "description": "Image the container was started from."
+            },
+            "runtime": {
+              "type": ["string", "null"],
+              "description": "Container runtime. Example: 'docker', 'containerd', 'cri-o'."
+            }
+          }
         }
-      },
+      ],
       "description": "A running container instance.",
       "title": "Container Instance Target"
     },
     "Container_Platform_Target": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["type", "name"],
-      "properties": {
-        "type": {
-          "const": "containerPlatform",
-          "description": "Target type discriminator."
-        },
-        "name": {
-          "type": "string",
-          "description": "Human-readable name for this target."
-        },
-        "platformType": {
-          "type": ["string", "null"],
-          "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
-        },
-        "clusterName": {
-          "type": ["string", "null"],
-          "description": "Cluster name."
-        },
-        "namespace": {
-          "type": ["string", "null"],
-          "description": "Namespace within the cluster, if applicable."
-        },
-        "version": {
-          "type": ["string", "null"],
-          "description": "Platform version."
+      "allOf": [
+        { "$ref": "#/$defs/Base_Target" },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "containerPlatform"
+            },
+            "platformType": {
+              "type": ["string", "null"],
+              "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
+            },
+            "clusterName": {
+              "type": ["string", "null"],
+              "description": "Cluster name."
+            },
+            "namespace": {
+              "type": ["string", "null"],
+              "description": "Namespace within the cluster, if applicable."
+            },
+            "version": {
+              "type": ["string", "null"],
+              "description": "Platform version."
+            }
+          }
         }
-      },
+      ],
       "description": "A container orchestration platform (Kubernetes, OpenShift, ECS, etc.) or workloads running on it.",
       "title": "Container Platform Target"
     },
     "Cloud_Account_Target": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["type", "name"],
-      "properties": {
-        "type": {
-          "const": "cloudAccount",
-          "description": "Target type discriminator."
-        },
-        "name": {
-          "type": "string",
-          "description": "Human-readable name for this target."
-        },
-        "provider": {
-          "type": ["string", "null"],
-          "enum": ["aws", "azure", "gcp", "oci", "other", null],
-          "description": "Cloud provider."
-        },
-        "accountId": {
-          "type": ["string", "null"],
-          "description": "Cloud account identifier. Example: AWS account ID, Azure subscription ID."
-        },
-        "region": {
-          "type": ["string", "null"],
-          "description": "Cloud region, if applicable."
+      "allOf": [
+        { "$ref": "#/$defs/Base_Target" },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "cloudAccount"
+            },
+            "provider": {
+              "type": ["string", "null"],
+              "enum": ["aws", "azure", "gcp", "oci", "other", null],
+              "description": "Cloud provider."
+            },
+            "accountId": {
+              "type": ["string", "null"],
+              "description": "Cloud account identifier. Example: AWS account ID, Azure subscription ID."
+            },
+            "region": {
+              "type": ["string", "null"],
+              "description": "Cloud region, if applicable."
+            }
+          }
         }
-      },
+      ],
       "description": "A cloud provider account (AWS account, Azure subscription, GCP project).",
       "title": "Cloud Account Target"
     },
     "Cloud_Resource_Target": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["type", "name"],
-      "properties": {
-        "type": {
-          "const": "cloudResource",
-          "description": "Target type discriminator."
-        },
-        "name": {
-          "type": "string",
-          "description": "Human-readable name for this target."
-        },
-        "provider": {
-          "type": ["string", "null"],
-          "enum": ["aws", "azure", "gcp", "oci", "other", null],
-          "description": "Cloud provider."
-        },
-        "resourceType": {
-          "type": ["string", "null"],
-          "description": "Type of cloud resource. Example: 'ec2:instance', 's3:bucket'."
-        },
-        "resourceId": {
-          "type": ["string", "null"],
-          "description": "Provider-specific resource identifier."
-        },
-        "arn": {
-          "type": ["string", "null"],
-          "description": "Amazon Resource Name (AWS only)."
-        },
-        "region": {
-          "type": ["string", "null"],
-          "description": "Cloud region where the resource resides."
+      "allOf": [
+        { "$ref": "#/$defs/Base_Target" },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "cloudResource"
+            },
+            "provider": {
+              "type": ["string", "null"],
+              "enum": ["aws", "azure", "gcp", "oci", "other", null],
+              "description": "Cloud provider."
+            },
+            "resourceType": {
+              "type": ["string", "null"],
+              "description": "Type of cloud resource. Example: 'ec2:instance', 's3:bucket'."
+            },
+            "resourceId": {
+              "type": ["string", "null"],
+              "description": "Provider-specific resource identifier."
+            },
+            "arn": {
+              "type": ["string", "null"],
+              "description": "Amazon Resource Name (AWS only)."
+            },
+            "region": {
+              "type": ["string", "null"],
+              "description": "Cloud region where the resource resides."
+            }
+          }
         }
-      },
+      ],
       "description": "A specific cloud resource (EC2 instance, S3 bucket, Azure VM, etc.).",
       "title": "Cloud Resource Target"
     },
     "Repository_Target": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["type", "name"],
-      "properties": {
-        "type": {
-          "const": "repository",
-          "description": "Target type discriminator."
-        },
-        "name": {
-          "type": "string",
-          "description": "Human-readable name for this target."
-        },
-        "url": {
-          "type": ["string", "null"],
-          "description": "Repository URL."
-        },
-        "branch": {
-          "type": ["string", "null"],
-          "description": "Branch that was scanned."
-        },
-        "commit": {
-          "type": ["string", "null"],
-          "description": "Commit SHA that was scanned."
+      "allOf": [
+        { "$ref": "#/$defs/Base_Target" },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "repository"
+            },
+            "url": {
+              "type": ["string", "null"],
+              "description": "Repository URL."
+            },
+            "branch": {
+              "type": ["string", "null"],
+              "description": "Branch that was scanned."
+            },
+            "commit": {
+              "type": ["string", "null"],
+              "description": "Commit SHA that was scanned."
+            }
+          }
         }
-      },
+      ],
       "description": "A code repository (for SAST tools).",
       "title": "Repository Target"
     },
     "Application_Target": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["type", "name"],
-      "properties": {
-        "type": {
-          "const": "application",
-          "description": "Target type discriminator."
-        },
-        "name": {
-          "type": "string",
-          "description": "Human-readable name for this target."
-        },
-        "url": {
-          "type": ["string", "null"],
-          "description": "Application URL (for DAST tools)."
-        },
-        "version": {
-          "type": ["string", "null"],
-          "description": "Application version."
-        },
-        "environment": {
-          "type": ["string", "null"],
-          "description": "Environment. Example: 'production', 'staging', 'development'."
+      "allOf": [
+        { "$ref": "#/$defs/Base_Target" },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "application"
+            },
+            "url": {
+              "type": ["string", "null"],
+              "description": "Application URL (for DAST tools)."
+            },
+            "version": {
+              "type": ["string", "null"],
+              "description": "Application version."
+            },
+            "environment": {
+              "type": ["string", "null"],
+              "description": "Environment. Example: 'production', 'staging', 'development'."
+            }
+          }
         }
-      },
+      ],
       "description": "A running application or API (for DAST tools).",
       "title": "Application Target"
     },
     "Artifact_Target": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["type", "name"],
-      "properties": {
-        "type": {
-          "const": "artifact",
-          "description": "Target type discriminator."
-        },
-        "name": {
-          "type": "string",
-          "description": "Human-readable name for this target."
-        },
-        "packageManager": {
-          "type": ["string", "null"],
-          "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
-        },
-        "packageName": {
-          "type": ["string", "null"],
-          "description": "Package name."
-        },
-        "version": {
-          "type": ["string", "null"],
-          "description": "Package version."
-        },
-        "checksum": {
-          "type": ["string", "null"],
-          "description": "Package checksum for verification."
+      "allOf": [
+        { "$ref": "#/$defs/Base_Target" },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "artifact"
+            },
+            "packageManager": {
+              "type": ["string", "null"],
+              "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
+            },
+            "packageName": {
+              "type": ["string", "null"],
+              "description": "Package name."
+            },
+            "version": {
+              "type": ["string", "null"],
+              "description": "Package version."
+            },
+            "checksum": {
+              "type": ["string", "null"],
+              "description": "Package checksum for verification."
+            }
+          }
         }
-      },
+      ],
       "description": "A software artifact or dependency (for SCA tools).",
       "title": "Artifact Target"
     },
     "Network_Target": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["type", "name"],
-      "properties": {
-        "type": {
-          "const": "network",
-          "description": "Target type discriminator."
-        },
-        "name": {
-          "type": "string",
-          "description": "Human-readable name for this target."
-        },
-        "cidr": {
-          "type": ["string", "null"],
-          "description": "Network CIDR block."
-        },
-        "gateway": {
-          "type": ["string", "null"],
-          "description": "Network gateway address."
+      "allOf": [
+        { "$ref": "#/$defs/Base_Target" },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "network"
+            },
+            "cidr": {
+              "type": ["string", "null"],
+              "description": "Network CIDR block."
+            },
+            "gateway": {
+              "type": ["string", "null"],
+              "description": "Network gateway address."
+            }
+          }
         }
-      },
+      ],
       "description": "A network segment or network device.",
       "title": "Network Target"
     },
     "Database_Target": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": ["type", "name"],
-      "properties": {
-        "type": {
-          "const": "database",
-          "description": "Target type discriminator."
-        },
-        "name": {
-          "type": "string",
-          "description": "Human-readable name for this target."
-        },
-        "engine": {
-          "type": ["string", "null"],
-          "description": "Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'."
-        },
-        "version": {
-          "type": ["string", "null"],
-          "description": "Database version."
-        },
-        "host": {
-          "type": ["string", "null"],
-          "description": "Database host."
-        },
-        "port": {
-          "type": ["integer", "null"],
-          "description": "Database port."
+      "allOf": [
+        { "$ref": "#/$defs/Base_Target" },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "database"
+            },
+            "engine": {
+              "type": ["string", "null"],
+              "description": "Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'."
+            },
+            "version": {
+              "type": ["string", "null"],
+              "description": "Database version."
+            },
+            "host": {
+              "type": ["string", "null"],
+              "description": "Database host."
+            },
+            "port": {
+              "type": ["integer", "null"],
+              "description": "Database port."
+            }
+          }
         }
-      },
+      ],
       "description": "A database instance.",
       "title": "Database Target"
     }

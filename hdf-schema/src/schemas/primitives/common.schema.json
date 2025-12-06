@@ -4,6 +4,12 @@
   "title": "HDF Common Primitives",
   "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
   "$defs": {
+    "Hash_Algorithm": {
+      "type": "string",
+      "enum": ["sha256", "sha384", "sha512"],
+      "description": "Supported cryptographic hash algorithms for checksums and integrity verification.",
+      "title": "Hash Algorithm"
+    },
     "Requirement_Group": {
       "type": "object",
       "additionalProperties": true,
@@ -179,8 +185,7 @@
       "required": ["algorithm", "value"],
       "properties": {
         "algorithm": {
-          "type": "string",
-          "enum": ["sha256", "sha384", "sha512"],
+          "$ref": "#/$defs/Hash_Algorithm",
           "description": "The hash algorithm used for the checksum."
         },
         "value": {
