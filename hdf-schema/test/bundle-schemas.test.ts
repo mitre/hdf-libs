@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { existsSync, rmSync, readFileSync } from 'fs';
 import { join } from 'path';
-import Ajv from 'ajv';
+import Ajv2020 from 'ajv/dist/2020.js';
 import { bundleSchemas } from '../src/bundle-schemas';
 import { loadFixture } from './setup';
 
@@ -40,12 +40,12 @@ describe('bundle-schemas', () => {
 
   describe('bundled hdf-results.schema.json', () => {
     let schema: Record<string, unknown>;
-    let ajv: Ajv;
+    let ajv: Ajv2020;
 
     beforeAll(() => {
       const content = readFileSync(join(DIST_DIR, 'hdf-results.schema.json'), 'utf-8');
       schema = JSON.parse(content);
-      ajv = new Ajv({ strict: false, allErrors: true });
+      ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
     });
 
     it('should be valid JSON', () => {
@@ -90,12 +90,12 @@ describe('bundle-schemas', () => {
 
   describe('bundled hdf-baseline.schema.json', () => {
     let schema: Record<string, unknown>;
-    let ajv: Ajv;
+    let ajv: Ajv2020;
 
     beforeAll(() => {
       const content = readFileSync(join(DIST_DIR, 'hdf-baseline.schema.json'), 'utf-8');
       schema = JSON.parse(content);
-      ajv = new Ajv({ strict: false, allErrors: true });
+      ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
     });
 
     it('should be valid JSON', () => {

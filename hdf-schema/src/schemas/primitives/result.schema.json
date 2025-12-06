@@ -1,9 +1,9 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0",
   "title": "HDF Result Primitives",
   "description": "Types for representing assessment results and statuses.",
-  "definitions": {
+  "$defs": {
     "Result_Status": {
       "type": "string",
       "enum": ["passed", "failed", "notApplicable", "notReviewed", "error"],
@@ -17,7 +17,7 @@
       "properties": {
         "status": {
           "anyOf": [
-            { "$ref": "#/definitions/Result_Status" },
+            { "$ref": "#/$defs/Result_Status" },
             { "type": "null" }
           ],
           "description": "The status of this test within the requirement. Example: 'failed'."

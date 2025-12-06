@@ -1,24 +1,24 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v1.0.0",
   "title": "HDF Target Primitives",
   "description": "Polymorphic target system supporting diverse scan targets from 35+ security tools.",
-  "definitions": {
+  "$defs": {
     "Target": {
       "description": "A scan target. Uses discriminated union pattern with 'type' field as discriminator.",
       "title": "Target",
       "oneOf": [
-        { "$ref": "#/definitions/Host_Target" },
-        { "$ref": "#/definitions/Container_Image_Target" },
-        { "$ref": "#/definitions/Container_Instance_Target" },
-        { "$ref": "#/definitions/Container_Platform_Target" },
-        { "$ref": "#/definitions/Cloud_Account_Target" },
-        { "$ref": "#/definitions/Cloud_Resource_Target" },
-        { "$ref": "#/definitions/Repository_Target" },
-        { "$ref": "#/definitions/Application_Target" },
-        { "$ref": "#/definitions/Artifact_Target" },
-        { "$ref": "#/definitions/Network_Target" },
-        { "$ref": "#/definitions/Database_Target" }
+        { "$ref": "#/$defs/Host_Target" },
+        { "$ref": "#/$defs/Container_Image_Target" },
+        { "$ref": "#/$defs/Container_Instance_Target" },
+        { "$ref": "#/$defs/Container_Platform_Target" },
+        { "$ref": "#/$defs/Cloud_Account_Target" },
+        { "$ref": "#/$defs/Cloud_Resource_Target" },
+        { "$ref": "#/$defs/Repository_Target" },
+        { "$ref": "#/$defs/Application_Target" },
+        { "$ref": "#/$defs/Artifact_Target" },
+        { "$ref": "#/$defs/Network_Target" },
+        { "$ref": "#/$defs/Database_Target" }
       ]
     },
     "Host_Target": {

@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v1.0.0",
   "type": "object",
   "additionalProperties": true,
@@ -18,38 +18,38 @@
     "targets": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v1.0.0#/definitions/Target"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v1.0.0#/$defs/Target"
       },
       "description": "The target systems that were assessed. Supports multiple targets of different types."
     },
     "baselines": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/Evaluated_Baseline"
+        "$ref": "#/$defs/Evaluated_Baseline"
       },
       "description": "Information on the baselines that were evaluated, including findings."
     },
     "statistics": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v1.0.0#/definitions/Statistics",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v1.0.0#/$defs/Statistics",
       "description": "Statistics for the assessment run, including duration and result counts."
     },
     "generator": {
       "anyOf": [
-        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Generator" },
+        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/$defs/Generator" },
         { "type": "null" }
       ],
       "description": "Information about the tool that generated this file."
     },
     "integrity": {
       "anyOf": [
-        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Integrity" },
+        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/$defs/Integrity" },
         { "type": "null" }
       ],
       "description": "Cryptographic integrity information for verifying this file."
     },
     "runner": {
       "anyOf": [
-        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v1.0.0#/definitions/Runner" },
+        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v1.0.0#/$defs/Runner" },
         { "type": "null" }
       ],
       "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
@@ -57,7 +57,7 @@
   },
   "description": "The top level value containing all assessment results.",
   "title": "HDF Results",
-  "definitions": {
+  "$defs": {
     "Evaluated_Baseline": {
       "type": "object",
       "additionalProperties": true,
@@ -86,7 +86,7 @@
         "depends": {
           "type": ["array", "null"],
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Dependency"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Dependency"
           },
           "description": "The set of dependencies this baseline depends on."
         },
@@ -109,7 +109,7 @@
         "supports": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Supported_Platform"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Supported_Platform"
           },
           "description": "The set of supported platform targets."
         },
@@ -122,7 +122,7 @@
           "description": "The version of InSpec used to execute this baseline."
         },
         "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Checksum",
           "description": "Cryptographic checksum for baseline integrity verification."
         },
         "status": {
@@ -140,14 +140,14 @@
         "requirements": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Evaluated_Requirement"
+            "$ref": "#/$defs/Evaluated_Requirement"
           },
           "description": "The set of requirements including any findings."
         },
         "groups": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Requirement_Group"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Requirement_Group"
           },
           "description": "A set of descriptions for the requirement groups."
         },
@@ -181,7 +181,7 @@
           "type": "array",
           "minItems": 1,
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/definitions/Requirement_Description"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/$defs/Requirement_Description"
           },
           "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
         },
@@ -199,7 +199,7 @@
         "refs": {
           "type": ["array", "null"],
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Reference"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Reference"
           },
           "description": "The set of references to external documents."
         },
@@ -213,13 +213,13 @@
           "description": "The raw source code of the requirement. Note that if this is an overlay, it does not include the underlying source code."
         },
         "sourceLocation": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Source_Location",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Source_Location",
           "description": "The explicit location of the requirement within the source code."
         },
         "results": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/definitions/Requirement_Result"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/$defs/Requirement_Result"
           },
           "description": "The set of all tests within the requirement and their results."
         },
@@ -228,7 +228,7 @@
             {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Override"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/$defs/Override"
               }
             },
             { "type": "null" }

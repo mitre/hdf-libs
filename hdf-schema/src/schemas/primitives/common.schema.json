@@ -1,9 +1,9 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0",
   "title": "HDF Common Primitives",
   "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
-  "definitions": {
+  "$defs": {
     "Requirement_Group": {
       "type": "object",
       "additionalProperties": true,
