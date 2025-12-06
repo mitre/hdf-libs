@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import Ajv from 'ajv';
+import Ajv2020 from 'ajv/dist/2020.js';
 import {
   createAjvWithPrimitives,
   loadSchema,
@@ -11,8 +11,8 @@ import {
 } from './setup';
 
 describe('hdf-results.schema.json (refactored)', () => {
-  let ajv: Ajv;
-  let validate: ReturnType<Ajv['compile']>;
+  let ajv: Ajv2020;
+  let validate: ReturnType<Ajv2020['compile']>;
 
   beforeAll(() => {
     ajv = createAjvWithPrimitives();

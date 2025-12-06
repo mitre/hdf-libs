@@ -1,9 +1,9 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/platform/v1.0.0",
   "title": "HDF Platform Primitive",
   "description": "Legacy platform information for backward compatibility with existing HDF documents.",
-  "definitions": {
+  "$defs": {
     "Platform": {
       "type": "object",
       "additionalProperties": true,

@@ -1,9 +1,9 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v1.0.0",
   "title": "HDF Statistics Primitives",
   "description": "Statistics types for tracking assessment run metrics.",
-  "definitions": {
+  "$defs": {
     "Statistic_Block": {
       "type": "object",
       "additionalProperties": true,
@@ -24,42 +24,42 @@
       "properties": {
         "passed": {
           "anyOf": [
-            { "$ref": "#/definitions/Statistic_Block" },
+            { "$ref": "#/$defs/Statistic_Block" },
             { "type": "null" }
           ],
           "description": "Statistics for requirements that passed."
         },
         "failed": {
           "anyOf": [
-            { "$ref": "#/definitions/Statistic_Block" },
+            { "$ref": "#/$defs/Statistic_Block" },
             { "type": "null" }
           ],
           "description": "Statistics for requirements that failed."
         },
         "notApplicable": {
           "anyOf": [
-            { "$ref": "#/definitions/Statistic_Block" },
+            { "$ref": "#/$defs/Statistic_Block" },
             { "type": "null" }
           ],
           "description": "Statistics for requirements that are not applicable to the target."
         },
         "notReviewed": {
           "anyOf": [
-            { "$ref": "#/definitions/Statistic_Block" },
+            { "$ref": "#/$defs/Statistic_Block" },
             { "type": "null" }
           ],
           "description": "Statistics for requirements that were not reviewed (manual check required)."
         },
         "error": {
           "anyOf": [
-            { "$ref": "#/definitions/Statistic_Block" },
+            { "$ref": "#/$defs/Statistic_Block" },
             { "type": "null" }
           ],
           "description": "Statistics for requirements that encountered an error during assessment."
         },
         "skipped": {
           "anyOf": [
-            { "$ref": "#/definitions/Statistic_Block" },
+            { "$ref": "#/$defs/Statistic_Block" },
             { "type": "null" }
           ],
           "description": "Deprecated: use 'notApplicable' or 'notReviewed' instead. Statistics for requirements that were skipped."
@@ -79,7 +79,7 @@
         },
         "requirements": {
           "anyOf": [
-            { "$ref": "#/definitions/Statistic_Hash" },
+            { "$ref": "#/$defs/Statistic_Hash" },
             { "type": "null" }
           ],
           "description": "Breakdowns of requirement statistics by result status."

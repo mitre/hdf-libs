@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v1.0.0",
   "type": "object",
   "additionalProperties": true,
@@ -40,21 +40,21 @@
     "supports": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Supported_Platform"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Supported_Platform"
       },
       "description": "The set of supported platform targets."
     },
     "requirements": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/Baseline_Requirement"
+        "$ref": "#/$defs/Baseline_Requirement"
       },
       "description": "The set of requirements - contains no findings as the assessment has not yet occurred."
     },
     "groups": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Requirement_Group"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Requirement_Group"
       },
       "description": "A set of descriptions for the requirement groups."
     },
@@ -68,7 +68,7 @@
       "description": "The input(s) or attribute(s) to be used in the run."
     },
     "checksum": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Checksum",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Checksum",
       "description": "Cryptographic checksum for baseline integrity verification."
     },
     "status": {
@@ -78,13 +78,13 @@
     "depends": {
       "type": ["array", "null"],
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Dependency"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Dependency"
       },
       "description": "The set of dependencies this baseline depends on."
     },
     "generator": {
       "anyOf": [
-        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/definitions/Generator" },
+        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/$defs/Generator" },
         { "type": "null" }
       ],
       "description": "The tool that generated this file."
@@ -92,7 +92,7 @@
   },
   "description": "Information on the set of requirements that can be assessed. Example: it can include the name of the InSpec profile.",
   "title": "HDF Baseline",
-  "definitions": {
+  "$defs": {
     "Baseline_Requirement": {
       "type": "object",
       "additionalProperties": true,
@@ -107,7 +107,7 @@
           "description": "The title - is nullable."
         },
         "descriptions": {
-          "$ref": "#/definitions/Baseline_Requirement_Descriptions",
+          "$ref": "#/$defs/Baseline_Requirement_Descriptions",
           "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
         },
         "impact": {
@@ -124,7 +124,7 @@
         "refs": {
           "type": ["array", "null"],
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Reference"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Reference"
           },
           "description": "The set of references to external documents."
         },
@@ -139,7 +139,7 @@
         },
         "sourceLocation": {
           "anyOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Source_Location" },
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Source_Location" },
             { "type": "null" }
           ],
           "description": "The explicit location of the requirement within the source code."

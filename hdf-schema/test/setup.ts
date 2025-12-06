@@ -1,4 +1,4 @@
-import Ajv from 'ajv';
+import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -11,8 +11,8 @@ const __dirname = path.dirname(__filename);
  * Creates and configures an Ajv instance with all primitive schemas loaded.
  * Use this for validating the new refactored schemas that use $ref.
  */
-export function createAjvWithPrimitives(): Ajv {
-  const ajv = new Ajv({ strict: false, allErrors: true });
+export function createAjvWithPrimitives(): Ajv2020 {
+  const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
   addFormats(ajv);
 
   const primitivesDir = path.join(__dirname, '../src/schemas/primitives');

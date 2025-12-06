@@ -1,9 +1,9 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v1.0.0",
   "title": "HDF Runner Primitive",
   "description": "Information about the test execution environment where the security tool/scanner was executed.",
-  "definitions": {
+  "$defs": {
     "Runner": {
       "type": "object",
       "additionalProperties": true,
