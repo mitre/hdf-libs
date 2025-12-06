@@ -36,14 +36,14 @@
           ],
           "description": "Statistics for requirements that failed."
         },
-        "not_applicable": {
+        "notApplicable": {
           "anyOf": [
             { "$ref": "#/definitions/Statistic_Block" },
             { "type": "null" }
           ],
           "description": "Statistics for requirements that are not applicable to the target."
         },
-        "not_reviewed": {
+        "notReviewed": {
           "anyOf": [
             { "$ref": "#/definitions/Statistic_Block" },
             { "type": "null" }
@@ -62,7 +62,7 @@
             { "$ref": "#/definitions/Statistic_Block" },
             { "type": "null" }
           ],
-          "description": "Deprecated: use 'not_applicable' or 'not_reviewed' instead. Statistics for requirements that were skipped."
+          "description": "Deprecated: use 'notApplicable' or 'notReviewed' instead. Statistics for requirements that were skipped."
         }
       },
       "description": "Statistics for requirement results, grouped by status.",

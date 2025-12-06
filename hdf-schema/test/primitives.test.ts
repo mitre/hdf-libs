@@ -216,20 +216,20 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Platform with target_id', () => {
+      it('should validate Platform with targetId', () => {
         const valid = {
           name: 'windows',
           release: '10',
-          target_id: '21H2',
+          targetId: '21H2',
         };
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Platform with null target_id', () => {
+      it('should validate Platform with null targetId', () => {
         const valid = {
           name: 'ubuntu',
           release: '20.04',
-          target_id: null,
+          targetId: null,
         };
         expect(validate(valid)).toBe(true);
       });
@@ -261,9 +261,9 @@ describe('Primitive Schema Validation', () => {
           type: 'host',
           name: 'web-server-01',
           fqdn: 'web-server-01.example.com',
-          ip_address: '192.168.1.100',
-          os_name: 'Ubuntu',
-          os_version: '22.04',
+          ipAddress: '192.168.1.100',
+          osName: 'Ubuntu',
+          osVersion: '22.04',
         };
         expect(validate(valid)).toBe(true);
       });
@@ -280,7 +280,7 @@ describe('Primitive Schema Validation', () => {
     describe('Container_Image_Target', () => {
       it('should validate a valid container image target', () => {
         const valid = {
-          type: 'container_image',
+          type: 'containerImage',
           name: 'nginx:1.25',
           registry: 'docker.io',
           repository: 'library/nginx',
@@ -292,7 +292,7 @@ describe('Primitive Schema Validation', () => {
 
       it('should validate minimal container image target', () => {
         const valid = {
-          type: 'container_image',
+          type: 'containerImage',
           name: 'my-image',
         };
         expect(validate(valid)).toBe(true);
@@ -302,7 +302,7 @@ describe('Primitive Schema Validation', () => {
     describe('Container_Instance_Target', () => {
       it('should validate a valid container instance target', () => {
         const valid = {
-          type: 'container_instance',
+          type: 'containerInstance',
           name: 'nginx-abc123',
           container_id: 'abc123def456',
           image: 'nginx:1.25',
@@ -315,7 +315,7 @@ describe('Primitive Schema Validation', () => {
     describe('Container_Platform_Target', () => {
       it('should validate a valid container platform target', () => {
         const valid = {
-          type: 'container_platform',
+          type: 'containerPlatform',
           name: 'production-cluster',
           platform_type: 'kubernetes',
           cluster_name: 'prod-k8s',
@@ -329,10 +329,10 @@ describe('Primitive Schema Validation', () => {
     describe('Cloud_Account_Target', () => {
       it('should validate a valid AWS account target', () => {
         const valid = {
-          type: 'cloud_account',
+          type: 'cloudAccount',
           name: 'Production AWS',
           provider: 'aws',
-          account_id: '123456789012',
+          accountId: '123456789012',
           region: 'us-east-1',
         };
         expect(validate(valid)).toBe(true);
@@ -340,17 +340,17 @@ describe('Primitive Schema Validation', () => {
 
       it('should validate Azure subscription target', () => {
         const valid = {
-          type: 'cloud_account',
+          type: 'cloudAccount',
           name: 'Azure Production',
           provider: 'azure',
-          account_id: 'subscription-uuid',
+          accountId: 'subscription-uuid',
         };
         expect(validate(valid)).toBe(true);
       });
 
       it('should reject invalid provider', () => {
         const invalid = {
-          type: 'cloud_account',
+          type: 'cloudAccount',
           name: 'Unknown Cloud',
           provider: 'invalid_provider',
         };
@@ -361,11 +361,11 @@ describe('Primitive Schema Validation', () => {
     describe('Cloud_Resource_Target', () => {
       it('should validate a valid cloud resource target', () => {
         const valid = {
-          type: 'cloud_resource',
+          type: 'cloudResource',
           name: 'web-server-ec2',
           provider: 'aws',
-          resource_type: 'ec2:instance',
-          resource_id: 'i-1234567890abcdef0',
+          resourceType: 'ec2:instance',
+          resourceId: 'i-1234567890abcdef0',
           arn: 'arn:aws:ec2:us-east-1:123456789012:instance/i-1234567890abcdef0',
           region: 'us-east-1',
         };
@@ -542,8 +542,8 @@ describe('Primitive Schema Validation', () => {
         const valid = {
           passed: { total: 10 },
           failed: { total: 2 },
-          not_applicable: { total: 5 },
-          not_reviewed: { total: 3 },
+          notApplicable: { total: 5 },
+          notReviewed: { total: 3 },
           error: { total: 0 },
         };
         expect(validate(valid)).toBe(true);
@@ -553,8 +553,8 @@ describe('Primitive Schema Validation', () => {
         const valid = {
           passed: { total: 10 },
           failed: null,
-          not_applicable: null,
-          not_reviewed: null,
+          notApplicable: null,
+          notReviewed: null,
           error: null,
         };
         expect(validate(valid)).toBe(true);
@@ -585,8 +585,8 @@ describe('Primitive Schema Validation', () => {
           controls: {
             passed: { total: 50 },
             failed: { total: 5 },
-            not_applicable: { total: 10 },
-            not_reviewed: { total: 2 },
+            notApplicable: { total: 10 },
+            notReviewed: { total: 2 },
             error: { total: 1 },
           },
         };
@@ -639,12 +639,12 @@ describe('Primitive Schema Validation', () => {
         expect(validate('failed')).toBe(true);
       });
 
-      it('should validate "not_applicable" status', () => {
-        expect(validate('not_applicable')).toBe(true);
+      it('should validate "notApplicable" status', () => {
+        expect(validate('notApplicable')).toBe(true);
       });
 
-      it('should validate "not_reviewed" status', () => {
-        expect(validate('not_reviewed')).toBe(true);
+      it('should validate "notReviewed" status', () => {
+        expect(validate('notReviewed')).toBe(true);
       });
 
       it('should validate "error" status', () => {
@@ -668,13 +668,13 @@ describe('Primitive Schema Validation', () => {
       it('should validate a full Requirement_Result', () => {
         const valid = {
           status: 'passed',
-          code_desc: 'File /etc/passwd should exist',
-          run_time: 0.005,
-          start_time: '2025-01-15T10:30:00Z',
+          codeDesc: 'File /etc/passwd should exist',
+          runTime: 0.005,
+          startTime: '2025-01-15T10:30:00Z',
           resource: 'file',
-          resource_id: '/etc/passwd',
+          resourceId: '/etc/passwd',
           message: null,
-          skip_message: null,
+          skipMessage: null,
           exception: null,
           backtrace: null,
         };
@@ -683,8 +683,8 @@ describe('Primitive Schema Validation', () => {
 
       it('should validate minimal Requirement_Result', () => {
         const valid = {
-          code_desc: 'Test description',
-          start_time: '2025-01-15T10:30:00Z',
+          codeDesc: 'Test description',
+          startTime: '2025-01-15T10:30:00Z',
         };
         expect(validate(valid)).toBe(true);
       });
@@ -692,19 +692,19 @@ describe('Primitive Schema Validation', () => {
       it('should validate Requirement_Result with failed status and message', () => {
         const valid = {
           status: 'failed',
-          code_desc: 'File /etc/secure should have mode 0600',
-          start_time: '2025-01-15T10:30:00Z',
+          codeDesc: 'File /etc/secure should have mode 0600',
+          startTime: '2025-01-15T10:30:00Z',
           message: 'expected mode to be 0600, got 0644',
         };
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Requirement_Result with not_reviewed status', () => {
+      it('should validate Requirement_Result with notReviewed status', () => {
         const valid = {
-          status: 'not_reviewed',
-          code_desc: 'Manual verification required',
-          start_time: '2025-01-15T10:30:00Z',
-          skip_message: 'This check requires manual verification by an auditor',
+          status: 'notReviewed',
+          codeDesc: 'Manual verification required',
+          startTime: '2025-01-15T10:30:00Z',
+          skipMessage: 'This check requires manual verification by an auditor',
         };
         expect(validate(valid)).toBe(true);
       });
@@ -712,24 +712,24 @@ describe('Primitive Schema Validation', () => {
       it('should validate Requirement_Result with error and backtrace', () => {
         const valid = {
           status: 'error',
-          code_desc: 'Check failed to execute',
-          start_time: '2025-01-15T10:30:00Z',
+          codeDesc: 'Check failed to execute',
+          startTime: '2025-01-15T10:30:00Z',
           exception: 'RuntimeError',
           backtrace: ['line1', 'line2', 'line3'],
         };
         expect(validate(valid)).toBe(true);
       });
 
-      it('should reject Requirement_Result missing required code_desc', () => {
+      it('should reject Requirement_Result missing required codeDesc', () => {
         const invalid = {
-          start_time: '2025-01-15T10:30:00Z',
+          startTime: '2025-01-15T10:30:00Z',
         };
         expect(validate(invalid)).toBe(false);
       });
 
-      it('should reject Requirement_Result missing required start_time', () => {
+      it('should reject Requirement_Result missing required startTime', () => {
         const invalid = {
-          code_desc: 'Test description',
+          codeDesc: 'Test description',
         };
         expect(validate(invalid)).toBe(false);
       });
@@ -781,11 +781,11 @@ describe('Primitive Schema Validation', () => {
       it('should validate a waiver override with all required fields', () => {
         const valid = {
           type: 'waiver',
-          status: 'not_applicable',
+          status: 'notApplicable',
           reason: 'Risk accepted by ISSO pending system upgrade',
-          applied_by: 'isso@example.com',
-          applied_at: '2025-12-05T20:30:00Z',
-          expires_at: '2026-12-05T20:30:00Z',
+          appliedBy: 'isso@example.com',
+          appliedAt: '2025-12-05T20:30:00Z',
+          expiresAt: '2026-12-05T20:30:00Z',
         };
         expect(validate(valid)).toBe(true);
       });
@@ -795,9 +795,9 @@ describe('Primitive Schema Validation', () => {
           type: 'attestation',
           status: 'passed',
           reason: 'Manually verified by security team during audit',
-          applied_by: 'security-team@example.com',
-          applied_at: '2025-12-05T15:30:00Z',
-          expires_at: '2026-12-05T15:30:00Z',
+          appliedBy: 'security-team@example.com',
+          appliedAt: '2025-12-05T15:30:00Z',
+          expiresAt: '2026-12-05T15:30:00Z',
         };
         expect(validate(valid)).toBe(true);
       });
@@ -805,51 +805,51 @@ describe('Primitive Schema Validation', () => {
       it('should validate override with optional signature field', () => {
         const valid = {
           type: 'waiver',
-          status: 'not_applicable',
+          status: 'notApplicable',
           reason: 'Compensating controls in place',
-          applied_by: 'ciso@example.com',
-          applied_at: '2025-12-05T20:30:00Z',
-          expires_at: '2027-12-05T20:30:00Z',
+          appliedBy: 'ciso@example.com',
+          appliedAt: '2025-12-05T20:30:00Z',
+          expiresAt: '2027-12-05T20:30:00Z',
           signature: 'base64-encoded-signature-data',
         };
         expect(validate(valid)).toBe(true);
       });
 
       it('should validate override with all valid status values', () => {
-        const statuses = ['passed', 'failed', 'not_applicable', 'not_reviewed'];
+        const statuses = ['passed', 'failed', 'notApplicable', 'notReviewed'];
         statuses.forEach(status => {
           const valid = {
             type: 'attestation',
             status,
             reason: 'Test override',
-            applied_by: 'test@example.com',
-            applied_at: '2025-12-05T20:30:00Z',
-            expires_at: '2026-12-05T20:30:00Z',
+            appliedBy: 'test@example.com',
+            appliedAt: '2025-12-05T20:30:00Z',
+            expiresAt: '2026-12-05T20:30:00Z',
           };
           expect(validate(valid)).toBe(true);
         });
       });
 
-      it('should reject override missing expires_at (no permanent overrides)', () => {
+      it('should reject override missing expiresAt (no permanent overrides)', () => {
         const invalid = {
           type: 'waiver',
-          status: 'not_applicable',
+          status: 'notApplicable',
           reason: 'Test',
-          applied_by: 'test@example.com',
-          applied_at: '2025-12-05T20:30:00Z',
-          // missing: expires_at
+          appliedBy: 'test@example.com',
+          appliedAt: '2025-12-05T20:30:00Z',
+          // missing: expiresAt
         };
         expect(validate(invalid)).toBe(false);
       });
 
-      it('should reject override with null expires_at (no permanent overrides)', () => {
+      it('should reject override with null expiresAt (no permanent overrides)', () => {
         const invalid = {
           type: 'waiver',
-          status: 'not_applicable',
+          status: 'notApplicable',
           reason: 'Test',
-          applied_by: 'test@example.com',
-          applied_at: '2025-12-05T20:30:00Z',
-          expires_at: null,
+          appliedBy: 'test@example.com',
+          appliedAt: '2025-12-05T20:30:00Z',
+          expiresAt: null,
         };
         expect(validate(invalid)).toBe(false);
       });
@@ -857,7 +857,7 @@ describe('Primitive Schema Validation', () => {
       it('should reject override missing required fields', () => {
         const invalid = {
           type: 'waiver',
-          // missing: status, reason, applied_by, applied_at, expires_at
+          // missing: status, reason, appliedBy, appliedAt, expiresAt
         };
         expect(validate(invalid)).toBe(false);
       });
@@ -865,11 +865,11 @@ describe('Primitive Schema Validation', () => {
       it('should reject override with invalid type', () => {
         const invalid = {
           type: 'exception', // invalid - only waiver/attestation allowed
-          status: 'not_applicable',
+          status: 'notApplicable',
           reason: 'Test',
-          applied_by: 'test@example.com',
-          applied_at: '2025-12-05T20:30:00Z',
-          expires_at: '2026-12-05T20:30:00Z',
+          appliedBy: 'test@example.com',
+          appliedAt: '2025-12-05T20:30:00Z',
+          expiresAt: '2026-12-05T20:30:00Z',
         };
         expect(validate(invalid)).toBe(false);
       });
@@ -879,9 +879,9 @@ describe('Primitive Schema Validation', () => {
           type: 'waiver',
           status: 'skipped', // invalid - skipped was removed
           reason: 'Test',
-          applied_by: 'test@example.com',
-          applied_at: '2025-12-05T20:30:00Z',
-          expires_at: '2026-12-05T20:30:00Z',
+          appliedBy: 'test@example.com',
+          appliedAt: '2025-12-05T20:30:00Z',
+          expiresAt: '2026-12-05T20:30:00Z',
         };
         expect(validate(invalid)).toBe(false);
       });
@@ -941,7 +941,7 @@ describe('Primitive Schema Validation', () => {
           algorithm: 'sha512',
           checksum: 'abc123def456789...',
           signature: 'base64-encoded-signature',
-          signed_by: 'security-team@example.com',
+          signedBy: 'security-team@example.com',
         };
         expect(validate(valid)).toBe(true);
       });
@@ -951,7 +951,7 @@ describe('Primitive Schema Validation', () => {
           algorithm: 'sha384',
           checksum: 'abc123...',
           signature: null,
-          signed_by: null,
+          signedBy: null,
         };
         expect(validate(valid)).toBe(true);
       });

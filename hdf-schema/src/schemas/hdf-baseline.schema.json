@@ -21,7 +21,7 @@
       "type": ["string", "null"],
       "description": "The copyright holder(s)."
     },
-    "copyright_email": {
+    "copyrightEmail": {
       "type": ["string", "null"],
       "description": "The email address or other contact information of the copyright holder(s)."
     },
@@ -137,7 +137,7 @@
           "type": "string",
           "description": "The raw source code of the requirement. Note that if this is an overlay, it does not include the underlying source code."
         },
-        "source_location": {
+        "sourceLocation": {
           "anyOf": [
             { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/definitions/Source_Location" },
             { "type": "null" }

@@ -6,14 +6,14 @@
   "definitions": {
     "Result_Status": {
       "type": "string",
-      "enum": ["passed", "failed", "not_applicable", "not_reviewed", "error"],
-      "description": "The status of an individual test result. 'not_applicable' indicates the requirement does not apply to the target. 'not_reviewed' indicates the requirement was not assessed (e.g., requires manual verification).",
+      "enum": ["passed", "failed", "notApplicable", "notReviewed", "error"],
+      "description": "The status of an individual test result. 'notApplicable' indicates the requirement does not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g., requires manual verification).",
       "title": "Result Status"
     },
     "Requirement_Result": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["code_desc", "start_time"],
+      "required": ["codeDesc", "startTime"],
       "properties": {
         "status": {
           "anyOf": [
@@ -22,15 +22,15 @@
           ],
           "description": "The status of this test within the requirement. Example: 'failed'."
         },
-        "code_desc": {
+        "codeDesc": {
           "type": "string",
           "description": "A description of this test. Example: 'limits.conf * is expected to include [\"hard\", \"maxlogins\", \"10\"]'."
         },
-        "run_time": {
+        "runTime": {
           "type": ["number", "null"],
           "description": "The execution time in seconds for the test."
         },
-        "start_time": {
+        "startTime": {
           "type": "string",
           "description": "The time at which the test started."
         },
@@ -38,7 +38,7 @@
           "type": ["string", "null"],
           "description": "The resource used in the test. Example: 'file', 'command', 'service'."
         },
-        "resource_id": {
+        "resourceId": {
           "type": ["string", "null"],
           "description": "The unique identifier of the resource. Example: '/etc/passwd'."
         },
@@ -46,7 +46,7 @@
           "type": ["string", "null"],
           "description": "An explanation of the test status - usually only provided when the test fails."
         },
-        "skip_message": {
+        "skipMessage": {
           "type": ["string", "null"],
           "description": "An explanation of why the test was not reviewed or not applicable."
         },

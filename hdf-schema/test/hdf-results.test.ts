@@ -92,14 +92,14 @@ describe('hdf-results.schema.json (refactored)', () => {
 
     it('should accept container_image target', () => {
       const doc = createMinimalResultsDoc({
-        targets: [{ type: 'container_image', name: 'nginx:latest', image_id: 'sha256:abc123' }],
+        targets: [{ type: 'containerImage', name: 'nginx:latest', image_id: 'sha256:abc123' }],
       });
       expect(validate(doc)).toBe(true);
     });
 
     it('should accept cloud_account target', () => {
       const doc = createMinimalResultsDoc({
-        targets: [{ type: 'cloud_account', name: 'prod-aws', provider: 'aws', account_id: '123456789012' }],
+        targets: [{ type: 'cloudAccount', name: 'prod-aws', provider: 'aws', account_id: '123456789012' }],
       });
       expect(validate(doc)).toBe(true);
     });
@@ -108,7 +108,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         targets: [
           { type: 'host', name: 'server-01' },
-          { type: 'container_image', name: 'app:v1', image_id: 'sha256:xyz' },
+          { type: 'containerImage', name: 'app:v1', image_id: 'sha256:xyz' },
           { type: 'database', name: 'prod-db', engine: 'postgresql' },
         ],
       });
@@ -192,7 +192,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         id: 'SV-238196',
         impact: 0.7,
         tags: {},
-        source_location: {},
+        sourceLocation: {},
         results: [],
         // Missing descriptions array
       };
@@ -289,14 +289,14 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with effective_status field', () => {
+    it('should validate control with effectiveStatus field', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
               createMinimalControl({
                 results: [createMinimalResult({ status: 'failed' })],
-                effective_status: 'not_applicable',
+                effectiveStatus: 'notApplicable',
               }),
             ],
           }),
@@ -315,14 +315,14 @@ describe('hdf-results.schema.json (refactored)', () => {
                 overrides: [
                   {
                     type: 'waiver',
-                    status: 'not_applicable',
+                    status: 'notApplicable',
                     reason: 'Compensating controls in place',
-                    applied_by: 'isso@example.com',
-                    applied_at: '2025-12-05T10:00:00Z',
-                    expires_at: '2026-12-05T10:00:00Z',
+                    appliedBy: 'isso@example.com',
+                    appliedAt: '2025-12-05T10:00:00Z',
+                    expiresAt: '2026-12-05T10:00:00Z',
                   },
                 ],
-                effective_status: 'not_applicable',
+                effectiveStatus: 'notApplicable',
               }),
             ],
           }),
@@ -337,18 +337,18 @@ describe('hdf-results.schema.json (refactored)', () => {
           createMinimalEvaluatedBaseline({
             requirements: [
               createMinimalControl({
-                results: [createMinimalResult({ status: 'not_reviewed' })],
+                results: [createMinimalResult({ status: 'notReviewed' })],
                 overrides: [
                   {
                     type: 'attestation',
                     status: 'passed',
                     reason: 'Manually verified by security team during audit',
-                    applied_by: 'security-team@example.com',
-                    applied_at: '2025-11-25T15:30:00Z',
-                    expires_at: '2026-11-25T15:30:00Z',
+                    appliedBy: 'security-team@example.com',
+                    appliedAt: '2025-11-25T15:30:00Z',
+                    expiresAt: '2026-11-25T15:30:00Z',
                   },
                 ],
-                effective_status: 'passed',
+                effectiveStatus: 'passed',
               }),
             ],
           }),
@@ -370,21 +370,21 @@ describe('hdf-results.schema.json (refactored)', () => {
                     type: 'attestation',
                     status: 'failed',
                     reason: 'Re-evaluated, confirmed failure',
-                    applied_by: 'auditor@example.com',
-                    applied_at: '2025-12-10T14:00:00Z',
-                    expires_at: '2026-12-10T14:00:00Z',
+                    appliedBy: 'auditor@example.com',
+                    appliedAt: '2025-12-10T14:00:00Z',
+                    expiresAt: '2026-12-10T14:00:00Z',
                   },
                   // Earlier override
                   {
                     type: 'waiver',
-                    status: 'not_applicable',
+                    status: 'notApplicable',
                     reason: 'Initially thought to be false positive',
-                    applied_by: 'engineer@example.com',
-                    applied_at: '2025-12-01T10:00:00Z',
-                    expires_at: '2026-12-01T10:00:00Z',
+                    appliedBy: 'engineer@example.com',
+                    appliedAt: '2025-12-01T10:00:00Z',
+                    expiresAt: '2026-12-01T10:00:00Z',
                   },
                 ],
-                effective_status: 'failed', // Most recent override wins
+                effectiveStatus: 'failed', // Most recent override wins
               }),
             ],
           }),
@@ -403,15 +403,15 @@ describe('hdf-results.schema.json (refactored)', () => {
                 overrides: [
                   {
                     type: 'waiver',
-                    status: 'not_applicable',
+                    status: 'notApplicable',
                     reason: 'Risk accepted by CISO',
-                    applied_by: 'ciso@example.com',
-                    applied_at: '2025-12-05T16:00:00Z',
-                    expires_at: '2027-12-05T16:00:00Z',
+                    appliedBy: 'ciso@example.com',
+                    appliedAt: '2025-12-05T16:00:00Z',
+                    expiresAt: '2027-12-05T16:00:00Z',
                     signature: 'base64-encoded-digital-signature',
                   },
                 ],
-                effective_status: 'not_applicable',
+                effectiveStatus: 'notApplicable',
               }),
             ],
           }),
@@ -470,7 +470,7 @@ describe('hdf-results.schema.json (refactored)', () => {
     });
 
     it('should validate all status values', () => {
-      const statuses = ['passed', 'failed', 'not_applicable', 'not_reviewed', 'error'];
+      const statuses = ['passed', 'failed', 'notApplicable', 'notReviewed', 'error'];
       for (const status of statuses) {
         const doc = createMinimalResultsDoc({
           baselines: [
@@ -516,7 +516,7 @@ describe('hdf-results.schema.json (refactored)', () => {
                 results: [
                   createMinimalResult({
                     status: 'failed',
-                    run_time: 0.023,
+                    runTime: 0.023,
                     message: 'expected "MaxAuthTries 6" to match /MaxAuthTries\\s+4/',
                     resource: 'file',
                     resource_id: '/etc/ssh/sshd_config',
@@ -539,8 +539,8 @@ describe('hdf-results.schema.json (refactored)', () => {
           requirements: {
             passed: { total: 50 },
             failed: { total: 5 },
-            not_applicable: { total: 10 },
-            not_reviewed: { total: 3 },
+            notApplicable: { total: 10 },
+            notReviewed: { total: 3 },
             error: { total: 1 },
           },
         },
@@ -569,8 +569,8 @@ describe('hdf-results.schema.json (refactored)', () => {
                 refs: [],
                 tags: { severity: 'medium' },
                 code: 'control "SV-238196" do\nend',
-                source_location: { ref: 'controls/ssh.rb', line: 10 },
-                results: [{ code_desc: 'SSH configured', start_time: '2025-11-25T12:00:00Z', status: 'passed' }],
+                sourceLocation: { ref: 'controls/ssh.rb', line: 10 },
+                results: [{ codeDesc: 'SSH configured', startTime: '2025-11-25T12:00:00Z', status: 'passed' }],
               },
             ],
           },
