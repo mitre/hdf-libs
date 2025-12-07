@@ -1203,7 +1203,6 @@ describe('Primitive Schema Validation', () => {
           resource: 'file',
           resourceId: '/etc/passwd',
           message: null,
-          skipMessage: null,
           exception: null,
           backtrace: null,
         };
@@ -1228,12 +1227,22 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Requirement_Result with notReviewed status', () => {
+      it('should validate Requirement_Result with notReviewed status and message', () => {
         const valid = {
           status: 'notReviewed',
           codeDesc: 'Manual verification required',
           startTime: '2025-01-15T10:30:00Z',
-          skipMessage: 'This check requires manual verification by an auditor',
+          message: 'This check requires manual verification by an auditor',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Requirement_Result with notApplicable status and message', () => {
+        const valid = {
+          status: 'notApplicable',
+          codeDesc: 'Check for GNOME desktop configuration',
+          startTime: '2025-01-15T10:30:00Z',
+          message: 'GNOME desktop is not installed, this requirement does not apply',
         };
         expect(validate(valid)).toBe(true);
       });

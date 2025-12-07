@@ -132,15 +132,11 @@
         },
         "status": {
           "type": ["string", "null"],
-          "description": "The status. Example: 'loaded'."
+          "description": "The status. Example: 'loaded', 'skipped', 'failed'."
         },
         "statusMessage": {
           "type": ["string", "null"],
-          "description": "The reason for the status. Example: why it was skipped or failed to load."
-        },
-        "skipMessage": {
-          "type": ["string", "null"],
-          "description": "The reason for skipping if it was skipped."
+          "description": "An explanation of the baseline status. Example: why it was skipped, failed to load, or any other status details."
         },
         "requirements": {
           "type": "array",
