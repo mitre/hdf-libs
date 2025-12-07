@@ -35,8 +35,23 @@
           "description": "Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no permanent overrides allowed. ISO 8601 format."
         },
         "signature": {
-          "type": ["string", "null"],
-          "description": "Optional digital signature for enhanced trust and non-repudiation."
+          "anyOf": [
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Signature" },
+            { "type": "null" }
+          ],
+          "description": "Optional digital signature for enhanced trust and non-repudiation. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing methods."
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Evidence"
+              }
+            },
+            { "type": "null" }
+          ],
+          "description": "Supporting evidence for this override, such as screenshots demonstrating manual verification for attestations."
         }
       },
       "description": "A status override applied to a requirement, such as a waiver or attestation. All overrides must have an expiration date to enforce periodic review.",

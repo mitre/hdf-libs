@@ -251,6 +251,18 @@
             { "type": "null" }
           ],
           "description": "The current effective status of this requirement after applying the most recent non-expired override, or computed from results if no overrides exist."
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Evidence"
+              }
+            },
+            { "type": "null" }
+          ],
+          "description": "Supporting evidence for this requirement's findings, such as screenshots, code samples, or log excerpts."
         }
       },
       "description": "A requirement that has been evaluated, including any findings.",

@@ -176,6 +176,156 @@
       },
       "description": "Cryptographic checksum for baseline integrity verification.",
       "title": "Checksum"
+    },
+    "Identity": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["identifier", "type"],
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "description": "The identifier value. Example: 'user@example.com', 'jdoe', 'automated-scanner-01'."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["email", "username", "system", "other"],
+          "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for automated systems, or 'other' for custom identity systems."
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "Optional description of the identity or identity system, particularly useful when type is 'other'."
+        }
+      },
+      "description": "Represents an identity that performed an action, such as capturing evidence or applying an override.",
+      "title": "Identity"
+    },
+    "Evidence": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["type", "data"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["screenshot", "code", "log", "url", "file", "other"],
+          "description": "The type of evidence being provided."
+        },
+        "data": {
+          "type": "string",
+          "description": "The evidence content. For screenshots/files: base64-encoded data or URL. For code/logs: the raw text. For URLs: the URL string."
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "Human-readable description of what this evidence shows."
+        },
+        "mimeType": {
+          "type": ["string", "null"],
+          "description": "MIME type of the evidence. Example: 'image/png', 'text/plain', 'application/json'."
+        },
+        "encoding": {
+          "type": ["string", "null"],
+          "description": "Encoding used for the data. Example: 'base64', 'utf-8'."
+        },
+        "size": {
+          "type": ["number", "null"],
+          "description": "Size of the evidence data in bytes."
+        },
+        "capturedAt": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Timestamp when this evidence was captured. ISO 8601 format."
+        },
+        "capturedBy": {
+          "anyOf": [
+            { "$ref": "#/$defs/Identity" },
+            { "type": "null" }
+          ],
+          "description": "Identity of who or what captured this evidence."
+        }
+      },
+      "description": "Supporting evidence for a finding or override, such as screenshots, code samples, log excerpts, or URLs.",
+      "title": "Evidence"
+    },
+    "Verification_Method": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["type", "controller"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The type of verification method. Example: 'JsonWebKey2020', 'RsaVerificationKey2018', 'Ed25519VerificationKey2020'."
+        },
+        "controller": {
+          "type": "string",
+          "description": "The entity that controls this verification method. Can be a DID, URI, or other identifier."
+        },
+        "publicKeyJwk": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Public key in JWK (JSON Web Key) format. Supports RSA, EC, Ed25519, and other key types."
+            },
+            { "type": "null" }
+          ],
+          "description": "Public key in JSON Web Key format."
+        },
+        "publicKeyPem": {
+          "type": ["string", "null"],
+          "description": "Public key in PEM format. Example: '-----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----'."
+        },
+        "publicKeyBase58": {
+          "type": ["string", "null"],
+          "description": "Public key in Base58 format, commonly used with Ed25519 keys."
+        }
+      },
+      "description": "Verification method containing the public key needed to verify a digital signature. Supports multiple key formats including JWK (for RSA, EC), PEM, and Base58.",
+      "title": "Verification Method"
+    },
+    "Signature": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["type", "created", "creator", "signatureValue", "proofPurpose", "verificationMethod"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The signature suite type. Example: 'JsonWebSignature2020', 'RsaSignature2018', 'Ed25519Signature2020'."
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the signature was created. ISO 8601 format."
+        },
+        "creator": {
+          "$ref": "#/$defs/Identity",
+          "description": "The identity that created this signature."
+        },
+        "signatureValue": {
+          "type": "string",
+          "description": "The base64-encoded or base58-encoded signature value."
+        },
+        "proofPurpose": {
+          "type": "string",
+          "description": "The purpose of this signature. Example: 'attestation', 'authentication', 'assertionMethod'."
+        },
+        "verificationMethod": {
+          "$ref": "#/$defs/Verification_Method",
+          "description": "The verification method containing the public key for signature verification."
+        },
+        "nonce": {
+          "type": ["string", "null"],
+          "description": "Random value to prevent replay attacks."
+        },
+        "challenge": {
+          "type": ["string", "null"],
+          "description": "Challenge value from the verifier, used in challenge-response authentication."
+        },
+        "domain": {
+          "type": ["string", "null"],
+          "description": "Domain restriction for the signature, prevents cross-domain replay attacks."
+        }
+      },
+      "description": "A digital signature following W3C Data Integrity Proofs pattern. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other cryptographic signing methods via JWK, PEM, or Base58 key formats.",
+      "title": "Signature"
     }
   }
 }

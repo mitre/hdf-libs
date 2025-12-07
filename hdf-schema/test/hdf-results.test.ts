@@ -462,7 +462,25 @@ describe('hdf-results.schema.json (refactored)', () => {
                     appliedBy: 'ciso@example.com',
                     appliedAt: '2025-12-05T16:00:00Z',
                     expiresAt: '2027-12-05T16:00:00Z',
-                    signature: 'base64-encoded-digital-signature',
+                    signature: {
+                      type: 'JsonWebSignature2020',
+                      created: '2025-12-05T16:00:00Z',
+                      creator: {
+                        identifier: 'ciso@example.com',
+                        type: 'email',
+                      },
+                      signatureValue: 'base64-encoded-digital-signature',
+                      proofPurpose: 'attestation',
+                      verificationMethod: {
+                        type: 'JsonWebKey2020',
+                        controller: 'https://example.com/ciso/keys/1',
+                        publicKeyJwk: {
+                          kty: 'RSA',
+                          n: 'xGOr-H7A...',
+                          e: 'AQAB',
+                        },
+                      },
+                    },
                   },
                 ],
                 effectiveStatus: 'notApplicable',
@@ -508,6 +526,87 @@ describe('hdf-results.schema.json (refactored)', () => {
         ],
       });
       expect(validate(doc)).toBe(false);
+    });
+
+    it('should validate requirement with evidence array', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                evidence: [
+                  {
+                    type: 'screenshot',
+                    data: 'base64-encoded-screenshot',
+                    description: 'Screenshot showing compliant configuration',
+                  },
+                ],
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate requirement with multiple evidence items', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                evidence: [
+                  {
+                    type: 'screenshot',
+                    data: 'base64-screenshot-data',
+                    description: 'Configuration interface screenshot',
+                    mimeType: 'image/png',
+                    encoding: 'base64',
+                    capturedAt: '2025-12-07T15:30:00Z',
+                    capturedBy: {
+                      identifier: 'auditor@example.com',
+                      type: 'email',
+                    },
+                  },
+                  {
+                    type: 'url',
+                    data: 'https://github.com/org/repo/blob/main/config.yaml',
+                    description: 'Link to configuration file in source control',
+                  },
+                  {
+                    type: 'log',
+                    data: '[2025-12-07 15:30:00] INFO: Configuration validation passed',
+                    description: 'Log excerpt showing successful validation',
+                  },
+                ],
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate requirement with null evidence field', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [createMinimalRequirement({ evidence: null })],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate requirement with empty evidence array', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [createMinimalRequirement({ evidence: [] })],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
     });
   });
 
