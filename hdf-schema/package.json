@@ -20,6 +20,9 @@
     "build": "pnpm clean && tsc && tsx src/bundle-schemas.ts && tsx src/generate-types.ts",
     "build:schemas": "tsx src/bundle-schemas.ts",
     "build:types": "tsx src/generate-types.ts",
+    "watch:schemas": "nodemon --watch src/schemas --ext json --exec 'tsx src/bundle-schemas.ts'",
+    "serve:schemas": "npx http-server dist/schemas -p 8081 --cors",
+    "dev:viewer": "pnpm run build:schemas && concurrently \"pnpm run watch:schemas\" \"pnpm run serve:schemas\"",
     "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -41,6 +44,9 @@
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^15.1.2",
     "@types/node": "^24.10.1",
+    "concurrently": "^9.2.1",
+    "http-server": "^14.1.1",
+    "nodemon": "^3.1.11",
     "quicktype-core": "^23.0.0",
     "tsx": "^4.20.6"
   },
