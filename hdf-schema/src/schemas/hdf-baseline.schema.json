@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v1.0.0",
   "type": "object",
-  "additionalProperties": true,
+  "unevaluatedProperties": false,
   "required": ["name", "supports", "requirements", "groups", "checksum"],
   "properties": {
     "name": {
@@ -90,12 +90,12 @@
       "description": "The tool that generated this file."
     }
   },
-  "description": "Information on the set of requirements that can be assessed. Example: it can include the name of the InSpec profile.",
+  "description": "Information on the set of requirements that can be assessed, including baseline metadata and requirement definitions.",
   "title": "HDF Baseline",
   "$defs": {
     "Baseline_Requirement": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": ["id", "impact", "tags", "code", "descriptions"],
       "properties": {
         "id": {
@@ -153,7 +153,7 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "additionalProperties": true,
+        "unevaluatedProperties": false,
         "required": ["label", "data"],
         "properties": {
           "label": {

@@ -6,7 +6,7 @@
   "$defs": {
     "Override": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": ["type", "status", "reason", "appliedBy", "appliedAt", "expiresAt"],
       "properties": {
         "type": {
@@ -44,7 +44,7 @@
     },
     "Generator": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": ["name", "version"],
       "properties": {
         "name": {
@@ -61,7 +61,7 @@
     },
     "Integrity": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "dependencies": {
         "algorithm": ["checksum"],
         "checksum": ["algorithm"]

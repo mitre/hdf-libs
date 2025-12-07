@@ -173,8 +173,8 @@ describe('Primitive Schema Validation', () => {
 
       it('should validate a valid Supported_Platform', () => {
         const valid = {
-          'platform-family': 'redhat',
-          'platform-name': 'centos',
+          'platformFamily': 'redhat',
+          'platformName': 'centos',
           release: '8',
         };
         expect(validate(valid)).toBe(true);
@@ -192,13 +192,6 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate deprecated os-family and os-name', () => {
-        const valid = {
-          'os-family': 'debian',
-          'os-name': 'ubuntu',
-        };
-        expect(validate(valid)).toBe(true);
-      });
     });
   });
 
@@ -304,7 +297,7 @@ describe('Primitive Schema Validation', () => {
         const valid = {
           type: 'containerInstance',
           name: 'nginx-abc123',
-          container_id: 'abc123def456',
+          containerId: 'abc123def456',
           image: 'nginx:1.25',
           runtime: 'containerd',
         };
@@ -317,8 +310,8 @@ describe('Primitive Schema Validation', () => {
         const valid = {
           type: 'containerPlatform',
           name: 'production-cluster',
-          platform_type: 'kubernetes',
-          cluster_name: 'prod-k8s',
+          platformType: 'kubernetes',
+          clusterName: 'prod-k8s',
           namespace: 'default',
           version: '1.28',
         };
@@ -404,8 +397,8 @@ describe('Primitive Schema Validation', () => {
         const valid = {
           type: 'artifact',
           name: 'lodash',
-          package_manager: 'npm',
-          package_name: 'lodash',
+          packageManager: 'npm',
+          packageName: 'lodash',
           version: '4.17.21',
           checksum: 'sha256:abc123',
         };
@@ -582,7 +575,7 @@ describe('Primitive Schema Validation', () => {
       it('should validate a full Statistics object', () => {
         const valid = {
           duration: 45.5,
-          controls: {
+          requirements: {
             passed: { total: 50 },
             failed: { total: 5 },
             notApplicable: { total: 10 },
@@ -603,17 +596,17 @@ describe('Primitive Schema Validation', () => {
       it('should validate Statistics with null duration', () => {
         const valid = {
           duration: null,
-          controls: {
+          requirements: {
             passed: { total: 10 },
           },
         };
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Statistics with null controls', () => {
+      it('should validate Statistics with null requirements', () => {
         const valid = {
           duration: 15.5,
-          controls: null,
+          requirements: null,
         };
         expect(validate(valid)).toBe(true);
       });

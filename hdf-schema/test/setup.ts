@@ -93,9 +93,9 @@ export function createMinimalEvaluatedBaseline(overrides: object = {}): object {
 }
 
 /**
- * Creates a minimal valid control/requirement for use in profiles.
+ * Creates a minimal valid requirement for use in evaluated baselines (with results).
  */
-export function createMinimalControl(overrides: object = {}): object {
+export function createMinimalRequirement(overrides: object = {}): object {
   return {
     id: 'SV-238196',
     impact: 0.7,
@@ -103,7 +103,7 @@ export function createMinimalControl(overrides: object = {}): object {
     sourceLocation: {},
     results: [],
     descriptions: [
-      { label: 'default', data: 'Minimal test control description' }
+      { label: 'default', data: 'Minimal test requirement description' }
     ],
     ...overrides,
   };
@@ -112,14 +112,14 @@ export function createMinimalControl(overrides: object = {}): object {
 /**
  * Creates a minimal valid baseline requirement (no results).
  */
-export function createMinimalBaselineControl(overrides: object = {}): object {
+export function createMinimalBaselineRequirement(overrides: object = {}): object {
   return {
     id: 'SV-238196',
     impact: 0.7,
     tags: {},
     code: 'control "SV-238196" do\nend',
     descriptions: [
-      { label: 'default', data: 'Minimal baseline control description' }
+      { label: 'default', data: 'Minimal baseline requirement description' }
     ],
     ...overrides,
   };

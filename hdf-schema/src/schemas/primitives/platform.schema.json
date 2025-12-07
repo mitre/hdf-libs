@@ -6,7 +6,7 @@
   "$defs": {
     "Platform": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": ["name", "release"],
       "properties": {
         "name": {
