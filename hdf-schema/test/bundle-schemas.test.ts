@@ -123,7 +123,6 @@ describe('bundle-schemas', () => {
         name: 'test-baseline',
         checksum: { algorithm: 'sha256', value: 'abc123' },
         supports: [],
-        attributes: [],
         groups: [],
         requirements: [],
       };

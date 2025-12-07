@@ -12,12 +12,8 @@
     },
     "Requirement_Group": {
       "type": "object",
-      "additionalProperties": true,
-      "required": ["id"],
-      "anyOf": [
-        { "required": ["requirements"] },
-        { "required": ["controls"] }
-      ],
+      "unevaluatedProperties": false,
+      "required": ["id", "requirements"],
       "properties": {
         "id": {
           "type": "string",
@@ -33,13 +29,6 @@
             "type": "string"
           },
           "description": "The set of requirements as specified by their ids in this group. Example: 'SV-238196'."
-        },
-        "controls": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Deprecated: use 'requirements' instead. The set of controls as specified by their ids in this group."
         }
       },
       "description": "Describes a group of requirements, such as those defined in a single file.",
@@ -47,7 +36,7 @@
     },
     "Dependency": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": [],
       "properties": {
         "name": {
@@ -131,7 +120,7 @@
     },
     "Source_Location": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": [],
       "properties": {
         "ref": {
@@ -148,14 +137,14 @@
     },
     "Supported_Platform": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": [],
       "properties": {
-        "platform-family": {
+        "platformFamily": {
           "type": ["string", "null"],
           "description": "The platform family. Example: 'redhat'."
         },
-        "platform-name": {
+        "platformName": {
           "type": ["string", "null"],
           "description": "The platform name - can include wildcards. Example: 'debian'."
         },
@@ -166,14 +155,6 @@
         "release": {
           "type": ["string", "null"],
           "description": "The release of the platform. Example: '20.04' for 'ubuntu'."
-        },
-        "os-family": {
-          "type": ["string", "null"],
-          "description": "Deprecated in favor of platform-family."
-        },
-        "os-name": {
-          "type": ["string", "null"],
-          "description": "Deprecated in favor of platform-name."
         }
       },
       "description": "A supported platform target. Example: the platform name being 'ubuntu'.",
@@ -181,7 +162,7 @@
     },
     "Checksum": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": ["algorithm", "value"],
       "properties": {
         "algorithm": {

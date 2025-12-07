@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v1.0.0",
   "type": "object",
-  "additionalProperties": true,
+  "unevaluatedProperties": false,
   "required": ["baselines", "statistics"],
   "properties": {
     "id": {
@@ -53,6 +53,11 @@
         { "type": "null" }
       ],
       "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Reserved for tool-specific data not defined in the HDF standard. Use this to preserve original tool output, auxiliary data, or custom metadata."
     }
   },
   "description": "The top level value containing all assessment results.",
@@ -60,7 +65,7 @@
   "$defs": {
     "Evaluated_Baseline": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": ["name", "supports", "attributes", "groups", "requirements", "checksum"],
       "properties": {
         "name": {
@@ -159,6 +164,11 @@
             "description": "An input or attribute used in the run."
           },
           "description": "The input(s) or attribute(s) used in the run."
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Reserved for tool-specific baseline metadata not defined in the HDF standard."
         }
       },
       "description": "Information on a baseline that was evaluated, including any findings.",
@@ -166,7 +176,7 @@
     },
     "Evaluated_Requirement": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": ["id", "impact", "tags", "sourceLocation", "results", "descriptions"],
       "properties": {
         "id": {

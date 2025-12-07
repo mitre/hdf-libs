@@ -6,7 +6,7 @@
   "$defs": {
     "Statistic_Block": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": ["total"],
       "properties": {
         "total": {
@@ -19,7 +19,7 @@
     },
     "Statistic_Hash": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": [],
       "properties": {
         "passed": {
@@ -70,7 +70,7 @@
     },
     "Statistics": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": [],
       "properties": {
         "duration": {

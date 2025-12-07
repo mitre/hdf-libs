@@ -12,7 +12,7 @@
     },
     "Requirement_Result": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": ["codeDesc", "startTime"],
       "properties": {
         "status": {
@@ -70,7 +70,7 @@
     },
     "Requirement_Description": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": ["label", "data"],
       "properties": {
         "label": {

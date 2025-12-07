@@ -4,7 +4,7 @@ import {
   createAjvWithPrimitives,
   loadSchema,
   createMinimalBaselineDoc,
-  createMinimalBaselineControl,
+  createMinimalBaselineRequirement,
 } from './setup';
 
 describe('hdf-baseline.schema.json (refactored)', () => {
@@ -101,19 +101,19 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate(createMinimalBaselineDoc())).toBe(true);
     });
 
-    it('should accept supported platform with platform-name', () => {
-      const doc = createMinimalBaselineDoc({ supports: [{ 'platform-name': 'ubuntu' }] });
+    it('should accept supported platform with platformName', () => {
+      const doc = createMinimalBaselineDoc({ supports: [{ platformName: 'ubuntu' }] });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept supported platform with platform-family', () => {
-      const doc = createMinimalBaselineDoc({ supports: [{ 'platform-family': 'debian' }] });
+    it('should accept supported platform with platformFamily', () => {
+      const doc = createMinimalBaselineDoc({ supports: [{ platformFamily: 'debian' }] });
       expect(validate(doc)).toBe(true);
     });
 
     it('should accept supported platform with release', () => {
       const doc = createMinimalBaselineDoc({
-        supports: [{ 'platform-name': 'ubuntu', release: '20.04' }],
+        supports: [{ platformName: 'ubuntu', release: '20.04' }],
       });
       expect(validate(doc)).toBe(true);
     });
@@ -132,13 +132,6 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept group with controls field (legacy format)', () => {
-      const doc = createMinimalBaselineDoc({
-        groups: [{ id: 'controls/ssh.rb', controls: ['SV-238196', 'SV-238197'] }],
-      });
-      expect(validate(doc)).toBe(true);
-    });
-
     it('should accept group with title', () => {
       const doc = createMinimalBaselineDoc({
         groups: [{ id: 'controls/ssh.rb', title: 'SSH Configuration', requirements: ['SV-238196'] }],
@@ -149,16 +142,15 @@ describe('hdf-baseline.schema.json (refactored)', () => {
 
   describe('requirements array (Baseline_Requirement)', () => {
     it('should validate requirement with minimal required fields', () => {
-      const doc = createMinimalBaselineDoc({ requirements: [createMinimalBaselineControl()] });
+      const doc = createMinimalBaselineDoc({ requirements: [createMinimalBaselineRequirement()] });
       expect(validate(doc)).toBe(true);
     });
 
     it('should validate requirement with full metadata', () => {
       const doc = createMinimalBaselineDoc({
         requirements: [
-          createMinimalBaselineControl({
+          createMinimalBaselineRequirement({
             title: 'SSH MaxAuthTries must be set to 4 or less',
-            desc: 'The SSH server must limit authentication attempts.',
             refs: [{ url: 'https://nvd.nist.gov/vuln/detail/CVE-2021-1234' }],
             tags: { severity: 'medium', cci: ['CCI-000044'] },
             sourceLocation: { ref: 'controls/ssh.rb', line: 15 },
@@ -171,7 +163,7 @@ describe('hdf-baseline.schema.json (refactored)', () => {
     it('should validate requirement with descriptions array', () => {
       const doc = createMinimalBaselineDoc({
         requirements: [
-          createMinimalBaselineControl({
+          createMinimalBaselineRequirement({
             descriptions: [
               { label: 'default', data: 'SSH authentication must be configured properly' },
               { label: 'fix', data: 'Set MaxAuthTries to 4 in /etc/ssh/sshd_config' },
@@ -185,17 +177,17 @@ describe('hdf-baseline.schema.json (refactored)', () => {
 
     it('should validate requirement with impact at boundaries', () => {
       expect(validate(createMinimalBaselineDoc({
-        requirements: [createMinimalBaselineControl({ impact: 0.0 })],
+        requirements: [createMinimalBaselineRequirement({ impact: 0.0 })],
       }))).toBe(true);
 
       expect(validate(createMinimalBaselineDoc({
-        requirements: [createMinimalBaselineControl({ impact: 1.0 })],
+        requirements: [createMinimalBaselineRequirement({ impact: 1.0 })],
       }))).toBe(true);
     });
 
     it('should reject requirement with impact out of range', () => {
       const doc = createMinimalBaselineDoc({
-        requirements: [createMinimalBaselineControl({ impact: 1.5 })],
+        requirements: [createMinimalBaselineRequirement({ impact: 1.5 })],
       });
       expect(validate(doc)).toBe(false);
     });
@@ -251,7 +243,7 @@ describe('hdf-baseline.schema.json (refactored)', () => {
         copyright: 'ACME Corporation',
         license: 'Apache-2.0',
         version: '1.0.0',
-        supports: [{ 'platform-name': 'ubuntu' }],
+        supports: [{ 'platformName': 'ubuntu' }],
         controls: [
           {
             id: 'SV-238196',

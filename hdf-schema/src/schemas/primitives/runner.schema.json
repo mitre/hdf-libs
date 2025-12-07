@@ -6,7 +6,7 @@
   "$defs": {
     "Runner": {
       "type": "object",
-      "additionalProperties": true,
+      "unevaluatedProperties": false,
       "required": ["name"],
       "properties": {
         "name": {

@@ -6,7 +6,7 @@ import {
   loadFixture,
   createMinimalResultsDoc,
   createMinimalEvaluatedBaseline,
-  createMinimalControl,
+  createMinimalRequirement,
   createMinimalResult,
 } from './setup';
 
@@ -78,6 +78,46 @@ describe('hdf-results.schema.json (refactored)', () => {
     });
   });
 
+  describe('extensions field (for tool-specific data)', () => {
+    it('should accept extensions field with arbitrary data', () => {
+      const doc = createMinimalResultsDoc({
+        extensions: {
+          auxiliary_data: [
+            {
+              name: 'SonarQube',
+              data: { projectKey: 'my-app', version: '1.0.0' }
+            }
+          ]
+        }
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept extensions with raw tool output', () => {
+      const doc = createMinimalResultsDoc({
+        extensions: {
+          raw: { original: 'tool output here' },
+          custom_field: 'any value'
+        }
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept empty extensions object', () => {
+      const doc = createMinimalResultsDoc({
+        extensions: {}
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject invalid top-level custom fields', () => {
+      const doc = createMinimalResultsDoc({});
+      (doc as any).invalid_custom_field = 'should be rejected';
+      expect(validate(doc)).toBe(false);
+      expect(validate.errors).not.toBeNull();
+    });
+  });
+
   describe('targets array (new field)', () => {
     it('should accept empty targets array', () => {
       expect(validate(createMinimalResultsDoc({ targets: [] }))).toBe(true);
@@ -92,14 +132,14 @@ describe('hdf-results.schema.json (refactored)', () => {
 
     it('should accept container_image target', () => {
       const doc = createMinimalResultsDoc({
-        targets: [{ type: 'containerImage', name: 'nginx:latest', image_id: 'sha256:abc123' }],
+        targets: [{ type: 'containerImage', name: 'nginx:latest', imageId: 'sha256:abc123' }],
       });
       expect(validate(doc)).toBe(true);
     });
 
     it('should accept cloud_account target', () => {
       const doc = createMinimalResultsDoc({
-        targets: [{ type: 'cloudAccount', name: 'prod-aws', provider: 'aws', account_id: '123456789012' }],
+        targets: [{ type: 'cloudAccount', name: 'prod-aws', provider: 'aws', accountId: '123456789012' }],
       });
       expect(validate(doc)).toBe(true);
     });
@@ -108,7 +148,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         targets: [
           { type: 'host', name: 'server-01' },
-          { type: 'containerImage', name: 'app:v1', image_id: 'sha256:xyz' },
+          { type: 'containerImage', name: 'app:v1', imageId: 'sha256:xyz' },
           { type: 'database', name: 'prod-db', engine: 'postgresql' },
         ],
       });
@@ -177,18 +217,32 @@ describe('hdf-results.schema.json (refactored)', () => {
       });
       expect(validate(doc)).toBe(true);
     });
+
+    it('should accept extensions field on baseline', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            extensions: {
+              profile_metadata: { original_format: 'InSpec' },
+              custom_data: 'any value'
+            }
+          })
+        ]
+      });
+      expect(validate(doc)).toBe(true);
+    });
   });
 
   describe('requirements array (Evaluated_Requirement)', () => {
-    it('should validate control with minimal required fields', () => {
+    it('should validate requirement with minimal required fields', () => {
       const doc = createMinimalResultsDoc({
-        baselines: [createMinimalEvaluatedBaseline({ requirements: [createMinimalControl()] })],
+        baselines: [createMinimalEvaluatedBaseline({ requirements: [createMinimalRequirement()] })],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should reject control without descriptions array', () => {
-      const control = {
+    it('should reject requirement without descriptions array', () => {
+      const requirement = {
         id: 'SV-238196',
         impact: 0.7,
         tags: {},
@@ -197,7 +251,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         // Missing descriptions array
       };
       const doc = createMinimalResultsDoc({
-        baselines: [createMinimalEvaluatedBaseline({ requirements: [control] })],
+        baselines: [createMinimalEvaluatedBaseline({ requirements: [requirement] })],
       });
       expect(validate(doc)).toBe(false);
       expect(validate.errors).toMatchObject([
@@ -208,10 +262,10 @@ describe('hdf-results.schema.json (refactored)', () => {
       ]);
     });
 
-    it('should reject control with empty descriptions array', () => {
-      const control = createMinimalControl({ descriptions: [] });
+    it('should reject requirement with empty descriptions array', () => {
+      const requirement = createMinimalRequirement({ descriptions: [] });
       const doc = createMinimalResultsDoc({
-        baselines: [createMinimalEvaluatedBaseline({ requirements: [control] })],
+        baselines: [createMinimalEvaluatedBaseline({ requirements: [requirement] })],
       });
       expect(validate(doc)).toBe(false);
       expect(validate.errors).toBeDefined();
@@ -219,18 +273,18 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate.errors?.[0].message).toMatch(/must NOT have fewer than 1 items/i);
     });
 
-    it('should validate control with descriptions array containing default label', () => {
-      const control = createMinimalControl({
+    it('should validate requirement with descriptions array containing default label', () => {
+      const requirement = createMinimalRequirement({
         descriptions: [{ label: 'default', data: 'This is the main description' }],
       });
       const doc = createMinimalResultsDoc({
-        baselines: [createMinimalEvaluatedBaseline({ requirements: [control] })],
+        baselines: [createMinimalEvaluatedBaseline({ requirements: [requirement] })],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with multiple labeled descriptions', () => {
-      const control = createMinimalControl({
+    it('should validate requirement with multiple labeled descriptions', () => {
+      const requirement = createMinimalRequirement({
         descriptions: [
           { label: 'default', data: 'Main vulnerability discussion' },
           { label: 'check', data: 'Verification steps...' },
@@ -239,13 +293,13 @@ describe('hdf-results.schema.json (refactored)', () => {
         ],
       });
       const doc = createMinimalResultsDoc({
-        baselines: [createMinimalEvaluatedBaseline({ requirements: [control] })],
+        baselines: [createMinimalEvaluatedBaseline({ requirements: [requirement] })],
       });
       expect(validate(doc)).toBe(true);
     });
 
     it('should validate custom description labels', () => {
-      const control = createMinimalControl({
+      const requirement = createMinimalRequirement({
         descriptions: [
           { label: 'default', data: 'Main description' },
           { label: 'custom_label', data: 'Tool-specific description' },
@@ -253,48 +307,48 @@ describe('hdf-results.schema.json (refactored)', () => {
         ],
       });
       const doc = createMinimalResultsDoc({
-        baselines: [createMinimalEvaluatedBaseline({ requirements: [control] })],
+        baselines: [createMinimalEvaluatedBaseline({ requirements: [requirement] })],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control without refs (refs is optional)', () => {
-      const control = createMinimalControl();
-      expect(control).not.toHaveProperty('refs');
+    it('should validate requirement without refs (refs is optional)', () => {
+      const requirement = createMinimalRequirement();
+      expect(requirement).not.toHaveProperty('refs');
       const doc = createMinimalResultsDoc({
-        baselines: [createMinimalEvaluatedBaseline({ requirements: [control] })],
+        baselines: [createMinimalEvaluatedBaseline({ requirements: [requirement] })],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with refs array', () => {
+    it('should validate requirement with refs array', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
-            requirements: [createMinimalControl({ refs: [{ url: 'https://example.com' }] })],
+            requirements: [createMinimalRequirement({ refs: [{ url: 'https://example.com' }] })],
           }),
         ],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with null refs', () => {
+    it('should validate requirement with null refs', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
-            requirements: [createMinimalControl({ refs: null })],
+            requirements: [createMinimalRequirement({ refs: null })],
           }),
         ],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with effectiveStatus field', () => {
+    it('should validate requirement with effectiveStatus field', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
-              createMinimalControl({
+              createMinimalRequirement({
                 results: [createMinimalResult({ status: 'failed' })],
                 effectiveStatus: 'notApplicable',
               }),
@@ -305,12 +359,12 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with single waiver override', () => {
+    it('should validate requirement with single waiver override', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
-              createMinimalControl({
+              createMinimalRequirement({
                 results: [createMinimalResult({ status: 'failed' })],
                 overrides: [
                   {
@@ -331,12 +385,12 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with single attestation override', () => {
+    it('should validate requirement with single attestation override', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
-              createMinimalControl({
+              createMinimalRequirement({
                 results: [createMinimalResult({ status: 'notReviewed' })],
                 overrides: [
                   {
@@ -357,12 +411,12 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with multiple overrides (chronological history)', () => {
+    it('should validate requirement with multiple overrides (chronological history)', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
-              createMinimalControl({
+              createMinimalRequirement({
                 results: [createMinimalResult({ status: 'failed' })],
                 overrides: [
                   // Most recent override first
@@ -393,12 +447,12 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with override containing digital signature', () => {
+    it('should validate requirement with override containing digital signature', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
-              createMinimalControl({
+              createMinimalRequirement({
                 results: [createMinimalResult({ status: 'failed' })],
                 overrides: [
                   {
@@ -420,11 +474,11 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate control with severity field', () => {
+    it('should validate requirement with severity field', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
-            requirements: [createMinimalControl({ severity: 'high' })],
+            requirements: [createMinimalRequirement({ severity: 'high' })],
           }),
         ],
       });
@@ -437,7 +491,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         const doc = createMinimalResultsDoc({
           baselines: [
             createMinimalEvaluatedBaseline({
-              requirements: [createMinimalControl({ severity })],
+              requirements: [createMinimalRequirement({ severity })],
             }),
           ],
         });
@@ -449,7 +503,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
-            requirements: [createMinimalControl({ severity: 'unknown' })],
+            requirements: [createMinimalRequirement({ severity: 'unknown' })],
           }),
         ],
       });
@@ -462,7 +516,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
-            requirements: [createMinimalControl({ results: [createMinimalResult()] })],
+            requirements: [createMinimalRequirement({ results: [createMinimalResult()] })],
           }),
         ],
       });
@@ -475,7 +529,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         const doc = createMinimalResultsDoc({
           baselines: [
             createMinimalEvaluatedBaseline({
-              requirements: [createMinimalControl({ results: [createMinimalResult({ status })] })],
+              requirements: [createMinimalRequirement({ results: [createMinimalResult({ status })] })],
             }),
           ],
         });
@@ -487,7 +541,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
-            requirements: [createMinimalControl({ results: [createMinimalResult({ status: 'skipped' })] })],
+            requirements: [createMinimalRequirement({ results: [createMinimalResult({ status: 'skipped' })] })],
           }),
         ],
       });
@@ -500,7 +554,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
-            requirements: [createMinimalControl({ results: [createMinimalResult({ status: 'unknown' })] })],
+            requirements: [createMinimalRequirement({ results: [createMinimalResult({ status: 'unknown' })] })],
           }),
         ],
       });
@@ -512,14 +566,14 @@ describe('hdf-results.schema.json (refactored)', () => {
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
-              createMinimalControl({
+              createMinimalRequirement({
                 results: [
                   createMinimalResult({
                     status: 'failed',
                     runTime: 0.023,
                     message: 'expected "MaxAuthTries 6" to match /MaxAuthTries\\s+4/',
                     resource: 'file',
-                    resource_id: '/etc/ssh/sshd_config',
+                    resourceId: '/etc/ssh/sshd_config',
                     }),
                 ],
               }),
@@ -553,12 +607,12 @@ describe('hdf-results.schema.json (refactored)', () => {
     // NOTE: v1 files must be converted
     it.skip('should accept legacy InSpec output structure (inline) - REQUIRES CONVERTER', () => {
       const legacyDoc = {
-        platform: { name: 'ubuntu', release: '20.04', target_id: 'web-server-01' },
+        platform: { name: 'ubuntu', release: '20.04', targetId: 'web-server-01' },
         profiles: [
           {
             name: 'ubuntu-stig-baseline',
             sha256: 'abc123',
-            supports: [{ 'platform-name': 'ubuntu' }],
+            supports: [{ platformName: 'ubuntu' }],
             attributes: [{ name: 'input_var', options: { value: 'test' } }],
             groups: [{ id: 'controls/ssh.rb', controls: ['SV-238196'] }],
             controls: [
