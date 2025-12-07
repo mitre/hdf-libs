@@ -44,11 +44,7 @@
         },
         "message": {
           "type": ["string", "null"],
-          "description": "An explanation of the test status - usually only provided when the test fails."
-        },
-        "skipMessage": {
-          "type": ["string", "null"],
-          "description": "An explanation of why the test was not reviewed or not applicable."
+          "description": "An explanation of the test result. Typically provided for failed tests, errors, or to explain why a test was not applicable or not reviewed."
         },
         "exception": {
           "type": ["string", "null"],
