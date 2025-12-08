@@ -1130,6 +1130,89 @@ describe('Primitive Schema Validation', () => {
       };
       expect(validate(invalid)).toBe(false);
     });
+
+    it('should validate runner with operator (automated system)', () => {
+      const valid = {
+        name: 'ubuntu',
+        release: '20.04',
+        operator: {
+          identifier: 'jenkins-ci-pipeline',
+          type: 'system',
+        },
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate runner with operator (human)', () => {
+      const valid = {
+        name: 'ubuntu',
+        operator: {
+          identifier: 'jdoe@example.com',
+          type: 'email',
+        },
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate runner with operator (simple manual assessment)', () => {
+      const valid = {
+        name: 'manual',
+        operator: {
+          identifier: 'John Doe - Manual DISA Checklist Review',
+          type: 'simple',
+          description: 'Human auditor completing DISA checklist by hand',
+        },
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate runner without operator field', () => {
+      const valid = {
+        name: 'ubuntu',
+        release: '20.04',
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate runner with containerImage', () => {
+      const valid = {
+        name: 'docker',
+        containerImage: 'inspec/inspec:latest',
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate runner with containerId', () => {
+      const valid = {
+        name: 'docker',
+        containerImage: 'inspec/inspec:5.22.3',
+        containerId: 'a1b2c3d4e5f6',
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate runner with full container details', () => {
+      const valid = {
+        name: 'kubernetes-pod',
+        containerImage: 'ghcr.io/my-org/security-scanner:v2.1.0',
+        containerId: 'security-scan-job-xyz123',
+        hostname: 'k8s-node-worker-03',
+        architecture: 'arm64',
+        operator: {
+          identifier: 'github-actions-ci',
+          type: 'system',
+        },
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate containerId without containerImage', () => {
+      const valid = {
+        name: 'docker',
+        containerId: 'running-container-123',
+      };
+      expect(validate(valid)).toBe(true);
+    });
   });
 
   describe('statistics.schema.json', () => {
