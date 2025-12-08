@@ -729,6 +729,98 @@ describe('Primitive Schema Validation', () => {
         expect(validate(invalid)).toBe(false);
       });
     });
+
+    describe('Milestone', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone',
+      });
+
+      it('should validate minimal pending milestone', () => {
+        const valid = {
+          description: 'Test patch in staging environment',
+          estimatedCompletion: '2025-12-15T00:00:00Z',
+          status: 'pending',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate in-progress milestone', () => {
+        const valid = {
+          description: 'Deploy security patch to production',
+          estimatedCompletion: '2025-01-10T00:00:00Z',
+          status: 'inProgress',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate completed milestone with all fields', () => {
+        const valid = {
+          description: 'Implement network segmentation',
+          estimatedCompletion: '2025-01-01T00:00:00Z',
+          status: 'completed',
+          completedAt: '2025-01-05T14:30:00Z',
+          completedBy: {
+            identifier: 'ops-team@example.com',
+            type: 'email',
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate completed milestone with null completedBy', () => {
+        const valid = {
+          description: 'Review compliance status',
+          estimatedCompletion: '2025-01-01T00:00:00Z',
+          status: 'completed',
+          completedAt: '2025-01-02T10:00:00Z',
+          completedBy: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject milestone missing required description', () => {
+        const invalid = {
+          estimatedCompletion: '2025-01-01T00:00:00Z',
+          status: 'pending',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject milestone missing required estimatedCompletion', () => {
+        const invalid = {
+          description: 'Test milestone',
+          status: 'pending',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject milestone missing required status', () => {
+        const invalid = {
+          description: 'Test milestone',
+          estimatedCompletion: '2025-01-01T00:00:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject milestone with invalid status', () => {
+        const invalid = {
+          description: 'Test milestone',
+          estimatedCompletion: '2025-01-01T00:00:00Z',
+          status: 'cancelled', // invalid - not in enum
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject milestone with extra unevaluated properties', () => {
+        const invalid = {
+          description: 'Test milestone',
+          estimatedCompletion: '2025-01-01T00:00:00Z',
+          status: 'pending',
+          extraField: 'not allowed',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
   });
 
   describe('platform.schema.json', () => {
@@ -1321,7 +1413,10 @@ describe('Primitive Schema Validation', () => {
           type: 'waiver',
           status: 'notApplicable',
           reason: 'Risk accepted by ISSO pending system upgrade',
-          appliedBy: 'isso@example.com',
+          appliedBy: {
+            identifier: 'isso@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-05T20:30:00Z',
           expiresAt: '2026-12-05T20:30:00Z',
         };
@@ -1333,7 +1428,10 @@ describe('Primitive Schema Validation', () => {
           type: 'attestation',
           status: 'passed',
           reason: 'Manually verified by security team during audit',
-          appliedBy: 'security-team@example.com',
+          appliedBy: {
+            identifier: 'security-team@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-05T15:30:00Z',
           expiresAt: '2026-12-05T15:30:00Z',
         };
@@ -1347,7 +1445,10 @@ describe('Primitive Schema Validation', () => {
             type: 'attestation',
             status,
             reason: 'Test override',
-            appliedBy: 'test@example.com',
+            appliedBy: {
+            identifier: 'test@example.com',
+            type: 'simple',
+          },
             appliedAt: '2025-12-05T20:30:00Z',
             expiresAt: '2026-12-05T20:30:00Z',
           };
@@ -1360,7 +1461,10 @@ describe('Primitive Schema Validation', () => {
           type: 'waiver',
           status: 'notApplicable',
           reason: 'Test',
-          appliedBy: 'test@example.com',
+          appliedBy: {
+            identifier: 'test@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-05T20:30:00Z',
           // missing: expiresAt
         };
@@ -1372,7 +1476,10 @@ describe('Primitive Schema Validation', () => {
           type: 'waiver',
           status: 'notApplicable',
           reason: 'Test',
-          appliedBy: 'test@example.com',
+          appliedBy: {
+            identifier: 'test@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-05T20:30:00Z',
           expiresAt: null,
         };
@@ -1392,7 +1499,10 @@ describe('Primitive Schema Validation', () => {
           type: 'exception', // invalid - not a status override type
           status: 'failed',
           reason: 'Test',
-          appliedBy: 'test@example.com',
+          appliedBy: {
+            identifier: 'test@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-05T20:30:00Z',
           expiresAt: '2026-12-05T20:30:00Z',
         };
@@ -1404,7 +1514,10 @@ describe('Primitive Schema Validation', () => {
           type: 'waiver',
           status: 'skipped', // invalid - skipped was removed
           reason: 'Test',
-          appliedBy: 'test@example.com',
+          appliedBy: {
+            identifier: 'test@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-05T20:30:00Z',
           expiresAt: '2026-12-05T20:30:00Z',
         };
@@ -1416,7 +1529,10 @@ describe('Primitive Schema Validation', () => {
           type: 'attestation',
           status: 'passed',
           reason: 'Manually verified configuration is compliant',
-          appliedBy: 'security-team@example.com',
+          appliedBy: {
+            identifier: 'security-team@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-07T15:30:00Z',
           expiresAt: '2026-12-07T15:30:00Z',
           evidence: [
@@ -1435,7 +1551,10 @@ describe('Primitive Schema Validation', () => {
           type: 'attestation',
           status: 'passed',
           reason: 'Manual verification with documented evidence',
-          appliedBy: 'auditor@example.com',
+          appliedBy: {
+            identifier: 'auditor@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-07T15:30:00Z',
           expiresAt: '2026-12-07T15:30:00Z',
           evidence: [
@@ -1473,7 +1592,10 @@ describe('Primitive Schema Validation', () => {
           type: 'waiver',
           status: 'notApplicable',
           reason: 'Control not applicable to this system',
-          appliedBy: 'isso@example.com',
+          appliedBy: {
+            identifier: 'isso@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-07T15:30:00Z',
           expiresAt: '2026-12-07T15:30:00Z',
           evidence: null,
@@ -1486,7 +1608,10 @@ describe('Primitive Schema Validation', () => {
           type: 'attestation',
           status: 'passed',
           reason: 'Verified but no evidence captured',
-          appliedBy: 'auditor@example.com',
+          appliedBy: {
+            identifier: 'auditor@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-07T15:30:00Z',
           expiresAt: '2026-12-07T15:30:00Z',
           evidence: [],
@@ -1499,7 +1624,10 @@ describe('Primitive Schema Validation', () => {
           type: 'waiver',
           status: 'notApplicable',
           reason: 'Risk accepted by CISO',
-          appliedBy: 'ciso@example.com',
+          appliedBy: {
+            identifier: 'ciso@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-07T15:30:00Z',
           expiresAt: '2027-12-07T15:30:00Z',
           signature: {
@@ -1530,7 +1658,10 @@ describe('Primitive Schema Validation', () => {
           type: 'attestation',
           status: 'passed',
           reason: 'Manually verified with hardware token',
-          appliedBy: 'security-auditor@example.com',
+          appliedBy: {
+            identifier: 'security-auditor@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-07T15:30:00Z',
           expiresAt: '2026-12-07T15:30:00Z',
           signature: {
@@ -1558,7 +1689,10 @@ describe('Primitive Schema Validation', () => {
           type: 'waiver',
           status: 'notApplicable',
           reason: 'Exception granted by security team',
-          appliedBy: 'gpg:ABCD1234EFGH5678',
+          appliedBy: {
+            identifier: 'gpg:ABCD1234EFGH5678',
+            type: 'simple',
+          },
           appliedAt: '2025-12-07T15:30:00Z',
           expiresAt: '2026-12-07T15:30:00Z',
           signature: {
@@ -1586,7 +1720,10 @@ describe('Primitive Schema Validation', () => {
           type: 'attestation',
           status: 'passed',
           reason: 'Verified in secure environment',
-          appliedBy: 'security-team@example.com',
+          appliedBy: {
+            identifier: 'security-team@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-07T15:30:00Z',
           expiresAt: '2026-12-07T15:30:00Z',
           signature: {
@@ -1615,10 +1752,44 @@ describe('Primitive Schema Validation', () => {
           type: 'waiver',
           status: 'notApplicable',
           reason: 'Not applicable to this system',
-          appliedBy: 'isso@example.com',
+          appliedBy: {
+            identifier: 'isso@example.com',
+            type: 'simple',
+          },
           appliedAt: '2025-12-07T15:30:00Z',
           expiresAt: '2026-12-07T15:30:00Z',
           signature: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate override with appliedBy as Identity object', () => {
+        const valid = {
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'Risk accepted by ISSO',
+          appliedBy: {
+            identifier: 'isso@example.com',
+            type: 'email',
+            description: 'Information System Security Officer',
+          },
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2026-12-07T15:30:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate override with appliedBy as simple string', () => {
+        const valid = {
+          type: 'attestation',
+          status: 'passed',
+          reason: 'Manually verified',
+          appliedBy: {
+            identifier: 'auditor@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2026-12-07T15:30:00Z',
         };
         expect(validate(valid)).toBe(true);
       });
@@ -1655,6 +1826,216 @@ describe('Primitive Schema Validation', () => {
       it('should reject Generator missing required version', () => {
         const invalid = {
           name: 'SomeTool',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('POAM', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/POAM',
+      });
+
+      it('should validate minimal remediation POAM', () => {
+        const valid = {
+          type: 'remediation',
+          explanation: 'Security patch scheduled for deployment to production environment',
+          appliedBy: {
+            identifier: 'ops-team@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-01T10:00:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate mitigation POAM with milestones', () => {
+        const valid = {
+          type: 'mitigation',
+          explanation: 'Implemented network segmentation as compensating control while awaiting vendor patch',
+          appliedBy: {
+            identifier: 'network-team@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-01T10:00:00Z',
+          milestones: [
+            {
+              description: 'Configure firewall rules to isolate affected system',
+              estimatedCompletion: '2025-12-05T00:00:00Z',
+              status: 'completed',
+              completedAt: '2025-12-04T14:30:00Z',
+              completedBy: {
+                identifier: 'network-admin@example.com',
+                type: 'email',
+              },
+            },
+            {
+              description: 'Deploy vendor patch when available',
+              estimatedCompletion: '2026-01-15T00:00:00Z',
+              status: 'pending',
+            },
+          ],
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate riskAcceptance POAM with signature', () => {
+        const valid = {
+          type: 'riskAcceptance',
+          explanation: 'Risk formally accepted by CISO pending system decommission in Q2',
+          appliedBy: {
+            identifier: 'ciso@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-07T10:00:00Z',
+          expiresAt: '2026-06-30T00:00:00Z',
+          signature: {
+            type: 'JsonWebSignature2020',
+            created: '2025-12-07T10:00:00Z',
+            creator: {
+              identifier: 'ciso@example.com',
+              type: 'email',
+            },
+            signatureValue: 'base64-signature-value',
+            proofPurpose: 'attestation',
+            verificationMethod: {
+              type: 'JsonWebKey2020',
+              controller: 'did:example:ciso',
+              publicKeyJwk: {
+                kty: 'RSA',
+                n: 'exampleKey',
+              },
+            },
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate POAM with evidence array', () => {
+        const valid = {
+          type: 'mitigation',
+          explanation: 'Compensating controls implemented - network segmentation and enhanced monitoring',
+          appliedBy: {
+            identifier: 'security-team@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-07T10:00:00Z',
+          evidence: [
+            {
+              type: 'file',
+              data: 'base64-firewall-rules',
+              description: 'Firewall configuration showing network segmentation',
+              mimeType: 'text/plain',
+            },
+            {
+              type: 'screenshot',
+              data: 'base64-screenshot',
+              description: 'SIEM dashboard showing enhanced monitoring',
+              mimeType: 'image/png',
+            },
+          ],
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate POAM with expiresAt', () => {
+        const valid = {
+          type: 'remediation',
+          explanation: 'Patch deployment requires change control approval',
+          appliedBy: {
+            identifier: 'ops@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-01T10:00:00Z',
+          expiresAt: '2025-12-31T00:00:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate POAM with null expiresAt', () => {
+        const valid = {
+          type: 'remediation',
+          explanation: 'Long-term remediation effort with no fixed deadline',
+          appliedBy: {
+            identifier: 'ops@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-01T10:00:00Z',
+          expiresAt: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate POAM with null milestones', () => {
+        const valid = {
+          type: 'remediation',
+          explanation: 'Simple remediation with no milestone tracking',
+          appliedBy: {
+            identifier: 'ops@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-01T10:00:00Z',
+          milestones: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject POAM missing required explanation', () => {
+        const invalid = {
+          type: 'remediation',
+          appliedBy: {
+            identifier: 'ops@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-01T10:00:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject POAM missing required appliedBy', () => {
+        const invalid = {
+          type: 'remediation',
+          explanation: 'Test',
+          appliedAt: '2025-12-01T10:00:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject POAM missing required appliedAt', () => {
+        const invalid = {
+          type: 'remediation',
+          explanation: 'Test',
+          appliedBy: {
+            identifier: 'ops@example.com',
+            type: 'simple',
+          },
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject POAM with invalid type', () => {
+        const invalid = {
+          type: 'exception', // invalid - not a POAM type
+          explanation: 'Test',
+          appliedBy: {
+            identifier: 'ops@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-01T10:00:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject POAM with extra unevaluated properties', () => {
+        const invalid = {
+          type: 'remediation',
+          explanation: 'Test',
+          appliedBy: {
+            identifier: 'ops@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-01T10:00:00Z',
+          extraField: 'not allowed',
         };
         expect(validate(invalid)).toBe(false);
       });
