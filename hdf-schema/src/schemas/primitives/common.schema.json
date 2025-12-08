@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0",
   "title": "HDF Common Primitives",
   "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
   "$defs": {
@@ -188,8 +188,8 @@
         },
         "type": {
           "type": "string",
-          "enum": ["email", "username", "system", "other"],
-          "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for automated systems, or 'other' for custom identity systems."
+          "enum": ["email", "username", "system", "simple", "other"],
+          "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for automated systems, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
         },
         "description": {
           "type": ["string", "null"],
@@ -280,6 +280,39 @@
       },
       "description": "Verification method containing the public key needed to verify a digital signature. Supports multiple key formats including JWK (for RSA, EC), PEM, and Base58.",
       "title": "Verification Method"
+    },
+    "Milestone": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["description", "estimatedCompletion", "status"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Description of this milestone or task."
+        },
+        "estimatedCompletion": {
+          "type": "string",
+          "description": "Estimated completion date. ISO 8601 format."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "inProgress", "completed"],
+          "description": "Current status of this milestone."
+        },
+        "completedAt": {
+          "type": ["string", "null"],
+          "description": "Actual completion timestamp. ISO 8601 format."
+        },
+        "completedBy": {
+          "anyOf": [
+            { "$ref": "#/$defs/Identity" },
+            { "type": "null" }
+          ],
+          "description": "Identity of who completed this milestone."
+        }
+      },
+      "description": "A milestone or task within a POA&M remediation plan.",
+      "title": "Milestone"
     },
     "Signature": {
       "type": "object",

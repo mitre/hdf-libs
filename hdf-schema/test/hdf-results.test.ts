@@ -366,12 +366,15 @@ describe('hdf-results.schema.json (refactored)', () => {
             requirements: [
               createMinimalRequirement({
                 results: [createMinimalResult({ status: 'failed' })],
-                overrides: [
+                statusOverrides: [
                   {
                     type: 'waiver',
                     status: 'notApplicable',
                     reason: 'Compensating controls in place',
-                    appliedBy: 'isso@example.com',
+                    appliedBy: {
+            identifier: 'isso@example.com',
+            type: 'simple',
+          },
                     appliedAt: '2025-12-05T10:00:00Z',
                     expiresAt: '2026-12-05T10:00:00Z',
                   },
@@ -385,19 +388,22 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate requirement with single attestation override', () => {
+    it('should validate requirement with single attestation status override', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
               createMinimalRequirement({
                 results: [createMinimalResult({ status: 'notReviewed' })],
-                overrides: [
+                statusOverrides: [
                   {
                     type: 'attestation',
                     status: 'passed',
                     reason: 'Manually verified by security team during audit',
-                    appliedBy: 'security-team@example.com',
+                    appliedBy: {
+            identifier: 'security-team@example.com',
+            type: 'simple',
+          },
                     appliedAt: '2025-11-25T15:30:00Z',
                     expiresAt: '2026-11-25T15:30:00Z',
                   },
@@ -411,20 +417,23 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate requirement with multiple overrides (chronological history)', () => {
+    it('should validate requirement with multiple status overrides (chronological history)', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
               createMinimalRequirement({
                 results: [createMinimalResult({ status: 'failed' })],
-                overrides: [
+                statusOverrides: [
                   // Most recent override first
                   {
                     type: 'attestation',
                     status: 'failed',
                     reason: 'Re-evaluated, confirmed failure',
-                    appliedBy: 'auditor@example.com',
+                    appliedBy: {
+            identifier: 'auditor@example.com',
+            type: 'simple',
+          },
                     appliedAt: '2025-12-10T14:00:00Z',
                     expiresAt: '2026-12-10T14:00:00Z',
                   },
@@ -433,7 +442,10 @@ describe('hdf-results.schema.json (refactored)', () => {
                     type: 'waiver',
                     status: 'notApplicable',
                     reason: 'Initially thought to be false positive',
-                    appliedBy: 'engineer@example.com',
+                    appliedBy: {
+            identifier: 'engineer@example.com',
+            type: 'simple',
+          },
                     appliedAt: '2025-12-01T10:00:00Z',
                     expiresAt: '2026-12-01T10:00:00Z',
                   },
@@ -447,19 +459,22 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate requirement with override containing digital signature', () => {
+    it('should validate requirement with status override containing digital signature', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             requirements: [
               createMinimalRequirement({
                 results: [createMinimalResult({ status: 'failed' })],
-                overrides: [
+                statusOverrides: [
                   {
                     type: 'waiver',
                     status: 'notApplicable',
                     reason: 'Risk accepted by CISO',
-                    appliedBy: 'ciso@example.com',
+                    appliedBy: {
+            identifier: 'ciso@example.com',
+            type: 'simple',
+          },
                     appliedAt: '2025-12-05T16:00:00Z',
                     expiresAt: '2027-12-05T16:00:00Z',
                     signature: {
@@ -484,6 +499,174 @@ describe('hdf-results.schema.json (refactored)', () => {
                   },
                 ],
                 effectiveStatus: 'notApplicable',
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate requirement with failed result and remediation POAM', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult({ status: 'failed' })],
+                poams: [
+                  {
+                    type: 'remediation',
+                    explanation: 'Security patch scheduled for deployment in next maintenance window',
+                    appliedBy: {
+            identifier: 'ops-team@example.com',
+            type: 'simple',
+          },
+                    appliedAt: '2025-12-01T10:00:00Z',
+                  },
+                ],
+                effectiveStatus: 'failed', // POAM doesn't change status
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate requirement with failed result and mitigation POAM with milestones', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult({ status: 'failed', message: 'MD5 hash algorithm detected' })],
+                poams: [
+                  {
+                    type: 'mitigation',
+                    explanation: 'Network segmentation implemented while awaiting vendor patch for hash algorithm upgrade',
+                    appliedBy: {
+            identifier: 'network-team@example.com',
+            type: 'simple',
+          },
+                    appliedAt: '2025-12-01T10:00:00Z',
+                    milestones: [
+                      {
+                        description: 'Implement firewall rules to isolate affected system',
+                        estimatedCompletion: '2025-12-05T00:00:00Z',
+                        status: 'completed',
+                        completedAt: '2025-12-04T14:30:00Z',
+                        completedBy: {
+                          identifier: 'network-admin@example.com',
+                          type: 'email',
+                        },
+                      },
+                      {
+                        description: 'Deploy vendor patch when available',
+                        estimatedCompletion: '2026-01-15T00:00:00Z',
+                        status: 'pending',
+                      },
+                    ],
+                  },
+                ],
+                effectiveStatus: 'failed', // still failing, but mitigated
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate requirement with statusOverride AND POAM (both allowed)', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult({ status: 'failed' })],
+                statusOverrides: [
+                  {
+                    type: 'waiver',
+                    status: 'notApplicable',
+                    reason: 'Temporary exception granted pending remediation',
+                    appliedBy: {
+            identifier: 'isso@example.com',
+            type: 'simple',
+          },
+                    appliedAt: '2025-12-01T10:00:00Z',
+                    expiresAt: '2026-01-15T10:00:00Z',
+                  },
+                ],
+                poams: [
+                  {
+                    type: 'remediation',
+                    explanation: 'Patch deployment scheduled for January 2026',
+                    appliedBy: {
+            identifier: 'ops-team@example.com',
+            type: 'simple',
+          },
+                    appliedAt: '2025-12-01T10:00:00Z',
+                    milestones: [
+                      {
+                        description: 'Test patch in staging',
+                        estimatedCompletion: '2025-12-15T00:00:00Z',
+                        status: 'pending',
+                      },
+                      {
+                        description: 'Deploy to production',
+                        estimatedCompletion: '2026-01-10T00:00:00Z',
+                        status: 'pending',
+                      },
+                    ],
+                  },
+                ],
+                effectiveStatus: 'notApplicable', // override changes status, POAM tracks work
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate requirement with multiple POAMs', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult({ status: 'failed' })],
+                poams: [
+                  {
+                    type: 'mitigation',
+                    explanation: 'Primary mitigation: network segmentation',
+                    appliedBy: {
+            identifier: 'network-team@example.com',
+            type: 'simple',
+          },
+                    appliedAt: '2025-12-01T10:00:00Z',
+                  },
+                  {
+                    type: 'mitigation',
+                    explanation: 'Secondary mitigation: enhanced monitoring',
+                    appliedBy: {
+            identifier: 'security-team@example.com',
+            type: 'simple',
+          },
+                    appliedAt: '2025-12-02T10:00:00Z',
+                  },
+                  {
+                    type: 'remediation',
+                    explanation: 'Root cause remediation: patch deployment',
+                    appliedBy: {
+            identifier: 'ops-team@example.com',
+            type: 'simple',
+          },
+                    appliedAt: '2025-12-03T10:00:00Z',
+                  },
+                ],
+                effectiveStatus: 'failed',
               }),
             ],
           }),

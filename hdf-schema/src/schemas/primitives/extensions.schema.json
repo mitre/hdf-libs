@@ -23,8 +23,8 @@
           "description": "Explanation for why this status override was applied."
         },
         "appliedBy": {
-          "type": "string",
-          "description": "Identifier of who applied this status override. Example: 'user@example.com' or system identifier."
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+          "description": "Identity of who applied this status override. For simple cases, use type 'simple' with just an identifier."
         },
         "appliedAt": {
           "type": "string",
@@ -56,6 +56,67 @@
       },
       "description": "An intentional change to a requirement's compliance status (waiver or attestation). Status overrides change the effectiveStatus of the requirement. All status overrides must have an expiration date to enforce periodic review.",
       "title": "Status Override"
+    },
+    "POAM": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["type", "explanation", "appliedBy", "appliedAt"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["remediation", "mitigation", "riskAcceptance"],
+          "description": "The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via compensating controls. 'riskAcceptance' documents decision to accept risk."
+        },
+        "explanation": {
+          "type": "string",
+          "description": "Detailed explanation of the plan, including what actions will be taken."
+        },
+        "appliedBy": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+          "description": "Identity of who created this POA&M. For simple cases, use type 'simple' with just an identifier."
+        },
+        "appliedAt": {
+          "type": "string",
+          "description": "Timestamp when this POA&M was created. ISO 8601 format."
+        },
+        "expiresAt": {
+          "type": ["string", "null"],
+          "description": "Optional expiration date for this POA&M requiring review/renewal. ISO 8601 format."
+        },
+        "milestones": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone"
+              }
+            },
+            { "type": "null" }
+          ],
+          "description": "Optional array of milestones tracking progress toward completion."
+        },
+        "signature": {
+          "anyOf": [
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature" },
+            { "type": "null" }
+          ],
+          "description": "Optional digital signature for enhanced trust and non-repudiation."
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
+              }
+            },
+            { "type": "null" }
+          ],
+          "description": "Supporting evidence for this POA&M, such as documentation of compensating controls or mitigation implementation."
+        }
+      },
+      "description": "Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance. POAMs do NOT change the effectiveStatus - the requirement remains in its current state while the POA&M tracks remediation efforts.",
+      "title": "POAM"
     },
     "Generator": {
       "type": "object",
