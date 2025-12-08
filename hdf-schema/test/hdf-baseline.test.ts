@@ -265,4 +265,45 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate(legacyDoc)).toBe(true);
     });
   });
+
+  describe('remediation field', () => {
+    it('should accept baseline with remediation URI and checksum', () => {
+      const doc = createMinimalBaselineDoc({
+        remediation: {
+          uri: 'https://github.com/RedHatOfficial/ansible-role-rhel9-stig',
+          checksum: {
+            algorithm: 'sha256',
+            value: 'abc123def456...',
+          },
+        },
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline with remediation URI only', () => {
+      const doc = createMinimalBaselineDoc({
+        remediation: {
+          uri: 'https://github.com/ComplianceAsCode/content/tree/master/linux_os/guide/system',
+        },
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline without remediation field', () => {
+      const doc = createMinimalBaselineDoc();
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject remediation missing required uri field', () => {
+      const doc = createMinimalBaselineDoc({
+        remediation: {
+          checksum: {
+            algorithm: 'sha256',
+            value: 'abc123',
+          },
+        },
+      });
+      expect(validate(doc)).toBe(false);
+    });
+  });
 });

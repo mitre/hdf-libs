@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v1.0.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v2.0.0",
   "type": "object",
   "unevaluatedProperties": false,
   "required": ["name", "supports", "requirements", "groups", "checksum"],
@@ -40,7 +40,7 @@
     "supports": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Supported_Platform"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Supported_Platform"
       },
       "description": "The set of supported platform targets."
     },
@@ -54,7 +54,7 @@
     "groups": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Requirement_Group"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Requirement_Group"
       },
       "description": "A set of descriptions for the requirement groups."
     },
@@ -68,8 +68,15 @@
       "description": "The input(s) or attribute(s) to be used in the run."
     },
     "checksum": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Checksum",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
       "description": "Cryptographic checksum for baseline integrity verification."
+    },
+    "remediation": {
+      "anyOf": [
+        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation" },
+        { "type": "null" }
+      ],
+      "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for implementing the security controls defined in this baseline."
     },
     "status": {
       "type": ["string", "null"],
@@ -78,13 +85,13 @@
     "depends": {
       "type": ["array", "null"],
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Dependency"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency"
       },
       "description": "The set of dependencies this baseline depends on."
     },
     "generator": {
       "anyOf": [
-        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/$defs/Generator" },
+        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator" },
         { "type": "null" }
       ],
       "description": "The tool that generated this file."
@@ -124,7 +131,7 @@
         "refs": {
           "type": ["array", "null"],
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Reference"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Reference"
           },
           "description": "The set of references to external documents."
         },
@@ -139,7 +146,7 @@
         },
         "sourceLocation": {
           "anyOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Source_Location" },
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Source_Location" },
             { "type": "null" }
           ],
           "description": "The explicit location of the requirement within the source code."
