@@ -53,10 +53,22 @@ describe('bundle-schemas', () => {
       expect(typeof schema).toBe('object');
     });
 
-    it('should have no external $ref (all resolved)', () => {
+    it('should embed referenced schemas in $defs (spec-compliant bundling)', () => {
       const content = readFileSync(join(DIST_DIR, 'hdf-results.schema.json'), 'utf-8');
-      // Should not contain references to external URLs
-      expect(content).not.toContain('https://mitre.github.io/hdf-libs/schemas/primitives');
+      const bundled = JSON.parse(content);
+
+      // The bundle should contain $refs to primitive schemas (spec-compliant approach)
+      expect(content).toContain('https://mitre.github.io/hdf-libs/schemas/primitives');
+
+      // But those schemas should be embedded in $defs at the end of the file
+      expect(bundled).toHaveProperty('$defs');
+
+      // Check that primitive schemas are embedded (not external)
+      const defsKeys = Object.keys(bundled.$defs || {});
+      const hasEmbeddedPrimitives = defsKeys.some(key =>
+        key.includes('https://mitre.github.io/hdf-libs/schemas/primitives')
+      );
+      expect(hasEmbeddedPrimitives).toBe(true);
     });
 
     it.skip('should be self-contained (contain platform definition inline) - REMOVED IN v2', () => {
@@ -103,18 +115,33 @@ describe('bundle-schemas', () => {
       expect(typeof schema).toBe('object');
     });
 
-    it('should have no external $ref (all resolved)', () => {
+    it('should embed referenced schemas in $defs (spec-compliant bundling)', () => {
       const content = readFileSync(join(DIST_DIR, 'hdf-baseline.schema.json'), 'utf-8');
-      expect(content).not.toContain('https://mitre.github.io/hdf-libs/schemas/primitives');
+      const bundled = JSON.parse(content);
+
+      // The bundle should contain $refs to primitive schemas (spec-compliant approach)
+      expect(content).toContain('https://mitre.github.io/hdf-libs/schemas/primitives');
+
+      // But those schemas should be embedded in $defs
+      expect(bundled).toHaveProperty('$defs');
+
+      // Check that primitive schemas are embedded (not external)
+      const defsKeys = Object.keys(bundled.$defs || {});
+      const hasEmbeddedPrimitives = defsKeys.some(key =>
+        key.includes('https://mitre.github.io/hdf-libs/schemas/primitives')
+      );
+      expect(hasEmbeddedPrimitives).toBe(true);
     });
 
-    it('should be self-contained (no external $ref in groups)', () => {
-      // The bundler inlines definitions where they're used
+    it('should preserve $ref URIs (spec-compliant bundling)', () => {
+      // The spec-compliant bundler maintains $ref URIs rather than inlining everything
+      // This allows tools to resolve by $id, which is more robust
       const properties = schema.properties as Record<string, unknown>;
       const groups = properties.groups as Record<string, unknown>;
       const items = groups.items as Record<string, unknown>;
-      expect(items).toHaveProperty('properties');
-      expect(items).not.toHaveProperty('$ref');
+
+      // groups.items should have a $ref (spec-compliant)
+      expect(items).toHaveProperty('$ref');
     });
 
     it('should validate a minimal baseline document', () => {

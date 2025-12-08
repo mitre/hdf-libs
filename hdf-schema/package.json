@@ -42,7 +42,7 @@
     "ajv-formats": "^3.0.0"
   },
   "devDependencies": {
-    "@apidevtools/json-schema-ref-parser": "^15.1.2",
+    "@hyperjump/json-schema": "^1.17.2",
     "@types/node": "^24.10.1",
     "concurrently": "^9.2.1",
     "http-server": "^14.1.1",

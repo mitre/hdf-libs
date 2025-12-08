@@ -130,6 +130,20 @@
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
           "description": "Cryptographic checksum for baseline integrity verification."
         },
+        "originalChecksum": {
+          "anyOf": [
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum" },
+            { "type": "null" }
+          ],
+          "description": "SHA-256 checksum of the original baseline definition file (before execution). This is an immutable reference to the baseline as defined, used to detect tampering with baseline requirements or metadata."
+        },
+        "resultsChecksum": {
+          "anyOf": [
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum" },
+            { "type": "null" }
+          ],
+          "description": "SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs). Used to detect tampering with test results. Compare with currentChecksum to verify amendment integrity."
+        },
         "status": {
           "type": ["string", "null"],
           "description": "The status. Example: 'loaded', 'skipped', 'failed'."
