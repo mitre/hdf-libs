@@ -994,4 +994,33 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(isValid).toBe(true);
     });
   });
+
+  describe('remediation field', () => {
+    it('should accept results with remediation URI and checksum', () => {
+      const doc = createMinimalResultsDoc({
+        remediation: {
+          uri: 'https://github.com/RedHatOfficial/ansible-role-rhel9-stig',
+          checksum: {
+            algorithm: 'sha256',
+            value: 'abc123def456...',
+          },
+        },
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept results with remediation URI only', () => {
+      const doc = createMinimalResultsDoc({
+        remediation: {
+          uri: 'https://public.cyber.mil/stigs/supplemental-automation-content/',
+        },
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept results without remediation field', () => {
+      const doc = createMinimalResultsDoc();
+      expect(validate(doc)).toBe(true);
+    });
+  });
 });

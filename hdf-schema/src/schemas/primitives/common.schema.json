@@ -245,6 +245,26 @@
       "description": "Supporting evidence for a finding or override, such as screenshots, code samples, log excerpts, or URLs.",
       "title": "Evidence"
     },
+    "Remediation": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["uri"],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "description": "URI pointing to automated remediation resources (Ansible playbooks, Terraform scripts, etc.). Examples: GitHub repository, DISA STIG Supplemental Automation Content, vendor-provided scripts."
+        },
+        "checksum": {
+          "anyOf": [
+            { "$ref": "#/$defs/Checksum" },
+            { "type": "null" }
+          ],
+          "description": "Optional cryptographic checksum for verifying the integrity of remediation resources fetched from the URI. Recommended for security when referencing external automation scripts."
+        }
+      },
+      "description": "Reference to automated remediation resources for implementing security controls. Points to external automation content like Ansible playbooks, Terraform scripts, or vendor-provided remediation tools.",
+      "title": "Remediation"
+    },
     "Verification_Method": {
       "type": "object",
       "unevaluatedProperties": false,

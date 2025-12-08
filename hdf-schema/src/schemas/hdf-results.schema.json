@@ -54,6 +54,13 @@
       ],
       "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
     },
+    "remediation": {
+      "anyOf": [
+        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation" },
+        { "type": "null" }
+      ],
+      "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for fixing failing requirements found in this assessment."
+    },
     "extensions": {
       "type": "object",
       "additionalProperties": true,
