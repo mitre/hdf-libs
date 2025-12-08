@@ -25,7 +25,7 @@ describe('Primitive Schema Validation', () => {
   describe('common.schema.json', () => {
     describe('Requirement_Group', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Requirement_Group',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Requirement_Group',
       });
 
       it('should validate a valid Requirement_Group', () => {
@@ -75,7 +75,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Dependency', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Dependency',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency',
       });
 
       it('should validate a valid Dependency with git URL', () => {
@@ -105,7 +105,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Reference', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Reference',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Reference',
       });
 
       it('should validate Reference with ref string', () => {
@@ -141,7 +141,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Source_Location', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Source_Location',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Source_Location',
       });
 
       it('should validate a valid Source_Location', () => {
@@ -168,7 +168,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Supported_Platform', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Supported_Platform',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Supported_Platform',
       });
 
       it('should validate a valid Supported_Platform', () => {
@@ -196,7 +196,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Identity', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Identity',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity',
       });
 
       it('should validate identity with email', () => {
@@ -266,7 +266,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Verification_Method', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Verification_Method',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Verification_Method',
       });
 
       it('should validate verification method with JWK public key', () => {
@@ -355,7 +355,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Signature', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Signature',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature',
       });
 
       it('should validate complete signature with all required fields', () => {
@@ -597,7 +597,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Evidence', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v1.0.0#/$defs/Evidence',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence',
       });
 
       it('should validate screenshot evidence with all fields', () => {
@@ -734,7 +734,7 @@ describe('Primitive Schema Validation', () => {
   describe('platform.schema.json', () => {
     describe('Platform', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/platform/v1.0.0#/$defs/Platform',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/platform/v2.0.0#/$defs/Platform',
       });
 
       it('should validate a valid Platform', () => {
@@ -781,7 +781,7 @@ describe('Primitive Schema Validation', () => {
 
   describe('target.schema.json', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v1.0.0#/$defs/Target',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Target',
     });
 
     describe('Host_Target', () => {
@@ -995,7 +995,7 @@ describe('Primitive Schema Validation', () => {
 
   describe('runner.schema.json', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/runner/v1.0.0#/$defs/Runner',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/runner/v2.0.0#/$defs/Runner',
     });
 
     it('should validate a minimal runner with only name', () => {
@@ -1043,7 +1043,7 @@ describe('Primitive Schema Validation', () => {
   describe('statistics.schema.json', () => {
     describe('Statistic_Block', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v1.0.0#/$defs/Statistic_Block',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0#/$defs/Statistic_Block',
       });
 
       it('should validate a valid Statistic_Block', () => {
@@ -1064,7 +1064,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Statistic_Hash', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v1.0.0#/$defs/Statistic_Hash',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0#/$defs/Statistic_Hash',
       });
 
       it('should validate a full Statistic_Hash', () => {
@@ -1105,7 +1105,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Statistics', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v1.0.0#/$defs/Statistics',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0#/$defs/Statistics',
       });
 
       it('should validate a full Statistics object', () => {
@@ -1157,7 +1157,7 @@ describe('Primitive Schema Validation', () => {
   describe('result.schema.json', () => {
     describe('Result_Status', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/$defs/Result_Status',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Result_Status',
       });
 
       it('should validate "passed" status', () => {
@@ -1191,7 +1191,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Requirement_Result', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/$defs/Requirement_Result',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Requirement_Result',
       });
 
       it('should validate a full Requirement_Result', () => {
@@ -1275,7 +1275,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Requirement_Description', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v1.0.0#/$defs/Requirement_Description',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Requirement_Description',
       });
 
       it('should validate a valid Requirement_Description', () => {
@@ -1311,12 +1311,12 @@ describe('Primitive Schema Validation', () => {
   });
 
   describe('extensions.schema.json', () => {
-    describe('Override', () => {
+    describe('Status_Override', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/$defs/Override',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Status_Override',
       });
 
-      it('should validate a waiver override with all required fields', () => {
+      it('should validate a waiver status override with all required fields', () => {
         const valid = {
           type: 'waiver',
           status: 'notApplicable',
@@ -1328,7 +1328,7 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate an attestation override with all required fields', () => {
+      it('should validate an attestation status override with all required fields', () => {
         const valid = {
           type: 'attestation',
           status: 'passed',
@@ -1340,7 +1340,7 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate override with all valid status values (including error)', () => {
+      it('should validate status override with all valid status values (including error)', () => {
         const statuses = ['passed', 'failed', 'notApplicable', 'notReviewed', 'error'];
         statuses.forEach(status => {
           const valid = {
@@ -1355,7 +1355,7 @@ describe('Primitive Schema Validation', () => {
         });
       });
 
-      it('should reject override missing expiresAt (no permanent overrides)', () => {
+      it('should reject status override missing expiresAt (no permanent overrides)', () => {
         const invalid = {
           type: 'waiver',
           status: 'notApplicable',
@@ -1367,7 +1367,7 @@ describe('Primitive Schema Validation', () => {
         expect(validate(invalid)).toBe(false);
       });
 
-      it('should reject override with null expiresAt (no permanent overrides)', () => {
+      it('should reject status override with null expiresAt (no permanent overrides)', () => {
         const invalid = {
           type: 'waiver',
           status: 'notApplicable',
@@ -1379,7 +1379,7 @@ describe('Primitive Schema Validation', () => {
         expect(validate(invalid)).toBe(false);
       });
 
-      it('should reject override missing required fields', () => {
+      it('should reject status override missing required fields', () => {
         const invalid = {
           type: 'waiver',
           // missing: status, reason, appliedBy, appliedAt, expiresAt
@@ -1387,10 +1387,10 @@ describe('Primitive Schema Validation', () => {
         expect(validate(invalid)).toBe(false);
       });
 
-      it('should reject override with invalid type', () => {
+      it('should reject status override with invalid type', () => {
         const invalid = {
-          type: 'exception', // invalid - only waiver/attestation allowed
-          status: 'notApplicable',
+          type: 'exception', // invalid - not a status override type
+          status: 'failed',
           reason: 'Test',
           appliedBy: 'test@example.com',
           appliedAt: '2025-12-05T20:30:00Z',
@@ -1626,7 +1626,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Generator', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/$defs/Generator',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator',
       });
 
       it('should validate a valid Generator', () => {
@@ -1662,7 +1662,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Integrity', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v1.0.0#/$defs/Integrity',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity',
       });
 
       it('should validate Integrity with sha256', () => {
