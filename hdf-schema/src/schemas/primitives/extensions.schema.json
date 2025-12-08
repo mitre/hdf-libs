@@ -52,6 +52,13 @@
             { "type": "null" }
           ],
           "description": "Supporting evidence for this status override, such as screenshots demonstrating manual verification for attestations."
+        },
+        "previousChecksum": {
+          "anyOf": [
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum" },
+            { "type": "null" }
+          ],
+          "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
         }
       },
       "description": "An intentional change to a requirement's compliance status (waiver or attestation). Status overrides change the effectiveStatus of the requirement. All status overrides must have an expiration date to enforce periodic review.",
@@ -113,6 +120,13 @@
             { "type": "null" }
           ],
           "description": "Supporting evidence for this POA&M, such as documentation of compensating controls or mitigation implementation."
+        },
+        "previousChecksum": {
+          "anyOf": [
+            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum" },
+            { "type": "null" }
+          ],
+          "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
         }
       },
       "description": "Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance. POAMs do NOT change the effectiveStatus - the requirement remains in its current state while the POA&M tracks remediation efforts.",

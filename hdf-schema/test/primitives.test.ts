@@ -1793,6 +1793,41 @@ describe('Primitive Schema Validation', () => {
         };
         expect(validate(valid)).toBe(true);
       });
+
+      it('should validate override with previousChecksum (for amendment chain)', () => {
+        const valid = {
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'Risk accepted',
+          appliedBy: {
+            identifier: 'isso@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-07T16:00:00Z',
+          expiresAt: '2026-12-07T16:00:00Z',
+          previousChecksum: {
+            algorithm: 'sha256',
+            value: 'abc123def456...',
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate override with null previousChecksum (first amendment)', () => {
+        const valid = {
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'First override, no previous amendment',
+          appliedBy: {
+            identifier: 'isso@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-07T16:00:00Z',
+          expiresAt: '2026-12-07T16:00:00Z',
+          previousChecksum: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
     });
 
     describe('Generator', () => {
@@ -2038,6 +2073,37 @@ describe('Primitive Schema Validation', () => {
           extraField: 'not allowed',
         };
         expect(validate(invalid)).toBe(false);
+      });
+
+      it('should validate POAM with previousChecksum (for amendment chain)', () => {
+        const valid = {
+          type: 'remediation',
+          explanation: 'Second POAM, referencing previous mitigation',
+          appliedBy: {
+            identifier: 'ops@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-07T16:00:00Z',
+          previousChecksum: {
+            algorithm: 'sha256',
+            value: 'xyz789abc012...',
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate POAM with null previousChecksum (first amendment)', () => {
+        const valid = {
+          type: 'remediation',
+          explanation: 'First POAM, no previous amendment',
+          appliedBy: {
+            identifier: 'ops@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-07T16:00:00Z',
+          previousChecksum: null,
+        };
+        expect(validate(valid)).toBe(true);
       });
     });
 

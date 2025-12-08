@@ -231,6 +231,74 @@ describe('hdf-results.schema.json (refactored)', () => {
       });
       expect(validate(doc)).toBe(true);
     });
+
+    it('should accept baseline with originalChecksum', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            originalChecksum: {
+              algorithm: 'sha256',
+              value: 'abc123def456...',
+            },
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline with resultsChecksum', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            resultsChecksum: {
+              algorithm: 'sha256',
+              value: '789xyz012...',
+            },
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline with both originalChecksum and resultsChecksum', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            originalChecksum: {
+              algorithm: 'sha256',
+              value: 'abc123def456...',
+            },
+            resultsChecksum: {
+              algorithm: 'sha256',
+              value: '789xyz012...',
+            },
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline with null originalChecksum', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            originalChecksum: null,
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline with null resultsChecksum', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            resultsChecksum: null,
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
   });
 
   describe('requirements array (Evaluated_Requirement)', () => {

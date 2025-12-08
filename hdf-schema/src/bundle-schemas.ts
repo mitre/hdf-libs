@@ -1,4 +1,5 @@
-import $RefParser from '@apidevtools/json-schema-ref-parser';
+import { registerSchema } from '@hyperjump/json-schema/draft-2020-12';
+import { bundle } from '@hyperjump/json-schema/bundle';
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -14,49 +15,42 @@ const DIST_DIR = join(__dirname, '..', 'dist', 'schemas');
 const MAIN_SCHEMAS = ['hdf-results.schema.json', 'hdf-baseline.schema.json'];
 
 /**
- * Load all primitive schemas and create a resolver that maps
- * our custom URIs to local file contents.
+ * Load and register all schemas with @hyperjump/json-schema.
+ * This allows the bundler to resolve $refs by $id.
  */
-function createResolver() {
-  const primitiveSchemas = new Map<string, object>();
-
-  // Load all primitive schemas
+function registerAllSchemas(): void {
+  // Load and register all primitive schemas
   const primitiveFiles = readdirSync(PRIMITIVES_DIR).filter((f) => f.endsWith('.schema.json'));
   for (const file of primitiveFiles) {
-    const content = JSON.parse(readFileSync(join(PRIMITIVES_DIR, file), 'utf-8'));
+    const filePath = join(PRIMITIVES_DIR, file);
+    const content = JSON.parse(readFileSync(filePath, 'utf-8'));
     const id = content.$id as string;
     if (id) {
-      primitiveSchemas.set(id, content);
+      registerSchema(content, id);
     }
   }
 
-  return {
-    order: 1,
-    canRead: /^https:\/\/hdf\.aesirsystems\.com\/schemas\//,
-    read: (file: { url: string }) => {
-      // Extract the base URL (without fragment)
-      const url = file.url.split('#')[0] ?? file.url;
-
-      // Find matching schema by $id
-      const schema = primitiveSchemas.get(url);
-      if (!schema) {
-        throw new Error(`Could not resolve schema: ${url}`);
-      }
-      return JSON.stringify(schema);
-    },
-  };
+  // Load and register main schemas
+  for (const schemaFile of MAIN_SCHEMAS) {
+    const filePath = join(SCHEMAS_DIR, schemaFile);
+    const content = JSON.parse(readFileSync(filePath, 'utf-8'));
+    const id = content.$id as string;
+    if (id) {
+      registerSchema(content, id);
+    }
+  }
 }
 
 /**
- * Bundle a schema by resolving all $ref and inlining definitions.
+ * Bundle a schema using @hyperjump/json-schema.
+ * This follows the official JSON Schema 2020-12 bundling specification.
  */
-async function bundleSchema(schemaPath: string): Promise<object> {
-  const parser = new $RefParser();
-
-  const bundled = await parser.bundle(schemaPath, {
-    resolve: {
-      aesir: createResolver(),
-    },
+async function bundleSchema(schemaId: string): Promise<object> {
+  const bundled = await bundle(schemaId, {
+    // Use URI-based naming for embedded schemas
+    definitionNamingStrategy: 'uri',
+    // Always include dialect for clarity
+    alwaysIncludeDialect: true,
   });
 
   return bundled;
@@ -66,6 +60,9 @@ async function bundleSchema(schemaPath: string): Promise<object> {
  * Bundle all main schemas and write to dist directory.
  */
 export async function bundleSchemas(): Promise<void> {
+  // Register all schemas first so the bundler can resolve $refs
+  registerAllSchemas();
+
   // Create dist directory
   if (!existsSync(DIST_DIR)) {
     mkdirSync(DIST_DIR, { recursive: true });
@@ -75,9 +72,13 @@ export async function bundleSchemas(): Promise<void> {
     const inputPath = join(SCHEMAS_DIR, schemaFile);
     const outputPath = join(DIST_DIR, schemaFile);
 
+    // Read the schema to get its $id
+    const content = JSON.parse(readFileSync(inputPath, 'utf-8'));
+    const schemaId = content.$id as string;
+
     console.log(`Bundling ${schemaFile}...`);
 
-    const bundled = await bundleSchema(inputPath);
+    const bundled = await bundleSchema(schemaId);
 
     writeFileSync(outputPath, JSON.stringify(bundled, null, 2));
 
