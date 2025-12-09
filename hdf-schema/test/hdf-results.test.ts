@@ -299,6 +299,35 @@ describe('hdf-results.schema.json (refactored)', () => {
       });
       expect(validate(doc)).toBe(true);
     });
+
+    it('should accept baseline with parentBaseline', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            parentBaseline: 'rhel-9-baseline',
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline with null parentBaseline', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            parentBaseline: null,
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline without parentBaseline field', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [createMinimalEvaluatedBaseline()],
+      });
+      expect(validate(doc)).toBe(true);
+    });
   });
 
   describe('requirements array (Evaluated_Requirement)', () => {
