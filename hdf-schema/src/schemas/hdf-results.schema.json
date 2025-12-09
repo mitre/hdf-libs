@@ -102,7 +102,7 @@
           },
           "description": "The set of dependencies this baseline depends on."
         },
-        "parentProfile": {
+        "parentBaseline": {
           "type": ["string", "null"],
           "description": "The name of the parent baseline if this is a dependency of another."
         },
