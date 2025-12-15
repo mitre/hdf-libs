@@ -1446,6 +1446,46 @@ describe('Primitive Schema Validation', () => {
         };
         expect(validate(invalid)).toBe(false);
       });
+
+      it('should reject invalid startTime format (date only)', () => {
+        const invalid = {
+          codeDesc: 'Test description',
+          startTime: '2025-01-15',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject invalid startTime format (plain text)', () => {
+        const invalid = {
+          codeDesc: 'Test description',
+          startTime: 'January 15, 2025 at 10:30 AM',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject startTime without timezone', () => {
+        const invalid = {
+          codeDesc: 'Test description',
+          startTime: '2025-01-15T10:30:00',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should accept startTime with timezone offset', () => {
+        const valid = {
+          codeDesc: 'Test description',
+          startTime: '2025-01-15T10:30:00-05:00',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept startTime with milliseconds', () => {
+        const valid = {
+          codeDesc: 'Test description',
+          startTime: '2025-01-15T10:30:00.123Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
     });
 
     describe('Requirement_Description', () => {
@@ -2246,6 +2286,252 @@ describe('Primitive Schema Validation', () => {
       it('should reject Integrity with checksum but no algorithm', () => {
         const invalid = {
           checksum: 'abc123def456',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+  });
+
+  describe('Date-Time Format Validation', () => {
+    describe('Milestone timestamps', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone',
+      });
+
+      it('should accept valid ISO 8601 date-time for estimatedCompletion', () => {
+        const valid = {
+          description: 'Fix critical vulnerability',
+          estimatedCompletion: '2025-12-15T14:30:00Z',
+          status: 'pending',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept ISO 8601 with timezone offset', () => {
+        const valid = {
+          description: 'Deploy patch',
+          estimatedCompletion: '2025-12-15T14:30:00-05:00',
+          status: 'pending',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept ISO 8601 with milliseconds', () => {
+        const valid = {
+          description: 'Complete testing',
+          estimatedCompletion: '2025-12-15T14:30:00.123Z',
+          status: 'completed',
+          completedAt: '2025-12-14T10:00:00.456Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid date-time format for estimatedCompletion', () => {
+        const invalid = {
+          description: 'Fix vulnerability',
+          estimatedCompletion: '2025-12-15',
+          status: 'pending',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject plain text date', () => {
+        const invalid = {
+          description: 'Deploy update',
+          estimatedCompletion: 'December 15, 2025',
+          status: 'pending',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject timestamp without timezone', () => {
+        const invalid = {
+          description: 'Test fix',
+          estimatedCompletion: '2025-12-15T14:30:00',
+          status: 'pending',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject invalid completedAt format', () => {
+        const invalid = {
+          description: 'Complete milestone',
+          estimatedCompletion: '2025-12-15T14:30:00Z',
+          status: 'completed',
+          completedAt: '12/14/2025',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Status_Override timestamps', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Status_Override',
+      });
+
+      it('should accept valid ISO 8601 timestamps', () => {
+        const valid = {
+          type: 'waiver',
+          status: 'passed',
+          reason: 'Compensating controls in place',
+          appliedBy: { identifier: 'john.doe@example.com', type: 'email' },
+          appliedAt: '2025-12-14T10:00:00Z',
+          expiresAt: '2026-12-14T10:00:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid appliedAt format', () => {
+        const invalid = {
+          type: 'waiver',
+          status: 'passed',
+          reason: 'Approved',
+          appliedBy: { identifier: 'admin', type: 'username' },
+          appliedAt: 'yesterday',
+          expiresAt: '2026-12-14T10:00:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject invalid expiresAt format', () => {
+        const invalid = {
+          type: 'attestation',
+          status: 'passed',
+          reason: 'Manual verification',
+          appliedBy: { identifier: 'admin', type: 'username' },
+          appliedAt: '2025-12-14T10:00:00Z',
+          expiresAt: '12/14/2026',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('POAM timestamps', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/POAM',
+      });
+
+      it('should accept valid ISO 8601 timestamps', () => {
+        const valid = {
+          type: 'remediation',
+          explanation: 'Deploy security patch to fix CVE-2025-12345',
+          appliedBy: { identifier: 'security.team@example.com', type: 'email' },
+          appliedAt: '2025-12-14T10:00:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept nullable expiresAt with valid format', () => {
+        const valid = {
+          type: 'mitigation',
+          explanation: 'Implement compensating controls until patch is available',
+          appliedBy: { identifier: 'admin', type: 'username' },
+          appliedAt: '2025-12-14T10:00:00Z',
+          expiresAt: '2026-06-14T10:00:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept null expiresAt', () => {
+        const valid = {
+          type: 'riskAcceptance',
+          explanation: 'Accept low-risk finding based on CISO decision',
+          appliedBy: { identifier: 'ciso', type: 'username' },
+          appliedAt: '2025-12-14T10:00:00Z',
+          expiresAt: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid appliedAt format', () => {
+        const invalid = {
+          type: 'remediation',
+          explanation: 'Fix critical security issue',
+          appliedBy: { identifier: 'dev', type: 'username' },
+          appliedAt: 'not-a-date',
+          expiresAt: null,
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject invalid expiresAt format when provided', () => {
+        const invalid = {
+          type: 'remediation',
+          explanation: 'Deploy security fix to all production servers',
+          appliedBy: { identifier: 'ops', type: 'username' },
+          appliedAt: '2025-12-14T10:00:00Z',
+          expiresAt: 'sometime next year',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Signature created timestamp', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature',
+      });
+
+      it('should accept valid ISO 8601 created timestamp', () => {
+        const valid = {
+          type: 'JsonWebSignature2020',
+          created: '2025-12-14T10:00:00Z',
+          creator: { identifier: 'signer@example.com', type: 'email' },
+          signatureValue: 'base64-signature-value',
+          proofPurpose: 'attestation',
+          verificationMethod: {
+            type: 'JsonWebKey2020',
+            controller: 'did:example:123',
+            publicKeyJwk: { kty: 'RSA', n: 'abc', e: 'AQAB' },
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid created timestamp format', () => {
+        const invalid = {
+          type: 'JsonWebSignature2020',
+          created: '2025-12-14',
+          creator: { identifier: 'signer@example.com', type: 'email' },
+          signatureValue: 'sig-value',
+          proofPurpose: 'attestation',
+          verificationMethod: {
+            type: 'JsonWebKey2020',
+            controller: 'did:example:123',
+            publicKeyJwk: { kty: 'RSA', n: 'abc', e: 'AQAB' },
+          },
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Evidence capturedAt timestamp', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence',
+      });
+
+      it('should accept valid ISO 8601 capturedAt timestamp', () => {
+        const valid = {
+          type: 'screenshot',
+          data: 'base64-encoded-image',
+          capturedAt: '2025-12-14T10:30:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept null capturedAt', () => {
+        const valid = {
+          type: 'screenshot',
+          data: 'base64-data',
+          capturedAt: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid capturedAt format', () => {
+        const invalid = {
+          type: 'screenshot',
+          data: 'base64-data',
+          capturedAt: 'today at noon',
         };
         expect(validate(invalid)).toBe(false);
       });

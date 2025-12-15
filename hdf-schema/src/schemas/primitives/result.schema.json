@@ -32,6 +32,7 @@
         },
         "startTime": {
           "type": "string",
+          "format": "date-time",
           "description": "The time at which the test started."
         },
         "resource": {

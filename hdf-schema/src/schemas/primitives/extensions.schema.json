@@ -28,10 +28,12 @@
         },
         "appliedAt": {
           "type": "string",
+          "format": "date-time",
           "description": "Timestamp when this status override was applied. ISO 8601 format."
         },
         "expiresAt": {
           "type": "string",
+          "format": "date-time",
           "description": "Timestamp when this status override expires and must be reviewed/renewed. REQUIRED - no permanent status overrides allowed. ISO 8601 format."
         },
         "signature": {
@@ -84,10 +86,12 @@
         },
         "appliedAt": {
           "type": "string",
+          "format": "date-time",
           "description": "Timestamp when this POA&M was created. ISO 8601 format."
         },
         "expiresAt": {
           "type": ["string", "null"],
+          "format": "date-time",
           "description": "Optional expiration date for this POA&M requiring review/renewal. ISO 8601 format."
         },
         "milestones": {
@@ -152,7 +156,7 @@
     "Integrity": {
       "type": "object",
       "unevaluatedProperties": false,
-      "dependencies": {
+      "dependentRequired": {
         "algorithm": ["checksum"],
         "checksum": ["algorithm"]
       },

@@ -312,6 +312,7 @@
         },
         "estimatedCompletion": {
           "type": "string",
+          "format": "date-time",
           "description": "Estimated completion date. ISO 8601 format."
         },
         "status": {
@@ -321,6 +322,7 @@
         },
         "completedAt": {
           "type": ["string", "null"],
+          "format": "date-time",
           "description": "Actual completion timestamp. ISO 8601 format."
         },
         "completedBy": {
@@ -438,7 +440,7 @@
           "description": "The requirement identifier. Example: 'SV-238196'."
         },
         "title": {
-          "type": ["null", "string"],
+          "type": ["string", "null"],
           "description": "The title - is nullable."
         },
         "descriptions": {
