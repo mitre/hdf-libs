@@ -65,6 +65,7 @@
         },
         "git": {
           "type": ["string", "null"],
+          "format": "uri",
           "description": "The location of the git repo. Example: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'."
         },
         "supermarket": {

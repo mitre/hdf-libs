@@ -28,6 +28,7 @@
         },
         "runTime": {
           "type": ["number", "null"],
+          "minimum": 0,
           "description": "The execution time in seconds for the test."
         },
         "startTime": {

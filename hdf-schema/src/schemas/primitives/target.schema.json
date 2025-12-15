@@ -52,12 +52,17 @@
               "description": "Fully qualified domain name."
             },
             "ipAddress": {
-              "type": ["string", "null"],
+              "anyOf": [
+                { "type": "string", "format": "ipv4" },
+                { "type": "string", "format": "ipv6" },
+                { "type": "null" }
+              ],
               "description": "IP address of the host."
             },
             "macAddress": {
               "type": ["string", "null"],
-              "description": "MAC address of the host."
+              "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
+              "description": "MAC address of the host in colon-separated hexadecimal format (e.g., '00:1A:2B:3C:4D:5E')."
             },
             "osName": {
               "type": ["string", "null"],
@@ -100,7 +105,8 @@
             },
             "digest": {
               "type": ["string", "null"],
-              "description": "Image digest for immutable reference. Example: 'sha256:abc123...'."
+              "pattern": "^(sha256:[a-f0-9]{64}|sha512:[a-f0-9]{128}|blake3:[a-f0-9]{64})$",
+              "description": "Image digest for immutable reference. Example: 'sha256:abc123...'. Must be sha256 (64 hex chars), sha512 (128 hex chars), or blake3 (64 hex chars)."
             }
           }
         }
@@ -361,6 +367,8 @@
             },
             "port": {
               "type": ["integer", "null"],
+              "minimum": 1,
+              "maximum": 65535,
               "description": "Database port."
             }
           }
