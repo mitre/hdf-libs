@@ -19,6 +19,17 @@ describe('hdf-results.schema.json (refactored)', () => {
     validate = ajv.compile(loadSchema('hdf-results.schema.json'));
   });
 
+  describe('metaschema validation', () => {
+    it('should validate hdf-results.schema.json against JSON Schema 2020-12 metaschema', () => {
+      const schema = loadSchema('hdf-results.schema.json');
+      const isValid = ajv.validateSchema(schema);
+      if (!isValid) {
+        console.error('Metaschema validation errors:', ajv.errors);
+      }
+      expect(isValid).toBe(true);
+    });
+  });
+
   describe('root-level structure', () => {
     it('should validate a minimal valid document', () => {
       const isValid = validate(createMinimalResultsDoc());

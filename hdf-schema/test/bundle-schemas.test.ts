@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { existsSync, rmSync, readFileSync } from 'fs';
 import { join } from 'path';
 import Ajv2020 from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
 import { bundleSchemas } from '../src/bundle-schemas';
 import { loadFixture } from './setup';
 
@@ -15,13 +16,6 @@ describe('bundle-schemas', () => {
     }
     // Run the bundler
     await bundleSchemas();
-  });
-
-  afterAll(() => {
-    // Clean up after tests
-    if (existsSync(DIST_DIR)) {
-      rmSync(DIST_DIR, { recursive: true });
-    }
   });
 
   describe('output files', () => {
@@ -46,6 +40,7 @@ describe('bundle-schemas', () => {
       const content = readFileSync(join(DIST_DIR, 'hdf-results.schema.json'), 'utf-8');
       schema = JSON.parse(content);
       ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
+      addFormats(ajv);
     });
 
     it('should be valid JSON', () => {
@@ -108,6 +103,7 @@ describe('bundle-schemas', () => {
       const content = readFileSync(join(DIST_DIR, 'hdf-baseline.schema.json'), 'utf-8');
       schema = JSON.parse(content);
       ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
+      addFormats(ajv);
     });
 
     it('should be valid JSON', () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { existsSync, rmSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { bundleSchemas } from '../src/bundle-schemas';
@@ -18,16 +18,6 @@ describe('generate-types', () => {
     // First bundle schemas, then generate types
     await bundleSchemas();
     await generateTypes();
-  });
-
-  afterAll(() => {
-    // Clean up after tests
-    for (const lang of ['ts', 'go', 'python']) {
-      const dir = join(DIST_DIR, lang);
-      if (existsSync(dir)) {
-        rmSync(dir, { recursive: true });
-      }
-    }
   });
 
   describe('TypeScript output', () => {
