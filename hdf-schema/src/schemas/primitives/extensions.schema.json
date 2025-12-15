@@ -63,6 +63,45 @@
           "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
         }
       },
+      "examples": [
+        {
+          "type": "waiver",
+          "status": "notApplicable",
+          "reason": "This control does not apply to containerized environments as the application runs in ephemeral containers without persistent storage",
+          "appliedBy": {
+            "identifier": "security-team@example.com",
+            "type": "email"
+          },
+          "appliedAt": "2025-12-01T10:00:00Z",
+          "expiresAt": "2026-12-01T00:00:00Z"
+        },
+        {
+          "type": "attestation",
+          "status": "passed",
+          "reason": "Manual verification completed: Reviewed firewall rules and confirmed all required ports are properly restricted per security policy",
+          "appliedBy": {
+            "identifier": "john.doe",
+            "type": "username",
+            "description": "Senior Security Engineer"
+          },
+          "appliedAt": "2025-11-30T14:30:00Z",
+          "expiresAt": "2026-05-30T00:00:00Z",
+          "evidence": [
+            {
+              "type": "screenshot",
+              "data": "base64-encoded-screenshot-data-here",
+              "description": "Screenshot showing firewall configuration",
+              "mimeType": "image/png",
+              "encoding": "base64",
+              "capturedAt": "2025-11-30T14:25:00Z",
+              "capturedBy": {
+                "identifier": "john.doe",
+                "type": "username"
+              }
+            }
+          ]
+        }
+      ],
       "description": "An intentional change to a requirement's compliance status (waiver or attestation). Status overrides change the effectiveStatus of the requirement. All status overrides must have an expiration date to enforce periodic review.",
       "title": "Status Override"
     },
@@ -133,6 +172,97 @@
           "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
         }
       },
+      "examples": [
+        {
+          "type": "remediation",
+          "explanation": "Upgrade OpenSSL to version 3.0.x to address CVE-2024-XXXXX vulnerability. Root cause: outdated dependency version in base image.",
+          "appliedBy": {
+            "identifier": "devops-team@example.com",
+            "type": "email"
+          },
+          "appliedAt": "2025-12-01T09:00:00Z",
+          "milestones": [
+            {
+              "description": "Update base Docker image to use OpenSSL 3.0.x",
+              "estimatedCompletion": "2025-12-15T00:00:00Z",
+              "status": "completed",
+              "completedAt": "2025-12-10T16:30:00Z",
+              "completedBy": {
+                "identifier": "alice.smith",
+                "type": "username"
+              }
+            },
+            {
+              "description": "Deploy updated image to production",
+              "estimatedCompletion": "2025-12-20T00:00:00Z",
+              "status": "inProgress"
+            },
+            {
+              "description": "Verify vulnerability no longer present via security scan",
+              "estimatedCompletion": "2025-12-22T00:00:00Z",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "type": "mitigation",
+          "explanation": "Implement network segmentation as compensating control while awaiting vendor patch for database vulnerability. Traffic to vulnerable database server is restricted to internal management VLAN only.",
+          "appliedBy": {
+            "identifier": "security-architect",
+            "type": "system",
+            "description": "Automated POA&M creation from vulnerability scan"
+          },
+          "appliedAt": "2025-11-28T14:00:00Z",
+          "expiresAt": "2026-02-28T00:00:00Z",
+          "milestones": [
+            {
+              "description": "Configure firewall rules to restrict database access to management VLAN",
+              "estimatedCompletion": "2025-12-02T00:00:00Z",
+              "status": "completed",
+              "completedAt": "2025-11-29T11:15:00Z",
+              "completedBy": {
+                "identifier": "network-ops@example.com",
+                "type": "email"
+              }
+            },
+            {
+              "description": "Monitor for vendor security patch release",
+              "estimatedCompletion": "2026-02-28T00:00:00Z",
+              "status": "inProgress"
+            }
+          ],
+          "evidence": [
+            {
+              "type": "code",
+              "data": "# Firewall rule configuration\niptables -A INPUT -s 10.0.1.0/24 -p tcp --dport 5432 -j ACCEPT\niptables -A INPUT -p tcp --dport 5432 -j DROP",
+              "description": "Firewall rules restricting database access",
+              "mimeType": "text/plain"
+            }
+          ]
+        },
+        {
+          "type": "riskAcceptance",
+          "explanation": "Risk accepted for legacy system scheduled for decommissioning in Q1 2026. Cost of remediation ($50K for emergency upgrade) exceeds residual risk given 3-month remaining lifespan. Compensating controls: isolated network segment, enhanced monitoring.",
+          "appliedBy": {
+            "identifier": "ciso@example.com",
+            "type": "email"
+          },
+          "appliedAt": "2025-12-05T10:00:00Z",
+          "expiresAt": "2026-04-01T00:00:00Z",
+          "milestones": [
+            {
+              "description": "Complete migration to replacement system",
+              "estimatedCompletion": "2026-03-15T00:00:00Z",
+              "status": "inProgress"
+            },
+            {
+              "description": "Decommission legacy system",
+              "estimatedCompletion": "2026-03-31T00:00:00Z",
+              "status": "pending"
+            }
+          ]
+        }
+      ],
       "description": "Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance. POAMs do NOT change the effectiveStatus - the requirement remains in its current state while the POA&M tracks remediation efforts.",
       "title": "POAM"
     },
@@ -178,6 +308,18 @@
           "description": "Identifier of who signed this file."
         }
       },
+      "examples": [
+        {
+          "algorithm": "sha256",
+          "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "algorithm": "sha512",
+          "checksum": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
+          "signature": "MEUCIQDx1y2hKl3mN8vP9qRz4tJ2sW5nX6cY8bD9aE3fG4hI5wIgK7mN8oP9qR0zS1tU2vW3xY4zA5bC6dD7eE8fG9hI0jK=",
+          "signedBy": "security-automation@example.com"
+        }
+      ],
       "description": "Cryptographic integrity information for verifying the HDF file has not been tampered with. If algorithm is provided, checksum must also be provided, and vice versa.",
       "title": "Integrity"
     }

@@ -38,6 +38,44 @@
           "description": "The identity of the person or system responsible for executing the test. This could be a human auditor manually completing a checklist, an automated CI/CD system, or a security tool. Optional field to support both automated and manual HDF generation."
         }
       },
+      "examples": [
+        {
+          "name": "docker",
+          "release": "20.04",
+          "architecture": "x86_64",
+          "hostname": "github-runner-prod-01",
+          "containerImage": "ghcr.io/inspec/inspec:5.22.3",
+          "containerId": "security-scan-job-a1b2c3d4",
+          "operator": {
+            "identifier": "github-actions",
+            "type": "system",
+            "description": "Automated CI/CD pipeline"
+          }
+        },
+        {
+          "name": "kubernetes-pod",
+          "release": "1.28.4",
+          "architecture": "arm64",
+          "hostname": "k8s-worker-node-05",
+          "containerImage": "gcr.io/my-org/security-scanner:v3.2.1",
+          "containerId": "compliance-scan-pod-xyz789",
+          "operator": {
+            "identifier": "security-automation@example.com",
+            "type": "email"
+          }
+        },
+        {
+          "name": "manual",
+          "release": "macOS 14.2",
+          "architecture": "arm64",
+          "hostname": "auditor-mbp-02",
+          "operator": {
+            "identifier": "jane.smith",
+            "type": "username",
+            "description": "Senior Security Auditor - Manual Assessment"
+          }
+        }
+      ],
       "description": "Information about the test execution environment. This is distinct from the target being scanned - the runner is where the security tool executes, while targets are what is being assessed.",
       "title": "Runner"
     }

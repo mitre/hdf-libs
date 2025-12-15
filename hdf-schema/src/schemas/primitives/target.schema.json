@@ -76,6 +76,24 @@
           }
         }
       ],
+      "examples": [
+        {
+          "type": "host",
+          "name": "web-server-01",
+          "fqdn": "web01.prod.example.com",
+          "ipAddress": "192.168.1.100",
+          "macAddress": "00:1A:2B:3C:4D:5E",
+          "osName": "Ubuntu",
+          "osVersion": "22.04 LTS"
+        },
+        {
+          "type": "host",
+          "name": "database-server",
+          "ipAddress": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+          "osName": "Red Hat Enterprise Linux",
+          "osVersion": "9.2"
+        }
+      ],
       "description": "A physical or virtual server, workstation, or network device.",
       "title": "Host Target"
     },
@@ -110,6 +128,24 @@
               "description": "Image digest for immutable reference. Example: 'sha256:abc123...'. Must be sha256 (64 hex chars), sha512 (128 hex chars), or blake3 (64 hex chars)."
             }
           }
+        }
+      ],
+      "examples": [
+        {
+          "type": "containerImage",
+          "name": "nginx-webserver",
+          "registry": "docker.io",
+          "repository": "library/nginx",
+          "tag": "1.25-alpine",
+          "digest": "sha256:a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d"
+        },
+        {
+          "type": "containerImage",
+          "name": "custom-api-service",
+          "registry": "gcr.io",
+          "repository": "my-project/api-service",
+          "tag": "v2.3.1",
+          "imageId": "sha256:9c27eacc5497"
         }
       ],
       "description": "A static container image (not running).",
@@ -232,6 +268,34 @@
               "description": "Cloud region where the resource resides."
             }
           }
+        }
+      ],
+      "examples": [
+        {
+          "type": "cloudResource",
+          "name": "production-web-server",
+          "provider": "aws",
+          "resourceType": "ec2:instance",
+          "resourceId": "i-0123456789abcdef0",
+          "arn": "arn:aws:ec2:us-east-1:123456789012:instance/i-0123456789abcdef0",
+          "region": "us-east-1"
+        },
+        {
+          "type": "cloudResource",
+          "name": "application-data-bucket",
+          "provider": "aws",
+          "resourceType": "s3:bucket",
+          "resourceId": "my-application-data-bucket",
+          "arn": "arn:aws:s3:::my-application-data-bucket",
+          "region": "us-west-2"
+        },
+        {
+          "type": "cloudResource",
+          "name": "analytics-vm",
+          "provider": "azure",
+          "resourceType": "Microsoft.Compute/virtualMachines",
+          "resourceId": "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/analytics-rg/providers/Microsoft.Compute/virtualMachines/analytics-vm-01",
+          "region": "eastus"
         }
       ],
       "description": "A specific cloud resource (EC2 instance, S3 bucket, Azure VM, etc.).",
@@ -375,6 +439,24 @@
               "description": "Database port."
             }
           }
+        }
+      ],
+      "examples": [
+        {
+          "type": "database",
+          "name": "production-postgres",
+          "engine": "postgresql",
+          "version": "15.3",
+          "host": "db.prod.example.com",
+          "port": 5432
+        },
+        {
+          "type": "database",
+          "name": "analytics-mysql",
+          "engine": "mysql",
+          "version": "8.0.34",
+          "host": "192.168.1.50",
+          "port": 3306
         }
       ],
       "description": "A database instance.",
