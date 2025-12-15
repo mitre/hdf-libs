@@ -12,6 +12,7 @@
   "properties": {
     "requirements": {
       "type": "array",
+      "minItems": 1,
       "items": {
         "$ref": "#/$defs/Baseline_Requirement"
       },
@@ -100,6 +101,15 @@
           "data": {
             "type": "string",
             "description": "The description text content."
+          }
+        }
+      },
+      "contains": {
+        "type": "object",
+        "required": ["label"],
+        "properties": {
+          "label": {
+            "const": "default"
           }
         }
       },
