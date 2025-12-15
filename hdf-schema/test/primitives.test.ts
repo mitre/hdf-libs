@@ -906,7 +906,7 @@ describe('Primitive Schema Validation', () => {
           registry: 'docker.io',
           repository: 'library/nginx',
           tag: '1.25',
-          digest: 'sha256:abc123def456',
+          digest: 'sha256:' + 'a'.repeat(64),
         };
         expect(validate(valid)).toBe(true);
       });
@@ -2534,6 +2534,397 @@ describe('Primitive Schema Validation', () => {
           capturedAt: 'today at noon',
         };
         expect(validate(invalid)).toBe(false);
+      });
+    });
+  });
+
+  describe('Array and Numeric Constraints', () => {
+    // Note: results and descriptions arrays are in hdf-results.schema.json (Evaluated_Requirement)
+    // Those tests are in hdf-results.test.ts
+
+    describe('Statistics numeric constraints', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0#/$defs/Statistics',
+      });
+
+      it('should accept valid statistics with positive duration', () => {
+        const valid = {
+          duration: 123.45,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept duration of zero', () => {
+        const valid = {
+          duration: 0,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject negative duration', () => {
+        const invalid = {
+          duration: -10.5,
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'minimum',
+          })
+        );
+      });
+
+      it('should accept integer total count', () => {
+        const valid = {
+          duration: 1.0,
+          requirements: {
+            passed: { total: 50 },
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject negative total count', () => {
+        const invalid = {
+          duration: 1.0,
+          requirements: {
+            passed: { total: -5 },
+          },
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject non-integer total count', () => {
+        const invalid = {
+          duration: 1.0,
+          requirements: {
+            passed: { total: 50.5 },
+          },
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'type',
+          })
+        );
+      });
+    });
+
+    describe('Requirement_Result runTime constraint', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Requirement_Result',
+      });
+
+      it('should accept positive runTime', () => {
+        const valid = {
+          codeDesc: 'Test check',
+          startTime: '2025-01-15T10:00:00Z',
+          runTime: 1.234,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept zero runTime', () => {
+        const valid = {
+          codeDesc: 'Test check',
+          startTime: '2025-01-15T10:00:00Z',
+          runTime: 0,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject negative runTime', () => {
+        const invalid = {
+          codeDesc: 'Test check',
+          startTime: '2025-01-15T10:00:00Z',
+          runTime: -5.0,
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'minimum',
+          })
+        );
+      });
+    });
+
+    describe('Database_Target port constraint', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Database_Target',
+      });
+
+      it('should accept valid port number', () => {
+        const valid = {
+          type: 'database',
+          name: 'prod-db',
+          engine: 'postgresql',
+          port: 5432,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept minimum valid port (1)', () => {
+        const valid = {
+          type: 'database',
+          name: 'test-db',
+          engine: 'mysql',
+          port: 1,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept maximum valid port (65535)', () => {
+        const valid = {
+          type: 'database',
+          name: 'mongo-db',
+          engine: 'mongodb',
+          port: 65535,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject port 0', () => {
+        const invalid = {
+          type: 'database',
+          name: 'invalid-db',
+          engine: 'postgresql',
+          port: 0,
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'minimum',
+          })
+        );
+      });
+
+      it('should reject port above 65535', () => {
+        const invalid = {
+          type: 'database',
+          name: 'invalid-db',
+          engine: 'postgresql',
+          port: 70000,
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'maximum',
+          })
+        );
+      });
+    });
+  });
+
+  describe('Format Pattern Validation', () => {
+    describe('Container digest patterns', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Container_Image_Target',
+      });
+
+      it('should accept valid sha256 digest', () => {
+        const valid = {
+          type: 'containerImage',
+          name: 'nginx',
+          digest: 'sha256:' + 'a'.repeat(64),
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept valid sha512 digest', () => {
+        const valid = {
+          type: 'containerImage',
+          name: 'nginx',
+          digest: 'sha512:' + 'b'.repeat(128),
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept valid blake3 digest', () => {
+        const valid = {
+          type: 'containerImage',
+          name: 'nginx',
+          digest: 'blake3:' + 'c'.repeat(64),
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject digest with invalid algorithm', () => {
+        const invalid = {
+          type: 'containerImage',
+          name: 'nginx',
+          digest: 'md5:' + 'a'.repeat(32),
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'pattern',
+          })
+        );
+      });
+
+      it('should reject digest with wrong hash length for sha256', () => {
+        const invalid = {
+          type: 'containerImage',
+          name: 'nginx',
+          digest: 'sha256:' + 'a'.repeat(32), // Too short
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject digest with uppercase hex chars', () => {
+        const invalid = {
+          type: 'containerImage',
+          name: 'nginx',
+          digest: 'sha256:' + 'A'.repeat(64), // Uppercase not allowed per OCI spec
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('MAC address pattern', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Host_Target',
+      });
+
+      it('should accept valid MAC address (uppercase)', () => {
+        const valid = {
+          type: 'host',
+          name: 'server-01',
+          hostname: 'server-01',
+          macAddress: '00:1A:2B:3C:4D:5E',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept valid MAC address (mixed case)', () => {
+        const valid = {
+          type: 'host',
+          name: 'server-02',
+          hostname: 'server-02',
+          macAddress: 'aA:bB:cC:dD:eE:fF',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject MAC address with invalid format (hyphens)', () => {
+        const invalid = {
+          type: 'host',
+          name: 'server-03',
+          hostname: 'server-03',
+          macAddress: '00-1A-2B-3C-4D-5E',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject MAC address with wrong length', () => {
+        const invalid = {
+          type: 'host',
+          name: 'server-04',
+          hostname: 'server-04',
+          macAddress: '00:1A:2B:3C:4D',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject MAC address with invalid hex characters', () => {
+        const invalid = {
+          type: 'host',
+          name: 'server-05',
+          hostname: 'server-05',
+          macAddress: '00:1G:2B:3C:4D:5E',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('IP address format', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Host_Target',
+      });
+
+      it('should accept valid IPv4 address', () => {
+        const valid = {
+          type: 'host',
+          name: 'web-server',
+          hostname: 'web-server.example.com',
+          ipAddress: '192.168.1.100',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept valid IPv6 address', () => {
+        const valid = {
+          type: 'host',
+          name: 'db-server',
+          hostname: 'db-server.example.com',
+          ipAddress: '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept compressed IPv6 address', () => {
+        const valid = {
+          type: 'host',
+          name: 'app-server',
+          hostname: 'app-server.example.com',
+          ipAddress: '2001:db8::1',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid IP address', () => {
+        const invalid = {
+          type: 'host',
+          name: 'bad-server',
+          hostname: 'bad-server.example.com',
+          ipAddress: '999.999.999.999',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject malformed IP address', () => {
+        const invalid = {
+          type: 'host',
+          name: 'invalid-server',
+          hostname: 'invalid-server.example.com',
+          ipAddress: 'not-an-ip',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Git URI format', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency',
+      });
+
+      it('should accept valid HTTPS git URL', () => {
+        const valid = {
+          name: 'baseline-dependency',
+          git: 'https://github.com/user/repo.git',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept valid SSH git URL', () => {
+        const valid = {
+          name: 'baseline-dependency',
+          git: 'ssh://git@github.com:user/repo.git',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid URI', () => {
+        const invalid = {
+          name: 'baseline-dependency',
+          git: 'not a valid uri',
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'format',
+            params: { format: 'uri' },
+          })
+        );
       });
     });
   });

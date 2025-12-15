@@ -10,7 +10,8 @@
       "required": ["total"],
       "properties": {
         "total": {
-          "type": "number",
+          "type": "integer",
+          "minimum": 0,
           "description": "The total count. Example: the total number of requirements in a given category for a run."
         }
       },
@@ -75,6 +76,7 @@
       "properties": {
         "duration": {
           "type": ["number", "null"],
+          "minimum": 0,
           "description": "How long (in seconds) this assessment run took."
         },
         "requirements": {
