@@ -379,6 +379,120 @@
       },
       "description": "A digital signature following W3C Data Integrity Proofs pattern. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other cryptographic signing methods via JWK, PEM, or Base58 key formats.",
       "title": "Signature"
+    },
+    "Baseline_Metadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name - must be unique."
+        },
+        "title": {
+          "type": ["string", "null"],
+          "description": "The title - should be human readable."
+        },
+        "maintainer": {
+          "type": ["string", "null"],
+          "description": "The maintainer(s)."
+        },
+        "copyright": {
+          "type": ["string", "null"],
+          "description": "The copyright holder(s)."
+        },
+        "copyrightEmail": {
+          "type": ["string", "null"],
+          "description": "The email address or other contact information of the copyright holder(s)."
+        },
+        "license": {
+          "type": ["string", "null"],
+          "description": "The copyright license. Example: 'Apache-2.0'."
+        },
+        "summary": {
+          "type": ["string", "null"],
+          "description": "The summary. Example: the Security Technical Implementation Guide (STIG) header."
+        },
+        "version": {
+          "type": ["string", "null"],
+          "description": "The version of the baseline."
+        },
+        "supports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Supported_Platform"
+          },
+          "description": "The set of supported platform targets."
+        },
+        "status": {
+          "type": ["string", "null"],
+          "description": "The status. Example: 'loaded'."
+        }
+      },
+      "description": "Shared metadata fields for baselines. Used in both standalone baseline documents and evaluated baseline results.",
+      "title": "Baseline Metadata"
+    },
+    "Requirement_Core": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The requirement identifier. Example: 'SV-238196'."
+        },
+        "title": {
+          "type": ["null", "string"],
+          "description": "The title - is nullable."
+        },
+        "descriptions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "unevaluatedProperties": false,
+            "required": ["label", "data"],
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Description category. The 'default' label is required for the primary description. Common labels: 'default', 'check', 'fix', 'rationale'. Tools may use custom labels."
+              },
+              "data": {
+                "type": "string",
+                "description": "The description text content."
+              }
+            }
+          },
+          "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
+        },
+        "impact": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "The impactfulness or severity (0.0 to 1.0)."
+        },
+        "refs": {
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/$defs/Reference"
+          },
+          "description": "The set of references to external documents."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "A set of tags - usually metadata like CCI, STIG ID, severity."
+        },
+        "code": {
+          "type": ["string", "null"],
+          "description": "The raw source code of the requirement. Set to null for manual-only requirements or requirements not yet implemented. Note that if this is an overlay, it does not include the underlying source code."
+        },
+        "sourceLocation": {
+          "anyOf": [
+            { "$ref": "#/$defs/Source_Location" },
+            { "type": "null" }
+          ],
+          "description": "The explicit location of the requirement within the source code."
+        }
+      },
+      "description": "Core requirement fields shared between baseline requirements and evaluated requirements. Contains the fundamental requirement definition without assessment results.",
+      "title": "Requirement Core"
     }
   }
 }
