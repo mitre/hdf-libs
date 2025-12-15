@@ -16,6 +16,17 @@ describe('hdf-baseline.schema.json (refactored)', () => {
     validate = ajv.compile(loadSchema('hdf-baseline.schema.json'));
   });
 
+  describe('metaschema validation', () => {
+    it('should validate hdf-baseline.schema.json against JSON Schema 2020-12 metaschema', () => {
+      const schema = loadSchema('hdf-baseline.schema.json');
+      const isValid = ajv.validateSchema(schema);
+      if (!isValid) {
+        console.error('Metaschema validation errors:', ajv.errors);
+      }
+      expect(isValid).toBe(true);
+    });
+  });
+
   describe('root-level structure', () => {
     it('should validate a minimal valid document', () => {
       expect(validate(createMinimalBaselineDoc())).toBe(true);
@@ -190,6 +201,45 @@ describe('hdf-baseline.schema.json (refactored)', () => {
         requirements: [createMinimalBaselineRequirement({ impact: 1.5 })],
       });
       expect(validate(doc)).toBe(false);
+    });
+
+    it('should accept requirement with null code (manual-only requirement)', () => {
+      const doc = createMinimalBaselineDoc({
+        requirements: [
+          createMinimalBaselineRequirement({
+            id: 'MAN-001',
+            code: null,
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept requirement without code field (omitted)', () => {
+      const doc = createMinimalBaselineDoc({
+        requirements: [
+          {
+            id: 'DRAFT-001',
+            impact: 0.5,
+            descriptions: [{ label: 'default', data: 'Draft requirement without code' }],
+            tags: {},
+            // code field omitted entirely
+          },
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept requirement with empty code string', () => {
+      const doc = createMinimalBaselineDoc({
+        requirements: [
+          createMinimalBaselineRequirement({
+            id: 'EMPTY-001',
+            code: '',
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
     });
   });
 

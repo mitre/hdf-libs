@@ -74,27 +74,12 @@
       "type": "object",
       "unevaluatedProperties": false,
       "required": ["name", "supports", "attributes", "groups", "requirements", "checksum"],
+      "allOf": [
+        {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Baseline_Metadata"
+        }
+      ],
       "properties": {
-        "name": {
-          "type": "string",
-          "description": "The name - must be unique."
-        },
-        "title": {
-          "type": ["string", "null"],
-          "description": "The title - should be human readable."
-        },
-        "maintainer": {
-          "type": ["string", "null"],
-          "description": "The maintainer(s)."
-        },
-        "copyright": {
-          "type": ["string", "null"],
-          "description": "The copyright holder(s)."
-        },
-        "copyrightEmail": {
-          "type": ["string", "null"],
-          "description": "The email address or other contact information of the copyright holder(s)."
-        },
         "depends": {
           "type": ["array", "null"],
           "items": {
@@ -105,25 +90,6 @@
         "parentBaseline": {
           "type": ["string", "null"],
           "description": "The name of the parent baseline if this is a dependency of another."
-        },
-        "license": {
-          "type": ["string", "null"],
-          "description": "The copyright license. Example: 'Apache-2.0'."
-        },
-        "summary": {
-          "type": ["string", "null"],
-          "description": "The summary. Example: the Security Technical Implementation Guide (STIG) header."
-        },
-        "version": {
-          "type": ["string", "null"],
-          "description": "The version of the baseline."
-        },
-        "supports": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Supported_Platform"
-          },
-          "description": "The set of supported platform targets."
         },
         "description": {
           "type": ["string", "null"],
@@ -150,10 +116,6 @@
             { "type": "null" }
           ],
           "description": "SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs). Used to detect tampering with test results. Compare with currentChecksum to verify amendment integrity."
-        },
-        "status": {
-          "type": ["string", "null"],
-          "description": "The status. Example: 'loaded', 'skipped', 'failed'."
         },
         "statusMessage": {
           "type": ["string", "null"],
@@ -195,15 +157,12 @@
       "type": "object",
       "unevaluatedProperties": false,
       "required": ["id", "impact", "tags", "sourceLocation", "results", "descriptions"],
+      "allOf": [
+        {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Requirement_Core"
+        }
+      ],
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "The requirement identifier. Example: 'SV-238196'."
-        },
-        "title": {
-          "type": ["null", "string"],
-          "description": "The title - is nullable."
-        },
         "descriptions": {
           "type": "array",
           "minItems": 1,
@@ -212,32 +171,10 @@
           },
           "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
         },
-        "impact": {
-          "type": "number",
-          "minimum": 0.0,
-          "maximum": 1.0,
-          "description": "The impactfulness or severity (0.0 to 1.0)."
-        },
         "severity": {
           "type": "string",
           "enum": ["critical", "high", "medium", "low", "informational"],
           "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
-        },
-        "refs": {
-          "type": ["array", "null"],
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Reference"
-          },
-          "description": "The set of references to external documents."
-        },
-        "tags": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "A set of tags - usually metadata like CCI, STIG ID, severity."
-        },
-        "code": {
-          "type": ["string", "null"],
-          "description": "The raw source code of the requirement. Note that if this is an overlay, it does not include the underlying source code."
         },
         "sourceLocation": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Source_Location",
