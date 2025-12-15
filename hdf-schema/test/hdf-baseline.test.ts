@@ -47,13 +47,9 @@ describe('hdf-baseline.schema.json (refactored)', () => {
     });
 
     it('should accept checksum with sha512 algorithm', () => {
-      const doc = {
-        name: 'test-baseline',
-        supports: [],
-        requirements: [],
-        groups: [],
+      const doc = createMinimalBaselineDoc({
         checksum: { algorithm: 'sha512', value: 'longer-sha512-hash-value' }
-      };
+      });
       expect(validate(doc)).toBe(true);
     });
 
@@ -354,6 +350,91 @@ describe('hdf-baseline.schema.json (refactored)', () => {
         },
       });
       expect(validate(doc)).toBe(false);
+    });
+  });
+
+  describe('array constraints (minItems)', () => {
+    it('should accept requirements array with at least one requirement', () => {
+      const doc = createMinimalBaselineDoc({
+        requirements: [createMinimalBaselineRequirement()],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject empty requirements array', () => {
+      const doc = createMinimalBaselineDoc({
+        requirements: [],
+      });
+      expect(validate(doc)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'minItems',
+        })
+      );
+    });
+
+    it('should accept descriptions array with at least one description', () => {
+      const req = createMinimalBaselineRequirement({
+        descriptions: [
+          { label: 'default', data: 'Test requirement' },
+        ],
+      });
+      const doc = createMinimalBaselineDoc({ requirements: [req] });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject empty descriptions array', () => {
+      const req = createMinimalBaselineRequirement({
+        descriptions: [],
+      });
+      const doc = createMinimalBaselineDoc({ requirements: [req] });
+      expect(validate(doc)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'minItems',
+        })
+      );
+    });
+  });
+
+  describe('descriptions contains validation', () => {
+    it('should accept descriptions with default label', () => {
+      const req = createMinimalBaselineRequirement({
+        descriptions: [
+          { label: 'default', data: 'Primary description' },
+          { label: 'check', data: 'How to check' },
+        ],
+      });
+      const doc = createMinimalBaselineDoc({ requirements: [req] });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject descriptions missing default label', () => {
+      const req = createMinimalBaselineRequirement({
+        descriptions: [
+          { label: 'check', data: 'How to check' },
+          { label: 'fix', data: 'How to fix' },
+        ],
+      });
+      const doc = createMinimalBaselineDoc({ requirements: [req] });
+      expect(validate(doc)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'contains',
+        })
+      );
+    });
+
+    it('should accept default label in any position', () => {
+      const req = createMinimalBaselineRequirement({
+        descriptions: [
+          { label: 'check', data: 'How to check' },
+          { label: 'default', data: 'Primary description' },
+          { label: 'fix', data: 'How to fix' },
+        ],
+      });
+      const doc = createMinimalBaselineDoc({ requirements: [req] });
+      expect(validate(doc)).toBe(true);
     });
   });
 });

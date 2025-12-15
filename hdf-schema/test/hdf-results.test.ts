@@ -355,7 +355,12 @@ describe('hdf-results.schema.json (refactored)', () => {
         impact: 0.7,
         tags: {},
         sourceLocation: {},
-        results: [],
+        results: [
+          {
+            codeDesc: 'Test description',
+            startTime: '2025-11-25T12:00:00Z',
+          }
+        ],
         // Missing descriptions array
       };
       const doc = createMinimalResultsDoc({
@@ -1060,6 +1065,142 @@ describe('hdf-results.schema.json (refactored)', () => {
 
     it('should accept results without remediation field', () => {
       const doc = createMinimalResultsDoc();
+      expect(validate(doc)).toBe(true);
+    });
+  });
+
+  describe('array constraints (minItems)', () => {
+    it('should accept results array with at least one result', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult()],
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject empty results array', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [],
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'minItems',
+        })
+      );
+    });
+
+    it('should accept descriptions array with at least one description', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                descriptions: [
+                  { label: 'default', data: 'Test requirement' },
+                ],
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject empty descriptions array', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                descriptions: [],
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'minItems',
+        })
+      );
+    });
+  });
+
+  describe('descriptions contains validation', () => {
+    it('should accept descriptions with default label', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                descriptions: [
+                  { label: 'default', data: 'Primary description' },
+                  { label: 'check', data: 'How to check' },
+                ],
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject descriptions missing default label', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                descriptions: [
+                  { label: 'check', data: 'How to check' },
+                  { label: 'fix', data: 'How to fix' },
+                ],
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'contains',
+        })
+      );
+    });
+
+    it('should accept default label in any position', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                descriptions: [
+                  { label: 'check', data: 'How to check' },
+                  { label: 'default', data: 'Primary description' },
+                  { label: 'fix', data: 'How to fix' },
+                ],
+              }),
+            ],
+          }),
+        ],
+      });
       expect(validate(doc)).toBe(true);
     });
   });

@@ -70,7 +70,17 @@ export function createMinimalBaselineDoc(overrides: object = {}): object {
   return {
     name: 'test-baseline',
     supports: [],
-    requirements: [],
+    requirements: [
+      {
+        id: 'SV-238196',
+        impact: 0.7,
+        tags: {},
+        code: 'control "SV-238196" do\nend',
+        descriptions: [
+          { label: 'default', data: 'Minimal baseline requirement description' }
+        ],
+      }
+    ],
     groups: [],
     checksum: { algorithm: 'sha256', value: 'abc123def456' },
     ...overrides,
@@ -87,7 +97,23 @@ export function createMinimalEvaluatedBaseline(overrides: object = {}): object {
     supports: [],
     attributes: [],
     groups: [],
-    requirements: [],
+    requirements: [
+      {
+        id: 'SV-238196',
+        impact: 0.7,
+        tags: {},
+        sourceLocation: {},
+        results: [
+          {
+            codeDesc: 'Test description',
+            startTime: '2025-11-25T12:00:00Z',
+          }
+        ],
+        descriptions: [
+          { label: 'default', data: 'Minimal test requirement description' }
+        ],
+      }
+    ],
     ...overrides,
   };
 }
@@ -101,7 +127,12 @@ export function createMinimalRequirement(overrides: object = {}): object {
     impact: 0.7,
     tags: {},
     sourceLocation: {},
-    results: [],
+    results: [
+      {
+        codeDesc: 'Test description',
+        startTime: '2025-11-25T12:00:00Z',
+      }
+    ],
     descriptions: [
       { label: 'default', data: 'Minimal test requirement description' }
     ],

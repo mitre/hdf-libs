@@ -147,7 +147,17 @@ describe('bundle-schemas', () => {
         checksum: { algorithm: 'sha256', value: 'abc123' },
         supports: [],
         groups: [],
-        requirements: [],
+        requirements: [
+          {
+            id: 'SV-238196',
+            impact: 0.7,
+            tags: {},
+            code: 'control "SV-238196" do\nend',
+            descriptions: [
+              { label: 'default', data: 'Test requirement' }
+            ],
+          }
+        ],
       };
       expect(validate(doc)).toBe(true);
     });

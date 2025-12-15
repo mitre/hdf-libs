@@ -2927,5 +2927,246 @@ describe('Primitive Schema Validation', () => {
         );
       });
     });
+
+    describe('Reference URL/URI format validation', () => {
+      const validateUrl = ajv.compile({
+        type: 'object',
+        required: ['url'],
+        properties: {
+          url: {
+            type: 'string',
+            format: 'uri',
+          },
+        },
+      });
+
+      const validateUri = ajv.compile({
+        type: 'object',
+        required: ['uri'],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'uri',
+          },
+        },
+      });
+
+      it('should accept valid HTTPS URL', () => {
+        expect(validateUrl({ url: 'https://example.com/doc' })).toBe(true);
+      });
+
+      it('should accept valid HTTP URL', () => {
+        expect(validateUrl({ url: 'http://example.com/page.html' })).toBe(true);
+      });
+
+      it('should reject invalid URL', () => {
+        expect(validateUrl({ url: 'not a url' })).toBe(false);
+        expect(validateUrl.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'format',
+            params: { format: 'uri' },
+          })
+        );
+      });
+
+      it('should accept valid URI', () => {
+        expect(validateUri({ uri: 'https://standards.org/doc#section-3' })).toBe(true);
+      });
+
+      it('should reject invalid URI', () => {
+        expect(validateUri({ uri: 'invalid uri' })).toBe(false);
+        expect(validateUri.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'format',
+            params: { format: 'uri' },
+          })
+        );
+      });
+    });
+
+    describe('Dependency url format validation', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency',
+      });
+
+      it('should accept valid HTTP URL', () => {
+        const valid = {
+          name: 'dependency',
+          url: 'http://example.com/resource',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept relative URL reference', () => {
+        const valid = {
+          name: 'dependency',
+          url: '../relative/path',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid URL format', () => {
+        const invalid = {
+          name: 'dependency',
+          url: 'not a valid url',
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'format',
+          })
+        );
+      });
+    });
+
+    describe('Remediation uri format validation', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation',
+      });
+
+      it('should accept valid HTTPS URI', () => {
+        const valid = {
+          uri: 'https://github.com/org/ansible-playbooks',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept valid file URI', () => {
+        const valid = {
+          uri: 'file:///opt/remediation/scripts',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid URI', () => {
+        const invalid = {
+          uri: 'not a uri',
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'format',
+            params: { format: 'uri' },
+          })
+        );
+      });
+    });
+
+    describe('Host_Target fqdn format validation', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Host_Target',
+      });
+
+      it('should accept valid FQDN', () => {
+        const valid = {
+          type: 'host',
+          name: 'web-server',
+          fqdn: 'web01.example.com',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept valid subdomain FQDN', () => {
+        const valid = {
+          type: 'host',
+          name: 'api-server',
+          fqdn: 'api.prod.example.com',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid hostname', () => {
+        const invalid = {
+          type: 'host',
+          name: 'bad-host',
+          fqdn: 'not a valid hostname!',
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'format',
+            params: { format: 'hostname' },
+          })
+        );
+      });
+    });
+
+    describe('Repository_Target url format validation', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Repository_Target',
+      });
+
+      it('should accept valid HTTPS repository URL', () => {
+        const valid = {
+          type: 'repository',
+          name: 'source-code',
+          url: 'https://github.com/org/repo',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept valid SSH repository URL', () => {
+        const valid = {
+          type: 'repository',
+          name: 'source-code',
+          url: 'ssh://git@gitlab.com/org/repo.git',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid repository URL', () => {
+        const invalid = {
+          type: 'repository',
+          name: 'source-code',
+          url: 'not a url',
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'format',
+            params: { format: 'uri' },
+          })
+        );
+      });
+    });
+
+    describe('Application_Target url format validation', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Application_Target',
+      });
+
+      it('should accept valid HTTPS application URL', () => {
+        const valid = {
+          type: 'application',
+          name: 'web-app',
+          url: 'https://app.example.com',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should accept valid HTTP application URL with port', () => {
+        const valid = {
+          type: 'application',
+          name: 'api',
+          url: 'http://localhost:8080/api',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid application URL', () => {
+        const invalid = {
+          type: 'application',
+          name: 'app',
+          url: 'not a valid url',
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toContainEqual(
+          expect.objectContaining({
+            keyword: 'format',
+            params: { format: 'uri' },
+          })
+        );
+      });
+    });
   });
 });

@@ -49,6 +49,7 @@
             },
             "fqdn": {
               "type": ["string", "null"],
+              "format": "hostname",
               "description": "Fully qualified domain name."
             },
             "ipAddress": {
@@ -247,6 +248,7 @@
             },
             "url": {
               "type": ["string", "null"],
+              "format": "uri",
               "description": "Repository URL."
             },
             "branch": {
@@ -274,6 +276,7 @@
             },
             "url": {
               "type": ["string", "null"],
+              "format": "uri",
               "description": "Application URL (for DAST tools)."
             },
             "version": {

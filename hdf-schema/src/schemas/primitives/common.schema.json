@@ -45,6 +45,7 @@
         },
         "url": {
           "type": ["string", "null"],
+          "format": "uri-reference",
           "description": "The address of the dependency."
         },
         "branch": {
@@ -100,7 +101,8 @@
           "required": ["url"],
           "properties": {
             "url": {
-              "type": "string"
+              "type": "string",
+              "format": "uri"
             }
           },
           "description": "A URL pointing at the reference."
@@ -110,7 +112,8 @@
           "required": ["uri"],
           "properties": {
             "uri": {
-              "type": "string"
+              "type": "string",
+              "format": "uri"
             }
           },
           "description": "A URI pointing at the reference."
@@ -253,6 +256,7 @@
       "properties": {
         "uri": {
           "type": "string",
+          "format": "uri",
           "description": "URI pointing to automated remediation resources (Ansible playbooks, Terraform scripts, etc.). Examples: GitHub repository, DISA STIG Supplemental Automation Content, vendor-provided scripts."
         },
         "checksum": {
