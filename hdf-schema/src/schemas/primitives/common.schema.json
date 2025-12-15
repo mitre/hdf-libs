@@ -78,6 +78,32 @@
           "description": "The 'user/profilename' attribute for an Automate server."
         }
       },
+      "examples": [
+        {
+          "name": "ubuntu-22.04-baseline",
+          "url": "https://github.com/my-org/ubuntu-22.04-stig-baseline",
+          "git": "https://github.com/my-org/ubuntu-22.04-stig-baseline.git",
+          "branch": "main",
+          "status": "loaded"
+        },
+        {
+          "name": "ssl-tls-baseline",
+          "path": "../shared-baselines/ssl-tls",
+          "status": "loaded"
+        },
+        {
+          "name": "windows-2022-baseline",
+          "git": "https://github.com/security-org/windows-2022-stig.git",
+          "branch": "v1.2.0",
+          "status": "failed",
+          "statusMessage": "Unable to clone repository: authentication failed"
+        },
+        {
+          "name": "chef-supermarket-baseline",
+          "supermarket": "dev-sec/linux-baseline",
+          "status": "loaded"
+        }
+      ],
       "description": "A dependency for a baseline. Can include relative paths or URLs for where to find the dependency.",
       "title": "Dependency"
     },
@@ -246,6 +272,54 @@
           "description": "Identity of who or what captured this evidence."
         }
       },
+      "examples": [
+        {
+          "type": "screenshot",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+          "description": "Screenshot showing firewall configuration with required ports blocked",
+          "mimeType": "image/png",
+          "encoding": "base64",
+          "size": 95,
+          "capturedAt": "2025-12-14T10:30:00Z",
+          "capturedBy": {
+            "identifier": "security-auditor@example.com",
+            "type": "email"
+          }
+        },
+        {
+          "type": "code",
+          "data": "# Nginx configuration\nserver {\n  listen 443 ssl;\n  ssl_protocols TLSv1.2 TLSv1.3;\n  ssl_ciphers HIGH:!aNULL:!MD5;\n}",
+          "description": "Server configuration showing TLS 1.2+ enforcement",
+          "mimeType": "text/plain",
+          "capturedAt": "2025-12-14T10:45:00Z"
+        },
+        {
+          "type": "log",
+          "data": "[2025-12-14 10:00:15] INFO: Security scan completed - 0 critical vulnerabilities found\n[2025-12-14 10:00:16] INFO: All required security patches applied\n[2025-12-14 10:00:17] INFO: System compliant with security baseline",
+          "description": "Security scan log output",
+          "mimeType": "text/plain",
+          "size": 256
+        },
+        {
+          "type": "url",
+          "data": "https://jira.example.com/browse/SEC-12345",
+          "description": "Link to security ticket documenting remediation work",
+          "capturedAt": "2025-12-14T11:00:00Z"
+        },
+        {
+          "type": "file",
+          "data": "UEsDBBQAAAAIAI1ZX1YhQp8FHgAAABIAAAAIAAAAdGVzdC50eHRLy8nPS8lQSgIAUmNEBhQAAAA=",
+          "description": "Compliance audit report PDF",
+          "mimeType": "application/pdf",
+          "encoding": "base64",
+          "size": 2048,
+          "capturedAt": "2025-12-14T12:00:00Z",
+          "capturedBy": {
+            "identifier": "compliance-system",
+            "type": "system"
+          }
+        }
+      ],
       "description": "Supporting evidence for a finding or override, such as screenshots, code samples, log excerpts, or URLs.",
       "title": "Evidence"
     },
@@ -384,6 +458,61 @@
           "description": "Domain restriction for the signature, prevents cross-domain replay attacks."
         }
       },
+      "examples": [
+        {
+          "type": "JsonWebSignature2020",
+          "created": "2025-12-14T10:00:00Z",
+          "creator": {
+            "identifier": "security-team@example.com",
+            "type": "email"
+          },
+          "signatureValue": "eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..MEYCIQDvKbtLRhWAa",
+          "proofPurpose": "attestation",
+          "verificationMethod": {
+            "type": "JsonWebKey2020",
+            "controller": "did:example:123456789abcdefghi",
+            "publicKeyJwk": {
+              "kty": "RSA",
+              "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtV",
+              "e": "AQAB"
+            }
+          }
+        },
+        {
+          "type": "RsaSignature2018",
+          "created": "2025-12-14T11:30:00Z",
+          "creator": {
+            "identifier": "ciso@example.com",
+            "type": "email"
+          },
+          "signatureValue": "pY9...Cg==",
+          "proofPurpose": "authentication",
+          "verificationMethod": {
+            "type": "RsaVerificationKey2018",
+            "controller": "https://example.com/issuers/565049",
+            "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAryQICCl6NZ5gDKrnSztO\n-----END PUBLIC KEY-----"
+          },
+          "nonce": "c0ae1c8e-c7e7-469f-b252-86e6a0e7387e"
+        },
+        {
+          "type": "Ed25519Signature2020",
+          "created": "2025-12-14T14:00:00Z",
+          "creator": {
+            "identifier": "automated-signer",
+            "type": "system",
+            "description": "Hardware security module (HSM) for automated attestations"
+          },
+          "signatureValue": "z58DAdFfa9SkqZMVMxABEBC59Ck6WibLZ",
+          "proofPurpose": "assertionMethod",
+          "verificationMethod": {
+            "type": "Ed25519VerificationKey2020",
+            "controller": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+            "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
+          },
+          "challenge": "1f44d2f3-d16c-47a4-9f5f-1d6e8f4e3a2b",
+          "domain": "https://compliance.example.com"
+        }
+      ],
       "description": "A digital signature following W3C Data Integrity Proofs pattern. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other cryptographic signing methods via JWK, PEM, or Base58 key formats.",
       "title": "Signature"
     },
