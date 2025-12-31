@@ -29,6 +29,7 @@ coverage/
 # IDEs
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
