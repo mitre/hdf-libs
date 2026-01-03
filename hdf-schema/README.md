@@ -140,4 +140,4 @@ pnpm build:types
 
 ## Schema Version
 
-This package uses **JSON Schema draft-07**.
+This package uses **JSON Schema draft/2020-12**.
