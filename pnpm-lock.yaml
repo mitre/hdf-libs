@@ -60,6 +60,8 @@ importers:
         specifier: ^4.20.6
         version: 4.20.6
 
+  hdf-utilities: {}
+
 packages:
 
   '@ampproject/remapping@2.3.0':
