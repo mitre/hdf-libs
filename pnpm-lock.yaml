@@ -32,6 +32,8 @@ importers:
 
   hdf-cli: {}
 
+  hdf-converters: {}
+
   hdf-mappings: {}
 
   hdf-schema:

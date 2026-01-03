@@ -1,0 +1,47 @@
+{
+  "name": "@mitre/hdf-converters",
+  "version": "0.1.0",
+  "description": "Converters for transforming security tool outputs and HDF formats",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm clean && tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src test",
+    "lint:fix": "eslint src test --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mitre/hdf-libs.git",
+    "directory": "hdf-converters"
+  },
+  "author": "MITRE Corporation",
+  "license": "Apache-2.0",
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "hdf",
+    "heimdall",
+    "converters",
+    "security",
+    "compliance",
+    "inspec"
+  ]
+}
