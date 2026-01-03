@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { existsSync, rmSync, readFileSync } from 'fs';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { existsSync, rmSync, readFileSync, renameSync } from 'fs';
 import { join } from 'path';
 import { bundleSchemas } from '../src/bundle-schemas';
 import { generateTypes } from '../src/generate-types';
 
 const DIST_DIR = join(__dirname, '..', 'dist');
+const SCHEMAS_DIR = join(DIST_DIR, 'schemas');
 
 describe('generate-types', () => {
   beforeAll(async () => {
@@ -90,6 +91,47 @@ describe('generate-types', () => {
     it('should use dataclasses or typing', () => {
       const content = readFileSync(join(DIST_DIR, 'python', 'hdf_results.py'), 'utf-8');
       expect(content).toMatch(/dataclass|@dataclass|from typing|TypedDict/);
+    });
+  });
+
+  describe('Error handling', () => {
+    it('should throw error when bundled schemas directory does not exist', async () => {
+      // Temporarily rename schemas directory
+      const tempDir = join(DIST_DIR, 'schemas-temp');
+      if (existsSync(SCHEMAS_DIR)) {
+        renameSync(SCHEMAS_DIR, tempDir);
+      }
+
+      try {
+        await expect(generateTypes()).rejects.toThrow(
+          'Bundled schemas not found'
+        );
+      } finally {
+        // Restore schemas directory
+        if (existsSync(tempDir)) {
+          renameSync(tempDir, SCHEMAS_DIR);
+        }
+      }
+    });
+
+    it('should handle missing schema files gracefully', async () => {
+      // Temporarily rename one schema file
+      const schemaFile = join(SCHEMAS_DIR, 'hdf-results.schema.json');
+      const tempFile = join(SCHEMAS_DIR, 'hdf-results.schema.json.temp');
+
+      if (existsSync(schemaFile)) {
+        renameSync(schemaFile, tempFile);
+      }
+
+      try {
+        // Should not throw, just skip the missing file
+        await expect(generateTypes()).resolves.not.toThrow();
+      } finally {
+        // Restore schema file
+        if (existsSync(tempFile)) {
+          renameSync(tempFile, schemaFile);
+        }
+      }
     });
   });
 });

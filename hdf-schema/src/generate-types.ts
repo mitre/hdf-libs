@@ -112,9 +112,11 @@ export async function generateTypes(): Promise<void> {
 }
 
 // Run if called directly
+/* c8 ignore start */
 if (import.meta.url === `file://${process.argv[1]}`) {
   generateTypes().catch((err) => {
     console.error('Type generation failed:', err);
     process.exit(1);
   });
 }
+/* c8 ignore stop */

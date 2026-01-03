@@ -89,9 +89,11 @@ export async function bundleSchemas(): Promise<void> {
 }
 
 // Run if called directly
+/* c8 ignore start */
 if (import.meta.url === `file://${process.argv[1]}`) {
   bundleSchemas().catch((err) => {
     console.error('Bundle failed:', err);
     process.exit(1);
   });
 }
+/* c8 ignore stop */
