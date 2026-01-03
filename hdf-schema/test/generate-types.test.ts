@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { existsSync, rmSync, readFileSync, renameSync } from 'fs';
 import { join } from 'path';
 import { bundleSchemas } from '../src/bundle-schemas';

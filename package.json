@@ -18,6 +18,7 @@
     "clean": "pnpm -r run clean"
   },
   "devDependencies": {
+    "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^2.0.0",
