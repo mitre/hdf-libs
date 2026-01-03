@@ -3,7 +3,33 @@ import tsparser from '@typescript-eslint/parser';
 
 export default [
   {
-    files: ['src/**/*.ts', 'test/**/*.ts'],
+    files: ['src/**/*.ts'],
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+        project: './tsconfig.json',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint,
+    },
+    rules: {
+      ...tseslint.configs.recommended.rules,
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/explicit-function-return-type': ['warn', {
+        allowExpressions: true,
+        allowTypedFunctionExpressions: true,
+      }],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/await-thenable': 'error',
+      'no-console': 'warn',
+    },
+  },
+  {
+    files: ['test/**/*.ts'],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
@@ -15,9 +41,10 @@ export default [
       '@typescript-eslint': tseslint,
     },
     rules: {
-      '@typescript-eslint/no-explicit-any': 'warn',
+      ...tseslint.configs.recommended.rules,
+      '@typescript-eslint/no-explicit-any': 'off', // Allow 'any' in tests for flexibility
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      'no-console': 'warn',
+      'no-console': 'off', // Allow console in tests
     },
   },
 ];

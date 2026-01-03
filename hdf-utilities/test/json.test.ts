@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { parseJSON, stringifyJSON, isValidJSON } from '../src/json/index.js';
 
 describe('parseJSON', () => {
@@ -52,6 +52,14 @@ describe('parseJSON', () => {
     expect(parseJSON('42')).toBe(42);
     expect(parseJSON('3.14')).toBe(3.14);
   });
+
+  it('should handle non-Error exceptions', () => {
+    const spy = vi.spyOn(JSON, 'parse').mockImplementation(() => {
+      throw 'string error';
+    });
+    expect(() => parseJSON('test')).toThrow('Invalid JSON: string error');
+    spy.mockRestore();
+  });
 });
 
 describe('stringifyJSON', () => {
@@ -102,6 +110,14 @@ describe('stringifyJSON', () => {
     const obj: any = { name: 'test' };
     obj.self = obj;
     expect(() => stringifyJSON(obj)).toThrow();
+  });
+
+  it('should handle non-Error exceptions', () => {
+    const spy = vi.spyOn(JSON, 'stringify').mockImplementation(() => {
+      throw 'string error';
+    });
+    expect(() => stringifyJSON({ test: 'value' })).toThrow('Failed to stringify JSON: string error');
+    spy.mockRestore();
   });
 });
 
