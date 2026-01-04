@@ -20,6 +20,7 @@ build/
 # Testing
 coverage/
 .nyc_output/
+test-output/
 
 # Environment variables
 .env

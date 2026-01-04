@@ -1,28 +1,197 @@
 /**
  * HDF v1.0 to v2.0 converter.
  *
- * Key transformations:
- * - Remove: version field (implicit in v2.0)
- * - Rename: profiles → baselines
- * - Transform: platform (single object) → targets (array)
+ * Comprehensive transformations:
+ * - Top-level: version removed, profiles → baselines, platform → targets
+ * - Baseline: sha256 → checksum, controls → requirements
+ * - Control: source_location → sourceLocation, waiver_data → waiverData, status → effectiveStatus
+ * - Results: snake_case → camelCase for all fields
  */
+
+// ===== V1.0 Type Definitions =====
+
+export interface V1Result {
+  status: string;
+  code_desc?: string;
+  run_time?: number;
+  start_time?: string;
+  message?: string;
+  exception?: string;
+  backtrace?: unknown;
+  resource_class?: string;
+  resource_params?: string;
+  resource_id?: string;
+  skip_message?: string;
+  [key: string]: unknown;
+}
+
+export interface V1Control {
+  id: string;
+  title?: string;
+  desc?: string;
+  descriptions?: Array<{label: string; data: string}>;
+  impact: number;
+  refs?: unknown[];
+  tags?: Record<string, unknown>;
+  code?: string;
+  source_location?: {
+    ref?: string;
+    line?: number;
+  };
+  waiver_data?: Record<string, unknown>;
+  results?: V1Result[];
+  status?: string; // overall_status in some v1.0 variants
+  [key: string]: unknown;
+}
+
+export interface V1Group {
+  id: string;
+  title?: string;
+  controls: string[]; // Array of control IDs
+  [key: string]: unknown;
+}
+
+export interface V1Dependency {
+  name?: string;
+  url?: string;
+  path?: string;
+  git?: string;
+  branch?: string;
+  tag?: string;
+  commit?: string;
+  version?: string;
+  supermarket?: string;
+  compliance?: string;
+  status?: string;
+  skip_message?: string;
+  [key: string]: unknown;
+}
+
+export interface V1Profile {
+  name: string;
+  version?: string;
+  title?: string;
+  maintainer?: string;
+  summary?: string;
+  license?: string;
+  copyright?: string;
+  copyright_email?: string;
+  supports?: unknown[];
+  attributes?: unknown[];
+  groups?: V1Group[];
+  controls?: V1Control[];
+  sha256?: string;
+  depends?: V1Dependency[];
+  parent_profile?: string;
+  status?: string;
+  status_message?: string;
+  skip_message?: string;
+  [key: string]: unknown;
+}
+
+export interface V1Platform {
+  name: string;
+  release?: string;
+  target_id?: string;
+  [key: string]: unknown;
+}
 
 export interface HDFV1Results {
   version: string;
-  platform: {
-    name: string;
-    release?: string;
-    target_id?: string;
-  };
-  profiles: unknown[];
+  platform: V1Platform;
+  profiles: V1Profile[];
   statistics: unknown;
   generator?: unknown;
   timestamp?: string;
   [key: string]: unknown;
 }
 
+// ===== V2.0 Type Definitions =====
+
+export interface V2Result {
+  status: string;
+  codeDesc?: string;
+  runTime?: number;
+  startTime?: string;
+  message?: string;
+  exception?: string;
+  backtrace?: unknown;
+  resourceClass?: string;
+  resourceParams?: string;
+  resourceId?: string;
+  skipMessage?: string;
+  [key: string]: unknown;
+}
+
+export interface V2Requirement {
+  id: string;
+  title?: string;
+  desc?: string;
+  descriptions?: Array<{label: string; data: string}>;
+  impact: number;
+  refs?: unknown[];
+  tags?: Record<string, unknown>;
+  code?: string;
+  sourceLocation?: {
+    ref?: string;
+    line?: number;
+  };
+  waiverData?: Record<string, unknown>;
+  results?: V2Result[];
+  effectiveStatus?: string;
+  [key: string]: unknown;
+}
+
+export interface V2Group {
+  id: string;
+  title?: string;
+  requirements: string[]; // Array of requirement IDs
+  [key: string]: unknown;
+}
+
+export interface V2Dependency {
+  name?: string;
+  url?: string;
+  path?: string;
+  git?: string;
+  branch?: string;
+  tag?: string;
+  commit?: string;
+  version?: string;
+  supermarket?: string;
+  compliance?: string;
+  status?: string;
+  skipMessage?: string;
+  [key: string]: unknown;
+}
+
+export interface V2Baseline {
+  name: string;
+  version?: string;
+  title?: string;
+  maintainer?: string;
+  summary?: string;
+  license?: string;
+  copyright?: string;
+  copyright_email?: string;
+  supports?: unknown[];
+  attributes?: unknown[];
+  groups?: V2Group[];
+  requirements?: V2Requirement[];
+  checksum?: {
+    algorithm: string;
+    value: string;
+  };
+  depends?: V2Dependency[];
+  parentProfile?: string;
+  status?: string;
+  statusMessage?: string;
+  skipMessage?: string;
+  [key: string]: unknown;
+}
+
 export interface HDFV2Results {
-  baselines: unknown[];
+  baselines: V2Baseline[];
   statistics: unknown;
   targets?: unknown[];
   generator?: unknown;
@@ -34,8 +203,251 @@ export interface HDFV2Results {
   extensions?: Record<string, unknown>;
 }
 
+// ===== Conversion Functions =====
+
+/**
+ * Normalize status values from v1.0 to v2.0 format.
+ * Converts snake_case to camelCase.
+ */
+function normalizeStatus(status: string): string {
+  const statusMap: Record<string, string> = {
+    'passed': 'passed',
+    'failed': 'failed',
+    'error': 'error',
+    'not_applicable': 'notApplicable',
+    'not_reviewed': 'notReviewed',
+    'skipped': 'notReviewed', // v1.0 skipped → v2.0 notReviewed
+  };
+  return statusMap[status] || status;
+}
+
+/**
+ * Convert v1.0 result to v2.0 result.
+ * Transforms snake_case field names to camelCase.
+ */
+function convertResult(v1Result: V1Result): V2Result {
+  const v2Result: V2Result = {
+    status: normalizeStatus(v1Result.status),
+  };
+
+  // Transform snake_case to camelCase
+  if (v1Result.code_desc !== undefined) v2Result.codeDesc = v1Result.code_desc;
+  if (v1Result.run_time !== undefined) v2Result.runTime = v1Result.run_time;
+  if (v1Result.start_time !== undefined) v2Result.startTime = v1Result.start_time;
+  if (v1Result.message !== undefined) v2Result.message = v1Result.message;
+  if (v1Result.exception !== undefined) v2Result.exception = v1Result.exception;
+  if (v1Result.backtrace !== undefined) v2Result.backtrace = v1Result.backtrace;
+  if (v1Result.resource_class !== undefined) v2Result.resourceClass = v1Result.resource_class;
+  if (v1Result.resource_params !== undefined) v2Result.resourceParams = v1Result.resource_params;
+  if (v1Result.resource_id !== undefined) v2Result.resourceId = v1Result.resource_id;
+  if (v1Result.skip_message !== undefined) v2Result.skipMessage = v1Result.skip_message;
+
+  // Preserve any other fields
+  const knownFields = new Set([
+    'status', 'code_desc', 'run_time', 'start_time', 'message', 'exception',
+    'backtrace', 'resource_class', 'resource_params', 'resource_id', 'skip_message'
+  ]);
+  for (const [key, value] of Object.entries(v1Result)) {
+    if (!knownFields.has(key) && !(key in v2Result)) {
+      v2Result[key] = value;
+    }
+  }
+
+  return v2Result;
+}
+
+/**
+ * Convert v1.0 control to v2.0 requirement.
+ * Transforms field names and structure.
+ */
+function convertControl(v1Control: V1Control): V2Requirement {
+  const v2Req: V2Requirement = {
+    id: v1Control.id,
+    impact: v1Control.impact,
+  };
+
+  // Copy simple fields
+  if (v1Control.title !== undefined) v2Req.title = v1Control.title;
+  if (v1Control.desc !== undefined) v2Req.desc = v1Control.desc;
+  if (v1Control.descriptions !== undefined) v2Req.descriptions = v1Control.descriptions;
+  if (v1Control.refs !== undefined) v2Req.refs = v1Control.refs;
+  if (v1Control.tags !== undefined) v2Req.tags = v1Control.tags;
+  if (v1Control.code !== undefined) v2Req.code = v1Control.code;
+
+  // Transform snake_case to camelCase
+  if (v1Control.source_location !== undefined) {
+    v2Req.sourceLocation = v1Control.source_location;
+  }
+  if (v1Control.waiver_data !== undefined) {
+    v2Req.waiverData = v1Control.waiver_data;
+  }
+
+  // Transform status to effectiveStatus with normalization
+  if (v1Control.status !== undefined) {
+    v2Req.effectiveStatus = normalizeStatus(v1Control.status);
+  }
+
+  // Transform results array
+  if (v1Control.results && Array.isArray(v1Control.results)) {
+    v2Req.results = v1Control.results.map(convertResult);
+  }
+
+  // Preserve any other fields
+  const knownFields = new Set([
+    'id', 'title', 'desc', 'descriptions', 'impact', 'refs', 'tags', 'code',
+    'source_location', 'waiver_data', 'results', 'status'
+  ]);
+  for (const [key, value] of Object.entries(v1Control)) {
+    if (!knownFields.has(key) && !(key in v2Req)) {
+      v2Req[key] = value;
+    }
+  }
+
+  return v2Req;
+}
+
+/**
+ * Convert v1.0 group to v2.0 group.
+ * Renames controls array to requirements.
+ */
+function convertGroup(v1Group: V1Group): V2Group {
+  const v2Group: V2Group = {
+    id: v1Group.id,
+    requirements: v1Group.controls, // Rename controls to requirements
+  };
+
+  if (v1Group.title !== undefined) {
+    v2Group.title = v1Group.title;
+  }
+
+  // Preserve any other fields
+  const knownFields = new Set(['id', 'title', 'controls']);
+  for (const [key, value] of Object.entries(v1Group)) {
+    if (!knownFields.has(key) && !(key in v2Group)) {
+      v2Group[key] = value;
+    }
+  }
+
+  return v2Group;
+}
+
+/**
+ * Convert v1.0 dependency to v2.0 dependency.
+ * Transforms snake_case to camelCase for skip_message.
+ */
+function convertDependency(v1Dep: V1Dependency): V2Dependency {
+  const v2Dep: V2Dependency = {};
+
+  // Copy most fields as-is
+  if (v1Dep.name !== undefined) v2Dep.name = v1Dep.name;
+  if (v1Dep.url !== undefined) v2Dep.url = v1Dep.url;
+  if (v1Dep.path !== undefined) v2Dep.path = v1Dep.path;
+  if (v1Dep.git !== undefined) v2Dep.git = v1Dep.git;
+  if (v1Dep.branch !== undefined) v2Dep.branch = v1Dep.branch;
+  if (v1Dep.tag !== undefined) v2Dep.tag = v1Dep.tag;
+  if (v1Dep.commit !== undefined) v2Dep.commit = v1Dep.commit;
+  if (v1Dep.version !== undefined) v2Dep.version = v1Dep.version;
+  if (v1Dep.supermarket !== undefined) v2Dep.supermarket = v1Dep.supermarket;
+  if (v1Dep.compliance !== undefined) v2Dep.compliance = v1Dep.compliance;
+  if (v1Dep.status !== undefined) v2Dep.status = v1Dep.status;
+
+  // Transform snake_case to camelCase
+  if (v1Dep.skip_message !== undefined) {
+    v2Dep.skipMessage = v1Dep.skip_message;
+  }
+
+  // Preserve any other fields
+  const knownFields = new Set([
+    'name', 'url', 'path', 'git', 'branch', 'tag', 'commit', 'version',
+    'supermarket', 'compliance', 'status', 'skip_message'
+  ]);
+  for (const [key, value] of Object.entries(v1Dep)) {
+    if (!knownFields.has(key) && !(key in v2Dep)) {
+      v2Dep[key] = value;
+    }
+  }
+
+  return v2Dep;
+}
+
+/**
+ * Convert v1.0 profile to v2.0 baseline.
+ * Transforms field names and nested structures.
+ */
+function convertProfile(v1Profile: V1Profile): V2Baseline {
+  const v2Baseline: V2Baseline = {
+    name: v1Profile.name,
+  };
+
+  // Copy simple fields
+  if (v1Profile.version !== undefined) v2Baseline.version = v1Profile.version;
+  if (v1Profile.title !== undefined) v2Baseline.title = v1Profile.title;
+  if (v1Profile.maintainer !== undefined) v2Baseline.maintainer = v1Profile.maintainer;
+  if (v1Profile.summary !== undefined) v2Baseline.summary = v1Profile.summary;
+  if (v1Profile.license !== undefined) v2Baseline.license = v1Profile.license;
+  if (v1Profile.copyright !== undefined) v2Baseline.copyright = v1Profile.copyright;
+  if (v1Profile.copyright_email !== undefined) v2Baseline.copyright_email = v1Profile.copyright_email;
+  if (v1Profile.supports !== undefined) v2Baseline.supports = v1Profile.supports;
+  if (v1Profile.attributes !== undefined) v2Baseline.attributes = v1Profile.attributes;
+  if (v1Profile.status !== undefined) v2Baseline.status = v1Profile.status;
+
+  // Transform sha256 to checksum object
+  if (v1Profile.sha256) {
+    v2Baseline.checksum = {
+      algorithm: 'sha256',
+      value: v1Profile.sha256,
+    };
+  }
+
+  // Transform snake_case to camelCase
+  if (v1Profile.parent_profile !== undefined) {
+    v2Baseline.parentProfile = v1Profile.parent_profile;
+  }
+  if (v1Profile.status_message !== undefined) {
+    v2Baseline.statusMessage = v1Profile.status_message;
+  }
+  if (v1Profile.skip_message !== undefined) {
+    v2Baseline.skipMessage = v1Profile.skip_message;
+  }
+
+  // Transform groups (controls → requirements)
+  if (v1Profile.groups && Array.isArray(v1Profile.groups)) {
+    v2Baseline.groups = v1Profile.groups.map(convertGroup);
+  }
+
+  // Transform controls to requirements
+  if (v1Profile.controls && Array.isArray(v1Profile.controls)) {
+    v2Baseline.requirements = v1Profile.controls.map(convertControl);
+  }
+
+  // Transform depends
+  if (v1Profile.depends && Array.isArray(v1Profile.depends)) {
+    v2Baseline.depends = v1Profile.depends.map(convertDependency);
+  }
+
+  // Preserve any other fields
+  const knownFields = new Set([
+    'name', 'version', 'title', 'maintainer', 'summary', 'license', 'copyright',
+    'copyright_email', 'supports', 'attributes', 'groups', 'controls', 'sha256',
+    'depends', 'parent_profile', 'status', 'status_message', 'skip_message'
+  ]);
+  for (const [key, value] of Object.entries(v1Profile)) {
+    if (!knownFields.has(key) && !(key in v2Baseline)) {
+      v2Baseline[key] = value;
+    }
+  }
+
+  return v2Baseline;
+}
+
 /**
  * Convert HDF v1.0 results to v2.0 format.
+ *
+ * Performs comprehensive transformation at all levels:
+ * - Top-level: version removed, profiles → baselines, platform → targets
+ * - Baselines: sha256 → checksum, controls → requirements, field renaming
+ * - Requirements: snake_case → camelCase, status → effectiveStatus
+ * - Results: snake_case → camelCase for all fields
  *
  * @param v1Data - HDF v1.0 results object
  * @returns HDF v2.0 results object
@@ -54,7 +466,7 @@ export interface HDFV2Results {
  */
 export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
   const v2: HDFV2Results = {
-    baselines: v1Data.profiles || [],
+    baselines: (v1Data.profiles || []).map(convertProfile),
     statistics: v1Data.statistics || {},
   };
 
@@ -62,7 +474,7 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
   if (v1Data.platform) {
     v2.targets = [
       {
-        type: 'system',
+        type: 'host', // v2.0 uses 'host' instead of 'system'
         id: v1Data.platform.target_id || v1Data.platform.name,
         name: v1Data.platform.name,
         ...(v1Data.platform.release && { release: v1Data.platform.release }),
