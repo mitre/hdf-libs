@@ -4,8 +4,10 @@
   "description": "CLI tool for working with Heimdall Data Format (HDF) files",
   "private": true,
   "scripts": {
-    "build": "go build -o hdf ./cmd/hdf",
-    "build:release": "go build -ldflags \"-s -w -X github.com/mitre/hdf-cli/cmd/hdf/cmd.version=$(git describe --tags --always) -X github.com/mitre/hdf-cli/cmd/hdf/cmd.commit=$(git rev-parse --short HEAD) -X github.com/mitre/hdf-cli/cmd/hdf/cmd.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)\" -o hdf ./cmd/hdf",
+    "sync-schemas": "while [ ! -d ../hdf-schema/dist/schemas ]; do sleep 0.5; done && cp ../hdf-schema/dist/schemas/*.json pkg/schema/schemas/",
+    "prebuild": "pnpm sync-schemas",
+    "build": "pnpm prebuild && go build -o hdf ./cmd/hdf",
+    "build:release": "pnpm prebuild && go build -ldflags \"-s -w -X github.com/mitre/hdf-cli/cmd/hdf/cmd.version=$(git describe --tags --always) -X github.com/mitre/hdf-cli/cmd/hdf/cmd.commit=$(git rev-parse --short HEAD) -X github.com/mitre/hdf-cli/cmd/hdf/cmd.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)\" -o hdf ./cmd/hdf",
     "clean": "rm -f hdf coverage.out",
 
     "test": "go test ./...",

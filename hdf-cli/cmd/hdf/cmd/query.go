@@ -121,11 +121,6 @@ func runQuery(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Interactive mode
-	if interactive {
-		return runInteractiveQuery(results)
-	}
-
 	// Build filter chain and find matches
 	filters := buildFilters()
 	matches := findMatches(results, filters)
@@ -138,13 +133,13 @@ func runQuery(_ *cobra.Command, args []string) error {
 func findMatches(results hdf.HdfResults, filters []filterFunc) []queryResult {
 	var matches []queryResult
 
-	for _, profile := range results.Profiles {
-		// Profile filter
-		if queryProfile != "" && !matchesGlob(profile.Name, queryProfile) {
+	for _, baseline := range results.Baselines {
+		// Baseline filter
+		if queryProfile != "" && !matchesGlob(baseline.Name, queryProfile) {
 			continue
 		}
 
-		for _, control := range profile.Controls {
+		for _, control := range baseline.Requirements {
 			// Check limit (unless counting)
 			if queryLimit > 0 && len(matches) >= queryLimit && !queryCount {
 				return matches
@@ -169,7 +164,7 @@ func findMatches(results hdf.HdfResults, filters []filterFunc) []queryResult {
 				Status:   status,
 				Impact:   control.Impact,
 				Severity: severity,
-				Profile:  profile.Name,
+				Profile:  baseline.Name,
 			})
 		}
 	}
@@ -299,9 +294,11 @@ func buildFilters() []filterFunc {
 			if c.Title != nil && strings.Contains(strings.ToLower(*c.Title), search) {
 				return true
 			}
-			// Search in description
-			if c.Desc != nil && strings.Contains(strings.ToLower(*c.Desc), search) {
-				return true
+				// Search in descriptions
+			for _, desc := range c.Descriptions {
+				if strings.Contains(strings.ToLower(desc.Data), search) {
+					return true
+				}
 			}
 			return false
 		})

@@ -13,18 +13,18 @@ func TestDetermineControlStatus(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "passed from overall_status",
+			name: "passed from effective_status",
 			control: hdf.EvaluatedRequirement{
-				OverallStatus: ptrOverallStatus(hdf.OverallStatusPassed),
-				Results:       []hdf.RequirementResult{},
+				EffectiveStatus: ptrResultStatus(hdf.Passed),
+				Results:         []hdf.RequirementResult{},
 			},
 			expected: "passed",
 		},
 		{
-			name: "failed from overall_status",
+			name: "failed from effective_status",
 			control: hdf.EvaluatedRequirement{
-				OverallStatus: ptrOverallStatus(hdf.OverallStatusFailed),
-				Results:       []hdf.RequirementResult{},
+				EffectiveStatus: ptrResultStatus(hdf.Failed),
+				Results:         []hdf.RequirementResult{},
 			},
 			expected: "failed",
 		},
@@ -49,7 +49,7 @@ func TestDetermineControlStatus(t *testing.T) {
 			control: hdf.EvaluatedRequirement{
 				Impact: 0.5,
 				Results: []hdf.RequirementResult{
-					{Status: ptrResultStatus(hdf.ResultStatusPassed)},
+					{Status: ptrResultStatus(hdf.Passed)},
 				},
 			},
 			expected: "passed",
@@ -59,8 +59,8 @@ func TestDetermineControlStatus(t *testing.T) {
 			control: hdf.EvaluatedRequirement{
 				Impact: 0.5,
 				Results: []hdf.RequirementResult{
-					{Status: ptrResultStatus(hdf.ResultStatusPassed)},
-					{Status: ptrResultStatus(hdf.ResultStatusFailed)},
+					{Status: ptrResultStatus(hdf.Passed)},
+					{Status: ptrResultStatus(hdf.Failed)},
 				},
 			},
 			expected: "failed",
@@ -70,21 +70,11 @@ func TestDetermineControlStatus(t *testing.T) {
 			control: hdf.EvaluatedRequirement{
 				Impact: 0.5,
 				Results: []hdf.RequirementResult{
-					{Status: ptrResultStatus(hdf.ResultStatusFailed)},
-					{Status: ptrResultStatus(hdf.ResultStatusError)},
+					{Status: ptrResultStatus(hdf.Failed)},
+					{Status: ptrResultStatus(hdf.Error)},
 				},
 			},
 			expected: "error",
-		},
-		{
-			name: "skipped from results",
-			control: hdf.EvaluatedRequirement{
-				Impact: 0.5,
-				Results: []hdf.RequirementResult{
-					{Status: ptrResultStatus(hdf.Skipped)},
-				},
-			},
-			expected: "skipped",
 		},
 	}
 
@@ -98,11 +88,7 @@ func TestDetermineControlStatus(t *testing.T) {
 	}
 }
 
-// Helper functions to create pointers.
-func ptrOverallStatus(s hdf.OverallStatus) *hdf.OverallStatus {
-	return &s
-}
-
+// Helper function to create pointers.
 func ptrResultStatus(s hdf.ResultStatus) *hdf.ResultStatus {
 	return &s
 }

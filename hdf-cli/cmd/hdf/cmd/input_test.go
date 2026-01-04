@@ -88,19 +88,17 @@ func TestParseHDFResults_TrailingGarbage(t *testing.T) {
 }
 
 func TestParseHDFResults_ValidMinimal(t *testing.T) {
-	// Minimal valid HDF structure
+	// Minimal valid HDF v2.0 structure
 	json := `{
-		"version": "1.0.0",
-		"platform": {"name": "test", "release": "1.0"},
-		"profiles": [],
+		"baselines": [],
 		"statistics": {}
 	}`
 	result, err := parseHDFResults([]byte(json))
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	if result.Version != "1.0.0" {
-		t.Errorf("version mismatch: got %q, want %q", result.Version, "1.0.0")
+	if len(result.Baselines) != 0 {
+		t.Errorf("baselines length mismatch: got %d, want 0", len(result.Baselines))
 	}
 }
 

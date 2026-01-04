@@ -109,7 +109,7 @@ func runNoPanicTests(t *testing.T, tests []cliTest) {
 
 // TestValidateCommand tests the validate command.
 func TestValidateCommand(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
 		{name: "valid file", args: []string{"validate", fixture}, wantContain: "valid HDF results file"},
@@ -121,7 +121,7 @@ func TestValidateCommand(t *testing.T) {
 
 // TestQueryCommand tests the query command.
 func TestQueryCommand(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
 		{name: "basic query", args: []string{"query", fixture}, wantContain: "matching control"},
@@ -135,18 +135,18 @@ func TestQueryCommand(t *testing.T) {
 
 // TestInfoCommand tests the info command.
 func TestInfoCommand(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
-		{name: "basic info", args: []string{"info", fixture}, wantContain: "Version:"},
-		{name: "info with --json", args: []string{"info", "--json", fixture}, wantContain: `"version":`},
+		{name: "basic info", args: []string{"info", fixture}, wantContain: "Baselines:"},
+		{name: "info with --json", args: []string{"info", "--json", fixture}, wantContain: `"baselines":`},
 		{name: "info no file", args: []string{"info"}, wantErr: true},
 	})
 }
 
 // TestStatsCommand tests the stats command.
 func TestStatsCommand(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
 		{name: "basic stats", args: []string{"stats", fixture}, wantContain: "Controls:"},
@@ -156,11 +156,11 @@ func TestStatsCommand(t *testing.T) {
 
 // TestListCommand tests the list command.
 func TestListCommand(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
 		{name: "list controls", args: []string{"list", "controls", fixture}, wantContain: "Controls:"},
-		{name: "list profiles", args: []string{"list", "profiles", fixture}, wantContain: "Profiles:"},
+		{name: "list profiles", args: []string{"list", "profiles", fixture}, wantContain: "Baselines:"},
 		{name: "list invalid type", args: []string{"list", "invalid", fixture}, wantErr: true, wantErrMsg: "Unknown list type"},
 		{name: "list no args", args: []string{"list"}, wantErr: true},
 	})
@@ -176,7 +176,7 @@ func TestVersionCommand(t *testing.T) {
 
 // TestGlobalFlags tests global flags work across commands.
 func TestGlobalFlags(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
 		{name: "validate with --debug", args: []string{"validate", "--debug", fixture}},
@@ -187,7 +187,7 @@ func TestGlobalFlags(t *testing.T) {
 
 // TestQueryFilters tests all query filter flags.
 func TestQueryFilters(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
 		// Status filters
@@ -233,7 +233,7 @@ func TestQueryFilters(t *testing.T) {
 
 // TestListFilters tests list command with filters and aliases.
 func TestListFilters(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
 		{name: "list controls with status filter", args: []string{"list", "controls", fixture, "--status", "passed"}},
@@ -243,20 +243,20 @@ func TestListFilters(t *testing.T) {
 		{name: "list targets", args: []string{"list", "targets", fixture}},
 		// Aliases
 		{name: "list control (singular)", args: []string{"list", "control", fixture}, wantContain: "Controls:"},
-		{name: "list profile (singular)", args: []string{"list", "profile", fixture}, wantContain: "Profiles:"},
+		{name: "list profile (singular)", args: []string{"list", "profile", fixture}, wantContain: "Baselines:"},
 		{name: "list c (short)", args: []string{"list", "c", fixture}, wantContain: "Controls:"},
-		{name: "list p (short)", args: []string{"list", "p", fixture}, wantContain: "Profiles:"},
+		{name: "list p (short)", args: []string{"list", "p", fixture}, wantContain: "Baselines:"},
 		{name: "list t (short)", args: []string{"list", "t", fixture}},
 	})
 }
 
 // TestJSONOutput tests JSON output format across commands.
 func TestJSONOutput(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
 		{name: "validate --json", args: []string{"validate", "--json", fixture}, wantContain: `"valid":`},
-		{name: "info --json", args: []string{"info", "--json", fixture}, wantContain: `"version":`},
+		{name: "info --json", args: []string{"info", "--json", fixture}, wantContain: `"baselines":`},
 		{name: "stats --json", args: []string{"stats", "--json", fixture}, wantContain: `"total":`},
 		{name: "list controls --json", args: []string{"list", "controls", fixture, "--json"}, wantContain: `"id":`},
 		{name: "list profiles --json", args: []string{"list", "profiles", fixture, "--json"}, wantContain: `"name":`},
@@ -282,7 +282,7 @@ func TestHelpOutput(t *testing.T) {
 // TestAEdgeCases tests edge cases that should not panic or error.
 // NOTE: Prefixed with "A" to run before TestHelpOutput which leaves Cobra in help mode.
 func TestAEdgeCases(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
 		{name: "query with empty --search", args: []string{"query", "--search", "", fixture}},
@@ -302,13 +302,13 @@ func TestAEdgeCases(t *testing.T) {
 func TestAInvalidInputs(t *testing.T) {
 	runCLITests(t, []cliTest{
 		{name: "validate nonexistent file", args: []string{"validate", "nonexistent.json"}, wantErr: true, wantErrMsg: "file not found"},
-		{name: "query with invalid status", args: []string{"query", "--status", "invalid", testFixturePath(t, "legacy-inspec-exec.json")}},
+		{name: "query with invalid status", args: []string{"query", "--status", "invalid", testFixturePath(t, "minimal-v2.json")}},
 	})
 }
 
 // TestSpecialCharacters tests handling of special characters in inputs.
 func TestSpecialCharacters(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runNoPanicTests(t, []cliTest{
 		{name: "search with space", args: []string{"query", "--search", "test value", fixture}},
@@ -322,7 +322,7 @@ func TestSpecialCharacters(t *testing.T) {
 
 // TestNegativeNumbers tests handling of negative numbers in flags.
 func TestNegativeNumbers(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runNoPanicTests(t, []cliTest{
 		{name: "negative limit", args: []string{"query", "--limit", "-1", fixture}},
@@ -333,7 +333,7 @@ func TestNegativeNumbers(t *testing.T) {
 
 // TestNoColorFlag tests the --no-color flag.
 func TestNoColorFlag(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
 		{name: "validate --no-color", args: []string{"validate", "--no-color", fixture}},
@@ -345,7 +345,7 @@ func TestNoColorFlag(t *testing.T) {
 
 // TestDebugFlag tests the --debug flag.
 func TestDebugFlag(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
 		{name: "validate --debug", args: []string{"validate", "--debug", fixture}},
@@ -357,7 +357,7 @@ func TestDebugFlag(t *testing.T) {
 
 // TestSchemaDirFlag tests the --schema-dir flag.
 func TestSchemaDirFlag(t *testing.T) {
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 	schemaDir := filepath.Join("..", "..", "..", "..", "hdf-schema", "dist", "schemas")
 
 	absSchemaDir, err := filepath.Abs(schemaDir)
@@ -379,7 +379,7 @@ func TestSchemaDirFlag(t *testing.T) {
 // doesn't reset properly between executeCommand() calls.
 func TestNoFollowSymlinksFlag(t *testing.T) {
 	tmpDir := t.TempDir()
-	fixture := testFixturePath(t, "legacy-inspec-exec.json")
+	fixture := testFixturePath(t, "minimal-v2.json")
 	symlinkPath := filepath.Join(tmpDir, "symlink.json")
 
 	if err := os.Symlink(fixture, symlinkPath); err != nil {
