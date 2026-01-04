@@ -20,6 +20,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:differential": "vitest run test/differential",
+    "test:parity": "pnpm test:differential && cd ../hdf-cli && go test ./pkg/converters/... && cd ../hdf-converters && node test/differential/scripts/compare-all.js",
     "type-check": "tsc --noEmit",
     "lint": "eslint src test",
     "lint:fix": "eslint src test --fix"
