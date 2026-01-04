@@ -94,8 +94,8 @@ func listControls(results hdf.HdfResults) error {
 
 	var controls []controlInfo
 
-	for _, profile := range results.Profiles {
-		for _, c := range profile.Controls {
+	for _, baseline := range results.Baselines {
+		for _, c := range baseline.Requirements {
 			status := determineControlStatus(c)
 
 			// Filter by status if specified
@@ -113,7 +113,7 @@ func listControls(results hdf.HdfResults) error {
 				Title:   title,
 				Status:  status,
 				Impact:  c.Impact,
-				Profile: profile.Name,
+				Profile: baseline.Name,
 			})
 		}
 	}
@@ -171,50 +171,50 @@ func listControls(results hdf.HdfResults) error {
 }
 
 func listProfiles(results hdf.HdfResults) error {
-	type profileInfo struct {
-		Name         string `json:"name"`
-		Title        string `json:"title,omitempty"`
-		Version      string `json:"version,omitempty"`
-		ControlCount int    `json:"control_count"`
-		Status       string `json:"status,omitempty"`
+	type baselineInfo struct {
+		Name             string `json:"name"`
+		Title            string `json:"title,omitempty"`
+		Version          string `json:"version,omitempty"`
+		RequirementCount int    `json:"requirement_count"`
+		Status           string `json:"status,omitempty"`
 	}
 
-	var profiles []profileInfo
+	var baselines []baselineInfo
 
-	for _, p := range results.Profiles {
-		info := profileInfo{
-			Name:         p.Name,
-			ControlCount: len(p.Controls),
+	for _, b := range results.Baselines {
+		info := baselineInfo{
+			Name:             b.Name,
+			RequirementCount: len(b.Requirements),
 		}
-		if p.Title != nil {
-			info.Title = *p.Title
+		if b.Title != nil {
+			info.Title = *b.Title
 		}
-		if p.Version != nil {
-			info.Version = *p.Version
+		if b.Version != nil {
+			info.Version = *b.Version
 		}
-		if p.Status != nil {
-			info.Status = *p.Status
+		if b.Status != nil {
+			info.Status = *b.Status
 		}
-		profiles = append(profiles, info)
+		baselines = append(baselines, info)
 	}
 
 	if jsonOutput {
-		output, _ := json.MarshalIndent(profiles, "", "  ")
+		output, _ := json.MarshalIndent(baselines, "", "  ")
 		fmt.Println(string(output))
 		return nil
 	}
 
-	fmt.Printf("Profiles: %d\n\n", len(profiles))
-	for _, p := range profiles {
-		name := sanitizeOutput(p.Name)
-		if p.Title != "" && p.Title != p.Name {
-			name = fmt.Sprintf("%s (%s)", sanitizeOutput(p.Title), sanitizeOutput(p.Name))
+	fmt.Printf("Baselines: %d\n\n", len(baselines))
+	for _, b := range baselines {
+		name := sanitizeOutput(b.Name)
+		if b.Title != "" && b.Title != b.Name {
+			name = fmt.Sprintf("%s (%s)", sanitizeOutput(b.Title), sanitizeOutput(b.Name))
 		}
 		version := ""
-		if p.Version != "" {
-			version = fmt.Sprintf(" v%s", sanitizeOutput(p.Version))
+		if b.Version != "" {
+			version = fmt.Sprintf(" v%s", sanitizeOutput(b.Version))
 		}
-		fmt.Printf("  %s%s: %d controls\n", name, version, p.ControlCount)
+		fmt.Printf("  %s%s: %d requirements\n", name, version, b.RequirementCount)
 	}
 
 	return nil

@@ -69,8 +69,8 @@ func runStats(_ *cobra.Command, args []string) error {
 func calculateStats(results hdf.HdfResults) controlStats {
 	stats := controlStats{}
 
-	for _, profile := range results.Profiles {
-		for _, control := range profile.Controls {
+	for _, baseline := range results.Baselines {
+		for _, control := range baseline.Requirements {
 			stats.Total++
 
 			// Determine status from results
@@ -96,9 +96,9 @@ func calculateStats(results hdf.HdfResults) controlStats {
 }
 
 func determineControlStatus(control hdf.EvaluatedRequirement) string {
-	// If overall_status is set, use that
-	if control.OverallStatus != nil {
-		return string(*control.OverallStatus)
+	// If effective_status is set, use that
+	if control.EffectiveStatus != nil {
+		return string(*control.EffectiveStatus)
 	}
 
 	// Otherwise, derive from results
@@ -120,17 +120,15 @@ func determineControlStatus(control hdf.EvaluatedRequirement) string {
 			continue
 		}
 		switch *result.Status {
-		case hdf.ResultStatusFailed:
+		case hdf.Failed:
 			hasFailed = true
-		case hdf.ResultStatusError:
+		case hdf.Error:
 			hasError = true
-		case hdf.ResultStatusPassed:
+		case hdf.Passed:
 			hasPassed = true
-		case hdf.Skipped:
-			hasSkipped = true
-		case hdf.ResultStatusNotApplicable:
+		case hdf.NotApplicable:
 			return StatusNotApplicable
-		case hdf.ResultStatusNotReviewed:
+		case hdf.NotReviewed:
 			return StatusNotReviewed
 		}
 	}
@@ -160,34 +158,34 @@ func outputStatsJSON(results hdf.HdfResults, stats controlStats) error {
 		output["duration_seconds"] = *results.Statistics.Duration
 	}
 
-	// Include profile breakdown
-	profiles := make([]map[string]interface{}, 0)
-	for _, p := range results.Profiles {
-		pStats := controlStats{}
-		for _, c := range p.Controls {
-			pStats.Total++
+	// Include baseline breakdown
+	baselines := make([]map[string]interface{}, 0)
+	for _, b := range results.Baselines {
+		bStats := controlStats{}
+		for _, c := range b.Requirements {
+			bStats.Total++
 			status := determineControlStatus(c)
 			switch status {
 			case StatusPassed:
-				pStats.Passed++
+				bStats.Passed++
 			case StatusFailed:
-				pStats.Failed++
+				bStats.Failed++
 			case StatusNotApplicable:
-				pStats.NotApplicable++
+				bStats.NotApplicable++
 			case StatusNotReviewed:
-				pStats.NotReviewed++
+				bStats.NotReviewed++
 			case StatusError:
-				pStats.Error++
+				bStats.Error++
 			case StatusSkipped:
-				pStats.Skipped++
+				bStats.Skipped++
 			}
 		}
-		profiles = append(profiles, map[string]interface{}{
-			"name":     p.Name,
-			"controls": pStats,
+		baselines = append(baselines, map[string]interface{}{
+			"name":         b.Name,
+			"requirements": bStats,
 		})
 	}
-	output["profiles"] = profiles
+	output["baselines"] = baselines
 
 	jsonOut, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
@@ -224,19 +222,19 @@ func outputStatsHuman(results hdf.HdfResults, stats controlStats) error {
 		}
 	}
 
-	// Per-profile breakdown
-	if len(results.Profiles) > 1 {
+	// Per-baseline breakdown
+	if len(results.Baselines) > 1 {
 		fmt.Println()
-		fmt.Println("By Profile:")
-		for _, p := range results.Profiles {
+		fmt.Println("By Baseline:")
+		for _, b := range results.Baselines {
 			passed := 0
-			for _, c := range p.Controls {
+			for _, c := range b.Requirements {
 				status := determineControlStatus(c)
 				if status == StatusPassed {
 					passed++
 				}
 			}
-			fmt.Printf("  %s: %d/%d passed\n", p.Name, passed, len(p.Controls))
+			fmt.Printf("  %s: %d/%d passed\n", b.Name, passed, len(b.Requirements))
 		}
 	}
 

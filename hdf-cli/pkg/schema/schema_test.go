@@ -5,11 +5,9 @@ import (
 )
 
 func TestValidateResults_ValidMinimal(t *testing.T) {
-	// Minimal valid HDF results
+	// Minimal valid HDF v2.0 results
 	data := []byte(`{
-		"version": "1.0.0",
-		"platform": {"name": "test", "release": "1.0"},
-		"profiles": [],
+		"baselines": [],
 		"statistics": {}
 	}`)
 
@@ -20,10 +18,8 @@ func TestValidateResults_ValidMinimal(t *testing.T) {
 }
 
 func TestValidateResults_MissingRequired(t *testing.T) {
-	// Missing required 'version' field
+	// Missing required 'baselines' field
 	data := []byte(`{
-		"platform": {"name": "test", "release": "1.0"},
-		"profiles": [],
 		"statistics": {}
 	}`)
 
@@ -61,13 +57,24 @@ func TestValidateResults_WrongType(t *testing.T) {
 }
 
 func TestValidateBaseline_ValidMinimal(t *testing.T) {
-	// Minimal valid HDF baseline (requires name, supports, controls, groups, and sha256 or sha512)
+	// Minimal valid HDF baseline (v2.0 requires name, supports, requirements, groups, depends, and checksum)
 	data := []byte(`{
 		"name": "test-baseline",
-		"sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+		"checksum": {
+			"algorithm": "sha256",
+			"value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+		},
 		"supports": [],
-		"controls": [],
-		"groups": []
+		"requirements": [{
+			"id": "test-1",
+			"descriptions": [{"label": "default", "data": "test"}],
+			"impact": 0.5,
+			"refs": [],
+			"tags": {},
+			"sourceLocation": {"ref": "test.rb", "line": 1}
+		}],
+		"groups": [{"id": "test", "requirements": ["test-1"]}],
+		"depends": []
 	}`)
 
 	result := ValidateBaseline(data)

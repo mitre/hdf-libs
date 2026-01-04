@@ -1,0 +1,85 @@
+{
+  "baselines": [
+    {
+      "name": "test-baseline",
+      "title": "Test Baseline",
+      "version": "1.0.0",
+      "attributes": [],
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "abc123"
+      },
+      "depends": [],
+      "groups": [
+        {
+          "id": "controls/test.rb",
+          "title": "Test Controls",
+          "requirements": ["test-1", "test-2"]
+        }
+      ],
+      "supports": [],
+      "requirements": [
+        {
+          "id": "test-1",
+          "title": "Test Requirement 1",
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "This is a test requirement"
+            }
+          ],
+          "impact": 0.7,
+          "refs": [],
+          "tags": {},
+          "sourceLocation": {
+            "ref": "controls/test.rb",
+            "line": 1
+          },
+          "results": [
+            {
+              "status": "passed",
+              "codeDesc": "Test should pass",
+              "startTime": "2024-01-01T00:00:00Z",
+              "runTime": 0.1
+            }
+          ]
+        },
+        {
+          "id": "test-2",
+          "title": "Test Requirement 2",
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "This is another test requirement"
+            }
+          ],
+          "impact": 0.5,
+          "refs": [],
+          "tags": {},
+          "sourceLocation": {
+            "ref": "controls/test.rb",
+            "line": 10
+          },
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "Test should fail",
+              "startTime": "2024-01-01T00:00:01Z",
+              "runTime": 0.2,
+              "message": "Expected value did not match"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "statistics": {
+    "duration": 0.3
+  },
+  "targets": [
+    {
+      "type": "host",
+      "name": "test-system"
+    }
+  ]
+}

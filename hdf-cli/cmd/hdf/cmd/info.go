@@ -58,12 +58,7 @@ func runInfo(_ *cobra.Command, args []string) error {
 
 func outputInfoJSON(results hdf.HdfResults, filename string) error {
 	info := map[string]interface{}{
-		"file":    filename,
-		"version": results.Version,
-		"platform": map[string]string{
-			"name":    results.Platform.Name,
-			"release": results.Platform.Release,
-		},
+		"file": filename,
 	}
 
 	if results.Generator != nil {
@@ -81,22 +76,22 @@ func outputInfoJSON(results hdf.HdfResults, filename string) error {
 		info["id"] = *results.ID
 	}
 
-	// Profiles
-	profiles := make([]map[string]interface{}, 0, len(results.Profiles))
-	for _, p := range results.Profiles {
-		profile := map[string]interface{}{
-			"name":          p.Name,
-			"control_count": len(p.Controls),
+	// Baselines
+	baselines := make([]map[string]interface{}, 0, len(results.Baselines))
+	for _, b := range results.Baselines {
+		baseline := map[string]interface{}{
+			"name":              b.Name,
+			"requirement_count": len(b.Requirements),
 		}
-		if p.Title != nil {
-			profile["title"] = *p.Title
+		if b.Title != nil {
+			baseline["title"] = *b.Title
 		}
-		if p.Version != nil {
-			profile["version"] = *p.Version
+		if b.Version != nil {
+			baseline["version"] = *b.Version
 		}
-		profiles = append(profiles, profile)
+		baselines = append(baselines, baseline)
 	}
-	info["profiles"] = profiles
+	info["baselines"] = baselines
 
 	// Targets
 	if len(results.Targets) > 0 {
@@ -121,7 +116,6 @@ func outputInfoJSON(results hdf.HdfResults, filename string) error {
 
 func outputInfoHuman(results hdf.HdfResults, filename string) error {
 	fmt.Printf("File: %s\n", sanitizeOutput(filename))
-	fmt.Printf("Version: %s\n", sanitizeOutput(results.Version))
 	fmt.Println()
 
 	// Generator
@@ -135,25 +129,20 @@ func outputInfoHuman(results hdf.HdfResults, filename string) error {
 	}
 	fmt.Println()
 
-	// Platform
-	fmt.Println("Platform:")
-	fmt.Printf("  Name:    %s\n", sanitizeOutput(results.Platform.Name))
-	fmt.Printf("  Release: %s\n", sanitizeOutput(results.Platform.Release))
-	fmt.Println()
-
-	// Profiles
-	fmt.Printf("Profiles: %d\n", len(results.Profiles))
-	for _, p := range results.Profiles {
-		name := p.Name
-		if p.Title != nil && *p.Title != "" {
-			name = *p.Title
+	// Baselines
+	fmt.Printf("Baselines: %d\n", len(results.Baselines))
+	for _, b := range results.Baselines {
+		name := b.Name
+		if b.Title != nil && *b.Title != "" {
+			name = *b.Title
 		}
 		version := ""
-		if p.Version != nil {
-			version = fmt.Sprintf(" (v%s)", sanitizeOutput(*p.Version))
+		if b.Version != nil {
+			version = fmt.Sprintf(" (v%s)", sanitizeOutput(*b.Version))
 		}
-		fmt.Printf("  - %s%s: %d controls\n", sanitizeOutput(name), version, len(p.Controls))
+		fmt.Printf("  - %s%s: %d requirements\n", sanitizeOutput(name), version, len(b.Requirements))
 	}
+	fmt.Println()
 
 	// Targets
 	if len(results.Targets) > 0 {
