@@ -12,7 +12,7 @@ import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootDir = join(__dirname, '../../..');
+const rootDir = join(__dirname, '../..');
 const outputDir = join(rootDir, '../test-output/differential');
 const tsOutputDir = join(outputDir, 'typescript');
 const goOutputDir = join(outputDir, 'go');
@@ -82,7 +82,7 @@ if (!existsSync(tsOutputDir)) {
 }
 
 if (!existsSync(goOutputDir)) {
-  console.error('❌ Go outputs not found. Run: cd ../hdf-cli && go test ./pkg/converters/...');
+  console.error('❌ Go outputs not found. Run: cd hdf-converters && go test ./converters/...');
   process.exit(2);
 }
 

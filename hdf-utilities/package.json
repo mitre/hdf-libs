@@ -17,7 +17,9 @@
   "scripts": {
     "build": "pnpm clean && tsc",
     "clean": "rm -rf dist",
-    "test": "vitest run",
+    "test": "pnpm run test:ts",
+    "test:ts": "vitest run",
+    "test:go": "echo 'No Go tests in hdf-utilities'",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit",

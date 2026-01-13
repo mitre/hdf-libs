@@ -11,7 +11,9 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "pnpm -r run build",
-    "test": "pnpm -r run test",
+    "test": "pnpm run test:ts && pnpm run test:go",
+    "test:ts": "pnpm -r run test:ts",
+    "test:go": "pnpm -r run test:go",
     "test:coverage": "pnpm -r run test:coverage",
     "lint": "pnpm -r run lint",
     "lint:fix": "pnpm -r run lint:fix",

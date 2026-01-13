@@ -1,5 +1,5 @@
 /**
- * Differential tests for v1-to-v2 converter.
+ * Differential tests for legacyhdf converter.
  *
  * Tests TypeScript implementation against expected outputs.
  * Go implementation tested separately but uses same fixtures.
@@ -8,14 +8,14 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
-import { convertV1ToV2 } from '../../src/v1-to-v2/index.js';
+import { convertV1ToV2 } from './converter.js';
 
-const FIXTURES_DIR = join(dirname(import.meta.url.replace('file://', '')), 'fixtures/v1-to-v2');
+const FIXTURES_DIR = join(dirname(import.meta.url.replace('file://', '')), '../fixtures');
 const INPUT_DIR = join(FIXTURES_DIR, 'input');
 const EXPECTED_DIR = join(FIXTURES_DIR, 'expected');
-const OUTPUT_DIR = join(dirname(import.meta.url.replace('file://', '')), '../../../test-output/differential/typescript/v1-to-v2');
+const OUTPUT_DIR = join(dirname(import.meta.url.replace('file://', '')), '../../../../test-output/differential/typescript/legacyhdf');
 
-describe('v1-to-v2 Converter - Differential Tests', () => {
+describe('legacyhdf Converter - Differential Tests', () => {
   // Get all test cases from input directory
   const testFiles = readdirSync(INPUT_DIR).filter(f => f.endsWith('.json'));
 

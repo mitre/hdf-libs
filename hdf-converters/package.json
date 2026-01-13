@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "description": "Converters for transforming security tool outputs and HDF formats",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
     }
   },
   "files": [
@@ -17,14 +17,16 @@
   "scripts": {
     "build": "pnpm clean && tsc",
     "clean": "rm -rf dist",
-    "test": "vitest run",
+    "test": "pnpm run test:ts && pnpm run test:go",
+    "test:ts": "vitest run",
+    "test:go": "go test ./...",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:differential": "vitest run test/differential",
-    "test:parity": "pnpm test:differential && cd ../hdf-cli && go test ./pkg/converters/... && cd ../hdf-converters && node test/differential/scripts/compare-all.js",
+    "test:differential": "vitest run converters/**/differential.test.ts",
+    "test:parity": "pnpm test:differential && pnpm test:go && node shared/typescript/compare-all.js",
     "type-check": "tsc --noEmit",
-    "lint": "eslint src test",
-    "lint:fix": "eslint src test --fix"
+    "lint": "eslint src converters",
+    "lint:fix": "eslint src converters --fix"
   },
   "repository": {
     "type": "git",
