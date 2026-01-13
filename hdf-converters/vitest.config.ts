@@ -4,12 +4,25 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['test/**/*.test.ts', 'test/**/*.spec.ts'],
+    include: [
+      'test/**/*.test.ts',
+      'test/**/*.spec.ts',
+      'converters/**/*.test.ts',
+      'converters/**/*.spec.ts',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/**/*.ts'],
-      exclude: ['src/**/*.d.ts', 'dist/**', 'test/**', '**/*.config.*', '**/node_modules/**'],
+      include: ['src/**/*.ts', 'converters/**/*.ts'],
+      exclude: [
+        'src/**/*.d.ts',
+        'dist/**',
+        'test/**',
+        '**/*.config.*',
+        '**/node_modules/**',
+        '**/*.test.ts',
+        '**/*.spec.ts',
+      ],
       thresholds: {
         statements: 95,
         branches: 95,

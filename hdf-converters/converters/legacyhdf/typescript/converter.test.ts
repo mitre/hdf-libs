@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { convertV1ToV2, isHDFV1, HDFV1Results } from '../src/v1-to-v2/index.js';
+import { convertV1ToV2, isHDFV1, HDFV1Results } from './converter.js';
 
 describe('HDF v1.0 to v2.0 Converter', () => {
   describe('convertV1ToV2', () => {
@@ -17,7 +17,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(v2.statistics).toEqual({});
       expect(v2.targets).toHaveLength(1);
       expect(v2.targets![0]).toMatchObject({
-        type: 'system',
+        type: 'host',
         name: 'ubuntu',
         release: '20.04',
       });
@@ -54,7 +54,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
       expect(v2.targets).toHaveLength(1);
       expect(v2.targets![0]).toEqual({
-        type: 'system',
+        type: 'host',
         id: 'server-123',
         name: 'redhat',
         release: '8.5',
@@ -160,7 +160,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       const v2 = convertV1ToV2(v1);
 
       expect(v2.targets![0]).toEqual({
-        type: 'system',
+        type: 'host',
         id: 'test-system',
         name: 'test-system',
       });
