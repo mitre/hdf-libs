@@ -50,23 +50,27 @@ describe('generate-types', () => {
       expect(existsSync(join(DIST_DIR, 'go'))).toBe(true);
     });
 
-    it('should create hdf_results.go', () => {
-      expect(existsSync(join(DIST_DIR, 'go', 'hdf_results.go'))).toBe(true);
+    it('should create combined hdf.go file', () => {
+      // Go types are combined into a single file to avoid duplicate type declarations
+      expect(existsSync(join(DIST_DIR, 'go', 'hdf.go'))).toBe(true);
     });
 
-    it('should create hdf_baseline.go', () => {
-      expect(existsSync(join(DIST_DIR, 'go', 'hdf_baseline.go'))).toBe(true);
+    it('should create go.mod file', () => {
+      expect(existsSync(join(DIST_DIR, 'go', 'go.mod'))).toBe(true);
     });
 
     it('should contain package declaration', () => {
-      const content = readFileSync(join(DIST_DIR, 'go', 'hdf_results.go'), 'utf-8');
+      const content = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
       expect(content).toContain('package hdf');
     });
 
-    it('should contain struct definitions', () => {
-      const content = readFileSync(join(DIST_DIR, 'go', 'hdf_results.go'), 'utf-8');
+    it('should contain struct definitions for both schemas', () => {
+      const content = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
       expect(content).toContain('type');
       expect(content).toContain('struct');
+      // Should contain types from both schemas
+      expect(content).toMatch(/HDFResults|HdfResults/);
+      expect(content).toMatch(/HDFBaseline|HdfBaseline/);
     });
   });
 
@@ -131,6 +135,8 @@ describe('generate-types', () => {
         if (existsSync(tempFile)) {
           renameSync(tempFile, schemaFile);
         }
+        // Regenerate with all schemas to restore correct state
+        await generateTypes();
       }
     });
   });
