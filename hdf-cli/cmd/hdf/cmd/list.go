@@ -83,22 +83,39 @@ func runList(_ *cobra.Command, args []string) error {
 	}
 }
 
+type controlInfo struct {
+	ID      string  `json:"id"`
+	Title   string  `json:"title,omitempty"`
+	Status  string  `json:"status"`
+	Impact  float64 `json:"impact"`
+	Profile string  `json:"profile"`
+}
+
 func listControls(results hdf.HdfResults) error {
-	type controlInfo struct {
-		ID      string  `json:"id"`
-		Title   string  `json:"title,omitempty"`
-		Status  string  `json:"status"`
-		Impact  float64 `json:"impact"`
-		Profile string  `json:"profile"`
+	controls := buildControlList(results)
+
+	if jsonOutput {
+		return printControlsJSON(controls)
 	}
 
+	fmt.Printf("Controls: %d\n\n", len(controls))
+
+	if statusFilter == "" && !showAll {
+		printControlsSummary(controls)
+	} else {
+		printControlsFlat(controls)
+	}
+
+	return nil
+}
+
+func buildControlList(results hdf.HdfResults) []controlInfo {
 	var controls []controlInfo
 
 	for _, baseline := range results.Baselines {
 		for _, c := range baseline.Requirements {
 			status := determineControlStatus(c)
 
-			// Filter by status if specified
 			if statusFilter != "" && status != statusFilter {
 				continue
 			}
@@ -118,56 +135,51 @@ func listControls(results hdf.HdfResults) error {
 		}
 	}
 
-	if jsonOutput {
-		output, _ := json.MarshalIndent(controls, "", "  ")
-		fmt.Println(string(output))
-		return nil
-	}
+	return controls
+}
 
-	// Human-readable output
-	fmt.Printf("Controls: %d\n\n", len(controls))
-
-	// Group by status for readability
-	if statusFilter == "" && !showAll {
-		// Show summary by status
-		byStatus := make(map[string][]controlInfo)
-		for _, c := range controls {
-			byStatus[c.Status] = append(byStatus[c.Status], c)
-		}
-
-		for _, status := range []string{StatusFailed, StatusError, StatusPassed, StatusNotApplicable, StatusNotReviewed} {
-			if len(byStatus[status]) == 0 {
-				continue
-			}
-			fmt.Printf("%s (%d):\n", strings.ToUpper(status), len(byStatus[status]))
-			for _, c := range byStatus[status] {
-				title := sanitizeOutput(c.Title)
-				if len(title) > 50 {
-					title = title[:47] + "..."
-				}
-				if title == "" {
-					title = noTitlePlaceholder
-				}
-				fmt.Printf("  %-15s %s\n", sanitizeOutput(c.ID), title)
-			}
-			fmt.Println()
-		}
-	} else {
-		// Show flat list
-		for _, c := range controls {
-			statusSymbol := statusToSymbol(c.Status)
-			title := sanitizeOutput(c.Title)
-			if len(title) > 60 {
-				title = title[:57] + "..."
-			}
-			if title == "" {
-				title = noTitlePlaceholder
-			}
-			fmt.Printf("%s %-15s %s\n", statusSymbol, sanitizeOutput(c.ID), title)
-		}
-	}
-
+func printControlsJSON(controls []controlInfo) error {
+	output, _ := json.MarshalIndent(controls, "", "  ")
+	fmt.Println(string(output))
 	return nil
+}
+
+func printControlsSummary(controls []controlInfo) {
+	byStatus := make(map[string][]controlInfo)
+	for _, c := range controls {
+		byStatus[c.Status] = append(byStatus[c.Status], c)
+	}
+
+	for _, status := range []string{StatusFailed, StatusError, StatusPassed, StatusNotApplicable, StatusNotReviewed} {
+		if len(byStatus[status]) == 0 {
+			continue
+		}
+		fmt.Printf("%s (%d):\n", strings.ToUpper(status), len(byStatus[status]))
+		for _, c := range byStatus[status] {
+			title := truncateTitle(c.Title, 50)
+			fmt.Printf("  %-15s %s\n", sanitizeOutput(c.ID), title)
+		}
+		fmt.Println()
+	}
+}
+
+func printControlsFlat(controls []controlInfo) {
+	for _, c := range controls {
+		statusSymbol := statusToSymbol(c.Status)
+		title := truncateTitle(c.Title, 60)
+		fmt.Printf("%s %-15s %s\n", statusSymbol, sanitizeOutput(c.ID), title)
+	}
+}
+
+func truncateTitle(title string, maxLen int) string {
+	title = sanitizeOutput(title)
+	if len(title) > maxLen {
+		title = title[:maxLen-3] + "..."
+	}
+	if title == "" {
+		title = noTitlePlaceholder
+	}
+	return title
 }
 
 func listProfiles(results hdf.HdfResults) error {
