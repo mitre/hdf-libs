@@ -17,7 +17,8 @@
     "test:coverage": "pnpm -r run test:coverage",
     "lint": "pnpm -r run lint",
     "lint:fix": "pnpm -r run lint:fix",
-    "clean": "pnpm -r run clean"
+    "clean": "pnpm -r run clean",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
@@ -25,6 +26,8 @@
     "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^2.0.0",
     "eslint": "^9.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "typescript": "^5.6.0",
     "vitest": "^2.0.0"
   },
@@ -32,5 +35,9 @@
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
   },
-  "packageManager": "pnpm@9.14.2"
+  "packageManager": "pnpm@9.14.2",
+  "lint-staged": {
+    "*.ts": "eslint --fix",
+    "*.go": "go fmt -w"
+  }
 }
