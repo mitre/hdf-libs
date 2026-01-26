@@ -1,1 +1,2 @@
+export PATH="$PATH:$HOME/go/bin"
 pnpm lint-staged

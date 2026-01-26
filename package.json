@@ -37,7 +37,6 @@
   },
   "packageManager": "pnpm@9.14.2",
   "lint-staged": {
-    "*.ts": "eslint --fix",
-    "*.go": "golangci-lint run --fix"
+    "*.ts": "eslint --fix"
   }
 }

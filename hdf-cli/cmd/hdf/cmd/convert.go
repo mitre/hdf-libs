@@ -34,7 +34,7 @@ Examples:
 }
 
 // validateConvertArgs validates the convert command arguments.
-func validateConvertArgs(cmd *cobra.Command, args []string) error {
+func validateConvertArgs(_ *cobra.Command, args []string) error {
 	if len(args) < 4 || len(args) > 5 {
 		return fmt.Errorf("requires: <src-format> to <dest-format> <input> [output]\n" +
 			"Run 'hdf convert --help' for usage")
@@ -56,7 +56,7 @@ func validateConvertArgs(cmd *cobra.Command, args []string) error {
 }
 
 // runConvert executes the convert command.
-func runConvert(cmd *cobra.Command, args []string) error {
+func runConvert(_ *cobra.Command, args []string) error {
 	srcFormat := args[0]
 	destFormat := args[2]
 	inputPath := args[3]
@@ -107,5 +107,5 @@ func writeConvertOutput(data []byte, path string) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0600)
 }

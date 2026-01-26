@@ -13,7 +13,7 @@ type mockConverter struct {
 	callCount int
 }
 
-func (m *mockConverter) Convert(input []byte) ([]byte, error) {
+func (m *mockConverter) Convert(_ []byte) ([]byte, error) {
 	m.callCount++
 	if m.err != nil {
 		return nil, m.err

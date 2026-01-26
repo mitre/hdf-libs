@@ -40,12 +40,10 @@ type GlobalFlags struct {
 // Global flag variables (used by legacy code and helper functions).
 var (
 	jsonOutput       bool
-	noColor          bool
 	debug            bool
 	maxSizeMB        int
 	noFollowSymlinks bool
 	schemaDirFlag    string
-	interactive      bool
 )
 
 // NewRootCmd creates a new root command with fresh state.
@@ -70,15 +68,13 @@ Examples:
 For more information: https://github.com/mitre/hdf-libs`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRun: func(_ *cobra.Command, _ []string) {
 			// Sync local flags to global variables for helper functions
 			jsonOutput = gf.JSONOutput
-			noColor = gf.NoColor
 			debug = gf.Debug
 			maxSizeMB = gf.MaxSizeMB
 			noFollowSymlinks = gf.NoFollowSymlinks
 			schemaDirFlag = gf.SchemaDirFlag
-			interactive = gf.Interactive
 
 			initConfig()
 		},
@@ -111,16 +107,6 @@ func Execute() error {
 }
 
 func initConfig() {
-	// Check NO_COLOR environment variable
-	if os.Getenv("NO_COLOR") != "" {
-		noColor = true
-	}
-
-	// Check TERM=dumb
-	if os.Getenv("TERM") == "dumb" {
-		noColor = true
-	}
-
 	// Configure schema directory if specified
 	if schemaDirFlag != "" {
 		schema.SetSchemaDir(schemaDirFlag)

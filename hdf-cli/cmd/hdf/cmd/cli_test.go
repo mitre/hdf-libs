@@ -9,6 +9,8 @@ import (
 )
 
 // testFixturePath returns the path to a test fixture file.
+//
+//nolint:unparam // name parameter kept for future test extensibility
 func testFixturePath(t *testing.T, name string) string {
 	t.Helper()
 	// Navigate from cmd/hdf/cmd to hdf-schema/test/fixtures
@@ -48,8 +50,8 @@ func executeCommand(args ...string) (stdout, stderr string, err error) {
 	os.Stderr = oldStderr
 
 	var bufOut, bufErr bytes.Buffer
-	bufOut.ReadFrom(rOut)
-	bufErr.ReadFrom(rErr)
+	_, _ = bufOut.ReadFrom(rOut)
+	_, _ = bufErr.ReadFrom(rErr)
 
 	return bufOut.String(), bufErr.String(), execErr
 }

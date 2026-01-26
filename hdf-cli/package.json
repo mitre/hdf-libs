@@ -20,8 +20,8 @@
     "test:bench": "go test -bench=. -benchmem ./...",
     "test:fuzz": "go test -fuzz=. -fuzztime=30s ./pkg/hdf/",
 
-    "lint": "golangci-lint run",
-    "lint:fix": "golangci-lint run --fix",
+    "lint": "PATH=\"$PATH:$HOME/go/bin\" golangci-lint run",
+    "lint:fix": "PATH=\"$PATH:$HOME/go/bin\" golangci-lint run --fix",
     "fmt": "gofmt -s -w .",
     "fmt:check": "gofmt -l . | grep -q . && exit 1 || exit 0",
     "vet": "go vet ./...",
