@@ -100,6 +100,7 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.AddCommand(NewListCmd())
 	cmd.AddCommand(NewQueryCmd())
 	cmd.AddCommand(NewVersionCmd())
+	cmd.AddCommand(NewConvertCmd())
 
 	return cmd
 }
