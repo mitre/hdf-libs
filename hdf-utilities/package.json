@@ -33,8 +33,9 @@
   },
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
-  "dependencies": {},
-  "devDependencies": {},
+  "dependencies": {
+    "fast-xml-parser": "^5.3.3"
+  },
   "engines": {
     "node": ">=20.0.0"
   },
