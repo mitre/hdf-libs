@@ -17,3 +17,12 @@ export {
   type HashEncoding,
   type HashOptions,
 } from './hash/index.js';
+
+// XML utilities
+export {
+  parseXml,
+  buildXml,
+  isValidXml,
+  parseXmlWithArrays,
+  extractTextFromXml,
+} from './xml/index.js';
