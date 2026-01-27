@@ -36,3 +36,62 @@ export {
 } from './owasp/index.js';
 
 export type { OwaspNistMapping, OwaspNistMappings } from './owasp/types.js';
+
+// CWE exports
+export {
+  getCweNistMapping,
+  getCweNistControl,
+  getCweName,
+  getAllCweIds,
+  cweExists,
+  getAllCweMappings,
+} from './cwe/index.js';
+
+export type { CweNistMapping, CweNistMappings } from './cwe/types.js';
+
+// Nessus exports
+export {
+  getNessusNistControl,
+  getNessusPluginFamilyMappings,
+  getAllNessusPluginFamilies,
+  nessusPluginFamilyExists,
+  getAllNessusMappings,
+} from './nessus/index.js';
+
+export type { NessusNistMapping, NessusNistMappings } from './nessus/types.js';
+
+// Nikto exports
+export {
+  getNiktoNistControl,
+  getAllNiktoIds,
+  niktoExists,
+  getAllNiktoMappings,
+} from './nikto/index.js';
+
+export type { NiktoNistMappings } from './nikto/types.js';
+
+// ScoutSuite exports
+export {
+  getScoutsuiteNistMapping,
+  getScoutsuiteNistControl,
+  getAllScoutsuiteRules,
+  scoutsuiteRuleExists,
+  getAllScoutsuiteMappings,
+} from './scoutsuite/index.js';
+
+export type { ScoutsuiteNistMapping, ScoutsuiteNistMappings } from './scoutsuite/types.js';
+
+// AWS Config exports
+export {
+  getAwsConfigNistMappingByIdentifier,
+  getAwsConfigNistMappingByName,
+  getAwsConfigNistControlByIdentifier,
+  getAwsConfigNistControlByName,
+  getAllAwsConfigIdentifiers,
+  getAllAwsConfigRuleNames,
+  awsConfigIdentifierExists,
+  awsConfigRuleNameExists,
+  getAllAwsConfigMappings,
+} from './awsconfig/index.js';
+
+export type { AwsConfigNistMapping, AwsConfigNistMappings } from './awsconfig/types.js';
