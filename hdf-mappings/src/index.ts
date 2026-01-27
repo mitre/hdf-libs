@@ -2,7 +2,7 @@
  * @mitre/hdf-mappings
  *
  * Security framework mappings for the Heimdall Data Format (HDF).
- * Provides CCI↔NIST mappings and NIST control descriptions.
+ * Provides CCI↔NIST, OWASP→NIST mappings and NIST control descriptions.
  */
 
 // CCI exports
@@ -24,3 +24,15 @@ export {
 } from './nist/index.js';
 
 export type { NISTDescriptions } from './nist/types.js';
+
+// OWASP exports
+export {
+  getOwaspNistMapping,
+  getOwaspNistControl,
+  getOwaspName,
+  getAllOwaspIds,
+  owaspExists,
+  getAllOwaspMappings,
+} from './owasp/index.js';
+
+export type { OwaspNistMapping, OwaspNistMappings } from './owasp/types.js';
