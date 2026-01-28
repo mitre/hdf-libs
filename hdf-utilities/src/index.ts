@@ -34,4 +34,7 @@ export {
   buildCsv,
   buildCsvArray,
   isValidCsv,
+  sanitizeCsvValue,
+  sanitizeCsvArray,
+  sanitizeCsvObject,
 } from './csv/index.js';

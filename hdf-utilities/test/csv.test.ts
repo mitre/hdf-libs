@@ -5,6 +5,9 @@ import {
   buildCsv,
   buildCsvArray,
   isValidCsv,
+  sanitizeCsvValue,
+  sanitizeCsvArray,
+  sanitizeCsvObject,
 } from '../src/csv';
 
 describe('CSV Utilities', () => {
@@ -357,6 +360,187 @@ break","Has newline"`;
         name: 'Jane Smith',
         age: '25',
         city: 'Los Angeles, CA',
+      });
+    });
+  });
+
+  describe('CSV Injection Protection', () => {
+    describe('sanitizeCsvValue', () => {
+      it('should prefix values starting with =', () => {
+        expect(sanitizeCsvValue('=1+1')).toBe("'=1+1");
+        expect(sanitizeCsvValue('=SUM(A1:A10)')).toBe("'=SUM(A1:A10)");
+      });
+
+      it('should prefix values starting with +', () => {
+        expect(sanitizeCsvValue('+1234')).toBe("'+1234");
+      });
+
+      it('should prefix values starting with -', () => {
+        expect(sanitizeCsvValue('-5')).toBe("'-5");
+        expect(sanitizeCsvValue('-cmd')).toBe("'-cmd");
+      });
+
+      it('should prefix values starting with @', () => {
+        expect(sanitizeCsvValue('@SUM(A1:A10)')).toBe("'@SUM(A1:A10)");
+      });
+
+      it('should prefix values starting with |', () => {
+        expect(sanitizeCsvValue('|calc')).toBe("'|calc");
+      });
+
+      it('should prefix values starting with %', () => {
+        expect(sanitizeCsvValue('%calc%')).toBe("'%calc%");
+      });
+
+      it('should not modify safe values', () => {
+        expect(sanitizeCsvValue('normal text')).toBe('normal text');
+        expect(sanitizeCsvValue('123')).toBe('123');
+        expect(sanitizeCsvValue('test@example.com')).toBe('test@example.com');
+      });
+
+      it('should handle non-string values', () => {
+        expect(sanitizeCsvValue(123)).toBe('123');
+        expect(sanitizeCsvValue(true)).toBe('true');
+        expect(sanitizeCsvValue(null)).toBe('null');
+      });
+    });
+
+    describe('sanitizeCsvArray', () => {
+      it('should sanitize all values in array', () => {
+        const input = ['=1+1', 'safe', '@SUM', '+123'];
+        const result = sanitizeCsvArray(input);
+        expect(result).toEqual(["'=1+1", 'safe', "'@SUM", "'+123"]);
+      });
+
+      it('should handle mixed types', () => {
+        const input = ['=formula', 123, true, 'normal'];
+        const result = sanitizeCsvArray(input);
+        expect(result).toEqual(["'=formula", '123', 'true', 'normal']);
+      });
+    });
+
+    describe('sanitizeCsvObject', () => {
+      it('should sanitize all values in object', () => {
+        const input = { name: '=formula', value: 'safe', cmd: '@exec' };
+        const result = sanitizeCsvObject(input);
+        expect(result).toEqual({
+          name: "'=formula",
+          value: 'safe',
+          cmd: "'@exec",
+        });
+      });
+    });
+
+    describe('buildCsv with sanitization', () => {
+      it('should sanitize when option is enabled', () => {
+        const data = [
+          { title: '=1+1', description: 'safe' },
+          { title: 'normal', description: '@SUM(A1)' },
+        ];
+
+        const csv = buildCsv(data, { sanitize: true });
+
+        // Verify formulas are prefixed
+        expect(csv).toContain("'=1+1");
+        expect(csv).toContain("'@SUM(A1)");
+
+        // Verify line structure shows sanitization
+        const lines = csv.split('\n');
+        expect(lines[1]).toBe("'=1+1,safe");
+        expect(lines[2]).toBe("normal,'@SUM(A1)");
+      });
+
+      it('should not sanitize when option is disabled', () => {
+        const data = [{ title: '=1+1', description: 'safe' }];
+
+        const csv = buildCsv(data, { sanitize: false });
+
+        expect(csv).toContain('=1+1');
+        expect(csv).not.toContain("'=1+1");
+      });
+
+      it('should not sanitize by default', () => {
+        const data = [{ title: '=1+1' }];
+
+        const csv = buildCsv(data);
+
+        expect(csv).toContain('=1+1');
+        expect(csv).not.toContain("'=1+1");
+      });
+    });
+
+    describe('buildCsvArray with sanitization', () => {
+      it('should sanitize when option is enabled', () => {
+        const data = [
+          ['Title', 'Command'],
+          ['Test', '=cmd|calc'],
+          ['Normal', 'safe'],
+        ];
+
+        const csv = buildCsvArray(data, { sanitize: true });
+
+        expect(csv).toContain("'=cmd|calc");
+        expect(csv).not.toContain('=cmd|calc,');
+      });
+
+      it('should not sanitize by default', () => {
+        const data = [['=1+1', 'test']];
+
+        const csv = buildCsvArray(data);
+
+        expect(csv).toContain('=1+1');
+      });
+    });
+
+    describe('Security attack vectors', () => {
+      it('should prevent Excel formula injection attack', () => {
+        const maliciousData = [
+          {
+            finding: 'SQL Injection',
+            payload: '=cmd|"/c calc"!A1',
+            status: 'Failed',
+          },
+        ];
+
+        const csv = buildCsv(maliciousData, { sanitize: true });
+
+        // Formula should be neutralized with leading quote
+        expect(csv).toContain("'=cmd|");
+        // Verify the original formula was prefixed
+        const lines = csv.split('\n');
+        expect(lines[1]).toMatch(/^SQL Injection,"'=cmd\|/);
+      });
+
+      it('should prevent DDE injection attack', () => {
+        const maliciousData = [
+          {
+            url: '@SUM(1+1)*cmd|"/c calc"!A1',
+            description: 'Malicious URL',
+          },
+        ];
+
+        const csv = buildCsv(maliciousData, { sanitize: true });
+
+        // Verify @ formula is escaped
+        expect(csv).toContain("'@SUM");
+        const lines = csv.split('\n');
+        expect(lines[1]).toMatch(/^"'@SUM/);
+      });
+
+      it('should handle real security tool output', () => {
+        const scanResults = [
+          {
+            pluginId: '12345',
+            severity: 'High',
+            name: 'SSL Certificate Issue',
+            output: '=HYPERLINK("http://evil.com","Click here")',
+          },
+        ];
+
+        const csv = buildCsv(scanResults, { sanitize: true });
+
+        // Verify formula is escaped
+        expect(csv).toContain("'=HYPERLINK");
       });
     });
   });
