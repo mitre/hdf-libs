@@ -246,14 +246,17 @@ const requirementId = sha256(`${baselineId}-${finding.id}`);
 
 ## CI/CD Integration
 
-Tests run automatically on push:
+Tests run automatically on pull requests:
 ```yaml
-- TypeScript tests: pnpm test
+- Lint: pnpm lint (TypeScript + Go)
+- Build: pnpm build (all packages)
+- TypeScript tests: pnpm test (95% coverage required)
 - Go tests: go test ./...
-- Differential parity: pnpm test:parity
+- Coverage: Upload to Codecov
 ```
 
-All tests must pass before merge.
+**Branch protection** enforces all checks must pass before merge to `main`.
+See [Branch Protection Setup](../docs/BRANCH_PROTECTION.md) for configuration.
 
 ## Tips
 
