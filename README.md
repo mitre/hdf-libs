@@ -48,3 +48,51 @@ Security requirement definitions without results. Contains:
 ```bash
 npm install @mitre/hdf-schema
 ```
+
+## Development
+
+This monorepo uses pnpm workspaces. Build order matters because some packages depend on generated types from others.
+
+### Setup
+
+```bash
+pnpm install
+```
+
+### Building
+
+Build hdf-schema first, then other packages:
+
+```bash
+# Build hdf-schema (generates TypeScript, Python, and Go types)
+pnpm -r --filter hdf-schema run build
+
+# Build other packages
+pnpm -r --filter '!hdf-schema' run build
+```
+
+### Linting
+
+Linting requires packages to be built first (especially for hdf-cli):
+
+```bash
+# Build packages first
+pnpm -r --filter hdf-schema run build
+pnpm -r --filter '!hdf-schema' run build
+
+# Then lint
+pnpm lint
+```
+
+### Testing
+
+```bash
+# TypeScript tests
+pnpm test:ts
+
+# Go tests
+pnpm test:go
+
+# All tests
+pnpm test
+```
