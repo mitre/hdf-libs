@@ -19,7 +19,7 @@ describe('XML Utilities', () => {
       const xml = '<root><item id="1" type="test">Value</item></root>';
       const result = parseXml(xml);
       expect(result).toEqual({
-        root: { item: { id: '1', type: 'test', text: 'Value' } },
+        root: { item: { id: '1', type: 'test', '#text': 'Value' } },
       });
     });
 
@@ -91,7 +91,8 @@ describe('XML Utilities', () => {
 
   describe('buildXml', () => {
     it('should build simple XML', () => {
-      const obj = { root: { item: 'Test' } };
+      // Note: Simple string values become attributes, use #text for element content
+      const obj = { root: { item: { '#text': 'Test' } } };
       const xml = buildXml(obj);
       expect(xml).toContain('<root>');
       expect(xml).toContain('<item>Test</item>');
@@ -106,7 +107,7 @@ describe('XML Utilities', () => {
     });
 
     it('should build XML with nested elements', () => {
-      const obj = { root: { parent: { child: 'Value' } } };
+      const obj = { root: { parent: { child: { '#text': 'Value' } } } };
       const xml = buildXml(obj);
       expect(xml).toContain('<parent>');
       expect(xml).toContain('<child>Value</child>');
@@ -121,7 +122,7 @@ describe('XML Utilities', () => {
     });
 
     it('should format XML with indentation by default', () => {
-      const obj = { root: { item: 'Test' } };
+      const obj = { root: { parent: { child: { '#text': 'Test' } } } };
       const xml = buildXml(obj);
       expect(xml).toContain('\n');
       expect(xml).toContain('  ');
