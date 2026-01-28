@@ -134,6 +134,12 @@ export function parseXmlWithArrays(
   arrayTags: string[],
   options?: Partial<X2jOptions>
 ): Record<string, unknown> {
+  // Validate XML first (consistency with parseXml)
+  const validation = XMLValidator.validate(xml);
+  if (validation !== true) {
+    throw new Error(`Invalid XML: ${validation.err.msg}`);
+  }
+
   const mergedOptions: Partial<X2jOptions> = {
     ...DEFAULT_PARSE_OPTIONS,
     ...options,

@@ -219,6 +219,11 @@ describe('XML Utilities', () => {
       expect(Array.isArray(child)).toBe(true);
     });
 
+    it('should throw on malformed XML', () => {
+      const xml = '<root><item>Test</root>'; // Mismatched tags
+      expect(() => parseXmlWithArrays(xml, ['item'])).toThrow('Invalid XML');
+    });
+
     it('should support custom options', () => {
       const xml = '<root><item id="1">Test</item></root>';
       const result = parseXmlWithArrays(xml, ['item'], { ignoreAttributes: true });
