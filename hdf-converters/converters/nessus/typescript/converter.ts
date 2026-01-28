@@ -1,8 +1,5 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
-import {
-  getNessusNistControl,
-  getAllNessusPluginFamilies,
-} from '@mitre/hdf-mappings';
+import { getNessusNistControl } from '@mitre/hdf-mappings';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -108,7 +105,7 @@ export function convertNessusToHdf(nessusXml: string): HdfResults {
   const reportHosts = parsed.NessusClientData_v2.Report.ReportHost as ReportHost[];
 
   // Calculate start and end times from first and last host
-  const { startTime, endTime, duration } = calculateTiming(reportHosts);
+  const { startTime, duration } = calculateTiming(reportHosts);
 
   const baselines: EvaluatedBaseline[] = [];
   const targets: Target[] = [];

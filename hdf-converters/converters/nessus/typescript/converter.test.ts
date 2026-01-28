@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertNessusToHdf } from './index.js';
-import type { HdfResults } from '@mitre/hdf-schema';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
