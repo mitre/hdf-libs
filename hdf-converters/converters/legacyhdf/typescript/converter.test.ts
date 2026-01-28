@@ -213,6 +213,350 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
   });
 
+  describe('Optional Field Coverage', () => {
+    it('should convert all result optional fields', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test-profile',
+          controls: [{
+            id: 'control-1',
+            impact: 0.7,
+            results: [{
+              status: 'failed',
+              code_desc: 'Test code description',
+              run_time: 1.5,
+              start_time: '2024-01-01T00:00:00Z',
+              message: 'Test message',
+              exception: 'TestException',
+              backtrace: ['line1', 'line2'],
+              resource_class: 'File',
+              resource_params: { path: '/test' },
+              resource_id: '/etc/test',
+              skip_message: 'Test skip',
+            }],
+          }],
+        }],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+      const result = v2.baselines[0].requirements![0].results[0];
+
+      expect(result.codeDesc).toBe('Test code description');
+      expect(result.runTime).toBe(1.5);
+      expect(result.startTime).toBe('2024-01-01T00:00:00Z');
+      expect(result.message).toBe('Test message');
+      expect(result.exception).toBe('TestException');
+      expect(result.backtrace).toEqual(['line1', 'line2']);
+      expect(result.resourceClass).toBe('File');
+      expect(result.resourceParams).toEqual({ path: '/test' });
+      expect(result.resourceId).toBe('/etc/test');
+      expect(result.skipMessage).toBe('Test skip');
+    });
+
+    it('should convert all control/requirement optional fields', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test-profile',
+          controls: [{
+            id: 'control-1',
+            impact: 0.7,
+            title: 'Test Title',
+            desc: 'Test Description',
+            descriptions: [{ label: 'default', data: 'Test' }],
+            refs: [{ url: 'https://example.com' }],
+            tags: { nist: ['AC-1'] },
+            code: 'describe "test" do\nend',
+            source_location: { ref: 'test.rb', line: 10 },
+            waiver_data: { expiration: '2025-01-01' },
+            status: 'not_applicable',
+            results: [{ status: 'passed' }],
+          }],
+        }],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+      const req = v2.baselines[0].requirements![0];
+
+      expect(req.title).toBe('Test Title');
+      expect(req.desc).toBe('Test Description');
+      expect(req.descriptions).toEqual([{ label: 'default', data: 'Test' }]);
+      expect(req.refs).toEqual([{ url: 'https://example.com' }]);
+      expect(req.tags).toEqual({ nist: ['AC-1'] });
+      expect(req.code).toBe('describe "test" do\nend');
+      expect(req.sourceLocation).toEqual({ ref: 'test.rb', line: 10 });
+      expect(req.waiverData).toEqual({ expiration: '2025-01-01' });
+      expect(req.effectiveStatus).toBe('notApplicable');
+    });
+
+    it('should convert all status values correctly', () => {
+      const statuses = [
+        { v1: 'passed', v2: 'passed' },
+        { v1: 'failed', v2: 'failed' },
+        { v1: 'error', v2: 'error' },
+        { v1: 'not_applicable', v2: 'notApplicable' },
+        { v1: 'not_reviewed', v2: 'notReviewed' },
+        { v1: 'skipped', v2: 'notReviewed' },
+      ];
+
+      statuses.forEach(({ v1: v1Status, v2: v2Status }) => {
+        const v1: HDFV1Results = {
+          version: '1.0.0',
+          platform: { name: 'test' },
+          profiles: [{
+            name: 'test',
+            controls: [{
+              id: 'test',
+              impact: 0.5,
+              status: v1Status,
+              results: [{ status: v1Status }],
+            }],
+          }],
+          statistics: {},
+        };
+
+        const v2 = convertV1ToV2(v1);
+        expect(v2.baselines[0].requirements![0].effectiveStatus).toBe(v2Status);
+        expect(v2.baselines[0].requirements![0].results[0].status).toBe(v2Status);
+      });
+    });
+
+    it('should preserve unknown status values', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'test',
+            impact: 0.5,
+            status: 'custom_status',
+            results: [{ status: 'custom_result_status' }],
+          }],
+        }],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('custom_status');
+      expect(v2.baselines[0].requirements![0].results[0].status).toBe('custom_result_status');
+    });
+
+    it('should convert group with all optional fields', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test-profile',
+          groups: [{
+            id: 'group-1',
+            title: 'Group Title',
+            controls: ['control-1', 'control-2'],
+          }],
+          controls: [],
+        }],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+      const group = v2.baselines[0].groups![0];
+
+      expect(group.id).toBe('group-1');
+      expect(group.title).toBe('Group Title');
+      expect(group.requirements).toEqual(['control-1', 'control-2']);
+    });
+
+    it('should convert dependency with all optional fields', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test-profile',
+          depends: [{
+            name: 'dep-profile',
+            url: 'https://example.com/profile',
+            path: '/path/to/profile',
+            git: 'https://github.com/test/profile.git',
+            branch: 'main',
+            tag: 'v1.0.0',
+            commit: 'abc123',
+            version: '1.0.0',
+            supermarket: 'test/profile',
+            compliance: { name: 'compliance' },
+            status: 'loaded',
+            skip_message: 'Skipped',
+          }],
+          controls: [],
+        }],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+      const dep = v2.baselines[0].depends![0];
+
+      expect(dep.name).toBe('dep-profile');
+      expect(dep.url).toBe('https://example.com/profile');
+      expect(dep.path).toBe('/path/to/profile');
+      expect(dep.git).toBe('https://github.com/test/profile.git');
+      expect(dep.branch).toBe('main');
+      expect(dep.tag).toBe('v1.0.0');
+      expect(dep.commit).toBe('abc123');
+      expect(dep.version).toBe('1.0.0');
+      expect(dep.supermarket).toBe('test/profile');
+      expect(dep.compliance).toEqual({ name: 'compliance' });
+      expect(dep.status).toBe('loaded');
+      expect(dep.skipMessage).toBe('Skipped');
+    });
+
+    it('should convert profile/baseline with all optional fields', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test-profile',
+          version: '1.0.0',
+          title: 'Test Profile',
+          maintainer: 'Test Maintainer',
+          summary: 'Test Summary',
+          license: 'Apache-2.0',
+          copyright: 'Copyright 2024',
+          copyright_email: 'test@example.com',
+          supports: [{ platform: 'ubuntu' }],
+          attributes: [{ name: 'attr1', options: {} }],
+          status: 'loaded',
+          sha256: 'abc123',
+          parent_profile: 'parent-profile',
+          status_message: 'Status message',
+          skip_message: 'Skip message',
+          groups: [],
+          controls: [],
+          depends: [],
+        }],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+      const baseline = v2.baselines[0];
+
+      expect(baseline.version).toBe('1.0.0');
+      expect(baseline.title).toBe('Test Profile');
+      expect(baseline.maintainer).toBe('Test Maintainer');
+      expect(baseline.summary).toBe('Test Summary');
+      expect(baseline.license).toBe('Apache-2.0');
+      expect(baseline.copyright).toBe('Copyright 2024');
+      expect(baseline.copyright_email).toBe('test@example.com');
+      expect(baseline.supports).toEqual([{ platform: 'ubuntu' }]);
+      expect(baseline.attributes).toEqual([{ name: 'attr1', options: {} }]);
+      expect(baseline.status).toBe('loaded');
+      expect(baseline.checksum).toEqual({ algorithm: 'sha256', value: 'abc123' });
+      expect(baseline.parentProfile).toBe('parent-profile');
+      expect(baseline.statusMessage).toBe('Status message');
+      expect(baseline.skipMessage).toBe('Skip message');
+    });
+
+    it('should preserve unknown fields in results', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'test',
+            impact: 0.5,
+            results: [{
+              status: 'passed',
+              custom_field: 'custom_value',
+            }],
+          }],
+        }],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].results[0]).toHaveProperty('custom_field', 'custom_value');
+    });
+
+    it('should preserve unknown fields in controls', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'test',
+            impact: 0.5,
+            custom_control_field: 'custom',
+            results: [],
+          }],
+        }],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0]).toHaveProperty('custom_control_field', 'custom');
+    });
+
+    it('should preserve unknown fields in groups', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          groups: [{
+            id: 'group1',
+            controls: [],
+            custom_group_field: 'custom',
+          }],
+          controls: [],
+        }],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].groups![0]).toHaveProperty('custom_group_field', 'custom');
+    });
+
+    it('should preserve unknown fields in dependencies', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          depends: [{
+            name: 'dep',
+            custom_dep_field: 'custom',
+          }],
+          controls: [],
+        }],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].depends![0]).toHaveProperty('custom_dep_field', 'custom');
+    });
+
+    it('should preserve unknown fields in profiles/baselines', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [],
+          custom_profile_field: 'custom',
+        }],
+        statistics: {},
+      };
+
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0]).toHaveProperty('custom_profile_field', 'custom');
+    });
+  });
+
   describe('isHDFV1', () => {
     it('should return true for valid v1.0 structure', () => {
       const data = {
