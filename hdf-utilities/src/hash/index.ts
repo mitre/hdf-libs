@@ -3,7 +3,8 @@
  * Provides cryptographic hashing functions for content identification and integrity verification
  */
 
-import { createHash, BinaryToTextEncoding } from 'node:crypto';
+import { createHash } from 'node:crypto';
+import type { BinaryToTextEncoding } from 'node:crypto';
 
 /**
  * Supported hash algorithms

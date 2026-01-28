@@ -26,3 +26,12 @@ export {
   parseXmlWithArrays,
   extractTextFromXml,
 } from './xml/index.js';
+
+// CSV utilities
+export {
+  parseCsv,
+  parseCsvArray,
+  buildCsv,
+  buildCsvArray,
+  isValidCsv,
+} from './csv/index.js';

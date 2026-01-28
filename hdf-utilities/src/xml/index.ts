@@ -3,7 +3,8 @@
  * Provides XML parsing with sensible defaults for security tool output
  */
 
-import { XMLParser, XMLBuilder, X2jOptions, XmlBuilderOptions, XMLValidator } from 'fast-xml-parser';
+import { XMLParser, XMLBuilder, XMLValidator } from 'fast-xml-parser';
+import type { X2jOptions, XmlBuilderOptions } from 'fast-xml-parser';
 
 /**
  * Default options for XML parsing optimized for security tool converters
