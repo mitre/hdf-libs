@@ -49,6 +49,12 @@ export function parseXml(
   xml: string,
   options?: Partial<X2jOptions>
 ): Record<string, unknown> {
+  // Validate XML first
+  const validation = XMLValidator.validate(xml);
+  if (validation !== true) {
+    throw new Error(`Invalid XML: ${validation.err.msg}`);
+  }
+
   const mergedOptions = {
     ...DEFAULT_PARSE_OPTIONS,
     ...options,
@@ -180,12 +186,7 @@ function extractTextRecursive(obj: unknown): string {
   if (typeof obj === 'object' && obj !== null) {
     const record = obj as Record<string, unknown>;
 
-    // If object has '#text' property, return it
-    if ('#text' in record) {
-      return extractTextRecursive(record['#text']);
-    }
-
-    // Otherwise, recursively extract from all properties
+    // Recursively extract text from all properties
     return Object.values(record)
       .map(extractTextRecursive)
       .filter(text => text.length > 0)
