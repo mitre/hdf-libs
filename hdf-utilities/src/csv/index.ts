@@ -1,5 +1,8 @@
 /**
  * CSV parsing and generation utilities using papaparse
+ *
+ * SECURITY WARNING: CSV files opened in Excel/LibreOffice may execute formulas.
+ * Use sanitization options when exporting data that may contain user-controlled content.
  */
 
 import Papa from 'papaparse';
@@ -91,39 +94,80 @@ export function parseCsvArray(
 
 /**
  * Build CSV string from array of objects
+ *
+ * SECURITY: Set sanitize=true when data may contain user-controlled content
+ * to prevent CSV formula injection attacks in Excel/LibreOffice.
+ *
  * @param data - Array of objects to convert to CSV
- * @param options - Optional papaparse unparse configuration
+ * @param options - Optional papaparse configuration and sanitize flag
  * @returns CSV string
+ *
+ * @example
+ * ```typescript
+ * // Without sanitization (default)
+ * buildCsv([{name: '=1+1', value: 'test'}]);
+ *
+ * // With sanitization (recommended for user data)
+ * buildCsv([{name: '=1+1', value: 'test'}], { sanitize: true });
+ * // Result: '=1+1' becomes "'=1+1"
+ * ```
  */
 export function buildCsv<T = Record<string, unknown>>(
   data: T[],
-  options?: Partial<UnparseConfig>
+  options?: Partial<UnparseConfig> & { sanitize?: boolean }
 ): string {
+  const { sanitize, ...unparseOptions } = options || {};
+
   const mergedOptions = {
     ...DEFAULT_BUILD_OPTIONS,
-    ...options,
+    ...unparseOptions,
   };
 
-  return Papa.unparse(data, mergedOptions);
+  let processedData = data;
+  if (sanitize) {
+    processedData = data.map((row) =>
+      sanitizeCsvObject(row as Record<string, unknown>)
+    ) as T[];
+  }
+
+  return Papa.unparse(processedData, mergedOptions);
 }
 
 /**
  * Build CSV string from array of arrays
+ *
+ * SECURITY: Set sanitize=true when data may contain user-controlled content
+ * to prevent CSV formula injection attacks in Excel/LibreOffice.
+ *
  * @param data - Array of arrays to convert to CSV
- * @param options - Optional papaparse unparse configuration
+ * @param options - Optional papaparse configuration and sanitize flag
  * @returns CSV string
+ *
+ * @example
+ * ```typescript
+ * // With sanitization for security tool output
+ * const rows = [['Title', 'Description'], ['Test', '=cmd|calc']];
+ * buildCsvArray(rows, { sanitize: true });
+ * ```
  */
 export function buildCsvArray(
   data: string[][],
-  options?: Partial<UnparseConfig>
+  options?: Partial<UnparseConfig> & { sanitize?: boolean }
 ): string {
+  const { sanitize, ...unparseOptions } = options || {};
+
   const mergedOptions = {
     ...DEFAULT_BUILD_OPTIONS,
     header: false,
-    ...options,
+    ...unparseOptions,
   };
 
-  return Papa.unparse(data, mergedOptions);
+  let processedData = data;
+  if (sanitize) {
+    processedData = data.map((row) => sanitizeCsvArray(row));
+  }
+
+  return Papa.unparse(processedData, mergedOptions);
 }
 
 /**
@@ -142,4 +186,54 @@ export function isValidCsv(csv: string): boolean {
   });
 
   return result.errors.length === 0;
+}
+
+/**
+ * Sanitize a single CSV value to prevent formula injection
+ *
+ * Prefixes values starting with =, +, -, @, |, or % with a single quote
+ * to prevent Excel/LibreOffice from interpreting them as formulas.
+ *
+ * @param value - Value to sanitize
+ * @returns Sanitized value
+ *
+ * @example
+ * ```typescript
+ * sanitizeCsvValue('=1+1'); // Returns: '=1+1'
+ * sanitizeCsvValue('normal'); // Returns: 'normal'
+ * ```
+ */
+export function sanitizeCsvValue(value: unknown): string {
+  const str = String(value);
+  // Check if string starts with formula trigger characters
+  if (/^[=+\-@|%]/.test(str)) {
+    return `'${str}`;
+  }
+  return str;
+}
+
+/**
+ * Sanitize all values in an array to prevent formula injection
+ *
+ * @param values - Array of values to sanitize
+ * @returns Array with sanitized values
+ */
+export function sanitizeCsvArray(values: unknown[]): string[] {
+  return values.map(sanitizeCsvValue);
+}
+
+/**
+ * Sanitize all values in an object to prevent formula injection
+ *
+ * @param obj - Object with values to sanitize
+ * @returns New object with sanitized values
+ */
+export function sanitizeCsvObject<T extends Record<string, unknown>>(
+  obj: T
+): Record<string, string> {
+  const sanitized: Record<string, string> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    sanitized[key] = sanitizeCsvValue(value);
+  }
+  return sanitized;
 }
