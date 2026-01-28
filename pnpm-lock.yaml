@@ -38,7 +38,17 @@ importers:
 
   hdf-cli: {}
 
-  hdf-converters: {}
+  hdf-converters:
+    dependencies:
+      '@mitre/hdf-mappings':
+        specifier: workspace:*
+        version: link:../hdf-mappings
+      '@mitre/hdf-schema':
+        specifier: workspace:*
+        version: link:../hdf-schema
+      '@mitre/hdf-utilities':
+        specifier: workspace:*
+        version: link:../hdf-utilities
 
   hdf-mappings: {}
 

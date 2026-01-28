@@ -15,8 +15,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "pnpm clean && tsc",
+    "build": "pnpm clean && tsc && pnpm copy-data",
     "clean": "rm -rf dist",
+    "copy-data": "cp -r src/data dist/data",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
     "test:go": "echo 'No Go tests in hdf-mappings'",

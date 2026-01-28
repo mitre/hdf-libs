@@ -1,0 +1,393 @@
+import { parseXmlWithArrays } from '@mitre/hdf-utilities';
+import {
+  getNessusNistControl,
+  getAllNessusPluginFamilies,
+} from '@mitre/hdf-mappings';
+import type {
+  HdfResults,
+  EvaluatedBaseline,
+  EvaluatedRequirement,
+  RequirementResult,
+  Target,
+  Description,
+  Reference,
+  ResultStatus,
+} from '@mitre/hdf-schema';
+import { version as converterVersion } from '../../../package.json';
+
+interface NessusXml {
+  NessusClientData_v2: {
+    Policy: {
+      policyName: string;
+      Preferences?: {
+        ServerPreferences?: {
+          preference?: Array<{ name: string; value: string }> | { name: string; value: string };
+        };
+      };
+    };
+    Report: {
+      '@name'?: string;
+      ReportHost: ReportHost | ReportHost[];
+    };
+  };
+}
+
+interface ReportHost {
+  name: string;
+  HostProperties?: {
+    tag?: HostPropertyTag | HostPropertyTag[];
+  };
+  ReportItem?: ReportItem | ReportItem[];
+}
+
+interface HostPropertyTag {
+  name: string;
+  '#text'?: string;
+}
+
+interface ReportItem {
+  port: string;
+  svc_name: string;
+  protocol: string;
+  severity: string;
+  pluginID: string;
+  pluginName: string;
+  pluginFamily: string;
+  description?: string;
+  fname?: string;
+  plugin_modification_date?: string;
+  plugin_name?: string;
+  plugin_publication_date?: string;
+  plugin_type?: string;
+  risk_factor?: string;
+  script_version?: string;
+  see_also?: string;
+  solution?: string;
+  synopsis?: string;
+  plugin_output?: string;
+  cvss_base_score?: string;
+  cvss3_base_score?: string;
+  cve?: string;
+  // Compliance fields
+  'compliance-reference'?: string;
+  'compliance-check-name'?: string;
+  'compliance-info'?: string;
+  'compliance-solution'?: string;
+  'compliance-result'?: string;
+  'compliance-actual-value'?: string;
+}
+
+// Severity to impact mapping from heimdall2
+const IMPACT_MAPPING: Record<string, number> = {
+  '4': 0.9,   // Critical
+  '3': 0.7,   // High
+  'i': 0.7,
+  '2': 0.5,   // Medium
+  'ii': 0.5,
+  '1': 0.3,   // Low
+  'iii': 0.3,
+  '0': 0.0,   // Info
+};
+
+/**
+ * Strip HTML tags from a string
+ */
+function parseHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').trim();
+}
+
+/**
+ * Convert Nessus XML scan results to HDF format
+ */
+export function convertNessusToHdf(nessusXml: string): HdfResults {
+  const parsed = parseXmlWithArrays(nessusXml, ['preference', 'tag', 'ReportItem', 'ReportHost']) as NessusXml;
+
+  const policyName = parsed.NessusClientData_v2.Policy.policyName;
+  const version = extractVersion(parsed);
+  const reportHosts = Array.isArray(parsed.NessusClientData_v2.Report.ReportHost)
+    ? parsed.NessusClientData_v2.Report.ReportHost
+    : [parsed.NessusClientData_v2.Report.ReportHost];
+
+  // Calculate start and end times from first and last host
+  const { startTime, endTime, duration } = calculateTiming(reportHosts);
+
+  const baselines: EvaluatedBaseline[] = [];
+  const targets: Target[] = [];
+
+  // Process each ReportHost
+  reportHosts.forEach(host => {
+    const baseline = convertReportHostToBaseline(host, policyName, version);
+    baselines.push(baseline);
+
+    const target = convertReportHostToTarget(host);
+    targets.push(target);
+  });
+
+  const result: HdfResults = {
+    baselines,
+    targets,
+    statistics: {
+      duration,
+    },
+    generator: {
+      name: 'hdf-converters',
+      version: converterVersion,
+    },
+    timestamp: startTime,
+  };
+
+  return result;
+}
+
+function extractVersion(parsed: NessusXml): string {
+  const prefs = parsed.NessusClientData_v2.Policy.Preferences?.ServerPreferences?.preference;
+  if (!prefs) return '';
+
+  const prefArray = Array.isArray(prefs) ? prefs : [prefs];
+  const scVersion = prefArray.find(p => p.name === 'sc_version');
+  return scVersion?.value || '';
+}
+
+function calculateTiming(hosts: ReportHost[]): { startTime: Date; endTime: Date; duration: number } {
+  if (hosts.length === 0) {
+    const now = new Date();
+    return { startTime: now, endTime: now, duration: 0 };
+  }
+
+  const firstHost = hosts[0];
+  const lastHost = hosts[hosts.length - 1];
+
+  const startTimeStr = getHostPropertyValue(firstHost, 'HOST_START');
+  const endTimeStr = getHostPropertyValue(lastHost, 'HOST_END') || getHostPropertyValue(lastHost, 'HOST_START');
+
+  const startTime = startTimeStr ? new Date(startTimeStr) : new Date();
+  const endTime = endTimeStr ? new Date(endTimeStr) : startTime;
+
+  const duration = (endTime.getTime() - startTime.getTime()) / 1000; // seconds
+
+  return { startTime, endTime, duration };
+}
+
+function getHostPropertyValue(host: ReportHost, name: string): string | undefined {
+  const tags = host.HostProperties?.tag;
+  if (!tags) return undefined;
+
+  const tagArray = Array.isArray(tags) ? tags : [tags];
+  const tag = tagArray.find(t => t['name'] === name);
+  return tag?.['#text'];
+}
+
+function convertReportHostToBaseline(
+  host: ReportHost,
+  policyName: string,
+  version: string
+): EvaluatedBaseline {
+  const items = host.ReportItem;
+  const itemArray = items ? (Array.isArray(items) ? items : [items]) : [];
+
+  const requirements = itemArray.map(item => convertReportItemToRequirement(item, host));
+
+  return {
+    name: `Nessus ${policyName}`,
+    title: `Nessus ${policyName}`,
+    version,
+    status: 'loaded',
+    summary: `Nessus ${policyName}`,
+    supports: [],
+    attributes: [],
+    groups: [],
+    checksum: '',
+    requirements,
+  };
+}
+
+function convertReportItemToRequirement(item: ReportItem, host: ReportHost): EvaluatedRequirement {
+  const isCompliance = !!item['compliance-reference'];
+  const id = isCompliance
+    ? parseComplianceRef(item['compliance-reference']!, 'Vuln-ID')[0] || item['pluginID']
+    : item['pluginID'];
+
+  const title = isCompliance
+    ? (item['compliance-check-name'] || item['pluginName'])
+    : item['pluginName'];
+
+  const descriptions = buildDescriptions(item, isCompliance);
+  const impact = calculateImpact(item, isCompliance);
+  const tags = buildTags(item, isCompliance);
+  const refs = buildRefs(item);
+  const results = [buildResult(item, host, isCompliance)];
+  const code = JSON.stringify(item, null, 2);
+
+  return {
+    id,
+    title,
+    descriptions,
+    impact,
+    tags,
+    refs,
+    results,
+    code,
+    sourceLocation: {},
+  };
+}
+
+function buildDescriptions(item: ReportItem, isCompliance: boolean): Description[] {
+  const descriptions: Description[] = [];
+
+  // Default description
+  if (isCompliance && item['compliance-info']) {
+    descriptions.push({
+      label: 'default',
+      data: parseHtml(item['compliance-info']),
+    });
+  } else {
+    // Non-compliance: create description from metadata
+    const parts = [
+      `Plugin Family: ${item['pluginFamily']}`,
+      `Port: ${item['port']}`,
+      `Protocol: ${item['protocol']}`,
+    ];
+    descriptions.push({
+      label: 'default',
+      data: parts.join('; ') + ';',
+    });
+  }
+
+  // Fix/solution description
+  const solution = isCompliance ? item['compliance-solution'] : item.solution;
+  if (solution && solution !== 'n/a') {
+    descriptions.push({
+      label: 'fix',
+      data: parseHtml(solution),
+    });
+  } else if (solution === 'n/a') {
+    descriptions.push({
+      label: 'fix',
+      data: 'n/a',
+    });
+  }
+
+  return descriptions;
+}
+
+function calculateImpact(item: ReportItem, isCompliance: boolean): number {
+  if (isCompliance && item['compliance-reference']) {
+    const cat = parseComplianceRef(item['compliance-reference'], 'CAT')[0];
+    return IMPACT_MAPPING[cat] ?? 0.5;
+  }
+
+  return IMPACT_MAPPING[item['severity']] ?? 0.0;
+}
+
+function buildTags(item: ReportItem, isCompliance: boolean): Record<string, unknown> {
+  const tags: Record<string, unknown> = {
+    rid: isCompliance
+      ? parseComplianceRef(item['compliance-reference']!, 'Rule-ID').join(',')
+      : item['pluginID'],
+  };
+
+  // NIST tags
+  if (isCompliance && item['compliance-reference']) {
+    const cciTags = parseComplianceRef(item['compliance-reference'], 'CCI');
+    tags.cci = cciTags;
+    // TODO: Map CCI to NIST using CciNistMapping
+    tags.nist = [];
+  } else {
+    const nistControls = getNessusNistControl(item['pluginFamily'], item['pluginID']);
+    tags.nist = nistControls ? nistControls.split('|') : [];
+  }
+
+  // STIG ID for compliance
+  if (isCompliance && item['compliance-reference']) {
+    const stigId = parseComplianceRef(item['compliance-reference'], 'STIG-ID').join(',');
+    if (stigId) {
+      tags.stig_id = stigId;
+    }
+  }
+
+  // Additional Nessus metadata tags
+  if (item.risk_factor) tags.risk_factor = item.risk_factor;
+  if (item.plugin_type) tags.plugin_type = item.plugin_type;
+  if (item.plugin_publication_date) tags.plugin_publication_date = item.plugin_publication_date;
+  if (item.fname) tags.fname = item.fname;
+  if (item.cvss3_base_score) tags.cvss3_base_score = item.cvss3_base_score;
+  if (item.cvss_base_score) tags.cvss_base_score = item.cvss_base_score;
+
+  return tags;
+}
+
+function buildRefs(item: ReportItem): Reference[] | undefined {
+  const refs: Reference[] = [];
+
+  if (item.see_also) {
+    refs.push({ url: item.see_also });
+  }
+
+  return refs.length > 0 ? refs : undefined;
+}
+
+function buildResult(item: ReportItem, host: ReportHost, isCompliance: boolean): RequirementResult {
+  const status = getStatus(item, isCompliance);
+  const codeDesc = getCodeDesc(item);
+  const message = item.plugin_output || item['compliance-actual-value'];
+  const startTimeStr = getHostPropertyValue(host, 'HOST_START');
+  const startTime = startTimeStr ? new Date(startTimeStr) : new Date();
+
+  return {
+    status,
+    codeDesc,
+    message: message || undefined,
+    startTime,
+  };
+}
+
+function getStatus(item: ReportItem, isCompliance: boolean): ResultStatus {
+  if (isCompliance && item['compliance-result']) {
+    const result = item['compliance-result'];
+    switch (result) {
+      case 'PASSED':
+        return 'passed';
+      case 'WARNING':
+        return 'notApplicable'; // Heimdall2 maps WARNING to skipped
+      case 'ERROR':
+        return 'error';
+      default:
+        return 'failed';
+    }
+  }
+
+  // Non-compliance items are always failed (informational findings)
+  return 'failed';
+}
+
+function getCodeDesc(item: ReportItem): string {
+  const desc = item.description || item.plugin_output || 'This Nessus Plugin does not provide output message.';
+  return parseHtml(desc);
+}
+
+function parseComplianceRef(ref: string, key: string): string[] {
+  const matches = ref.split(',').filter(element => element.startsWith(key));
+  return matches.map(element => element.split('|')[1] || '');
+}
+
+function convertReportHostToTarget(host: ReportHost): Target {
+  const hostName = host['name'];
+  const attributes: Record<string, unknown> = {};
+
+  const tags = host.HostProperties?.tag;
+  if (tags) {
+    const tagArray = Array.isArray(tags) ? tags : [tags];
+    tagArray.forEach(tag => {
+      const name = tag['name'];
+      const value = tag['#text'];
+      if (name && value) {
+        attributes[name] = value;
+      }
+    });
+  }
+
+  return {
+    id: hostName,
+    attributes,
+  };
+}

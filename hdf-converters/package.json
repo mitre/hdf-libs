@@ -35,7 +35,11 @@
   },
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
-  "dependencies": {},
+  "dependencies": {
+    "@mitre/hdf-schema": "workspace:*",
+    "@mitre/hdf-utilities": "workspace:*",
+    "@mitre/hdf-mappings": "workspace:*"
+  },
   "devDependencies": {},
   "engines": {
     "node": ">=20.0.0"
