@@ -34,7 +34,8 @@
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
   "dependencies": {
-    "fast-xml-parser": "^5.3.3"
+    "fast-xml-parser": "^5.3.3",
+    "papaparse": "^5.5.3"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -45,5 +46,8 @@
     "utilities",
     "json",
     "parsing"
-  ]
+  ],
+  "devDependencies": {
+    "@types/papaparse": "^5.5.2"
+  }
 }
