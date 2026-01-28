@@ -60,14 +60,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
-
       - name: Build hdf-schema
         run: pnpm -r --filter hdf-schema run build
 
       - name: Build other packages
         run: pnpm -r --filter '!hdf-schema' run build
+
+      - name: Lint
+        run: pnpm lint
 
       - name: Test TypeScript
         run: pnpm test:ts

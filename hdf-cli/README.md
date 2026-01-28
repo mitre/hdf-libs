@@ -36,6 +36,18 @@ go build -o hdf ./cmd/hdf
 ./hdf convert legacyhdf to hdf old-scan.json new-scan.json
 ```
 
+## Linting
+
+Linting requires hdf-schema to be built first (golangci-lint needs Go module dependencies):
+
+```bash
+# From hdf-libs root
+cd hdf-schema && pnpm build && cd ../hdf-cli
+
+# Lint
+golangci-lint run
+```
+
 ## Testing
 
 ```bash
