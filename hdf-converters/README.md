@@ -36,6 +36,22 @@ if (isHDFV1(data)) {
 - `platform` (single object) → `targets` (array, supports multiple targets)
 - Extension fields moved to `extensions` object
 
+## Adding New Converters
+
+This package maintains **dual implementations** (TypeScript and Go) for all converters:
+- TypeScript for npm package (web apps, Node.js tools)
+- Go for `hdf-cli` (standalone binary, better security)
+
+See **[CONVERTER_GUIDE.md](./CONVERTER_GUIDE.md)** for complete implementation instructions.
+
+**Quick start**:
+1. Implement TypeScript converter in `converters/{tool}/typescript/`
+2. Add test fixtures in `converters/{tool}/fixtures/`
+3. Port to Go in `converters/{tool}/go/`
+4. Differential tests ensure both produce identical output
+
+**Architecture decision**: [ADR-001](../docs/architecture/ADR-001-dual-converter-implementations.md)
+
 ## License
 
 Apache-2.0 © MITRE Corporation
