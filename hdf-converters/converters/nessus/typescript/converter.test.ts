@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
-import { convertNessusToHdf } from './converter.js';
+import { convertNessusToHdf } from './index.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -257,6 +257,311 @@ describe('Nessus to HDF Converter', () => {
           expect(ref.url).not.toBe('');
         });
       });
+    });
+  });
+
+  describe('Compliance Scan Conversion', () => {
+    it('should convert compliance scan to HDF format', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+
+      expect(result).toBeDefined();
+      expect(result.baselines).toBeDefined();
+      expect(result.baselines).toHaveLength(1);
+    });
+
+    it('should extract ID from compliance-reference Vuln-ID field', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+      const req = result.baselines[0].requirements[0];
+
+      // Should extract Vuln-ID from compliance-reference
+      expect(req.id).toBe('V-71849');
+    });
+
+    it('should use compliance-check-name for title', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+      const req = result.baselines[0].requirements[0];
+
+      expect(req.title).toContain('RHEL-07-010010');
+      expect(req.title).toContain('Standard Mandatory DoD Notice');
+    });
+
+    it('should use compliance-info for default description', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+      const req = result.baselines[0].requirements[0];
+
+      const defaultDesc = req.descriptions.find(d => d.label === 'default');
+      expect(defaultDesc?.data).toContain('standardized and approved use notification');
+    });
+
+    it('should use compliance-solution for fix description', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+      const req = result.baselines[0].requirements[0];
+
+      const fixDesc = req.descriptions.find(d => d.label === 'fix');
+      expect(fixDesc?.data).toContain('Configure the operating system');
+      expect(fixDesc?.data).toContain('dconf');
+    });
+
+    it('should map CAT levels to impact scores', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+
+      // CAT I (High) = 0.7
+      const catI = result.baselines[0].requirements.find(r => r.id === 'V-71971');
+      expect(catI?.impact).toBe(0.7);
+
+      // CAT II (Medium) = 0.5
+      const catII = result.baselines[0].requirements.find(r => r.id === 'V-71849');
+      expect(catII?.impact).toBe(0.5);
+
+      // CAT III (Low) = 0.3
+      const catIII = result.baselines[0].requirements.find(r => r.id === 'V-72083');
+      expect(catIII?.impact).toBe(0.3);
+    });
+
+    it('should extract CCI from compliance-reference', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+      const req = result.baselines[0].requirements[0];
+
+      expect(req.tags.cci).toBeDefined();
+      expect(req.tags.cci).toContain('CCI-000366');
+    });
+
+    it('should extract STIG ID from compliance-reference', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+      const req = result.baselines[0].requirements[0];
+
+      expect(req.tags.stig_id).toBe('RHEL-07-010010');
+    });
+
+    it('should extract Rule-ID as rid from compliance-reference', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+      const req = result.baselines[0].requirements[0];
+
+      expect(req.tags.rid).toBe('SV-86473r2_rule');
+    });
+
+    it('should map compliance-result to HDF status', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+
+      // PASSED -> passed
+      const passed = result.baselines[0].requirements.find(r => r.id === 'V-72083');
+      expect(passed?.results[0].status).toBe('passed');
+
+      // FAILED -> failed
+      const failed = result.baselines[0].requirements.find(r => r.id === 'V-71849');
+      expect(failed?.results[0].status).toBe('failed');
+
+      // WARNING -> notApplicable
+      const warning = result.baselines[0].requirements.find(r => r.id === 'V-72095');
+      expect(warning?.results[0].status).toBe('notApplicable');
+
+      // ERROR -> error
+      const error = result.baselines[0].requirements.find(r => r.id === 'V-72229');
+      expect(error?.results[0].status).toBe('error');
+    });
+
+    it('should use compliance-actual-value for result message', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+      const req = result.baselines[0].requirements[0];
+
+      expect(req.results[0].message).toContain('banner-message-enable : not set');
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle single ReportHost (not array)', () => {
+      // The sample files have arrays of ReportHosts, but a scan with only
+      // one host returns a single object, not an array
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'minimal.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+
+      // Should handle it correctly regardless of array vs single
+      expect(result.baselines).toBeDefined();
+      expect(result.baselines.length).toBeGreaterThan(0);
+    });
+
+    it('should handle missing optional fields gracefully', () => {
+      const minimalXml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Test</policyName></Policy>
+  <Report name="Test">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="test" protocol="tcp" severity="0" pluginID="1" pluginName="Test" pluginFamily="Test">
+        <description>Test</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+
+      const result = convertNessusToHdf(minimalXml);
+      expect(result).toBeDefined();
+      expect(result.baselines[0].version).toBe('');
+    });
+
+    it('should handle ReportHost without HostProperties', () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Test</policyName></Policy>
+  <Report name="Test">
+    <ReportHost name="10.0.0.1">
+      <ReportItem port="0" svc_name="test" protocol="tcp" severity="0" pluginID="1" pluginName="Test" pluginFamily="Test">
+        <description>Test</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+
+      const result = convertNessusToHdf(xml);
+      expect(result.targets).toBeDefined();
+    });
+
+    it('should handle ReportHost without ReportItems', () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Test</policyName></Policy>
+  <Report name="Test">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+
+      const result = convertNessusToHdf(xml);
+      expect(result.baselines[0].requirements).toHaveLength(0);
+    });
+
+    it('should handle ReportItem without see_also', () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Test</policyName></Policy>
+  <Report name="Test">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="test" protocol="tcp" severity="0" pluginID="1" pluginName="Test" pluginFamily="Test">
+        <description>Test</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+
+      const result = convertNessusToHdf(xml);
+      const req = result.baselines[0].requirements[0];
+      expect(req.refs).toBeUndefined();
+    });
+
+    it('should handle compliance item without solution', () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Test</policyName></Policy>
+  <Report name="Test" xmlns:cm="http://www.nessus.org/cm">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="test" protocol="tcp" severity="2" pluginID="1" pluginName="Test" pluginFamily="Policy Compliance">
+        <cm:compliance-reference>CCI|CCI-000001,CAT|II</cm:compliance-reference>
+        <cm:compliance-check-name>Test Check</cm:compliance-check-name>
+        <cm:compliance-info>Info</cm:compliance-info>
+        <cm:compliance-result>FAILED</cm:compliance-result>
+        <description>Test</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+
+      const result = convertNessusToHdf(xml);
+      const fixDesc = result.baselines[0].requirements[0].descriptions.find(d => d.label === 'fix');
+      expect(fixDesc).toBeUndefined();
+    });
+
+    it('should handle compliance result without actual value', () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Test</policyName></Policy>
+  <Report name="Test" xmlns:cm="http://www.nessus.org/cm">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="test" protocol="tcp" severity="2" pluginID="1" pluginName="Test" pluginFamily="Policy Compliance">
+        <cm:compliance-reference>CCI|CCI-000001,CAT|II</cm:compliance-reference>
+        <cm:compliance-check-name>Test Check</cm:compliance-check-name>
+        <cm:compliance-info>Info</cm:compliance-info>
+        <cm:compliance-result>FAILED</cm:compliance-result>
+        <description>Test</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+
+      const result = convertNessusToHdf(xml);
+      expect(result.baselines[0].requirements[0].results[0].message).toBeUndefined();
     });
   });
 });
