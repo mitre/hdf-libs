@@ -1,0 +1,147 @@
+<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>DISA STIG Compliance Audit</policyName>
+    <Preferences>
+      <ServerPreferences>
+        <preference>
+          <name>sc_version</name>
+          <value>5.19.0</value>
+        </preference>
+      </ServerPreferences>
+    </Preferences>
+  </Policy>
+  <Report name="DISA STIG Compliance Audit" xmlns:cm="http://www.nessus.org/cm">
+    <ReportHost name="rhel7-server.example.com">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+        <tag name="HOST_END">Mon Jan 29 10:15:30 2024</tag>
+        <tag name="operating-system">Red Hat Enterprise Linux Server 7.9</tag>
+        <tag name="host-ip">10.1.2.50</tag>
+        <tag name="system-type">general-purpose</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="2" pluginID="33814" pluginName="DISA STIG Compliance" pluginFamily="Policy Compliance">
+        <cm:compliance-reference>CCI|CCI-000366,STIG-ID|RHEL-07-010010,Rule-ID|SV-86473r2_rule,Vuln-ID|V-71849,CAT|II</cm:compliance-reference>
+        <cm:compliance-check-name>RHEL-07-010010 - The Red Hat Enterprise Linux operating system must display the Standard Mandatory DoD Notice and Consent Banner before granting local or remote access to the system via a graphical user logon.</cm:compliance-check-name>
+        <cm:compliance-info>Display of a standardized and approved use notification before granting access to the operating system ensures privacy and security notification verbiage used is consistent with applicable federal laws, Executive Orders, directives, policies, regulations, standards, and guidance.
+
+System use notifications are required only for access via logon interfaces with human users and are not required when such human interfaces do not exist.</cm:compliance-info>
+        <cm:compliance-solution>Configure the operating system to display the Standard Mandatory DoD Notice and Consent Banner before granting access to the system.
+
+Note: If the system does not have GNOME installed, this requirement is Not Applicable.
+
+Create a database to contain the system-wide graphical user logon settings (if it does not already exist) with the following command:
+
+# touch /etc/dconf/db/local.d/01-banner-message
+
+Add the following line to the [org/gnome/login-screen] section of the "/etc/dconf/db/local.d/01-banner-message":
+
+[org/gnome/login-screen]
+banner-message-enable=true</cm:compliance-solution>
+        <cm:compliance-result>FAILED</cm:compliance-result>
+        <cm:compliance-actual-value>banner-message-enable : not set</cm:compliance-actual-value>
+        <fname>disa_stig_rhel7.audit</fname>
+        <plugin_modification_date>2024/01/15</plugin_modification_date>
+        <plugin_name>DISA STIG Compliance</plugin_name>
+        <plugin_publication_date>2017/11/27</plugin_publication_date>
+        <plugin_type>local</plugin_type>
+        <risk_factor>Medium</risk_factor>
+        <see_also>https://public.cyber.mil/stigs/downloads/</see_also>
+        <synopsis>The remote Red Hat Enterprise Linux host does not comply with DISA STIG requirements.</synopsis>
+        <description>The remote Red Hat Enterprise Linux 7 host failed one or more compliance checks from the DISA STIG audit file.</description>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="33814" pluginName="DISA STIG Compliance" pluginFamily="Policy Compliance">
+        <cm:compliance-reference>CCI|CCI-000196,STIG-ID|RHEL-07-010290,Rule-ID|SV-86595r2_rule,Vuln-ID|V-71971,CAT|I</cm:compliance-reference>
+        <cm:compliance-check-name>RHEL-07-010290 - The Red Hat Enterprise Linux operating system must be configured so that the PAM system service is configured to store only encrypted representations of passwords.</cm:compliance-check-name>
+        <cm:compliance-info>Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised. Passwords encrypted with a weak algorithm are no more protected than if they are kept in plain text.</cm:compliance-info>
+        <cm:compliance-solution>Configure the operating system to store only SHA512 encrypted representations of passwords.
+
+Add the following line in "/etc/pam.d/system-auth":
+
+password sufficient pam_unix.so sha512 shadow try_first_pass use_authtok
+
+Add the following line in "/etc/pam.d/password-auth":
+
+password sufficient pam_unix.so sha512 shadow try_first_pass use_authtok
+
+Note: Per requirement RHEL-07-010199, the "nullok" option cannot be utilized in the password files.</cm:compliance-solution>
+        <cm:compliance-result>FAILED</cm:compliance-result>
+        <cm:compliance-actual-value>password sufficient pam_unix.so md5 shadow nullok try_first_pass use_authtok</cm:compliance-actual-value>
+        <fname>disa_stig_rhel7.audit</fname>
+        <plugin_modification_date>2024/01/15</plugin_modification_date>
+        <plugin_name>DISA STIG Compliance</plugin_name>
+        <plugin_publication_date>2017/11/27</plugin_publication_date>
+        <plugin_type>local</plugin_type>
+        <risk_factor>High</risk_factor>
+        <see_also>https://public.cyber.mil/stigs/downloads/</see_also>
+        <synopsis>The remote Red Hat Enterprise Linux host does not comply with DISA STIG requirements.</synopsis>
+        <description>The remote Red Hat Enterprise Linux 7 host failed one or more compliance checks from the DISA STIG audit file.</description>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="33814" pluginName="DISA STIG Compliance" pluginFamily="Policy Compliance">
+        <cm:compliance-reference>CCI|CCI-001764,STIG-ID|RHEL-07-020230,Rule-ID|SV-86707r3_rule,Vuln-ID|V-72083,CAT|III</cm:compliance-reference>
+        <cm:compliance-check-name>RHEL-07-020230 - All local interactive user accounts, upon creation, must be assigned a home directory.</cm:compliance-check-name>
+        <cm:compliance-info>If local interactive users are not assigned a valid home directory, there is no place for the storage and control of files they should own.</cm:compliance-info>
+        <cm:compliance-solution>Configure the operating system to assign home directories to all new local interactive users by setting the CREATE_HOME parameter in "/etc/login.defs" to "yes" as follows.
+
+CREATE_HOME yes</cm:compliance-solution>
+        <cm:compliance-result>PASSED</cm:compliance-result>
+        <cm:compliance-actual-value>CREATE_HOME yes</cm:compliance-actual-value>
+        <fname>disa_stig_rhel7.audit</fname>
+        <plugin_modification_date>2024/01/15</plugin_modification_date>
+        <plugin_name>DISA STIG Compliance</plugin_name>
+        <plugin_publication_date>2017/11/27</plugin_publication_date>
+        <plugin_type>local</plugin_type>
+        <risk_factor>None</risk_factor>
+        <see_also>https://public.cyber.mil/stigs/downloads/</see_also>
+        <synopsis>The remote Red Hat Enterprise Linux host complies with DISA STIG requirements.</synopsis>
+        <description>The remote Red Hat Enterprise Linux 7 host passed this compliance check from the DISA STIG audit file.</description>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="1" pluginID="33814" pluginName="DISA STIG Compliance" pluginFamily="Policy Compliance">
+        <cm:compliance-reference>CCI|CCI-000172,STIG-ID|RHEL-07-030000,Rule-ID|SV-86719r3_rule,Vuln-ID|V-72095,CAT|II</cm:compliance-reference>
+        <cm:compliance-check-name>RHEL-07-030000 - Auditing must be configured to produce records containing information to establish what type of events occurred, where the events occurred, the source of the events, and the outcome of the events.</cm:compliance-check-name>
+        <cm:compliance-info>Without establishing what type of events occurred, it would be difficult to establish, correlate, and investigate the events leading up to an outage or attack.
+
+Audit record content that may be necessary to satisfy this requirement includes, for example, time stamps, source and destination addresses, user/process identifiers, event descriptions, success/fail indications, filenames involved, and access control or flow control rules invoked.</cm:compliance-info>
+        <cm:compliance-solution>Configure the operating system to produce audit records containing information to establish when (date and time) the events occurred.
+
+Enable the auditd service with the following command:
+
+# systemctl enable auditd.service</cm:compliance-solution>
+        <cm:compliance-result>WARNING</cm:compliance-result>
+        <cm:compliance-actual-value>auditd.service is enabled but not running</cm:compliance-actual-value>
+        <fname>disa_stig_rhel7.audit</fname>
+        <plugin_modification_date>2024/01/15</plugin_modification_date>
+        <plugin_name>DISA STIG Compliance</plugin_name>
+        <plugin_publication_date>2017/11/27</plugin_publication_date>
+        <plugin_type>local</plugin_type>
+        <risk_factor>Low</risk_factor>
+        <see_also>https://public.cyber.mil/stigs/downloads/</see_also>
+        <synopsis>The remote Red Hat Enterprise Linux host has a WARNING for DISA STIG requirements.</synopsis>
+        <description>The remote Red Hat Enterprise Linux 7 host has a warning for this compliance check from the DISA STIG audit file.</description>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="2" pluginID="33814" pluginName="DISA STIG Compliance" pluginFamily="Policy Compliance">
+        <cm:compliance-reference>CCI|CCI-001314,STIG-ID|RHEL-07-040180,Rule-ID|SV-86853r2_rule,Vuln-ID|V-72229,CAT|II</cm:compliance-reference>
+        <cm:compliance-check-name>RHEL-07-040180 - A FIPS 140-2 approved cryptographic algorithm must be used for SSH communications.</cm:compliance-check-name>
+        <cm:compliance-info>Unapproved mechanisms that are used for authentication to the cryptographic module are not verified and therefore cannot be relied upon to provide confidentiality or integrity, and DoD data may be compromised.</cm:compliance-info>
+        <cm:compliance-solution>Configure SSH to use FIPS 140-2 approved cryptographic algorithms.
+
+Add the following line (or modify the line to have the required value) to the "/etc/ssh/sshd_config" file (this file may be named differently or be in a different location if using a version of SSH that is provided by a third-party vendor).
+
+Ciphers aes128-ctr,aes192-ctr,aes256-ctr
+
+The SSH service must be restarted for changes to take effect.</cm:compliance-solution>
+        <cm:compliance-result>ERROR</cm:compliance-result>
+        <cm:compliance-actual-value>Unable to read /etc/ssh/sshd_config - Permission denied</cm:compliance-actual-value>
+        <fname>disa_stig_rhel7.audit</fname>
+        <plugin_modification_date>2024/01/15</plugin_modification_date>
+        <plugin_name>DISA STIG Compliance</plugin_name>
+        <plugin_publication_date>2017/11/27</plugin_publication_date>
+        <plugin_type>local</plugin_type>
+        <risk_factor>Medium</risk_factor>
+        <see_also>https://public.cyber.mil/stigs/downloads/</see_also>
+        <synopsis>The remote Red Hat Enterprise Linux host encountered an ERROR during DISA STIG compliance check.</synopsis>
+        <description>The remote Red Hat Enterprise Linux 7 host encountered an error during this compliance check from the DISA STIG audit file.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>

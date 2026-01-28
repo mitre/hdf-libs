@@ -21,13 +21,13 @@ interface NessusXml {
       policyName: string;
       Preferences?: {
         ServerPreferences?: {
-          preference?: Array<{ name: string; value: string }> | { name: string; value: string };
+          preference?: Array<{ name: string; value: string }>;
         };
       };
     };
     Report: {
       '@name'?: string;
-      ReportHost: ReportHost | ReportHost[];
+      ReportHost: ReportHost[];
     };
   };
 }
@@ -35,9 +35,9 @@ interface NessusXml {
 interface ReportHost {
   name: string;
   HostProperties?: {
-    tag?: HostPropertyTag | HostPropertyTag[];
+    tag?: HostPropertyTag[];
   };
-  ReportItem?: ReportItem | ReportItem[];
+  ReportItem?: ReportItem[];
 }
 
 interface HostPropertyTag {
@@ -104,9 +104,8 @@ export function convertNessusToHdf(nessusXml: string): HdfResults {
 
   const policyName = parsed.NessusClientData_v2.Policy.policyName;
   const version = extractVersion(parsed);
-  const reportHosts = Array.isArray(parsed.NessusClientData_v2.Report.ReportHost)
-    ? parsed.NessusClientData_v2.Report.ReportHost
-    : [parsed.NessusClientData_v2.Report.ReportHost];
+  // parseXmlWithArrays ensures ReportHost is always an array
+  const reportHosts = parsed.NessusClientData_v2.Report.ReportHost as ReportHost[];
 
   // Calculate start and end times from first and last host
   const { startTime, endTime, duration } = calculateTiming(reportHosts);
@@ -143,8 +142,8 @@ function extractVersion(parsed: NessusXml): string {
   const prefs = parsed.NessusClientData_v2.Policy.Preferences?.ServerPreferences?.preference;
   if (!prefs) return '';
 
-  const prefArray = Array.isArray(prefs) ? prefs : [prefs];
-  const scVersion = prefArray.find(p => p.name === 'sc_version');
+  // parseXmlWithArrays ensures preference is always an array
+  const scVersion = (prefs as Array<{ name: string; value: string }>).find(p => p.name === 'sc_version');
   return scVersion?.value || '';
 }
 
@@ -172,8 +171,8 @@ function getHostPropertyValue(host: ReportHost, name: string): string | undefine
   const tags = host.HostProperties?.tag;
   if (!tags) return undefined;
 
-  const tagArray = Array.isArray(tags) ? tags : [tags];
-  const tag = tagArray.find(t => t['name'] === name);
+  // parseXmlWithArrays ensures tag is always an array
+  const tag = (tags as HostPropertyTag[]).find(t => t['name'] === name);
   return tag?.['#text'];
 }
 
@@ -183,9 +182,10 @@ function convertReportHostToBaseline(
   version: string
 ): EvaluatedBaseline {
   const items = host.ReportItem;
-  const itemArray = items ? (Array.isArray(items) ? items : [items]) : [];
-
-  const requirements = itemArray.map(item => convertReportItemToRequirement(item, host));
+  // parseXmlWithArrays ensures ReportItem is always an array
+  const requirements = items
+    ? (items as ReportItem[]).map(item => convertReportItemToRequirement(item, host))
+    : [];
 
   return {
     name: `Nessus ${policyName}`,
@@ -273,7 +273,7 @@ function buildDescriptions(item: ReportItem, isCompliance: boolean): Description
 function calculateImpact(item: ReportItem, isCompliance: boolean): number {
   if (isCompliance && item['compliance-reference']) {
     const cat = parseComplianceRef(item['compliance-reference'], 'CAT')[0];
-    return IMPACT_MAPPING[cat] ?? 0.5;
+    return IMPACT_MAPPING[cat?.toLowerCase()] ?? 0.5;
   }
 
   return IMPACT_MAPPING[item['severity']] ?? 0.0;
@@ -376,8 +376,8 @@ function convertReportHostToTarget(host: ReportHost): Target {
 
   const tags = host.HostProperties?.tag;
   if (tags) {
-    const tagArray = Array.isArray(tags) ? tags : [tags];
-    tagArray.forEach(tag => {
+    // parseXmlWithArrays ensures tag is always an array
+    (tags as HostPropertyTag[]).forEach(tag => {
       const name = tag['name'];
       const value = tag['#text'];
       if (name && value) {
