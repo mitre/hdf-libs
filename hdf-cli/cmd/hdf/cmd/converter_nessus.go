@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	nessus "github.com/mitre/hdf-converters/converters/nessus/go"
+	nessus "github.com/mitre/hdf-converters/converters/nessus-to-hdf/go"
 )
 
 type nessusConverter struct{}
