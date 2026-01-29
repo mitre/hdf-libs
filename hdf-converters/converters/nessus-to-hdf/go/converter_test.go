@@ -15,7 +15,7 @@ const converterVersion = "0.1.0"
 
 func TestConvertNessusToHDF_Minimal(t *testing.T) {
 	// Load minimal fixture
-	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus", "fixtures", "input", "minimal.nessus")
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "minimal.nessus")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err, "Failed to read minimal.nessus fixture")
 
@@ -42,12 +42,12 @@ func TestConvertNessusToHDF_Minimal(t *testing.T) {
 	assert.Equal(t, "192.168.1.100", target.Name)
 
 	// Write output for differential testing
-	shared.WriteOutput(t, "nessus", "minimal.json", result)
+	shared.WriteOutput(t, "nessus-to-hdf", "minimal.json", result)
 }
 
 func TestConvertNessusToHDF_Compliance(t *testing.T) {
 	// Load compliance fixture
-	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus", "fixtures", "input", "compliance.nessus")
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "compliance.nessus")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err, "Failed to read compliance.nessus fixture")
 
@@ -97,7 +97,7 @@ func TestConvertNessusToHDF_Compliance(t *testing.T) {
 	assert.Equal(t, hdf.Error, *errorReq.Results[0].Status)
 
 	// Write output for differential testing
-	shared.WriteOutput(t, "nessus", "compliance.json", result)
+	shared.WriteOutput(t, "nessus-to-hdf", "compliance.json", result)
 }
 
 func TestConvertNessusToHDF_InvalidXML(t *testing.T) {

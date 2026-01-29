@@ -95,8 +95,8 @@ func nessusFixturePath(t *testing.T, name string) string {
 
 	// Navigate to the converters directory
 	// From cmd/hdf/cmd, go up 3 levels to hdf-cli, then up 1 to hdf-libs,
-	// then into hdf-converters/converters/nessus/fixtures
-	fixturePath := filepath.Join(cwd, "..", "..", "..", "..", "hdf-converters", "converters", "nessus", "fixtures", name)
+	// then into hdf-converters/converters/nessus-to-hdf/fixtures
+	fixturePath := filepath.Join(cwd, "..", "..", "..", "..", "hdf-converters", "converters", "nessus-to-hdf", "fixtures", name)
 
 	// Clean the path
 	fixturePath = filepath.Clean(fixturePath)

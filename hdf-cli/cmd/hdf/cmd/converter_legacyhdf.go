@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	legacyhdf "github.com/mitre/hdf-converters/converters/legacyhdf/go"
+	legacyhdf "github.com/mitre/hdf-converters/converters/legacyhdf-to-hdf/go"
 )
 
 // legacyHDFConverter converts HDF v1.0 (legacy InSpec JSON) to HDF v2.0.

@@ -10,8 +10,8 @@ import (
 // legacyhdfFixturePath returns the path to a legacyhdf test fixture.
 func legacyhdfFixturePath(t *testing.T, name string) string {
 	t.Helper()
-	// Navigate from cmd/hdf/cmd to hdf-converters/converters/legacyhdf/fixtures
-	path := filepath.Join("..", "..", "..", "..", "hdf-converters", "converters", "legacyhdf", "fixtures", name)
+	// Navigate from cmd/hdf/cmd to hdf-converters/converters/legacyhdf-to-hdf/fixtures
+	path := filepath.Join("..", "..", "..", "..", "hdf-converters", "converters", "legacyhdf-to-hdf", "fixtures", name)
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		t.Fatalf("failed to get absolute path: %v", err)

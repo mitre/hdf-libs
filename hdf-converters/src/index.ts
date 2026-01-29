@@ -10,4 +10,4 @@ export {
   isHDFV1,
   type HDFV1Results,
   type HDFV2Results,
-} from '../converters/legacyhdf/typescript/index.js';
+} from '../converters/legacyhdf-to-hdf/typescript/index.js';
