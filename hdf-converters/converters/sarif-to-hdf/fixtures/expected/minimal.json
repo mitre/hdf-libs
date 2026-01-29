@@ -1,0 +1,77 @@
+{
+  "timestamp": "2026-01-29T00:00:00.000Z",
+  "baselines": [
+    {
+      "name": "SARIF",
+      "version": "2.1.0",
+      "title": "Static Analysis Results Interchange Format",
+      "maintainer": "Static Analysis Tool",
+      "requirements": [
+        {
+          "id": "RULE-001",
+          "title": "buffer/strcpy",
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Does not check for buffer overflows when copying to destination (CWE-120, CWE-20)."
+            }
+          ],
+          "impact": 0.7,
+          "tags": {
+            "severity": "error",
+            "cwe": ["CWE-120", "CWE-20"],
+            "nist": ["SI-10"],
+            "cci": ["CCI-003173", "CCI-001643"]
+          },
+          "sourceLocation": {
+            "ref": "src/main.c",
+            "line": 42
+          },
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "URL : src/main.c LINE : 42 COLUMN : 5",
+              "startTime": "2026-01-29T00:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "id": "RULE-002",
+          "title": "format/printf",
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Format string vulnerability (CWE-134)."
+            }
+          ],
+          "impact": 0.5,
+          "tags": {
+            "severity": "warning",
+            "cwe": ["CWE-134"],
+            "nist": ["SI-10"],
+            "cci": ["CCI-003173", "CCI-001643"]
+          },
+          "sourceLocation": {
+            "ref": "src/utils.c",
+            "line": 15
+          },
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "URL : src/utils.c LINE : 15 COLUMN : 3",
+              "startTime": "2026-01-29T00:00:00.000Z"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "targets": [],
+  "statistics": {
+    "duration": 0
+  },
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  }
+}

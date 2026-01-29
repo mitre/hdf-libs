@@ -11,3 +11,6 @@ export {
   type HDFV1Results,
   type HDFV2Results,
 } from '../converters/legacyhdf-to-hdf/typescript/index.js';
+
+// SARIF to HDF converter
+export { convertSarifToHdf } from '../converters/sarif-to-hdf/typescript/index.js';

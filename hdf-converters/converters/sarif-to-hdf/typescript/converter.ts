@@ -1,0 +1,277 @@
+import { parseJSON } from '@mitre/hdf-utilities';
+import {
+  getCweNistControl,
+  getAllCCIIds,
+  getCCINistMappings,
+} from '@mitre/hdf-mappings';
+import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Result } from '@mitre/hdf-schema';
+
+interface SarifFile {
+  $schema?: string;
+  version: string;
+  runs: SarifRun[];
+}
+
+interface SarifRun {
+  tool?: {
+    driver?: {
+      name?: string;
+      version?: string;
+      informationUri?: string;
+    };
+  };
+  results: SarifResult[];
+}
+
+interface SarifResult {
+  ruleId: string;
+  level?: 'error' | 'warning' | 'note' | 'none';
+  message: {
+    text: string;
+  };
+  locations?: SarifLocation[];
+}
+
+interface SarifLocation {
+  physicalLocation?: {
+    artifactLocation?: {
+      uri?: string;
+    };
+    region?: {
+      startLine?: number;
+      startColumn?: number;
+    };
+  };
+}
+
+const IMPACT_MAPPING: Record<string, number> = {
+  error: 0.7,
+  warning: 0.5,
+  note: 0.3,
+};
+
+const DEFAULT_STATIC_ANALYSIS_NIST_TAGS = ['SI-10'];
+
+export function convertSarifToHdf(input: string): string {
+  // Parse SARIF JSON
+  const sarif = parseJSON<SarifFile>(input);
+
+  if (!sarif || typeof sarif !== 'object') {
+    throw new Error('Invalid SARIF structure: not a valid JSON object');
+  }
+
+  if (!Array.isArray(sarif.runs)) {
+    throw new Error('Invalid SARIF structure: missing or invalid runs field');
+  }
+
+  // Build HDF
+  const hdf: HDFResults = {
+    timestamp: new Date().toISOString(),
+    baselines: sarif.runs.map(run => convertRun(run, sarif.version)),
+    targets: [],
+    statistics: {
+      duration: 0,
+    },
+    generator: {
+      name: 'sarif-to-hdf',
+      version: '1.0.0',
+    },
+  };
+
+  return JSON.stringify(hdf, null, 2);
+}
+
+function convertRun(run: SarifRun, version: string): EvaluatedBaseline {
+  const requirements = run.results.map(result => convertResult(result));
+
+  return {
+    name: 'SARIF',
+    version,
+    title: 'Static Analysis Results Interchange Format',
+    maintainer: 'Static Analysis Tool',
+    requirements,
+  };
+}
+
+function convertResult(result: SarifResult): EvaluatedRequirement {
+  const messageText = result.message.text;
+
+  // Parse title and description from message
+  const { title, description } = parseMessage(messageText);
+
+  // Extract CWE IDs from message
+  const cweIds = extractCweIds(messageText);
+
+  // Map CWE to NIST
+  const nistControls = mapCweToNist(cweIds);
+
+  // Map NIST to CCI
+  const cciControls = mapNistToCci(nistControls);
+
+  // Get impact from level
+  const impact = IMPACT_MAPPING[result.level || ''] || 0.1;
+
+  // Get source location from first location
+  const sourceLocation = result.locations && result.locations.length > 0
+    ? extractSourceLocation(result.locations[0])
+    : undefined;
+
+  // Create results for each location
+  const results: Result[] = (result.locations || [])
+    .filter(loc => loc.physicalLocation?.artifactLocation?.uri)
+    .map(loc => createResult(loc));
+
+  const requirement: EvaluatedRequirement = {
+    id: result.ruleId,
+    title,
+    descriptions: [
+      {
+        label: 'default',
+        data: description,
+      },
+    ],
+    impact,
+    tags: {
+      severity: result.level || 'none',
+      cwe: cweIds,
+      nist: nistControls,
+      cci: cciControls,
+    },
+    results,
+  };
+
+  if (sourceLocation) {
+    requirement.sourceLocation = sourceLocation;
+  }
+
+  return requirement;
+}
+
+function parseMessage(text: string): { title: string; description: string } {
+  const colonIndex = text.indexOf(':');
+
+  if (colonIndex === -1) {
+    return { title: text, description: '' };
+  }
+
+  return {
+    title: text.substring(0, colonIndex).trim(),
+    description: text.substring(colonIndex + 1).trim(),
+  };
+}
+
+function extractCweIds(text: string): string[] {
+  // Look for pattern like (CWE-123, CWE-456) or (CWE-119!/CWE-120)
+  const cwePattern = /\(([^)]+)\)/g;
+  const matches = text.match(cwePattern);
+
+  if (!matches) {
+    return [];
+  }
+
+  const cweIds: string[] = [];
+
+  for (const match of matches) {
+    // Remove parentheses
+    const content = match.slice(1, -1);
+
+    // Check if it contains CWE
+    if (content.includes('CWE-')) {
+      // Split by comma or !/
+      const parts = content.split(/,\s*|!\//);
+
+      for (const part of parts) {
+        const trimmed = part.trim();
+        if (trimmed.startsWith('CWE-')) {
+          cweIds.push(trimmed);
+        }
+      }
+    }
+  }
+
+  return cweIds;
+}
+
+function mapCweToNist(cweIds: string[]): string[] {
+  if (cweIds.length === 0) {
+    return DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
+  }
+
+  const nistSet = new Set<string>();
+
+  for (const cweId of cweIds) {
+    // Extract numeric part (e.g., "CWE-79" -> 79)
+    const numericId = parseInt(cweId.replace('CWE-', ''), 10);
+
+    if (isNaN(numericId)) {
+      continue;
+    }
+
+    const nistControl = getCweNistControl(numericId);
+
+    if (nistControl) {
+      nistSet.add(nistControl);
+    }
+  }
+
+  // If no NIST mappings found, use default
+  if (nistSet.size === 0) {
+    return DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
+  }
+
+  return Array.from(nistSet);
+}
+
+function mapNistToCci(nistControls: string[]): string[] {
+  if (nistControls.length === 0) {
+    return [];
+  }
+
+  const cciSet = new Set<string>();
+  const allCciIds = getAllCCIIds();
+
+  // Iterate through all CCI IDs and check if they map to our NIST controls
+  for (const cciId of allCciIds) {
+    const nistMappings = getCCINistMappings(cciId);
+
+    if (!nistMappings) {
+      continue;
+    }
+
+    // Check if any of the CCI's NIST mappings match our controls
+    for (const nistMapping of nistMappings) {
+      // Extract base NIST ID (e.g., "AC-1 a" -> "AC-1")
+      const baseNistId = nistMapping.split(' ')[0];
+
+      if (nistControls.includes(baseNistId)) {
+        cciSet.add(cciId);
+        break;
+      }
+    }
+  }
+
+  return Array.from(cciSet).sort();
+}
+
+function extractSourceLocation(location: SarifLocation): { ref: string; line: number } | undefined {
+  const uri = location.physicalLocation?.artifactLocation?.uri;
+  const line = location.physicalLocation?.region?.startLine;
+
+  if (!uri || !line) {
+    return undefined;
+  }
+
+  return { ref: uri, line };
+}
+
+function createResult(location: SarifLocation): Result {
+  const uri = location.physicalLocation?.artifactLocation?.uri || '';
+  const line = location.physicalLocation?.region?.startLine || 0;
+  const column = location.physicalLocation?.region?.startColumn || 0;
+
+  return {
+    status: 'failed',
+    codeDesc: `URL : ${uri} LINE : ${line} COLUMN : ${column}`,
+    startTime: new Date().toISOString(),
+  };
+}
