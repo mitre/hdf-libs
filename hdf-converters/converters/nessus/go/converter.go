@@ -145,15 +145,18 @@ func convertReportHostToBaseline(host *ReportHost, policyName, version string) h
 	summary := fmt.Sprintf("Nessus %s", policyName)
 
 	return hdf.EvaluatedBaseline{
-		Name:         name,
-		Title:        &title,
-		Version:      &version,
-		Status:       &status,
-		Summary:      &summary,
-		Supports:     []hdf.SupportedPlatform{},
-		Attributes:   []map[string]interface{}{},
-		Groups:       []hdf.RequirementGroup{},
-		Checksum:     hdf.Checksum{},
+		Name:    name,
+		Title:   &title,
+		Version: &version,
+		Status:  &status,
+		Summary: &summary,
+		Supports: []hdf.SupportedPlatform{},
+		Attributes: []map[string]interface{}{},
+		Groups:     []hdf.RequirementGroup{},
+		Checksum: hdf.Checksum{
+			Algorithm: hdf.Sha256,
+			Value:     "",
+		},
 		Requirements: requirements,
 	}
 }
@@ -409,17 +412,70 @@ func parseHTML(html string) string {
 func convertReportHostToTarget(host *ReportHost) hdf.Target {
 	hostName := host.Name
 
-	// Check if it's an IP address and populate IPAddress field
-	var ipAddress *string
-	if isIPAddress(hostName) {
+	// Extract host properties
+	var fqdn, ipAddress, osName, osVersion *string
+
+	// Determine FQDN: if the hostname is an FQDN, populate the fqdn field
+	if isFQDN(hostName) {
+		fqdn = &hostName
+	}
+
+	// Determine IP address: prefer host-ip property, fall back to name if it's an IP
+	if hostIP := getHostPropertyValue(host, "host-ip"); hostIP != "" {
+		ipAddress = &hostIP
+	} else if isIPAddress(hostName) {
 		ipAddress = &hostName
+	}
+
+	// Extract operating system information
+	if osInfo := getHostPropertyValue(host, "operating-system"); osInfo != "" {
+		osName = &osInfo
+	}
+
+	// Extract OS version if available
+	if osVer := getHostPropertyValue(host, "os"); osVer != "" {
+		osVersion = &osVer
 	}
 
 	return hdf.Target{
 		Name:      hostName,
 		Type:      hdf.Host,
+		FQDN:      fqdn,
 		IPAddress: ipAddress,
+		OSName:    osName,
+		OSVersion: osVersion,
 	}
+}
+
+func isFQDN(s string) bool {
+	// Must contain at least one dot
+	if !strings.Contains(s, ".") {
+		return false
+	}
+
+	// Must not be an IP address
+	if isIPAddress(s) {
+		return false
+	}
+
+	// Should have at least 2 parts (hostname.domain)
+	parts := strings.Split(s, ".")
+	if len(parts) < 2 {
+		return false
+	}
+
+	// All parts should be non-empty and valid hostname components
+	for _, part := range parts {
+		if len(part) == 0 {
+			return false
+		}
+		// Hostname components can't start or end with hyphen
+		if part[0] == '-' || part[len(part)-1] == '-' {
+			return false
+		}
+	}
+
+	return true
 }
 
 func isIPAddress(s string) bool {
