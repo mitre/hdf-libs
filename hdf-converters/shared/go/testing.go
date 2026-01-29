@@ -20,12 +20,12 @@ func getSharedDir() string {
 
 // GetConvertersDir returns the path to the converters/ directory
 func GetConvertersDir() string {
-	return filepath.Join(getSharedDir(), "..", "converters")
+	return filepath.Join(getSharedDir(), "..", "..", "converters")
 }
 
 // GetOutputDir returns the path to test output directory
 func GetOutputDir() string {
-	return filepath.Join(getSharedDir(), "..", "..", "test-output", "differential", "go")
+	return filepath.Join(getSharedDir(), "..", "..", "test-output")
 }
 
 // DifferentialTest represents a test case with input and expected output
