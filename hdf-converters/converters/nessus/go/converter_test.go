@@ -267,6 +267,32 @@ func TestParseHostTime(t *testing.T) {
 	}
 }
 
+func TestIsFQDN(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"FQDN with subdomain", "rhel7-server.example.com", true},
+		{"FQDN simple", "web01.prod.example.com", true},
+		{"Two-part FQDN", "host.domain", true},
+		{"IP address", "192.168.1.100", false},
+		{"Simple hostname", "webserver", false},
+		{"Localhost", "localhost", false},
+		{"Hostname with hyphen", "web-server.example.com", true},
+		{"Invalid - starts with hyphen", "-invalid.example.com", false},
+		{"Invalid - ends with hyphen", "invalid-.example.com", false},
+		{"Empty string", "", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isFQDN(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 // Helper function to find a requirement by ID
 func findRequirementByID(requirements []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
 	for i := range requirements {

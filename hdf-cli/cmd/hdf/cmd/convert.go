@@ -17,13 +17,14 @@ func NewConvertCmd() *cobra.Command {
 
 Supported conversions:
   legacyhdf to hdf    Convert legacy HDF v1.0 (InSpec JSON) to HDF v2.0
+  nessus to hdf       Convert Nessus XML scan results to HDF v2.0
 
 Input can be a file path or "-" for stdin.
 Output defaults to stdout if not specified.
 
 Examples:
   hdf convert legacyhdf to hdf scan.json                    # Convert, output to stdout
-  hdf convert legacyhdf to hdf scan.json results.json       # Convert to file
+  hdf convert nessus to hdf scan.nessus results.json        # Convert Nessus to file
   hdf convert legacyhdf to hdf - output.json                # Read from stdin
   cat scan.json | hdf convert legacyhdf to hdf -            # Pipe through stdin`,
 		Args: validateConvertArgs,
