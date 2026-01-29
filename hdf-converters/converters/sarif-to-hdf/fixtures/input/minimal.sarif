@@ -1,0 +1,57 @@
+{
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Flawfinder",
+          "version": "2.0.15",
+          "informationUri": "https://dwheeler.com/flawfinder/"
+        }
+      },
+      "results": [
+        {
+          "ruleId": "RULE-001",
+          "level": "error",
+          "message": {
+            "text": "buffer/strcpy: Does not check for buffer overflows when copying to destination (CWE-120, CWE-20)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main.c"
+                },
+                "region": {
+                  "startLine": 42,
+                  "startColumn": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "RULE-002",
+          "level": "warning",
+          "message": {
+            "text": "format/printf: Format string vulnerability (CWE-134)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/utils.c"
+                },
+                "region": {
+                  "startLine": 15,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
