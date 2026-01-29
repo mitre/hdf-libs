@@ -94,6 +94,29 @@ async function generateCombinedForLanguage(
 }
 
 /**
+ * Add omitempty tags to optional pointer fields in generated Go code.
+ * This ensures that nil/null fields are omitted from JSON output, matching
+ * the discriminated union semantics of the schema.
+ */
+function addOmitemptyToGoCode(code: string): string {
+  // Pattern matches Go struct fields with pointer types and json tags
+  // Example: FQDN *string `json:"fqdn"`
+  // Captures: field name, type, json tag name, and closing backtick
+  const fieldPattern = /(\w+)\s+(\*\w+(?:<[^>]+>)?|\*time\.Time)\s+`json:"([^"]+)"`/g;
+
+  return code.replace(fieldPattern, (match, fieldName, fieldType, jsonTag) => {
+    // Only add omitempty if not already present
+    if (jsonTag.includes('omitempty')) {
+      return match;
+    }
+
+    // Add omitempty to the json tag
+    const newJsonTag = `${jsonTag},omitempty`;
+    return `${fieldName} ${fieldType} \`json:"${newJsonTag}"\``;
+  });
+}
+
+/**
  * Generate go.mod file for the Go types package.
  */
 function generateGoMod(outputDir: string): void {
@@ -142,11 +165,15 @@ export async function generateTypes(): Promise<void> {
       }
 
       if (schemasToGenerate.length > 0) {
-        const code = await generateCombinedForLanguage(
+        let code = await generateCombinedForLanguage(
           schemasToGenerate,
           lang.name,
           lang.options
         );
+
+        // Add omitempty tags to optional fields for discriminated union support
+        code = addOmitemptyToGoCode(code);
+
         const outputPath = join(outputDir, 'hdf.go');
         writeFileSync(outputPath, code);
         console.log(`  → ${outputPath}`);

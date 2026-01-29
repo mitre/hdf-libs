@@ -72,6 +72,46 @@ describe('generate-types', () => {
       expect(content).toMatch(/HDFResults|HdfResults/);
       expect(content).toMatch(/HDFBaseline|HdfBaseline/);
     });
+
+    it('should add omitempty tags to optional pointer fields', () => {
+      const content = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
+
+      // Target struct should have omitempty on optional fields
+      // Example: FQDN *string `json:"fqdn,omitempty"`
+      const fqdnMatch = content.match(/FQDN\s+\*string\s+`json:"fqdn,omitempty"`/);
+      expect(fqdnMatch).toBeTruthy();
+
+      // IPAddress should have omitempty
+      const ipMatch = content.match(/IPAddress.*\*string\s+`json:"ipAddress,omitempty"`/);
+      expect(ipMatch).toBeTruthy();
+
+      // Check other optional fields have omitempty
+      const osNameMatch = content.match(/OSName.*\*string\s+`json:"osName,omitempty"`/);
+      expect(osNameMatch).toBeTruthy();
+    });
+
+    it('should NOT add omitempty to required fields', () => {
+      const content = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
+
+      // Target.Name is required - should not have omitempty
+      const nameMatch = content.match(/Name\s+string\s+`json:"name"`[^,]/);
+      expect(nameMatch).toBeTruthy();
+
+      // Target.Type is required - should not have omitempty
+      const typeMatch = content.match(/Type\s+Name\s+`json:"type"`[^,]/);
+      expect(typeMatch).toBeTruthy();
+    });
+
+    it('should have omitempty on all optional EvaluatedBaseline fields', () => {
+      const content = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
+
+      // Optional fields like Title, Version, Status should have omitempty
+      const titleMatch = content.match(/Title.*\*string\s+`json:"title,omitempty"`/);
+      expect(titleMatch).toBeTruthy();
+
+      const versionMatch = content.match(/Version.*\*string\s+`json:"version,omitempty"`/);
+      expect(versionMatch).toBeTruthy();
+    });
   });
 
   describe('Python output', () => {
