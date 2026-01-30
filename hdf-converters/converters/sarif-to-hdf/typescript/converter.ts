@@ -4,7 +4,8 @@ import {
   getAllCCIIds,
   getCCINistMappings,
 } from '@mitre/hdf-mappings';
-import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Result } from '@mitre/hdf-schema';
+import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult } from '@mitre/hdf-schema';
+import { ResultStatus, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 interface SarifFile {
   $schema?: string;
@@ -65,8 +66,8 @@ export function convertSarifToHdf(input: string): string {
   }
 
   // Build HDF
-  const hdf: HDFResults = {
-    timestamp: new Date().toISOString(),
+  const hdf: HdfResults = {
+    timestamp: new Date(),
     baselines: sarif.runs.map(run => convertRun(run, sarif.version)),
     targets: [],
     statistics: {
@@ -84,13 +85,10 @@ export function convertSarifToHdf(input: string): string {
 function convertRun(run: SarifRun, version: string): EvaluatedBaseline {
   const requirements = run.results.map(result => convertResult(result));
 
-  return {
-    name: 'SARIF',
+  return createMinimalBaseline('SARIF', requirements, {
     version,
     title: 'Static Analysis Results Interchange Format',
-    maintainer: 'Static Analysis Tool',
-    requirements,
-  };
+  });
 }
 
 function convertResult(result: SarifResult): EvaluatedRequirement {
@@ -113,38 +111,38 @@ function convertResult(result: SarifResult): EvaluatedRequirement {
 
   // Get source location from first location
   const sourceLocation = result.locations && result.locations.length > 0
-    ? extractSourceLocation(result.locations[0])
+    ? extractSourceLocation(result.locations[0]!)
     : undefined;
 
   // Create results for each location
-  const results: Result[] = (result.locations || [])
+  const results: RequirementResult[] = (result.locations || [])
     .filter(loc => loc.physicalLocation?.artifactLocation?.uri)
-    .map(loc => createResult(loc));
+    .map(loc => createResultFromLocation(loc));
 
-  const requirement: EvaluatedRequirement = {
-    id: result.ruleId,
-    title,
-    descriptions: [
-      {
-        label: 'default',
-        data: description,
-      },
-    ],
-    impact,
+  const options: {
+    sourceLocation?: { ref: string; line: number };
+    tags: Record<string, unknown>;
+  } = {
     tags: {
       severity: result.level || 'none',
       cwe: cweIds,
       nist: nistControls,
       cci: cciControls,
     },
-    results,
   };
 
   if (sourceLocation) {
-    requirement.sourceLocation = sourceLocation;
+    options.sourceLocation = sourceLocation;
   }
 
-  return requirement;
+  return createRequirement(
+    result.ruleId,
+    title,
+    [createDescription('default', description)],
+    impact,
+    results,
+    options
+  );
 }
 
 function parseMessage(text: string): { title: string; description: string } {
@@ -241,9 +239,9 @@ function mapNistToCci(nistControls: string[]): string[] {
     // Check if any of the CCI's NIST mappings match our controls
     for (const nistMapping of nistMappings) {
       // Extract base NIST ID (e.g., "AC-1 a" -> "AC-1")
-      const baseNistId = nistMapping.split(' ')[0];
+      const baseNistId = nistMapping.split(' ')[0] || '';
 
-      if (nistControls.includes(baseNistId)) {
+      if (baseNistId && nistControls.includes(baseNistId)) {
         cciSet.add(cciId);
         break;
       }
@@ -264,14 +262,17 @@ function extractSourceLocation(location: SarifLocation): { ref: string; line: nu
   return { ref: uri, line };
 }
 
-function createResult(location: SarifLocation): Result {
+function createResultFromLocation(location: SarifLocation): RequirementResult {
   const uri = location.physicalLocation?.artifactLocation?.uri || '';
   const line = location.physicalLocation?.region?.startLine || 0;
   const column = location.physicalLocation?.region?.startColumn || 0;
 
-  return {
-    status: 'failed',
-    codeDesc: `URL : ${uri} LINE : ${line} COLUMN : ${column}`,
-    startTime: new Date().toISOString(),
-  };
+  return createResult(
+    ResultStatus.Failed,
+    '',
+    {
+      codeDesc: `URL : ${uri} LINE : ${line} COLUMN : ${column}`,
+      startTime: new Date(),
+    }
+  );
 }

@@ -1,6 +1,6 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { buildCsv } from '@mitre/hdf-utilities';
-import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
+import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, Target, Description } from '@mitre/hdf-schema';
 
 /**
  * Row structure for CSV export
@@ -28,7 +28,7 @@ interface CsvRow {
  * @returns CSV string with sanitized output
  */
 export function convertHdfToCsv(input: string): string {
-  const hdf = parseJSON<HDFResults>(input);
+  const hdf = parseJSON<HdfResults>(input);
 
   if (!hdf || typeof hdf !== 'object' || !('baselines' in hdf)) {
     throw new Error('Invalid HDF structure: missing baselines field');
@@ -45,7 +45,7 @@ export function convertHdfToCsv(input: string): string {
 
   // If no targets, create a single default target entry
   const targetList: Array<{ name: string; type: string }> = targets.length > 0
-    ? targets.map(t => ({ name: t.name, type: t.type }))
+    ? targets.map((t: Target) => ({ name: t.name, type: t.type }))
     : [{ name: '', type: '' }];
 
   // Iterate through each baseline
@@ -72,7 +72,7 @@ function createRow(
   target: { name: string; type: string }
 ): CsvRow {
   // Get default description (required to be present per schema)
-  const defaultDesc = requirement.descriptions.find(d => d.label === 'default');
+  const defaultDesc = requirement.descriptions.find((d: Description) => d.label === 'default');
   const description = defaultDesc?.data || '';
 
   // Get severity from tags or derive from impact
@@ -80,8 +80,8 @@ function createRow(
 
   // Get status from first result (results is required, minItems: 1 per schema)
   const firstResult = requirement.results[0];
-  const status = firstResult.status;
-  const message = firstResult.message || '';
+  const status = firstResult?.status || '';
+  const message = firstResult?.message || '';
 
   // Extract NIST and CCI controls from tags
   const nistControls = extractArrayFromTags(requirement.tags, 'nist');
@@ -98,7 +98,7 @@ function createRow(
     'Description': description,
     'Severity': severity,
     'Impact': requirement.impact,
-    'Status': status,
+    'Status': String(status),
     'NIST Controls': nistControls,
     'CCI Controls': cciControls,
     'Result Message': message
