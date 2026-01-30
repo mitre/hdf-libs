@@ -8,8 +8,8 @@ import type {
   Target,
   Description,
   Reference,
-  ResultStatus,
 } from '@mitre/hdf-schema';
+import { ResultStatus, Name as TargetType, createEmptyChecksum, createSourceLocation } from '@mitre/hdf-schema';
 import { version as converterVersion } from '../../../package.json';
 
 interface NessusXml {
@@ -97,7 +97,7 @@ function parseHtml(html: string): string {
  * Convert Nessus XML scan results to HDF format
  */
 export function convertNessusToHdf(nessusXml: string): HdfResults {
-  const parsed = parseXmlWithArrays(nessusXml, ['preference', 'tag', 'ReportItem', 'ReportHost']) as NessusXml;
+  const parsed = parseXmlWithArrays(nessusXml, ['preference', 'tag', 'ReportItem', 'ReportHost']) as unknown as NessusXml;
 
   const policyName = parsed.NessusClientData_v2.Policy.policyName;
   const version = extractVersion(parsed);
@@ -150,8 +150,8 @@ function calculateTiming(hosts: ReportHost[]): { startTime: Date; endTime: Date;
     return { startTime: now, endTime: now, duration: 0 };
   }
 
-  const firstHost = hosts[0];
-  const lastHost = hosts[hosts.length - 1];
+  const firstHost = hosts[0]!;
+  const lastHost = hosts[hosts.length - 1]!;
 
   const startTimeStr = getHostPropertyValue(firstHost, 'HOST_START');
   const endTimeStr = getHostPropertyValue(lastHost, 'HOST_END') || getHostPropertyValue(lastHost, 'HOST_START');
@@ -193,7 +193,7 @@ function convertReportHostToBaseline(
     supports: [],
     attributes: [],
     groups: [],
-    checksum: '',
+    checksum: createEmptyChecksum(),
     requirements,
   };
 }
@@ -224,7 +224,7 @@ function convertReportItemToRequirement(item: ReportItem, host: ReportHost): Eva
     refs,
     results,
     code,
-    sourceLocation: {},
+    sourceLocation: createSourceLocation('', 0),
   };
 }
 
@@ -270,7 +270,8 @@ function buildDescriptions(item: ReportItem, isCompliance: boolean): Description
 function calculateImpact(item: ReportItem, isCompliance: boolean): number {
   if (isCompliance && item['compliance-reference']) {
     const cat = parseComplianceRef(item['compliance-reference'], 'CAT')[0];
-    return IMPACT_MAPPING[cat?.toLowerCase()] ?? 0.5;
+    const catKey = cat?.toLowerCase();
+    return catKey ? (IMPACT_MAPPING[catKey] ?? 0.5) : 0.5;
   }
 
   return IMPACT_MAPPING[item['severity']] ?? 0.0;
@@ -343,18 +344,18 @@ function getStatus(item: ReportItem, isCompliance: boolean): ResultStatus {
     const result = item['compliance-result'];
     switch (result) {
       case 'PASSED':
-        return 'passed';
+        return ResultStatus.Passed;
       case 'WARNING':
-        return 'notApplicable'; // Heimdall2 maps WARNING to skipped
+        return ResultStatus.NotApplicable; // Heimdall2 maps WARNING to skipped
       case 'ERROR':
-        return 'error';
+        return ResultStatus.Error;
       default:
-        return 'failed';
+        return ResultStatus.Failed;
     }
   }
 
   // Non-compliance items are always failed (informational findings)
-  return 'failed';
+  return ResultStatus.Failed;
 }
 
 function getCodeDesc(item: ReportItem): string {
@@ -384,6 +385,8 @@ function convertReportHostToTarget(host: ReportHost): Target {
   }
 
   return {
+    name: hostName,
+    type: TargetType.Host,
     id: hostName,
     attributes,
   };

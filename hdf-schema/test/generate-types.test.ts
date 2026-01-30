@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { existsSync, rmSync, readFileSync, renameSync } from 'fs';
 import { join } from 'path';
 import { bundleSchemas } from '../src/bundle-schemas';
 import { generateTypes } from '../src/generate-types';
+import { createIndex } from '../src/create-index';
 
 const DIST_DIR = join(__dirname, '..', 'dist');
 const SCHEMAS_DIR = join(DIST_DIR, 'schemas');
@@ -19,6 +20,12 @@ describe('generate-types', () => {
     // First bundle schemas, then generate types
     await bundleSchemas();
     await generateTypes();
+  });
+
+  afterAll(() => {
+    // Create index files and compile TypeScript after all tests complete
+    // This ensures other packages can import from @mitre/hdf-schema during parallel test runs
+    createIndex();
   });
 
   describe('TypeScript output', () => {

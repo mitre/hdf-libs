@@ -3,12 +3,18 @@
   "version": "0.1.0",
   "description": "JSON schemas and multi-language type definitions for Heimdall Data Format (HDF)",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./hdf-results": {
+      "import": "./dist/ts/hdf-results.js",
+      "types": "./dist/ts/hdf-results.d.ts"
+    },
+    "./hdf-baseline": {
+      "import": "./dist/ts/hdf-baseline.js",
+      "types": "./dist/ts/hdf-baseline.d.ts"
     },
     "./schemas/*": "./src/schemas/*"
   },
@@ -17,7 +23,7 @@
     "src/schemas"
   ],
   "scripts": {
-    "build": "pnpm clean && tsc && tsx src/bundle-schemas.ts && tsx src/generate-types.ts",
+    "build": "pnpm clean && tsx src/bundle-schemas.ts && tsx src/generate-types.ts && tsx src/create-index.ts",
     "build:schemas": "tsx src/bundle-schemas.ts",
     "build:types": "tsx src/generate-types.ts",
     "watch:schemas": "nodemon --watch src/schemas --ext json --exec 'tsx src/bundle-schemas.ts'",
