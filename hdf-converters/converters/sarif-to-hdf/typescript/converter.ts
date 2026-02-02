@@ -1,11 +1,12 @@
+import { createHash } from 'crypto';
 import { parseJSON } from '@mitre/hdf-utilities';
 import {
   getCweNistControl,
   getAllCCIIds,
   getCCINistMappings,
 } from '@mitre/hdf-mappings';
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult } from '@mitre/hdf-schema';
-import { ResultStatus, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
+import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum } from '@mitre/hdf-schema';
+import { ResultStatus, HashAlgorithm, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 interface SarifFile {
   $schema?: string;
@@ -54,6 +55,12 @@ const IMPACT_MAPPING: Record<string, number> = {
 const DEFAULT_STATIC_ANALYSIS_NIST_TAGS = ['SI-10'];
 
 export function convertSarifToHdf(input: string): string {
+  // Calculate checksum of source scan data for integrity verification
+  const resultsChecksum: Checksum = {
+    algorithm: HashAlgorithm.Sha256,
+    value: createHash('sha256').update(input).digest('hex'),
+  };
+
   // Parse SARIF JSON
   const sarif = parseJSON<SarifFile>(input);
 
@@ -68,7 +75,7 @@ export function convertSarifToHdf(input: string): string {
   // Build HDF
   const hdf: HdfResults = {
     timestamp: new Date(),
-    baselines: sarif.runs.map(run => convertRun(run, sarif.version)),
+    baselines: sarif.runs.map(run => convertRun(run, sarif.version, resultsChecksum)),
     targets: [],
     statistics: {
       duration: 0,
@@ -82,12 +89,13 @@ export function convertSarifToHdf(input: string): string {
   return JSON.stringify(hdf, null, 2);
 }
 
-function convertRun(run: SarifRun, version: string): EvaluatedBaseline {
+function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum): EvaluatedBaseline {
   const requirements = run.results.map(result => convertResult(result));
 
   return createMinimalBaseline('SARIF', requirements, {
     version,
     title: 'Static Analysis Results Interchange Format',
+    resultsChecksum,
   });
 }
 

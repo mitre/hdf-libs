@@ -11,7 +11,7 @@
  * @returns {import('../dist/ts/hdf-results.js').EvaluatedBaseline}
  */
 export function createMinimalBaseline(name, requirements, options = {}) {
-  return {
+  const baseline = {
     name,
     requirements,
     attributes: options.attributes || [],
@@ -21,6 +21,22 @@ export function createMinimalBaseline(name, requirements, options = {}) {
     title: options.title,
     version: options.version,
   };
+
+  // Include optional fields if provided
+  if (options.resultsChecksum) {
+    baseline.resultsChecksum = options.resultsChecksum;
+  }
+  if (options.originalChecksum) {
+    baseline.originalChecksum = options.originalChecksum;
+  }
+  if (options.status) {
+    baseline.status = options.status;
+  }
+  if (options.summary) {
+    baseline.summary = options.summary;
+  }
+
+  return baseline;
 }
 
 /**

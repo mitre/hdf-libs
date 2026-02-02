@@ -1,6 +1,8 @@
 package sarif
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -71,6 +73,13 @@ const defaultStaticAnalysisNistTag = "SI-10"
 
 // ConvertSarifToHDF converts SARIF JSON to HDF format
 func ConvertSarifToHDF(input []byte) ([]byte, error) {
+	// Calculate checksum of source scan data for integrity verification
+	hash := sha256.Sum256(input)
+	resultsChecksum := &hdf.Checksum{
+		Algorithm: hdf.Sha256,
+		Value:     hex.EncodeToString(hash[:]),
+	}
+
 	var sarif SarifFile
 	if err := json.Unmarshal(input, &sarif); err != nil {
 		return nil, fmt.Errorf("invalid SARIF JSON: %w", err)
@@ -85,7 +94,7 @@ func ConvertSarifToHDF(input []byte) ([]byte, error) {
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(sarif.Runs))
 
 	for _, run := range sarif.Runs {
-		baseline := convertRun(run, sarif.Version, timestamp)
+		baseline := convertRun(run, sarif.Version, timestamp, resultsChecksum)
 		baselines = append(baselines, baseline)
 	}
 
@@ -110,7 +119,7 @@ func ConvertSarifToHDF(input []byte) ([]byte, error) {
 	return output, nil
 }
 
-func convertRun(run SarifRun, version string, timestamp time.Time) hdf.EvaluatedBaseline {
+func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(run.Results))
 
 	for _, result := range run.Results {
@@ -119,11 +128,19 @@ func convertRun(run SarifRun, version string, timestamp time.Time) hdf.Evaluated
 	}
 
 	return hdf.EvaluatedBaseline{
-		Name:         "SARIF",
-		Version:      &version,
-		Title:        stringPtr("Static Analysis Results Interchange Format"),
-		Maintainer:   stringPtr("Static Analysis Tool"),
-		Requirements: requirements,
+		Name:            "SARIF",
+		Version:         &version,
+		Title:           stringPtr("Static Analysis Results Interchange Format"),
+		Maintainer:      stringPtr("Static Analysis Tool"),
+		Requirements:    requirements,
+		ResultsChecksum: resultsChecksum,
+		Attributes:      []map[string]interface{}{},
+		Groups:          []hdf.RequirementGroup{},
+		Supports:        []hdf.SupportedPlatform{},
+		Checksum: hdf.Checksum{
+			Algorithm: hdf.Sha256,
+			Value:     "",
+		},
 	}
 }
 

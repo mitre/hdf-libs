@@ -1,6 +1,8 @@
 package nessus
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -25,6 +27,13 @@ var impactMapping = map[string]float64{
 
 // ConvertNessusToHDF converts Nessus XML scan results to HDF format
 func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResults, error) {
+	// Calculate checksum of source scan data for integrity verification
+	hash := sha256.Sum256(nessusXML)
+	resultsChecksum := &hdf.Checksum{
+		Algorithm: hdf.Sha256,
+		Value:     hex.EncodeToString(hash[:]),
+	}
+
 	var nessus NessusXML
 	if err := xml.Unmarshal(nessusXML, &nessus); err != nil {
 		return nil, fmt.Errorf("failed to parse Nessus XML: %w", err)
@@ -42,7 +51,7 @@ func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResu
 
 	// Process each ReportHost
 	for _, host := range reportHosts {
-		baseline := convertReportHostToBaseline(&host, policyName, version)
+		baseline := convertReportHostToBaseline(&host, policyName, version, resultsChecksum)
 		baselines = append(baselines, baseline)
 
 		target := convertReportHostToTarget(&host)
@@ -131,7 +140,7 @@ func getHostPropertyValue(host *ReportHost, name string) string {
 	return ""
 }
 
-func convertReportHostToBaseline(host *ReportHost, policyName, version string) hdf.EvaluatedBaseline {
+func convertReportHostToBaseline(host *ReportHost, policyName, version string, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
 	var requirements []hdf.EvaluatedRequirement
 
 	for _, item := range host.ReportItems {
@@ -157,7 +166,8 @@ func convertReportHostToBaseline(host *ReportHost, policyName, version string) h
 			Algorithm: hdf.Sha256,
 			Value:     "",
 		},
-		Requirements: requirements,
+		ResultsChecksum: resultsChecksum,
+		Requirements:    requirements,
 	}
 }
 
