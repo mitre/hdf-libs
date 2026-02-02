@@ -166,7 +166,7 @@ func convertResult(result SarifResult, timestamp time.Time) hdf.EvaluatedRequire
 	}
 
 	// Get source location from first location
-	var sourceLocation hdf.SourceLocationClass
+	var sourceLocation hdf.SourceLocation
 	if len(result.Locations) > 0 {
 		sourceLocation = extractSourceLocation(result.Locations[0])
 	}
@@ -253,8 +253,8 @@ func extractCweIds(text string) []string {
 	return cweIds
 }
 
-func extractSourceLocation(location SarifLocation) hdf.SourceLocationClass {
-	sourceLocation := hdf.SourceLocationClass{}
+func extractSourceLocation(location SarifLocation) hdf.SourceLocation {
+	sourceLocation := hdf.SourceLocation{}
 
 	if location.PhysicalLocation == nil || location.PhysicalLocation.ArtifactLocation == nil {
 		return sourceLocation
