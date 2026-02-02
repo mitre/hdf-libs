@@ -183,9 +183,6 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should validate baseline with sha512 checksum', () => {
       const baseline = {
         name: 'test-baseline',
-        supports: [],
-        attributes: [],
-        groups: [],
         requirements: [],
         checksum: { algorithm: 'sha512', value: 'longer-sha512-hash-value' },
       };
@@ -205,13 +202,51 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should reject baseline without checksum', () => {
       const baseline = {
         name: 'test-baseline',
-        supports: [],
-        attributes: [],
-        groups: [],
         requirements: [],
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
       expect(validate(doc)).toBe(false);
+    });
+
+    it('should accept baseline without supports field', () => {
+      const baseline = {
+        name: 'test-baseline',
+        requirements: [],
+        checksum: { algorithm: 'sha256', value: 'abc123' },
+      };
+      const doc = createMinimalResultsDoc({ baselines: [baseline] });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline without attributes field', () => {
+      const baseline = {
+        name: 'test-baseline',
+        requirements: [],
+        checksum: { algorithm: 'sha256', value: 'abc123' },
+      };
+      const doc = createMinimalResultsDoc({ baselines: [baseline] });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline without groups field', () => {
+      const baseline = {
+        name: 'test-baseline',
+        requirements: [],
+        checksum: { algorithm: 'sha256', value: 'abc123' },
+      };
+      const doc = createMinimalResultsDoc({ baselines: [baseline] });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline with supports field when provided', () => {
+      const baseline = {
+        name: 'test-baseline',
+        requirements: [],
+        checksum: { algorithm: 'sha256', value: 'abc123' },
+        supports: [{ platformFamily: 'redhat', platformName: 'centos' }],
+      };
+      const doc = createMinimalResultsDoc({ baselines: [baseline] });
+      expect(validate(doc)).toBe(true);
     });
 
     it('should validate baseline with full metadata', () => {
@@ -883,7 +918,20 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate requirement with null evidence field', () => {
+    it('should validate requirement without evidence field', () => {
+      const req = createMinimalRequirement();
+      delete (req as Record<string, unknown>).evidence;
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [req],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject requirement with null evidence field', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
@@ -891,7 +939,7 @@ describe('hdf-results.schema.json (refactored)', () => {
           }),
         ],
       });
-      expect(validate(doc)).toBe(true);
+      expect(validate(doc)).toBe(false);
     });
 
     it('should validate requirement with empty evidence array', () => {
@@ -903,6 +951,54 @@ describe('hdf-results.schema.json (refactored)', () => {
         ],
       });
       expect(validate(doc)).toBe(true);
+    });
+
+    it('should validate requirement without poams field', () => {
+      const req = createMinimalRequirement();
+      delete (req as Record<string, unknown>).poams;
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [req],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject requirement with null poams field', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [createMinimalRequirement({ poams: null })],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('should validate requirement without statusOverrides field', () => {
+      const req = createMinimalRequirement();
+      delete (req as Record<string, unknown>).statusOverrides;
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [req],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject requirement with null statusOverrides field', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [createMinimalRequirement({ statusOverrides: null })],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
     });
   });
 

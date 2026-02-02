@@ -3,7 +3,7 @@
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v2.0.0",
   "type": "object",
   "unevaluatedProperties": false,
-  "required": ["name", "supports", "requirements", "groups", "checksum"],
+  "required": ["name", "requirements", "checksum"],
   "allOf": [
     {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Baseline_Metadata"

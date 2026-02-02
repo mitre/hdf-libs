@@ -73,7 +73,7 @@
     "Evaluated_Baseline": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["name", "supports", "attributes", "groups", "requirements", "checksum"],
+      "required": ["name", "requirements", "checksum"],
       "allOf": [
         {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Baseline_Metadata"
@@ -198,27 +198,17 @@
           "description": "The set of all tests within the requirement and their results."
         },
         "statusOverrides": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Status_Override"
-              }
-            },
-            { "type": "null" }
-          ],
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Status_Override"
+          },
           "description": "Chronological history of all status overrides applied to this requirement. Status overrides are intentional changes to the compliance status (waivers, attestations). Most recent override should be first in array. Preserves full audit trail."
         },
         "poams": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/POAM"
-              }
-            },
-            { "type": "null" }
-          ],
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/POAM"
+          },
           "description": "Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance. POAMs do NOT change effectiveStatus - they track the work being done to address a failure. Separate from statusOverrides which DO change status."
         },
         "effectiveStatus": {
@@ -229,15 +219,10 @@
           "description": "The current effective status of this requirement after applying the most recent non-expired override, or computed from results if no overrides exist."
         },
         "evidence": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
-              }
-            },
-            { "type": "null" }
-          ],
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
+          },
           "description": "Supporting evidence for this requirement's findings, such as screenshots, code samples, or log excerpts."
         }
       },

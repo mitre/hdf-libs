@@ -64,9 +64,7 @@ describe('hdf-baseline.schema.json (refactored)', () => {
     it('should reject document without checksum', () => {
       const doc = {
         name: 'test-baseline',
-        supports: [],
-        controls: [],
-        groups: [],
+        requirements: [],
       };
       expect(validate(doc)).toBe(false);
     });
@@ -74,12 +72,36 @@ describe('hdf-baseline.schema.json (refactored)', () => {
     it('should reject checksum with invalid algorithm', () => {
       const doc = {
         name: 'test-baseline',
-        supports: [],
-        controls: [],
-        groups: [],
+        requirements: [],
         checksum: { algorithm: 'md5', value: 'bad-algorithm' }
       };
       expect(validate(doc)).toBe(false);
+    });
+
+    it('should accept baseline without supports field', () => {
+      const doc = createMinimalBaselineDoc();
+      delete (doc as Record<string, unknown>).supports;
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline without groups field', () => {
+      const doc = createMinimalBaselineDoc();
+      delete (doc as Record<string, unknown>).groups;
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline with supports field when provided', () => {
+      const doc = createMinimalBaselineDoc({
+        supports: [{ platformFamily: 'redhat', platformName: 'centos' }],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept baseline with groups field when provided', () => {
+      const doc = createMinimalBaselineDoc({
+        groups: [{ id: 'controls/ssh.rb', requirements: ['SV-238196'] }],
+      });
+      expect(validate(doc)).toBe(true);
     });
 
     it('should accept optional generator field', () => {
