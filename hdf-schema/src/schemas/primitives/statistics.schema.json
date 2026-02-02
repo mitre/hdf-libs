@@ -7,7 +7,9 @@
     "Statistic_Block": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["total"],
+      "required": [
+        "total"
+      ],
       "properties": {
         "total": {
           "type": "integer",
@@ -24,45 +26,27 @@
       "required": [],
       "properties": {
         "passed": {
-          "anyOf": [
-            { "$ref": "#/$defs/Statistic_Block" },
-            { "type": "null" }
-          ],
+          "$ref": "#/$defs/Statistic_Block",
           "description": "Statistics for requirements that passed."
         },
         "failed": {
-          "anyOf": [
-            { "$ref": "#/$defs/Statistic_Block" },
-            { "type": "null" }
-          ],
+          "$ref": "#/$defs/Statistic_Block",
           "description": "Statistics for requirements that failed."
         },
         "notApplicable": {
-          "anyOf": [
-            { "$ref": "#/$defs/Statistic_Block" },
-            { "type": "null" }
-          ],
+          "$ref": "#/$defs/Statistic_Block",
           "description": "Statistics for requirements that are not applicable to the target."
         },
         "notReviewed": {
-          "anyOf": [
-            { "$ref": "#/$defs/Statistic_Block" },
-            { "type": "null" }
-          ],
+          "$ref": "#/$defs/Statistic_Block",
           "description": "Statistics for requirements that were not reviewed (manual check required)."
         },
         "error": {
-          "anyOf": [
-            { "$ref": "#/$defs/Statistic_Block" },
-            { "type": "null" }
-          ],
+          "$ref": "#/$defs/Statistic_Block",
           "description": "Statistics for requirements that encountered an error during assessment."
         },
         "skipped": {
-          "anyOf": [
-            { "$ref": "#/$defs/Statistic_Block" },
-            { "type": "null" }
-          ],
+          "$ref": "#/$defs/Statistic_Block",
           "description": "Deprecated: use 'notApplicable' or 'notReviewed' instead. Statistics for requirements that were skipped."
         }
       },
@@ -75,15 +59,12 @@
       "required": [],
       "properties": {
         "duration": {
-          "type": ["number", "null"],
+          "type": "number",
           "minimum": 0,
           "description": "How long (in seconds) this assessment run took."
         },
         "requirements": {
-          "anyOf": [
-            { "$ref": "#/$defs/Statistic_Hash" },
-            { "type": "null" }
-          ],
+          "$ref": "#/$defs/Statistic_Hash",
           "description": "Breakdowns of requirement statistics by result status."
         }
       },

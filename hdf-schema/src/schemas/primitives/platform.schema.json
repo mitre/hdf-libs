@@ -7,7 +7,10 @@
     "Platform": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["name", "release"],
+      "required": [
+        "name",
+        "release"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -18,7 +21,7 @@
           "description": "The version of the platform this was run on."
         },
         "targetId": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The id of the target. Example: the name and version of the operating system were not sufficient to identify the platform so a release identifier can additionally be provided like '21H2' for the release version of MS Windows 10."
         }
       },

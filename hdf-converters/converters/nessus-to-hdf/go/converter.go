@@ -205,7 +205,7 @@ func convertReportItemToRequirement(item *ReportItem, host *ReportHost) hdf.Eval
 		Refs:           refs,
 		Results:        results,
 		Code:           &code,
-		SourceLocation: hdf.SourceLocationClass{},
+		SourceLocation: hdf.SourceLocation{},
 	}
 }
 

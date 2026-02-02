@@ -3,7 +3,10 @@
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v2.0.0",
   "type": "object",
   "unevaluatedProperties": false,
-  "required": ["baselines", "statistics"],
+  "required": [
+    "baselines",
+    "statistics"
+  ],
   "properties": {
     "id": {
       "type": "string",
@@ -34,31 +37,19 @@
       "description": "Statistics for the assessment run, including duration and result counts."
     },
     "generator": {
-      "anyOf": [
-        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator" },
-        { "type": "null" }
-      ],
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
       "description": "Information about the tool that generated this file."
     },
     "integrity": {
-      "anyOf": [
-        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity" },
-        { "type": "null" }
-      ],
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this file."
     },
     "runner": {
-      "anyOf": [
-        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v2.0.0#/$defs/Runner" },
-        { "type": "null" }
-      ],
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v2.0.0#/$defs/Runner",
       "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
     },
     "remediation": {
-      "anyOf": [
-        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation" },
-        { "type": "null" }
-      ],
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation",
       "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for fixing failing requirements found in this assessment."
     },
     "extensions": {
@@ -73,7 +64,11 @@
     "Evaluated_Baseline": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["name", "requirements", "checksum"],
+      "required": [
+        "name",
+        "requirements",
+        "checksum"
+      ],
       "allOf": [
         {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Baseline_Metadata"
@@ -81,22 +76,22 @@
       ],
       "properties": {
         "depends": {
-          "type": ["array", "null"],
+          "type": "array",
           "items": {
             "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency"
           },
           "description": "The set of dependencies this baseline depends on."
         },
         "parentBaseline": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The name of the parent baseline if this is a dependency of another."
         },
         "description": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The description - should be more detailed than the summary."
         },
         "inspecVersion": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The version of InSpec used to execute this baseline."
         },
         "checksum": {
@@ -104,21 +99,15 @@
           "description": "Cryptographic checksum for baseline integrity verification."
         },
         "originalChecksum": {
-          "anyOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum" },
-            { "type": "null" }
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the original baseline definition file (before execution). This is an immutable reference to the baseline as defined, used to detect tampering with baseline requirements or metadata."
         },
         "resultsChecksum": {
-          "anyOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum" },
-            { "type": "null" }
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs). Used to detect tampering with test results. Compare with currentChecksum to verify amendment integrity."
         },
         "statusMessage": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "An explanation of the baseline status. Example: why it was skipped, failed to load, or any other status details."
         },
         "requirements": {
@@ -156,7 +145,14 @@
     "Evaluated_Requirement": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["id", "impact", "tags", "sourceLocation", "results", "descriptions"],
+      "required": [
+        "id",
+        "impact",
+        "tags",
+        "sourceLocation",
+        "results",
+        "descriptions"
+      ],
       "allOf": [
         {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Requirement_Core"
@@ -171,7 +167,9 @@
           },
           "contains": {
             "type": "object",
-            "required": ["label"],
+            "required": [
+              "label"
+            ],
             "properties": {
               "label": {
                 "const": "default"
@@ -182,7 +180,13 @@
         },
         "severity": {
           "type": "string",
-          "enum": ["critical", "high", "medium", "low", "informational"],
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "informational"
+          ],
           "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
         },
         "sourceLocation": {
@@ -212,10 +216,7 @@
           "description": "Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance. POAMs do NOT change effectiveStatus - they track the work being done to address a failure. Separate from statusOverrides which DO change status."
         },
         "effectiveStatus": {
-          "anyOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Result_Status" },
-            { "type": "null" }
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Result_Status",
           "description": "The current effective status of this requirement after applying the most recent non-expired override, or computed from results if no overrides exist."
         },
         "evidence": {
