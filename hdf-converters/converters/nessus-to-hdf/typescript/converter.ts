@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
 import { getNessusNistControl } from '@mitre/hdf-mappings';
 import type {
@@ -8,8 +9,9 @@ import type {
   Target,
   Description,
   Reference,
+  Checksum,
 } from '@mitre/hdf-schema';
-import { ResultStatus, Name as TargetType, createEmptyChecksum, createSourceLocation } from '@mitre/hdf-schema';
+import { ResultStatus, HashAlgorithm, Name as TargetType, createMinimalBaseline, createSourceLocation } from '@mitre/hdf-schema';
 import { version as converterVersion } from '../../../package.json';
 
 interface NessusXml {
@@ -97,6 +99,12 @@ function parseHtml(html: string): string {
  * Convert Nessus XML scan results to HDF format
  */
 export function convertNessusToHdf(nessusXml: string): HdfResults {
+  // Calculate checksum of source scan data for integrity verification
+  const resultsChecksum: Checksum = {
+    algorithm: HashAlgorithm.Sha256,
+    value: createHash('sha256').update(nessusXml).digest('hex'),
+  };
+
   const parsed = parseXmlWithArrays(nessusXml, ['preference', 'tag', 'ReportItem', 'ReportHost']) as unknown as NessusXml;
 
   const policyName = parsed.NessusClientData_v2.Policy.policyName;
@@ -112,7 +120,7 @@ export function convertNessusToHdf(nessusXml: string): HdfResults {
 
   // Process each ReportHost
   reportHosts.forEach(host => {
-    const baseline = convertReportHostToBaseline(host, policyName, version);
+    const baseline = convertReportHostToBaseline(host, policyName, version, resultsChecksum);
     baselines.push(baseline);
 
     const target = convertReportHostToTarget(host);
@@ -176,7 +184,8 @@ function getHostPropertyValue(host: ReportHost, name: string): string | undefine
 function convertReportHostToBaseline(
   host: ReportHost,
   policyName: string,
-  version: string
+  version: string,
+  resultsChecksum: Checksum
 ): EvaluatedBaseline {
   const items = host.ReportItem;
   // parseXmlWithArrays ensures ReportItem is always an array
@@ -184,18 +193,13 @@ function convertReportHostToBaseline(
     ? (items as ReportItem[]).map(item => convertReportItemToRequirement(item, host))
     : [];
 
-  return {
-    name: `Nessus ${policyName}`,
+  return createMinimalBaseline(`Nessus ${policyName}`, requirements, {
     title: `Nessus ${policyName}`,
     version,
+    resultsChecksum,
     status: 'loaded',
     summary: `Nessus ${policyName}`,
-    supports: [],
-    attributes: [],
-    groups: [],
-    checksum: createEmptyChecksum(),
-    requirements,
-  };
+  });
 }
 
 function convertReportItemToRequirement(item: ReportItem, host: ReportHost): EvaluatedRequirement {

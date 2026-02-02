@@ -25,6 +25,10 @@ export function createMinimalBaseline(
     groups?: RequirementGroup[];
     supports?: SupportedPlatform[];
     checksum?: Checksum;
+    resultsChecksum?: Checksum;
+    originalChecksum?: Checksum;
+    status?: string;
+    summary?: string;
   }
 ): EvaluatedBaseline;
 
