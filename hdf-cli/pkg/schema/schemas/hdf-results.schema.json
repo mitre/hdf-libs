@@ -37,47 +37,19 @@
       "description": "Statistics for the assessment run, including duration and result counts."
     },
     "generator": {
-      "anyOf": [
-        {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator"
-        },
-        {
-          "type": "null"
-        }
-      ],
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
       "description": "Information about the tool that generated this file."
     },
     "integrity": {
-      "anyOf": [
-        {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity"
-        },
-        {
-          "type": "null"
-        }
-      ],
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this file."
     },
     "runner": {
-      "anyOf": [
-        {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v2.0.0#/$defs/Runner"
-        },
-        {
-          "type": "null"
-        }
-      ],
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v2.0.0#/$defs/Runner",
       "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
     },
     "remediation": {
-      "anyOf": [
-        {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation"
-        },
-        {
-          "type": "null"
-        }
-      ],
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation",
       "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for fixing failing requirements found in this assessment."
     },
     "extensions": {
@@ -104,34 +76,22 @@
       ],
       "properties": {
         "depends": {
-          "type": [
-            "array",
-            "null"
-          ],
+          "type": "array",
           "items": {
             "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency"
           },
           "description": "The set of dependencies this baseline depends on."
         },
         "parentBaseline": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": "string",
           "description": "The name of the parent baseline if this is a dependency of another."
         },
         "description": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": "string",
           "description": "The description - should be more detailed than the summary."
         },
         "inspecVersion": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": "string",
           "description": "The version of InSpec used to execute this baseline."
         },
         "checksum": {
@@ -139,32 +99,15 @@
           "description": "Cryptographic checksum for baseline integrity verification."
         },
         "originalChecksum": {
-          "anyOf": [
-            {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum"
-            },
-            {
-              "type": "null"
-            }
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the original baseline definition file (before execution). This is an immutable reference to the baseline as defined, used to detect tampering with baseline requirements or metadata."
         },
         "resultsChecksum": {
-          "anyOf": [
-            {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum"
-            },
-            {
-              "type": "null"
-            }
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs). Used to detect tampering with test results. Compare with currentChecksum to verify amendment integrity."
         },
         "statusMessage": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": "string",
           "description": "An explanation of the baseline status. Example: why it was skipped, failed to load, or any other status details."
         },
         "requirements": {
@@ -273,14 +216,7 @@
           "description": "Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance. POAMs do NOT change effectiveStatus - they track the work being done to address a failure. Separate from statusOverrides which DO change status."
         },
         "effectiveStatus": {
-          "anyOf": [
-            {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Result_Status"
-            },
-            {
-              "type": "null"
-            }
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Result_Status",
           "description": "The current effective status of this requirement after applying the most recent non-expired override, or computed from results if no overrides exist."
         },
         "evidence": {
@@ -371,10 +307,7 @@
                   "const": "host"
                 },
                 "fqdn": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "format": "hostname",
                   "description": "Fully qualified domain name."
                 },
@@ -387,33 +320,21 @@
                     {
                       "type": "string",
                       "format": "ipv6"
-                    },
-                    {
-                      "type": "null"
                     }
                   ],
                   "description": "IP address of the host."
                 },
                 "macAddress": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
                   "description": "MAC address of the host in colon-separated hexadecimal format (e.g., '00:1A:2B:3C:4D:5E')."
                 },
                 "osName": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Operating system name."
                 },
                 "osVersion": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Operating system version."
                 }
               }
@@ -452,38 +373,23 @@
                   "const": "containerImage"
                 },
                 "imageId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Container image ID."
                 },
                 "registry": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Container registry. Example: 'docker.io'."
                 },
                 "repository": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Repository name. Example: 'library/nginx'."
                 },
                 "tag": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Image tag. Example: '1.25'."
                 },
                 "digest": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "pattern": "^(sha256:[a-f0-9]{64}|sha512:[a-f0-9]{128}|blake3:[a-f0-9]{64})$",
                   "description": "Image digest for immutable reference. Example: 'sha256:abc123...'. Must be sha256 (64 hex chars), sha512 (128 hex chars), or blake3 (64 hex chars)."
                 }
@@ -523,24 +429,15 @@
                   "const": "containerInstance"
                 },
                 "containerId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Running container ID."
                 },
                 "image": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Image the container was started from."
                 },
                 "runtime": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Container runtime. Example: 'docker', 'containerd', 'cri-o'."
                 }
               }
@@ -561,31 +458,19 @@
                   "const": "containerPlatform"
                 },
                 "platformType": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
                 },
                 "clusterName": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Cluster name."
                 },
                 "namespace": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Namespace within the cluster, if applicable."
                 },
                 "version": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Platform version."
                 }
               }
@@ -606,10 +491,7 @@
                   "const": "cloudAccount"
                 },
                 "provider": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "enum": [
                     "aws",
                     "azure",
@@ -621,17 +503,11 @@
                   "description": "Cloud provider."
                 },
                 "accountId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Cloud account identifier. Example: AWS account ID, Azure subscription ID."
                 },
                 "region": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Cloud region, if applicable."
                 }
               }
@@ -652,10 +528,7 @@
                   "const": "cloudResource"
                 },
                 "provider": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "enum": [
                     "aws",
                     "azure",
@@ -667,31 +540,19 @@
                   "description": "Cloud provider."
                 },
                 "resourceType": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Type of cloud resource. Example: 'ec2:instance', 's3:bucket'."
                 },
                 "resourceId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Provider-specific resource identifier."
                 },
                 "arn": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Amazon Resource Name (AWS only)."
                 },
                 "region": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Cloud region where the resource resides."
                 }
               }
@@ -740,25 +601,16 @@
                   "const": "repository"
                 },
                 "url": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "format": "uri",
                   "description": "Repository URL."
                 },
                 "branch": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Branch that was scanned."
                 },
                 "commit": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Commit SHA that was scanned."
                 }
               }
@@ -779,25 +631,16 @@
                   "const": "application"
                 },
                 "url": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "format": "uri",
                   "description": "Application URL (for DAST tools)."
                 },
                 "version": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Application version."
                 },
                 "environment": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Environment. Example: 'production', 'staging', 'development'."
                 }
               }
@@ -818,31 +661,19 @@
                   "const": "artifact"
                 },
                 "packageManager": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
                 },
                 "packageName": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Package name."
                 },
                 "version": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Package version."
                 },
                 "checksum": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Package checksum for verification."
                 }
               }
@@ -863,17 +694,11 @@
                   "const": "network"
                 },
                 "cidr": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Network CIDR block."
                 },
                 "gateway": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Network gateway address."
                 }
               }
@@ -894,31 +719,19 @@
                   "const": "database"
                 },
                 "engine": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'."
                 },
                 "version": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Database version."
                 },
                 "host": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
                   "description": "Database host."
                 },
                 "port": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ],
+                  "type": "integer",
                   "minimum": 1,
                   "maximum": 65535,
                   "description": "Database port."
@@ -977,69 +790,27 @@
           "required": [],
           "properties": {
             "passed": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/Statistic_Block"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "#/$defs/Statistic_Block",
               "description": "Statistics for requirements that passed."
             },
             "failed": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/Statistic_Block"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "#/$defs/Statistic_Block",
               "description": "Statistics for requirements that failed."
             },
             "notApplicable": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/Statistic_Block"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "#/$defs/Statistic_Block",
               "description": "Statistics for requirements that are not applicable to the target."
             },
             "notReviewed": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/Statistic_Block"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "#/$defs/Statistic_Block",
               "description": "Statistics for requirements that were not reviewed (manual check required)."
             },
             "error": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/Statistic_Block"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "#/$defs/Statistic_Block",
               "description": "Statistics for requirements that encountered an error during assessment."
             },
             "skipped": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/Statistic_Block"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "#/$defs/Statistic_Block",
               "description": "Deprecated: use 'notApplicable' or 'notReviewed' instead. Statistics for requirements that were skipped."
             }
           },
@@ -1052,22 +823,12 @@
           "required": [],
           "properties": {
             "duration": {
-              "type": [
-                "number",
-                "null"
-              ],
+              "type": "number",
               "minimum": 0,
               "description": "How long (in seconds) this assessment run took."
             },
             "requirements": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/Statistic_Hash"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "#/$defs/Statistic_Hash",
               "description": "Breakdowns of requirement statistics by result status."
             }
           },
@@ -1125,39 +886,18 @@
               "description": "Timestamp when this status override expires and must be reviewed/renewed. REQUIRED - no permanent status overrides allowed. ISO 8601 format."
             },
             "signature": {
-              "anyOf": [
-                {
-                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature",
               "description": "Optional digital signature for enhanced trust and non-repudiation. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing methods."
             },
             "evidence": {
-              "anyOf": [
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
+              },
               "description": "Supporting evidence for this status override, such as screenshots demonstrating manual verification for attestations."
             },
             "previousChecksum": {
-              "anyOf": [
-                {
-                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
             }
           },
@@ -1236,61 +976,30 @@
               "description": "Timestamp when this POA&M was created. ISO 8601 format."
             },
             "expiresAt": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "format": "date-time",
               "description": "Optional expiration date for this POA&M requiring review/renewal. ISO 8601 format."
             },
             "milestones": {
-              "anyOf": [
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone"
+              },
               "description": "Optional array of milestones tracking progress toward completion."
             },
             "signature": {
-              "anyOf": [
-                {
-                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature",
               "description": "Optional digital signature for enhanced trust and non-repudiation."
             },
             "evidence": {
-              "anyOf": [
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
+              },
               "description": "Supporting evidence for this POA&M, such as documentation of compensating controls or mitigation implementation."
             },
             "previousChecksum": {
-              "anyOf": [
-                {
-                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
             }
           },
@@ -1429,17 +1138,11 @@
               "description": "The checksum value."
             },
             "signature": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "Optional cryptographic signature."
             },
             "signedBy": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "Identifier of who signed this file."
             }
           },
@@ -1487,14 +1190,7 @@
           ],
           "properties": {
             "status": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/Result_Status"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "#/$defs/Result_Status",
               "description": "The status of this test within the requirement. Example: 'failed'."
             },
             "codeDesc": {
@@ -1502,10 +1198,7 @@
               "description": "A description of this test. Example: 'limits.conf * is expected to include [\"hard\", \"maxlogins\", \"10\"]'."
             },
             "runTime": {
-              "type": [
-                "number",
-                "null"
-              ],
+              "type": "number",
               "minimum": 0,
               "description": "The execution time in seconds for the test."
             },
@@ -1515,45 +1208,26 @@
               "description": "The time at which the test started."
             },
             "resource": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The resource used in the test. Example: 'file', 'command', 'service'."
             },
             "resourceId": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The unique identifier of the resource. Example: '/etc/passwd'."
             },
             "message": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "An explanation of the test result. Typically provided for failed tests, errors, or to explain why a test was not applicable or not reviewed."
             },
             "exception": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The type of exception if an exception was thrown."
             },
             "backtrace": {
-              "anyOf": [
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
               "description": "The stacktrace/backtrace of the exception if one occurred."
             }
           },
@@ -1611,10 +1285,7 @@
               "description": "The unique identifier for the group. Example: the relative path to the file specifying the requirements."
             },
             "title": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The title of the group - should be human readable."
             },
             "requirements": {
@@ -1634,68 +1305,41 @@
           "required": [],
           "properties": {
             "name": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The name or assigned alias."
             },
             "url": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "format": "uri-reference",
               "description": "The address of the dependency."
             },
             "branch": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The branch name for a git repo."
             },
             "path": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The relative path if the dependency is locally available."
             },
             "statusMessage": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The reason for the status if it is 'failed' or 'skipped'."
             },
             "status": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The status. Should be: 'loaded', 'failed', or 'skipped'."
             },
             "git": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "format": "uri",
               "description": "The location of the git repo. Example: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'."
             },
             "supermarket": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The 'user/profilename' attribute for a Supermarket server."
             },
             "compliance": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The 'user/profilename' attribute for an Automate server."
             }
           },
@@ -1791,17 +1435,11 @@
           "required": [],
           "properties": {
             "ref": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "Path to the file that this requirement originates from."
             },
             "line": {
-              "type": [
-                "number",
-                "null"
-              ],
+              "type": "number",
               "description": "The line on which this requirement is located."
             }
           },
@@ -1814,31 +1452,19 @@
           "required": [],
           "properties": {
             "platformFamily": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The platform family. Example: 'redhat'."
             },
             "platformName": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The platform name - can include wildcards. Example: 'debian'."
             },
             "platform": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The location of the platform. Can be: 'os', 'aws', 'azure', or 'gcp'."
             },
             "release": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The release of the platform. Example: '20.04' for 'ubuntu'."
             }
           },
@@ -1889,10 +1515,7 @@
               "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for automated systems, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
             },
             "description": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "Optional description of the identity or identity system, particularly useful when type is 'other'."
             }
           },
@@ -1924,50 +1547,28 @@
               "description": "The evidence content. For screenshots/files: base64-encoded data or URL. For code/logs: the raw text. For URLs: the URL string."
             },
             "description": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "Human-readable description of what this evidence shows."
             },
             "mimeType": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "MIME type of the evidence. Example: 'image/png', 'text/plain', 'application/json'."
             },
             "encoding": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "Encoding used for the data. Example: 'base64', 'utf-8'."
             },
             "size": {
-              "type": [
-                "number",
-                "null"
-              ],
+              "type": "number",
               "description": "Size of the evidence data in bytes."
             },
             "capturedAt": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "format": "date-time",
               "description": "Timestamp when this evidence was captured. ISO 8601 format."
             },
             "capturedBy": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/Identity"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "#/$defs/Identity",
               "description": "Identity of who or what captured this evidence."
             }
           },
@@ -2035,14 +1636,7 @@
               "description": "URI pointing to automated remediation resources (Ansible playbooks, Terraform scripts, etc.). Examples: GitHub repository, DISA STIG Supplemental Automation Content, vendor-provided scripts."
             },
             "checksum": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/Checksum"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "#/$defs/Checksum",
               "description": "Optional cryptographic checksum for verifying the integrity of remediation resources fetched from the URI. Recommended for security when referencing external automation scripts."
             }
           },
@@ -2066,30 +1660,16 @@
               "description": "The entity that controls this verification method. Can be a DID, URI, or other identifier."
             },
             "publicKeyJwk": {
-              "anyOf": [
-                {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "description": "Public key in JWK (JSON Web Key) format. Supports RSA, EC, Ed25519, and other key types."
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "object",
+              "additionalProperties": true,
               "description": "Public key in JSON Web Key format."
             },
             "publicKeyPem": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "Public key in PEM format. Example: '-----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----'."
             },
             "publicKeyBase58": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "Public key in Base58 format, commonly used with Ed25519 keys."
             }
           },
@@ -2124,22 +1704,12 @@
               "description": "Current status of this milestone."
             },
             "completedAt": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "format": "date-time",
               "description": "Actual completion timestamp. ISO 8601 format."
             },
             "completedBy": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/Identity"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "#/$defs/Identity",
               "description": "Identity of who completed this milestone."
             }
           },
@@ -2184,24 +1754,15 @@
               "description": "The verification method containing the public key for signature verification."
             },
             "nonce": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "Random value to prevent replay attacks."
             },
             "challenge": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "Challenge value from the verifier, used in challenge-response authentication."
             },
             "domain": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "Domain restriction for the signature, prevents cross-domain replay attacks."
             }
           },
@@ -2271,52 +1832,31 @@
               "description": "The name - must be unique."
             },
             "title": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The title - should be human readable."
             },
             "maintainer": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The maintainer(s)."
             },
             "copyright": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The copyright holder(s)."
             },
             "copyrightEmail": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The email address or other contact information of the copyright holder(s)."
             },
             "license": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The copyright license. Example: 'Apache-2.0'."
             },
             "summary": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The summary. Example: the Security Technical Implementation Guide (STIG) header."
             },
             "version": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The version of the baseline."
             },
             "supports": {
@@ -2327,10 +1867,7 @@
               "description": "The set of supported platform targets."
             },
             "status": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The status. Example: 'loaded'."
             }
           },
@@ -2345,10 +1882,7 @@
               "description": "The requirement identifier. Example: 'SV-238196'."
             },
             "title": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The title - is nullable."
             },
             "descriptions": {
@@ -2381,10 +1915,7 @@
               "description": "The impactfulness or severity (0.0 to 1.0)."
             },
             "refs": {
-              "type": [
-                "array",
-                "null"
-              ],
+              "type": "array",
               "items": {
                 "$ref": "#/$defs/Reference"
               },
@@ -2396,21 +1927,11 @@
               "description": "A set of tags - usually metadata like CCI, STIG ID, severity."
             },
             "code": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "type": "string",
               "description": "The raw source code of the requirement. Set to null for manual-only requirements or requirements not yet implemented. Note that if this is an overlay, it does not include the underlying source code."
             },
             "sourceLocation": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/Source_Location"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "$ref": "#/$defs/Source_Location",
               "description": "The explicit location of the requirement within the source code."
             }
           },

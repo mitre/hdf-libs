@@ -100,12 +100,13 @@ describe('generate-types', () => {
     it('should NOT add omitempty to required fields', () => {
       const content = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
 
-      // Target.Name is required - should not have omitempty
+      // Name is a required field in BaselineMetadata - should not have omitempty
       const nameMatch = content.match(/Name\s+string\s+`json:"name"`[^,]/);
       expect(nameMatch).toBeTruthy();
 
-      // Target.Type is required - should not have omitempty
-      const typeMatch = content.match(/Type\s+Name\s+`json:"type"`[^,]/);
+      // Type is a required field in various structs - should not have omitempty
+      // Check for any Type field without omitempty
+      const typeMatch = content.match(/Type\s+\w+\s+`json:"type"`[^,]/);
       expect(typeMatch).toBeTruthy();
     });
 

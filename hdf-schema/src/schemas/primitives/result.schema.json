@@ -6,20 +6,26 @@
   "$defs": {
     "Result_Status": {
       "type": "string",
-      "enum": ["passed", "failed", "notApplicable", "notReviewed", "error"],
+      "enum": [
+        "passed",
+        "failed",
+        "notApplicable",
+        "notReviewed",
+        "error"
+      ],
       "description": "The status of an individual test result. 'notApplicable' indicates the requirement does not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g., requires manual verification).",
       "title": "Result Status"
     },
     "Requirement_Result": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["codeDesc", "startTime"],
+      "required": [
+        "codeDesc",
+        "startTime"
+      ],
       "properties": {
         "status": {
-          "anyOf": [
-            { "$ref": "#/$defs/Result_Status" },
-            { "type": "null" }
-          ],
+          "$ref": "#/$defs/Result_Status",
           "description": "The status of this test within the requirement. Example: 'failed'."
         },
         "codeDesc": {
@@ -27,7 +33,7 @@
           "description": "A description of this test. Example: 'limits.conf * is expected to include [\"hard\", \"maxlogins\", \"10\"]'."
         },
         "runTime": {
-          "type": ["number", "null"],
+          "type": "number",
           "minimum": 0,
           "description": "The execution time in seconds for the test."
         },
@@ -37,29 +43,26 @@
           "description": "The time at which the test started."
         },
         "resource": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The resource used in the test. Example: 'file', 'command', 'service'."
         },
         "resourceId": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The unique identifier of the resource. Example: '/etc/passwd'."
         },
         "message": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "An explanation of the test result. Typically provided for failed tests, errors, or to explain why a test was not applicable or not reviewed."
         },
         "exception": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The type of exception if an exception was thrown."
         },
         "backtrace": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": { "type": "string" }
-            },
-            { "type": "null" }
-          ],
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
           "description": "The stacktrace/backtrace of the exception if one occurred."
         }
       },
@@ -69,7 +72,10 @@
     "Requirement_Description": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["label", "data"],
+      "required": [
+        "label",
+        "data"
+      ],
       "properties": {
         "label": {
           "type": "string",

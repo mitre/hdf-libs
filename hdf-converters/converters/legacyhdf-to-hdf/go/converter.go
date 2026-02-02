@@ -104,7 +104,7 @@ func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 
 	// Convert source location
 	if v1.SourceLocation != nil {
-		v2.SourceLocation = hdf.SourceLocationClass{
+		v2.SourceLocation = hdf.SourceLocation{
 			Ref: v1.SourceLocation.Ref,
 		}
 		if v1.SourceLocation.Line != nil {

@@ -221,7 +221,7 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(false);
     });
 
-    it('should accept requirement with null code (manual-only requirement)', () => {
+    it('should reject requirement with explicit null code (manual-only requirement)', () => {
       const doc = createMinimalBaselineDoc({
         requirements: [
           createMinimalBaselineRequirement({
@@ -230,7 +230,7 @@ describe('hdf-baseline.schema.json (refactored)', () => {
           }),
         ],
       });
-      expect(validate(doc)).toBe(true);
+      expect(validate(doc)).toBe(false);
     });
 
     it('should accept requirement without code field (omitted)', () => {
@@ -272,9 +272,9 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept null inputs', () => {
+    it('should reject explicit null inputs', () => {
       const doc = createMinimalBaselineDoc({ inputs: null });
-      expect(validate(doc)).toBe(true);
+      expect(validate(doc)).toBe(false);
     });
   });
 

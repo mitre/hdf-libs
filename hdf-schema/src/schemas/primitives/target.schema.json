@@ -7,7 +7,10 @@
     "Base_Target": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["type", "name"],
+      "required": [
+        "type",
+        "name"
+      ],
       "properties": {
         "type": {
           "type": "string",
@@ -25,22 +28,46 @@
       "description": "A scan target. Uses discriminated union pattern with 'type' field as discriminator.",
       "title": "Target",
       "oneOf": [
-        { "$ref": "#/$defs/Host_Target" },
-        { "$ref": "#/$defs/Container_Image_Target" },
-        { "$ref": "#/$defs/Container_Instance_Target" },
-        { "$ref": "#/$defs/Container_Platform_Target" },
-        { "$ref": "#/$defs/Cloud_Account_Target" },
-        { "$ref": "#/$defs/Cloud_Resource_Target" },
-        { "$ref": "#/$defs/Repository_Target" },
-        { "$ref": "#/$defs/Application_Target" },
-        { "$ref": "#/$defs/Artifact_Target" },
-        { "$ref": "#/$defs/Network_Target" },
-        { "$ref": "#/$defs/Database_Target" }
+        {
+          "$ref": "#/$defs/Host_Target"
+        },
+        {
+          "$ref": "#/$defs/Container_Image_Target"
+        },
+        {
+          "$ref": "#/$defs/Container_Instance_Target"
+        },
+        {
+          "$ref": "#/$defs/Container_Platform_Target"
+        },
+        {
+          "$ref": "#/$defs/Cloud_Account_Target"
+        },
+        {
+          "$ref": "#/$defs/Cloud_Resource_Target"
+        },
+        {
+          "$ref": "#/$defs/Repository_Target"
+        },
+        {
+          "$ref": "#/$defs/Application_Target"
+        },
+        {
+          "$ref": "#/$defs/Artifact_Target"
+        },
+        {
+          "$ref": "#/$defs/Network_Target"
+        },
+        {
+          "$ref": "#/$defs/Database_Target"
+        }
       ]
     },
     "Host_Target": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Target" },
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
         {
           "type": "object",
           "properties": {
@@ -48,29 +75,34 @@
               "const": "host"
             },
             "fqdn": {
-              "type": ["string", "null"],
+              "type": "string",
               "format": "hostname",
               "description": "Fully qualified domain name."
             },
             "ipAddress": {
               "anyOf": [
-                { "type": "string", "format": "ipv4" },
-                { "type": "string", "format": "ipv6" },
-                { "type": "null" }
+                {
+                  "type": "string",
+                  "format": "ipv4"
+                },
+                {
+                  "type": "string",
+                  "format": "ipv6"
+                }
               ],
               "description": "IP address of the host."
             },
             "macAddress": {
-              "type": ["string", "null"],
+              "type": "string",
               "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
               "description": "MAC address of the host in colon-separated hexadecimal format (e.g., '00:1A:2B:3C:4D:5E')."
             },
             "osName": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Operating system name."
             },
             "osVersion": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Operating system version."
             }
           }
@@ -99,7 +131,9 @@
     },
     "Container_Image_Target": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Target" },
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
         {
           "type": "object",
           "properties": {
@@ -107,23 +141,23 @@
               "const": "containerImage"
             },
             "imageId": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Container image ID."
             },
             "registry": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Container registry. Example: 'docker.io'."
             },
             "repository": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Repository name. Example: 'library/nginx'."
             },
             "tag": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Image tag. Example: '1.25'."
             },
             "digest": {
-              "type": ["string", "null"],
+              "type": "string",
               "pattern": "^(sha256:[a-f0-9]{64}|sha512:[a-f0-9]{128}|blake3:[a-f0-9]{64})$",
               "description": "Image digest for immutable reference. Example: 'sha256:abc123...'. Must be sha256 (64 hex chars), sha512 (128 hex chars), or blake3 (64 hex chars)."
             }
@@ -153,7 +187,9 @@
     },
     "Container_Instance_Target": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Target" },
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
         {
           "type": "object",
           "properties": {
@@ -161,15 +197,15 @@
               "const": "containerInstance"
             },
             "containerId": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Running container ID."
             },
             "image": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Image the container was started from."
             },
             "runtime": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Container runtime. Example: 'docker', 'containerd', 'cri-o'."
             }
           }
@@ -180,7 +216,9 @@
     },
     "Container_Platform_Target": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Target" },
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
         {
           "type": "object",
           "properties": {
@@ -188,19 +226,19 @@
               "const": "containerPlatform"
             },
             "platformType": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
             },
             "clusterName": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Cluster name."
             },
             "namespace": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Namespace within the cluster, if applicable."
             },
             "version": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Platform version."
             }
           }
@@ -211,7 +249,9 @@
     },
     "Cloud_Account_Target": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Target" },
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
         {
           "type": "object",
           "properties": {
@@ -219,16 +259,23 @@
               "const": "cloudAccount"
             },
             "provider": {
-              "type": ["string", "null"],
-              "enum": ["aws", "azure", "gcp", "oci", "other", null],
+              "type": "string",
+              "enum": [
+                "aws",
+                "azure",
+                "gcp",
+                "oci",
+                "other",
+                null
+              ],
               "description": "Cloud provider."
             },
             "accountId": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Cloud account identifier. Example: AWS account ID, Azure subscription ID."
             },
             "region": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Cloud region, if applicable."
             }
           }
@@ -239,7 +286,9 @@
     },
     "Cloud_Resource_Target": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Target" },
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
         {
           "type": "object",
           "properties": {
@@ -247,24 +296,31 @@
               "const": "cloudResource"
             },
             "provider": {
-              "type": ["string", "null"],
-              "enum": ["aws", "azure", "gcp", "oci", "other", null],
+              "type": "string",
+              "enum": [
+                "aws",
+                "azure",
+                "gcp",
+                "oci",
+                "other",
+                null
+              ],
               "description": "Cloud provider."
             },
             "resourceType": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Type of cloud resource. Example: 'ec2:instance', 's3:bucket'."
             },
             "resourceId": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Provider-specific resource identifier."
             },
             "arn": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Amazon Resource Name (AWS only)."
             },
             "region": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Cloud region where the resource resides."
             }
           }
@@ -303,7 +359,9 @@
     },
     "Repository_Target": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Target" },
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
         {
           "type": "object",
           "properties": {
@@ -311,16 +369,16 @@
               "const": "repository"
             },
             "url": {
-              "type": ["string", "null"],
+              "type": "string",
               "format": "uri",
               "description": "Repository URL."
             },
             "branch": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Branch that was scanned."
             },
             "commit": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Commit SHA that was scanned."
             }
           }
@@ -331,7 +389,9 @@
     },
     "Application_Target": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Target" },
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
         {
           "type": "object",
           "properties": {
@@ -339,16 +399,16 @@
               "const": "application"
             },
             "url": {
-              "type": ["string", "null"],
+              "type": "string",
               "format": "uri",
               "description": "Application URL (for DAST tools)."
             },
             "version": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Application version."
             },
             "environment": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Environment. Example: 'production', 'staging', 'development'."
             }
           }
@@ -359,7 +419,9 @@
     },
     "Artifact_Target": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Target" },
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
         {
           "type": "object",
           "properties": {
@@ -367,19 +429,19 @@
               "const": "artifact"
             },
             "packageManager": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
             },
             "packageName": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Package name."
             },
             "version": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Package version."
             },
             "checksum": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Package checksum for verification."
             }
           }
@@ -390,7 +452,9 @@
     },
     "Network_Target": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Target" },
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
         {
           "type": "object",
           "properties": {
@@ -398,11 +462,11 @@
               "const": "network"
             },
             "cidr": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Network CIDR block."
             },
             "gateway": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Network gateway address."
             }
           }
@@ -413,7 +477,9 @@
     },
     "Database_Target": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Target" },
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
         {
           "type": "object",
           "properties": {
@@ -421,19 +487,19 @@
               "const": "database"
             },
             "engine": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'."
             },
             "version": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Database version."
             },
             "host": {
-              "type": ["string", "null"],
+              "type": "string",
               "description": "Database host."
             },
             "port": {
-              "type": ["integer", "null"],
+              "type": "integer",
               "minimum": 1,
               "maximum": 65535,
               "description": "Database port."

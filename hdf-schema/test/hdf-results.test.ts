@@ -324,7 +324,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept baseline with null originalChecksum', () => {
+    it('should reject baseline with explicit null originalChecksum', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
@@ -332,10 +332,10 @@ describe('hdf-results.schema.json (refactored)', () => {
           }),
         ],
       });
-      expect(validate(doc)).toBe(true);
+      expect(validate(doc)).toBe(false);
     });
 
-    it('should accept baseline with null resultsChecksum', () => {
+    it('should reject baseline with explicit null resultsChecksum', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
@@ -343,7 +343,7 @@ describe('hdf-results.schema.json (refactored)', () => {
           }),
         ],
       });
-      expect(validate(doc)).toBe(true);
+      expect(validate(doc)).toBe(false);
     });
 
     it('should accept baseline with parentBaseline', () => {
@@ -357,7 +357,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept baseline with null parentBaseline', () => {
+    it('should reject baseline with explicit null parentBaseline', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
@@ -365,7 +365,7 @@ describe('hdf-results.schema.json (refactored)', () => {
           }),
         ],
       });
-      expect(validate(doc)).toBe(true);
+      expect(validate(doc)).toBe(false);
     });
 
     it('should accept baseline without parentBaseline field', () => {
@@ -480,7 +480,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate requirement with null refs', () => {
+    it('should reject requirement with explicit null refs', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
@@ -488,7 +488,7 @@ describe('hdf-results.schema.json (refactored)', () => {
           }),
         ],
       });
-      expect(validate(doc)).toBe(true);
+      expect(validate(doc)).toBe(false);
     });
 
     it('should validate requirement with effectiveStatus field', () => {

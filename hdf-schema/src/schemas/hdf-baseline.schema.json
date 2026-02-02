@@ -3,7 +3,11 @@
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v2.0.0",
   "type": "object",
   "unevaluatedProperties": false,
-  "required": ["name", "requirements", "checksum"],
+  "required": [
+    "name",
+    "requirements",
+    "checksum"
+  ],
   "allOf": [
     {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Baseline_Metadata"
@@ -26,7 +30,7 @@
       "description": "A set of descriptions for the requirement groups."
     },
     "inputs": {
-      "type": ["array", "null"],
+      "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": true,
@@ -39,24 +43,18 @@
       "description": "Cryptographic checksum for baseline integrity verification."
     },
     "remediation": {
-      "anyOf": [
-        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation" },
-        { "type": "null" }
-      ],
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation",
       "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for implementing the security controls defined in this baseline."
     },
     "depends": {
-      "type": ["array", "null"],
+      "type": "array",
       "items": {
         "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency"
       },
       "description": "The set of dependencies this baseline depends on."
     },
     "generator": {
-      "anyOf": [
-        { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator" },
-        { "type": "null" }
-      ],
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
       "description": "The tool that generated this file."
     }
   },
@@ -66,7 +64,12 @@
     "Baseline_Requirement": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["id", "impact", "tags", "descriptions"],
+      "required": [
+        "id",
+        "impact",
+        "tags",
+        "descriptions"
+      ],
       "allOf": [
         {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Requirement_Core"
@@ -79,7 +82,13 @@
         },
         "severity": {
           "type": "string",
-          "enum": ["critical", "high", "medium", "low", "informational"],
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "informational"
+          ],
           "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
         }
       },
@@ -92,7 +101,10 @@
       "items": {
         "type": "object",
         "unevaluatedProperties": false,
-        "required": ["label", "data"],
+        "required": [
+          "label",
+          "data"
+        ],
         "properties": {
           "label": {
             "type": "string",
@@ -106,7 +118,9 @@
       },
       "contains": {
         "type": "object",
-        "required": ["label"],
+        "required": [
+          "label"
+        ],
         "properties": {
           "label": {
             "const": "default"

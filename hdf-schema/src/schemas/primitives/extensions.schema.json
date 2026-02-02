@@ -7,11 +7,21 @@
     "Status_Override": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["type", "status", "reason", "appliedBy", "appliedAt", "expiresAt"],
+      "required": [
+        "type",
+        "status",
+        "reason",
+        "appliedBy",
+        "appliedAt",
+        "expiresAt"
+      ],
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["waiver", "attestation"],
+          "enum": [
+            "waiver",
+            "attestation"
+          ],
           "description": "The type of status override. 'waiver' indicates risk acceptance. 'attestation' indicates manual verification."
         },
         "status": {
@@ -37,29 +47,18 @@
           "description": "Timestamp when this status override expires and must be reviewed/renewed. REQUIRED - no permanent status overrides allowed. ISO 8601 format."
         },
         "signature": {
-          "anyOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature" },
-            { "type": "null" }
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature",
           "description": "Optional digital signature for enhanced trust and non-repudiation. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing methods."
         },
         "evidence": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
-              }
-            },
-            { "type": "null" }
-          ],
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
+          },
           "description": "Supporting evidence for this status override, such as screenshots demonstrating manual verification for attestations."
         },
         "previousChecksum": {
-          "anyOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum" },
-            { "type": "null" }
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
         }
       },
@@ -108,11 +107,20 @@
     "POAM": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["type", "explanation", "appliedBy", "appliedAt"],
+      "required": [
+        "type",
+        "explanation",
+        "appliedBy",
+        "appliedAt"
+      ],
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["remediation", "mitigation", "riskAcceptance"],
+          "enum": [
+            "remediation",
+            "mitigation",
+            "riskAcceptance"
+          ],
           "description": "The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via compensating controls. 'riskAcceptance' documents decision to accept risk."
         },
         "explanation": {
@@ -129,46 +137,30 @@
           "description": "Timestamp when this POA&M was created. ISO 8601 format."
         },
         "expiresAt": {
-          "type": ["string", "null"],
+          "type": "string",
           "format": "date-time",
           "description": "Optional expiration date for this POA&M requiring review/renewal. ISO 8601 format."
         },
         "milestones": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone"
-              }
-            },
-            { "type": "null" }
-          ],
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone"
+          },
           "description": "Optional array of milestones tracking progress toward completion."
         },
         "signature": {
-          "anyOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature" },
-            { "type": "null" }
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature",
           "description": "Optional digital signature for enhanced trust and non-repudiation."
         },
         "evidence": {
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
-              }
-            },
-            { "type": "null" }
-          ],
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
+          },
           "description": "Supporting evidence for this POA&M, such as documentation of compensating controls or mitigation implementation."
         },
         "previousChecksum": {
-          "anyOf": [
-            { "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum" },
-            { "type": "null" }
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
         }
       },
@@ -269,7 +261,10 @@
     "Generator": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["name", "version"],
+      "required": [
+        "name",
+        "version"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -287,8 +282,12 @@
       "type": "object",
       "unevaluatedProperties": false,
       "dependentRequired": {
-        "algorithm": ["checksum"],
-        "checksum": ["algorithm"]
+        "algorithm": [
+          "checksum"
+        ],
+        "checksum": [
+          "algorithm"
+        ]
       },
       "properties": {
         "algorithm": {
@@ -300,11 +299,11 @@
           "description": "The checksum value."
         },
         "signature": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "Optional cryptographic signature."
         },
         "signedBy": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "Identifier of who signed this file."
         }
       },

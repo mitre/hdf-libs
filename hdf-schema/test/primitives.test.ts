@@ -38,13 +38,13 @@ describe('Primitive Schema Validation', () => {
         expect(validate.errors).toBeNull();
       });
 
-      it('should validate Requirement_Group with null title', () => {
-        const valid = {
+      it('should reject Requirement_Group with explicit null title', () => {
+        const invalid = {
           id: 'controls/ssh.rb',
           title: null,
           requirements: ['SV-238196'],
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should reject Requirement_Group missing required id', () => {
@@ -93,13 +93,13 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Dependency with null fields', () => {
-        const valid = {
+      it('should reject Dependency with explicit null fields', () => {
+        const invalid = {
           name: null,
           url: null,
           status: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
     });
 
@@ -152,12 +152,12 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Source_Location with null values', () => {
-        const valid = {
+      it('should reject Source_Location with explicit null values', () => {
+        const invalid = {
           ref: null,
           line: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should validate empty Source_Location', () => {
@@ -232,13 +232,13 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate identity with null description', () => {
-        const valid = {
+      it('should reject identity with explicit null description', () => {
+        const invalid = {
           identifier: 'user@example.com',
           type: 'email',
           description: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should reject identity missing required identifier', () => {
@@ -315,15 +315,15 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate verification method with null optional fields', () => {
-        const valid = {
+      it('should reject verification method with explicit null optional fields', () => {
+        const invalid = {
           type: 'JsonWebKey2020',
           controller: 'did:example:123',
           publicKeyJwk: null,
           publicKeyPem: null,
           publicKeyBase58: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should reject verification method missing required type', () => {
@@ -481,8 +481,8 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate signature with null optional fields', () => {
-        const valid = {
+      it('should reject signature with explicit null optional fields', () => {
+        const invalid = {
           type: 'JsonWebSignature2020',
           created: '2025-12-07T15:30:00Z',
           creator: {
@@ -500,7 +500,7 @@ describe('Primitive Schema Validation', () => {
           challenge: null,
           domain: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should reject signature missing required type', () => {
@@ -675,8 +675,8 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate evidence with null optional fields', () => {
-        const valid = {
+      it('should reject evidence with explicit null optional fields', () => {
+        const invalid = {
           type: 'log',
           data: 'log content',
           description: null,
@@ -686,7 +686,7 @@ describe('Primitive Schema Validation', () => {
           capturedAt: null,
           capturedBy: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should reject evidence missing required type', () => {
@@ -767,15 +767,15 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate completed milestone with null completedBy', () => {
-        const valid = {
+      it('should reject completed milestone with explicit null completedBy', () => {
+        const invalid = {
           description: 'Review compliance status',
           estimatedCompletion: '2025-01-01T00:00:00Z',
           status: 'completed',
           completedAt: '2025-01-02T10:00:00Z',
           completedBy: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should reject milestone missing required description', () => {
@@ -846,13 +846,13 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Platform with null targetId', () => {
-        const valid = {
+      it('should reject Platform with explicit null targetId', () => {
+        const invalid = {
           name: 'ubuntu',
           release: '20.04',
           targetId: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should reject Platform missing required name', () => {
@@ -1253,15 +1253,15 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Statistic_Hash with null values', () => {
-        const valid = {
+      it('should reject Statistic_Hash with explicit null values', () => {
+        const invalid = {
           passed: { total: 10 },
           failed: null,
           notApplicable: null,
           notReviewed: null,
           error: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should validate empty Statistic_Hash', () => {
@@ -1304,22 +1304,22 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Statistics with null duration', () => {
-        const valid = {
+      it('should reject Statistics with explicit null duration', () => {
+        const invalid = {
           duration: null,
           requirements: {
             passed: { total: 10 },
           },
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
-      it('should validate Statistics with null requirements', () => {
-        const valid = {
+      it('should reject Statistics with explicit null requirements', () => {
+        const invalid = {
           duration: 15.5,
           requirements: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should validate empty Statistics', () => {
@@ -1377,9 +1377,6 @@ describe('Primitive Schema Validation', () => {
           startTime: '2025-01-15T10:30:00Z',
           resource: 'file',
           resourceId: '/etc/passwd',
-          message: null,
-          exception: null,
-          backtrace: null,
         };
         expect(validate(valid)).toBe(true);
       });
@@ -1710,8 +1707,8 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate override with null evidence', () => {
-        const valid = {
+      it('should reject override with explicit null evidence', () => {
+        const invalid = {
           type: 'waiver',
           status: 'notApplicable',
           reason: 'Control not applicable to this system',
@@ -1723,7 +1720,7 @@ describe('Primitive Schema Validation', () => {
           expiresAt: '2026-12-07T15:30:00Z',
           evidence: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should validate override with empty evidence array', () => {
@@ -1870,8 +1867,8 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate override with null signature (backward compatibility)', () => {
-        const valid = {
+      it('should reject override with explicit null signature (backward compatibility)', () => {
+        const invalid = {
           type: 'waiver',
           status: 'notApplicable',
           reason: 'Not applicable to this system',
@@ -1883,7 +1880,7 @@ describe('Primitive Schema Validation', () => {
           expiresAt: '2026-12-07T15:30:00Z',
           signature: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should validate override with appliedBy as Identity object', () => {
@@ -1936,8 +1933,8 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate override with null previousChecksum (first amendment)', () => {
-        const valid = {
+      it('should reject override with explicit null previousChecksum (first amendment)', () => {
+        const invalid = {
           type: 'waiver',
           status: 'notApplicable',
           reason: 'First override, no previous amendment',
@@ -1949,7 +1946,7 @@ describe('Primitive Schema Validation', () => {
           expiresAt: '2026-12-07T16:00:00Z',
           previousChecksum: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
     });
 
@@ -2110,8 +2107,8 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate POAM with null expiresAt', () => {
-        const valid = {
+      it('should reject POAM with explicit null expiresAt', () => {
+        const invalid = {
           type: 'remediation',
           explanation: 'Long-term remediation effort with no fixed deadline',
           appliedBy: {
@@ -2121,11 +2118,11 @@ describe('Primitive Schema Validation', () => {
           appliedAt: '2025-12-01T10:00:00Z',
           expiresAt: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
-      it('should validate POAM with null milestones', () => {
-        const valid = {
+      it('should reject POAM with explicit null milestones', () => {
+        const invalid = {
           type: 'remediation',
           explanation: 'Simple remediation with no milestone tracking',
           appliedBy: {
@@ -2135,7 +2132,7 @@ describe('Primitive Schema Validation', () => {
           appliedAt: '2025-12-01T10:00:00Z',
           milestones: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should reject POAM missing required explanation', () => {
@@ -2215,8 +2212,8 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate POAM with null previousChecksum (first amendment)', () => {
-        const valid = {
+      it('should reject POAM with explicit null previousChecksum (first amendment)', () => {
+        const invalid = {
           type: 'remediation',
           explanation: 'First POAM, no previous amendment',
           appliedBy: {
@@ -2226,7 +2223,7 @@ describe('Primitive Schema Validation', () => {
           appliedAt: '2025-12-07T16:00:00Z',
           previousChecksum: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
     });
 
@@ -2253,14 +2250,14 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should validate Integrity with null optional fields', () => {
-        const valid = {
+      it('should reject Integrity with explicit null optional fields', () => {
+        const invalid = {
           algorithm: 'sha384',
           checksum: 'abc123...',
           signature: null,
           signedBy: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should validate empty Integrity', () => {
@@ -2432,15 +2429,15 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should accept null expiresAt', () => {
-        const valid = {
+      it('should reject explicit null expiresAt', () => {
+        const invalid = {
           type: 'riskAcceptance',
           explanation: 'Accept low-risk finding based on CISO decision',
           appliedBy: { identifier: 'ciso', type: 'username' },
           appliedAt: '2025-12-14T10:00:00Z',
           expiresAt: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should reject invalid appliedAt format', () => {
@@ -2518,13 +2515,13 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
-      it('should accept null capturedAt', () => {
-        const valid = {
+      it('should reject explicit null capturedAt', () => {
+        const invalid = {
           type: 'screenshot',
           data: 'base64-data',
           capturedAt: null,
         };
-        expect(validate(valid)).toBe(true);
+        expect(validate(invalid)).toBe(false);
       });
 
       it('should reject invalid capturedAt format', () => {

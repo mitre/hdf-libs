@@ -70,7 +70,7 @@ func buildCSVRows(hdfData *hdf.HDFResults) [][]string {
 	targets := hdfData.Targets
 	if len(targets) == 0 {
 		// Create single empty target entry
-		targets = []hdf.Target{{Name: "", Type: hdf.Name("")}}
+		targets = []hdf.Target{{Name: "", Type: hdf.Copyright("")}}
 	}
 
 	// Iterate through baselines

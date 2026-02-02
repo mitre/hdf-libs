@@ -6,21 +6,28 @@
   "$defs": {
     "Hash_Algorithm": {
       "type": "string",
-      "enum": ["sha256", "sha384", "sha512"],
+      "enum": [
+        "sha256",
+        "sha384",
+        "sha512"
+      ],
       "description": "Supported cryptographic hash algorithms for checksums and integrity verification.",
       "title": "Hash Algorithm"
     },
     "Requirement_Group": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["id", "requirements"],
+      "required": [
+        "id",
+        "requirements"
+      ],
       "properties": {
         "id": {
           "type": "string",
           "description": "The unique identifier for the group. Example: the relative path to the file specifying the requirements."
         },
         "title": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The title of the group - should be human readable."
         },
         "requirements": {
@@ -40,41 +47,41 @@
       "required": [],
       "properties": {
         "name": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The name or assigned alias."
         },
         "url": {
-          "type": ["string", "null"],
+          "type": "string",
           "format": "uri-reference",
           "description": "The address of the dependency."
         },
         "branch": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The branch name for a git repo."
         },
         "path": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The relative path if the dependency is locally available."
         },
         "statusMessage": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The reason for the status if it is 'failed' or 'skipped'."
         },
         "status": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The status. Should be: 'loaded', 'failed', or 'skipped'."
         },
         "git": {
-          "type": ["string", "null"],
+          "type": "string",
           "format": "uri",
           "description": "The location of the git repo. Example: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'."
         },
         "supermarket": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The 'user/profilename' attribute for a Supermarket server."
         },
         "compliance": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The 'user/profilename' attribute for an Automate server."
         }
       },
@@ -111,12 +118,24 @@
       "anyOf": [
         {
           "type": "object",
-          "required": ["ref"],
+          "required": [
+            "ref"
+          ],
           "properties": {
             "ref": {
               "anyOf": [
-                { "type": "string", "description": "A human readable/meaningful reference. Example: a book title." },
-                { "type": "array", "items": { "type": "object", "additionalProperties": true }, "description": "An array of reference objects." }
+                {
+                  "type": "string",
+                  "description": "A human readable/meaningful reference. Example: a book title."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "description": "An array of reference objects."
+                }
               ]
             }
           },
@@ -124,7 +143,9 @@
         },
         {
           "type": "object",
-          "required": ["url"],
+          "required": [
+            "url"
+          ],
           "properties": {
             "url": {
               "type": "string",
@@ -135,7 +156,9 @@
         },
         {
           "type": "object",
-          "required": ["uri"],
+          "required": [
+            "uri"
+          ],
           "properties": {
             "uri": {
               "type": "string",
@@ -154,11 +177,11 @@
       "required": [],
       "properties": {
         "ref": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "Path to the file that this requirement originates from."
         },
         "line": {
-          "type": ["number", "null"],
+          "type": "number",
           "description": "The line on which this requirement is located."
         }
       },
@@ -171,19 +194,19 @@
       "required": [],
       "properties": {
         "platformFamily": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The platform family. Example: 'redhat'."
         },
         "platformName": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The platform name - can include wildcards. Example: 'debian'."
         },
         "platform": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The location of the platform. Can be: 'os', 'aws', 'azure', or 'gcp'."
         },
         "release": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The release of the platform. Example: '20.04' for 'ubuntu'."
         }
       },
@@ -193,7 +216,10 @@
     "Checksum": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["algorithm", "value"],
+      "required": [
+        "algorithm",
+        "value"
+      ],
       "properties": {
         "algorithm": {
           "$ref": "#/$defs/Hash_Algorithm",
@@ -210,7 +236,10 @@
     "Identity": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["identifier", "type"],
+      "required": [
+        "identifier",
+        "type"
+      ],
       "properties": {
         "identifier": {
           "type": "string",
@@ -218,11 +247,17 @@
         },
         "type": {
           "type": "string",
-          "enum": ["email", "username", "system", "simple", "other"],
+          "enum": [
+            "email",
+            "username",
+            "system",
+            "simple",
+            "other"
+          ],
           "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for automated systems, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
         },
         "description": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "Optional description of the identity or identity system, particularly useful when type is 'other'."
         }
       },
@@ -232,11 +267,21 @@
     "Evidence": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["type", "data"],
+      "required": [
+        "type",
+        "data"
+      ],
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["screenshot", "code", "log", "url", "file", "other"],
+          "enum": [
+            "screenshot",
+            "code",
+            "log",
+            "url",
+            "file",
+            "other"
+          ],
           "description": "The type of evidence being provided."
         },
         "data": {
@@ -244,31 +289,28 @@
           "description": "The evidence content. For screenshots/files: base64-encoded data or URL. For code/logs: the raw text. For URLs: the URL string."
         },
         "description": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "Human-readable description of what this evidence shows."
         },
         "mimeType": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "MIME type of the evidence. Example: 'image/png', 'text/plain', 'application/json'."
         },
         "encoding": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "Encoding used for the data. Example: 'base64', 'utf-8'."
         },
         "size": {
-          "type": ["number", "null"],
+          "type": "number",
           "description": "Size of the evidence data in bytes."
         },
         "capturedAt": {
-          "type": ["string", "null"],
+          "type": "string",
           "format": "date-time",
           "description": "Timestamp when this evidence was captured. ISO 8601 format."
         },
         "capturedBy": {
-          "anyOf": [
-            { "$ref": "#/$defs/Identity" },
-            { "type": "null" }
-          ],
+          "$ref": "#/$defs/Identity",
           "description": "Identity of who or what captured this evidence."
         }
       },
@@ -326,7 +368,9 @@
     "Remediation": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["uri"],
+      "required": [
+        "uri"
+      ],
       "properties": {
         "uri": {
           "type": "string",
@@ -334,10 +378,7 @@
           "description": "URI pointing to automated remediation resources (Ansible playbooks, Terraform scripts, etc.). Examples: GitHub repository, DISA STIG Supplemental Automation Content, vendor-provided scripts."
         },
         "checksum": {
-          "anyOf": [
-            { "$ref": "#/$defs/Checksum" },
-            { "type": "null" }
-          ],
+          "$ref": "#/$defs/Checksum",
           "description": "Optional cryptographic checksum for verifying the integrity of remediation resources fetched from the URI. Recommended for security when referencing external automation scripts."
         }
       },
@@ -347,7 +388,10 @@
     "Verification_Method": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["type", "controller"],
+      "required": [
+        "type",
+        "controller"
+      ],
       "properties": {
         "type": {
           "type": "string",
@@ -358,22 +402,16 @@
           "description": "The entity that controls this verification method. Can be a DID, URI, or other identifier."
         },
         "publicKeyJwk": {
-          "anyOf": [
-            {
-              "type": "object",
-              "additionalProperties": true,
-              "description": "Public key in JWK (JSON Web Key) format. Supports RSA, EC, Ed25519, and other key types."
-            },
-            { "type": "null" }
-          ],
+          "type": "object",
+          "additionalProperties": true,
           "description": "Public key in JSON Web Key format."
         },
         "publicKeyPem": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "Public key in PEM format. Example: '-----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----'."
         },
         "publicKeyBase58": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "Public key in Base58 format, commonly used with Ed25519 keys."
         }
       },
@@ -383,7 +421,11 @@
     "Milestone": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["description", "estimatedCompletion", "status"],
+      "required": [
+        "description",
+        "estimatedCompletion",
+        "status"
+      ],
       "properties": {
         "description": {
           "type": "string",
@@ -396,19 +438,20 @@
         },
         "status": {
           "type": "string",
-          "enum": ["pending", "inProgress", "completed"],
+          "enum": [
+            "pending",
+            "inProgress",
+            "completed"
+          ],
           "description": "Current status of this milestone."
         },
         "completedAt": {
-          "type": ["string", "null"],
+          "type": "string",
           "format": "date-time",
           "description": "Actual completion timestamp. ISO 8601 format."
         },
         "completedBy": {
-          "anyOf": [
-            { "$ref": "#/$defs/Identity" },
-            { "type": "null" }
-          ],
+          "$ref": "#/$defs/Identity",
           "description": "Identity of who completed this milestone."
         }
       },
@@ -418,7 +461,14 @@
     "Signature": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": ["type", "created", "creator", "signatureValue", "proofPurpose", "verificationMethod"],
+      "required": [
+        "type",
+        "created",
+        "creator",
+        "signatureValue",
+        "proofPurpose",
+        "verificationMethod"
+      ],
       "properties": {
         "type": {
           "type": "string",
@@ -446,15 +496,15 @@
           "description": "The verification method containing the public key for signature verification."
         },
         "nonce": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "Random value to prevent replay attacks."
         },
         "challenge": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "Challenge value from the verifier, used in challenge-response authentication."
         },
         "domain": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "Domain restriction for the signature, prevents cross-domain replay attacks."
         }
       },
@@ -524,31 +574,31 @@
           "description": "The name - must be unique."
         },
         "title": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The title - should be human readable."
         },
         "maintainer": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The maintainer(s)."
         },
         "copyright": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The copyright holder(s)."
         },
         "copyrightEmail": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The email address or other contact information of the copyright holder(s)."
         },
         "license": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The copyright license. Example: 'Apache-2.0'."
         },
         "summary": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The summary. Example: the Security Technical Implementation Guide (STIG) header."
         },
         "version": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The version of the baseline."
         },
         "supports": {
@@ -559,7 +609,7 @@
           "description": "The set of supported platform targets."
         },
         "status": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The status. Example: 'loaded'."
         }
       },
@@ -574,7 +624,7 @@
           "description": "The requirement identifier. Example: 'SV-238196'."
         },
         "title": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The title - is nullable."
         },
         "descriptions": {
@@ -583,7 +633,10 @@
           "items": {
             "type": "object",
             "unevaluatedProperties": false,
-            "required": ["label", "data"],
+            "required": [
+              "label",
+              "data"
+            ],
             "properties": {
               "label": {
                 "type": "string",
@@ -604,7 +657,7 @@
           "description": "The impactfulness or severity (0.0 to 1.0)."
         },
         "refs": {
-          "type": ["array", "null"],
+          "type": "array",
           "items": {
             "$ref": "#/$defs/Reference"
           },
@@ -616,14 +669,11 @@
           "description": "A set of tags - usually metadata like CCI, STIG ID, severity."
         },
         "code": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "The raw source code of the requirement. Set to null for manual-only requirements or requirements not yet implemented. Note that if this is an overlay, it does not include the underlying source code."
         },
         "sourceLocation": {
-          "anyOf": [
-            { "$ref": "#/$defs/Source_Location" },
-            { "type": "null" }
-          ],
+          "$ref": "#/$defs/Source_Location",
           "description": "The explicit location of the requirement within the source code."
         }
       },
