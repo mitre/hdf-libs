@@ -134,9 +134,6 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 		Maintainer:      stringPtr("Static Analysis Tool"),
 		Requirements:    requirements,
 		ResultsChecksum: resultsChecksum,
-		Attributes:      []map[string]interface{}{},
-		Groups:          []hdf.RequirementGroup{},
-		Supports:        []hdf.SupportedPlatform{},
 		Checksum: hdf.Checksum{
 			Algorithm: hdf.Sha256,
 			Value:     "",

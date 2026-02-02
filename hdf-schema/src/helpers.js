@@ -14,15 +14,25 @@ export function createMinimalBaseline(name, requirements, options = {}) {
   const baseline = {
     name,
     requirements,
-    attributes: options.attributes || [],
-    groups: options.groups || [],
-    supports: options.supports || [],
     checksum: options.checksum || createEmptyChecksum(),
-    title: options.title,
-    version: options.version,
   };
 
-  // Include optional fields if provided
+  // Include optional fields only if provided
+  if (options.title) {
+    baseline.title = options.title;
+  }
+  if (options.version) {
+    baseline.version = options.version;
+  }
+  if (options.attributes) {
+    baseline.attributes = options.attributes;
+  }
+  if (options.groups) {
+    baseline.groups = options.groups;
+  }
+  if (options.supports) {
+    baseline.supports = options.supports;
+  }
   if (options.resultsChecksum) {
     baseline.resultsChecksum = options.resultsChecksum;
   }

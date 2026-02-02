@@ -159,9 +159,6 @@ func convertReportHostToBaseline(host *ReportHost, policyName, version string, r
 		Version: &version,
 		Status:  &status,
 		Summary: &summary,
-		Supports: []hdf.SupportedPlatform{},
-		Attributes: []map[string]interface{}{},
-		Groups:     []hdf.RequirementGroup{},
 		Checksum: hdf.Checksum{
 			Algorithm: hdf.Sha256,
 			Value:     "",

@@ -456,7 +456,7 @@ describe('Nessus to HDF Converter', () => {
 
       const result = convertNessusToHdf(minimalXml);
       expect(result).toBeDefined();
-      expect(result.baselines[0].version).toBe('');
+      expect(result.baselines[0].version).toBeUndefined();
     });
 
     it('should handle ReportHost without HostProperties', () => {

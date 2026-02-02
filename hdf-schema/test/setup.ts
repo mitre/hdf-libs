@@ -69,7 +69,6 @@ export function createMinimalResultsDoc(overrides: object = {}): object {
 export function createMinimalBaselineDoc(overrides: object = {}): object {
   return {
     name: 'test-baseline',
-    supports: [],
     requirements: [
       {
         id: 'SV-238196',
@@ -81,7 +80,6 @@ export function createMinimalBaselineDoc(overrides: object = {}): object {
         ],
       }
     ],
-    groups: [],
     checksum: { algorithm: 'sha256', value: 'abc123def456' },
     ...overrides,
   };
@@ -94,9 +92,6 @@ export function createMinimalEvaluatedBaseline(overrides: object = {}): object {
   return {
     name: 'test-baseline',
     checksum: { algorithm: 'sha256', value: 'abc123' },
-    supports: [],
-    attributes: [],
-    groups: [],
     requirements: [
       {
         id: 'SV-238196',
