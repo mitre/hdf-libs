@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
-import { getNessusNistControl } from '@mitre/hdf-mappings';
+import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -291,8 +291,9 @@ function buildTags(item: ReportItem, isCompliance: boolean): Record<string, unkn
   if (isCompliance && item['compliance-reference']) {
     const cciTags = parseComplianceRef(item['compliance-reference'], 'CCI');
     tags.cci = cciTags;
-    // TODO: Map CCI to NIST using CciNistMapping
-    tags.nist = [];
+    // Map CCI IDs to NIST controls using hdf-mappings
+    // Pattern: Extract source IDs → Map each ID → Flatten results
+    tags.nist = cciTags.flatMap(cci => getCCINistMappings(cci) ?? []);
   } else {
     const nistControls = getNessusNistControl(item['pluginFamily'], item['pluginID']);
     tags.nist = nistControls ? nistControls.split('|') : [];
