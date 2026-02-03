@@ -360,6 +360,23 @@ describe('Nessus to HDF Converter', () => {
       expect(req.tags.cci).toContain('CCI-000366');
     });
 
+    it('should map CCI to NIST controls using hdf-mappings', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+      const req = result.baselines[0].requirements[0];
+
+      // CCI-000366 should map to NIST controls
+      expect(req.tags.nist).toBeDefined();
+      expect(Array.isArray(req.tags.nist)).toBe(true);
+      expect(req.tags.nist.length).toBeGreaterThan(0);
+      // CCI-000366 maps to CM-6 controls
+      expect(req.tags.nist).toContain('CM-6 b');
+    });
+
     it('should extract STIG ID from compliance-reference', () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),

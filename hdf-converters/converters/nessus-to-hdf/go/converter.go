@@ -286,7 +286,9 @@ func buildTags(item *ReportItem, isCompliance bool) map[string]interface{} {
 	if isCompliance && item.ComplianceReference != "" {
 		cciTags := parseComplianceRef(item.ComplianceReference, "CCI")
 		tags["cci"] = cciTags
-		// TODO: Map CCI to NIST using mappings when available
+		// TODO: Map CCI to NIST using Go mappings (once ported from TypeScript)
+		// Pattern: Extract source IDs → Map each ID → Flatten results
+		// See TypeScript implementation for reference using getCCINistMappings()
 		tags["nist"] = []string{}
 	} else {
 		// TODO: Use getNessusNistControl when Go mappings available
