@@ -11,7 +11,7 @@ import type {
   Reference,
   Checksum,
 } from '@mitre/hdf-schema';
-import { ResultStatus, HashAlgorithm, Copyright as TargetType, createMinimalBaseline, createSourceLocation } from '@mitre/hdf-schema';
+import { ResultStatus, HashAlgorithm, Copyright as TargetType, createMinimalBaseline } from '@mitre/hdf-schema';
 import { version as converterVersion } from '../../../package.json';
 
 interface NessusXml {
@@ -228,7 +228,6 @@ function convertReportItemToRequirement(item: ReportItem, host: ReportHost): Eva
     refs,
     results,
     code,
-    sourceLocation: createSourceLocation('', 0),
   };
 }
 

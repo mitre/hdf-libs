@@ -197,15 +197,14 @@ func convertReportItemToRequirement(item *ReportItem, host *ReportHost) hdf.Eval
 	code := string(codeBytes)
 
 	return hdf.EvaluatedRequirement{
-		ID:             id,
-		Title:          &title,
-		Descriptions:   descriptions,
-		Impact:         impact,
-		Tags:           tags,
-		Refs:           refs,
-		Results:        results,
-		Code:           &code,
-		SourceLocation: hdf.SourceLocation{},
+		ID:           id,
+		Title:        &title,
+		Descriptions: descriptions,
+		Impact:       impact,
+		Tags:         tags,
+		Refs:         refs,
+		Results:      results,
+		Code:         &code,
 	}
 }
 

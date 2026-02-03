@@ -165,10 +165,14 @@ func convertResult(result SarifResult, timestamp time.Time) hdf.EvaluatedRequire
 		impact = 0.1
 	}
 
-	// Get source location from first location
-	var sourceLocation hdf.SourceLocation
+	// Get source location from first location (only if meaningful data exists)
+	var sourceLocationPtr *hdf.SourceLocation
 	if len(result.Locations) > 0 {
-		sourceLocation = extractSourceLocation(result.Locations[0])
+		sourceLocation := extractSourceLocation(result.Locations[0])
+		// Only include if it has meaningful data
+		if sourceLocation.Ref != nil || sourceLocation.Line != nil {
+			sourceLocationPtr = &sourceLocation
+		}
 	}
 
 	// Create results for each location
@@ -202,7 +206,7 @@ func convertResult(result SarifResult, timestamp time.Time) hdf.EvaluatedRequire
 		Impact:         impact,
 		Tags:           tags,
 		Results:        results,
-		SourceLocation: sourceLocation,
+		SourceLocation: sourceLocationPtr,
 	}
 
 	return req

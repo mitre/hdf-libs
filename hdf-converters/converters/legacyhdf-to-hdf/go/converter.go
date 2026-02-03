@@ -104,13 +104,14 @@ func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 
 	// Convert source location
 	if v1.SourceLocation != nil {
-		v2.SourceLocation = hdf.SourceLocation{
+		srcLoc := hdf.SourceLocation{
 			Ref: v1.SourceLocation.Ref,
 		}
 		if v1.SourceLocation.Line != nil {
 			line := float64(*v1.SourceLocation.Line)
-			v2.SourceLocation.Line = &line
+			srcLoc.Line = &line
 		}
+		v2.SourceLocation = &srcLoc
 	}
 
 	// Transform status to effectiveStatus with normalization
