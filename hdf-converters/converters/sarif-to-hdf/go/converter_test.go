@@ -45,6 +45,7 @@ func TestConvertSarifToHDF_Minimal(t *testing.T) {
 	cwe1, ok := req1.Tags["cwe"].([]interface{})
 	require.True(t, ok, "CWE should be interface array")
 	assert.Len(t, cwe1, 2)
+	require.NotNil(t, req1.SourceLocation, "SourceLocation should not be nil")
 	require.NotNil(t, req1.SourceLocation.Ref)
 	assert.Equal(t, "src/main.c", *req1.SourceLocation.Ref)
 	require.NotNil(t, req1.SourceLocation.Line)
@@ -103,8 +104,7 @@ func TestConvertSarifToHDF_MissingLocations(t *testing.T) {
 	require.NoError(t, err)
 
 	req := hdfResult.Baselines[0].Requirements[0]
-	assert.Nil(t, req.SourceLocation.Ref, "Should have no source location ref")
-	assert.Nil(t, req.SourceLocation.Line, "Should have no source location line")
+	assert.Nil(t, req.SourceLocation, "Should have no source location when locations array is empty")
 	assert.Len(t, req.Results, 0, "Should have no results")
 }
 
@@ -256,6 +256,7 @@ func TestMultipleLocations(t *testing.T) {
 	req := hdfResult.Baselines[0].Requirements[0]
 
 	// Should use first location for sourceLocation
+	require.NotNil(t, req.SourceLocation, "SourceLocation should not be nil")
 	require.NotNil(t, req.SourceLocation.Ref)
 	assert.Equal(t, "file1.c", *req.SourceLocation.Ref)
 	require.NotNil(t, req.SourceLocation.Line)
