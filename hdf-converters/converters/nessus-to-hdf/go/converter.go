@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -286,10 +287,16 @@ func buildTags(item *ReportItem, isCompliance bool) map[string]interface{} {
 	if isCompliance && item.ComplianceReference != "" {
 		cciTags := parseComplianceRef(item.ComplianceReference, "CCI")
 		tags["cci"] = cciTags
-		// TODO: Map CCI to NIST using Go mappings (once ported from TypeScript)
+		// Map CCI to NIST using hdf-mappings
 		// Pattern: Extract source IDs → Map each ID → Flatten results
-		// See TypeScript implementation for reference using getCCINistMappings()
-		tags["nist"] = []string{}
+		var nistControls []string
+		for _, cciID := range cciTags {
+			mappings := cci.GetCCINistMappings(cciID)
+			if mappings != nil {
+				nistControls = append(nistControls, mappings...)
+			}
+		}
+		tags["nist"] = nistControls
 	} else {
 		// TODO: Use getNessusNistControl when Go mappings available
 		tags["nist"] = []string{}
