@@ -16,53 +16,74 @@ import { getCCINistMappings } from '@mitre/hdf-mappings';
 const cciIds = parseComplianceRef(item['compliance-reference'], 'CCI');
 tags.cci = cciIds;
 
-// 3. Map each identifier using flatMap to flatten array results
-// Pattern: Extract source IDs → Map each ID → Flatten results
-tags.nist = cciIds.flatMap(cci => getCCINistMappings(cci) ?? []);
+// 3. Map each identifier and deduplicate results
+// Pattern: Extract source IDs → Map each ID → Flatten results → Deduplicate
+const mappedControls = cciIds.flatMap(cci => getCCINistMappings(cci) ?? []);
+tags.nist = [...new Set(mappedControls)];
 ```
 
 **Key Points:**
 - Use `flatMap()` to handle one-to-many mappings (one CCI → multiple NIST controls)
 - Use nullish coalescing (`??`) to provide empty array fallback for unmapped IDs
-- Results in a flat array of all mapped values
+- **Always deduplicate** using `new Set()` - mapping data may contain duplicates, and multiple CCIs may map to the same controls
+- Results in a flat, deduplicated array
 
 **Example:**
 ```typescript
 // Input: ['CCI-000366']
 // getCCINistMappings('CCI-000366') returns: ['CM-6 b', 'CM-6.1 (iv)', 'CM-6 b']
-// Output: ['CM-6 b', 'CM-6.1 (iv)', 'CM-6 b']
+// After deduplication: ['CM-6 b', 'CM-6.1 (iv)']
 ```
 
-### Go Pattern (Awaiting hdf-mappings Port)
+### Go Pattern
 
 ```go
-// TODO: Once CCI mappings are ported to Go
-// Pattern: Extract source IDs → Map each ID → Flatten results
+import "github.com/mitre/hdf-mappings/go/cci"
 
+// Pattern: Extract source IDs → Map each ID → Flatten results → Deduplicate
 cciTags := parseComplianceRef(item.ComplianceReference, "CCI")
 tags["cci"] = cciTags
 
-// Map each CCI to NIST controls
+// Map each CCI to NIST controls and deduplicate
+seen := make(map[string]bool)
 var nistControls []string
-for _, cci := range cciTags {
-	mappings := getCCINistMappings(cci) // Returns []string
-	nistControls = append(nistControls, mappings...)
+for _, cciID := range cciTags {
+	mappings := cci.GetCCINistMappings(cciID)
+	if mappings != nil {
+		for _, control := range mappings {
+			if !seen[control] {
+				seen[control] = true
+				nistControls = append(nistControls, control)
+			}
+		}
+	}
 }
 tags["nist"] = nistControls
 ```
 
+**Key Points:**
+- Use a map for deduplication (Go doesn't have Set built-in)
+- Check `mappings != nil` before processing
+- Maintain insertion order while deduplicating
+
 ## Available Mappers
 
-### Current TypeScript Mappers
+### TypeScript Mappers
 - **CCI to NIST**: `getCCINistMappings(cciId: string): string[] | undefined`
 - **CCI Description**: `getCCIDescription(cciId: string): string | undefined`
 - **Nessus to NIST**: `getNessusNistControl(pluginFamily: string, pluginID: string): string | undefined`
 - **OWASP to CWE**: Multiple mapping functions in `@mitre/hdf-mappings/owasp`
 - **CWE Utilities**: `getCWEDescription()`, `getCWESeverity()`, etc.
 
+### Go Mappers
+- **CCI to NIST**: `cci.GetCCINistMappings(cciID string): []string` (from `github.com/mitre/hdf-mappings/go/cci`)
+- **CCI Description**: `cci.GetCCIDescription(cciID string): string`
+- **CCI Validation**: `cci.CCIExists(cciID string): bool`
+- **List all CCIs**: `cci.GetAllCCIIDs(): []string`
+
 ### Needed Go Ports
-- CCI mappings (for compliance scan converters)
 - Nessus mappings (for vulnerability scan converters)
+- OWASP/CWE mappings
 - Other mappers as needed
 
 ## When to Use Mappings

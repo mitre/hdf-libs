@@ -292,8 +292,9 @@ function buildTags(item: ReportItem, isCompliance: boolean): Record<string, unkn
     const cciTags = parseComplianceRef(item['compliance-reference'], 'CCI');
     tags.cci = cciTags;
     // Map CCI IDs to NIST controls using hdf-mappings
-    // Pattern: Extract source IDs → Map each ID → Flatten results
-    tags.nist = cciTags.flatMap(cci => getCCINistMappings(cci) ?? []);
+    // Pattern: Extract source IDs → Map each ID → Flatten results → Deduplicate
+    const mappedControls = cciTags.flatMap(cci => getCCINistMappings(cci) ?? []);
+    tags.nist = [...new Set(mappedControls)];
   } else {
     const nistControls = getNessusNistControl(item['pluginFamily'], item['pluginID']);
     tags.nist = nistControls ? nistControls.split('|') : [];
