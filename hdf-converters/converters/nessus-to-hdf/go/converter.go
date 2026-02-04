@@ -288,12 +288,18 @@ func buildTags(item *ReportItem, isCompliance bool) map[string]interface{} {
 		cciTags := parseComplianceRef(item.ComplianceReference, "CCI")
 		tags["cci"] = cciTags
 		// Map CCI to NIST using hdf-mappings
-		// Pattern: Extract source IDs → Map each ID → Flatten results
+		// Pattern: Extract source IDs → Map each ID → Flatten results → Deduplicate
+		seen := make(map[string]bool)
 		var nistControls []string
 		for _, cciID := range cciTags {
 			mappings := cci.GetCCINistMappings(cciID)
 			if mappings != nil {
-				nistControls = append(nistControls, mappings...)
+				for _, control := range mappings {
+					if !seen[control] {
+						seen[control] = true
+						nistControls = append(nistControls, control)
+					}
+				}
 			}
 		}
 		tags["nist"] = nistControls

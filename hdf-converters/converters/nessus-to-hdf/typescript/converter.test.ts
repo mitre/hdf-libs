@@ -377,6 +377,21 @@ describe('Nessus to HDF Converter', () => {
       expect(req.tags.nist).toContain('CM-6 b');
     });
 
+    it('should deduplicate NIST controls when mapping from CCI', () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'compliance.nessus'),
+        'utf-8'
+      );
+
+      const result = convertNessusToHdf(nessusXml);
+      const req = result.baselines[0].requirements[0];
+
+      // Verify no duplicates exist
+      const nistTags = req.tags.nist;
+      const uniqueNist = [...new Set(nistTags)];
+      expect(nistTags.length).toBe(uniqueNist.length);
+    });
+
     it('should extract STIG ID from compliance-reference', () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
