@@ -90,9 +90,9 @@
           "type": "string",
           "description": "The description - should be more detailed than the summary."
         },
-        "inspecVersion": {
+        "toolVersion": {
           "type": "string",
-          "description": "The version of InSpec used to execute this baseline."
+          "description": "The version of the security scanning tool used to execute this baseline (e.g., InSpec, Chef InSpec, other scanning tools)."
         },
         "checksum": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
