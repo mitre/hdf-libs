@@ -20,7 +20,7 @@
     "copy-data": "cp -r src/data dist/data",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
-    "test:go": "echo 'No Go tests in hdf-mappings'",
+    "test:go": "cd go && go test ./...",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit",

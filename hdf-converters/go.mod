@@ -3,6 +3,7 @@ module github.com/mitre/hdf-converters
 go 1.23
 
 require (
+	github.com/mitre/hdf-mappings/go v0.0.0
 	github.com/mitre/hdf-schema v0.0.0
 	github.com/stretchr/testify v1.9.0
 )
@@ -14,3 +15,5 @@ require (
 )
 
 replace github.com/mitre/hdf-schema => ../hdf-schema/dist/go
+
+replace github.com/mitre/hdf-mappings/go => ../hdf-mappings/go
