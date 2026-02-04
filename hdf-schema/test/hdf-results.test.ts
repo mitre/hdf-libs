@@ -264,6 +264,17 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
+    it('should accept toolVersion field on baseline', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            toolVersion: '5.22.3',
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
     it('should accept extensions field on baseline', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
