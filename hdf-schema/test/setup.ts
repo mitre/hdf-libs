@@ -100,6 +100,7 @@ export function createMinimalEvaluatedBaseline(overrides: object = {}): object {
         sourceLocation: {},
         results: [
           {
+            status: 'passed',
             codeDesc: 'Test description',
             startTime: '2025-11-25T12:00:00Z',
           }
@@ -124,6 +125,7 @@ export function createMinimalRequirement(overrides: object = {}): object {
     sourceLocation: {},
     results: [
       {
+        status: 'passed',
         codeDesc: 'Test description',
         startTime: '2025-11-25T12:00:00Z',
       }
@@ -156,6 +158,7 @@ export function createMinimalBaselineRequirement(overrides: object = {}): object
  */
 export function createMinimalResult(overrides: object = {}): object {
   return {
+    status: 'passed',
     codeDesc: 'Test description',
     startTime: '2025-11-25T12:00:00Z',
     ...overrides,

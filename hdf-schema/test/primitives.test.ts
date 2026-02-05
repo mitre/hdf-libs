@@ -1381,8 +1381,23 @@ describe('Primitive Schema Validation', () => {
         expect(validate(valid)).toBe(true);
       });
 
+      it('should reject Requirement_Result without status', () => {
+        const invalid = {
+          codeDesc: 'Test description',
+          startTime: '2025-01-15T10:30:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toMatchObject([
+          expect.objectContaining({
+            message: expect.stringMatching(/required|missing/i),
+            params: expect.objectContaining({ missingProperty: 'status' }),
+          }),
+        ]);
+      });
+
       it('should validate minimal Requirement_Result', () => {
         const valid = {
+          status: 'passed',
           codeDesc: 'Test description',
           startTime: '2025-01-15T10:30:00Z',
         };
@@ -1432,6 +1447,7 @@ describe('Primitive Schema Validation', () => {
 
       it('should reject Requirement_Result missing required codeDesc', () => {
         const invalid = {
+          status: 'passed',
           startTime: '2025-01-15T10:30:00Z',
         };
         expect(validate(invalid)).toBe(false);
@@ -1439,6 +1455,7 @@ describe('Primitive Schema Validation', () => {
 
       it('should reject Requirement_Result missing required startTime', () => {
         const invalid = {
+          status: 'passed',
           codeDesc: 'Test description',
         };
         expect(validate(invalid)).toBe(false);
@@ -1446,6 +1463,7 @@ describe('Primitive Schema Validation', () => {
 
       it('should reject invalid startTime format (date only)', () => {
         const invalid = {
+          status: 'passed',
           codeDesc: 'Test description',
           startTime: '2025-01-15',
         };
@@ -1454,6 +1472,7 @@ describe('Primitive Schema Validation', () => {
 
       it('should reject invalid startTime format (plain text)', () => {
         const invalid = {
+          status: 'passed',
           codeDesc: 'Test description',
           startTime: 'January 15, 2025 at 10:30 AM',
         };
@@ -1462,6 +1481,7 @@ describe('Primitive Schema Validation', () => {
 
       it('should reject startTime without timezone', () => {
         const invalid = {
+          status: 'passed',
           codeDesc: 'Test description',
           startTime: '2025-01-15T10:30:00',
         };
@@ -1470,6 +1490,7 @@ describe('Primitive Schema Validation', () => {
 
       it('should accept startTime with timezone offset', () => {
         const valid = {
+          status: 'passed',
           codeDesc: 'Test description',
           startTime: '2025-01-15T10:30:00-05:00',
         };
@@ -1478,6 +1499,7 @@ describe('Primitive Schema Validation', () => {
 
       it('should accept startTime with milliseconds', () => {
         const valid = {
+          status: 'passed',
           codeDesc: 'Test description',
           startTime: '2025-01-15T10:30:00.123Z',
         };
@@ -2613,6 +2635,7 @@ describe('Primitive Schema Validation', () => {
 
       it('should accept positive runTime', () => {
         const valid = {
+          status: 'passed',
           codeDesc: 'Test check',
           startTime: '2025-01-15T10:00:00Z',
           runTime: 1.234,
@@ -2622,6 +2645,7 @@ describe('Primitive Schema Validation', () => {
 
       it('should accept zero runTime', () => {
         const valid = {
+          status: 'passed',
           codeDesc: 'Test check',
           startTime: '2025-01-15T10:00:00Z',
           runTime: 0,
@@ -2631,6 +2655,7 @@ describe('Primitive Schema Validation', () => {
 
       it('should reject negative runTime', () => {
         const invalid = {
+          status: 'passed',
           codeDesc: 'Test check',
           startTime: '2025-01-15T10:00:00Z',
           runTime: -5.0,

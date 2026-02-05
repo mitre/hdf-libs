@@ -365,7 +365,7 @@ func buildResult(item *ReportItem, host *ReportHost, isCompliance bool) hdf.Requ
 	startTime := parseHostTime(startTimeStr)
 
 	result := hdf.RequirementResult{
-		Status:    &status,
+		Status:    status,
 		CodeDesc:  codeDesc,
 		StartTime: startTime,
 	}

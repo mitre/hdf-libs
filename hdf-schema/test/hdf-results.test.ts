@@ -403,6 +403,7 @@ describe('hdf-results.schema.json (refactored)', () => {
         sourceLocation: {},
         results: [
           {
+            status: 'passed',
             codeDesc: 'Test description',
             startTime: '2025-11-25T12:00:00Z',
           }
@@ -1014,6 +1015,33 @@ describe('hdf-results.schema.json (refactored)', () => {
   });
 
   describe('results array (Requirement_Result)', () => {
+    it('should reject result without status field', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [
+                  {
+                    codeDesc: 'Test description',
+                    startTime: '2025-11-25T12:00:00Z',
+                    // Missing status field
+                  },
+                ],
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+      expect(validate.errors).toMatchObject([
+        expect.objectContaining({
+          message: expect.stringMatching(/required|missing/i),
+          params: expect.objectContaining({ missingProperty: 'status' }),
+        }),
+      ]);
+    });
+
     it('should validate result with minimal required fields', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
