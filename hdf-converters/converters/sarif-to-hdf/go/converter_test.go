@@ -51,7 +51,7 @@ func TestConvertSarifToHDF_Minimal(t *testing.T) {
 	require.NotNil(t, req1.SourceLocation.Line)
 	assert.Equal(t, float64(42), *req1.SourceLocation.Line)
 	require.Len(t, req1.Results, 1)
-	assert.Equal(t, hdf.Failed, *req1.Results[0].Status)
+	assert.Equal(t, hdf.Failed, req1.Results[0].Status)
 	assert.Contains(t, req1.Results[0].CodeDesc, "src/main.c")
 
 	// Verify second requirement

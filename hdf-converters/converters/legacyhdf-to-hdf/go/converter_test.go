@@ -321,8 +321,7 @@ func TestConvertResult_AllOptionalFields(t *testing.T) {
 
 	v2 := convertResult(v1)
 
-	require.NotNil(t, v2.Status)
-	assert.Equal(t, hdf.Passed, *v2.Status)
+	assert.Equal(t, hdf.Passed, v2.Status)
 	assert.Equal(t, codeDesc, v2.CodeDesc)
 	require.NotNil(t, v2.RunTime)
 	assert.Equal(t, runTime, *v2.RunTime)

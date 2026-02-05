@@ -114,7 +114,7 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 
 	// Get status from first result (required, minItems: 1)
 	firstResult := requirement.Results[0]
-	status := string(*firstResult.Status)
+	status := string(firstResult.Status)
 	message := ""
 	if firstResult.Message != nil {
 		message = *firstResult.Message

@@ -70,7 +70,7 @@ func TestConvertNessusToHDF_Compliance(t *testing.T) {
 	assert.Equal(t, "V-71849", failedReq.ID)
 	assert.Contains(t, *failedReq.Title, "RHEL-07-010010")
 	assert.Equal(t, 0.5, failedReq.Impact, "CAT II should map to 0.5")
-	assert.Equal(t, hdf.Failed, *failedReq.Results[0].Status)
+	assert.Equal(t, hdf.Failed, failedReq.Results[0].Status)
 	assert.Contains(t, failedReq.Tags, "stig_id")
 	assert.Equal(t, "RHEL-07-010010", failedReq.Tags["stig_id"])
 
@@ -78,23 +78,23 @@ func TestConvertNessusToHDF_Compliance(t *testing.T) {
 	highReq := findRequirementByID(baseline.Requirements, "V-71971")
 	require.NotNil(t, highReq, "Should find V-71971")
 	assert.Equal(t, 0.7, highReq.Impact, "CAT I should map to 0.7")
-	assert.Equal(t, hdf.Failed, *highReq.Results[0].Status)
+	assert.Equal(t, hdf.Failed, highReq.Results[0].Status)
 
 	// Test PASSED compliance result (CAT III - Low)
 	passedReq := findRequirementByID(baseline.Requirements, "V-72083")
 	require.NotNil(t, passedReq, "Should find V-72083")
 	assert.Equal(t, 0.3, passedReq.Impact, "CAT III should map to 0.3")
-	assert.Equal(t, hdf.Passed, *passedReq.Results[0].Status)
+	assert.Equal(t, hdf.Passed, passedReq.Results[0].Status)
 
 	// Test WARNING compliance result
 	warningReq := findRequirementByID(baseline.Requirements, "V-72095")
 	require.NotNil(t, warningReq, "Should find V-72095")
-	assert.Equal(t, hdf.NotApplicable, *warningReq.Results[0].Status, "WARNING should map to notApplicable")
+	assert.Equal(t, hdf.NotApplicable, warningReq.Results[0].Status, "WARNING should map to notApplicable")
 
 	// Test ERROR compliance result
 	errorReq := findRequirementByID(baseline.Requirements, "V-72229")
 	require.NotNil(t, errorReq, "Should find V-72229")
-	assert.Equal(t, hdf.Error, *errorReq.Results[0].Status)
+	assert.Equal(t, hdf.Error, errorReq.Results[0].Status)
 
 	// Write output for differential testing
 	shared.WriteOutput(t, "nessus-to-hdf", "compliance.json", result)

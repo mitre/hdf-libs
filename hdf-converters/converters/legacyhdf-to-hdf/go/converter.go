@@ -43,7 +43,7 @@ func convertResult(v1 V1Result) hdf.RequirementResult {
 	status := normalizeStatus(v1.Status)
 
 	v2 := hdf.RequirementResult{
-		Status:    &status,
+		Status:    status,
 		Backtrace: v1.Backtrace,
 	}
 

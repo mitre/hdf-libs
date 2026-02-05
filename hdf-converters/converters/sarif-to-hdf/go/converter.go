@@ -300,7 +300,7 @@ func createResult(location SarifLocation, timestamp time.Time) hdf.RequirementRe
 	status := hdf.Failed
 
 	return hdf.RequirementResult{
-		Status:    &status,
+		Status:    status,
 		CodeDesc:  codeDesc,
 		StartTime: timestamp,
 		Backtrace: []string{},
