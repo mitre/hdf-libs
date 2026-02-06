@@ -93,6 +93,18 @@ importers:
         specifier: ^5.5.2
         version: 5.5.2
 
+  hdf-validators:
+    dependencies:
+      '@mitre/hdf-schema':
+        specifier: workspace:*
+        version: link:../hdf-schema
+      ajv:
+        specifier: ^8.17.1
+        version: 8.17.1
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.17.1)
+
 packages:
 
   '@ampproject/remapping@2.3.0':
