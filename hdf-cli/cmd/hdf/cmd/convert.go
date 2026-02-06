@@ -19,6 +19,7 @@ Supported conversions:
   legacyhdf to hdf    Convert legacy HDF v1.0 (InSpec JSON) to HDF v2.0
   nessus to hdf       Convert Nessus XML scan results to HDF v2.0
   hdf to csv          Export HDF JSON to CSV spreadsheet format
+  hdf to xml          Export HDF JSON to XML format
 
 Input can be a file path or "-" for stdin.
 Output defaults to stdout if not specified.
