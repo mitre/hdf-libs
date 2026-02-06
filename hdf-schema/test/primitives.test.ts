@@ -1276,6 +1276,15 @@ describe('Primitive Schema Validation', () => {
         };
         expect(validate(valid)).toBe(true);
       });
+
+      it('should reject deprecated skipped field', () => {
+        const invalid = {
+          passed: { total: 10 },
+          skipped: { total: 5 },
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toBeDefined();
+      });
     });
 
     describe('Statistics', () => {

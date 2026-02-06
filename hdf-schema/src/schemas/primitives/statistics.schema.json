@@ -44,10 +44,6 @@
         "error": {
           "$ref": "#/$defs/Statistic_Block",
           "description": "Statistics for requirements that encountered an error during assessment."
-        },
-        "skipped": {
-          "$ref": "#/$defs/Statistic_Block",
-          "description": "Deprecated: use 'notApplicable' or 'notReviewed' instead. Statistics for requirements that were skipped."
         }
       },
       "description": "Statistics for requirement results, grouped by status.",
