@@ -5,8 +5,9 @@ go 1.23
 require (
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/mitre/hdf-converters v0.0.0
+	github.com/mitre/hdf-validators/go v0.0.0
 	github.com/spf13/cobra v1.8.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/xeipuuv/gojsonschema v1.2.0
 )
 
@@ -27,3 +28,5 @@ replace github.com/mitre/hdf-converters => ../hdf-converters
 replace github.com/mitre/hdf-schema => ../hdf-schema/dist/go
 
 replace github.com/mitre/hdf-mappings/go => ../hdf-mappings/go
+
+replace github.com/mitre/hdf-validators/go => ../hdf-validators/go

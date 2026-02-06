@@ -9,7 +9,7 @@ import (
 	"os"
 
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
-	"github.com/mitre/hdf-cli/pkg/schema"
+	validators "github.com/mitre/hdf-validators/go"
 )
 
 const (
@@ -125,7 +125,7 @@ func parseHDFResults(data []byte) (hdf.HdfResults, error) {
 	var results hdf.HdfResults
 
 	// Step 1: Validate against JSON Schema (gatekeeper)
-	validationResult := schema.ValidateResults(data)
+	validationResult := validators.ValidateResults(data)
 	if !validationResult.Valid {
 		return results, fmt.Errorf("schema validation failed: %s", validationResult.Error())
 	}
@@ -152,7 +152,7 @@ func parseHDFBaseline(data []byte) (hdf.HdfBaseline, error) {
 	var baseline hdf.HdfBaseline
 
 	// Step 1: Validate against JSON Schema (gatekeeper)
-	validationResult := schema.ValidateBaseline(data)
+	validationResult := validators.ValidateBaseline(data)
 	if !validationResult.Valid {
 		return baseline, fmt.Errorf("schema validation failed: %s", validationResult.Error())
 	}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mitre/hdf-cli/pkg/schema"
+	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
 
@@ -109,7 +109,7 @@ func Execute() error {
 func initConfig() {
 	// Configure schema directory if specified
 	if schemaDirFlag != "" {
-		schema.SetSchemaDir(schemaDirFlag)
+		validators.SetSchemaDir(schemaDirFlag)
 		if debug {
 			printDebug("Using schemas from: %s", schemaDirFlag)
 		}
