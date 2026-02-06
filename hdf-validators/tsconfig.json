@@ -2,9 +2,9 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "./typescript",
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test"]
+  "include": ["typescript/**/*"],
+  "exclude": ["node_modules", "dist", "typescript/**/*.test.ts"]
 }

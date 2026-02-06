@@ -3,7 +3,7 @@ import {
   parseResults,
   parseBaseline,
   parse
-} from '../src/index.js';
+} from './index.js';
 
 describe('HDF Results Parsing', () => {
   describe('Valid documents', () => {

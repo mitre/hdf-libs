@@ -10,7 +10,7 @@ export default defineConfig({
       exclude: [
         'node_modules/**',
         'dist/**',
-        'test/**',
+        'go/**',
         '**/*.test.ts',
         'vitest.config.ts',
         'eslint.config.js'
