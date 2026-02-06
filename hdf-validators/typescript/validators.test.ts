@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateResults, validateBaseline, ValidationResult } from '../src/index.js';
+import { validateResults, validateBaseline, ValidationResult } from './index.js';
 
 describe('HDF Results Validation', () => {
   describe('Valid documents', () => {
