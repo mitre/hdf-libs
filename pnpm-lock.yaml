@@ -52,6 +52,15 @@ importers:
 
   hdf-mappings: {}
 
+  hdf-parsers:
+    dependencies:
+      '@mitre/hdf-schema':
+        specifier: workspace:*
+        version: link:../hdf-schema
+      '@mitre/hdf-validators':
+        specifier: workspace:*
+        version: link:../hdf-validators
+
   hdf-schema:
     dependencies:
       ajv:
