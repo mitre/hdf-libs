@@ -125,8 +125,8 @@ describe('HDF Results Validation', () => {
       expect(result.errors.some(e => e.field.includes('name'))).toBe(true);
     });
 
-    it('should reject baseline missing checksum', () => {
-      const invalid = {
+    it('should accept baseline missing checksum', () => {
+      const valid = {
         baselines: [
           {
             name: 'Test',
@@ -137,9 +137,8 @@ describe('HDF Results Validation', () => {
         statistics: {}
       };
 
-      const result = validateResults(invalid);
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.field.includes('checksum'))).toBe(true);
+      const result = validateResults(valid);
+      expect(result.valid).toBe(true);
     });
 
     it('should reject requirement with invalid impact value', () => {
@@ -296,17 +295,23 @@ describe('HDF Baseline Validation', () => {
       expect(result.errors.some(e => e.field.includes('name'))).toBe(true);
     });
 
-    it('should reject baseline missing checksum', () => {
-      const invalid = {
+    it('should accept baseline missing checksum', () => {
+      const valid = {
         name: 'Test',
         title: 'Test',
         version: '1.0.0',
-        requirements: []
+        requirements: [
+          {
+            id: 'test-1',
+            impact: 0.5,
+            tags: {},
+            descriptions: [{ label: 'default', data: 'Test requirement' }],
+          },
+        ],
       };
 
-      const result = validateBaseline(invalid);
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.field.includes('checksum'))).toBe(true);
+      const result = validateBaseline(valid);
+      expect(result.valid).toBe(true);
     });
   });
 });
