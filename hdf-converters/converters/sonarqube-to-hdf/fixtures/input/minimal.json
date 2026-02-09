@@ -1,0 +1,106 @@
+{
+  "total": 2,
+  "p": 1,
+  "ps": 100,
+  "paging": {
+    "pageIndex": 1,
+    "pageSize": 100,
+    "total": 2
+  },
+  "issues": [
+    {
+      "key": "AYzX1234567890",
+      "rule": "java:S1144",
+      "severity": "MAJOR",
+      "component": "com.example:myproject:src/main/java/com/example/Example.java",
+      "project": "com.example:myproject",
+      "line": 42,
+      "hash": "abc123def456",
+      "textRange": {
+        "startLine": 42,
+        "endLine": 45,
+        "startOffset": 4,
+        "endOffset": 8
+      },
+      "status": "OPEN",
+      "message": "Remove this unused private method.",
+      "effort": "5min",
+      "debt": "5min",
+      "tags": [],
+      "creationDate": "2026-01-15T10:30:00+0000",
+      "updateDate": "2026-01-15T10:30:00+0000",
+      "type": "CODE_SMELL"
+    },
+    {
+      "key": "AYzX9876543210",
+      "rule": "java:S2259",
+      "severity": "BLOCKER",
+      "component": "com.example:myproject:src/main/java/com/example/Security.java",
+      "project": "com.example:myproject",
+      "line": 128,
+      "hash": "xyz789uvw456",
+      "textRange": {
+        "startLine": 128,
+        "endLine": 128,
+        "startOffset": 12,
+        "endOffset": 24
+      },
+      "status": "OPEN",
+      "message": "A NullPointerException could be thrown; \"user\" is nullable here.",
+      "effort": "10min",
+      "debt": "10min",
+      "tags": ["cwe-476"],
+      "creationDate": "2026-01-20T14:22:00+0000",
+      "updateDate": "2026-01-20T14:22:00+0000",
+      "type": "BUG"
+    }
+  ],
+  "components": [
+    {
+      "key": "com.example:myproject:src/main/java/com/example/Example.java",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "Example.java",
+      "longName": "src/main/java/com/example/Example.java",
+      "path": "src/main/java/com/example/Example.java"
+    },
+    {
+      "key": "com.example:myproject:src/main/java/com/example/Security.java",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "Security.java",
+      "longName": "src/main/java/com/example/Security.java",
+      "path": "src/main/java/com/example/Security.java"
+    }
+  ],
+  "rules": [
+    {
+      "key": "java:S1144",
+      "name": "Unused private method should be removed",
+      "status": "READY",
+      "lang": "java",
+      "langName": "Java",
+      "htmlDesc": "<p>Unused private methods are dead code and should be removed. This issue does not apply to private methods annotated with <code>@javax.annotation.PostConstruct</code> or <code>@javax.annotation.PreDestroy</code>.</p>",
+      "mdDesc": "Unused private methods are dead code and should be removed.",
+      "severity": "MAJOR",
+      "type": "CODE_SMELL",
+      "tags": ["unused"],
+      "sysTags": ["code-smell"],
+      "scope": "MAIN"
+    },
+    {
+      "key": "java:S2259",
+      "name": "Null pointers should not be dereferenced",
+      "status": "READY",
+      "lang": "java",
+      "langName": "Java",
+      "htmlDesc": "<p>A reference to <code>null</code> should never be dereferenced/accessed. Doing so will cause a <code>NullPointerException</code> to be thrown. This rule raises an issue when a value that is guaranteed to be null (or highly likely to be null) is accessed. Related to CWE-476.</p>",
+      "mdDesc": "A reference to null should never be dereferenced. Related to CWE-476.",
+      "severity": "BLOCKER",
+      "type": "BUG",
+      "tags": ["cwe-476", "error-handling"],
+      "sysTags": ["bug", "cwe"],
+      "scope": "MAIN"
+    }
+  ]
+}
