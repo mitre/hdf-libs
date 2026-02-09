@@ -1,0 +1,231 @@
+{
+  "descriptor": {
+    "name": "grype",
+    "version": "0.79.3",
+    "timestamp": "2024-01-15T10:30:00Z"
+  },
+  "source": {
+    "target": {
+      "userInput": "alpine:3.18"
+    }
+  },
+  "distro": {
+    "name": "alpine",
+    "version": "3.18.0",
+    "idLike": ["alpine"]
+  },
+  "matches": [
+    {
+      "vulnerability": {
+        "id": "CVE-2023-12345",
+        "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2023-12345",
+        "namespace": "nvd:cpe",
+        "severity": "High",
+        "urls": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2023-12345"
+        ],
+        "description": "A high severity vulnerability in libssl that allows remote code execution.",
+        "cvss": [
+          {
+            "version": "3.1",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "metrics": {
+              "baseScore": 9.8,
+              "exploitabilityScore": 3.9,
+              "impactScore": 5.9
+            }
+          }
+        ],
+        "fix": {
+          "versions": ["3.1.0-r5", "3.1.1"],
+          "state": "fixed"
+        }
+      },
+      "relatedVulnerabilities": [
+        {
+          "id": "CVE-2023-12345",
+          "dataSource": "https://security.alpinelinux.org",
+          "namespace": "alpine:distro:alpine:3.18",
+          "severity": "High",
+          "urls": [
+            "https://security.alpinelinux.org/vuln/CVE-2023-12345"
+          ],
+          "description": "A high severity vulnerability in libssl that allows remote code execution.",
+          "cvss": []
+        }
+      ],
+      "matchDetails": [
+        {
+          "type": "exact-direct-match",
+          "matcher": "apk-matcher",
+          "searchedBy": {
+            "distro": {
+              "type": "alpine",
+              "version": "3.18.0"
+            },
+            "namespace": "alpine:distro:alpine:3.18",
+            "package": {
+              "name": "libssl3",
+              "version": "3.1.0-r4"
+            }
+          },
+          "found": {
+            "versionConstraint": "< 3.1.0-r5 (apk)",
+            "vulnerabilityID": "CVE-2023-12345"
+          }
+        }
+      ],
+      "artifact": {
+        "id": "sha256:abc123def456",
+        "name": "libssl3",
+        "version": "3.1.0-r4",
+        "type": "apk",
+        "locations": [
+          {
+            "path": "/lib/apk/db/installed",
+            "layerID": "sha256:layer123"
+          }
+        ],
+        "licenses": ["Apache-2.0"],
+        "language": "",
+        "cpes": [
+          "cpe:2.3:a:openssl:libssl:3.1.0:r4:*:*:*:*:*:*"
+        ],
+        "purl": "pkg:apk/alpine/libssl3@3.1.0-r4?arch=x86_64&distro=alpine-3.18.0"
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "CVE-2023-67890",
+        "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2023-67890",
+        "namespace": "nvd:cpe",
+        "severity": "Critical",
+        "urls": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2023-67890"
+        ],
+        "description": "Critical vulnerability allowing arbitrary code execution.",
+        "cvss": [
+          {
+            "version": "3.1",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "metrics": {
+              "baseScore": 10.0,
+              "exploitabilityScore": 3.9,
+              "impactScore": 6.0
+            }
+          }
+        ],
+        "fix": {
+          "versions": [],
+          "state": "not-fixed"
+        }
+      },
+      "relatedVulnerabilities": [],
+      "matchDetails": [
+        {
+          "type": "cpe-match",
+          "matcher": "stock-matcher",
+          "searchedBy": {
+            "namespace": "nvd:cpe",
+            "cpes": [
+              "cpe:2.3:a:example:vulnerable-lib:1.2.3:*:*:*:*:*:*:*"
+            ]
+          },
+          "found": {
+            "vulnerabilityID": "CVE-2023-67890",
+            "cpes": [
+              "cpe:2.3:a:example:vulnerable-lib:1.2.3:*:*:*:*:*:*:*"
+            ]
+          }
+        }
+      ],
+      "artifact": {
+        "id": "sha256:def456ghi789",
+        "name": "vulnerable-lib",
+        "version": "1.2.3",
+        "type": "npm",
+        "locations": [
+          {
+            "path": "/app/node_modules/vulnerable-lib",
+            "layerID": "sha256:layer456"
+          }
+        ],
+        "licenses": ["MIT"],
+        "language": "javascript",
+        "cpes": [
+          "cpe:2.3:a:example:vulnerable-lib:1.2.3:*:*:*:*:*:*:*"
+        ],
+        "purl": "pkg:npm/vulnerable-lib@1.2.3"
+      }
+    }
+  ],
+  "ignoredMatches": [
+    {
+      "vulnerability": {
+        "id": "CVE-2022-99999",
+        "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2022-99999",
+        "namespace": "nvd:cpe",
+        "severity": "Low",
+        "urls": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2022-99999"
+        ],
+        "description": "Low severity information disclosure vulnerability.",
+        "cvss": [
+          {
+            "version": "3.1",
+            "vector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:R/S:U/C:L/I:N/A:N",
+            "metrics": {
+              "baseScore": 2.5,
+              "exploitabilityScore": 0.8,
+              "impactScore": 1.4
+            }
+          }
+        ],
+        "fix": {
+          "versions": ["1.0.1"],
+          "state": "fixed"
+        }
+      },
+      "relatedVulnerabilities": [],
+      "matchDetails": [
+        {
+          "type": "exact-direct-match",
+          "matcher": "apk-matcher",
+          "searchedBy": {
+            "distro": {
+              "type": "alpine",
+              "version": "3.18.0"
+            },
+            "namespace": "alpine:distro:alpine:3.18",
+            "package": {
+              "name": "test-package",
+              "version": "1.0.0"
+            }
+          },
+          "found": {
+            "versionConstraint": "< 1.0.1 (apk)",
+            "vulnerabilityID": "CVE-2022-99999"
+          }
+        }
+      ],
+      "artifact": {
+        "id": "sha256:ghi789jkl012",
+        "name": "test-package",
+        "version": "1.0.0",
+        "type": "apk",
+        "locations": [
+          {
+            "path": "/lib/apk/db/installed",
+            "layerID": "sha256:layer789"
+          }
+        ],
+        "licenses": ["BSD-3-Clause"],
+        "language": "",
+        "cpes": [
+          "cpe:2.3:a:example:test-package:1.0.0:*:*:*:*:*:*:*"
+        ],
+        "purl": "pkg:apk/alpine/test-package@1.0.0?arch=x86_64&distro=alpine-3.18.0"
+      }
+    }
+  ]
+}
