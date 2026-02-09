@@ -173,7 +173,7 @@ func convertProfile(v1 V1Profile) hdf.EvaluatedBaseline {
 
 	// Transform sha256 to checksum object
 	if v1.SHA256 != nil {
-		v2.Checksum = hdf.Checksum{
+		v2.Checksum = &hdf.Checksum{
 			Algorithm: hdf.Sha256,
 			Value:     *v1.SHA256,
 		}

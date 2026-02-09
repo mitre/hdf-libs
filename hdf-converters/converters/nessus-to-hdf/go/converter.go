@@ -155,15 +155,11 @@ func convertReportHostToBaseline(host *ReportHost, policyName, version string, r
 	summary := fmt.Sprintf("Nessus %s", policyName)
 
 	return hdf.EvaluatedBaseline{
-		Name:    name,
-		Title:   &title,
-		Version: &version,
-		Status:  &status,
-		Summary: &summary,
-		Checksum: hdf.Checksum{
-			Algorithm: hdf.Sha256,
-			Value:     "",
-		},
+		Name:            name,
+		Title:           &title,
+		Version:         &version,
+		Status:          &status,
+		Summary:         &summary,
 		ResultsChecksum: resultsChecksum,
 		Requirements:    requirements,
 	}
