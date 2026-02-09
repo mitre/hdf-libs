@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,6 +43,11 @@ func executeCommand(args ...string) (stdout, stderr string, err error) {
 	// Set args and execute
 	cmd.SetArgs(args)
 	execErr := cmd.Execute()
+
+	// If there's an error, print it to stderr (matching main.go behavior)
+	if execErr != nil {
+		fmt.Fprintf(wErr, "Error: %v\n", execErr)
+	}
 
 	// Restore and read output
 	wOut.Close()
