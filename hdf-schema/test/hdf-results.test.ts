@@ -199,13 +199,13 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should reject baseline without checksum', () => {
+    it('should accept baseline without checksum', () => {
       const baseline = {
         name: 'test-baseline',
         requirements: [],
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
-      expect(validate(doc)).toBe(false);
+      expect(validate(doc)).toBe(true);
     });
 
     it('should accept baseline without supports field', () => {

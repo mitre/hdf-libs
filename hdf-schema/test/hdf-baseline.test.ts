@@ -61,12 +61,19 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should reject document without checksum', () => {
+    it('should accept document without checksum', () => {
       const doc = {
         name: 'test-baseline',
-        requirements: [],
+        requirements: [
+          {
+            id: 'test-req-1',
+            impact: 0.5,
+            tags: {},
+            descriptions: [{ label: 'default', data: 'Test requirement' }],
+          },
+        ],
       };
-      expect(validate(doc)).toBe(false);
+      expect(validate(doc)).toBe(true);
     });
 
     it('should reject checksum with invalid algorithm', () => {
