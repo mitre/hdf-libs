@@ -14,7 +14,6 @@ export function createMinimalBaseline(name, requirements, options = {}) {
   const baseline = {
     name,
     requirements,
-    checksum: options.checksum || createEmptyChecksum(),
   };
 
   // Include optional fields only if provided
@@ -32,6 +31,9 @@ export function createMinimalBaseline(name, requirements, options = {}) {
   }
   if (options.supports) {
     baseline.supports = options.supports;
+  }
+  if (options.checksum) {
+    baseline.checksum = options.checksum;
   }
   if (options.resultsChecksum) {
     baseline.resultsChecksum = options.resultsChecksum;

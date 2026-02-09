@@ -66,8 +66,7 @@
       "unevaluatedProperties": false,
       "required": [
         "name",
-        "requirements",
-        "checksum"
+        "requirements"
       ],
       "allOf": [
         {
