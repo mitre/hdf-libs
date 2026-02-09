@@ -74,7 +74,6 @@ func runConvert(_ *cobra.Command, args []string) error {
 	printDebug("Reading input from %s", inputPath)
 	data, err := readInputFile(inputPath)
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 	printDebug("Read %d bytes", len(data))
@@ -82,7 +81,6 @@ func runConvert(_ *cobra.Command, args []string) error {
 	// Get converter
 	converter, err := GetConverter(srcFormat, destFormat)
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 	printDebug("Using converter: %s", converter.Name())
@@ -90,14 +88,12 @@ func runConvert(_ *cobra.Command, args []string) error {
 	// Convert
 	output, err := converter.Convert(data)
 	if err != nil {
-		printError(fmt.Sprintf("Conversion failed: %v", err))
-		return err
+		return fmt.Errorf("conversion failed: %w", err)
 	}
 	printDebug("Conversion produced %d bytes", len(output))
 
 	// Write output
 	if err := writeConvertOutput(output, outputPath); err != nil {
-		printError(err.Error())
 		return err
 	}
 
