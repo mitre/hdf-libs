@@ -52,11 +52,51 @@ func validateConvertArgs(_ *cobra.Command, args []string) error {
 	// Validate converter exists for this format pair
 	source, dest := args[0], args[2]
 	if _, err := GetConverter(source, dest); err != nil {
-		return fmt.Errorf("unsupported conversion: %s to %s\n"+
-			"Run 'hdf convert --help' to see available conversions", source, dest)
+		return buildConverterNotFoundError(source, dest)
 	}
 
 	return nil
+}
+
+// buildConverterNotFoundError creates a helpful error message when a converter is not found.
+func buildConverterNotFoundError(source, dest string) error {
+	// Get all available converters
+	allPairs := ListConverters()
+
+	// Find what formats the source can convert to
+	var sourceDestinations []string
+	for _, pair := range allPairs {
+		if strings.EqualFold(pair.Source, source) {
+			sourceDestinations = append(sourceDestinations, pair.Dest)
+		}
+	}
+
+	// Find what formats can convert to the destination
+	var destSources []string
+	for _, pair := range allPairs {
+		if strings.EqualFold(pair.Dest, dest) {
+			destSources = append(destSources, pair.Source)
+		}
+	}
+
+	// Build helpful error message
+	var msg strings.Builder
+	msg.WriteString(fmt.Sprintf("no converter found for: %s to %s", source, dest))
+
+	if len(sourceDestinations) > 0 {
+		msg.WriteString(fmt.Sprintf("\n\nThe '%s' format can convert to: %s", source, strings.Join(sourceDestinations, ", ")))
+	} else if len(destSources) > 0 {
+		// Source format not recognized, but dest is
+		msg.WriteString(fmt.Sprintf("\n\nUnrecognized source format: '%s'", source))
+		msg.WriteString(fmt.Sprintf("\nFormats that can convert to '%s': %s", dest, strings.Join(destSources, ", ")))
+	} else {
+		// Neither format recognized or no converters available
+		msg.WriteString(fmt.Sprintf("\n\nUnrecognized format(s): '%s', '%s'", source, dest))
+	}
+
+	msg.WriteString("\n\nRun 'hdf convert --help' to see all available conversions")
+
+	return fmt.Errorf("%s", msg.String())
 }
 
 // runConvert executes the convert command.
