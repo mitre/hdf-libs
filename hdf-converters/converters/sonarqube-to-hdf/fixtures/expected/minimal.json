@@ -83,8 +83,5 @@
     "name": "sonarqube-to-hdf",
     "version": "1.0.0"
   },
-  "statistics": {
-    "duration": 0
-  },
-  "timestamp": "2026-02-08T22:03:39.547611412-05:00"
+  "timestamp": "2026-02-09T23:35:35.83480603-05:00"
 }

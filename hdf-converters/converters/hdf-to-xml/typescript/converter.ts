@@ -46,10 +46,12 @@ function transformHdfToXmlObject(hdf: HdfResults): Record<string, unknown> {
         name: wrap(baseline.name),
         ...(baseline.version && { version: wrap(baseline.version) }),
         ...(baseline.title && { title: wrap(baseline.title) }),
-        checksum: {
-          algorithm: wrap(baseline.checksum.algorithm),
-          value: wrap(baseline.checksum.value)
-        },
+        ...(baseline.checksum && {
+          checksum: {
+            algorithm: wrap(baseline.checksum.algorithm),
+            value: wrap(baseline.checksum.value)
+          }
+        }),
         ...(baseline.requirements && baseline.requirements.length > 0 && {
           requirements: {
             requirement: baseline.requirements.map(req => transformRequirement(req))
@@ -90,7 +92,7 @@ function transformHdfToXmlObject(hdf: HdfResults): Record<string, unknown> {
 
   // Add other optional fields
   if (hdf.timestamp) {
-    result.timestamp = wrap(hdf.timestamp);
+    result.timestamp = wrap(typeof hdf.timestamp === 'string' ? hdf.timestamp : hdf.timestamp.toISOString());
   }
   if (hdf.generator) {
     result.generator = hdf.generator;
@@ -139,7 +141,7 @@ function transformRequirement(req: EvaluatedRequirement): Record<string, unknown
       result: req.results.map((r: RequirementResult) => ({
         status: wrap(r.status),
         codeDesc: wrap(r.codeDesc),
-        startTime: wrap(r.startTime),
+        startTime: wrap(typeof r.startTime === 'string' ? r.startTime : r.startTime.toISOString()),
         ...(r.message && { message: wrap(r.message) }),
         ...(r.runTime !== undefined && { runTime: wrap(r.runTime) })
       }))

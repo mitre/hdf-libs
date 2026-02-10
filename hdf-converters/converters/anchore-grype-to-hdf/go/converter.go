@@ -320,7 +320,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 	// Get CCI tags
 	cciTags := getCCITags()
 
-	// Build tags
+	// Build tags - only include cci if not empty
 	nistInterfaces := make([]interface{}, len(nistTags))
 	for i, tag := range nistTags {
 		nistInterfaces[i] = tag
@@ -328,7 +328,9 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 
 	tags := map[string]interface{}{
 		"nist": nistInterfaces,
-		"cci":  cciTags,
+	}
+	if len(cciTags) > 0 {
+		tags["cci"] = cciTags
 	}
 
 	// Build requirement ID

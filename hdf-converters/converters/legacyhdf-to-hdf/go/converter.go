@@ -215,7 +215,7 @@ func convertProfile(v1 V1Profile) hdf.EvaluatedBaseline {
 //   - Results: snake_case → camelCase for all fields
 func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 	v2 := &hdf.HDFResults{
-		Statistics: hdf.Statistics{
+		Statistics: &hdf.Statistics{
 			Duration: v1.Statistics.Duration,
 		},
 	}

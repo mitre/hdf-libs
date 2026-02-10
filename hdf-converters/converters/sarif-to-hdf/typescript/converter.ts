@@ -77,9 +77,6 @@ export function convertSarifToHdf(input: string): string {
     timestamp: new Date(),
     baselines: sarif.runs.map(run => convertRun(run, sarif.version, resultsChecksum)),
     targets: [],
-    statistics: {
-      duration: 0,
-    },
     generator: {
       name: 'sarif-to-hdf',
       version: '1.0.0',

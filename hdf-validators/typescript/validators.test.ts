@@ -203,7 +203,17 @@ describe('HDF Results Validation', () => {
   describe('Error messages', () => {
     it('should provide descriptive error messages', () => {
       const invalid = {
-        baselines: []
+        baselines: [
+          {
+            name: 'Test',
+            requirements: [
+              {
+                // Missing required fields: id, descriptions, impact, tags
+                results: []
+              }
+            ]
+          }
+        ]
       };
 
       const result = validateResults(invalid);

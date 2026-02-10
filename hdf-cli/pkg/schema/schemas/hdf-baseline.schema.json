@@ -5,8 +5,7 @@
   "unevaluatedProperties": false,
   "required": [
     "name",
-    "requirements",
-    "checksum"
+    "requirements"
   ],
   "allOf": [
     {
@@ -1162,6 +1161,7 @@
           "type": "object",
           "unevaluatedProperties": false,
           "required": [
+            "status",
             "codeDesc",
             "startTime"
           ],

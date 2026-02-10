@@ -204,14 +204,10 @@ func TestNISTAndCCITags(t *testing.T) {
 		}
 	}
 
-	cciVal, hasCci := req.Tags["cci"]
-	if !hasCci {
-		t.Error("Expected CCI tags to be defined")
-	} else {
-		_, ok := cciVal.([]interface{})
-		if !ok {
-			t.Error("Expected CCI tags to be a slice")
-		}
+	// CCI tags should be omitted when empty (SA-11 and RA-5 have no CCI mappings)
+	_, hasCci := req.Tags["cci"]
+	if hasCci {
+		t.Error("Expected CCI tags to be omitted when there are no CCI mappings")
 	}
 }
 
