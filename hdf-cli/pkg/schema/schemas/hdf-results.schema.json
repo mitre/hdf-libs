@@ -4,8 +4,7 @@
   "type": "object",
   "unevaluatedProperties": false,
   "required": [
-    "baselines",
-    "statistics"
+    "baselines"
   ],
   "properties": {
     "id": {
@@ -66,8 +65,7 @@
       "unevaluatedProperties": false,
       "required": [
         "name",
-        "requirements",
-        "checksum"
+        "requirements"
       ],
       "allOf": [
         {
@@ -807,10 +805,6 @@
             "error": {
               "$ref": "#/$defs/Statistic_Block",
               "description": "Statistics for requirements that encountered an error during assessment."
-            },
-            "skipped": {
-              "$ref": "#/$defs/Statistic_Block",
-              "description": "Deprecated: use 'notApplicable' or 'notReviewed' instead. Statistics for requirements that were skipped."
             }
           },
           "description": "Statistics for requirement results, grouped by status.",
@@ -1184,6 +1178,7 @@
           "type": "object",
           "unevaluatedProperties": false,
           "required": [
+            "status",
             "codeDesc",
             "startTime"
           ],

@@ -153,9 +153,6 @@ func ConvertSonarqubeToHDF(input []byte) ([]byte, error) {
 		Timestamp: &timestamp,
 		Baselines: baselines,
 		Targets:   []hdf.Target{},
-		Statistics: hdf.Statistics{
-			Duration: floatPtr(0),
-		},
 		Generator: &hdf.Generator{
 			Name:    "sonarqube-to-hdf",
 			Version: "1.0.0",

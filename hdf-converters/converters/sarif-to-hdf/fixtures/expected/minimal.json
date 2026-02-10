@@ -1,77 +1,92 @@
 {
-  "timestamp": "2026-01-29T00:00:00.000Z",
   "baselines": [
     {
-      "name": "SARIF",
-      "version": "2.1.0",
-      "title": "Static Analysis Results Interchange Format",
-      "maintainer": "Static Analysis Tool",
       "requirements": [
         {
-          "id": "RULE-001",
-          "title": "buffer/strcpy",
           "descriptions": [
             {
-              "label": "default",
-              "data": "Does not check for buffer overflows when copying to destination (CWE-120, CWE-20)."
+              "data": "Does not check for buffer overflows when copying to destination (CWE-120, CWE-20).",
+              "label": "default"
             }
           ],
+          "results": [
+            {
+              "codeDesc": "URL : src/main.c LINE : 42 COLUMN : 5",
+              "startTime": "2026-02-09T23:35:35.831305621-05:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 42,
+            "ref": "src/main.c"
+          },
+          "id": "RULE-001",
           "impact": 0.7,
           "tags": {
-            "severity": "error",
-            "cwe": ["CWE-120", "CWE-20"],
-            "nist": ["SI-10"],
-            "cci": ["CCI-003173", "CCI-001643"]
+            "cci": [
+              "CCI-003173",
+              "CCI-001643"
+            ],
+            "cwe": [
+              "CWE-120",
+              "CWE-20"
+            ],
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
           },
-          "sourceLocation": {
-            "ref": "src/main.c",
-            "line": 42
-          },
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "URL : src/main.c LINE : 42 COLUMN : 5",
-              "startTime": "2026-01-29T00:00:00.000Z"
-            }
-          ]
+          "title": "buffer/strcpy"
         },
         {
-          "id": "RULE-002",
-          "title": "format/printf",
           "descriptions": [
             {
-              "label": "default",
-              "data": "Format string vulnerability (CWE-134)."
+              "data": "Format string vulnerability (CWE-134).",
+              "label": "default"
             }
           ],
-          "impact": 0.5,
-          "tags": {
-            "severity": "warning",
-            "cwe": ["CWE-134"],
-            "nist": ["SI-10"],
-            "cci": ["CCI-003173", "CCI-001643"]
-          },
-          "sourceLocation": {
-            "ref": "src/utils.c",
-            "line": 15
-          },
           "results": [
             {
-              "status": "failed",
               "codeDesc": "URL : src/utils.c LINE : 15 COLUMN : 3",
-              "startTime": "2026-01-29T00:00:00.000Z"
+              "startTime": "2026-02-09T23:35:35.831305621-05:00",
+              "status": "failed"
             }
-          ]
+          ],
+          "sourceLocation": {
+            "line": 15,
+            "ref": "src/utils.c"
+          },
+          "id": "RULE-002",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173",
+              "CCI-001643"
+            ],
+            "cwe": [
+              "CWE-134"
+            ],
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "warning"
+          },
+          "title": "format/printf"
         }
-      ]
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "85bd118b9d3bd659679e90695c5ab19559a4fb99489bcbcafe8317de377946ae"
+      },
+      "name": "SARIF",
+      "maintainer": "Static Analysis Tool",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
     }
   ],
-  "targets": [],
-  "statistics": {
-    "duration": 0
-  },
   "generator": {
     "name": "sarif-to-hdf",
     "version": "1.0.0"
-  }
+  },
+  "timestamp": "2026-02-09T23:35:35.831305621-05:00"
 }

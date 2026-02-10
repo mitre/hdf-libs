@@ -4,8 +4,7 @@
   "type": "object",
   "unevaluatedProperties": false,
   "required": [
-    "baselines",
-    "statistics"
+    "baselines"
   ],
   "properties": {
     "id": {

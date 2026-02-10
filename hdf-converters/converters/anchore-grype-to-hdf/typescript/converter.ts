@@ -1,10 +1,10 @@
 import {createHash} from 'crypto';
 import {
-  Checksum,
+  type Checksum,
   createMinimalBaseline,
-  EvaluatedBaseline,
-  EvaluatedRequirement,
-  ExecutionResult,
+  type EvaluatedBaseline,
+  type EvaluatedRequirement,
+  type RequirementResult,
   HashAlgorithm,
   type HdfResults,
   ResultStatus,
@@ -229,7 +229,7 @@ function buildCodeDesc(match: GrypeMatch): string {
 
   // Location if available
   if (match.artifact.locations && match.artifact.locations.length > 0) {
-    const location = match.artifact.locations[0];
+    const location = match.artifact.locations[0]!;
     if (location.path) {
       parts.push(`Location: ${location.path}`);
     }
@@ -237,7 +237,7 @@ function buildCodeDesc(match: GrypeMatch): string {
 
   // Match type if available
   if (match.matchDetails && match.matchDetails.length > 0) {
-    const matchType = match.matchDetails[0].type;
+    const matchType = match.matchDetails[0]!.type;
     if (matchType) {
       parts.push(`Match Type: ${matchType}`);
     }
@@ -281,11 +281,11 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
   const message = messageParts.join(' ');
 
   // Build execution result
-  const result: ExecutionResult = {
+  const result: RequirementResult = {
     status,
     codeDesc: buildCodeDesc(match),
     message,
-    startTime: '0001-01-01T00:00:00Z', // Go zero time format
+    startTime: new Date('0001-01-01T00:00:00Z'), // Go zero time format
   };
 
   // Get CCI mappings for NIST controls
@@ -307,15 +307,20 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
     }
   }
 
+  // Build tags object - only include cci if not empty
+  const tags: Record<string, unknown> = {
+    nist: NIST_TAGS,
+  };
+  if (cciTags.length > 0) {
+    tags.cci = cciTags;
+  }
+
   // Build requirement
   const requirement: EvaluatedRequirement = {
     id: isIgnored ? `Grype-Ignored-Match/${cveId}` : `Grype/${cveId}`,
     impact,
     results: [result],
-    tags: {
-      nist: NIST_TAGS,
-      cci: cciTags,
-    },
+    tags,
     descriptions: [
       {label: 'default', data: description},
       {label: 'fix', data: fixInfo},
@@ -369,7 +374,7 @@ export function convertAnchoreGrypeToHdf(input: string): string {
       name: grypeData.descriptor?.name || 'grype',
       version: grypeData.descriptor?.version || 'unknown',
     },
-    timestamp: grypeData.descriptor?.timestamp || new Date().toISOString(),
+    timestamp: grypeData.descriptor?.timestamp ? new Date(grypeData.descriptor.timestamp) : new Date(),
   };
 
   return JSON.stringify(hdf, null, 2);

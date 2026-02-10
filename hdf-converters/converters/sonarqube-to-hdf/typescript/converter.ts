@@ -186,9 +186,6 @@ export function convertSonarqubeToHdf(input: string): string {
     timestamp: new Date(),
     baselines,
     targets: [],
-    statistics: {
-      duration: 0,
-    },
     generator: {
       name: 'sonarqube-to-hdf',
       version: '1.0.0',

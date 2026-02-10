@@ -83,13 +83,14 @@ func buildConverterNotFoundError(source, dest string) error {
 	var msg strings.Builder
 	msg.WriteString(fmt.Sprintf("no converter found for: %s to %s", source, dest))
 
-	if len(sourceDestinations) > 0 {
+	switch {
+	case len(sourceDestinations) > 0:
 		msg.WriteString(fmt.Sprintf("\n\nThe '%s' format can convert to: %s", source, strings.Join(sourceDestinations, ", ")))
-	} else if len(destSources) > 0 {
+	case len(destSources) > 0:
 		// Source format not recognized, but dest is
 		msg.WriteString(fmt.Sprintf("\n\nUnrecognized source format: '%s'", source))
 		msg.WriteString(fmt.Sprintf("\nFormats that can convert to '%s': %s", dest, strings.Join(destSources, ", ")))
-	} else {
+	default:
 		// Neither format recognized or no converters available
 		msg.WriteString(fmt.Sprintf("\n\nUnrecognized format(s): '%s', '%s'", source, dest))
 	}
