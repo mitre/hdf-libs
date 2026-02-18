@@ -3,6 +3,7 @@ package cci
 import (
 	_ "embed"
 	"encoding/json"
+	"strings"
 	"sync"
 )
 
@@ -87,6 +88,57 @@ func GetAllCCIIDs() []string {
 		ids = append(ids, id)
 	}
 	return ids
+}
+
+// NistCCIMappings is the curated NIST control → CCI mapping table.
+type NistCCIMappings map[string][]string
+
+//go:embed nist-cci-mappings.json
+var nistCCIMappingsData []byte
+
+var (
+	nistCCIData     NistCCIMappings
+	nistCCIDataOnce sync.Once
+)
+
+func loadNistCCIData() NistCCIMappings {
+	nistCCIDataOnce.Do(func() {
+		if err := json.Unmarshal(nistCCIMappingsData, &nistCCIData); err != nil {
+			nistCCIData = make(NistCCIMappings)
+		}
+	})
+	return nistCCIData
+}
+
+// GetNistCCIMappings returns the CCI IDs for a given NIST control using the curated
+// mapping table sourced from heimdall2's NistCciMappingData. The input is normalized
+// to its base control (e.g. "SI-10 a 1" → "SI-10") before lookup.
+// Returns nil if the control is empty or not in the curated table.
+//
+// Example:
+//
+//	ids := GetNistCCIMappings("SI-10")
+//	// Returns: []string{"CCI-001310"}
+func GetNistCCIMappings(nistControl string) []string {
+	if nistControl == "" {
+		return nil
+	}
+	base := baseNistControl(nistControl)
+	data := loadNistCCIData()
+	if ccis, ok := data[base]; ok {
+		return ccis
+	}
+	return nil
+}
+
+// baseNistControl extracts the base control identifier from a potentially qualified
+// NIST control string (e.g. "SI-10 a 1" → "SI-10", "AC-3 (2)" → "AC-3").
+func baseNistControl(control string) string {
+	idx := strings.IndexAny(control, " (.")
+	if idx == -1 {
+		return control
+	}
+	return control[:idx]
 }
 
 // CCIExists checks if a CCI ID exists in the database.

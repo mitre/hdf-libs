@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -146,9 +147,11 @@ func convertResult(result SarifResult, timestamp time.Time) hdf.EvaluatedRequire
 	// Use default NIST control for static analysis
 	nistControls := []string{defaultStaticAnalysisNistTag}
 
-	// For simplicity, use hardcoded CCI controls that map to SI-10
-	// In a full implementation, we would do a reverse lookup
-	cciControls := []string{"CCI-003173", "CCI-001643"}
+	// Derive CCI controls from the NIST control via reverse lookup
+	cciControls := cci.GetNistCCIMappings(defaultStaticAnalysisNistTag)
+	if cciControls == nil {
+		cciControls = []string{}
+	}
 
 	// Get impact from level
 	impact := impactMapping[result.Level]
