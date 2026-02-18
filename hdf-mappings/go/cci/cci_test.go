@@ -125,6 +125,90 @@ func TestGetCCINistMappings(t *testing.T) {
 	}
 }
 
+func TestGetNistCCIMappings(t *testing.T) {
+	tests := []struct {
+		name        string
+		nistControl string
+		expectNil   bool
+		expect      []string
+	}{
+		{
+			name:        "SI-10 returns curated CCI",
+			nistControl: "SI-10",
+			expect:      []string{"CCI-001310"},
+		},
+		{
+			name:        "AC-3 returns curated CCI",
+			nistControl: "AC-3",
+			expect:      []string{"CCI-000213"},
+		},
+		{
+			name:        "SI-11 returns curated CCI",
+			nistControl: "SI-11",
+			expect:      []string{"CCI-001312"},
+		},
+		{
+			name:        "SA-11 returns curated CCI",
+			nistControl: "SA-11",
+			expect:      []string{"CCI-003173"},
+		},
+		{
+			name:        "AC-4 returns multiple curated CCIs",
+			nistControl: "AC-4",
+			expect:      []string{"CCI-001368", "CCI-001414"},
+		},
+		{
+			name:        "Qualified control normalizes to base",
+			nistControl: "SI-10 a 1",
+			expect:      []string{"CCI-001310"},
+		},
+		{
+			name:        "Control with enhancement normalizes to base",
+			nistControl: "AC-3 (2)",
+			expect:      []string{"CCI-000213"},
+		},
+		{
+			name:        "Empty control returns nil",
+			nistControl: "",
+			expectNil:   true,
+		},
+		{
+			name:        "Control not in curated table returns nil",
+			nistControl: "ZZ-999",
+			expectNil:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := GetNistCCIMappings(tt.nistControl)
+
+			if tt.expectNil {
+				if result != nil {
+					t.Errorf("Expected nil, got: %v", result)
+				}
+				return
+			}
+
+			if result == nil {
+				t.Errorf("Expected %v for %s, got nil", tt.expect, tt.nistControl)
+				return
+			}
+
+			if len(result) != len(tt.expect) {
+				t.Errorf("Expected %v for %s, got %v", tt.expect, tt.nistControl, result)
+				return
+			}
+
+			for i, cci := range tt.expect {
+				if result[i] != cci {
+					t.Errorf("Expected result[%d]=%s for %s, got %s", i, cci, tt.nistControl, result[i])
+				}
+			}
+		})
+	}
+}
+
 func TestCCIExists(t *testing.T) {
 	tests := []struct {
 		name     string

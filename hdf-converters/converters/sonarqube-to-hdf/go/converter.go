@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -220,7 +220,7 @@ func convertRuleToRequirement(
 
 	// Extract tags and mappings
 	cweIds, owaspTags, allTags := extractTags(&rule, hasRule, issues)
-	nistControls := mapToNist(cweIds, owaspTags, firstIssue.Type)
+	nistControls := mapToNist(firstIssue.Type)
 	cciControls := mapNistToCCI(nistControls)
 
 	// Create results for each issue
@@ -388,89 +388,26 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 	return cweIds, owaspTags, allTags
 }
 
-func mapToNist(cweIds []string, owaspTags []string, issueType string) []string {
-	nistSet := make(map[string]bool)
-
-	// Map CWE to NIST (simplified - in real implementation, use CWE→NIST mapping table)
-	for _, cweId := range cweIds {
-		// Extract numeric part
-		numStr := strings.TrimPrefix(cweId, "CWE-")
-		if num, err := strconv.Atoi(numStr); err == nil {
-			// Simplified mapping - real implementation should use hdf-mappings
-			if nist := getCweNistMapping(num); nist != "" {
-				nistSet[nist] = true
-			}
-		}
+func mapToNist(issueType string) []string {
+	if issueType == "VULNERABILITY" || issueType == "SECURITY_HOTSPOT" {
+		return []string{defaultSecurityNistTag}
 	}
-
-	// If no NIST mappings found, use default based on issue type
-	if len(nistSet) == 0 {
-		if issueType == "VULNERABILITY" || issueType == "SECURITY_HOTSPOT" {
-			return []string{defaultSecurityNistTag}
-		}
-		return []string{defaultCodeQualityNistTag}
-	}
-
-	// Convert to sorted slice
-	nistControls := make([]string, 0, len(nistSet))
-	for nist := range nistSet {
-		nistControls = append(nistControls, nist)
-	}
-	sort.Strings(nistControls)
-
-	return nistControls
-}
-
-// Simplified CWE to NIST mapping - should use hdf-mappings in production
-func getCweNistMapping(cweNum int) string {
-	mappings := map[int]string{
-		20:  "SI-10", // Improper Input Validation
-		79:  "SI-10", // XSS
-		89:  "SI-10", // SQL Injection
-		119: "SI-16", // Buffer overflow
-		120: "SI-16", // Buffer Copy without Checking Size
-		190: "SI-10", // Integer Overflow
-		200: "SC-28", // Information Exposure
-		284: "AC-3",  // Improper Access Control
-		287: "IA-2",  // Improper Authentication
-		311: "SC-13", // Missing Encryption
-		352: "SC-23", // CSRF
-		476: "SI-11", // NULL Pointer Dereference
-		502: "SI-10", // Deserialization of Untrusted Data
-		787: "SI-16", // Out-of-bounds Write
-	}
-
-	if nist, ok := mappings[cweNum]; ok {
-		return nist
-	}
-	return ""
+	return []string{defaultCodeQualityNistTag}
 }
 
 func mapNistToCCI(nistControls []string) []string {
-	// Simplified CCI mapping - should use hdf-mappings in production
 	cciSet := make(map[string]bool)
-
 	for _, nist := range nistControls {
-		// Simple mapping for common controls
-		switch nist {
-		case "SI-10":
-			cciSet["CCI-001310"] = true
-		case "AC-3":
-			cciSet["CCI-000213"] = true
-		case "IA-2":
-			cciSet["CCI-000764"] = true
-		case "SC-13":
-			cciSet["CCI-002450"] = true
+		for _, cciID := range cci.GetNistCCIMappings(nist) {
+			cciSet[cciID] = true
 		}
 	}
-
-	cciControls := make([]string, 0, len(cciSet))
-	for cci := range cciSet {
-		cciControls = append(cciControls, cci)
+	result := make([]string, 0, len(cciSet))
+	for cciID := range cciSet {
+		result = append(result, cciID)
 	}
-	sort.Strings(cciControls)
-
-	return cciControls
+	sort.Strings(result)
+	return result
 }
 
 func createResultFromIssue(issue Issue, componentMap map[string]Component) hdf.RequirementResult {
