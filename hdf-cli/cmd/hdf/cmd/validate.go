@@ -14,7 +14,7 @@ var (
 )
 
 // NewValidateCmd creates a new validate command with fresh state.
-func NewValidateCmd() *cobra.Command {
+func NewValidateCmd() *cobra.Command { //nolint:dupl // Cobra command setup; flags and args differ per command
 	// Local flag variables for this command instance
 	var (
 		localSchemaType string

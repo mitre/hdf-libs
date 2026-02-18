@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -18,21 +17,16 @@ func TestHDFToXMLConverter_IsRegistered(t *testing.T) {
 }
 
 func TestHDFToXMLConverter_Convert_Minimal(t *testing.T) {
-	// Load minimal fixture
-	inputPath := hdfToXMLFixturePath(t, "input/minimal.json")
-	inputData, err := os.ReadFile(inputPath)
+	inputData, err := os.ReadFile(converterFixturePath(t, "hdf-to-xml", "input/minimal.json"))
 	require.NoError(t, err, "Failed to read minimal.json fixture")
 
-	// Get converter
 	converter, err := GetConverter("hdf", "xml")
 	require.NoError(t, err, "Failed to get HDF-to-XML converter")
 
-	// Convert
 	output, err := converter.Convert(inputData)
 	require.NoError(t, err, "Conversion should succeed")
 	require.NotEmpty(t, output, "Output should not be empty")
 
-	// Verify it's valid XML with expected content
 	outputStr := string(output)
 	assert.Contains(t, outputStr, "<?xml")
 	assert.Contains(t, outputStr, "<HdfResults>")
@@ -55,9 +49,7 @@ func TestHDFToXMLConverter_Convert_MissingBaselines(t *testing.T) {
 	converter, err := GetConverter("hdf", "xml")
 	require.NoError(t, err, "Failed to get HDF-to-XML converter")
 
-	input := []byte(`{"foo": "bar"}`)
-
-	_, err = converter.Convert(input)
+	_, err = converter.Convert([]byte(`{"foo": "bar"}`))
 	assert.Error(t, err, "Should error on missing baselines field")
 	assert.Contains(t, err.Error(), "missing baselines field")
 }
@@ -105,33 +97,7 @@ func TestHDFToXMLConverter_Convert_SpecialCharacters(t *testing.T) {
 	require.NoError(t, err, "Should succeed with special characters")
 
 	outputStr := string(output)
-	// XML should escape special characters
 	assert.True(t, strings.Contains(outputStr, "&amp;") || strings.Contains(outputStr, "&#38;"), "Should contain escaped ampersand")
 	assert.True(t, strings.Contains(outputStr, "&lt;") || strings.Contains(outputStr, "&#60;"), "Should contain escaped less-than")
 	assert.True(t, strings.Contains(outputStr, "&gt;") || strings.Contains(outputStr, "&#62;"), "Should contain escaped greater-than")
-}
-
-func hdfToXMLFixturePath(t *testing.T, name string) string {
-	t.Helper()
-
-	cwd, err := os.Getwd()
-	require.NoError(t, err, "Failed to get current working directory")
-
-	// From cmd/hdf/cmd, navigate to hdf-converters/converters/hdf-to-xml/fixtures
-	fixturePath := filepath.Join(cwd, "..", "..", "..", "..", "hdf-converters", "converters", "hdf-to-xml", "fixtures", name)
-	fixturePath = filepath.Clean(fixturePath)
-
-	// Check if file exists
-	if _, err := os.Stat(fixturePath); os.IsNotExist(err) {
-		// Try alternative path (when running from different directory)
-		altPath := filepath.Join("..", "..", "..", "..", "hdf-converters", "converters", "hdf-to-xml", "fixtures", name)
-		if absPath, err := filepath.Abs(altPath); err == nil {
-			if _, err := os.Stat(absPath); err == nil {
-				return absPath
-			}
-		}
-		t.Skipf("Fixture not found: %s", fixturePath)
-	}
-
-	return fixturePath
 }

@@ -16,7 +16,7 @@ var (
 )
 
 // NewListCmd creates a new list command with fresh state.
-func NewListCmd() *cobra.Command {
+func NewListCmd() *cobra.Command { //nolint:dupl // Cobra command setup; flags and args differ per command
 	// Local flag variables for this command instance
 	var (
 		localStatusFilter string
