@@ -81,18 +81,18 @@ func buildConverterNotFoundError(source, dest string) error {
 
 	// Build helpful error message
 	var msg strings.Builder
-	msg.WriteString(fmt.Sprintf("no converter found for: %s to %s", source, dest))
+	fmt.Fprintf(&msg, "no converter found for: %s to %s", source, dest)
 
 	switch {
 	case len(sourceDestinations) > 0:
-		msg.WriteString(fmt.Sprintf("\n\nThe '%s' format can convert to: %s", source, strings.Join(sourceDestinations, ", ")))
+		fmt.Fprintf(&msg, "\n\nThe '%s' format can convert to: %s", source, strings.Join(sourceDestinations, ", "))
 	case len(destSources) > 0:
 		// Source format not recognized, but dest is
-		msg.WriteString(fmt.Sprintf("\n\nUnrecognized source format: '%s'", source))
-		msg.WriteString(fmt.Sprintf("\nFormats that can convert to '%s': %s", dest, strings.Join(destSources, ", ")))
+		fmt.Fprintf(&msg, "\n\nUnrecognized source format: '%s'", source)
+		fmt.Fprintf(&msg, "\nFormats that can convert to '%s': %s", dest, strings.Join(destSources, ", "))
 	default:
 		// Neither format recognized or no converters available
-		msg.WriteString(fmt.Sprintf("\n\nUnrecognized format(s): '%s', '%s'", source, dest))
+		fmt.Fprintf(&msg, "\n\nUnrecognized format(s): '%s', '%s'", source, dest)
 	}
 
 	msg.WriteString("\n\nRun 'hdf convert --help' to see all available conversions")
@@ -134,11 +134,7 @@ func runConvert(_ *cobra.Command, args []string) error {
 	printDebug("Conversion produced %d bytes", len(output))
 
 	// Write output
-	if err := writeConvertOutput(output, outputPath); err != nil {
-		return err
-	}
-
-	return nil
+	return writeConvertOutput(output, outputPath)
 }
 
 // writeConvertOutput writes conversion output to a file or stdout.
@@ -148,5 +144,5 @@ func writeConvertOutput(data []byte, path string) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0600)
+	return os.WriteFile(path, data, 0o600)
 }

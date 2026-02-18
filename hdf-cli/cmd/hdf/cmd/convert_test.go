@@ -127,7 +127,7 @@ func TestConvertCommand_InvalidInput(t *testing.T) {
 	// Create a temp file with invalid content
 	tmpDir := t.TempDir()
 	invalidFile := filepath.Join(tmpDir, "invalid.json")
-	if err := os.WriteFile(invalidFile, []byte("not valid json"), 0644); err != nil {
+	if err := os.WriteFile(invalidFile, []byte("not valid json"), 0o600); err != nil {
 		t.Fatalf("failed to create invalid file: %v", err)
 	}
 
