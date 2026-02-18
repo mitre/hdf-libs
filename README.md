@@ -1,6 +1,6 @@
 # HDF Libraries
 
-**Heimdall Data Format (HDF)** is a standardized JSON schema for representing security assessment baselines and assesresults across diverse tools and platforms.
+**Heimdall Data Format (HDF)** is a standardized JSON schema for representing security assessment baselines and results across diverse tools and platforms.
 
 ## Overview
 
@@ -11,19 +11,33 @@ Security teams use many different tools—vulnerability scanners, compliance che
 - **Interoperability** between security platforms
 - **Historical analysis** with a stable schema
 
+## Quick navigation
+
+| I want to... | Start here |
+|---|---|
+| Convert or validate a security scan file | [hdf-cli →](./hdf-cli/README.md) |
+| Use the HDF schema or types in my project | [hdf-schema →](./hdf-schema/README.md) |
+| Contribute code or add a converter | [CONTRIBUTING.md →](./CONTRIBUTING.md) |
+| Set up the development environment | [Development →](#development) |
+
 ## Packages
 
-This monorepo contains the following libraries:
+### npm libraries
 
 | Package | Description |
 |---------|-------------|
-| `@mitre/hdf-schema` | JSON schemas and generated types for HDF documents |
-| `@mitre/hdf-mappings` | CCI, NIST 800-53, CIS, and CMMC framework mappings |
-| `@mitre/hdf-utilities` | Generic utilities for XML, CSV, and hash operations |
-| `@mitre/hdf-parsers` | Parse and flatten HDF documents |
-| `@mitre/hdf-converters` | Convert 30+ security tool formats to HDF |
-| `@mitre/hdf-generators` | Generate templates and baseline documents |
-| `@mitre/hdf-validators` | Validate HDF documents against schemas |
+| [`@mitre/hdf-schema`](./hdf-schema/README.md) | JSON schemas and generated types for HDF documents |
+| [`@mitre/hdf-mappings`](./hdf-mappings/README.md) | CCI, NIST 800-53, CIS, and CMMC framework mappings |
+| [`@mitre/hdf-utilities`](./hdf-utilities/README.md) | Generic utilities for XML, CSV, and hash operations |
+| [`@mitre/hdf-parsers`](./hdf-parsers/README.md) | Parse and flatten HDF documents |
+| [`@mitre/hdf-converters`](./hdf-converters/README.md) | Convert security tool outputs to HDF |
+| [`@mitre/hdf-validators`](./hdf-validators/README.md) | Validate HDF documents against schemas |
+
+### CLI tool
+
+| Tool | Description |
+|------|-------------|
+| [`hdf`](./hdf-cli/README.md) | Command-line tool for validating, querying, and converting HDF files |
 
 ## Schema Types
 
@@ -53,6 +67,50 @@ npm install @mitre/hdf-schema
 
 This monorepo uses pnpm workspaces. Build order matters because some packages depend on generated types from others.
 
+### Prerequisites
+
+The following tools must be installed before running `pnpm lint` or `pnpm test`:
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| [Node.js](https://nodejs.org/) | ≥20.0.0 | TypeScript build and test runner |
+| [pnpm](https://pnpm.io/) | ≥9.0.0 | Package manager |
+| [Go](https://go.dev/) | 1.23.x | Go packages and CLI tool |
+| [golangci-lint](https://golangci-lint.run/) | latest | Go linter (required for `pnpm lint`) |
+
+**macOS (Homebrew):**
+
+```bash
+brew install node go
+corepack enable && corepack prepare pnpm@9.14.2 --activate
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+```
+
+**Ubuntu / WSL:**
+
+```bash
+# Node.js 20.x
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+corepack enable && corepack prepare pnpm@9.14.2 --activate
+
+# Go 1.23 — check https://go.dev/dl/ for the latest 1.23.x tarball
+wget https://go.dev/dl/go1.23.8.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.8.linux-amd64.tar.gz
+echo 'export PATH="$PATH:/usr/local/go/bin"' >> ~/.bashrc && source ~/.bashrc
+
+# golangci-lint
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+```
+
+After installing golangci-lint, ensure `$HOME/go/bin` is on your PATH. Add the following to your shell profile (`.zshrc`, `.bashrc`, etc.):
+
+```bash
+export PATH="$PATH:$HOME/go/bin"
+```
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the PR process, coverage requirements, and how to add a converter.
+
 ### Setup
 
 ```bash
@@ -61,13 +119,19 @@ pnpm install
 
 ### Building
 
-Build hdf-schema first, then other packages:
+`pnpm build` handles ordering automatically — hdf-schema is built first since other packages depend on its generated types.
 
 ```bash
-# Build hdf-schema (generates TypeScript, Python, and Go types)
+pnpm build
+```
+
+To build packages individually:
+
+```bash
+# Build hdf-schema first (generates TypeScript, Python, and Go types)
 pnpm -r --filter hdf-schema run build
 
-# Build other packages
+# Then build other packages
 pnpm -r --filter '!hdf-schema' run build
 ```
 
@@ -76,23 +140,21 @@ pnpm -r --filter '!hdf-schema' run build
 Linting requires packages to be built first (especially for hdf-cli):
 
 ```bash
-# Build packages first
-pnpm -r --filter hdf-schema run build
-pnpm -r --filter '!hdf-schema' run build
-
-# Then lint
+pnpm build
 pnpm lint
 ```
 
 ### Testing
 
+`pnpm test` automatically builds hdf-schema before running tests.
+
 ```bash
-# TypeScript tests
+# All tests (TypeScript + Go)
+pnpm test
+
+# TypeScript tests only
 pnpm test:ts
 
-# Go tests
+# Go tests only
 pnpm test:go
-
-# All tests
-pnpm test
 ```
