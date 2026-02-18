@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,37 +26,26 @@ func TestAnchoreGrypeConverter_IsRegistered(t *testing.T) {
 func TestAnchoreGrypeConverter_Convert_Minimal(t *testing.T) {
 	ensureAnchoreGrypeRegistered()
 
-	// Load minimal fixture
-	inputPath := anchoreGrypeFixturePath(t, "input/minimal.json")
-	inputData, err := os.ReadFile(inputPath)
+	inputData, err := os.ReadFile(converterFixturePath(t, "anchore-grype-to-hdf", "input/minimal.json"))
 	require.NoError(t, err, "Failed to read minimal.json fixture")
 
-	// Get converter
 	converter, err := GetConverter("anchore-grype", "hdf")
 	require.NoError(t, err, "Failed to get Anchore Grype converter")
 
-	// Convert
 	output, err := converter.Convert(inputData)
 	require.NoError(t, err, "Conversion should succeed")
 	require.NotEmpty(t, output, "Output should not be empty")
 
-	// Verify it's valid JSON with HDF structure
-	assert.Contains(t, string(output), "\"baselines\"")
-	assert.Contains(t, string(output), "\"generator\"")
-	assert.Contains(t, string(output), "\"timestamp\"")
+	assertHDFOutput(t, output)
 }
 
 func TestAnchoreGrypeConverter_Convert_InvalidJSON(t *testing.T) {
 	ensureAnchoreGrypeRegistered()
 
-	// Get converter
 	converter, err := GetConverter("anchore-grype", "hdf")
 	require.NoError(t, err, "Failed to get Anchore Grype converter")
 
-	// Try to convert invalid JSON
-	invalidData := []byte("not valid json")
-	output, err := converter.Convert(invalidData)
-
+	output, err := converter.Convert([]byte("not valid json"))
 	assert.Error(t, err, "Should fail on invalid JSON")
 	assert.Nil(t, output, "Output should be nil on error")
 	assert.Contains(t, err.Error(), "anchore grype conversion failed")
@@ -66,14 +54,10 @@ func TestAnchoreGrypeConverter_Convert_InvalidJSON(t *testing.T) {
 func TestAnchoreGrypeConverter_Convert_EmptyInput(t *testing.T) {
 	ensureAnchoreGrypeRegistered()
 
-	// Get converter
 	converter, err := GetConverter("anchore-grype", "hdf")
 	require.NoError(t, err, "Failed to get Anchore Grype converter")
 
-	// Try to convert empty input
-	emptyData := []byte("")
-	output, err := converter.Convert(emptyData)
-
+	output, err := converter.Convert([]byte(""))
 	assert.Error(t, err, "Should fail on empty input")
 	assert.Nil(t, output, "Output should be nil on error")
 }
@@ -81,37 +65,13 @@ func TestAnchoreGrypeConverter_Convert_EmptyInput(t *testing.T) {
 func TestAnchoreGrypeConverter_Convert_InvalidStructure(t *testing.T) {
 	ensureAnchoreGrypeRegistered()
 
-	// Get converter
 	converter, err := GetConverter("anchore-grype", "hdf")
 	require.NoError(t, err, "Failed to get Anchore Grype converter")
 
-	// Valid JSON but minimal Anchore Grype structure
-	// The converter is lenient and will accept this, using defaults for missing fields
+	// The converter is lenient and will accept a minimal structure, using defaults for missing fields.
 	minimalGrype := []byte(`{"descriptor": {"name": "grype"}, "source": {"target": {"userInput": "test"}}, "matches": []}`)
 	output, err := converter.Convert(minimalGrype)
-
-	// Should succeed with minimal structure
 	assert.NoError(t, err, "Should handle minimal structure gracefully")
 	assert.NotNil(t, output, "Output should not be nil")
 	assert.Contains(t, string(output), "\"baselines\"")
-}
-
-// Helper function to get path to Anchore Grype fixture files.
-// Navigates from cmd/hdf/cmd/ to converters/anchore-grype-to-hdf/fixtures/.
-func anchoreGrypeFixturePath(t *testing.T, name string) string {
-	t.Helper()
-
-	// Get the current working directory
-	cwd, err := os.Getwd()
-	require.NoError(t, err, "Failed to get current working directory")
-
-	// Navigate to the converters directory
-	// From cmd/hdf/cmd, go up 3 levels to hdf-cli, then up 1 to hdf-libs,
-	// then into hdf-converters/converters/anchore-grype-to-hdf/fixtures
-	fixturePath := filepath.Join(cwd, "..", "..", "..", "..", "hdf-converters", "converters", "anchore-grype-to-hdf", "fixtures", name)
-
-	// Clean the path
-	fixturePath = filepath.Clean(fixturePath)
-
-	return fixturePath
 }
