@@ -1,2 +1,2 @@
-export PATH="$PATH:$HOME/go/bin"
-# pnpm lint-staged  # Disabled - linting runs in CI
+export PATH="$PATH:$HOME/go/bin:/opt/homebrew/bin"
+pnpm lint
