@@ -294,7 +294,7 @@ func buildFilters() []filterFunc {
 			if c.Title != nil && strings.Contains(strings.ToLower(*c.Title), search) {
 				return true
 			}
-				// Search in descriptions
+			// Search in descriptions
 			for _, desc := range c.Descriptions {
 				if strings.Contains(strings.ToLower(desc.Data), search) {
 					return true

@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	shared "github.com/mitre/hdf-converters/shared/go"
+	"github.com/stretchr/testify/assert"
 )
 
 // converterFixturePath returns the absolute path to a fixture file for a named converter.
