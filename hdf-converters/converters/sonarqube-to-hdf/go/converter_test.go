@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	hdf "github.com/mitre/hdf-schema"
@@ -298,6 +299,144 @@ func TestMissingIssuesField(t *testing.T) {
 	}
 	if err != nil && err.Error() != "invalid SonarQube structure: missing or invalid issues field" {
 		t.Errorf("Expected specific error message, got: %v", err)
+	}
+}
+
+func TestExtractDescription(t *testing.T) {
+	t.Run("rule is nil with hasRule false returns empty", func(t *testing.T) {
+		result := extractDescription(nil, false)
+		if result != "" {
+			t.Errorf("expected empty string, got %q", result)
+		}
+	})
+
+	t.Run("hasRule false returns empty regardless of rule content", func(t *testing.T) {
+		rule := &Rule{Name: "some rule", MDDesc: "some desc"}
+		result := extractDescription(rule, false)
+		if result != "" {
+			t.Errorf("expected empty string for hasRule=false, got %q", result)
+		}
+	})
+
+	t.Run("MDDesc takes priority over HTMLDesc", func(t *testing.T) {
+		rule := &Rule{Name: "rule", MDDesc: "markdown desc", HTMLDesc: "<p>html desc</p>"}
+		result := extractDescription(rule, true)
+		if result != "markdown desc" {
+			t.Errorf("expected MDDesc %q, got %q", "markdown desc", result)
+		}
+	})
+
+	t.Run("HTMLDesc is stripped when MDDesc is empty", func(t *testing.T) {
+		rule := &Rule{Name: "rule", HTMLDesc: "<p>This is <b>HTML</b> content</p>"}
+		result := extractDescription(rule, true)
+		if result == "" {
+			t.Error("expected non-empty stripped text from HTMLDesc")
+		}
+		if strings.Contains(result, "<p>") || strings.Contains(result, "<b>") {
+			t.Errorf("expected HTML tags stripped, got %q", result)
+		}
+		if !strings.Contains(result, "HTML") {
+			t.Errorf("expected text content preserved, got %q", result)
+		}
+	})
+
+	t.Run("falls back to rule name when both descs empty", func(t *testing.T) {
+		rule := &Rule{Name: "fallback name"}
+		result := extractDescription(rule, true)
+		if result != "fallback name" {
+			t.Errorf("expected rule Name %q, got %q", "fallback name", result)
+		}
+	})
+}
+
+func TestComponentPathResolution(t *testing.T) {
+	t.Run("component with Path uses Path", func(t *testing.T) {
+		componentMap := map[string]Component{
+			"comp:key": {Key: "comp:key", Path: "src/Main.java", LongName: "com.example.Main"},
+		}
+		line := 10
+		issue := Issue{
+			Component:    "comp:key",
+			Rule:         "java:S001",
+			Severity:     "MAJOR",
+			Status:       "OPEN",
+			Message:      "issue message",
+			CreationDate: "2024-01-01T00:00:00Z",
+			UpdateDate:   "2024-01-01T00:00:00Z",
+			Type:         "CODE_SMELL",
+			Line:         &line,
+		}
+		result := createResultFromIssue(issue, componentMap)
+		if !strings.Contains(result.CodeDesc, "src/Main.java") {
+			t.Errorf("expected CodeDesc to contain Path %q, got %q", "src/Main.java", result.CodeDesc)
+		}
+	})
+
+	t.Run("component with only LongName uses LongName", func(t *testing.T) {
+		componentMap := map[string]Component{
+			"comp:key": {Key: "comp:key", LongName: "com.example.Main"},
+		}
+		issue := Issue{
+			Component:    "comp:key",
+			Rule:         "java:S001",
+			Severity:     "MAJOR",
+			Status:       "OPEN",
+			Message:      "issue message",
+			CreationDate: "2024-01-01T00:00:00Z",
+			UpdateDate:   "2024-01-01T00:00:00Z",
+			Type:         "CODE_SMELL",
+		}
+		result := createResultFromIssue(issue, componentMap)
+		if !strings.Contains(result.CodeDesc, "com.example.Main") {
+			t.Errorf("expected CodeDesc to use LongName %q, got %q", "com.example.Main", result.CodeDesc)
+		}
+	})
+
+	t.Run("component not in map uses issue Component key", func(t *testing.T) {
+		componentMap := map[string]Component{}
+		issue := Issue{
+			Component:    "unknown:component",
+			Rule:         "java:S001",
+			Severity:     "MAJOR",
+			Status:       "OPEN",
+			Message:      "issue message",
+			CreationDate: "2024-01-01T00:00:00Z",
+			UpdateDate:   "2024-01-01T00:00:00Z",
+			Type:         "CODE_SMELL",
+		}
+		result := createResultFromIssue(issue, componentMap)
+		if !strings.Contains(result.CodeDesc, "unknown:component") {
+			t.Errorf("expected CodeDesc to contain issue Component %q, got %q", "unknown:component", result.CodeDesc)
+		}
+	})
+}
+
+func TestExtractTags_KeyValueParsing(t *testing.T) {
+	// Exercises the allTagsMap nil check in the tag-splitting loop (line ~329)
+	// by providing a rule with "key:value" formatted tags.
+	rule := &Rule{
+		Key:     "java:S001",
+		Name:    "Test Rule",
+		Tags:    []string{"cwe-476", "owasp:a01", "category:security", "category:reliability"},
+		SysTags: []string{},
+	}
+
+	cweIds, owaspTags, allTags := extractTags(rule, true, []Issue{})
+
+	if len(cweIds) == 0 {
+		t.Error("expected at least one CWE ID extracted")
+	}
+	if len(owaspTags) == 0 {
+		t.Error("expected at least one OWASP tag extracted")
+	}
+	// The "category:security" and "category:reliability" tags should produce an
+	// "category" entry in allTags, exercising the allTagsMap initialization path.
+	if _, ok := allTags["category"]; !ok {
+		t.Error("expected 'category' key in allTags from key:value tag parsing")
+	}
+	categoryVals := allTags["category"]
+	if len(categoryVals) != 2 {
+		t.Errorf("expected 2 category values, got %d: %v", len(categoryVals), categoryVals)
 	}
 }
 

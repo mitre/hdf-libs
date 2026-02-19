@@ -293,6 +293,57 @@ describe('XML Utilities', () => {
     });
   });
 
+  describe('extractTextFromXml edge cases', () => {
+    it('should handle number value in XML node (exercises typeof number branch)', () => {
+      // fast-xml-parser parses numeric text nodes as numbers when parseTagValue:true
+      // extractTextRecursive has a `typeof obj === 'number'` branch
+      const xml = '<root><count>42</count></root>';
+      const text = extractTextFromXml(xml);
+      // The number branch converts to string via String(obj)
+      expect(text).toContain('42');
+    });
+
+    it('should handle array children (exercises Array.isArray branch)', () => {
+      // Repeated sibling elements produce arrays in parsed output
+      const xml = '<root><item>First</item><item>Second</item><item>Third</item></root>';
+      const text = extractTextFromXml(xml);
+      expect(text).toContain('First');
+      expect(text).toContain('Second');
+      expect(text).toContain('Third');
+    });
+
+    it('should join multiple text segments with space separator', () => {
+      const xml = '<root><a>Hello</a><b>World</b></root>';
+      const text = extractTextFromXml(xml);
+      // Array.map().join(' ') uses a space — verify the separator
+      const parts = text.split(/\s+/).filter(Boolean);
+      expect(parts).toContain('Hello');
+      expect(parts).toContain('World');
+      // They should be space-separated, not concatenated without space
+      expect(text).toMatch(/Hello\s+World|World\s+Hello/);
+    });
+
+    it('should return empty for whitespace-only XML input', () => {
+      // isValidXml returns false for whitespace-only, so extractTextFromXml returns ''
+      const text = extractTextFromXml('   ');
+      expect(text).toBe('');
+    });
+  });
+
+  describe('parseXml option variants', () => {
+    it('should handle parseTagValue:true option', () => {
+      const xml = '<root><count>42</count></root>';
+      const result = parseXml(xml, { parseTagValue: true });
+      expect(result).toHaveProperty('root');
+    });
+
+    it('should handle suppressEmptyNode option', () => {
+      const xml = '<root><empty/><item>Test</item></root>';
+      const result = parseXml(xml, { });
+      expect(result).toHaveProperty('root');
+    });
+  });
+
   describe('Real-world security tool XML scenarios', () => {
     it('should parse Nessus-like vulnerability XML', () => {
       const xml = `

@@ -352,6 +352,116 @@ describe('Auto-Detection Parsing', () => {
   });
 });
 
+describe('Whitespace-equivalent JSON (isWhitespaceEquivalent path)', () => {
+  const validResultsData = {
+    baselines: [{
+      name: 'WS Test Baseline',
+      checksum: { algorithm: 'sha256', value: 'abc123' },
+      requirements: [{
+        id: 'REQ-001',
+        descriptions: [{ label: 'default', data: 'Test' }],
+        impact: 0.5,
+        tags: {},
+        results: [{
+          status: 'passed',
+          codeDesc: 'ok',
+          startTime: '2025-01-01T00:00:00Z'
+        }]
+      }]
+    }],
+    targets: [],
+    statistics: {}
+  };
+
+  it('parseResults accepts pretty-printed JSON (exercises isWhitespaceEquivalent)', () => {
+    // Pretty-printed JSON has extra internal whitespace: compact serialized != trimmed input
+    // but isWhitespaceEquivalent returns true, so it should parse successfully
+    const prettyJson = JSON.stringify(validResultsData, null, 2);
+    const result = parseResults(prettyJson);
+    expect(result.success).toBe(true);
+    expect(result.data).toBeDefined();
+  });
+
+  it('parseResults accepts compact JSON with trailing whitespace', () => {
+    const json = JSON.stringify(validResultsData) + '   \n';
+    const result = parseResults(json);
+    expect(result.success).toBe(true);
+  });
+
+  it('parseBaseline accepts pretty-printed JSON', () => {
+    const validBaselineData = {
+      name: 'WS Baseline',
+      version: '1.0.0',
+      checksum: { algorithm: 'sha256', value: 'def456' },
+      requirements: [{
+        id: 'REQ-001',
+        title: 'Test',
+        descriptions: [{ label: 'default', data: 'Test' }],
+        impact: 0.5,
+        tags: {}
+      }]
+    };
+    const prettyJson = JSON.stringify(validBaselineData, null, 2);
+    const result = parseBaseline(prettyJson);
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('Trailing garbage detection (parseBaseline and parse)', () => {
+  it('parseBaseline rejects trailing non-whitespace data', () => {
+    const validJson = JSON.stringify({
+      name: 'Test',
+      version: '1.0.0',
+      checksum: { algorithm: 'sha256', value: 'test' },
+      requirements: [{
+        id: 'REQ-001',
+        title: 'Test',
+        descriptions: [{ label: 'default', data: 'Test' }],
+        impact: 0.5,
+        tags: {}
+      }]
+    }) + ' garbage_data';
+
+    const result = parseBaseline(validJson);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(result.error).toMatch(/JSON|trailing|unexpected/i);
+  });
+
+  it('parse rejects trailing garbage after valid JSON', () => {
+    const validJson = '{"baselines":[],"targets":[],"statistics":{}}extraGarbage';
+
+    const result = parse(validJson);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(result.error).toMatch(/JSON|trailing|unexpected/i);
+  });
+});
+
+describe('Schema validation error messages', () => {
+  it('parseResults error explicitly contains Schema validation failed', () => {
+    const validJsonButInvalidHdf = JSON.stringify({ notHdf: true });
+    const result = parseResults(validJsonButInvalidHdf);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Schema validation failed');
+  });
+
+  it('parseBaseline error explicitly contains Schema validation failed', () => {
+    const invalidSchema = JSON.stringify({ name: 'test', notRequirements: true });
+    const result = parseBaseline(invalidSchema);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Schema validation failed');
+  });
+
+  it('parse auto-detect error for object missing HDF keys', () => {
+    const result = parse(JSON.stringify({ name: 'test' }));
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+  });
+});
+
 describe('Error Messages', () => {
   it('should provide helpful error message for schema validation failure', () => {
     const invalidJson = JSON.stringify({

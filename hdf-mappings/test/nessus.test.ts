@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   getNessusNistControl,
   getNessusPluginFamilyMappings,
@@ -69,6 +69,28 @@ describe('Nessus Mapping Functions', () => {
 
     it('should return false for invalid plugin family', () => {
       expect(nessusPluginFamilyExists('Invalid Plugin Family')).toBe(false);
+    });
+  });
+
+  describe('wildcard fallback path', () => {
+    it('returns wildcard mapping when specific pluginId has no exact match', () => {
+      // The 'AIX Local Security Checks' family only has a wildcard (*) entry
+      // Passing a non-matching pluginId should fall back to the wildcard
+      const nistId = getNessusNistControl('AIX Local Security Checks', 'NONEXISTENT-PLUGIN-99999');
+      expect(nistId).toBe('SI-2|RA-5');
+    });
+
+    it('returns undefined when neither exact nor wildcard matches', () => {
+      const nistId = getNessusNistControl('Nonexistent Family', 'PLUGIN-123');
+      expect(nistId).toBeUndefined();
+    });
+  });
+
+  describe('lazy initialization (cold start)', () => {
+    it('loads mappings on first call after module reset', async () => {
+      vi.resetModules();
+      const { getNessusNistControl: getFresh } = await import('../src/nessus/index.js');
+      expect(getFresh('AIX Local Security Checks')).toBe('SI-2|RA-5');
     });
   });
 

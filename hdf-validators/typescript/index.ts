@@ -2,15 +2,15 @@ import Ajv, { type ValidateFunction, type ErrorObject } from 'ajv';
 import addFormats from 'ajv-formats';
 
 // Import all schemas
-import hdfResultsSchema from '@mitre/hdf-schema/schemas/hdf-results.schema.json' assert { type: 'json' };
-import hdfBaselineSchema from '@mitre/hdf-schema/schemas/hdf-baseline.schema.json' assert { type: 'json' };
-import commonSchema from '@mitre/hdf-schema/schemas/primitives/common.schema.json' assert { type: 'json' };
-import extensionsSchema from '@mitre/hdf-schema/schemas/primitives/extensions.schema.json' assert { type: 'json' };
-import platformSchema from '@mitre/hdf-schema/schemas/primitives/platform.schema.json' assert { type: 'json' };
-import resultSchema from '@mitre/hdf-schema/schemas/primitives/result.schema.json' assert { type: 'json' };
-import runnerSchema from '@mitre/hdf-schema/schemas/primitives/runner.schema.json' assert { type: 'json' };
-import statisticsSchema from '@mitre/hdf-schema/schemas/primitives/statistics.schema.json' assert { type: 'json' };
-import targetSchema from '@mitre/hdf-schema/schemas/primitives/target.schema.json' assert { type: 'json' };
+import hdfResultsSchema from '@mitre/hdf-schema/schemas/hdf-results.schema.json' with { type: 'json' };
+import hdfBaselineSchema from '@mitre/hdf-schema/schemas/hdf-baseline.schema.json' with { type: 'json' };
+import commonSchema from '@mitre/hdf-schema/schemas/primitives/common.schema.json' with { type: 'json' };
+import extensionsSchema from '@mitre/hdf-schema/schemas/primitives/extensions.schema.json' with { type: 'json' };
+import platformSchema from '@mitre/hdf-schema/schemas/primitives/platform.schema.json' with { type: 'json' };
+import resultSchema from '@mitre/hdf-schema/schemas/primitives/result.schema.json' with { type: 'json' };
+import runnerSchema from '@mitre/hdf-schema/schemas/primitives/runner.schema.json' with { type: 'json' };
+import statisticsSchema from '@mitre/hdf-schema/schemas/primitives/statistics.schema.json' with { type: 'json' };
+import targetSchema from '@mitre/hdf-schema/schemas/primitives/target.schema.json' with { type: 'json' };
 
 /**
  * Validation error details
