@@ -97,6 +97,7 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.AddCommand(NewQueryCmd())
 	cmd.AddCommand(NewVersionCmd())
 	cmd.AddCommand(NewConvertCmd())
+	cmd.AddCommand(NewFetchCmd())
 
 	return cmd
 }

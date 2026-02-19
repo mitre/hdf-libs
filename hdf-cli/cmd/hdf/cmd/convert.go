@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -13,28 +14,39 @@ func NewConvertCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "convert <src-format> to <dest-format> <input> [output]",
 		Short: "Convert between HDF and other security formats",
-		Long: `Convert security assessment data between formats.
+		Long:  buildConvertLong(),
+		Args:  validateConvertArgs,
+		RunE:  runConvert,
+	}
 
-Supported conversions:
-  legacyhdf to hdf    Convert legacy HDF v1.0 (InSpec JSON) to HDF v2.0
-  nessus to hdf       Convert Nessus XML scan results to HDF v2.0
-  hdf to csv          Export HDF JSON to CSV spreadsheet format
-  hdf to xml          Export HDF JSON to XML format
+	return cmd
+}
 
+// buildConvertLong generates the Long help text from the live converter registry.
+func buildConvertLong() string {
+	pairs := ListConverters()
+	sort.Slice(pairs, func(i, j int) bool {
+		si := pairs[i].Source + " to " + pairs[i].Dest
+		sj := pairs[j].Source + " to " + pairs[j].Dest
+		return si < sj
+	})
+
+	var sb strings.Builder
+	sb.WriteString("Convert security assessment data between formats.\n\nSupported conversions:\n")
+	for _, pair := range pairs {
+		fmt.Fprintf(&sb, "  %s to %s\n", pair.Source, pair.Dest)
+	}
+	sb.WriteString(`
 Input can be a file path or "-" for stdin.
 Output defaults to stdout if not specified.
 
 Examples:
-  hdf convert legacyhdf to hdf scan.json                    # Convert, output to stdout
-  hdf convert nessus to hdf scan.nessus results.json        # Convert Nessus to file
+  hdf convert nessus to hdf scan.nessus results.json        # Convert to file
   hdf convert hdf to csv results.json output.csv            # Export HDF to CSV
   hdf convert legacyhdf to hdf - output.json                # Read from stdin
-  cat scan.json | hdf convert legacyhdf to hdf -            # Pipe through stdin`,
-		Args: validateConvertArgs,
-		RunE: runConvert,
-	}
+  cat scan.json | hdf convert legacyhdf to hdf -            # Pipe through stdin`)
 
-	return cmd
+	return sb.String()
 }
 
 // validateConvertArgs validates the convert command arguments.
