@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   getNiktoNistControl,
   getAllNiktoIds,
@@ -60,6 +60,14 @@ describe('Nikto Mapping Functions', () => {
     it('should return false for invalid Nikto ID', () => {
       expect(niktoExists('999999999')).toBe(false);
       expect(niktoExists(999999999)).toBe(false);
+    });
+  });
+
+  describe('lazy initialization (cold start)', () => {
+    it('loads mappings on first call after module reset', async () => {
+      vi.resetModules();
+      const { getNiktoNistControl: getFresh } = await import('../src/nikto/index.js');
+      expect(getFresh('750500')).toBe('SI-11');
     });
   });
 

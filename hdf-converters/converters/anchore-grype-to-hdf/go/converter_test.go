@@ -325,6 +325,63 @@ func TestEmptyInput(t *testing.T) {
 	}
 }
 
+func TestGetVulnDescription_RelatedFallback(t *testing.T) {
+	t.Run("uses primary description when available", func(t *testing.T) {
+		vuln := GrypeVulnerability{
+			ID:          "CVE-2023-00001",
+			Description: "Primary description",
+		}
+		result := getDescription(vuln, nil)
+		if result != "Primary description" {
+			t.Errorf("expected primary description, got %q", result)
+		}
+	})
+
+	t.Run("falls back to related vuln with matching ID", func(t *testing.T) {
+		vuln := GrypeVulnerability{
+			ID:          "CVE-2023-00001",
+			Description: "",
+		}
+		related := []GrypeRelatedVulnerability{
+			{ID: "CVE-2023-00001", Description: "Related description for same CVE"},
+		}
+		result := getDescription(vuln, related)
+		if result != "Related description for same CVE" {
+			t.Errorf("expected related description, got %q", result)
+		}
+	})
+
+	t.Run("skips related vulns with different ID", func(t *testing.T) {
+		vuln := GrypeVulnerability{
+			ID:          "CVE-2023-00001",
+			Description: "",
+		}
+		related := []GrypeRelatedVulnerability{
+			{ID: "CVE-2023-99999", Description: "Unrelated"},
+		}
+		result := getDescription(vuln, related)
+		// Should fall through to the default format
+		if !strings.Contains(result, "CVE-2023-00001") {
+			t.Errorf("expected fallback to contain CVE ID, got %q", result)
+		}
+	})
+
+	t.Run("skips related vuln with empty description", func(t *testing.T) {
+		vuln := GrypeVulnerability{
+			ID:          "CVE-2023-00001",
+			Description: "",
+		}
+		related := []GrypeRelatedVulnerability{
+			{ID: "CVE-2023-00001", Description: ""},
+		}
+		result := getDescription(vuln, related)
+		// Falls through because related description is empty
+		if !strings.Contains(result, "CVE-2023-00001") {
+			t.Errorf("expected fallback to contain CVE ID, got %q", result)
+		}
+	})
+}
+
 func TestMinimalReport(t *testing.T) {
 	minimalReport := `{
 		"descriptor": {

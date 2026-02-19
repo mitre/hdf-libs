@@ -217,6 +217,30 @@ describe('Hash Utilities', () => {
     });
   });
 
+  describe('explicit algorithm option', () => {
+    it('explicit sha256 algorithm matches default', () => {
+      const data = 'test data for algorithm option';
+      const defaultHash = generateHash(data);
+      const explicitHash = generateHash(data, { algorithm: 'sha256' });
+      expect(explicitHash).toBe(defaultHash);
+    });
+  });
+
+  describe('hashObject undefined handling', () => {
+    it('undefined value is serialized as string "undefined"', () => {
+      // hashObject serializes undefined as the string 'undefined', not JSON.stringify(undefined) = undefined
+      const hashUndef = hashObject(undefined);
+      const hashStrUndef = generateHash('undefined');
+      expect(hashUndef).toBe(hashStrUndef);
+    });
+
+    it('null is distinct from undefined', () => {
+      const hashNull = hashObject(null);
+      const hashUndef = hashObject(undefined);
+      expect(hashNull).not.toBe(hashUndef);
+    });
+  });
+
   describe('Real-world HDF use cases', () => {
     it('should hash HDF control object consistently', () => {
       const control = {

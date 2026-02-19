@@ -1,6 +1,11 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -319,5 +324,117 @@ func TestStatusToSymbol(t *testing.T) {
 				t.Errorf("statusToSymbol(%q) = %q, want %q", tt.status, result, tt.expected)
 			}
 		})
+	}
+}
+
+// buildQueryFixture creates a synthetic HDF results JSON file in a temp dir.
+func buildQueryFixture(t *testing.T, requirements []map[string]interface{}) string {
+	t.Helper()
+	data, err := json.Marshal(map[string]interface{}{
+		"baselines": []interface{}{
+			map[string]interface{}{
+				"name":         "Query Test Baseline",
+				"checksum":     map[string]interface{}{"algorithm": "sha256", "value": "abc"},
+				"requirements": requirements,
+			},
+		},
+		"targets":    []interface{}{},
+		"statistics": map[string]interface{}{},
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal query fixture: %v", err)
+	}
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "query-fixture.json")
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatalf("failed to write query fixture: %v", err)
+	}
+	return path
+}
+
+// makeRequirement builds a minimal requirement map.
+func makeRequirement(id, title string, impact float64) map[string]interface{} {
+	return map[string]interface{}{
+		"id":           id,
+		"title":        title,
+		"descriptions": []interface{}{map[string]interface{}{"label": "default", "data": "test"}},
+		"impact":       impact,
+		"tags":         map[string]interface{}{},
+		"results": []interface{}{
+			map[string]interface{}{
+				"status":    "failed",
+				"codeDesc":  "check",
+				"startTime": "2025-01-01T00:00:00Z",
+			},
+		},
+	}
+}
+
+func TestQueryCommand_TextOutput_ImpactFilter(t *testing.T) {
+	// Exercises the human-readable outputQueryResults path (fmt.Printf loop) via
+	// a real executeCommand call, covering compareImpact >, >=, < branches in
+	// the full CLI pipeline.
+	reqs := []map[string]interface{}{
+		makeRequirement("REQ-001", "Low impact control", 0.2),
+		makeRequirement("REQ-002", "Medium impact control", 0.5),
+		makeRequirement("REQ-003", "High impact control", 0.8),
+	}
+	fixturePath := buildQueryFixture(t, reqs)
+
+	tests := []struct {
+		name           string
+		impactFilter   string
+		wantContain    string
+		wantNotContain string
+	}{
+		{
+			name:         "greater than 0.3",
+			impactFilter: ">0.3",
+			wantContain:  "REQ-002",
+		},
+		{
+			name:         "greater or equal 0.5",
+			impactFilter: ">=0.5",
+			wantContain:  "REQ-003",
+		},
+		{
+			name:           "less than 0.5",
+			impactFilter:   "<0.5",
+			wantContain:    "REQ-001",
+			wantNotContain: "REQ-003",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stdout, stderr, err := executeCommand("query", "--impact", tt.impactFilter, fixturePath)
+			if err != nil {
+				t.Fatalf("query command failed: %v (stderr: %s)", err, stderr)
+			}
+			if tt.wantContain != "" && !strings.Contains(stdout, tt.wantContain) {
+				t.Errorf("stdout missing %q, got: %s", tt.wantContain, stdout)
+			}
+			if tt.wantNotContain != "" && strings.Contains(stdout, tt.wantNotContain) {
+				t.Errorf("stdout should not contain %q, got: %s", tt.wantNotContain, stdout)
+			}
+		})
+	}
+}
+
+func TestQueryCommand_TextOutput_TitleTruncation(t *testing.T) {
+	// A title of 56+ characters exercises the title[:52]+"..." truncation branch
+	// in outputQueryResults (line 205–207 of query.go).
+	longTitle := fmt.Sprintf("%-56s", "This title is intentionally very long to trigger truncation logic")
+	reqs := []map[string]interface{}{
+		makeRequirement("REQ-LONG", longTitle, 0.5),
+	}
+	fixturePath := buildQueryFixture(t, reqs)
+
+	stdout, stderr, err := executeCommand("query", fixturePath)
+	if err != nil {
+		t.Fatalf("query command failed: %v (stderr: %s)", err, stderr)
+	}
+	if !strings.Contains(stdout, "...") {
+		t.Errorf("expected truncated title with '...', got: %s", stdout)
 	}
 }

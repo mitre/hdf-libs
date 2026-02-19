@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   getCCIDescription,
   getCCINistMappings,
@@ -91,6 +91,48 @@ describe('CCI Mapping Functions', () => {
 
     it('should be case-sensitive', () => {
       expect(cciExists('cci-000001')).toBe(false);
+    });
+  });
+
+  describe('type guard: non-string inputs', () => {
+    it('getCCIDescription returns undefined for null', () => {
+      expect(getCCIDescription(null as unknown as string)).toBeUndefined();
+    });
+
+    it('getCCIDescription returns undefined for undefined', () => {
+      expect(getCCIDescription(undefined as unknown as string)).toBeUndefined();
+    });
+
+    it('getCCIDescription returns undefined for number', () => {
+      expect(getCCIDescription(123 as unknown as string)).toBeUndefined();
+    });
+
+    it('getCCIDescription returns undefined for false', () => {
+      expect(getCCIDescription(false as unknown as string)).toBeUndefined();
+    });
+
+    it('getCCINistMappings returns undefined for null', () => {
+      expect(getCCINistMappings(null as unknown as string)).toBeUndefined();
+    });
+
+    it('getCCINistMappings returns undefined for 0', () => {
+      expect(getCCINistMappings(0 as unknown as string)).toBeUndefined();
+    });
+
+    it('cciExists returns false for null', () => {
+      expect(cciExists(null as unknown as string)).toBe(false);
+    });
+
+    it('cciExists returns false for 42', () => {
+      expect(cciExists(42 as unknown as string)).toBe(false);
+    });
+  });
+
+  describe('lazy initialization (cold start)', () => {
+    it('loads data on first call after module reset', async () => {
+      vi.resetModules();
+      const { getCCIDescription: getCCIDescFresh } = await import('../src/cci/index.js');
+      expect(getCCIDescFresh('CCI-000001')).toBeDefined();
     });
   });
 

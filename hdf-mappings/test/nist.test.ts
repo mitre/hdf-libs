@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   getNISTDescription,
   getAllNISTIds,
@@ -99,6 +99,42 @@ describe('NIST Mapping Functions', () => {
     it('should handle all common NIST families', () => {
       // Verify the function works for a representative NIST family
       expect(getNISTFamily('AC-01')).toBe('AC');
+    });
+  });
+
+  describe('type guard: non-string inputs', () => {
+    it('getNISTDescription returns undefined for null', () => {
+      expect(getNISTDescription(null as unknown as string)).toBeUndefined();
+    });
+
+    it('getNISTDescription returns undefined for 0', () => {
+      expect(getNISTDescription(0 as unknown as string)).toBeUndefined();
+    });
+
+    it('nistExists returns false for null', () => {
+      expect(nistExists(null as unknown as string)).toBe(false);
+    });
+
+    it('nistExists returns false for false', () => {
+      expect(nistExists(false as unknown as string)).toBe(false);
+    });
+  });
+
+  describe('lazy initialization (cold start)', () => {
+    it('loads data on first call after module reset', async () => {
+      vi.resetModules();
+      const { getNISTDescription: getNISTFresh } = await import('../src/nist/index.js');
+      expect(getNISTFresh('AC-01')).toBeDefined();
+    });
+  });
+
+  describe('getNISTFamily with prefix content', () => {
+    it('returns undefined for ID with characters before the control code', () => {
+      // The regex uses ^ anchor, so 'prefix-AC-2' should not match
+      // (getNISTFamily finds the control in the DB and extracts the family prefix)
+      // If AC-2 is not a direct entry prefix, this falls through to undefined
+      const family = getNISTFamily('prefix-AC-2');
+      expect(family).toBeUndefined();
     });
   });
 

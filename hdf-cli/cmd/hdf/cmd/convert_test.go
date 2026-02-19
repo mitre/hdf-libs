@@ -157,3 +157,51 @@ func TestConvertCommand_ListsConverters(t *testing.T) {
 		t.Error("help should list legacyhdf converter")
 	}
 }
+
+func TestConvertCommand_ErrorMessages(t *testing.T) {
+	// These tests exercise the three switch cases in buildConverterNotFoundError:
+	//   case len(sourceDestinations) > 0: source format is known, dest is unknown
+	//   case len(destSources) > 0:        dest format is known, source is unknown
+	//   default:                           neither format is recognized
+	//
+	// The error is emitted to stderr via executeCommand's "Error: %v" wrapper.
+	fixture := legacyhdfFixturePath(t, "input/minimal.json")
+
+	tests := []struct {
+		name       string
+		src        string
+		dst        string
+		wantErrMsg string
+	}{
+		{
+			name:       "known source unknown dest (sourceDestinations>0 branch)",
+			src:        "legacyhdf",
+			dst:        "unknown",
+			wantErrMsg: "legacyhdf",
+		},
+		{
+			name:       "unknown source known dest (destSources>0 branch)",
+			src:        "unknown",
+			dst:        "hdf",
+			wantErrMsg: "hdf",
+		},
+		{
+			name:       "both unknown (default branch)",
+			src:        "foo",
+			dst:        "bar",
+			wantErrMsg: "foo",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, stderr, err := executeCommand("convert", tt.src, "to", tt.dst, fixture)
+			if err == nil {
+				t.Fatalf("expected error for %s->%s, got nil", tt.src, tt.dst)
+			}
+			if !strings.Contains(stderr, tt.wantErrMsg) {
+				t.Errorf("stderr = %q, expected to contain %q", stderr, tt.wantErrMsg)
+			}
+		})
+	}
+}

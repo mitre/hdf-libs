@@ -46,5 +46,9 @@
     "heimdall",
     "validation",
     "json-schema"
-  ]
+  ],
+  "devDependencies": {
+    "@stryker-mutator/core": "^9.5.1",
+    "@stryker-mutator/vitest-runner": "^9.5.1"
+  }
 }

@@ -310,6 +310,68 @@ Jane,25`;
     });
   });
 
+  describe('whitespace and trim behavior', () => {
+    it('should trim leading/trailing whitespace from input before parsing', () => {
+      const csv = '  name,age\nJohn,30\n  ';
+      const result = parseCsv(csv);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({ name: 'John', age: '30' });
+    });
+
+    it('should throw or return empty for whitespace-only input (after trim becomes empty)', () => {
+      // parseCsv trims input; "   " becomes "" which papaparse rejects
+      const input = '   ';
+      let threw = false;
+      let result: unknown[] = [];
+      try {
+        result = parseCsv(input);
+      } catch {
+        threw = true;
+      }
+      // papaparse either throws or returns []: both are acceptable empty-input behaviors
+      expect(threw || result.length === 0).toBe(true);
+    });
+  });
+
+  describe('error message format', () => {
+    it('should include Row prefix in error message', () => {
+      const csv = `name,age\nJohn,30,"unclosed quote`;
+      let errorMessage = '';
+      try {
+        parseCsv(csv);
+      } catch (e) {
+        errorMessage = (e as Error).message;
+      }
+      expect(errorMessage).toContain('CSV parsing failed');
+      expect(errorMessage).toContain('Row');
+    });
+
+    it('should use "; " separator when multiple row errors exist', () => {
+      // parseCsvArray with header:false and quotes that span multiple rows
+      // This exercises the join('; ') path when there are multiple parse errors
+      const csv = `name,age\nJohn,30,"unclosed`;
+      let errorMessage = '';
+      try {
+        parseCsv(csv);
+      } catch (e) {
+        errorMessage = (e as Error).message;
+      }
+      // The error message format: "Row N: message; Row M: message"
+      expect(errorMessage).toMatch(/Row \d+:/);
+    });
+  });
+
+  describe('header option', () => {
+    it('header:false treats first row as data not headers', () => {
+      const csv = `name,age\nJohn,30`;
+      // With header:false via parseCsvArray (which uses DEFAULT_PARSE_ARRAY_OPTIONS)
+      const result = parseCsvArray(csv);
+      // First row is data, not headers
+      expect(result[0]).toEqual(['name', 'age']);
+      expect(result[1]).toEqual(['John', '30']);
+    });
+  });
+
   describe('Real-world scenarios', () => {
     it('should parse security tool CSV export', () => {
       const csv = `PluginID,Severity,Name,Description

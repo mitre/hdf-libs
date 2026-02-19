@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   getOwaspNistMapping,
   getOwaspNistControl,
@@ -113,6 +113,14 @@ describe('OWASP Mapping Functions', () => {
     it('should return false for non-string input', () => {
       expect(owaspExists(null as any)).toBe(false);
       expect(owaspExists(undefined as any)).toBe(false);
+    });
+  });
+
+  describe('lazy initialization (cold start)', () => {
+    it('loads mappings on first call after module reset', async () => {
+      vi.resetModules();
+      const { getOwaspNistControl: getFresh } = await import('../src/owasp/index.js');
+      expect(getFresh('A1')).toBe('SI-10');
     });
   });
 

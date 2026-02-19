@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -290,6 +291,39 @@ func TestConvertHDFToCSV_CSVInjection(t *testing.T) {
 	assert.Contains(t, resultStr, "'+dangerous")
 	assert.Contains(t, resultStr, "'-dangerous")
 	assert.Contains(t, resultStr, "'@dangerous")
+}
+
+func TestGetSeverity_ArrayPath(t *testing.T) {
+	t.Run("severity tag as []interface{} slice returns first element", func(t *testing.T) {
+		req := &hdf.EvaluatedRequirement{
+			Impact: 0.5,
+			Tags: map[string]interface{}{
+				"severity": []interface{}{"high", "critical"},
+			},
+		}
+		result := getSeverity(req)
+		assert.Equal(t, "high", result)
+	})
+
+	t.Run("impact exactly 0.7 returns high", func(t *testing.T) {
+		req := &hdf.EvaluatedRequirement{Impact: 0.7}
+		assert.Equal(t, "high", getSeverity(req))
+	})
+
+	t.Run("impact exactly 0.4 returns medium", func(t *testing.T) {
+		req := &hdf.EvaluatedRequirement{Impact: 0.4}
+		assert.Equal(t, "medium", getSeverity(req))
+	})
+
+	t.Run("impact 0.39 returns low", func(t *testing.T) {
+		req := &hdf.EvaluatedRequirement{Impact: 0.39}
+		assert.Equal(t, "low", getSeverity(req))
+	})
+
+	t.Run("impact 0.0 returns low (below medium threshold)", func(t *testing.T) {
+		req := &hdf.EvaluatedRequirement{Impact: 0.0}
+		assert.Equal(t, "low", getSeverity(req))
+	})
 }
 
 func TestConvertHDFToCSV_InvalidJSON(t *testing.T) {

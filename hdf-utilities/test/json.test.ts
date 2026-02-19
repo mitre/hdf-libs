@@ -60,6 +60,18 @@ describe('parseJSON', () => {
     expect(() => parseJSON('test')).toThrow('Invalid JSON: string error');
     spy.mockRestore();
   });
+
+  it('should parse input with leading/trailing whitespace', () => {
+    // parseJSON does not explicitly trim but JSON.parse handles surrounding whitespace
+    const input = '  {"name": "test"}  ';
+    // The trim() check on input.trim() === '' passes non-empty trimmed, then JSON.parse handles whitespace
+    const result = parseJSON<{ name: string }>(input);
+    expect(result.name).toBe('test');
+  });
+
+  it('should throw for whitespace-only input (empty after trim)', () => {
+    expect(() => parseJSON('   ')).toThrow('Input cannot be empty');
+  });
 });
 
 describe('stringifyJSON', () => {
