@@ -16,13 +16,15 @@ without any intermediate file.
 
 Available sources:
   aws-config    AWS Config compliance evaluation results
+  sonarqube     SonarQube static analysis issues
 
 Examples:
   hdf fetch aws-config --region us-east-1 output.json
-  hdf fetch aws-config --region us-east-1 --access-key-id KEY --secret-access-key SECRET output.json`,
+  hdf fetch sonarqube --url https://sonarqube.example.com --project-key my-project output.json`,
 	}
 
 	cmd.AddCommand(newFetchAWSConfigCmd())
+	cmd.AddCommand(newFetchSonarqubeCmd())
 
 	return cmd
 }
