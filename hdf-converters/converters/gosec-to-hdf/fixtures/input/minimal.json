@@ -1,0 +1,65 @@
+{
+  "Golang errors": {},
+  "Issues": [
+    {
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "cwe": {
+        "id": "22",
+        "url": "https://cwe.mitre.org/data/definitions/22.html"
+      },
+      "rule_id": "G304",
+      "details": "Potential file inclusion via variable",
+      "file": "/app/main.go",
+      "code": "42: \tf, err := os.Open(userInput)\n",
+      "line": "42",
+      "column": "12",
+      "nosec": false,
+      "suppressions": null
+    },
+    {
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "cwe": {
+        "id": "22",
+        "url": "https://cwe.mitre.org/data/definitions/22.html"
+      },
+      "rule_id": "G304",
+      "details": "Potential file inclusion via variable",
+      "file": "/app/handler.go",
+      "code": "10: \tf, err := os.Open(path)\n",
+      "line": "10",
+      "column": "8",
+      "nosec": false,
+      "suppressions": null
+    },
+    {
+      "severity": "HIGH",
+      "confidence": "MEDIUM",
+      "cwe": {
+        "id": "338",
+        "url": "https://cwe.mitre.org/data/definitions/338.html"
+      },
+      "rule_id": "G404",
+      "details": "Use of weak random number generator (math/rand instead of crypto/rand)",
+      "file": "/app/token.go",
+      "code": "7: \tn := rand.Intn(100)\n",
+      "line": "7",
+      "column": "5",
+      "nosec": true,
+      "suppressions": [
+        {
+          "kind": "inSource",
+          "justification": "Acceptable for non-security context."
+        }
+      ]
+    }
+  ],
+  "Stats": {
+    "files": 3,
+    "lines": 100,
+    "nosec": 1,
+    "found": 3
+  },
+  "GosecVersion": "2.18.0"
+}
