@@ -66,7 +66,7 @@ func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResu
 			Duration: &duration,
 		},
 		Generator: &hdf.Generator{
-			Name:    "hdf-converters",
+			Name:    "nessus-to-hdf",
 			Version: converterVersion,
 		},
 		Timestamp: &startTime,

@@ -25,7 +25,7 @@ func TestConvertAWSConfigToHDF_Minimal(t *testing.T) {
 	require.NotNil(t, result)
 
 	require.NotNil(t, result.Generator)
-	assert.Equal(t, "hdf-converters", result.Generator.Name)
+	assert.Equal(t, "aws-config-to-hdf", result.Generator.Name)
 	assert.Equal(t, converterVersion, result.Generator.Version)
 	require.Len(t, result.Baselines, 1, "Should produce one baseline")
 

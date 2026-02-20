@@ -1,7 +1,6 @@
 package anchore_grype_to_hdf
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +9,8 @@ import (
 
 	hdf "github.com/mitre/hdf-schema"
 )
+
+const testConverterVersion = "test-version"
 
 func loadFixture(t *testing.T, name string) []byte {
 	t.Helper()
@@ -23,15 +24,10 @@ func loadFixture(t *testing.T, name string) []byte {
 
 func TestConvertAnchoreGrypeToHDF(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
-	output, err := ConvertAnchoreGrypeToHDF(input)
+	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
-	}
-
-	var hdfResults hdf.HDFResults
-	if err := json.Unmarshal(output, &hdfResults); err != nil {
-		t.Fatalf("Failed to parse output JSON: %v", err)
 	}
 
 	// Check basic structure
@@ -39,12 +35,12 @@ func TestConvertAnchoreGrypeToHDF(t *testing.T) {
 		t.Errorf("Expected 1 baseline, got %d", len(hdfResults.Baselines))
 	}
 
-	if hdfResults.Generator.Name != "grype" {
-		t.Errorf("Expected generator name 'grype', got '%s'", hdfResults.Generator.Name)
+	if hdfResults.Generator.Name != "anchore-grype-to-hdf" {
+		t.Errorf("Expected generator name 'anchore-grype-to-hdf', got '%s'", hdfResults.Generator.Name)
 	}
 
-	if hdfResults.Generator.Version != "0.79.3" {
-		t.Errorf("Expected generator version '0.79.3', got '%s'", hdfResults.Generator.Version)
+	if hdfResults.Generator.Version != testConverterVersion {
+		t.Errorf("Expected generator version %q, got '%s'", testConverterVersion, hdfResults.Generator.Version)
 	}
 
 	expectedTime, _ := time.Parse(time.RFC3339, "2024-01-15T10:30:00Z")
@@ -59,15 +55,10 @@ func TestConvertAnchoreGrypeToHDF(t *testing.T) {
 
 func TestBaselineName(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
-	output, err := ConvertAnchoreGrypeToHDF(input)
+	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
-	}
-
-	var hdfResults hdf.HDFResults
-	if err := json.Unmarshal(output, &hdfResults); err != nil {
-		t.Fatalf("Failed to parse output JSON: %v", err)
 	}
 
 	if hdfResults.Baselines[0].Name != "alpine:3.18" {
@@ -77,15 +68,10 @@ func TestBaselineName(t *testing.T) {
 
 func TestMatchesConvertedToRequirements(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
-	output, err := ConvertAnchoreGrypeToHDF(input)
+	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
-	}
-
-	var hdfResults hdf.HDFResults
-	if err := json.Unmarshal(output, &hdfResults); err != nil {
-		t.Fatalf("Failed to parse output JSON: %v", err)
 	}
 
 	requirements := hdfResults.Baselines[0].Requirements
@@ -138,15 +124,10 @@ func TestMatchesConvertedToRequirements(t *testing.T) {
 
 func TestIgnoredMatches(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
-	output, err := ConvertAnchoreGrypeToHDF(input)
+	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
-	}
-
-	var hdfResults hdf.HDFResults
-	if err := json.Unmarshal(output, &hdfResults); err != nil {
-		t.Fatalf("Failed to parse output JSON: %v", err)
 	}
 
 	requirements := hdfResults.Baselines[0].Requirements
@@ -173,15 +154,10 @@ func TestIgnoredMatches(t *testing.T) {
 
 func TestNISTAndCCITags(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
-	output, err := ConvertAnchoreGrypeToHDF(input)
+	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
-	}
-
-	var hdfResults hdf.HDFResults
-	if err := json.Unmarshal(output, &hdfResults); err != nil {
-		t.Fatalf("Failed to parse output JSON: %v", err)
 	}
 
 	req := hdfResults.Baselines[0].Requirements[0]
@@ -213,15 +189,10 @@ func TestNISTAndCCITags(t *testing.T) {
 
 func TestDescriptions(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
-	output, err := ConvertAnchoreGrypeToHDF(input)
+	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
-	}
-
-	var hdfResults hdf.HDFResults
-	if err := json.Unmarshal(output, &hdfResults); err != nil {
-		t.Fatalf("Failed to parse output JSON: %v", err)
 	}
 
 	req := hdfResults.Baselines[0].Requirements[0]
@@ -260,15 +231,10 @@ func TestDescriptions(t *testing.T) {
 
 func TestReferences(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
-	output, err := ConvertAnchoreGrypeToHDF(input)
+	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
-	}
-
-	var hdfResults hdf.HDFResults
-	if err := json.Unmarshal(output, &hdfResults); err != nil {
-		t.Fatalf("Failed to parse output JSON: %v", err)
 	}
 
 	req := hdfResults.Baselines[0].Requirements[0]
@@ -280,15 +246,10 @@ func TestReferences(t *testing.T) {
 
 func TestChecksumCalculation(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
-	output, err := ConvertAnchoreGrypeToHDF(input)
+	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
-	}
-
-	var hdfResults hdf.HDFResults
-	if err := json.Unmarshal(output, &hdfResults); err != nil {
-		t.Fatalf("Failed to parse output JSON: %v", err)
 	}
 
 	baseline := hdfResults.Baselines[0]
@@ -309,7 +270,7 @@ func TestChecksumCalculation(t *testing.T) {
 
 func TestInvalidJSON(t *testing.T) {
 	input := []byte("not valid json")
-	_, err := ConvertAnchoreGrypeToHDF(input)
+	_, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err == nil {
 		t.Error("Expected error for invalid JSON")
@@ -318,7 +279,7 @@ func TestInvalidJSON(t *testing.T) {
 
 func TestEmptyInput(t *testing.T) {
 	input := []byte("")
-	_, err := ConvertAnchoreGrypeToHDF(input)
+	_, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err == nil {
 		t.Error("Expected error for empty input")
@@ -396,14 +357,9 @@ func TestMinimalReport(t *testing.T) {
 		"matches": []
 	}`
 
-	output, err := ConvertAnchoreGrypeToHDF([]byte(minimalReport))
+	hdfResults, err := ConvertAnchoreGrypeToHDF([]byte(minimalReport), testConverterVersion)
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
-	}
-
-	var hdfResults hdf.HDFResults
-	if err := json.Unmarshal(output, &hdfResults); err != nil {
-		t.Fatalf("Failed to parse output JSON: %v", err)
 	}
 
 	if len(hdfResults.Baselines) != 1 {

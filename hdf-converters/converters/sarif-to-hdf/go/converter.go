@@ -73,7 +73,7 @@ var impactMapping = map[string]float64{
 const defaultStaticAnalysisNistTag = "SI-10"
 
 // ConvertSarifToHDF converts SARIF JSON to HDF format
-func ConvertSarifToHDF(input []byte) ([]byte, error) {
+func ConvertSarifToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	// Calculate checksum of source scan data for integrity verification
 	hash := sha256.Sum256(input)
 	resultsChecksum := &hdf.Checksum{
@@ -99,22 +99,17 @@ func ConvertSarifToHDF(input []byte) ([]byte, error) {
 		baselines = append(baselines, baseline)
 	}
 
-	hdfResult := hdf.HDFResults{
+	hdfResult := &hdf.HDFResults{
 		Timestamp: &timestamp,
 		Baselines: baselines,
 		Targets:   []hdf.Target{},
 		Generator: &hdf.Generator{
 			Name:    "sarif-to-hdf",
-			Version: "1.0.0",
+			Version: converterVersion,
 		},
 	}
 
-	output, err := json.MarshalIndent(hdfResult, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal HDF JSON: %w", err)
-	}
-
-	return output, nil
+	return hdfResult, nil
 }
 
 func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {

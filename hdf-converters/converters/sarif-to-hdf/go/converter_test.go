@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testConverterVersion = "test-version"
+
 func TestConvertSarifToHDF_Minimal(t *testing.T) {
 	// Load minimal fixture
 	inputPath := filepath.Join(shared.GetConvertersDir(), "sarif-to-hdf", "fixtures", "input", "minimal.sarif")
@@ -19,18 +21,18 @@ func TestConvertSarifToHDF_Minimal(t *testing.T) {
 	require.NoError(t, err, "Failed to read minimal.sarif fixture")
 
 	// Convert
-	result, err := ConvertSarifToHDF(inputData)
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
 	require.NoError(t, err, "Conversion should succeed")
-	require.NotEmpty(t, result, "Result should not be empty")
+	require.NotNil(t, result, "Result should not be nil")
 
-	// Parse result
-	var hdfResult hdf.HDFResults
-	err = json.Unmarshal(result, &hdfResult)
-	require.NoError(t, err, "Should parse HDF JSON")
+	// Verify generator
+	require.NotNil(t, result.Generator)
+	assert.Equal(t, "sarif-to-hdf", result.Generator.Name)
+	assert.Equal(t, testConverterVersion, result.Generator.Version)
 
 	// Verify structure
-	require.Len(t, hdfResult.Baselines, 1, "Should have 1 baseline")
-	baseline := hdfResult.Baselines[0]
+	require.Len(t, result.Baselines, 1, "Should have 1 baseline")
+	baseline := result.Baselines[0]
 	assert.Equal(t, "SARIF", baseline.Name)
 	assert.Equal(t, "2.1.0", *baseline.Version)
 	require.Len(t, baseline.Requirements, 2, "Should have 2 requirements")
@@ -42,8 +44,8 @@ func TestConvertSarifToHDF_Minimal(t *testing.T) {
 	assert.Contains(t, req1.Descriptions[0].Data, "Does not check for buffer overflows")
 	assert.Equal(t, 0.7, req1.Impact)
 	assert.Equal(t, "error", req1.Tags["severity"])
-	cwe1, ok := req1.Tags["cwe"].([]interface{})
-	require.True(t, ok, "CWE should be interface array")
+	cwe1, ok := req1.Tags["cwe"].([]string)
+	require.True(t, ok, "CWE should be string slice")
 	assert.Len(t, cwe1, 2)
 	require.NotNil(t, req1.SourceLocation, "SourceLocation should not be nil")
 	require.NotNil(t, req1.SourceLocation.Ref)
@@ -71,15 +73,12 @@ func TestConvertSarifToHDF_EmptyResults(t *testing.T) {
 		}]
 	}`
 
-	result, err := ConvertSarifToHDF([]byte(input))
+	result, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
 	require.NoError(t, err, "Should succeed with empty results")
+	require.NotNil(t, result)
 
-	var hdfResult hdf.HDFResults
-	err = json.Unmarshal(result, &hdfResult)
-	require.NoError(t, err)
-
-	assert.Len(t, hdfResult.Baselines, 1)
-	assert.Len(t, hdfResult.Baselines[0].Requirements, 0)
+	assert.Len(t, result.Baselines, 1)
+	assert.Len(t, result.Baselines[0].Requirements, 0)
 }
 
 func TestConvertSarifToHDF_MissingLocations(t *testing.T) {
@@ -96,22 +95,19 @@ func TestConvertSarifToHDF_MissingLocations(t *testing.T) {
 		}]
 	}`
 
-	result, err := ConvertSarifToHDF([]byte(input))
+	result, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
 	require.NoError(t, err)
+	require.NotNil(t, result)
 
-	var hdfResult hdf.HDFResults
-	err = json.Unmarshal(result, &hdfResult)
-	require.NoError(t, err)
-
-	req := hdfResult.Baselines[0].Requirements[0]
+	req := result.Baselines[0].Requirements[0]
 	assert.Nil(t, req.SourceLocation, "Should have no source location when locations array is empty")
 	assert.Len(t, req.Results, 0, "Should have no results")
 }
 
 func TestImpactMapping(t *testing.T) {
 	tests := []struct {
-		name          string
-		level         string
+		name           string
+		level          string
 		expectedImpact float64
 	}{
 		{"error level", "error", 0.7},
@@ -143,13 +139,11 @@ func TestImpactMapping(t *testing.T) {
 			}
 
 			inputBytes, _ := json.Marshal(input)
-			result, err := ConvertSarifToHDF(inputBytes)
+			result, err := ConvertSarifToHDF(inputBytes, testConverterVersion)
 			require.NoError(t, err)
+			require.NotNil(t, result)
 
-			var hdfResult hdf.HDFResults
-			json.Unmarshal(result, &hdfResult)
-
-			assert.Equal(t, tt.expectedImpact, hdfResult.Baselines[0].Requirements[0].Impact)
+			assert.Equal(t, tt.expectedImpact, result.Baselines[0].Requirements[0].Impact)
 		})
 	}
 }
@@ -192,10 +186,10 @@ func TestCweExtraction(t *testing.T) {
 
 func TestMessageParsing(t *testing.T) {
 	tests := []struct {
-		name             string
-		messageText      string
-		expectedTitle    string
-		expectedDesc     string
+		name          string
+		messageText   string
+		expectedTitle string
+		expectedDesc  string
 	}{
 		{
 			"with colon",
@@ -247,13 +241,11 @@ func TestMultipleLocations(t *testing.T) {
 		}]
 	}`
 
-	result, err := ConvertSarifToHDF([]byte(input))
+	result, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
 	require.NoError(t, err)
+	require.NotNil(t, result)
 
-	var hdfResult hdf.HDFResults
-	json.Unmarshal(result, &hdfResult)
-
-	req := hdfResult.Baselines[0].Requirements[0]
+	req := result.Baselines[0].Requirements[0]
 
 	// Should use first location for sourceLocation
 	require.NotNil(t, req.SourceLocation, "SourceLocation should not be nil")
@@ -271,14 +263,14 @@ func TestMultipleLocations(t *testing.T) {
 }
 
 func TestInvalidJSON(t *testing.T) {
-	_, err := ConvertSarifToHDF([]byte("not valid json"))
+	_, err := ConvertSarifToHDF([]byte("not valid json"), testConverterVersion)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid SARIF JSON")
 }
 
 func TestMissingRuns(t *testing.T) {
 	input := `{ "version": "2.1.0" }`
-	_, err := ConvertSarifToHDF([]byte(input))
+	_, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "missing or empty runs field")
 }

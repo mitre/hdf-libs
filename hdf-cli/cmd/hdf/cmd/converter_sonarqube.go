@@ -1,6 +1,8 @@
+//nolint:dupl // CLI converter wrappers are structurally similar by design
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 
 	sonarqube "github.com/mitre/hdf-converters/converters/sonarqube-to-hdf/go"
@@ -13,10 +15,14 @@ func (c *sonarqubeConverter) Name() string {
 }
 
 func (c *sonarqubeConverter) Convert(input []byte) ([]byte, error) {
-	// Convert to HDF (already returns JSON bytes)
-	output, err := sonarqube.ConvertSonarqubeToHDF(input)
+	result, err := sonarqube.ConvertSonarqubeToHDF(input, version)
 	if err != nil {
 		return nil, fmt.Errorf("sonarqube conversion failed: %w", err)
+	}
+
+	output, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize HDF output: %w", err)
 	}
 
 	return output, nil

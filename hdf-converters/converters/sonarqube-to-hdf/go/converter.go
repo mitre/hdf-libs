@@ -11,18 +11,19 @@ import (
 	"time"
 
 	"github.com/mitre/hdf-mappings/go/cci"
+	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
 )
 
 // SonarQube /api/issues/search response structure
 type IssuesResponse struct {
-	Total      int          `json:"total"`
-	Page       int          `json:"p"`
-	PageSize   int          `json:"ps"`
-	Paging     Paging       `json:"paging"`
-	Issues     []Issue      `json:"issues"`
-	Components []Component  `json:"components,omitempty"`
-	Rules      []Rule       `json:"rules,omitempty"`
+	Total      int         `json:"total"`
+	Page       int         `json:"p"`
+	PageSize   int         `json:"ps"`
+	Paging     Paging      `json:"paging"`
+	Issues     []Issue     `json:"issues"`
+	Components []Component `json:"components,omitempty"`
+	Rules      []Rule      `json:"rules,omitempty"`
 }
 
 type Paging struct {
@@ -95,17 +96,21 @@ type Rule struct {
 
 var severityImpactMapping = map[string]float64{
 	"BLOCKER":  1.0,
-	"CRITICAL": 0.9,
+	"CRITICAL": 0.7,
 	"MAJOR":    0.7,
 	"MINOR":    0.5,
-	"INFO":     0.3,
+	"INFO":     0.0,
 }
 
 const defaultCodeQualityNistTag = "SA-11"
 const defaultSecurityNistTag = "SI-10"
 
+// sonarTimestampFormat matches the SonarQube API date format "2006-01-02T15:04:05+0000".
+// SonarQube omits the colon in the timezone offset, so time.RFC3339 does not parse it.
+const sonarTimestampFormat = "2006-01-02T15:04:05-0700"
+
 // ConvertSonarqubeToHDF converts SonarQube issues JSON to HDF format
-func ConvertSonarqubeToHDF(input []byte) ([]byte, error) {
+func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	// Calculate checksum of source scan data
 	hash := sha256.Sum256(input)
 	resultsChecksum := &hdf.Checksum{
@@ -149,22 +154,17 @@ func ConvertSonarqubeToHDF(input []byte) ([]byte, error) {
 
 	// Build HDF
 	timestamp := time.Now()
-	hdfResult := hdf.HDFResults{
+	hdfResult := &hdf.HDFResults{
 		Timestamp: &timestamp,
 		Baselines: baselines,
 		Targets:   []hdf.Target{},
 		Generator: &hdf.Generator{
 			Name:    "sonarqube-to-hdf",
-			Version: "1.0.0",
+			Version: converterVersion,
 		},
 	}
 
-	output, err := json.MarshalIndent(hdfResult, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal HDF JSON: %w", err)
-	}
-
-	return output, nil
+	return hdfResult, nil
 }
 
 func convertProjectToBaseline(
@@ -220,7 +220,7 @@ func convertRuleToRequirement(
 
 	// Extract tags and mappings
 	cweIds, owaspTags, allTags := extractTags(&rule, hasRule, issues)
-	nistControls := mapToNist(firstIssue.Type)
+	nistControls := mapToNist(cweIds, firstIssue.Type)
 	cciControls := mapNistToCCI(nistControls)
 
 	// Create results for each issue
@@ -260,12 +260,12 @@ func convertRuleToRequirement(
 	}
 
 	req := hdf.EvaluatedRequirement{
-		ID:             ruleKey,
-		Title:          &title,
-		Descriptions:   descriptions,
-		Impact:         impact,
-		Results:        results,
-		Tags:           tags,
+		ID:           ruleKey,
+		Title:        &title,
+		Descriptions: descriptions,
+		Impact:       impact,
+		Results:      results,
+		Tags:         tags,
 	}
 
 	if sourceLocation != nil {
@@ -364,8 +364,8 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 
 	// Convert sets to sorted slices
 	cweIds := make([]string, 0, len(cweSet))
-	for cwe := range cweSet {
-		cweIds = append(cweIds, cwe)
+	for cweID := range cweSet {
+		cweIds = append(cweIds, cweID)
 	}
 	sort.Strings(cweIds)
 
@@ -388,7 +388,26 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 	return cweIds, owaspTags, allTags
 }
 
-func mapToNist(issueType string) []string {
+// mapToNist maps CWE IDs to NIST controls using the CWE→NIST lookup table.
+// Falls back to issue-type-based defaults when no CWE mapping is found.
+func mapToNist(cweIDs []string, issueType string) []string {
+	nistSet := make(map[string]bool)
+	for _, cweID := range cweIDs {
+		for _, ctrl := range cwe.NISTControls(cweID) {
+			nistSet[ctrl] = true
+		}
+	}
+
+	if len(nistSet) > 0 {
+		result := make([]string, 0, len(nistSet))
+		for ctrl := range nistSet {
+			result = append(result, ctrl)
+		}
+		sort.Strings(result)
+		return result
+	}
+
+	// Fall back to type-based defaults
 	if issueType == "VULNERABILITY" || issueType == "SECURITY_HOTSPOT" {
 		return []string{defaultSecurityNistTag}
 	}
@@ -431,7 +450,7 @@ func createResultFromIssue(issue Issue, componentMap map[string]Component) hdf.R
 		codeDesc = fmt.Sprintf("%s LINE : %d", componentPath, *issue.Line)
 	}
 
-	creationTime, _ := time.Parse(time.RFC3339, issue.CreationDate)
+	creationTime, _ := time.Parse(sonarTimestampFormat, issue.CreationDate)
 
 	return hdf.RequirementResult{
 		Status:    status,
@@ -468,8 +487,4 @@ func extractSourceLocation(issue Issue, componentMap map[string]Component) *hdf.
 // Helper functions
 func stringPtr(s string) *string {
 	return &s
-}
-
-func floatPtr(f float64) *float64 {
-	return &f
 }

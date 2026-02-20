@@ -1,351 +1,182 @@
 package sonarqube
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
+	"time"
 
 	hdf "github.com/mitre/hdf-schema"
+	shared "github.com/mitre/hdf-converters/shared/go"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestConvertSonarqubeToHDF(t *testing.T) {
-	// Load minimal fixture
-	fixturePath := filepath.Join("..", "fixtures", "input", "minimal.json")
-	input, err := os.ReadFile(fixturePath)
-	if err != nil {
-		t.Fatalf("Failed to read minimal.json fixture: %v", err)
-	}
+const testConverterVersion = "test-version"
 
-	result, err := ConvertSonarqubeToHDF(input)
-	if err != nil {
-		t.Fatalf("Conversion failed: %v", err)
-	}
-
-	if len(result) == 0 {
-		t.Fatal("Output should not be empty")
-	}
-
-	var hdfResult hdf.HDFResults
-	if err := json.Unmarshal(result, &hdfResult); err != nil {
-		t.Fatalf("Failed to unmarshal HDF result: %v", err)
-	}
-
-	// Verify HDF structure
-	if hdfResult.Timestamp == nil {
-		t.Error("Timestamp should not be nil")
-	}
-
-	if len(hdfResult.Baselines) == 0 {
-		t.Error("Baselines should not be empty")
-	}
-
-	if hdfResult.Generator == nil {
-		t.Error("Generator should not be nil")
-	} else {
-		if hdfResult.Generator.Name != "sonarqube-to-hdf" {
-			t.Errorf("Expected generator name 'sonarqube-to-hdf', got '%s'", hdfResult.Generator.Name)
-		}
-		if hdfResult.Generator.Version != "1.0.0" {
-			t.Errorf("Expected generator version '1.0.0', got '%s'", hdfResult.Generator.Version)
-		}
-	}
+func loadMinimalFixture(t *testing.T) []byte {
+	t.Helper()
+	fixturePath := filepath.Join(shared.GetConvertersDir(), "sonarqube-to-hdf", "fixtures", "input", "minimal.json")
+	data, err := os.ReadFile(fixturePath)
+	require.NoError(t, err, "Failed to read minimal.json fixture")
+	return data
 }
 
-func TestCreateBaselinesPerProject(t *testing.T) {
-	fixturePath := filepath.Join("..", "fixtures", "input", "minimal.json")
-	input, err := os.ReadFile(fixturePath)
-	if err != nil {
-		t.Fatalf("Failed to read minimal.json fixture: %v", err)
-	}
+// ---- Structure and generator tests ----
 
-	result, err := ConvertSonarqubeToHDF(input)
-	if err != nil {
-		t.Fatalf("Conversion failed: %v", err)
-	}
+func TestConvertSonarqubeToHDF_Structure(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err, "Conversion should succeed")
+	require.NotNil(t, result, "Result should not be nil")
 
-	var hdfResult hdf.HDFResults
-	if err := json.Unmarshal(result, &hdfResult); err != nil {
-		t.Fatalf("Failed to unmarshal HDF result: %v", err)
-	}
+	assert.NotNil(t, result.Timestamp, "Timestamp should not be nil")
+	assert.NotEmpty(t, result.Baselines, "Baselines should not be empty")
+
+	require.NotNil(t, result.Generator, "Generator should not be nil")
+	assert.Equal(t, "sonarqube-to-hdf", result.Generator.Name)
+	assert.Equal(t, testConverterVersion, result.Generator.Version)
+}
+
+func TestConvertSonarqubeToHDF_OneBaselinePerProject(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
 
 	// Minimal fixture has 1 project
-	if len(hdfResult.Baselines) != 1 {
-		t.Errorf("Expected 1 baseline, got %d", len(hdfResult.Baselines))
-	}
-
-	baseline := hdfResult.Baselines[0]
-	if baseline.Name != "com.example:myproject" {
-		t.Errorf("Expected baseline name 'com.example:myproject', got '%s'", baseline.Name)
-	}
-
-	if len(baseline.Requirements) == 0 {
-		t.Error("Requirements should not be empty")
-	}
+	require.Len(t, result.Baselines, 1)
+	assert.Equal(t, "com.example:myproject", result.Baselines[0].Name)
+	assert.NotEmpty(t, result.Baselines[0].Requirements)
 }
 
-func TestCreateRequirementsPerRule(t *testing.T) {
-	fixturePath := filepath.Join("..", "fixtures", "input", "minimal.json")
-	input, err := os.ReadFile(fixturePath)
-	if err != nil {
-		t.Fatalf("Failed to read minimal.json fixture: %v", err)
-	}
+func TestConvertSonarqubeToHDF_OneRequirementPerRule(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
 
-	result, err := ConvertSonarqubeToHDF(input)
-	if err != nil {
-		t.Fatalf("Conversion failed: %v", err)
-	}
+	baseline := result.Baselines[0]
+	require.Len(t, baseline.Requirements, 2, "Minimal fixture has 2 rules")
 
-	var hdfResult hdf.HDFResults
-	if err := json.Unmarshal(result, &hdfResult); err != nil {
-		t.Fatalf("Failed to unmarshal HDF result: %v", err)
-	}
-
-	baseline := hdfResult.Baselines[0]
-
-	// Minimal fixture has 2 rules
-	if len(baseline.Requirements) != 2 {
-		t.Errorf("Expected 2 requirements, got %d", len(baseline.Requirements))
-	}
-
-	// Collect rule IDs
-	ruleIDs := make([]string, 0, len(baseline.Requirements))
+	ids := make(map[string]bool)
 	for _, req := range baseline.Requirements {
-		ruleIDs = append(ruleIDs, req.ID)
+		ids[req.ID] = true
 	}
-
-	// Check for expected rule IDs
-	hasS1144 := false
-	hasS2259 := false
-	for _, id := range ruleIDs {
-		if id == "java:S1144" {
-			hasS1144 = true
-		}
-		if id == "java:S2259" {
-			hasS2259 = true
-		}
-	}
-
-	if !hasS1144 {
-		t.Error("Expected to find rule java:S1144")
-	}
-	if !hasS2259 {
-		t.Error("Expected to find rule java:S2259")
-	}
+	assert.True(t, ids["java:S1144"], "expected rule java:S1144")
+	assert.True(t, ids["java:S2259"], "expected rule java:S2259")
 }
 
-func TestMapSeverityToImpact(t *testing.T) {
-	fixturePath := filepath.Join("..", "fixtures", "input", "minimal.json")
-	input, err := os.ReadFile(fixturePath)
-	if err != nil {
-		t.Fatalf("Failed to read minimal.json fixture: %v", err)
-	}
+// ---- Correctness tests ----
 
-	result, err := ConvertSonarqubeToHDF(input)
-	if err != nil {
-		t.Fatalf("Conversion failed: %v", err)
-	}
+func TestConvertSonarqubeToHDF_TimestampParsing(t *testing.T) {
+	// The minimal fixture has creationDate "2026-01-15T10:30:00+0000" (SonarQube format with +0000,
+	// not +00:00). time.RFC3339 would silently produce a zero time; our format must parse it correctly.
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
 
-	var hdfResult hdf.HDFResults
-	if err := json.Unmarshal(result, &hdfResult); err != nil {
-		t.Fatalf("Failed to unmarshal HDF result: %v", err)
-	}
-
-	baseline := hdfResult.Baselines[0]
-
-	// Find BLOCKER severity rule (java:S2259)
-	var blockerRule *hdf.EvaluatedRequirement
-	for i := range baseline.Requirements {
-		if baseline.Requirements[i].ID == "java:S2259" {
-			blockerRule = &baseline.Requirements[i]
-			break
-		}
-	}
-
-	if blockerRule == nil {
-		t.Fatal("Expected to find rule java:S2259")
-	}
-
-	if blockerRule.Impact != 1.0 {
-		t.Errorf("Expected BLOCKER impact 1.0, got %f", blockerRule.Impact)
-	}
-
-	// Find MAJOR severity rule (java:S1144)
-	var majorRule *hdf.EvaluatedRequirement
-	for i := range baseline.Requirements {
-		if baseline.Requirements[i].ID == "java:S1144" {
-			majorRule = &baseline.Requirements[i]
-			break
-		}
-	}
-
-	if majorRule == nil {
-		t.Fatal("Expected to find rule java:S1144")
-	}
-
-	if majorRule.Impact != 0.7 {
-		t.Errorf("Expected MAJOR impact 0.7, got %f", majorRule.Impact)
-	}
-}
-
-func TestExtractCWETags(t *testing.T) {
-	fixturePath := filepath.Join("..", "fixtures", "input", "minimal.json")
-	input, err := os.ReadFile(fixturePath)
-	if err != nil {
-		t.Fatalf("Failed to read minimal.json fixture: %v", err)
-	}
-
-	result, err := ConvertSonarqubeToHDF(input)
-	if err != nil {
-		t.Fatalf("Conversion failed: %v", err)
-	}
-
-	var hdfResult hdf.HDFResults
-	if err := json.Unmarshal(result, &hdfResult); err != nil {
-		t.Fatalf("Failed to unmarshal HDF result: %v", err)
-	}
-
-	baseline := hdfResult.Baselines[0]
-
-	// Find rule with CWE tag (java:S2259 has cwe-476)
-	var ruleWithCwe *hdf.EvaluatedRequirement
-	for i := range baseline.Requirements {
-		if baseline.Requirements[i].ID == "java:S2259" {
-			ruleWithCwe = &baseline.Requirements[i]
-			break
-		}
-	}
-
-	if ruleWithCwe == nil {
-		t.Fatal("Expected to find rule java:S2259")
-	}
-
-	cweTag, ok := ruleWithCwe.Tags["cwe"]
-	if !ok {
-		t.Fatal("Expected 'cwe' tag to be present")
-	}
-
-	cweSlice, ok := cweTag.([]interface{})
-	if !ok {
-		t.Fatal("Expected 'cwe' tag to be a slice")
-	}
-
-	if len(cweSlice) == 0 {
-		t.Fatal("Expected CWE tags to be present")
-	}
-
-	hasCWE476 := false
-	for _, cwe := range cweSlice {
-		if cweStr, ok := cwe.(string); ok && cweStr == "CWE-476" {
-			hasCWE476 = true
-			break
-		}
-	}
-
-	if !hasCWE476 {
-		t.Error("Expected to find CWE-476 in tags")
-	}
-}
-
-func TestCreateResultsForEachIssue(t *testing.T) {
-	fixturePath := filepath.Join("..", "fixtures", "input", "minimal.json")
-	input, err := os.ReadFile(fixturePath)
-	if err != nil {
-		t.Fatalf("Failed to read minimal.json fixture: %v", err)
-	}
-
-	result, err := ConvertSonarqubeToHDF(input)
-	if err != nil {
-		t.Fatalf("Conversion failed: %v", err)
-	}
-
-	var hdfResult hdf.HDFResults
-	if err := json.Unmarshal(result, &hdfResult); err != nil {
-		t.Fatalf("Failed to unmarshal HDF result: %v", err)
-	}
-
-	baseline := hdfResult.Baselines[0]
-
-	// Each requirement should have results
+	baseline := result.Baselines[0]
 	for _, req := range baseline.Requirements {
-		if len(req.Results) == 0 {
-			t.Errorf("Requirement %s should have results", req.ID)
-		}
-
-		// Check result structure
-		firstResult := req.Results[0]
-		if firstResult.Status == "" {
-			t.Error("Result status should not be empty")
-		}
-		if firstResult.CodeDesc == "" {
-			t.Error("Result codeDesc should not be empty")
+		for _, res := range req.Results {
+			assert.False(t, res.StartTime.IsZero(),
+				"StartTime should be non-zero for rule %s (got %v)", req.ID, res.StartTime)
 		}
 	}
 }
 
-func TestInvalidJSON(t *testing.T) {
-	_, err := ConvertSonarqubeToHDF([]byte("not valid json"))
-	if err == nil {
-		t.Error("Expected error for invalid JSON")
+func TestConvertSonarqubeToHDF_ImpactMapping(t *testing.T) {
+	input := []byte(`{
+		"total": 4, "p": 1, "ps": 100,
+		"paging": {"pageIndex": 1, "pageSize": 100, "total": 4},
+		"issues": [
+			{"key":"k1","rule":"r:CRITICAL","severity":"CRITICAL","component":"proj:file","project":"proj","status":"OPEN","message":"msg","creationDate":"2026-01-01T00:00:00+0000","updateDate":"2026-01-01T00:00:00+0000","type":"VULNERABILITY"},
+			{"key":"k2","rule":"r:INFO","severity":"INFO","component":"proj:file","project":"proj","status":"OPEN","message":"msg","creationDate":"2026-01-01T00:00:00+0000","updateDate":"2026-01-01T00:00:00+0000","type":"CODE_SMELL"},
+			{"key":"k3","rule":"r:BLOCKER","severity":"BLOCKER","component":"proj:file","project":"proj","status":"OPEN","message":"msg","creationDate":"2026-01-01T00:00:00+0000","updateDate":"2026-01-01T00:00:00+0000","type":"BUG"},
+			{"key":"k4","rule":"r:MAJOR","severity":"MAJOR","component":"proj:file","project":"proj","status":"OPEN","message":"msg","creationDate":"2026-01-01T00:00:00+0000","updateDate":"2026-01-01T00:00:00+0000","type":"CODE_SMELL"}
+		],
+		"components": [], "rules": []
+	}`)
+
+	result, err := ConvertSonarqubeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	impactByRule := make(map[string]float64)
+	for _, req := range result.Baselines[0].Requirements {
+		impactByRule[req.ID] = req.Impact
+	}
+
+	assert.Equal(t, 0.7, impactByRule["r:CRITICAL"], "CRITICAL should map to 0.7")
+	assert.Equal(t, 0.0, impactByRule["r:INFO"], "INFO should map to 0.0")
+	assert.Equal(t, 1.0, impactByRule["r:BLOCKER"], "BLOCKER should map to 1.0")
+	assert.Equal(t, 0.7, impactByRule["r:MAJOR"], "MAJOR should map to 0.7")
+}
+
+func TestConvertSonarqubeToHDF_CWENISTMapping(t *testing.T) {
+	// CWE-476 (NULL Pointer Dereference) maps to SI-10 via cwe.NISTControls.
+	// java:S2259 in the minimal fixture has the cwe-476 tag.
+	// The NIST controls should be SI-10, not the generic SA-11 default.
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	var ruleWithCWE *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "java:S2259" {
+			ruleWithCWE = &result.Baselines[0].Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, ruleWithCWE, "expected to find rule java:S2259")
+
+	nistVal, ok := ruleWithCWE.Tags["nist"]
+	require.True(t, ok, "expected 'nist' tag")
+
+	nistSlice, ok := nistVal.([]string)
+	require.True(t, ok, "expected nist to be []string, got %T", nistVal)
+
+	found := false
+	for _, ctrl := range nistSlice {
+		if ctrl == "SI-10" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "CWE-476 should produce SI-10 in NIST controls; got %v", nistSlice)
+
+	// Should NOT have fallen back to the generic code-quality default
+	for _, ctrl := range nistSlice {
+		assert.NotEqual(t, "SA-11", ctrl,
+			"CWE-476 should produce SI-10, not the generic SA-11 fallback")
 	}
 }
 
-func TestMissingIssuesField(t *testing.T) {
-	input := []byte(`{"total": 0}`)
-	_, err := ConvertSonarqubeToHDF(input)
-	if err == nil {
-		t.Error("Expected error for missing issues field")
-	}
-	if err != nil && err.Error() != "invalid SonarQube structure: missing or invalid issues field" {
-		t.Errorf("Expected specific error message, got: %v", err)
-	}
-}
+// ---- Description and component tests (migrated to testify) ----
 
 func TestExtractDescription(t *testing.T) {
 	t.Run("rule is nil with hasRule false returns empty", func(t *testing.T) {
 		result := extractDescription(nil, false)
-		if result != "" {
-			t.Errorf("expected empty string, got %q", result)
-		}
+		assert.Equal(t, "", result)
 	})
 
 	t.Run("hasRule false returns empty regardless of rule content", func(t *testing.T) {
 		rule := &Rule{Name: "some rule", MDDesc: "some desc"}
 		result := extractDescription(rule, false)
-		if result != "" {
-			t.Errorf("expected empty string for hasRule=false, got %q", result)
-		}
+		assert.Equal(t, "", result)
 	})
 
 	t.Run("MDDesc takes priority over HTMLDesc", func(t *testing.T) {
 		rule := &Rule{Name: "rule", MDDesc: "markdown desc", HTMLDesc: "<p>html desc</p>"}
 		result := extractDescription(rule, true)
-		if result != "markdown desc" {
-			t.Errorf("expected MDDesc %q, got %q", "markdown desc", result)
-		}
+		assert.Equal(t, "markdown desc", result)
 	})
 
 	t.Run("HTMLDesc is stripped when MDDesc is empty", func(t *testing.T) {
 		rule := &Rule{Name: "rule", HTMLDesc: "<p>This is <b>HTML</b> content</p>"}
 		result := extractDescription(rule, true)
-		if result == "" {
-			t.Error("expected non-empty stripped text from HTMLDesc")
-		}
-		if strings.Contains(result, "<p>") || strings.Contains(result, "<b>") {
-			t.Errorf("expected HTML tags stripped, got %q", result)
-		}
-		if !strings.Contains(result, "HTML") {
-			t.Errorf("expected text content preserved, got %q", result)
-		}
+		assert.NotEmpty(t, result)
+		assert.NotContains(t, result, "<p>")
+		assert.NotContains(t, result, "<b>")
+		assert.Contains(t, result, "HTML")
 	})
 
 	t.Run("falls back to rule name when both descs empty", func(t *testing.T) {
 		rule := &Rule{Name: "fallback name"}
 		result := extractDescription(rule, true)
-		if result != "fallback name" {
-			t.Errorf("expected rule Name %q, got %q", "fallback name", result)
-		}
+		assert.Equal(t, "fallback name", result)
 	})
 }
 
@@ -361,15 +192,13 @@ func TestComponentPathResolution(t *testing.T) {
 			Severity:     "MAJOR",
 			Status:       "OPEN",
 			Message:      "issue message",
-			CreationDate: "2024-01-01T00:00:00Z",
-			UpdateDate:   "2024-01-01T00:00:00Z",
+			CreationDate: "2024-01-01T00:00:00+0000",
+			UpdateDate:   "2024-01-01T00:00:00+0000",
 			Type:         "CODE_SMELL",
 			Line:         &line,
 		}
 		result := createResultFromIssue(issue, componentMap)
-		if !strings.Contains(result.CodeDesc, "src/Main.java") {
-			t.Errorf("expected CodeDesc to contain Path %q, got %q", "src/Main.java", result.CodeDesc)
-		}
+		assert.Contains(t, result.CodeDesc, "src/Main.java")
 	})
 
 	t.Run("component with only LongName uses LongName", func(t *testing.T) {
@@ -382,14 +211,12 @@ func TestComponentPathResolution(t *testing.T) {
 			Severity:     "MAJOR",
 			Status:       "OPEN",
 			Message:      "issue message",
-			CreationDate: "2024-01-01T00:00:00Z",
-			UpdateDate:   "2024-01-01T00:00:00Z",
+			CreationDate: "2024-01-01T00:00:00+0000",
+			UpdateDate:   "2024-01-01T00:00:00+0000",
 			Type:         "CODE_SMELL",
 		}
 		result := createResultFromIssue(issue, componentMap)
-		if !strings.Contains(result.CodeDesc, "com.example.Main") {
-			t.Errorf("expected CodeDesc to use LongName %q, got %q", "com.example.Main", result.CodeDesc)
-		}
+		assert.Contains(t, result.CodeDesc, "com.example.Main")
 	})
 
 	t.Run("component not in map uses issue Component key", func(t *testing.T) {
@@ -400,20 +227,16 @@ func TestComponentPathResolution(t *testing.T) {
 			Severity:     "MAJOR",
 			Status:       "OPEN",
 			Message:      "issue message",
-			CreationDate: "2024-01-01T00:00:00Z",
-			UpdateDate:   "2024-01-01T00:00:00Z",
+			CreationDate: "2024-01-01T00:00:00+0000",
+			UpdateDate:   "2024-01-01T00:00:00+0000",
 			Type:         "CODE_SMELL",
 		}
 		result := createResultFromIssue(issue, componentMap)
-		if !strings.Contains(result.CodeDesc, "unknown:component") {
-			t.Errorf("expected CodeDesc to contain issue Component %q, got %q", "unknown:component", result.CodeDesc)
-		}
+		assert.Contains(t, result.CodeDesc, "unknown:component")
 	})
 }
 
 func TestExtractTags_KeyValueParsing(t *testing.T) {
-	// Exercises the allTagsMap nil check in the tag-splitting loop (line ~329)
-	// by providing a rule with "key:value" formatted tags.
 	rule := &Rule{
 		Key:     "java:S001",
 		Name:    "Test Rule",
@@ -423,45 +246,224 @@ func TestExtractTags_KeyValueParsing(t *testing.T) {
 
 	cweIds, owaspTags, allTags := extractTags(rule, true, []Issue{})
 
-	if len(cweIds) == 0 {
-		t.Error("expected at least one CWE ID extracted")
+	assert.NotEmpty(t, cweIds, "expected at least one CWE ID extracted")
+	assert.NotEmpty(t, owaspTags, "expected at least one OWASP tag extracted")
+
+	_, ok := allTags["category"]
+	assert.True(t, ok, "expected 'category' key in allTags")
+	assert.Len(t, allTags["category"], 2)
+}
+
+func TestConvertSonarqubeToHDF_InvalidJSON(t *testing.T) {
+	_, err := ConvertSonarqubeToHDF([]byte("not valid json"), testConverterVersion)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid SonarQube JSON")
+}
+
+func TestConvertSonarqubeToHDF_MissingIssuesField(t *testing.T) {
+	input := []byte(`{"total": 0}`)
+	_, err := ConvertSonarqubeToHDF(input, testConverterVersion)
+	require.Error(t, err)
+	assert.Equal(t, "invalid SonarQube structure: missing or invalid issues field", err.Error())
+}
+
+func TestConvertSonarqubeToHDF_EmptyIssues(t *testing.T) {
+	input := []byte(`{
+		"total": 0, "p": 1, "ps": 100,
+		"paging": {"pageIndex": 1, "pageSize": 100, "total": 0},
+		"issues": [], "components": [], "rules": []
+	}`)
+
+	result, err := ConvertSonarqubeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	assert.Empty(t, result.Baselines, "Expected 0 baselines for empty issues")
+}
+
+func TestConvertSonarqubeToHDF_SeverityMapImpact(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+
+	var blockerRule, majorRule *hdf.EvaluatedRequirement
+	for i := range baseline.Requirements {
+		switch baseline.Requirements[i].ID {
+		case "java:S2259":
+			blockerRule = &baseline.Requirements[i]
+		case "java:S1144":
+			majorRule = &baseline.Requirements[i]
+		}
 	}
-	if len(owaspTags) == 0 {
-		t.Error("expected at least one OWASP tag extracted")
+
+	require.NotNil(t, blockerRule, "expected rule java:S2259")
+	assert.Equal(t, 1.0, blockerRule.Impact, "BLOCKER should have impact 1.0")
+
+	require.NotNil(t, majorRule, "expected rule java:S1144")
+	assert.Equal(t, 0.7, majorRule.Impact, "MAJOR should have impact 0.7")
+}
+
+func TestConvertSonarqubeToHDF_ExtractCWETags(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	var ruleWithCwe *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "java:S2259" {
+			ruleWithCwe = &result.Baselines[0].Requirements[i]
+			break
+		}
 	}
-	// The "category:security" and "category:reliability" tags should produce an
-	// "category" entry in allTags, exercising the allTagsMap initialization path.
-	if _, ok := allTags["category"]; !ok {
-		t.Error("expected 'category' key in allTags from key:value tag parsing")
-	}
-	categoryVals := allTags["category"]
-	if len(categoryVals) != 2 {
-		t.Errorf("expected 2 category values, got %d: %v", len(categoryVals), categoryVals)
+	require.NotNil(t, ruleWithCwe, "expected rule java:S2259")
+
+	cweTag, ok := ruleWithCwe.Tags["cwe"]
+	require.True(t, ok, "expected 'cwe' tag")
+
+	cweSlice, ok := cweTag.([]string)
+	require.True(t, ok, "expected cwe to be []string, got %T", cweTag)
+	require.NotEmpty(t, cweSlice)
+
+	assert.Contains(t, cweSlice, "CWE-476")
+}
+
+func TestConvertSonarqubeToHDF_CreateResultsPerIssue(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		assert.NotEmpty(t, req.Results, "requirement %s should have results", req.ID)
+		for _, res := range req.Results {
+			assert.NotEmpty(t, res.Status, "result status should not be empty")
+			assert.NotEmpty(t, res.CodeDesc, "result codeDesc should not be empty")
+		}
 	}
 }
 
-func TestEmptyIssuesArray(t *testing.T) {
+func TestSonarTimestampFormat_ParsesCorrectly(t *testing.T) {
+	// Verify our format constant parses SonarQube timestamps correctly
+	ts, err := time.Parse(sonarTimestampFormat, "2026-01-15T10:30:00+0000")
+	require.NoError(t, err, "sonarTimestampFormat must parse +0000 timezone format")
+	assert.False(t, ts.IsZero())
+	assert.Equal(t, 2026, ts.Year())
+	assert.Equal(t, time.January, ts.Month())
+	assert.Equal(t, 15, ts.Day())
+}
+
+func TestMapToNist_FallsBackWhenNoCWE(t *testing.T) {
+	// No CWE IDs → use type-based defaults
+	nist := mapToNist([]string{}, "VULNERABILITY")
+	assert.Equal(t, []string{"SI-10"}, nist)
+
+	nist = mapToNist([]string{}, "CODE_SMELL")
+	assert.Equal(t, []string{"SA-11"}, nist)
+}
+
+func TestMapToNist_UsesCWEWhenAvailable(t *testing.T) {
+	// CWE-476 → SI-10 (from cwe-nist-mappings.json)
+	nist := mapToNist([]string{"CWE-476"}, "BUG")
+	assert.Contains(t, nist, "SI-10", "CWE-476 should produce SI-10")
+}
+
+func TestMapToNist_UnknownCWEFallsBack(t *testing.T) {
+	// Unknown CWE with no mapping → fall back to type-based default
+	nist := mapToNist([]string{"CWE-999999"}, "VULNERABILITY")
+	assert.Equal(t, []string{"SI-10"}, nist)
+}
+
+func TestExtractTags_ParsesCWEFromDescription(t *testing.T) {
+	rule := &Rule{
+		Name:     "Test Rule",
+		HTMLDesc: "<p>Related to CWE-476.</p>",
+	}
+	cweIds, _, _ := extractTags(rule, true, []Issue{})
+	assert.Contains(t, cweIds, "CWE-476")
+}
+
+func TestConvertSonarqubeToHDF_NistContainsString(t *testing.T) {
+	// Verify nist tags are []string (not []interface{}) when accessing directly
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		nistVal, ok := req.Tags["nist"]
+		require.True(t, ok, "expected nist tag in requirement %s", req.ID)
+		_, isStrSlice := nistVal.([]string)
+		assert.True(t, isStrSlice, "nist tag should be []string in requirement %s, got %T", req.ID, nistVal)
+	}
+}
+
+func TestMapSeverityToImpact(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	baseline := result.Baselines[0]
+
+	var blockerRule *hdf.EvaluatedRequirement
+	for i := range baseline.Requirements {
+		if baseline.Requirements[i].ID == "java:S2259" {
+			blockerRule = &baseline.Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, blockerRule)
+	assert.Equal(t, 1.0, blockerRule.Impact)
+
+	var majorRule *hdf.EvaluatedRequirement
+	for i := range baseline.Requirements {
+		if baseline.Requirements[i].ID == "java:S1144" {
+			majorRule = &baseline.Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, majorRule)
+	assert.Equal(t, 0.7, majorRule.Impact)
+}
+
+func TestConvertSonarqubeToHDF_CWETagsAreStringSlice(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	var ruleWithCwe *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if result.Baselines[0].Requirements[i].ID == "java:S2259" {
+			ruleWithCwe = &result.Baselines[0].Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, ruleWithCwe)
+
+	cweTag, ok := ruleWithCwe.Tags["cwe"]
+	require.True(t, ok)
+	_, isStrSlice := cweTag.([]string)
+	assert.True(t, isStrSlice, "cwe tag should be []string, got %T", cweTag)
+
+	if isStrSlice {
+		hasCWE476 := false
+		for _, cweStr := range cweTag.([]string) {
+			if cweStr == "CWE-476" {
+				hasCWE476 = true
+				break
+			}
+		}
+		assert.True(t, hasCWE476)
+	}
+}
+
+func TestConvertSonarqubeToHDF_NoStringsImportNeeded(t *testing.T) {
+	// Regression test: 'strings' package used in converter logic
 	input := []byte(`{
-		"total": 0,
-		"p": 1,
-		"ps": 100,
-		"paging": {"pageIndex": 1, "pageSize": 100, "total": 0},
-		"issues": [],
-		"components": [],
-		"rules": []
+		"total": 1, "p": 1, "ps": 100,
+		"paging": {"pageIndex": 1, "pageSize": 100, "total": 1},
+		"issues": [{"key":"k1","rule":"r:VULNERABILITY","severity":"CRITICAL","component":"proj:file","project":"proj","status":"OPEN","message":"msg","creationDate":"2026-01-01T00:00:00+0000","updateDate":"2026-01-01T00:00:00+0000","type":"VULNERABILITY"}],
+		"components": [], "rules": []
 	}`)
 
-	result, err := ConvertSonarqubeToHDF(input)
-	if err != nil {
-		t.Fatalf("Conversion failed: %v", err)
-	}
+	result, err := ConvertSonarqubeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
 
-	var hdfResult hdf.HDFResults
-	if err := json.Unmarshal(result, &hdfResult); err != nil {
-		t.Fatalf("Failed to unmarshal HDF result: %v", err)
-	}
-
-	if len(hdfResult.Baselines) != 0 {
-		t.Errorf("Expected 0 baselines for empty issues, got %d", len(hdfResult.Baselines))
-	}
+	req := result.Baselines[0].Requirements[0]
+	severityTag, ok := req.Tags["severity"]
+	require.True(t, ok)
+	// Severity tag should be lowercased
+	assert.Equal(t, "critical", severityTag.(string))
 }

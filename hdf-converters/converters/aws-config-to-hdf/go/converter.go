@@ -89,7 +89,7 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 	return &hdf.HDFResults{
 		Generator: &hdf.Generator{
-			Name:    "hdf-converters",
+			Name:    "aws-config-to-hdf",
 			Version: converterVersion,
 		},
 		Baselines: []hdf.EvaluatedBaseline{baseline},
