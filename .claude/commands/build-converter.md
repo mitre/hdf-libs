@@ -12,20 +12,26 @@ Build the `$ARGUMENTS` converter end-to-end per the workflow and patterns below.
 ```
 hdf-converters/converters/<name>/
   go/
-    converter.go          # Implementation
-    converter_test.go     # Unit tests
+    converter.go          # Go implementation
+    converter_test.go     # Go unit tests
+  typescript/
+    converter.ts          # TypeScript implementation
+    converter.test.ts     # TypeScript unit tests
   fixtures/
     input/                # Source format samples (minimal.*, real.*, edge cases)
     output/               # Expected HDF JSON output (optional; prefer assertion-based tests)
 
 hdf-cli/cmd/hdf/cmd/
-  converter_<snake>.go    # CLI registration (wraps hdf-converters impl)
+  converter_<snake>.go    # CLI registration (wraps Go hdf-converters impl)
   converter_<snake>_test.go
 ```
+
+**Both Go and TypeScript implementations are required.** A converter is not done until both are implemented, tested, and passing. The CLI integration wraps the Go implementation only — the TypeScript implementation is consumed by JS/TS tooling that imports from `@mitre/hdf-converters`.
 
 Converter name conventions:
 - Directory: `{source}-to-hdf` or `hdf-to-{dest}` (kebab-case)
 - Go package: short, no hyphens (e.g. `package nessus`, `package hdftocsv`)
+- TypeScript export: camelCase function (e.g. `convertGosecToHdf`, `convertNessusToHdf`)
 - CLI snake: hyphens → underscores (e.g. `nessus-to-hdf` → `converter_nessus.go`)
 
 ---
@@ -68,6 +74,10 @@ Copy or adapt real samples. Keep them small by truncating arrays, but preserve t
 ---
 
 ## Step 3 — Write Unit Tests First (TDD)
+
+Write tests for **both Go and TypeScript** before implementing either. They share the same fixtures, so write them together.
+
+### Step 3a — Go tests
 
 File: `hdf-converters/converters/<name>/go/converter_test.go`
 
@@ -115,9 +125,54 @@ func TestConvert_EmptyInput(t *testing.T) {
 
 Also test individual helper functions directly — each private helper should have its own test cases covering boundary values, nil inputs, and error paths.
 
+### Step 3b — TypeScript tests
+
+File: `hdf-converters/converters/<name>/typescript/converter.test.ts`
+
+```typescript
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { describe, it, expect } from 'vitest';
+import { convert<Name>ToHdf } from './converter.js';
+import type { HdfResults } from '@mitre/hdf-schema';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
+
+function loadFixture(name: string): string {
+  return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
+}
+
+describe('<name> to HDF converter', () => {
+  it('should throw on invalid JSON', () => {
+    expect(() => convert<Name>ToHdf('not json')).toThrow();
+  });
+
+  it('should throw on empty input', () => {
+    expect(() => convert<Name>ToHdf('')).toThrow();
+  });
+
+  it('should produce valid HDF structure from minimal fixture', () => {
+    const output = convert<Name>ToHdf(loadFixture('minimal.<ext>'));
+    const hdf = JSON.parse(output) as HdfResults;
+
+    expect(hdf.timestamp).toBeTruthy();
+    expect(hdf.generator?.name).toBe('<name>-to-hdf');
+    expect(hdf.baselines).toHaveLength(1);
+  });
+
+  // ... assert specific field values matching your Go tests
+});
+```
+
+Mirror the same scenarios as the Go tests. Tests use vitest (not Jest) — syntax is nearly identical.
+
 ---
 
 ## Step 4 — Implement the Converter
+
+### Step 4a — Go
 
 File: `hdf-converters/converters/<name>/go/converter.go`
 
@@ -225,6 +280,74 @@ Specifically:
 - **`hdf-parsers`** owns CSV and XML handling for the TypeScript side. If implementing a Go converter for a CSV or XML source, use Go stdlib (`encoding/csv`, `encoding/xml`) but check whether there is already a shared Go helper in the monorepo before adding logic.
 
 If you find yourself writing something that looks like general-purpose infrastructure (a lookup table, a format parser, a schema validator), stop and check whether it belongs in one of the sibling packages instead.
+
+---
+
+### Step 4b — TypeScript Implementation
+
+File: `hdf-converters/converters/<name>/typescript/converter.ts`
+
+```typescript
+import { createHash } from 'crypto';
+import { parseJSON } from '@mitre/hdf-utilities';
+import { getCweNistControl } from '@mitre/hdf-mappings'; // adjust imports to what you need
+import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description } from '@mitre/hdf-schema';
+import { ResultStatus, HashAlgorithm, createMinimalBaseline, createRequirement, createResult } from '@mitre/hdf-schema';
+
+export function convert<Name>ToHdf(input: string): string {
+  const resultsChecksum: Checksum = {
+    algorithm: HashAlgorithm.Sha256,
+    value: createHash('sha256').update(input).digest('hex'),
+  };
+
+  const data = parseJSON<<SourceType>>(input);
+  // ... validate structure, convert, build requirements ...
+
+  const baseline: EvaluatedBaseline = createMinimalBaseline(
+    '<baseline name>',
+    requirements,
+    { resultsChecksum }
+  ) as EvaluatedBaseline;
+
+  const hdf: HdfResults = {
+    baselines: [baseline],
+    generator: { name: '<name>-to-hdf', version: '1.0.0' },
+    timestamp: new Date(),
+  };
+
+  return JSON.stringify(hdf, null, 2);
+}
+```
+
+#### TypeScript-specific notes
+
+**`@mitre/hdf-schema` helpers available:**
+- `createMinimalBaseline(name, requirements, options)` — builds an `EvaluatedBaseline`
+- `createRequirement(id, title, descriptions, impact, results, options)` — builds a requirement; `options.tags` and `options.sourceLocation` are optional
+- `createResult(status, message, options)` — builds a `RequirementResult`; `options.codeDesc` and `options.startTime` are optional
+- `ResultStatus.Passed / Failed / NotReviewed / NotApplicable / Error` — status enum values
+- `HashAlgorithm.Sha256` — checksum algorithm constant
+
+**`createDescription` is NOT exported.** Build description objects inline:
+```typescript
+const descriptions: Description[] = [
+  { label: 'default', data: 'the primary description text' },
+  { label: 'check',   data: 'CWE-22: https://cwe.mitre.org/...' },
+];
+```
+
+**`@mitre/hdf-mappings` helpers available:**
+- `getCweNistControl(numericCweId: number): string | undefined` — returns a single NIST control or undefined
+- `getAllCCIIds() / getCCINistMappings(cciId)` — for CCI lookups
+- Tool-specific: `getNessusNistControl(pluginFamily)`, `getScoutsuitNistControl(service)`, etc.
+
+**Build order matters for tests.** If TypeScript tests fail to resolve `@mitre/hdf-utilities`, `@mitre/hdf-mappings`, or `@mitre/hdf-schema`, those packages need to be built first:
+```bash
+cd hdf-utilities && pnpm build
+cd hdf-mappings && pnpm build
+cd hdf-schema && pnpm build
+cd hdf-converters && pnpm test   # should now pass
+```
 
 ---
 
@@ -411,8 +534,14 @@ func Test<Name>Converter_Convert_InvalidInput(t *testing.T) {
 ## Step 7 — Verify and Spot Check
 
 ```bash
-# Run unit tests
+# Run Go unit tests
 cd hdf-converters && go test ./converters/<name>/go/...
+
+# Run TypeScript unit tests (build sibling packages first if needed)
+cd hdf-utilities && pnpm build
+cd hdf-mappings && pnpm build
+cd hdf-schema && pnpm build
+cd hdf-converters && pnpm test
 
 # Run CLI tests
 cd hdf-cli && go test ./cmd/hdf/cmd/...
@@ -444,12 +573,14 @@ pnpm test
 
 **All converters:**
 - [ ] Fixtures created (`fixtures/input/minimal.*` at minimum, sourced from real tool output)
-- [ ] Unit tests written and passing (`converter_test.go`)
-- [ ] Implementation complete (`converter.go`)
+- [ ] **Go:** Unit tests written and passing (`go/converter_test.go`)
+- [ ] **Go:** Implementation complete (`go/converter.go`)
+- [ ] **TypeScript:** Unit tests written and passing (`typescript/converter.test.ts`)
+- [ ] **TypeScript:** Implementation complete (`typescript/converter.ts`)
 - [ ] CLI registration file (`converter_<snake>.go`) — add `//nolint:dupl` if lint flags it as a duplicate of another thin converter wrapper
 - [ ] CLI tests passing (`converter_<snake>_test.go`)
 - [ ] `pnpm lint` clean
-- [ ] `pnpm test` passes (both go and ts)
+- [ ] `pnpm test` passes (Go and TypeScript)
 - [ ] Spot-checked output looks correct
 
 **API-pull converters additionally (aws-config, sonarqube, ionchannel, msft-secure-score, splunk):**
