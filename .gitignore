@@ -44,3 +44,6 @@ test-output/
 # Generated files
 *.log
 hdf-cli/hdf
+
+# Local research notes (to be converted to GitHub wiki pages)
+hdf-cli/SAF_CLI_COMPARISON.md
