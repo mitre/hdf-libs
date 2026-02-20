@@ -721,5 +721,5 @@ func TestAWSConfigFetcher_FetchAndConvert(t *testing.T) {
 
 	req := hdfResult.Baselines[0].Requirements[0]
 	assert.Equal(t, "config-rule-7hytm9", req.ID)
-	assert.Equal(t, hdfResult.Generator.Name, "hdf-converters")
+	assert.Equal(t, hdfResult.Generator.Name, "aws-config-to-hdf")
 }

@@ -371,7 +371,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 }
 
 // ConvertAnchoreGrypeToHDF converts Anchore Grype JSON to HDF
-func ConvertAnchoreGrypeToHDF(input []byte) ([]byte, error) {
+func ConvertAnchoreGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	// Calculate checksum of input data
 	hash := sha256.Sum256(input)
 	resultsChecksum := &hdf.Checksum{
@@ -411,21 +411,6 @@ func ConvertAnchoreGrypeToHDF(input []byte) ([]byte, error) {
 		ResultsChecksum: resultsChecksum,
 	}
 
-	// Build generator
-	generatorName := grypeData.Descriptor.Name
-	if generatorName == "" {
-		generatorName = "grype"
-	}
-	generatorVersion := grypeData.Descriptor.Version
-	if generatorVersion == "" {
-		generatorVersion = "unknown"
-	}
-
-	generator := &hdf.Generator{
-		Name:    generatorName,
-		Version: generatorVersion,
-	}
-
 	// Build timestamp
 	var timestamp *time.Time
 	if grypeData.Descriptor.Timestamp != "" {
@@ -436,11 +421,14 @@ func ConvertAnchoreGrypeToHDF(input []byte) ([]byte, error) {
 	}
 
 	// Build HDF results
-	hdfResult := hdf.HDFResults{
+	hdfResult := &hdf.HDFResults{
 		Baselines: []hdf.EvaluatedBaseline{baseline},
-		Generator: generator,
+		Generator: &hdf.Generator{
+			Name:    "anchore-grype-to-hdf",
+			Version: converterVersion,
+		},
 		Timestamp: timestamp,
 	}
 
-	return json.MarshalIndent(hdfResult, "", "  ")
+	return hdfResult, nil
 }

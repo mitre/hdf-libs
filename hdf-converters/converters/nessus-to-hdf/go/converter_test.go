@@ -25,7 +25,7 @@ func TestConvertNessusToHDF_Minimal(t *testing.T) {
 	require.NotNil(t, result, "Result should not be nil")
 
 	// Verify basic structure
-	assert.Equal(t, "hdf-converters", result.Generator.Name)
+	assert.Equal(t, "nessus-to-hdf", result.Generator.Name)
 	assert.Equal(t, converterVersion, result.Generator.Version)
 	assert.Len(t, result.Baselines, 1, "Should have 1 baseline")
 	assert.Len(t, result.Targets, 1, "Should have 1 target")
