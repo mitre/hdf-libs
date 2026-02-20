@@ -14,6 +14,23 @@
 - **>90% code coverage required.** Code is not considered working without unit tests meeting this threshold.
 - Tests define the spec; implementation fulfills the spec.
 
+## Issue Tracking (Beads)
+
+Use `bd` CLI commands to interact with beads. **Never edit `.beads/issues.jsonl` directly.**
+
+Common commands:
+```bash
+bd show <id>                        # Show issue details
+bd list                             # List open issues
+bd close <id> -r "reason"           # Close an issue
+bd update <id> --status in_progress # Update status
+bd update <id> -d "description"     # Update description
+bd create --title "..." -d "..."    # Create new issue
+```
+
+If bd errors with "Database out of sync", run `bd sync --import-only` first.
+If bd errors with "LEGACY DATABASE DETECTED", run `bd migrate --update-repo-id` first.
+
 ## Converter Requirements
 - **HDF CLI integration required.** Converters are not considered fully implemented until integrated into hdf-cli.
 - Each converter must have both:

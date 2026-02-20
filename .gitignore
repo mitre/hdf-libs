@@ -31,7 +31,6 @@ test-output/
 # IDEs
 .vscode/
 .idea/
-.claude/
 *.swp
 *.swo
 *~
@@ -44,6 +43,9 @@ test-output/
 # Generated files
 *.log
 hdf-cli/hdf
+
+# Claude Code — track commands and project rules, but not local machine settings
+.claude/settings.local.json
 
 # Local research notes (to be converted to GitHub wiki pages)
 hdf-cli/SAF_CLI_COMPARISON.md
