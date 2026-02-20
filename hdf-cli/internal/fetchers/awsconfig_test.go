@@ -81,7 +81,184 @@ func ts(s string) time.Time {
 	return t
 }
 
-// ---- tests ----
+// ---- region validation tests ----
+
+func TestNewAWSConfigFetcher_RegionValidation(t *testing.T) {
+	ctx := context.Background()
+
+	valid := []string{
+		"us-east-1",
+		"us-west-2",
+		"eu-central-1",
+		"ap-southeast-2",
+		"us-gov-west-1",
+		"cn-north-1",
+		"me-south-1",
+	}
+	for _, r := range valid {
+		t.Run("valid/"+r, func(t *testing.T) {
+			// NewAWSConfigFetcher will fail past validation (no real AWS),
+			// but the error must not be about region format.
+			_, err := NewAWSConfigFetcher(ctx, AWSConfigParams{Region: r})
+			if err != nil {
+				assert.NotContains(t, err.Error(), "invalid region", "region %q should pass validation", r)
+			}
+		})
+	}
+
+	invalid := []string{
+		"",
+		"US-EAST-1",
+		"us_east_1",
+		"us.east.1",
+		"evil.attacker.com",
+		"us-east-1.evil.com",
+		"us-east-1@evil.com",
+		"us-east-1/path",
+		"-us-east-1",
+		"us-east-1-",
+	}
+	for _, r := range invalid {
+		t.Run("invalid/"+r, func(t *testing.T) {
+			_, err := NewAWSConfigFetcher(ctx, AWSConfigParams{Region: r})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "invalid region")
+		})
+	}
+}
+
+// ---- pagination limit and context tests ----
+
+// infiniteMockClient always returns a NextToken on every call, so both
+// DescribeConfigRules and GetComplianceDetailsByConfigRule loop indefinitely
+// unless capped by maxPages or context cancellation.
+type infiniteMockClient struct{ rule types.ConfigRule }
+
+func (m *infiniteMockClient) DescribeConfigRules(
+	_ context.Context,
+	_ *configservice.DescribeConfigRulesInput,
+	_ ...func(*configservice.Options),
+) (*configservice.DescribeConfigRulesOutput, error) {
+	return &configservice.DescribeConfigRulesOutput{
+		ConfigRules: []types.ConfigRule{m.rule},
+		NextToken:   aws.String("forever"),
+	}, nil
+}
+
+func (m *infiniteMockClient) GetComplianceDetailsByConfigRule(
+	_ context.Context,
+	_ *configservice.GetComplianceDetailsByConfigRuleInput,
+	_ ...func(*configservice.Options),
+) (*configservice.GetComplianceDetailsByConfigRuleOutput, error) {
+	return &configservice.GetComplianceDetailsByConfigRuleOutput{
+		NextToken: aws.String("forever"),
+	}, nil
+}
+
+// oneRuleInfiniteResultsClient returns a single rule page (no NextToken) but
+// returns compliance results with a NextToken on every call.
+type oneRuleInfiniteResultsClient struct{ rule types.ConfigRule }
+
+func (m *oneRuleInfiniteResultsClient) DescribeConfigRules(
+	_ context.Context,
+	_ *configservice.DescribeConfigRulesInput,
+	_ ...func(*configservice.Options),
+) (*configservice.DescribeConfigRulesOutput, error) {
+	return &configservice.DescribeConfigRulesOutput{
+		ConfigRules: []types.ConfigRule{m.rule},
+		// No NextToken — rules loop terminates after one page.
+	}, nil
+}
+
+func (m *oneRuleInfiniteResultsClient) GetComplianceDetailsByConfigRule(
+	_ context.Context,
+	_ *configservice.GetComplianceDetailsByConfigRuleInput,
+	_ ...func(*configservice.Options),
+) (*configservice.GetComplianceDetailsByConfigRuleOutput, error) {
+	return &configservice.GetComplianceDetailsByConfigRuleOutput{
+		NextToken: aws.String("forever"),
+	}, nil
+}
+
+// contextCapturingClient wraps an inner client and records the context passed
+// to DescribeConfigRules so tests can inspect it after Fetch returns.
+type contextCapturingClient struct {
+	inner       ConfigServiceClient
+	capturedCtx context.Context
+}
+
+func (c *contextCapturingClient) DescribeConfigRules(
+	ctx context.Context,
+	params *configservice.DescribeConfigRulesInput,
+	optFns ...func(*configservice.Options),
+) (*configservice.DescribeConfigRulesOutput, error) {
+	c.capturedCtx = ctx
+	return c.inner.DescribeConfigRules(ctx, params, optFns...)
+}
+
+func (c *contextCapturingClient) GetComplianceDetailsByConfigRule(
+	ctx context.Context,
+	params *configservice.GetComplianceDetailsByConfigRuleInput,
+	optFns ...func(*configservice.Options),
+) (*configservice.GetComplianceDetailsByConfigRuleOutput, error) {
+	return c.inner.GetComplianceDetailsByConfigRule(ctx, params, optFns...)
+}
+
+var testRule = types.ConfigRule{
+	ConfigRuleId:    aws.String("config-rule-abc"),
+	ConfigRuleName:  aws.String("some-rule"),
+	ConfigRuleArn:   aws.String("arn:aws:config:us-east-1:123456789012:config-rule/config-rule-abc"),
+	Source:          &types.Source{Owner: types.OwnerAws, SourceIdentifier: aws.String("ACCESS_KEYS_ROTATED")},
+	InputParameters: aws.String("{}"),
+}
+
+func TestAWSConfigFetcher_PageLimit_Rules(t *testing.T) {
+	f := &AWSConfigFetcher{client: &infiniteMockClient{rule: testRule}, maxPages: 3}
+	_, err := f.Fetch(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "maximum page limit")
+}
+
+func TestAWSConfigFetcher_PageLimit_EvaluationResults(t *testing.T) {
+	f := &AWSConfigFetcher{client: &oneRuleInfiniteResultsClient{rule: testRule}, maxPages: 3}
+	_, err := f.Fetch(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "maximum page limit")
+}
+
+func TestAWSConfigFetcher_ContextCancelled_BeforeFirstPage(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // already cancelled before Fetch is called
+
+	f := &AWSConfigFetcher{client: &infiniteMockClient{rule: testRule}, maxPages: 3}
+	_, err := f.Fetch(ctx)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.Canceled)
+}
+
+func TestAWSConfigFetcher_DefaultTimeoutApplied(t *testing.T) {
+	// Verify that Fetch wraps a deadline-free context with a timeout by
+	// capturing the context that reaches the first API call.
+	inner := &mockConfigClient{
+		describeRulesPages: []configservice.DescribeConfigRulesOutput{
+			{ConfigRules: []types.ConfigRule{}},
+		},
+	}
+	ccc := &contextCapturingClient{inner: inner}
+
+	ctx := context.Background()
+	_, hasDeadline := ctx.Deadline()
+	require.False(t, hasDeadline, "precondition: background context has no deadline")
+
+	f := NewAWSConfigFetcherWithClient(ccc)
+	_, err := f.Fetch(ctx)
+	require.NoError(t, err)
+
+	_, deadlineSet := ccc.capturedCtx.Deadline()
+	assert.True(t, deadlineSet, "Fetch must wrap a deadline-free context with a timeout")
+}
+
+// ---- fetch tests ----
 
 func TestAWSConfigFetcher_Fetch_NoRules(t *testing.T) {
 	mock := &mockConfigClient{

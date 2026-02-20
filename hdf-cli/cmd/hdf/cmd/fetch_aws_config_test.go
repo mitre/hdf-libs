@@ -39,7 +39,7 @@ func TestFetchAWSConfigCmd_Help(t *testing.T) {
 	_ = root.Execute()
 	help := out.String()
 	assert.Contains(t, help, "region")
-	assert.Contains(t, help, "access-key-id")
+	assert.Contains(t, help, "profile")
 }
 
 // TestFetchCmd_Help verifies the fetch parent command help lists aws-config.

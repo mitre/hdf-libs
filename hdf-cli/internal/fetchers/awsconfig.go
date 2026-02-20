@@ -8,16 +8,39 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/configservice"
 	"github.com/aws/aws-sdk-go-v2/service/configservice/types"
 
 	awsconfigconv "github.com/mitre/hdf-converters/converters/aws-config-to-hdf/go"
 )
+
+const (
+	// defaultMaxPages caps pagination in both DescribeConfigRules and
+	// GetComplianceDetailsByConfigRule to prevent unbounded memory growth or
+	// infinite loops if the API returns malformed continuation tokens.
+	// AWS Config limits accounts to 500 rules, so 1000 pages is a generous
+	// ceiling that will never be reached in practice.
+	defaultMaxPages = 1000
+
+	// defaultFetchTimeout is applied when the caller has not set a deadline on
+	// the context. Five minutes is generous for accounts with hundreds of rules.
+	defaultFetchTimeout = 5 * time.Minute
+)
+
+// validRegionRe accepts any string that is a valid DNS hostname label:
+// alphanumerics and hyphens, not starting or ending with a hyphen.
+// This mirrors the defense-in-depth fix AWS applied across their SDKs
+// (GHSA-3jcv-796g-cpjg / CVE-2026-22611) to prevent region strings from
+// being interpolated into endpoint URLs in a way that could redirect traffic.
+// Intentionally permissive about region structure (accepts us-gov-west-1,
+// ap-southeast-2, cn-north-1, future regions) while blocking URL-special
+// characters (dots, slashes, colons, @, ?, #).
+var validRegionRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*[a-z0-9]$`)
 
 // ConfigServiceClient is the subset of the AWS Config SDK used by the fetcher.
 // Defined as an interface so tests can inject a mock without a live AWS account.
@@ -39,32 +62,30 @@ type ConfigServiceClient interface {
 type AWSConfigParams struct {
 	// Region is required.
 	Region string
-	// AccessKeyID and SecretAccessKey are optional; when absent the standard
-	// AWS credential chain is used (env vars, ~/.aws/credentials, IAM role).
-	AccessKeyID     string
-	SecretAccessKey string
-	SessionToken    string //nolint:gosec // not a hardcoded credential; user-supplied flag value
+	// Profile selects a named profile from ~/.aws/credentials or ~/.aws/config.
+	// When empty, the standard AWS credential chain is used (env vars →
+	// default profile → IAM instance role).
+	Profile string
 }
 
 // AWSConfigFetcher fetches AWS Config compliance data from the AWS API and
 // returns it as ConfigRulesFile JSON, ready for ConvertAWSConfigToHDF.
 type AWSConfigFetcher struct {
-	client ConfigServiceClient
+	client   ConfigServiceClient
+	maxPages int // 0 → defaultMaxPages
 }
 
 // NewAWSConfigFetcher creates a fetcher using live AWS credentials.
 func NewAWSConfigFetcher(ctx context.Context, params AWSConfigParams) (*AWSConfigFetcher, error) {
+	if !validRegionRe.MatchString(params.Region) {
+		return nil, fmt.Errorf("invalid region %q: must contain only lowercase letters, digits, and hyphens (e.g. us-east-1)", params.Region)
+	}
+
 	var opts []func(*config.LoadOptions) error
 	opts = append(opts, config.WithRegion(params.Region))
 
-	if params.AccessKeyID != "" && params.SecretAccessKey != "" {
-		opts = append(opts, config.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(
-				params.AccessKeyID,
-				params.SecretAccessKey,
-				params.SessionToken,
-			),
-		))
+	if params.Profile != "" {
+		opts = append(opts, config.WithSharedConfigProfile(params.Profile))
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)
@@ -86,6 +107,14 @@ func NewAWSConfigFetcherWithClient(client ConfigServiceClient) *AWSConfigFetcher
 // Fetch retrieves all AWS Config rules and their evaluation results, then
 // marshals the combined data into ConfigRulesFile JSON.
 func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
+	// Apply a default deadline when the caller has not set one, so a hung or
+	// unreachable endpoint cannot block indefinitely.
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, defaultFetchTimeout)
+		defer cancel()
+	}
+
 	rules, err := f.fetchAllConfigRules(ctx)
 	if err != nil {
 		return nil, err
@@ -105,10 +134,22 @@ func (f *AWSConfigFetcher) Fetch(ctx context.Context) ([]byte, error) {
 
 // fetchAllConfigRules pages through DescribeConfigRules and returns all rules.
 func (f *AWSConfigFetcher) fetchAllConfigRules(ctx context.Context) ([]awsconfigconv.ConfigRule, error) {
+	limit := f.maxPages
+	if limit <= 0 {
+		limit = defaultMaxPages
+	}
+
 	var rules []awsconfigconv.ConfigRule
 	var nextToken *string
 
-	for {
+	for page := 0; ; page++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if page >= limit {
+			return nil, fmt.Errorf("DescribeConfigRules: exceeded maximum page limit (%d)", limit)
+		}
+
 		out, err := f.client.DescribeConfigRules(ctx, &configservice.DescribeConfigRulesInput{
 			NextToken: nextToken,
 		})
@@ -134,10 +175,22 @@ func (f *AWSConfigFetcher) fetchEvaluationResults(
 	ctx context.Context,
 	ruleName string,
 ) ([]awsconfigconv.EvaluationResult, error) {
+	limit := f.maxPages
+	if limit <= 0 {
+		limit = defaultMaxPages
+	}
+
 	var results []awsconfigconv.EvaluationResult
 	var nextToken *string
 
-	for {
+	for page := 0; ; page++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if page >= limit {
+			return nil, fmt.Errorf("GetComplianceDetailsByConfigRule: exceeded maximum page limit (%d)", limit)
+		}
+
 		out, err := f.client.GetComplianceDetailsByConfigRule(ctx, &configservice.GetComplianceDetailsByConfigRuleInput{
 			ConfigRuleName: aws.String(ruleName),
 			Limit:          100,

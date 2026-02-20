@@ -12,11 +12,9 @@ import (
 
 func newFetchAWSConfigCmd() *cobra.Command {
 	var (
-		region          string
-		accessKeyID     string
-		secretAccessKey string
-		sessionToken    string
-		outputPath      string
+		region     string
+		profile    string
+		outputPath string
 	)
 
 	cmd := &cobra.Command{
@@ -25,19 +23,19 @@ func newFetchAWSConfigCmd() *cobra.Command {
 		Long: `Fetch compliance evaluation results from AWS Config and convert to HDF format.
 
 Credentials are resolved via the standard AWS credential chain:
-  1. --access-key-id / --secret-access-key flags
-  2. AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY environment variables
-  3. ~/.aws/credentials file
-  4. IAM instance role (EC2/ECS/Lambda)
+  1. AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY environment variables
+  2. ~/.aws/credentials and ~/.aws/config (default profile, or --profile)
+  3. IAM instance role (EC2/ECS/Lambda)
+
+Use --profile to select a named profile from your AWS CLI configuration.
+This is the recommended approach for users with multiple AWS accounts.
 
 Output defaults to stdout when no output path is given.`,
-		Example: `  # IAM role or environment credentials
+		Example: `  # Use default credential chain (env vars, default profile, IAM role)
   hdf fetch aws-config --region us-east-1 output.json
 
-  # Explicit credentials
-  hdf fetch aws-config --region us-east-1 \
-    --access-key-id YOUR_ACCESS_KEY_ID \
-    --secret-access-key YOUR_SECRET_ACCESS_KEY output.json
+  # Use a named AWS CLI profile
+  hdf fetch aws-config --region us-east-1 --profile my-audit-account output.json
 
   # Write to stdout and pipe to jq
   hdf fetch aws-config --region us-east-1 | jq '.baselines[0].requirements | length'`,
@@ -48,10 +46,8 @@ Output defaults to stdout when no output path is given.`,
 			}
 
 			f, err := fetchers.NewAWSConfigFetcher(cmd.Context(), fetchers.AWSConfigParams{
-				Region:          region,
-				AccessKeyID:     accessKeyID,
-				SecretAccessKey: secretAccessKey,
-				SessionToken:    sessionToken,
+				Region:  region,
+				Profile: profile,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to initialize AWS Config fetcher: %w", err)
@@ -79,9 +75,7 @@ Output defaults to stdout when no output path is given.`,
 	}
 
 	cmd.Flags().StringVarP(&region, "region", "r", "", "AWS region (required)")
-	cmd.Flags().StringVarP(&accessKeyID, "access-key-id", "a", "", "AWS access key ID")
-	cmd.Flags().StringVarP(&secretAccessKey, "secret-access-key", "s", "", "AWS secret access key")
-	cmd.Flags().StringVarP(&sessionToken, "session-token", "t", "", "AWS session token")
+	cmd.Flags().StringVarP(&profile, "profile", "p", "", "AWS CLI named profile (from ~/.aws/credentials or ~/.aws/config)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file path (default: stdout)")
 
 	_ = cmd.MarkFlagRequired("region")
