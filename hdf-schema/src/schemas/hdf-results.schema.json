@@ -39,6 +39,10 @@
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
       "description": "Information about the tool that generated this file."
     },
+    "dataSource": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/DataSource",
+      "description": "The tool or service that produced the security data in this file."
+    },
     "integrity": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this file."
@@ -87,10 +91,6 @@
         "description": {
           "type": "string",
           "description": "The description - should be more detailed than the summary."
-        },
-        "toolVersion": {
-          "type": "string",
-          "description": "The version of the security scanning tool used to execute this baseline (e.g., InSpec, Chef InSpec, other scanning tools)."
         },
         "checksum": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
