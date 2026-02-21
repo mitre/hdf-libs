@@ -198,7 +198,7 @@ func TestParseHTML(t *testing.T) {
 		{
 			name:     "Multiple tags",
 			input:    "<div><p>Hello</p><p>World</p></div>",
-			expected: "HelloWorld",
+			expected: "Hello World",
 		},
 		{
 			name:     "No HTML",

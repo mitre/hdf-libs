@@ -1,8 +1,6 @@
 package sonarqube
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -10,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
@@ -112,11 +111,7 @@ const sonarTimestampFormat = "2006-01-02T15:04:05-0700"
 // ConvertSonarqubeToHDF converts SonarQube issues JSON to HDF format
 func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	// Calculate checksum of source scan data
-	hash := sha256.Sum256(input)
-	resultsChecksum := &hdf.Checksum{
-		Algorithm: hdf.Sha256,
-		Value:     hex.EncodeToString(hash[:]),
-	}
+	resultsChecksum := shared.InputChecksum(input)
 
 	var sonarData IssuesResponse
 	if err := json.Unmarshal(input, &sonarData); err != nil {
@@ -192,7 +187,7 @@ func convertProjectToBaseline(
 
 	return hdf.EvaluatedBaseline{
 		Name:            projectKey,
-		Title:           stringPtr(fmt.Sprintf("SonarQube Analysis for %s", projectKey)),
+		Title:           shared.Ptr(fmt.Sprintf("SonarQube Analysis for %s", projectKey)),
 		Requirements:    requirements,
 		ResultsChecksum: resultsChecksum,
 	}
@@ -289,10 +284,7 @@ func extractDescription(rule *Rule, hasRule bool) string {
 
 	// Strip HTML tags for plain text description
 	if rule.HTMLDesc != "" {
-		re := regexp.MustCompile(`<[^>]*>`)
-		stripped := re.ReplaceAllString(rule.HTMLDesc, " ")
-		re = regexp.MustCompile(`\s+`)
-		return strings.TrimSpace(re.ReplaceAllString(stripped, " "))
+		return shared.StripHTML(rule.HTMLDesc)
 	}
 
 	return rule.Name
@@ -475,7 +467,3 @@ func extractSourceLocation(issue Issue, componentMap map[string]Component) *hdf.
 	}
 }
 
-// Helper functions
-func stringPtr(s string) *string {
-	return &s
-}

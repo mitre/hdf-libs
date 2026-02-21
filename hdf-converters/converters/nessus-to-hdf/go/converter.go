@@ -1,15 +1,13 @@
 package nessus
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -29,11 +27,7 @@ var impactMapping = map[string]float64{
 // ConvertNessusToHDF converts Nessus XML scan results to HDF format
 func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResults, error) {
 	// Calculate checksum of source scan data for integrity verification
-	hash := sha256.Sum256(nessusXML)
-	resultsChecksum := &hdf.Checksum{
-		Algorithm: hdf.Sha256,
-		Value:     hex.EncodeToString(hash[:]),
-	}
+	resultsChecksum := shared.InputChecksum(nessusXML)
 
 	var nessus NessusXML
 	if err := xml.Unmarshal(nessusXML, &nessus); err != nil {
@@ -113,25 +107,11 @@ func calculateTiming(hosts []ReportHost) (time.Time, float64) {
 }
 
 func parseHostTime(timeStr string) time.Time {
-	if timeStr == "" {
+	t := shared.ParseTimestamp(timeStr)
+	if t.IsZero() {
 		return time.Now()
 	}
-
-	// Try common Nessus time formats
-	formats := []string{
-		"Mon Jan 02 15:04:05 2006",
-		time.RFC1123,
-		time.RFC1123Z,
-		time.RFC3339,
-	}
-
-	for _, format := range formats {
-		if t, err := time.Parse(format, timeStr); err == nil {
-			return t
-		}
-	}
-
-	return time.Now()
+	return t
 }
 
 func getHostPropertyValue(host *ReportHost, name string) string {
@@ -408,9 +388,7 @@ func parseComplianceRef(ref, key string) []string {
 }
 
 func parseHTML(html string) string {
-	// Strip HTML tags
-	re := regexp.MustCompile(`<[^>]*>`)
-	return strings.TrimSpace(re.ReplaceAllString(html, ""))
+	return shared.StripHTML(html)
 }
 
 func convertReportHostToTarget(host *ReportHost) hdf.Target {

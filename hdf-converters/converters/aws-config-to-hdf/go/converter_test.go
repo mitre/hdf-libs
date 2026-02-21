@@ -253,28 +253,28 @@ func TestBuildMessage_NotApplicable(t *testing.T) {
 	assert.Nil(t, msg)
 }
 
-// ---- parseISO ----
+// ---- ParseTimestamp (via shared) ----
 
-func TestParseISO_ValidRFC3339(t *testing.T) {
-	ts := parseISO("2021-04-09T14:39:21Z")
+func TestParseTimestamp_ValidRFC3339(t *testing.T) {
+	ts := shared.ParseTimestamp("2021-04-09T14:39:21Z")
 	assert.False(t, ts.IsZero())
 	assert.Equal(t, 2021, ts.Year())
 	assert.Equal(t, 14, ts.Hour())
 }
 
-func TestParseISO_ValidRFC3339Nano(t *testing.T) {
-	ts := parseISO("2021-04-09T14:39:51.614Z")
+func TestParseTimestamp_ValidRFC3339Nano(t *testing.T) {
+	ts := shared.ParseTimestamp("2021-04-09T14:39:51.614Z")
 	assert.False(t, ts.IsZero())
 	assert.Equal(t, 51, ts.Second())
 }
 
-func TestParseISO_Empty(t *testing.T) {
-	ts := parseISO("")
+func TestParseTimestamp_Empty(t *testing.T) {
+	ts := shared.ParseTimestamp("")
 	assert.True(t, ts.IsZero())
 }
 
-func TestParseISO_Invalid(t *testing.T) {
-	ts := parseISO("not-a-date")
+func TestParseTimestamp_Invalid(t *testing.T) {
+	ts := shared.ParseTimestamp("not-a-date")
 	assert.True(t, ts.IsZero())
 }
 
