@@ -21,6 +21,7 @@ export default defineConfig({
         'test/**',
         '**/*.config.*',
         '**/node_modules/**',
+        '**/.stryker-tmp/**',
       ],
     },
   },
