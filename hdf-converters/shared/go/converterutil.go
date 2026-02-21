@@ -65,6 +65,7 @@ func ParseTimestamp(s string) time.Time {
 		time.RFC3339,
 		time.RFC1123Z,
 		time.RFC1123,
+		"2006-01-02T15:04:05",
 		"Mon Jan 02 15:04:05 2006",
 	}
 

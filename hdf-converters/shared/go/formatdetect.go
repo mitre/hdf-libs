@@ -1,7 +1,9 @@
 package testing
 
 import (
+	"bytes"
 	"encoding/json"
+	"encoding/xml"
 )
 
 // InputFormat represents a detected input file format.
@@ -10,6 +12,8 @@ type InputFormat string
 const (
 	// FormatSARIF indicates SARIF 2.1.0 JSON input.
 	FormatSARIF InputFormat = "sarif"
+	// FormatJUnit indicates JUnit XML input.
+	FormatJUnit InputFormat = "junit"
 	// FormatUnknown indicates the format could not be determined.
 	FormatUnknown InputFormat = "unknown"
 )
@@ -18,25 +22,30 @@ const (
 // Uses structural fingerprinting — checks for characteristic top-level fields.
 //
 // SARIF fingerprint: JSON object with "version" string and "runs" array.
+// JUnit fingerprint: XML with <testsuites> or <testsuite> root element.
 func DetectFormat(input []byte) InputFormat {
 	if len(input) == 0 {
 		return FormatUnknown
 	}
 
-	// Quick byte-level pre-check: must start with '{' (JSON object)
+	// Find the first non-whitespace byte to determine format family
 	for _, b := range input {
 		switch b {
 		case ' ', '\t', '\n', '\r':
 			continue
 		case '{':
-			goto parseJSON
+			return detectJSON(input)
+		case '<':
+			return detectXML(input)
 		default:
 			return FormatUnknown
 		}
 	}
 	return FormatUnknown
+}
 
-parseJSON:
+// detectJSON probes JSON input for known formats.
+func detectJSON(input []byte) InputFormat {
 	var probe struct {
 		Schema  string          `json:"$schema"`
 		Version json.RawMessage `json:"version"`
@@ -51,6 +60,25 @@ parseJSON:
 	}
 
 	return FormatUnknown
+}
+
+// detectXML probes XML input for known formats by reading the root element name.
+func detectXML(input []byte) InputFormat {
+	decoder := xml.NewDecoder(bytes.NewReader(input))
+	for {
+		tok, err := decoder.Token()
+		if err != nil {
+			return FormatUnknown
+		}
+		if se, ok := tok.(xml.StartElement); ok {
+			switch se.Name.Local {
+			case "testsuites", "testsuite":
+				return FormatJUnit
+			default:
+				return FormatUnknown
+			}
+		}
+	}
 }
 
 // isSARIF checks whether the probed fields match SARIF structure:
