@@ -3,6 +3,7 @@ package cci
 import (
 	_ "embed"
 	"encoding/json"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -139,6 +140,52 @@ func baseNistControl(control string) string {
 		return control
 	}
 	return control[:idx]
+}
+
+// CCIToNIST maps a list of CCI IDs to their NIST 800-53 controls.
+// Results are deduplicated and sorted. Returns an empty (non-nil) slice if no
+// mappings are found.
+//
+// Example:
+//
+//	controls := CCIToNIST([]string{"CCI-000366", "CCI-000001"})
+//	// Returns: []string{"AC-1 a", ..., "CM-6 b", ...}
+func CCIToNIST(cciIDs []string) []string {
+	seen := make(map[string]bool)
+	for _, cciID := range cciIDs {
+		for _, control := range GetCCINistMappings(cciID) {
+			seen[control] = true
+		}
+	}
+	result := make([]string, 0, len(seen))
+	for control := range seen {
+		result = append(result, control)
+	}
+	sort.Strings(result)
+	return result
+}
+
+// NISTToCCI maps a list of NIST 800-53 controls to their CCI IDs using the
+// curated mapping table. Results are deduplicated and sorted. Returns an empty
+// (non-nil) slice if no mappings are found.
+//
+// Example:
+//
+//	ccis := NISTToCCI([]string{"AC-3", "SI-10"})
+//	// Returns: []string{"CCI-000213", "CCI-001310"}
+func NISTToCCI(nistControls []string) []string {
+	seen := make(map[string]bool)
+	for _, control := range nistControls {
+		for _, cciID := range GetNistCCIMappings(control) {
+			seen[cciID] = true
+		}
+	}
+	result := make([]string, 0, len(seen))
+	for cciID := range seen {
+		result = append(result, cciID)
+	}
+	sort.Strings(result)
+	return result
 }
 
 // CCIExists checks if a CCI ID exists in the database.

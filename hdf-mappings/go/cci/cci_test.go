@@ -275,6 +275,127 @@ func TestGetAllCCIIDs(t *testing.T) {
 	}
 }
 
+func TestCCIToNIST(t *testing.T) {
+	t.Run("maps known CCI IDs to NIST controls", func(t *testing.T) {
+		result := CCIToNIST([]string{"CCI-000366"})
+		if len(result) == 0 {
+			t.Fatal("Expected non-empty NIST controls for CCI-000366")
+		}
+		found := false
+		for _, c := range result {
+			if c == "CM-6 b" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Expected result to contain 'CM-6 b', got: %v", result)
+		}
+	})
+
+	t.Run("deduplicates controls from multiple CCI IDs", func(t *testing.T) {
+		// Both CCI-000001 and itself map to the same controls; dupes must collapse
+		single := CCIToNIST([]string{"CCI-000001"})
+		double := CCIToNIST([]string{"CCI-000001", "CCI-000001"})
+		if len(single) != len(double) {
+			t.Errorf("Expected deduplication: single=%d, double=%d", len(single), len(double))
+		}
+	})
+
+	t.Run("result is sorted", func(t *testing.T) {
+		result := CCIToNIST([]string{"CCI-000366", "CCI-000001"})
+		for i := 1; i < len(result); i++ {
+			if result[i] < result[i-1] {
+				t.Errorf("Result not sorted at index %d: %v", i, result)
+			}
+		}
+	})
+
+	t.Run("empty input returns empty slice", func(t *testing.T) {
+		result := CCIToNIST([]string{})
+		if result == nil {
+			t.Error("Expected non-nil empty slice")
+		}
+		if len(result) != 0 {
+			t.Errorf("Expected empty slice, got: %v", result)
+		}
+	})
+
+	t.Run("unknown CCI IDs return empty slice", func(t *testing.T) {
+		result := CCIToNIST([]string{"CCI-999999"})
+		if result == nil {
+			t.Error("Expected non-nil empty slice")
+		}
+		if len(result) != 0 {
+			t.Errorf("Expected empty slice, got: %v", result)
+		}
+	})
+}
+
+func TestNISTToCCI(t *testing.T) {
+	t.Run("maps known NIST control to CCI IDs", func(t *testing.T) {
+		result := NISTToCCI([]string{"AC-3"})
+		if len(result) == 0 {
+			t.Fatal("Expected non-empty CCI IDs for AC-3")
+		}
+		found := false
+		for _, c := range result {
+			if c == "CCI-000213" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Expected result to contain 'CCI-000213', got: %v", result)
+		}
+	})
+
+	t.Run("deduplicates CCI IDs from multiple NIST controls", func(t *testing.T) {
+		single := NISTToCCI([]string{"AC-3"})
+		double := NISTToCCI([]string{"AC-3", "AC-3"})
+		if len(single) != len(double) {
+			t.Errorf("Expected deduplication: single=%d, double=%d", len(single), len(double))
+		}
+	})
+
+	t.Run("result is sorted", func(t *testing.T) {
+		result := NISTToCCI([]string{"AC-3", "SI-10"})
+		for i := 1; i < len(result); i++ {
+			if result[i] < result[i-1] {
+				t.Errorf("Result not sorted at index %d: %v", i, result)
+			}
+		}
+	})
+
+	t.Run("empty input returns empty slice", func(t *testing.T) {
+		result := NISTToCCI([]string{})
+		if result == nil {
+			t.Error("Expected non-nil empty slice")
+		}
+		if len(result) != 0 {
+			t.Errorf("Expected empty slice, got: %v", result)
+		}
+	})
+
+	t.Run("unknown NIST control returns empty slice", func(t *testing.T) {
+		result := NISTToCCI([]string{"ZZ-999"})
+		if result == nil {
+			t.Error("Expected non-nil empty slice")
+		}
+		if len(result) != 0 {
+			t.Errorf("Expected empty slice, got: %v", result)
+		}
+	})
+
+	t.Run("qualified control normalizes before lookup", func(t *testing.T) {
+		base := NISTToCCI([]string{"SI-10"})
+		qualified := NISTToCCI([]string{"SI-10 a 1"})
+		if len(base) != len(qualified) {
+			t.Errorf("Expected same result for base and qualified: %v vs %v", base, qualified)
+		}
+	})
+}
+
 func TestLazyLoading(t *testing.T) {
 	// First call should load data
 	desc1 := GetCCIDescription("CCI-000001")
