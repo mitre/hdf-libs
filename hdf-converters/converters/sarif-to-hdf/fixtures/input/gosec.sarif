@@ -1,0 +1,244 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "gosec",
+          "version": "2.18.2",
+          "informationUri": "https://github.com/securego/gosec",
+          "rules": [
+            {
+              "id": "G101",
+              "name": "Look for hard coded credentials",
+              "shortDescription": {
+                "text": "Look for hard coded credentials"
+              },
+              "fullDescription": {
+                "text": "Potential hardcoded credentials detected. Secrets should be stored in environment variables or external secret managers."
+              },
+              "helpUri": "https://github.com/securego/gosec#available-rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "tags": ["security", "credentials", "CWE-798"],
+                "precision": "high"
+              }
+            },
+            {
+              "id": "G201",
+              "name": "SQL query construction using format string",
+              "shortDescription": {
+                "text": "SQL string formatting"
+              },
+              "fullDescription": {
+                "text": "SQL query construction using string concatenation or formatting, which can lead to SQL injection vulnerabilities."
+              },
+              "helpUri": "https://github.com/securego/gosec#available-rules",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "relationships": [
+                {
+                  "target": {
+                    "id": "89",
+                    "toolComponent": {
+                      "name": "CWE"
+                    }
+                  },
+                  "kinds": ["superset"]
+                }
+              ]
+            },
+            {
+              "id": "G304",
+              "name": "File path provided as taint input",
+              "shortDescription": {
+                "text": "File path provided as taint input"
+              },
+              "fullDescription": {
+                "text": "A file path is constructed from user-controlled input, potentially allowing path traversal attacks."
+              },
+              "helpUri": "https://github.com/securego/gosec#available-rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "relationships": [
+                {
+                  "target": {
+                    "id": "22",
+                    "toolComponent": {
+                      "name": "CWE"
+                    }
+                  },
+                  "kinds": ["superset"]
+                }
+              ]
+            },
+            {
+              "id": "G401",
+              "name": "Detect the usage of MD5 or SHA1",
+              "shortDescription": {
+                "text": "Use of weak cryptographic primitive"
+              },
+              "helpUri": "https://github.com/securego/gosec#available-rules",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "relationships": [
+                {
+                  "target": {
+                    "id": "326",
+                    "toolComponent": {
+                      "name": "CWE"
+                    }
+                  },
+                  "kinds": ["superset"]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "taxonomies": [
+        {
+          "name": "CWE",
+          "version": "4.13",
+          "organization": "MITRE",
+          "taxa": [
+            {
+              "id": "89",
+              "name": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+            },
+            {
+              "id": "22",
+              "name": "Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+            },
+            {
+              "id": "326",
+              "name": "Inadequate Encryption Strength"
+            },
+            {
+              "id": "798",
+              "name": "Use of Hard-coded Credentials"
+            }
+          ]
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "G201",
+          "ruleIndex": 1,
+          "level": "error",
+          "message": {
+            "text": "SQL string formatting"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "internal/db/users.go"
+                },
+                "region": {
+                  "startLine": 34,
+                  "startColumn": 2,
+                  "endLine": 34,
+                  "endColumn": 68,
+                  "snippet": {
+                    "text": "\tquery := fmt.Sprintf(\"SELECT * FROM users WHERE id = %s\", id)"
+                  }
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "primaryLocationHash": "gosec-g201-users-34"
+          }
+        },
+        {
+          "ruleId": "G304",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "Potential file inclusion via variable"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "internal/handlers/files.go"
+                },
+                "region": {
+                  "startLine": 56,
+                  "startColumn": 15,
+                  "endLine": 56,
+                  "endColumn": 42,
+                  "snippet": {
+                    "text": "\tdata, err := os.ReadFile(filePath)"
+                  }
+                }
+              }
+            }
+          ],
+          "suppressions": [
+            {
+              "kind": "inSource",
+              "status": "accepted",
+              "justification": "#nosec G304 -- filePath is validated against allowlist"
+            }
+          ]
+        },
+        {
+          "ruleId": "G401",
+          "ruleIndex": 3,
+          "level": "warning",
+          "message": {
+            "text": "Use of weak cryptographic primitive"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "internal/auth/checksum.go"
+                },
+                "region": {
+                  "startLine": 12,
+                  "startColumn": 8,
+                  "snippet": {
+                    "text": "\th := md5.New()"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "G101",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "Potential hardcoded credentials"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "internal/config/constants.go"
+                },
+                "region": {
+                  "startLine": 7,
+                  "startColumn": 2,
+                  "snippet": {
+                    "text": "\tdbPassword = \"supersecret123\""
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
