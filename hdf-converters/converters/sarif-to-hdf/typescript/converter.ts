@@ -5,7 +5,7 @@ import {
   getAllCCIIds,
   getCCINistMappings,
 } from '@mitre/hdf-mappings';
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum } from '@mitre/hdf-schema';
+import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, DataSource } from '@mitre/hdf-schema';
 import { ResultStatus, HashAlgorithm, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 interface SarifFile {
@@ -72,6 +72,18 @@ export function convertSarifToHdf(input: string): string {
     throw new Error('Invalid SARIF structure: missing or invalid runs field');
   }
 
+  const dataSource: DataSource = { format: 'SARIF' };
+  const firstRun = sarif.runs[0];
+  const firstDriver = firstRun?.tool?.driver;
+  if (firstDriver) {
+    if (firstDriver.name) {
+      dataSource.name = firstDriver.name;
+    }
+    if (firstDriver.version) {
+      dataSource.version = firstDriver.version;
+    }
+  }
+
   // Build HDF
   const hdf: HdfResults = {
     timestamp: new Date(),
@@ -81,6 +93,7 @@ export function convertSarifToHdf(input: string): string {
       name: 'sarif-to-hdf',
       version: '1.0.0',
     },
+    dataSource,
   };
 
   return JSON.stringify(hdf, null, 2);

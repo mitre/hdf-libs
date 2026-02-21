@@ -10,6 +10,7 @@ import type {
   Description,
   Reference,
   Checksum,
+  DataSource,
 } from '@mitre/hdf-schema';
 import { ResultStatus, HashAlgorithm, Copyright as TargetType, createMinimalBaseline } from '@mitre/hdf-schema';
 import { version as converterVersion } from '../../../package.json';
@@ -127,6 +128,8 @@ export function convertNessusToHdf(nessusXml: string): HdfResults {
     targets.push(target);
   });
 
+  const dataSource: DataSource = { name: 'Nessus' };
+
   const result: HdfResults = {
     baselines,
     targets,
@@ -137,6 +140,7 @@ export function convertNessusToHdf(nessusXml: string): HdfResults {
       name: 'hdf-converters',
       version: converterVersion,
     },
+    dataSource,
     timestamp: startTime,
   };
 

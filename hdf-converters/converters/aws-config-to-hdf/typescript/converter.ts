@@ -11,6 +11,7 @@ import type {
   RequirementResult,
   Checksum,
   Description,
+  DataSource,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -181,12 +182,15 @@ export function convertAwsConfigToHdf(input: string): string {
     maintainer: 'Amazon Web Services',
   } as EvaluatedBaseline;
 
+  const dataSource: DataSource = { name: 'AWS Config' };
+
   const hdf: HdfResults = {
     baselines: [baseline],
     generator: {
       name: 'aws-config-to-hdf',
       version: '1.0.0',
     },
+    dataSource,
     timestamp: new Date(),
   };
 

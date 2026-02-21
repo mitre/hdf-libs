@@ -11,6 +11,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
+  DataSource,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -181,6 +182,8 @@ export function convertSonarqubeToHdf(input: string): string {
     baselines.push(baseline);
   }
 
+  const dataSource: DataSource = { name: 'SonarQube' };
+
   // Build HDF
   const hdf: HdfResults = {
     timestamp: new Date(),
@@ -190,6 +193,7 @@ export function convertSonarqubeToHdf(input: string): string {
       name: 'sonarqube-to-hdf',
       version: '1.0.0',
     },
+    dataSource,
   };
 
   return JSON.stringify(hdf, null, 2);

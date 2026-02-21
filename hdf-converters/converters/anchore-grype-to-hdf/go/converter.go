@@ -420,6 +420,13 @@ func ConvertAnchoreGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFRe
 		}
 	}
 
+	toolName := "Grype"
+	dataSource := &hdf.DataSource{Name: &toolName}
+	if grypeData.Descriptor.Version != "" {
+		v := grypeData.Descriptor.Version
+		dataSource.Version = &v
+	}
+
 	// Build HDF results
 	hdfResult := &hdf.HDFResults{
 		Baselines: []hdf.EvaluatedBaseline{baseline},
@@ -427,7 +434,8 @@ func ConvertAnchoreGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFRe
 			Name:    "anchore-grype-to-hdf",
 			Version: converterVersion,
 		},
-		Timestamp: timestamp,
+		DataSource: dataSource,
+		Timestamp:  timestamp,
 	}
 
 	return hdfResult, nil

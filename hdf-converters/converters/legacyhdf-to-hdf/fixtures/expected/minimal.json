@@ -53,5 +53,8 @@
       "name": "test-system",
       "release": "1.0"
     }
-  ]
+  ],
+  "dataSource": {
+    "name": "Heimdall Data Format v1"
+  }
 }
