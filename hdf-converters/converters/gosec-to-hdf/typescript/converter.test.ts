@@ -208,4 +208,32 @@ describe('gosec to HDF converter', () => {
       expect(g104?.results).toHaveLength(2);
     });
   });
+
+  describe('SARIF format routing', () => {
+    function loadSarifFixture(name: string): string {
+      return readFileSync(join(__dirname, '..', '..', 'sarif-to-hdf', 'fixtures', 'input', name), 'utf-8');
+    }
+
+    it('should detect SARIF input and delegate to SARIF converter', () => {
+      const input = loadSarifFixture('gosec.sarif');
+      const hdf = JSON.parse(convertGosecToHdf(input)) as HdfResults;
+
+      // SARIF converter uses tool driver name as baseline name
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.name).toBe('gosec');
+      expect(hdf.baselines[0]!.requirements.length).toBeGreaterThan(0);
+
+      // Verify enriched SARIF data — CWE from relationships
+      const g201 = hdf.baselines[0]!.requirements.find(r => r.id === 'G201');
+      expect(g201).toBeDefined();
+      expect(g201!.tags.cwe).toContain('CWE-89');
+    });
+
+    it('should not route native gosec JSON to SARIF converter', () => {
+      const hdf = JSON.parse(convertGosecToHdf(loadFixture('minimal.json'))) as HdfResults;
+
+      // Native output uses "gosec Scan" baseline name
+      expect(hdf.baselines[0]!.name).toBe('gosec Scan');
+    });
+  });
 });

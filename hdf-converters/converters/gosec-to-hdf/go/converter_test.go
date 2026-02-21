@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -526,4 +527,47 @@ func TestNistTagsForIssue_EmptyCWE(t *testing.T) {
 	issue := GosecIssue{CWE: GosecCWE{ID: ""}}
 	tags := nistTagsForIssue(issue)
 	assert.Equal(t, []string{"SI-2", "RA-5"}, tags)
+}
+
+// ---- SARIF format detection and routing ----
+
+func TestConvertGosecToHDF_SARIFRouting(t *testing.T) {
+	// Load the gosec SARIF fixture from the SARIF converter's fixtures
+	sarifPath := filepath.Join(shared.GetConvertersDir(), "sarif-to-hdf", "fixtures", "input", "gosec.sarif")
+	input, err := os.ReadFile(sarifPath)
+	require.NoError(t, err, "Failed to read gosec.sarif fixture")
+
+	// Should be detected as SARIF and routed to the SARIF converter
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err, "SARIF input should be accepted by gosec converter")
+	require.NotNil(t, result)
+
+	// Verify the SARIF converter produced the output (baseline name = tool driver name)
+	require.Len(t, result.Baselines, 1)
+	assert.Equal(t, "gosec", result.Baselines[0].Name)
+	assert.NotEmpty(t, result.Baselines[0].Requirements)
+
+	// Verify enriched SARIF data came through (CWE from relationships)
+	reqs := result.Baselines[0].Requirements
+	var g201 *hdf.EvaluatedRequirement
+	for i := range reqs {
+		if reqs[i].ID == "G201" {
+			g201 = &reqs[i]
+			break
+		}
+	}
+	require.NotNil(t, g201, "expected G201 requirement from SARIF")
+	cweIds, ok := g201.Tags["cwe"].([]string)
+	require.True(t, ok, "CWE should be []string from SARIF converter")
+	assert.Contains(t, cweIds, "CWE-89")
+}
+
+func TestConvertGosecToHDF_NativeJSONNotRoutedToSARIF(t *testing.T) {
+	// Native gosec JSON should not be detected as SARIF
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertGosecToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Native output uses "gosec Scan" baseline name (not tool driver name)
+	assert.Equal(t, "gosec Scan", result.Baselines[0].Name)
 }

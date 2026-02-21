@@ -1,6 +1,8 @@
 import { createHash } from 'crypto';
 import { parseJSON } from '@mitre/hdf-utilities';
 import { getCweNistControl, DEFAULT_REMEDIATION_NIST_TAGS } from '@mitre/hdf-mappings';
+import { detectFormat } from '../../../shared/typescript/formatdetect.js';
+import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -152,12 +154,19 @@ function buildRequirement(ruleId: string, issues: GosecIssue[]): EvaluatedRequir
 }
 
 /**
- * Converts gosec JSON output to HDF format.
+ * Converts gosec output to HDF format.
+ * Accepts both native gosec JSON and SARIF format — SARIF input is detected
+ * automatically and delegated to the shared SARIF converter.
  *
- * @param input - gosec JSON string (output of `gosec -fmt json`)
+ * @param input - gosec JSON or SARIF string
  * @returns HDF JSON string
  */
 export function convertGosecToHdf(input: string): string {
+  // Detect format: if SARIF, delegate to the shared SARIF converter
+  if (detectFormat(input) === 'sarif') {
+    return convertSarifToHdf(input);
+  }
+
   const resultsChecksum: Checksum = {
     algorithm: HashAlgorithm.Sha256,
     value: createHash('sha256').update(input).digest('hex'),
