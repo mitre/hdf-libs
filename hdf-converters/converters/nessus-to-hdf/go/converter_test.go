@@ -45,6 +45,21 @@ func TestConvertNessusToHDF_Minimal(t *testing.T) {
 	shared.WriteOutput(t, "nessus-to-hdf", "minimal.json", result)
 }
 
+func TestConvertNessusToHDF_DataSource(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "minimal.nessus")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.DataSource)
+	require.NotNil(t, result.DataSource.Name)
+	assert.Equal(t, "Nessus", *result.DataSource.Name)
+	assert.Nil(t, result.DataSource.Version)
+	assert.Nil(t, result.DataSource.Format)
+}
+
 func TestConvertNessusToHDF_Compliance(t *testing.T) {
 	// Load compliance fixture
 	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "compliance.nessus")

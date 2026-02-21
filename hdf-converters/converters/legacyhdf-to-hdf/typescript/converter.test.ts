@@ -21,6 +21,9 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         name: 'ubuntu',
         release: '20.04',
       });
+      expect(v2.dataSource?.name).toBe('Heimdall Data Format v1');
+      expect(v2.dataSource?.version).toBeUndefined();
+      expect(v2.dataSource?.format).toBeUndefined();
     });
 
     it('should rename profiles to baselines', () => {

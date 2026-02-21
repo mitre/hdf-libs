@@ -19,6 +19,9 @@ describe('SARIF Converter', () => {
       const result = JSON.parse(convertSarifToHdf(input));
 
       // Compare structure (ignore timestamp and generator version)
+      expect(result.dataSource?.format).toBe('SARIF');
+      expect(result.dataSource?.name).toBe('Flawfinder');
+      expect(result.dataSource?.version).toBe('2.0.15');
       expect(result.baselines).toHaveLength(1);
       expect(result.baselines[0].name).toBe('SARIF');
       expect(result.baselines[0].version).toBe('2.1.0');

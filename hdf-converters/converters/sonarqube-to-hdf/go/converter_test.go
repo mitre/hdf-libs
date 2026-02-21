@@ -37,6 +37,17 @@ func TestConvertSonarqubeToHDF_Structure(t *testing.T) {
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 }
 
+func TestConvertSonarqubeToHDF_DataSource(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.DataSource)
+	require.NotNil(t, result.DataSource.Name)
+	assert.Equal(t, "SonarQube", *result.DataSource.Name)
+	assert.Nil(t, result.DataSource.Version)
+	assert.Nil(t, result.DataSource.Format)
+}
+
 func TestConvertSonarqubeToHDF_OneBaselinePerProject(t *testing.T) {
 	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
 	require.NoError(t, err)

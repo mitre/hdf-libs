@@ -64,6 +64,23 @@ func TestConvertSarifToHDF_Minimal(t *testing.T) {
 	assert.Equal(t, "warning", req2.Tags["severity"])
 }
 
+func TestConvertSarifToHDF_DataSource(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "sarif-to-hdf", "fixtures", "input", "minimal.sarif")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.DataSource)
+	require.NotNil(t, result.DataSource.Format)
+	assert.Equal(t, "SARIF", *result.DataSource.Format)
+	require.NotNil(t, result.DataSource.Name)
+	assert.Equal(t, "Flawfinder", *result.DataSource.Name)
+	require.NotNil(t, result.DataSource.Version)
+	assert.Equal(t, "2.0.15", *result.DataSource.Version)
+}
+
 func TestConvertSarifToHDF_EmptyResults(t *testing.T) {
 	input := `{
 		"version": "2.1.0",

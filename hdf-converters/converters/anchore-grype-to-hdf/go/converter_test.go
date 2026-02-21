@@ -53,6 +53,27 @@ func TestConvertAnchoreGrypeToHDF(t *testing.T) {
 	}
 }
 
+func TestConvertAnchoreGrypeToHDF_DataSource(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+
+	if result.DataSource == nil {
+		t.Fatal("Expected DataSource to be set")
+	}
+	if result.DataSource.Name == nil || *result.DataSource.Name != "Grype" {
+		t.Errorf("Expected DataSource.Name to be 'Grype', got %v", result.DataSource.Name)
+	}
+	if result.DataSource.Version == nil || *result.DataSource.Version != "0.79.3" {
+		t.Errorf("Expected DataSource.Version to be '0.79.3', got %v", result.DataSource.Version)
+	}
+	if result.DataSource.Format != nil {
+		t.Errorf("Expected DataSource.Format to be nil, got %v", *result.DataSource.Format)
+	}
+}
+
 func TestBaselineName(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
