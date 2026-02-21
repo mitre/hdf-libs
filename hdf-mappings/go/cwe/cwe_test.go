@@ -1,6 +1,7 @@
 package cwe
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -86,5 +87,29 @@ func TestNISTControls_CasePrefixHandling(t *testing.T) {
 	controls := NISTControls("cwe-476")
 	if len(controls) == 0 {
 		t.Fatal("expected NIST controls for cwe-476 (lowercase), got none")
+	}
+}
+
+func TestLoadCWEData_InvalidJSON(t *testing.T) {
+	// Exercise the json.Unmarshal error path in loadCWEData.
+	origData := cweMappingsData
+	origMap := cweData
+	origOnce := cweDataOnce
+	defer func() {
+		cweMappingsData = origData
+		cweData = origMap
+		cweDataOnce = origOnce
+	}()
+
+	cweMappingsData = []byte("not valid json")
+	cweData = nil
+	cweDataOnce = sync.Once{}
+
+	result := loadCWEData()
+	if result == nil {
+		t.Error("expected non-nil empty map on JSON error, got nil")
+	}
+	if len(result) != 0 {
+		t.Errorf("expected empty map on JSON error, got %d entries", len(result))
 	}
 }
