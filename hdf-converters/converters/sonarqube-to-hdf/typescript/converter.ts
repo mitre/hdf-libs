@@ -2,8 +2,7 @@ import { createHash } from 'crypto';
 import { parseJSON } from '@mitre/hdf-utilities';
 import {
   getCweNistControl,
-  getAllCCIIds,
-  getCCINistMappings,
+  nistToCci,
 } from '@mitre/hdf-mappings';
 import type {
   HdfResults,
@@ -253,7 +252,7 @@ function convertRuleToRequirement(
   // Extract tags and mappings
   const { cweIds, owaspTags, allTags } = extractTags(rule, issues);
   const nistControls = mapToNist(cweIds, owaspTags, firstIssue.type);
-  const cciControls = mapNistToCci(nistControls);
+  const cciControls = nistToCci(nistControls);
 
   // Create results for each issue
   const results: RequirementResult[] = issues.map(issue =>
@@ -433,31 +432,7 @@ function mapToNist(
   return Array.from(nistSet).sort();
 }
 
-function mapNistToCci(nistControls: string[]): string[] {
-  if (nistControls.length === 0) {
-    return [];
-  }
 
-  const cciSet = new Set<string>();
-  const allCciIds = getAllCCIIds();
-
-  for (const cciId of allCciIds) {
-    const nistMappings = getCCINistMappings(cciId);
-    if (!nistMappings) {
-      continue;
-    }
-
-    for (const nistMapping of nistMappings) {
-      const baseNistId = nistMapping.split(' ')[0] || '';
-      if (baseNistId && nistControls.includes(baseNistId)) {
-        cciSet.add(cciId);
-        break;
-      }
-    }
-  }
-
-  return Array.from(cciSet).sort();
-}
 
 function createResultFromIssue(
   issue: SonarQubeIssue,

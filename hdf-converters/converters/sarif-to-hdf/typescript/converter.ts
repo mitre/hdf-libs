@@ -2,8 +2,7 @@ import { createHash } from 'crypto';
 import { parseJSON } from '@mitre/hdf-utilities';
 import {
   getCweNistControl,
-  getAllCCIIds,
-  getCCINistMappings,
+  nistToCci,
 } from '@mitre/hdf-mappings';
 import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, DataSource } from '@mitre/hdf-schema';
 import { ResultStatus, HashAlgorithm, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
@@ -122,7 +121,7 @@ function convertResult(result: SarifResult): EvaluatedRequirement {
   const nistControls = mapCweToNist(cweIds);
 
   // Map NIST to CCI
-  const cciControls = mapNistToCci(nistControls);
+  const cciControls = nistToCci(nistControls);
 
   // Get impact from level
   const impact = IMPACT_MAPPING[result.level || ''] || 0.1;
@@ -238,36 +237,7 @@ function mapCweToNist(cweIds: string[]): string[] {
   return Array.from(nistSet);
 }
 
-function mapNistToCci(nistControls: string[]): string[] {
-  if (nistControls.length === 0) {
-    return [];
-  }
 
-  const cciSet = new Set<string>();
-  const allCciIds = getAllCCIIds();
-
-  // Iterate through all CCI IDs and check if they map to our NIST controls
-  for (const cciId of allCciIds) {
-    const nistMappings = getCCINistMappings(cciId);
-
-    if (!nistMappings) {
-      continue;
-    }
-
-    // Check if any of the CCI's NIST mappings match our controls
-    for (const nistMapping of nistMappings) {
-      // Extract base NIST ID (e.g., "AC-1 a" -> "AC-1")
-      const baseNistId = nistMapping.split(' ')[0] || '';
-
-      if (baseNistId && nistControls.includes(baseNistId)) {
-        cciSet.add(cciId);
-        break;
-      }
-    }
-  }
-
-  return Array.from(cciSet).sort();
-}
 
 function extractSourceLocation(location: SarifLocation): { ref: string; line: number } | undefined {
   const uri = location.physicalLocation?.artifactLocation?.uri;
