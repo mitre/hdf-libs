@@ -1,13 +1,12 @@
 package gosec
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/mitre/hdf-mappings/go/cwe"
 )
@@ -215,11 +214,7 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		return nil, fmt.Errorf("gosec: invalid JSON: %w", err)
 	}
 
-	hash := sha256.Sum256(input)
-	checksum := &hdf.Checksum{
-		Algorithm: hdf.Sha256,
-		Value:     hex.EncodeToString(hash[:]),
-	}
+	checksum := shared.InputChecksum(input)
 
 	order, groups := groupByRuleID(report.Issues)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))

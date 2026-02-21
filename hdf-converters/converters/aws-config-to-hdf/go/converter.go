@@ -2,14 +2,13 @@
 package awsconfig
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	awsconfigmap "github.com/mitre/hdf-mappings/go/awsconfig"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -70,11 +69,7 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		return nil, fmt.Errorf("empty input")
 	}
 
-	hash := sha256.Sum256(input)
-	checksum := &hdf.Checksum{
-		Algorithm: hdf.Sha256,
-		Value:     hex.EncodeToString(hash[:]),
-	}
+	checksum := shared.InputChecksum(input)
 
 	var data ConfigRulesFile
 	if err := json.Unmarshal(input, &data); err != nil {
@@ -109,9 +104,9 @@ func buildBaseline(rules []ConfigRule, checksum *hdf.Checksum) hdf.EvaluatedBase
 
 	return hdf.EvaluatedBaseline{
 		Name:         "AWS Config",
-		Title:        ptr("AWS Config Compliance Results"),
-		Version:      ptr("1.0.0"),
-		Maintainer:   ptr("Amazon Web Services"),
+		Title:        shared.Ptr("AWS Config Compliance Results"),
+		Version:      shared.Ptr("1.0.0"),
+		Maintainer:   shared.Ptr("Amazon Web Services"),
 		Checksum:     checksum,
 		Requirements: requirements,
 	}
@@ -140,7 +135,7 @@ func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 
 	return hdf.EvaluatedRequirement{
 		ID:           rule.ConfigRuleID,
-		Title:        ptr(buildTitle(rule)),
+		Title:        shared.Ptr(buildTitle(rule)),
 		Descriptions: descriptions,
 		Impact: 0.5,
 		Tags:   tags,
@@ -157,7 +152,7 @@ func buildResult(r EvaluationResult) hdf.RequirementResult {
 	q := r.EvaluationResultIdentifier.EvaluationResultQualifier
 	status := mapComplianceStatus(r.ComplianceType)
 	codeDesc := buildCodeDesc(q)
-	startTime := parseISO(r.ConfigRuleInvokedTime)
+	startTime := shared.ParseTimestamp(r.ConfigRuleInvokedTime)
 	runTime := computeRunTime(r.ConfigRuleInvokedTime, r.ResultRecordedTime)
 
 	return hdf.RequirementResult{
@@ -247,25 +242,10 @@ func buildMessage(codeDesc, annotation string, status hdf.ResultStatus) *string 
 	return &msg
 }
 
-// parseISO parses an ISO 8601 / RFC3339 timestamp string to time.Time.
-func parseISO(s string) time.Time {
-	if s == "" {
-		return time.Time{}
-	}
-	t, err := time.Parse(time.RFC3339Nano, s)
-	if err != nil {
-		t, err = time.Parse(time.RFC3339, s)
-		if err != nil {
-			return time.Time{}
-		}
-	}
-	return t
-}
-
 // computeRunTime calculates elapsed seconds between two ISO timestamps.
 func computeRunTime(invokedStr, recordedStr string) *float64 {
-	invoked := parseISO(invokedStr)
-	recorded := parseISO(recordedStr)
+	invoked := shared.ParseTimestamp(invokedStr)
+	recorded := shared.ParseTimestamp(recordedStr)
 	if invoked.IsZero() || recorded.IsZero() {
 		return nil
 	}
@@ -280,6 +260,3 @@ func strOrNA(s string) string {
 	}
 	return s
 }
-
-// ptr returns a pointer to the given value.
-func ptr[T any](v T) *T { return &v }

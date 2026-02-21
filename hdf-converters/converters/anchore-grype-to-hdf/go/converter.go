@@ -1,13 +1,12 @@
 package anchore_grype_to_hdf
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/mitre/hdf-mappings/go/cci"
 )
@@ -346,11 +345,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 // ConvertAnchoreGrypeToHDF converts Anchore Grype JSON to HDF
 func ConvertAnchoreGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	// Calculate checksum of input data
-	hash := sha256.Sum256(input)
-	resultsChecksum := &hdf.Checksum{
-		Algorithm: hdf.Sha256,
-		Value:     hex.EncodeToString(hash[:]),
-	}
+	resultsChecksum := shared.InputChecksum(input)
 
 	// Parse Grype JSON
 	var grypeData GrypeReport

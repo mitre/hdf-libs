@@ -3,6 +3,7 @@ package legacyhdf
 import (
 	"time"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -26,16 +27,7 @@ func normalizeStatus(status string) hdf.ResultStatus {
 
 // parseTime parses a v1.0 timestamp string to time.Time.
 func parseTime(ts string) time.Time {
-	// Try RFC3339 first
-	if t, err := time.Parse(time.RFC3339, ts); err == nil {
-		return t
-	}
-	// Try RFC3339Nano
-	if t, err := time.Parse(time.RFC3339Nano, ts); err == nil {
-		return t
-	}
-	// Return zero time if parsing fails
-	return time.Time{}
+	return shared.ParseTimestamp(ts)
 }
 
 // convertResult converts a v1.0 result to v2.0 RequirementResult.

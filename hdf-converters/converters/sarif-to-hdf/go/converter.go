@@ -1,14 +1,13 @@
 package sarif
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -75,11 +74,7 @@ const defaultStaticAnalysisNistTag = "SI-10"
 // ConvertSarifToHDF converts SARIF JSON to HDF format
 func ConvertSarifToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	// Calculate checksum of source scan data for integrity verification
-	hash := sha256.Sum256(input)
-	resultsChecksum := &hdf.Checksum{
-		Algorithm: hdf.Sha256,
-		Value:     hex.EncodeToString(hash[:]),
-	}
+	resultsChecksum := shared.InputChecksum(input)
 
 	var sarif SarifFile
 	if err := json.Unmarshal(input, &sarif); err != nil {
@@ -138,8 +133,8 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 	return hdf.EvaluatedBaseline{
 		Name:            "SARIF",
 		Version:         &version,
-		Title:           stringPtr("Static Analysis Results Interchange Format"),
-		Maintainer:      stringPtr("Static Analysis Tool"),
+		Title:           shared.Ptr("Static Analysis Results Interchange Format"),
+		Maintainer:      shared.Ptr("Static Analysis Tool"),
 		Requirements:    requirements,
 		ResultsChecksum: resultsChecksum,
 	}
@@ -310,10 +305,3 @@ func createResult(location SarifLocation, timestamp time.Time) hdf.RequirementRe
 	}
 }
 
-func stringPtr(s string) *string {
-	return &s
-}
-
-func floatPtr(f float64) *float64 {
-	return &f
-}
