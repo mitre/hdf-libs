@@ -42,6 +42,7 @@ Before writing any code:
 1. Read sample input files if the user provides them; otherwise ask.
 2. Identify: What maps to `Requirement.ID`? What maps to `Impact`? What maps to `Status`? What maps to NIST tags?
 3. Sketch the struct types needed to parse the source format.
+4. **Check whether the tool supports common output formats** (SARIF, JUnit XML, CycloneDX, XCCDF). If it does, the converter must detect and delegate to the shared format converter — see "Step 4c — Format Detection and Routing" below.
 
 ---
 
@@ -423,6 +424,70 @@ cd hdf-converters && pnpm test   # should now pass
 
 ---
 
+## Step 4c — Format Detection and Routing
+
+Many security tools support multiple output formats. For example, gosec can emit native JSON or SARIF. Rather than requiring users to know which format they exported, converters **detect the input format and route accordingly**.
+
+### When to add format routing
+
+Add format routing when the source tool supports any of these common formats:
+- **SARIF** — gosec, snyk, zap, jfrog-xray, semgrep, CodeQL, trivy, checkov, ESLint, fortify, veracode
+- **JUnit XML** — test frameworks, CI/CD outputs
+- **CycloneDX** — SBOM tools (trivy, syft, snyk, cdxgen)
+- **XCCDF** — OpenSCAP, DISA STIGs
+
+### Shared utilities
+
+Format detection is implemented in:
+- **Go:** `shared/go/formatdetect.go` — `shared.DetectFormat(input []byte) InputFormat`
+- **TypeScript:** `shared/typescript/formatdetect.ts` — `detectFormat(input: string): InputFormat`
+
+Returns `shared.FormatSARIF` / `'sarif'` (or other formats as they're added), or `shared.FormatUnknown` / `'unknown'`.
+
+### Implementation pattern (Go)
+
+At the top of your `Convert<Name>` function, before any tool-specific parsing:
+
+```go
+import (
+    shared "github.com/mitre/hdf-converters/shared/go"
+    sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
+)
+
+func Convert<Name>(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+    // Format detection — delegate to shared converter if input is a common format
+    if shared.DetectFormat(input) == shared.FormatSARIF {
+        return sarif.ConvertSarifToHDF(input, converterVersion)
+    }
+
+    // ... native format parsing continues below
+}
+```
+
+### Implementation pattern (TypeScript)
+
+```typescript
+import { detectFormat } from '../../../shared/typescript/formatdetect.js';
+import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
+
+export function convert<Name>ToHdf(input: string): string {
+  // Format detection — delegate to shared converter if input is a common format
+  if (detectFormat(input) === 'sarif') {
+    return convertSarifToHdf(input);
+  }
+
+  // ... native format parsing continues below
+}
+```
+
+### Required tests
+
+Add two integration tests per language:
+1. **SARIF routing** — load a SARIF fixture for the tool (e.g. `sarif-to-hdf/fixtures/input/gosec.sarif`), pass it through the tool converter, verify it produces valid HDF with enriched SARIF fields.
+2. **Native not routed** — load a native fixture, verify it uses the tool-specific baseline name (not the SARIF converter's tool driver name).
+
+---
+
 ## Step 5 — CLI Integration
 
 File: `hdf-cli/cmd/hdf/cmd/converter_<snake>.go`
@@ -663,6 +728,12 @@ pnpm test
 - [ ] All security findings addressed before marking done
 - [ ] `--live` flag wired into CLI converter command, file-based path still works
 - [ ] Spot-checked live mode output (or documented why a live spot-check isn't possible)
+
+**Converters for tools with SARIF/JUnit/CycloneDX/XCCDF support (review Step 4c):**
+- [ ] Format detection added at top of converter function (Go + TypeScript)
+- [ ] SARIF routing test: tool's SARIF output produces valid HDF via shared converter
+- [ ] Native format test: native input is NOT routed to shared converter
+- [ ] SARIF fixture exists in `sarif-to-hdf/fixtures/input/` for the tool (or reuses existing one)
 
 **All converters — library usage check (review Step 4b):**
 - [ ] NIST/CCI lookups delegate to `hdf-mappings` — no hardcoded lookup tables in converter code
