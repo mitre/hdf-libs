@@ -263,23 +263,95 @@ tags := map[string]interface{}{
 
 ## Step 4b — Use Monorepo Libraries; Do Not Reinvent
 
-Before implementing any utility logic, check whether a sibling package already provides it. The monorepo exists so this code is written once.
+**This is a BLOCKING requirement.** Before writing ANY utility logic in a converter, you MUST check the four sibling libraries below and use their functions if they cover your need. Converters that reimplement library functionality will be rejected. The whole point of this monorepo is that common logic is written once.
 
-| Need | Use | Do NOT |
-|------|-----|--------|
-| Look up NIST controls from a tool's identifier | `hdf-mappings/go/<tool>` | Hardcode a map inside the converter |
-| Look up CCI from NIST | `hdf-mappings/go/cci` | Reimplement CCI lookup |
-| Parse CSV source input | `hdf-parsers` TypeScript package | Roll a CSV parser in Go in the converter |
-| Parse XML source input | Use Go stdlib `encoding/xml` or `hdf-parsers` | Pull in a third-party XML library without first checking what parsers already uses |
-| Validate that converter output is valid HDF | `hdf-validators/go` (`validators.ValidateResults()`) | Write ad-hoc JSON field checks in tests |
-| HDF schema types | `hdf-schema` (already imported as `hdf "github.com/mitre/hdf-schema"`) | Redefine HDF structs inside the converter package |
+**Before every converter implementation:** read the exports of each library to know what's available. If you skip this step you will inevitably duplicate something.
 
-Specifically:
-- **`hdf-validators`** is already wired into `hdf-cli/cmd/hdf/cmd/input.go`. CLI integration tests should call `assertHDFOutput(t, output)`, which delegates to the validators package. Do not add a second validation path.
-- **`hdf-mappings`** covers all tools with NIST/CCI mappings. If a mapping package for the source tool doesn't exist yet, create it in `hdf-mappings/go/<tool>/` rather than embedding the map in the converter. If you add a new mapping package (Go or TypeScript), you must also: export it from `hdf-mappings/src/index.ts`, add it to the supported mappings table in `hdf-mappings/README.md`, and add usage examples for every exported function.
-- **`hdf-parsers`** owns CSV and XML handling for the TypeScript side. If implementing a Go converter for a CSV or XML source, use Go stdlib (`encoding/csv`, `encoding/xml`) but check whether there is already a shared Go helper in the monorepo before adding logic.
+### `hdf-schema` — types and builder helpers
 
-If you find yourself writing something that looks like general-purpose infrastructure (a lookup table, a format parser, a schema validator), stop and check whether it belongs in one of the sibling packages instead.
+**Go** (`hdf "github.com/mitre/hdf-schema"`): All HDF struct types. Use these directly; never redefine HDF types in converter code.
+
+**TypeScript** (`@mitre/hdf-schema`): Types AND builder helpers. Use these instead of constructing objects by hand:
+
+| Function | Use for |
+|----------|---------|
+| `createMinimalBaseline(name, requirements, options)` | Building `EvaluatedBaseline` objects |
+| `createRequirement(id, title, descriptions, impact, results, options)` | Building `EvaluatedRequirement` objects |
+| `createResult(status, message, options)` | Building `RequirementResult` objects |
+| `createDescription(label, data)` | Building `Description` objects |
+| `createSourceLocation(ref, line)` | Building `SourceLocation` objects |
+| `createEmptyChecksum()` | Default checksum placeholder |
+| `severityToImpact(severity)` | Standard critical/high/medium/low/info → 0.0–1.0 mapping |
+| `impactToSeverity(impact)` | Reverse of above |
+| `ResultStatus.Passed / Failed / NotReviewed / NotApplicable / Error` | Status enum values |
+| `HashAlgorithm.Sha256` | Checksum algorithm constant |
+
+### `hdf-mappings` — NIST/CCI/CWE/OWASP lookups
+
+**Go** (`github.com/mitre/hdf-mappings/go/cci`, `.../cwe`, `.../awsconfig`):
+
+| Function | Use for |
+|----------|---------|
+| `cci.GetCCINistMappings(cciID)` | CCI → NIST controls |
+| `cci.NISTToCCI(nistControls)` | NIST controls → CCI IDs (batch, deduplicated, sorted) |
+| `cci.CCIToNIST(cciIDs)` | CCI IDs → NIST controls (batch, deduplicated, sorted) |
+| `cwe.NISTControls(cweID)` | CWE → NIST control |
+| `awsconfig.NISTControls(identifier)` | AWS Config rule → NIST controls |
+
+**TypeScript** (`@mitre/hdf-mappings`):
+
+| Function | Use for |
+|----------|---------|
+| `getCCINistMappings(cciId)` | CCI → NIST controls |
+| `nistToCci(nistControls)` | NIST controls → CCI IDs (batch, deduplicated, sorted) |
+| `getNistCCIMappings(nistControl)` | Single NIST control → CCI IDs |
+| `getCweNistControl(numericCweId)` | CWE → NIST control |
+| `getOwaspNistControl(owaspId)` | OWASP → NIST control |
+| `getNessusNistControl(pluginFamily)` | Nessus plugin family → NIST control |
+| `getNiktoNistControl(testId)` | Nikto test → NIST control |
+| `getScoutsuiteNistControl(rule)` | ScoutSuite rule → NIST control |
+| `getAwsConfigNistControlByIdentifier(id)` | AWS Config → NIST control |
+
+If a mapping package for the source tool doesn't exist yet, create it in `hdf-mappings/go/<tool>/` and `hdf-mappings/src/<tool>/` rather than embedding a map in the converter.
+
+### `hdf-utilities` — JSON/CSV/XML parsing and hashing
+
+**TypeScript** (`@mitre/hdf-utilities`):
+
+| Function | Use for |
+|----------|---------|
+| `parseJSON<T>(input)` | Parse JSON with error handling (use instead of raw `JSON.parse`) |
+| `stringifyJSON(value, options)` | Serialize JSON with options |
+| `isValidJSON(input)` | Check if string is valid JSON |
+| `sha256(data)` | SHA-256 hash (use instead of raw `createHash`) |
+| `parseCsv<T>(input)` | Parse CSV to typed records |
+| `buildCsv<T>(records)` | Build CSV from records |
+| `parseXml(input)` | Parse XML to JS object |
+| `buildXml(obj)` | Build XML from JS object |
+
+**Go**: Use stdlib (`encoding/json`, `encoding/csv`, `encoding/xml`, `crypto/sha256`).
+
+### `hdf-validators` — output validation
+
+**Go** (`github.com/mitre/hdf-validators/go`):
+
+| Function | Use for |
+|----------|---------|
+| `validators.ValidateResults(data)` | Validate HDF Results JSON against schema |
+| `validators.ValidateBaseline(data)` | Validate HDF Baseline JSON against schema |
+
+Already wired into `hdf-cli/cmd/hdf/cmd/input.go`. CLI integration tests MUST call `assertHDFOutput(t, output)`, which delegates to validators. Do not write ad-hoc JSON field checks as a substitute for schema validation.
+
+### Rules
+
+1. **Never hardcode a NIST/CCI/CWE lookup table in a converter.** Use `hdf-mappings`.
+2. **Never iterate all CCI IDs to find which ones match a NIST control.** Use `cci.NISTToCCI()` (Go) or `nistToCci()` (TypeScript).
+3. **Never redefine HDF types.** Import from `hdf-schema`.
+4. **Never write raw `JSON.parse()` in TypeScript converters.** Use `parseJSON()` from `hdf-utilities`.
+5. **Never write ad-hoc severity-to-impact maps in TypeScript.** Use `severityToImpact()` from `hdf-schema`. (Go converters may define their own if the source tool uses non-standard severity labels.)
+6. **Never roll your own CSV/XML parser.** Use `hdf-utilities` (TypeScript) or Go stdlib.
+7. **If a new mapping package is created:** export it from `hdf-mappings/src/index.ts`, add it to the supported mappings table in `hdf-mappings/README.md`, and add usage examples for every exported function.
+8. **If you find yourself writing general-purpose infrastructure** (a lookup table, a format parser, a hash function, a schema validator), stop and check whether it belongs in a sibling package instead.
 
 ---
 
@@ -592,8 +664,13 @@ pnpm test
 - [ ] `--live` flag wired into CLI converter command, file-based path still works
 - [ ] Spot-checked live mode output (or documented why a live spot-check isn't possible)
 
-**All converters — library usage check:**
-- [ ] NIST/CCI lookups delegate to `hdf-mappings/go/<tool>` or `hdf-mappings/go/cci` — not reimplemented in the converter
+**All converters — library usage check (review Step 4b):**
+- [ ] NIST/CCI lookups delegate to `hdf-mappings` — no hardcoded lookup tables in converter code
+- [ ] CCI lookups use `cci.NISTToCCI()` / `nistToCci()` — not brute-force iteration over all CCI IDs
+- [ ] TypeScript uses `parseJSON()` from `hdf-utilities` — not raw `JSON.parse()`
+- [ ] TypeScript uses `severityToImpact()` from `hdf-schema` — not a custom impact map (unless non-standard severity labels)
+- [ ] TypeScript uses `createMinimalBaseline()`, `createRequirement()`, `createResult()` from `hdf-schema` where applicable
+- [ ] HDF types imported from `hdf-schema` — not redefined in converter
+- [ ] HDF output validation in CLI tests uses `assertHDFOutput()` / `hdf-validators` — no ad-hoc field checks as substitute
+- [ ] CSV/XML parsing uses `hdf-utilities` (TypeScript) or Go stdlib — no new third-party parser deps
 - [ ] If a new mapping package was created: exported from `hdf-mappings/src/index.ts`, added to the table and usage examples in `hdf-mappings/README.md`
-- [ ] HDF output validation in CLI tests uses `assertHDFOutput()` / `hdf-validators` — no ad-hoc field checks
-- [ ] CSV/XML parsing uses stdlib or existing monorepo helpers — no new third-party parser deps added without discussion
