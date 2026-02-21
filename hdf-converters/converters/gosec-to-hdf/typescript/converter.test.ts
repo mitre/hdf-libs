@@ -35,6 +35,9 @@ describe('gosec to HDF converter', () => {
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('gosec-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
+      expect(hdf.dataSource?.name).toBe('gosec');
+      expect(hdf.dataSource?.version).toBe('2.18.0');
+      expect(hdf.dataSource?.format).toBeUndefined();
       expect(hdf.baselines).toHaveLength(1);
     });
 

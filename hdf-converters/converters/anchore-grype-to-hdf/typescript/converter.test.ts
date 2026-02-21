@@ -21,6 +21,9 @@ describe('Anchore Grype Converter', () => {
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.generator.name).toBe('grype');
       expect(hdf.generator.version).toBe('0.79.3');
+      expect(hdf.dataSource?.name).toBe('Grype');
+      expect(hdf.dataSource?.version).toBe('0.79.3');
+      expect(hdf.dataSource?.format).toBeUndefined();
       // Timestamp format may include milliseconds (.000Z) depending on serialization
       expect(hdf.timestamp).toMatch(/^2024-01-15T10:30:00(\.000)?Z$/);
     });
