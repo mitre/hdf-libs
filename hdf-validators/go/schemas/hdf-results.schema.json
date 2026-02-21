@@ -4,8 +4,7 @@
   "type": "object",
   "unevaluatedProperties": false,
   "required": [
-    "baselines",
-    "statistics"
+    "baselines"
   ],
   "properties": {
     "id": {
@@ -40,6 +39,10 @@
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
       "description": "Information about the tool that generated this file."
     },
+    "dataSource": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/DataSource",
+      "description": "The tool or service that produced the security data in this file."
+    },
     "integrity": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this file."
@@ -66,8 +69,7 @@
       "unevaluatedProperties": false,
       "required": [
         "name",
-        "requirements",
-        "checksum"
+        "requirements"
       ],
       "allOf": [
         {
@@ -89,10 +91,6 @@
         "description": {
           "type": "string",
           "description": "The description - should be more detailed than the summary."
-        },
-        "toolVersion": {
-          "type": "string",
-          "description": "The version of the security scanning tool used to execute this baseline (e.g., InSpec, Chef InSpec, other scanning tools)."
         },
         "checksum": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
@@ -807,10 +805,6 @@
             "error": {
               "$ref": "#/$defs/Statistic_Block",
               "description": "Statistics for requirements that encountered an error during assessment."
-            },
-            "skipped": {
-              "$ref": "#/$defs/Statistic_Block",
-              "description": "Deprecated: use 'notApplicable' or 'notReviewed' instead. Statistics for requirements that were skipped."
             }
           },
           "description": "Statistics for requirement results, grouped by status.",
@@ -1106,7 +1100,7 @@
           "properties": {
             "name": {
               "type": "string",
-              "description": "The name of the tool that generated this file. Example: 'Chef InSpec'."
+              "description": "The name of the software that produced this HDF file. Example: 'gosec-to-hdf'."
             },
             "version": {
               "type": "string",
@@ -1115,6 +1109,26 @@
           },
           "description": "Information about the tool that generated this HDF file.",
           "title": "Generator"
+        },
+        "DataSource": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the tool or service that produced the data, if known. Examples: 'gosec', 'Semgrep', 'OpenSCAP', 'AWS Config'. Omit if the tool cannot be identified."
+            },
+            "version": {
+              "type": "string",
+              "description": "Version of the source tool, if available in the tool's output. Example: '5.22.3'."
+            },
+            "format": {
+              "type": "string",
+              "description": "The file format, if it is a recognized named format shared by multiple tools. Examples: 'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the format (Nessus XML, gosec JSON)."
+            }
+          },
+          "description": "The tool or service that produced the security data represented in this HDF file.",
+          "title": "DataSource"
         },
         "Integrity": {
           "type": "object",
@@ -1184,6 +1198,7 @@
           "type": "object",
           "unevaluatedProperties": false,
           "required": [
+            "status",
             "codeDesc",
             "startTime"
           ],

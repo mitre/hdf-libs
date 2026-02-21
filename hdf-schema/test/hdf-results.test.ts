@@ -60,6 +60,46 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
+    it('should accept dataSource with name and version', () => {
+      const doc = createMinimalResultsDoc({
+        dataSource: { name: 'gosec', version: '2.18.0' },
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept dataSource with name only', () => {
+      const doc = createMinimalResultsDoc({
+        dataSource: { name: 'AWS Config' },
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept dataSource with name, version, and format', () => {
+      const doc = createMinimalResultsDoc({
+        dataSource: { name: 'Semgrep', version: '1.45.0', format: 'SARIF' },
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept dataSource with format only (tool unknown)', () => {
+      const doc = createMinimalResultsDoc({
+        dataSource: { format: 'SARIF' },
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept dataSource as empty object (all fields optional)', () => {
+      const doc = createMinimalResultsDoc({
+        dataSource: {},
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept document with dataSource omitted entirely', () => {
+      const doc = createMinimalResultsDoc();
+      expect(validate(doc)).toBe(true);
+    });
+
     it('should accept optional integrity field', () => {
       const doc = createMinimalResultsDoc({
         integrity: { algorithm: 'sha256', checksum: 'abc123def456' },
@@ -264,15 +304,15 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept toolVersion field on baseline', () => {
+    it('should reject toolVersion field on baseline (removed in v2)', () => {
       const doc = createMinimalResultsDoc({
         baselines: [
           createMinimalEvaluatedBaseline({
             toolVersion: '5.22.3',
-          }),
+          } as any),
         ],
       });
-      expect(validate(doc)).toBe(true);
+      expect(validate(doc)).toBe(false);
     });
 
     it('should accept extensions field on baseline', () => {
