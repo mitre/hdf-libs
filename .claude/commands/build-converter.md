@@ -276,7 +276,7 @@ Before implementing any utility logic, check whether a sibling package already p
 
 Specifically:
 - **`hdf-validators`** is already wired into `hdf-cli/cmd/hdf/cmd/input.go`. CLI integration tests should call `assertHDFOutput(t, output)`, which delegates to the validators package. Do not add a second validation path.
-- **`hdf-mappings`** covers all tools with NIST/CCI mappings. If a mapping package for the source tool doesn't exist yet, create it in `hdf-mappings/go/<tool>/` rather than embedding the map in the converter.
+- **`hdf-mappings`** covers all tools with NIST/CCI mappings. If a mapping package for the source tool doesn't exist yet, create it in `hdf-mappings/go/<tool>/` rather than embedding the map in the converter. If you add a new mapping package (Go or TypeScript), you must also: export it from `hdf-mappings/src/index.ts`, add it to the supported mappings table in `hdf-mappings/README.md`, and add usage examples for every exported function.
 - **`hdf-parsers`** owns CSV and XML handling for the TypeScript side. If implementing a Go converter for a CSV or XML source, use Go stdlib (`encoding/csv`, `encoding/xml`) but check whether there is already a shared Go helper in the monorepo before adding logic.
 
 If you find yourself writing something that looks like general-purpose infrastructure (a lookup table, a format parser, a schema validator), stop and check whether it belongs in one of the sibling packages instead.
@@ -594,5 +594,6 @@ pnpm test
 
 **All converters — library usage check:**
 - [ ] NIST/CCI lookups delegate to `hdf-mappings/go/<tool>` or `hdf-mappings/go/cci` — not reimplemented in the converter
+- [ ] If a new mapping package was created: exported from `hdf-mappings/src/index.ts`, added to the table and usage examples in `hdf-mappings/README.md`
 - [ ] HDF output validation in CLI tests uses `assertHDFOutput()` / `hdf-validators` — no ad-hoc field checks
 - [ ] CSV/XML parsing uses stdlib or existing monorepo helpers — no new third-party parser deps added without discussion
