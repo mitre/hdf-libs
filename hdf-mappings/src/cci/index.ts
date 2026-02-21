@@ -5,7 +5,7 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import type { CCIMappings } from './types.js';
+import type { CCIMappings, NistCCIMappings } from './types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -104,5 +104,74 @@ export function cciExists(cciId: string): boolean {
   return cciId in data;
 }
 
+// Lazy-load NIST → CCI curated mapping data
+let nistCCIData: NistCCIMappings | null = null;
+
+function loadNistCCIData(): NistCCIMappings {
+  if (nistCCIData === null) {
+    const dataPath = join(__dirname, '..', 'data', 'nist-cci-mappings.json');
+    const content = readFileSync(dataPath, 'utf-8');
+    nistCCIData = JSON.parse(content) as NistCCIMappings;
+  }
+  return nistCCIData;
+}
+
+/**
+ * Extract the base NIST control identifier from a potentially qualified string.
+ * For example, "SI-10 a 1" → "SI-10", "AC-3 (2)" → "AC-3".
+ */
+function baseNistControl(control: string): string {
+  const idx = control.search(/[ (.]/);
+  return idx === -1 ? control : control.slice(0, idx);
+}
+
+/**
+ * Get CCI IDs for a NIST control using the curated mapping table.
+ * The input is normalized to its base control before lookup.
+ *
+ * @param nistControl - NIST control string (e.g., 'SI-10', 'AC-3 (2)')
+ * @returns Array of CCI IDs, or undefined if not found
+ *
+ * @example
+ * ```typescript
+ * const ccis = getNistCCIMappings('SI-10');
+ * // Returns: ['CCI-001310']
+ * ```
+ */
+export function getNistCCIMappings(nistControl: string): string[] | undefined {
+  if (!nistControl || typeof nistControl !== 'string') {
+    return undefined;
+  }
+  const base = baseNistControl(nistControl);
+  const data = loadNistCCIData();
+  return data[base];
+}
+
+/**
+ * Map NIST 800-53 controls to their CCI IDs using the curated mapping table.
+ * Results are deduplicated and sorted.
+ *
+ * @param nistControls - Array of NIST control strings
+ * @returns Deduplicated, sorted array of CCI IDs (empty array if no mappings found)
+ *
+ * @example
+ * ```typescript
+ * const ccis = nistToCci(['AC-3', 'SI-10']);
+ * // Returns: ['CCI-000213', 'CCI-001310']
+ * ```
+ */
+export function nistToCci(nistControls: string[]): string[] {
+  const seen = new Set<string>();
+  for (const control of nistControls) {
+    const ccis = getNistCCIMappings(control);
+    if (ccis) {
+      for (const cciId of ccis) {
+        seen.add(cciId);
+      }
+    }
+  }
+  return Array.from(seen).sort();
+}
+
 // Re-export types
-export type { CCIItem, CCIMappings } from './types.js';
+export type { CCIItem, CCIMappings, NistCCIMappings } from './types.js';

@@ -201,10 +201,26 @@ func TestNISTAndCCITags(t *testing.T) {
 		}
 	}
 
-	// CCI tags should be omitted when empty (SA-11 and RA-5 have no CCI mappings)
-	_, hasCci := req.Tags["cci"]
-	if hasCci {
-		t.Error("Expected CCI tags to be omitted when there are no CCI mappings")
+	// CCI tags should be present — SA-11 maps to CCI-003173, RA-5 maps to CCI-001643
+	cciVal, hasCci := req.Tags["cci"]
+	if !hasCci {
+		t.Fatal("Expected CCI tags to be present for SA-11 and RA-5")
+	}
+	cciSlice, ok := cciVal.([]interface{})
+	if !ok {
+		t.Fatal("Expected CCI tags to be a slice")
+	}
+	if len(cciSlice) != 2 {
+		t.Errorf("Expected 2 CCI tags, got %d", len(cciSlice))
+	}
+	// NISTToCCI returns sorted results
+	expectedCCIs := []string{"CCI-001643", "CCI-003173"}
+	for i, expected := range expectedCCIs {
+		if i < len(cciSlice) {
+			if cciSlice[i] != expected {
+				t.Errorf("Expected CCI tag %q at index %d, got %q", expected, i, cciSlice[i])
+			}
+		}
 	}
 }
 

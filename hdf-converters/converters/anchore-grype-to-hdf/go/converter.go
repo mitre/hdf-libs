@@ -239,37 +239,6 @@ func buildCodeDesc(match GrypeMatch) string {
 	return strings.Join(parts, " | ")
 }
 
-func getCCITags() []interface{} {
-	// Get all CCIs that map to our NIST controls
-	cciSet := make(map[string]bool)
-	allCCIs := cci.GetAllCCIIDs()
-
-	for _, cciID := range allCCIs {
-		nistMappings := cci.GetCCINistMappings(cciID)
-		if len(nistMappings) == 0 {
-			continue
-		}
-
-		// Check if any of the CCI's NIST mappings match our tags
-		for _, nistMapping := range nistMappings {
-			for _, nistTag := range nistTags {
-				if nistMapping == nistTag {
-					cciSet[cciID] = true
-					break
-				}
-			}
-		}
-	}
-
-	// Convert set to slice
-	cciTags := make([]interface{}, 0, len(cciSet))
-	for cciID := range cciSet {
-		cciTags = append(cciTags, cciID)
-	}
-
-	return cciTags
-}
-
 func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRequirement {
 	vuln := match.Vulnerability
 	cveID := vuln.ID
@@ -317,8 +286,8 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 		StartTime: zeroTime,
 	}
 
-	// Get CCI tags
-	cciTags := getCCITags()
+	// Get CCI tags from curated NIST → CCI mapping
+	cciTags := cci.NISTToCCI(nistTags)
 
 	// Build tags - only include cci if not empty
 	nistInterfaces := make([]interface{}, len(nistTags))
@@ -330,7 +299,11 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 		"nist": nistInterfaces,
 	}
 	if len(cciTags) > 0 {
-		tags["cci"] = cciTags
+		cciInterfaces := make([]interface{}, len(cciTags))
+		for i, tag := range cciTags {
+			cciInterfaces[i] = tag
+		}
+		tags["cci"] = cciInterfaces
 	}
 
 	// Build requirement ID

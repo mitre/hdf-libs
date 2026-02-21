@@ -12,3 +12,9 @@ export interface CCIItem {
  * CCI mappings database structure
  */
 export type CCIMappings = Record<string, CCIItem>;
+
+/**
+ * NIST control → CCI ID mapping database structure.
+ * Keys are base NIST controls (e.g. "SA-11"), values are arrays of CCI IDs.
+ */
+export type NistCCIMappings = Record<string, string[]>;
