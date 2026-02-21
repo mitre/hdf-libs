@@ -266,8 +266,8 @@ describe('SonarQube to HDF Converter', () => {
       const baseline = hdf.baselines[0]!;
       const requirement = baseline.requirements[0]!;
 
-      // VULNERABILITY without CWE should get default SI-10
-      expect(requirement.tags.nist).toEqual(['SI-10']);
+      // VULNERABILITY without CWE should get default SA-11
+      expect(requirement.tags.nist).toEqual(['SA-11']);
     });
   });
 });

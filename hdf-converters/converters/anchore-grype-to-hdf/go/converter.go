@@ -108,8 +108,6 @@ type GrypeLocation struct {
 	LayerID string `json:"layerID,omitempty"`
 }
 
-// NIST controls for vulnerability management
-var nistTags = []string{"SA-11", "RA-5"}
 
 // Severity to impact mapping
 func getImpact(severity string) float64 {
@@ -286,11 +284,11 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 	}
 
 	// Get CCI tags from curated NIST → CCI mapping
-	cciTags := cci.NISTToCCI(nistTags)
+	cciTags := cci.NISTToCCI(shared.DefaultStaticAnalysisNIST)
 
 	// Build tags - only include cci if not empty
-	nistInterfaces := make([]interface{}, len(nistTags))
-	for i, tag := range nistTags {
+	nistInterfaces := make([]interface{}, len(shared.DefaultStaticAnalysisNIST))
+	for i, tag := range shared.DefaultStaticAnalysisNIST {
 		nistInterfaces[i] = tag
 	}
 

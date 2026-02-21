@@ -10,7 +10,7 @@ import {
   type HdfResults,
   ResultStatus,
 } from '@mitre/hdf-schema';
-import {nistToCci} from '@mitre/hdf-mappings';
+import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
 
 // Input types for Anchore Grype JSON
@@ -123,8 +123,6 @@ const IMPACT_MAPPING: Map<string, number> = new Map([
   ['unknown', 0.5],
 ]);
 
-// NIST controls for vulnerability management
-const NIST_TAGS = ['SA-11', 'RA-5'];
 
 function getImpact(severity?: string): number {
   if (!severity) {
@@ -290,11 +288,11 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
   };
 
   // Get CCI mappings for NIST controls using curated mapping table
-  const cciTags = nistToCci(NIST_TAGS);
+  const cciTags = nistToCci(DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
 
   // Build tags object - only include cci if not empty
   const tags: Record<string, unknown> = {
-    nist: NIST_TAGS,
+    nist: DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   };
   if (cciTags.length > 0) {
     tags.cci = cciTags;

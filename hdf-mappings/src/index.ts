@@ -23,6 +23,9 @@ export {
   getAllNISTIds,
   nistExists,
   getNISTFamily,
+  DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
+  DEFAULT_REMEDIATION_NIST_TAGS,
+  DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS,
 } from './nist/index.js';
 
 export type { NISTDescriptions } from './nist/types.js';

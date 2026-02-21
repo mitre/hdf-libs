@@ -118,5 +118,24 @@ export function getNISTFamily(nistId: string): string | undefined {
   return hasFamily ? family : undefined;
 }
 
+/**
+ * Canonical NIST 800-53 fallback tags for converters when a finding has no
+ * CWE or the CWE has no NIST mapping. Categories match heimdall2's global.ts.
+ *
+ * - SA-11: Developer Security Testing and Evaluation
+ * - RA-5: Vulnerability Monitoring and Scanning
+ * - SI-2: Flaw Remediation
+ * - CM-8: System Component Inventory
+ */
+
+/** Static analysis and vulnerability scanning tools (SA-11 + RA-5). */
+export const DEFAULT_STATIC_ANALYSIS_NIST_TAGS: string[] = ['SA-11', 'RA-5'];
+
+/** Tools that identify outdated packages or flaws requiring patching (SI-2 + RA-5). */
+export const DEFAULT_REMEDIATION_NIST_TAGS: string[] = ['SI-2', 'RA-5'];
+
+/** Dependency/inventory management tools (CM-8). */
+export const DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS: string[] = ['CM-8'];
+
 // Re-export types
 export type { NISTDescriptions } from './types.js';

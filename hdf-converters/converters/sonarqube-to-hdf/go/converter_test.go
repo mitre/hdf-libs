@@ -360,24 +360,21 @@ func TestSonarTimestampFormat_ParsesCorrectly(t *testing.T) {
 }
 
 func TestMapToNist_FallsBackWhenNoCWE(t *testing.T) {
-	// No CWE IDs → use type-based defaults
-	nist := mapToNist([]string{}, "VULNERABILITY")
-	assert.Equal(t, []string{"SI-10"}, nist)
-
-	nist = mapToNist([]string{}, "CODE_SMELL")
+	// No CWE IDs → fall back to SA-11 for all issue types
+	nist := mapToNist([]string{})
 	assert.Equal(t, []string{"SA-11"}, nist)
 }
 
 func TestMapToNist_UsesCWEWhenAvailable(t *testing.T) {
 	// CWE-476 → SI-10 (from cwe-nist-mappings.json)
-	nist := mapToNist([]string{"CWE-476"}, "BUG")
+	nist := mapToNist([]string{"CWE-476"})
 	assert.Contains(t, nist, "SI-10", "CWE-476 should produce SI-10")
 }
 
 func TestMapToNist_UnknownCWEFallsBack(t *testing.T) {
-	// Unknown CWE with no mapping → fall back to type-based default
-	nist := mapToNist([]string{"CWE-999999"}, "VULNERABILITY")
-	assert.Equal(t, []string{"SI-10"}, nist)
+	// Unknown CWE with no mapping → fall back to SA-11
+	nist := mapToNist([]string{"CWE-999999"})
+	assert.Equal(t, []string{"SA-11"}, nist)
 }
 
 func TestExtractTags_ParsesCWEFromDescription(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
+	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -69,7 +70,6 @@ var impactMapping = map[string]float64{
 	"note":    0.3,
 }
 
-const defaultStaticAnalysisNistTag = "SI-10"
 
 // ConvertSarifToHDF converts SARIF JSON to HDF format
 func ConvertSarifToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
@@ -149,10 +149,10 @@ func convertResult(result SarifResult, timestamp time.Time) hdf.EvaluatedRequire
 	// Extract CWE IDs from message
 	cweIds := extractCweIds(messageText)
 
-	// Use default NIST control for static analysis
-	nistControls := []string{defaultStaticAnalysisNistTag}
+	// Map CWE IDs to NIST controls, falling back to shared default
+	nistControls := mapCweToNist(cweIds)
 
-	// Derive CCI controls from the NIST control via reverse lookup
+	// Derive CCI controls from the NIST controls via reverse lookup
 	cciControls := cci.NISTToCCI(nistControls)
 
 	// Get impact from level
@@ -253,6 +253,25 @@ func extractCweIds(text string) []string {
 	}
 
 	return cweIds
+}
+
+// mapCweToNist maps CWE IDs to NIST controls via the CWE→NIST lookup table.
+// Falls back to shared.DefaultStaticAnalysisNIST when no mapping is found.
+func mapCweToNist(cweIds []string) []string {
+	nistSet := make(map[string]bool)
+	for _, cweID := range cweIds {
+		for _, ctrl := range cwe.NISTControls(cweID) {
+			nistSet[ctrl] = true
+		}
+	}
+	if len(nistSet) > 0 {
+		result := make([]string, 0, len(nistSet))
+		for ctrl := range nistSet {
+			result = append(result, ctrl)
+		}
+		return result
+	}
+	return shared.DefaultStaticAnalysisNIST
 }
 
 func extractSourceLocation(location SarifLocation) hdf.SourceLocation {

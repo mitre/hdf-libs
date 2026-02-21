@@ -35,6 +35,21 @@ func StripHTML(html string) string {
 	return strings.TrimSpace(ws.ReplaceAllString(stripped, " "))
 }
 
+// DefaultStaticAnalysisNIST is the canonical NIST 800-53 fallback for static
+// analysis and vulnerability scanning tools (SA-11: Developer Security Testing
+// and Evaluation, RA-5: Vulnerability Monitoring and Scanning).
+// Use when a finding has no CWE or the CWE has no NIST mapping.
+var DefaultStaticAnalysisNIST = []string{"SA-11", "RA-5"}
+
+// DefaultRemediationNIST is the canonical NIST 800-53 fallback for tools that
+// identify outdated packages or flaws requiring patching (SI-2: Flaw
+// Remediation, RA-5: Vulnerability Monitoring and Scanning).
+var DefaultRemediationNIST = []string{"SI-2", "RA-5"}
+
+// DefaultComponentManagementNIST is the canonical NIST 800-53 fallback for
+// dependency/inventory management tools (CM-8: System Component Inventory).
+var DefaultComponentManagementNIST = []string{"CM-8"}
+
 // ParseTimestamp tries multiple common timestamp formats and returns the first
 // successful parse. Returns zero time if none match.
 //
