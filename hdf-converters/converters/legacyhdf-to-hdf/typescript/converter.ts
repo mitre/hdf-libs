@@ -195,6 +195,7 @@ export interface HDFV2Results {
   statistics: unknown;
   targets?: unknown[];
   generator?: unknown;
+  dataSource?: { name?: string; version?: string; format?: string };
   timestamp?: string;
   id?: string;
   integrity?: unknown;
@@ -486,6 +487,8 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
   if (v1Data.generator) {
     v2.generator = v1Data.generator;
   }
+
+  v2.dataSource = { name: 'Heimdall Data Format v1' };
 
   if (v1Data.timestamp) {
     v2.timestamp = v1Data.timestamp;

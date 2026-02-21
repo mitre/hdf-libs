@@ -2,6 +2,7 @@ import {createHash} from 'crypto';
 import {
   type Checksum,
   createMinimalBaseline,
+  type DataSource,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
@@ -367,6 +368,11 @@ export function convertAnchoreGrypeToHdf(input: string): string {
     resultsChecksum,
   }) as EvaluatedBaseline;
 
+  const dataSource: DataSource = { name: 'Grype' };
+  if (grypeData.descriptor?.version) {
+    dataSource.version = grypeData.descriptor.version;
+  }
+
   // Build HDF results
   const hdf: HdfResults = {
     baselines: [baseline],
@@ -374,6 +380,7 @@ export function convertAnchoreGrypeToHdf(input: string): string {
       name: grypeData.descriptor?.name || 'grype',
       version: grypeData.descriptor?.version || 'unknown',
     },
+    dataSource,
     timestamp: grypeData.descriptor?.timestamp ? new Date(grypeData.descriptor.timestamp) : new Date(),
   };
 

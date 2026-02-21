@@ -154,6 +154,7 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 	// Build HDF
 	timestamp := time.Now()
+	toolName := "SonarQube"
 	hdfResult := &hdf.HDFResults{
 		Timestamp: &timestamp,
 		Baselines: baselines,
@@ -162,6 +163,7 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			Name:    "sonarqube-to-hdf",
 			Version: converterVersion,
 		},
+		DataSource: &hdf.DataSource{Name: &toolName},
 	}
 
 	return hdfResult, nil
@@ -415,18 +417,7 @@ func mapToNist(cweIDs []string, issueType string) []string {
 }
 
 func mapNistToCCI(nistControls []string) []string {
-	cciSet := make(map[string]bool)
-	for _, nist := range nistControls {
-		for _, cciID := range cci.GetNistCCIMappings(nist) {
-			cciSet[cciID] = true
-		}
-	}
-	result := make([]string, 0, len(cciSet))
-	for cciID := range cciSet {
-		result = append(result, cciID)
-	}
-	sort.Strings(result)
-	return result
+	return cci.NISTToCCI(nistControls)
 }
 
 func createResultFromIssue(issue Issue, componentMap map[string]Component) hdf.RequirementResult {

@@ -59,6 +59,7 @@ func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResu
 		targets = append(targets, target)
 	}
 
+	toolName := "Nessus"
 	result := &hdf.HDFResults{
 		Baselines: baselines,
 		Targets:   targets,
@@ -69,7 +70,8 @@ func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResu
 			Name:    "nessus-to-hdf",
 			Version: converterVersion,
 		},
-		Timestamp: &startTime,
+		DataSource: &hdf.DataSource{Name: &toolName},
+		Timestamp:  &startTime,
 	}
 
 	return result, nil
@@ -283,22 +285,7 @@ func buildTags(item *ReportItem, isCompliance bool) map[string]interface{} {
 	if isCompliance && item.ComplianceReference != "" {
 		cciTags := parseComplianceRef(item.ComplianceReference, "CCI")
 		tags["cci"] = cciTags
-		// Map CCI to NIST using hdf-mappings
-		// Pattern: Extract source IDs → Map each ID → Flatten results → Deduplicate
-		seen := make(map[string]bool)
-		var nistControls []string
-		for _, cciID := range cciTags {
-			mappings := cci.GetCCINistMappings(cciID)
-			if mappings != nil {
-				for _, control := range mappings {
-					if !seen[control] {
-						seen[control] = true
-						nistControls = append(nistControls, control)
-					}
-				}
-			}
-		}
-		tags["nist"] = nistControls
+		tags["nist"] = cci.CCIToNIST(cciTags)
 	} else {
 		// TODO: Use getNessusNistControl when Go mappings available
 		tags["nist"] = []string{}

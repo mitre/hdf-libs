@@ -99,6 +99,20 @@ func ConvertSarifToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		baselines = append(baselines, baseline)
 	}
 
+	sarifFormat := "SARIF"
+	dataSource := &hdf.DataSource{Format: &sarifFormat}
+	if len(sarif.Runs) > 0 && sarif.Runs[0].Tool != nil && sarif.Runs[0].Tool.Driver != nil {
+		driver := sarif.Runs[0].Tool.Driver
+		if driver.Name != "" {
+			n := driver.Name
+			dataSource.Name = &n
+		}
+		if driver.Version != "" {
+			v := driver.Version
+			dataSource.Version = &v
+		}
+	}
+
 	hdfResult := &hdf.HDFResults{
 		Timestamp: &timestamp,
 		Baselines: baselines,
@@ -107,6 +121,7 @@ func ConvertSarifToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 			Name:    "sarif-to-hdf",
 			Version: converterVersion,
 		},
+		DataSource: dataSource,
 	}
 
 	return hdfResult, nil
@@ -143,10 +158,7 @@ func convertResult(result SarifResult, timestamp time.Time) hdf.EvaluatedRequire
 	nistControls := []string{defaultStaticAnalysisNistTag}
 
 	// Derive CCI controls from the NIST control via reverse lookup
-	cciControls := cci.GetNistCCIMappings(defaultStaticAnalysisNistTag)
-	if cciControls == nil {
-		cciControls = []string{}
-	}
+	cciControls := cci.NISTToCCI(nistControls)
 
 	// Get impact from level
 	impact := impactMapping[result.Level]

@@ -214,10 +214,12 @@ func convertProfile(v1 V1Profile) hdf.EvaluatedBaseline {
 //   - Requirements: snake_case → camelCase, status → effectiveStatus
 //   - Results: snake_case → camelCase for all fields
 func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
+	toolName := "Heimdall Data Format v1"
 	v2 := &hdf.HDFResults{
 		Statistics: &hdf.Statistics{
 			Duration: v1.Statistics.Duration,
 		},
+		DataSource: &hdf.DataSource{Name: &toolName},
 	}
 
 	// Convert profiles to baselines

@@ -7,6 +7,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
+  DataSource,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -196,12 +197,18 @@ export function convertGosecToHdf(input: string): string {
     { resultsChecksum }
   ) as EvaluatedBaseline;
 
+  const dataSource: DataSource = { name: 'gosec' };
+  if (report.GosecVersion) {
+    dataSource.version = report.GosecVersion;
+  }
+
   const hdf: HdfResults = {
     baselines: [baseline],
     generator: {
       name: 'gosec-to-hdf',
       version: '1.0.0',
     },
+    dataSource,
     timestamp: new Date(),
   };
 
