@@ -30,8 +30,23 @@ func TestDetectFormat(t *testing.T) {
 		assert.Equal(t, FormatUnknown, DetectFormat(nil))
 	})
 
-	t.Run("returns unknown for XML input", func(t *testing.T) {
-		input := `<?xml version="1.0"?><testsuites><testsuite/></testsuites>`
+	t.Run("detects JUnit XML with testsuites root", func(t *testing.T) {
+		input := `<?xml version="1.0"?><testsuites><testsuite name="test"/></testsuites>`
+		assert.Equal(t, FormatJUnit, DetectFormat([]byte(input)))
+	})
+
+	t.Run("detects JUnit XML with testsuite root", func(t *testing.T) {
+		input := `<testsuite name="test" tests="1"><testcase name="t1"/></testsuite>`
+		assert.Equal(t, FormatJUnit, DetectFormat([]byte(input)))
+	})
+
+	t.Run("detects JUnit XML with whitespace before", func(t *testing.T) {
+		input := `  <?xml version="1.0"?><testsuites/>`
+		assert.Equal(t, FormatJUnit, DetectFormat([]byte(input)))
+	})
+
+	t.Run("returns unknown for non-JUnit XML", func(t *testing.T) {
+		input := `<?xml version="1.0"?><root><item/></root>`
 		assert.Equal(t, FormatUnknown, DetectFormat([]byte(input)))
 	})
 
@@ -66,5 +81,10 @@ func TestDetectFormat(t *testing.T) {
 	t.Run("handles whitespace before JSON", func(t *testing.T) {
 		input := `  {"version": "2.1.0", "runs": []}`
 		assert.Equal(t, FormatSARIF, DetectFormat([]byte(input)))
+	})
+
+	t.Run("returns unknown for invalid XML", func(t *testing.T) {
+		input := `<unclosed`
+		assert.Equal(t, FormatUnknown, DetectFormat([]byte(input)))
 	})
 }

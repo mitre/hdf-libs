@@ -29,7 +29,7 @@ describe('detectFormat', () => {
     expect(detectFormat('')).toBe('unknown');
   });
 
-  it('returns unknown for XML input', () => {
+  it('returns unknown for non-JUnit XML', () => {
     expect(detectFormat('<?xml version="1.0"?><root/>')).toBe('unknown');
   });
 
@@ -55,5 +55,30 @@ describe('detectFormat', () => {
 
   it('returns unknown when runs missing', () => {
     expect(detectFormat('{"version": "2.1.0"}')).toBe('unknown');
+  });
+
+  // JUnit XML detection tests
+  it('detects JUnit XML with testsuites root', () => {
+    expect(detectFormat('<?xml version="1.0"?><testsuites><testsuite/></testsuites>')).toBe(
+      'junit'
+    );
+  });
+
+  it('detects JUnit XML with testsuite root', () => {
+    expect(
+      detectFormat('<testsuite name="test" tests="1"><testcase name="t1"/></testsuite>')
+    ).toBe('junit');
+  });
+
+  it('detects JUnit XML with whitespace before', () => {
+    expect(detectFormat('  <?xml version="1.0"?><testsuites/>')).toBe('junit');
+  });
+
+  it('returns unknown for non-JUnit XML root', () => {
+    expect(detectFormat('<?xml version="1.0"?><root><item/></root>')).toBe('unknown');
+  });
+
+  it('returns unknown for invalid XML', () => {
+    expect(detectFormat('<unclosed')).toBe('unknown');
   });
 });

@@ -5,18 +5,31 @@
  * should handle it, allowing tool-specific converters to delegate.
  */
 
-export type InputFormat = 'sarif' | 'unknown';
+export type InputFormat = 'sarif' | 'junit' | 'unknown';
 
 /**
  * Detects the format of raw input by examining structural characteristics.
  *
  * SARIF fingerprint: JSON object with "version" (string) and "runs" (array).
+ * JUnit fingerprint: XML with <testsuites> or <testsuite> root element.
  */
 export function detectFormat(input: string): InputFormat {
-  if (!input || !input.trim().startsWith('{')) {
+  if (!input) {
     return 'unknown';
   }
 
+  const trimmed = input.trim();
+  if (trimmed.startsWith('{')) {
+    return detectJSON(trimmed);
+  }
+  if (trimmed.startsWith('<')) {
+    return detectXML(trimmed);
+  }
+
+  return 'unknown';
+}
+
+function detectJSON(input: string): InputFormat {
   try {
     const parsed = JSON.parse(input);
     if (typeof parsed !== 'object' || parsed === null) {
@@ -28,6 +41,21 @@ export function detectFormat(input: string): InputFormat {
     }
   } catch {
     return 'unknown';
+  }
+
+  return 'unknown';
+}
+
+function detectXML(input: string): InputFormat {
+  // Extract root element name by finding the first opening tag after XML declaration/comments
+  const rootMatch = input.match(/<(?!\?|!--)([a-zA-Z_][\w.-]*)/);
+  if (!rootMatch) {
+    return 'unknown';
+  }
+
+  const rootElement = rootMatch[1];
+  if (rootElement === 'testsuites' || rootElement === 'testsuite') {
+    return 'junit';
   }
 
   return 'unknown';
