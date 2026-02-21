@@ -77,8 +77,8 @@ describe('Anchore Grype Converter', () => {
 
       const req = hdf.baselines[0].requirements[0];
       expect(req.tags?.nist).toEqual(['SA-11', 'RA-5']);
-      // CCI tags should be omitted when empty (SA-11 and RA-5 have no CCI mappings)
-      expect(req.tags?.cci).toBeUndefined();
+      // CCI tags from curated NIST→CCI mapping: SA-11→CCI-003173, RA-5→CCI-001643
+      expect(req.tags?.cci).toEqual(['CCI-001643', 'CCI-003173']);
     });
 
     it('should include descriptions for vulnerability, fix, and check', () => {

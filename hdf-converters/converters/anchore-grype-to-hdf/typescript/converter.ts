@@ -10,7 +10,7 @@ import {
   type HdfResults,
   ResultStatus,
 } from '@mitre/hdf-schema';
-import {getAllCCIIds, getCCINistMappings} from '@mitre/hdf-mappings';
+import {nistToCci} from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
 
 // Input types for Anchore Grype JSON
@@ -289,24 +289,8 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
     startTime: new Date('0001-01-01T00:00:00Z'), // Go zero time format
   };
 
-  // Get CCI mappings for NIST controls
-  // We need to find all CCIs that map to our NIST controls
-  const cciTags: string[] = [];
-  const allCCIs = getAllCCIIds();
-  for (const cciId of allCCIs) {
-    const nistMappings = getCCINistMappings(cciId);
-    if (!nistMappings) {
-      continue;
-    }
-
-    // Check if any of the CCI's NIST mappings match our tags
-    for (const nistMapping of nistMappings) {
-      if (NIST_TAGS.includes(nistMapping)) {
-        cciTags.push(cciId);
-        break; // Found a match, no need to check other mappings for this CCI
-      }
-    }
-  }
+  // Get CCI mappings for NIST controls using curated mapping table
+  const cciTags = nistToCci(NIST_TAGS);
 
   // Build tags object - only include cci if not empty
   const tags: Record<string, unknown> = {

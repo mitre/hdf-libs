@@ -11,9 +11,11 @@ export {
   getCCINistMappings,
   getAllCCIIds,
   cciExists,
+  getNistCCIMappings,
+  nistToCci,
 } from './cci/index.js';
 
-export type { CCIItem, CCIMappings } from './cci/types.js';
+export type { CCIItem, CCIMappings, NistCCIMappings } from './cci/types.js';
 
 // NIST exports
 export {

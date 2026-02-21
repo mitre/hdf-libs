@@ -39,6 +39,8 @@ import {
   getCCINistMappings,
   getAllCCIIds,
   cciExists,
+  getNistCCIMappings,
+  nistToCci,
 } from '@mitre/hdf-mappings';
 
 // Get the CCI definition text
@@ -48,6 +50,14 @@ const def = getCCIDescription('CCI-000001');
 // Get NIST controls for a CCI
 const nistControls = getCCINistMappings('CCI-000001');
 // Returns: ['AC-1 a', 'AC-1.1 (i and ii)', 'AC-1 a 1']
+
+// Reverse lookup: get CCIs for a NIST control (curated mapping table)
+const ccis = getNistCCIMappings('SI-10');
+// Returns: ['CCI-001310']
+
+// Batch reverse lookup: map multiple NIST controls to CCIs (deduplicated, sorted)
+const allCcis = nistToCci(['SA-11', 'RA-5']);
+// Returns: ['CCI-001643', 'CCI-003173']
 
 // Check existence before lookup
 if (cciExists('CCI-000001')) { /* ... */ }
@@ -203,7 +213,7 @@ Each mapping is also available as a Go package:
 
 ```
 hdf-mappings/go/
-  cci/        — CCI↔NIST lookups (NISTControls, CCIsForNIST)
+  cci/        — CCI↔NIST lookups (GetCCINistMappings, NISTToCCI, CCIToNIST)
   cwe/        — CWE→NIST lookups (NISTControls)
   awsconfig/  — AWS Config→NIST lookups (NISTControls, GetByRuleName, GetByIdentifier)
 ```
@@ -211,11 +221,14 @@ hdf-mappings/go/
 ```go
 import "github.com/mitre/hdf-mappings/go/cci"
 
-controls := cci.NISTControls("CCI-000001")
+controls := cci.GetCCINistMappings("CCI-000001")
 // Returns: []string{"AC-1 a", "AC-1.1 (i and ii)", "AC-1 a 1"}
 
-ccis := cci.CCIsForNIST("AC-1")
-// Returns all CCI IDs that map to AC-1
+ccis := cci.NISTToCCI([]string{"SA-11", "RA-5"})
+// Returns: []string{"CCI-001643", "CCI-003173"}
+
+nist := cci.CCIToNIST([]string{"CCI-000366", "CCI-000001"})
+// Returns: []string{"AC-1 a", ..., "CM-6 b", ...}
 ```
 
 ```go
