@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { parseJSON } from '@mitre/hdf-utilities';
-import { getCweNistControl } from '@mitre/hdf-mappings';
+import { getCweNistControl, DEFAULT_REMEDIATION_NIST_TAGS } from '@mitre/hdf-mappings';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -69,8 +69,6 @@ const IMPACT_MAPPING: Record<string, number> = {
   LOW: 0.3,
 };
 
-/** Default NIST tags used when no CWE mapping is found. */
-const DEFAULT_NIST_TAGS = ['SI-2', 'RA-5'];
 
 /**
  * Returns true if the issue is suppressed (via nosec flag or suppressions list).
@@ -96,18 +94,18 @@ function formatSkipMessage(suppressions: GosecSuppression[] | null): string | un
 }
 
 /**
- * Returns NIST controls for the given CWE ID, falling back to DEFAULT_NIST_TAGS.
+ * Returns NIST controls for the given CWE ID, falling back to DEFAULT_REMEDIATION_NIST_TAGS.
  */
 function nistTagsForCwe(cweId: string): string[] {
   if (!cweId) {
-    return DEFAULT_NIST_TAGS;
+    return DEFAULT_REMEDIATION_NIST_TAGS;
   }
   const numericId = parseInt(cweId, 10);
   if (isNaN(numericId)) {
-    return DEFAULT_NIST_TAGS;
+    return DEFAULT_REMEDIATION_NIST_TAGS;
   }
   const nistControl = getCweNistControl(numericId);
-  return nistControl ? [nistControl] : DEFAULT_NIST_TAGS;
+  return nistControl ? [nistControl] : DEFAULT_REMEDIATION_NIST_TAGS;
 }
 
 /**

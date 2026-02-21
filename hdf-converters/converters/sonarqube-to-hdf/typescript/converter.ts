@@ -114,10 +114,11 @@ const SEVERITY_IMPACT_MAPPING: Record<string, number> = {
 };
 
 /**
- * Default NIST tags for code quality issues without specific security mappings
+ * Default NIST tag for SonarQube findings without CWE mappings.
+ * SA-11 (Developer Security Testing and Evaluation) applies to all issue types —
+ * SonarQube is fundamentally a static analysis tool. Matches heimdall2.
  */
-const DEFAULT_CODE_QUALITY_NIST_TAGS = ['SA-11'];
-const DEFAULT_SECURITY_NIST_TAGS = ['SI-10'];
+const DEFAULT_NIST_TAGS = ['SA-11'];
 
 /**
  * Convert SonarQube issues JSON to HDF format
@@ -251,7 +252,7 @@ function convertRuleToRequirement(
 
   // Extract tags and mappings
   const { cweIds, owaspTags, allTags } = extractTags(rule, issues);
-  const nistControls = mapToNist(cweIds, owaspTags, firstIssue.type);
+  const nistControls = mapToNist(cweIds);
   const cciControls = nistToCci(nistControls);
 
   // Create results for each issue
@@ -404,8 +405,6 @@ function extractTags(
 
 function mapToNist(
   cweIds: string[],
-  owaspTags: string[],
-  issueType: string
 ): string[] {
   const nistSet = new Set<string>();
 
@@ -420,13 +419,9 @@ function mapToNist(
     }
   }
 
-  // If no NIST mappings found, use default based on issue type
+  // If no NIST mappings found, fall back to SA-11 for all issue types
   if (nistSet.size === 0) {
-    if (issueType === 'VULNERABILITY' || issueType === 'SECURITY_HOTSPOT') {
-      return DEFAULT_SECURITY_NIST_TAGS;
-    } else {
-      return DEFAULT_CODE_QUALITY_NIST_TAGS;
-    }
+    return DEFAULT_NIST_TAGS;
   }
 
   return Array.from(nistSet).sort();

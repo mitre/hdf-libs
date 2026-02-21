@@ -11,8 +11,6 @@ import (
 	"github.com/mitre/hdf-mappings/go/cwe"
 )
 
-// defaultNISTTags is used when no CWE mapping is found.
-var defaultNISTTags = []string{"SI-2", "RA-5"}
 
 // GosecReport is the top-level gosec JSON output structure.
 type GosecReport struct {
@@ -113,7 +111,7 @@ func formatMessage(issue GosecIssue) string {
 }
 
 // nistTagsForIssue looks up NIST controls for the issue's CWE, falling back to
-// defaultNISTTags when no mapping is found.
+// shared.DefaultRemediationNIST when no mapping is found.
 func nistTagsForIssue(issue GosecIssue) []string {
 	if issue.CWE.ID != "" {
 		controls := cwe.NISTControls(issue.CWE.ID)
@@ -121,7 +119,7 @@ func nistTagsForIssue(issue GosecIssue) []string {
 			return controls
 		}
 	}
-	return defaultNISTTags
+	return shared.DefaultRemediationNIST
 }
 
 // issueToResult converts a single GosecIssue into an HDF RequirementResult.

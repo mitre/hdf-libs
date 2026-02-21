@@ -3,6 +3,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import {
   getCweNistControl,
   nistToCci,
+  DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, DataSource } from '@mitre/hdf-schema';
 import { ResultStatus, HashAlgorithm, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
@@ -51,7 +52,6 @@ const IMPACT_MAPPING: Record<string, number> = {
   note: 0.3,
 };
 
-const DEFAULT_STATIC_ANALYSIS_NIST_TAGS = ['SI-10'];
 
 export function convertSarifToHdf(input: string): string {
   // Calculate checksum of source scan data for integrity verification

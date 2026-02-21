@@ -101,8 +101,11 @@ var severityImpactMapping = map[string]float64{
 	"INFO":     0.0,
 }
 
-const defaultCodeQualityNistTag = "SA-11"
-const defaultSecurityNistTag = "SI-10"
+// defaultNistTag is the fallback NIST control for SonarQube findings without
+// CWE mappings. SA-11 (Developer Security Testing and Evaluation) applies to
+// all SonarQube issue types — security findings without CWEs are rare, and
+// SonarQube is fundamentally a static analysis tool. Matches heimdall2.
+const defaultNistTag = "SA-11"
 
 // sonarTimestampFormat matches the SonarQube API date format "2006-01-02T15:04:05+0000".
 // SonarQube omits the colon in the timezone offset, so time.RFC3339 does not parse it.
@@ -217,7 +220,7 @@ func convertRuleToRequirement(
 
 	// Extract tags and mappings
 	cweIds, owaspTags, allTags := extractTags(&rule, hasRule, issues)
-	nistControls := mapToNist(cweIds, firstIssue.Type)
+	nistControls := mapToNist(cweIds)
 	cciControls := mapNistToCCI(nistControls)
 
 	// Create results for each issue
@@ -383,8 +386,8 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 }
 
 // mapToNist maps CWE IDs to NIST controls using the CWE→NIST lookup table.
-// Falls back to issue-type-based defaults when no CWE mapping is found.
-func mapToNist(cweIDs []string, issueType string) []string {
+// Falls back to SA-11 when no CWE mapping is found.
+func mapToNist(cweIDs []string) []string {
 	nistSet := make(map[string]bool)
 	for _, cweID := range cweIDs {
 		for _, ctrl := range cwe.NISTControls(cweID) {
@@ -401,11 +404,8 @@ func mapToNist(cweIDs []string, issueType string) []string {
 		return result
 	}
 
-	// Fall back to type-based defaults
-	if issueType == "VULNERABILITY" || issueType == "SECURITY_HOTSPOT" {
-		return []string{defaultSecurityNistTag}
-	}
-	return []string{defaultCodeQualityNistTag}
+	// Fall back to SA-11 for all issue types — SonarQube is a static analysis tool
+	return []string{defaultNistTag}
 }
 
 func mapNistToCCI(nistControls []string) []string {
