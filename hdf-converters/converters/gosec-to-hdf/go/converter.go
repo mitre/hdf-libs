@@ -6,9 +6,10 @@ import (
 	"strings"
 	"time"
 
+	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
 	shared "github.com/mitre/hdf-converters/shared/go"
-	hdf "github.com/mitre/hdf-schema"
 	"github.com/mitre/hdf-mappings/go/cwe"
+	hdf "github.com/mitre/hdf-schema"
 )
 
 
@@ -201,10 +202,17 @@ func buildRequirement(ruleID string, issues []GosecIssue) hdf.EvaluatedRequireme
 	}
 }
 
-// ConvertGosecToHDF converts gosec JSON output to HDF format.
+// ConvertGosecToHDF converts gosec output to HDF format.
+// Accepts both native gosec JSON and SARIF format — SARIF input is detected
+// automatically and delegated to the shared SARIF converter.
 func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("gosec: empty input")
+	}
+
+	// Detect format: if SARIF, delegate to the shared SARIF converter
+	if shared.DetectFormat(input) == shared.FormatSARIF {
+		return sarif.ConvertSarifToHDF(input, converterVersion)
 	}
 
 	var report GosecReport

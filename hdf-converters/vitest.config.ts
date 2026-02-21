@@ -12,6 +12,8 @@ export default defineConfig({
       'test/**/*.spec.ts',
       'converters/**/*.test.ts',
       'converters/**/*.spec.ts',
+      'shared/**/*.test.ts',
+      'shared/**/*.spec.ts',
     ],
     coverage: {
       provider: 'v8',
