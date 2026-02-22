@@ -1107,6 +1107,166 @@ func TestConvertSarifToHDF_RichFixture(t *testing.T) {
 	assert.Equal(t, hdf.NotApplicable, sec005.Results[0].Status)
 }
 
+// --- Multi-tool fixture tests (DefectDojo-sourced, schema-validated) ---
+
+func TestConvertSarifToHDF_CodeQLFixture(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("codeQL-output.sarif"))
+	require.NoError(t, err, "Failed to read codeQL-output.sarif fixture")
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	baseline := result.Baselines[0]
+	assert.Equal(t, "CodeQL", baseline.Name)
+	assert.Equal(t, "2.1.0", *baseline.Version)
+	require.Len(t, baseline.Requirements, 13, "72 results should group into 13 distinct rules")
+
+	// py/sql-injection — has codeFlows (data flow traces from real CodeQL)
+	var sqlInj *hdf.EvaluatedRequirement
+	for i := range baseline.Requirements {
+		if baseline.Requirements[i].ID == "py/sql-injection" {
+			sqlInj = &baseline.Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, sqlInj, "Expected py/sql-injection requirement")
+	require.Len(t, sqlInj.Results, 2)
+	// CodeQL produces codeFlows for taint-tracking queries
+	assert.NotEmpty(t, sqlInj.Results[0].Backtrace, "SQL injection result should have backtrace from codeFlows")
+
+	// py/unused-import — heaviest grouping: 40 results → 1 requirement
+	var unusedImport *hdf.EvaluatedRequirement
+	for i := range baseline.Requirements {
+		if baseline.Requirements[i].ID == "py/unused-import" {
+			unusedImport = &baseline.Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, unusedImport, "Expected py/unused-import requirement")
+	assert.Len(t, unusedImport.Results, 40, "All 40 unused-import results should be under one requirement")
+
+	// All CodeQL results have no explicit level → resolveRuleLevel should use
+	// rule.defaultConfiguration.level where available
+	// py/sql-injection has defaultConfiguration.level = "error"
+	assert.Equal(t, 0.7, sqlInj.Impact, "py/sql-injection should have error-level impact")
+
+	// Fingerprints — CodeQL puts partialFingerprints on results
+	fp, ok := sqlInj.Tags["fingerprints"].(map[string]interface{})
+	assert.True(t, ok, "Should have fingerprints from CodeQL output")
+	if ok {
+		_, hasPFP := fp["partialFingerprints"]
+		assert.True(t, hasPFP, "Should have partialFingerprints")
+	}
+}
+
+func TestConvertSarifToHDF_GitleaksFixture(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("gitleaks_7.5.0.sarif"))
+	require.NoError(t, err, "Failed to read gitleaks_7.5.0.sarif fixture")
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	baseline := result.Baselines[0]
+	assert.Equal(t, "Gitleaks", baseline.Name)
+
+	// Known edge case (tracked in bead hdf-asy): all 8 results have no ruleId,
+	// so they all group under a single requirement with id=""
+	require.Len(t, baseline.Requirements, 1, "All results grouped under empty ruleId")
+	req := baseline.Requirements[0]
+	assert.Equal(t, "", req.ID)
+	assert.Len(t, req.Results, 8, "All 8 Gitleaks results under one requirement")
+
+	// Results should have snippets from the SARIF locations
+	for _, r := range req.Results {
+		assert.Contains(t, r.CodeDesc, "URL :")
+		assert.Contains(t, r.CodeDesc, "LINE :")
+	}
+}
+
+func TestConvertSarifToHDF_SpotBugsFixture(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("spotbugs.sarif"))
+	require.NoError(t, err, "Failed to read spotbugs.sarif fixture")
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	baseline := result.Baselines[0]
+	assert.Equal(t, "SpotBugs", baseline.Name)
+	require.Len(t, baseline.Requirements, 9, "56 results should group into 9 rules")
+
+	// All SpotBugs results are "note" level → 0.3 impact
+	for _, req := range baseline.Requirements {
+		assert.Equal(t, 0.3, req.Impact, "SpotBugs rule %s should have note-level impact", req.ID)
+		assert.Equal(t, "note", req.Tags["severity"])
+	}
+
+	// NM_METHOD_NAMING_CONVENTION — heaviest grouping: 33 results
+	var nmMethod *hdf.EvaluatedRequirement
+	for i := range baseline.Requirements {
+		if baseline.Requirements[i].ID == "NM_METHOD_NAMING_CONVENTION" {
+			nmMethod = &baseline.Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, nmMethod, "Expected NM_METHOD_NAMING_CONVENTION requirement")
+	assert.Len(t, nmMethod.Results, 33)
+
+	// SpotBugs rules have shortDescription and helpUri
+	assert.NotNil(t, nmMethod.Title)
+	helpUri, ok := nmMethod.Tags["helpUri"]
+	assert.True(t, ok, "SpotBugs rules should have helpUri")
+	assert.NotEmpty(t, helpUri)
+}
+
+func TestConvertSarifToHDF_DockleFixture(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("dockle_0_3_15.sarif"))
+	require.NoError(t, err, "Failed to read dockle_0_3_15.sarif fixture")
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	baseline := result.Baselines[0]
+	assert.Equal(t, "Dockle", baseline.Name)
+	require.Len(t, baseline.Requirements, 4, "4 rules with 4 results")
+
+	// Known edge case (tracked in bead hdf-79h): all Dockle results have 0 locations,
+	// so no RequirementResults are produced. The finding data is preserved in the
+	// requirement metadata but no individual results exist.
+	for _, req := range baseline.Requirements {
+		assert.Empty(t, req.Results, "Dockle rule %s should have 0 results (no locations)", req.ID)
+	}
+
+	// CIS-DI-0010 is error level, the rest are note
+	var cis0010 *hdf.EvaluatedRequirement
+	var cis0005 *hdf.EvaluatedRequirement
+	for i := range baseline.Requirements {
+		switch baseline.Requirements[i].ID {
+		case "CIS-DI-0010":
+			cis0010 = &baseline.Requirements[i]
+		case "CIS-DI-0005":
+			cis0005 = &baseline.Requirements[i]
+		}
+	}
+	require.NotNil(t, cis0010)
+	assert.Equal(t, 0.7, cis0010.Impact, "CIS-DI-0010 is error level")
+	require.NotNil(t, cis0005)
+	assert.Equal(t, 0.3, cis0005.Impact, "CIS-DI-0005 is note level")
+
+	// Dockle rules have help text → should produce "check" description
+	hasCheck := false
+	for _, d := range cis0010.Descriptions {
+		if d.Label == "check" {
+			hasCheck = true
+			assert.Contains(t, d.Data, "CHECKPOINT")
+		}
+	}
+	assert.True(t, hasCheck, "Dockle rules with help should have check description")
+}
+
 func TestConvertSarifToHDF_GosecFixture(t *testing.T) {
 	inputData, err := os.ReadFile(fixturePath("gosec.sarif"))
 	require.NoError(t, err, "Failed to read gosec.sarif fixture")
