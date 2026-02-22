@@ -15,41 +15,31 @@ function loadFixture(type: 'input' | 'expected', filename: string): string {
 
 describe('SARIF Converter', () => {
   describe('Basic conversion', () => {
-    it('should convert minimal SARIF to HDF', () => {
-      const input = loadFixture('input', 'minimal.sarif');
+    it('should convert real Flawfinder SARIF to HDF', () => {
+      const input = loadFixture('input', 'sarif_input.sarif');
       const result = JSON.parse(convertSarifToHdf(input));
 
       expect(result.dataSource?.format).toBe('SARIF');
       expect(result.dataSource?.name).toBe('Flawfinder');
       expect(result.dataSource?.version).toBe('2.0.15');
       expect(result.baselines).toHaveLength(1);
-      // Baseline name is now the tool driver name
       expect(result.baselines[0].name).toBe('Flawfinder');
       expect(result.baselines[0].version).toBe('2.1.0');
-      expect(result.baselines[0].requirements).toHaveLength(2);
+      expect(result.baselines[0].requirements).toHaveLength(21);
 
-      const req1 = result.baselines[0].requirements[0];
-      expect(req1.id).toBe('RULE-001');
-      expect(req1.title).toBe('buffer/strcpy');
-      expect(req1.descriptions[0].data).toContain('Does not check for buffer overflows');
-      expect(req1.impact).toBe(0.7);
-      expect(req1.tags.severity).toBe('error');
-      expect(req1.tags.cwe).toContain('CWE-120');
-      expect(req1.tags.cwe).toContain('CWE-20');
-      expect(req1.tags.nist).toContain('SI-10');
-      expect(req1.sourceLocation.ref).toBe('src/main.c');
-      expect(req1.sourceLocation.line).toBe(42);
-      expect(req1.results).toHaveLength(1);
-      expect(req1.results[0].status).toBe('failed');
-      expect(req1.results[0].codeDesc).toContain('src/main.c');
-      expect(req1.results[0].codeDesc).toContain('LINE : 42');
-
-      const req2 = result.baselines[0].requirements[1];
-      expect(req2.id).toBe('RULE-002');
-      expect(req2.title).toBe('format/printf');
-      expect(req2.impact).toBe(0.5);
-      expect(req2.tags.severity).toBe('warning');
-      expect(req2.tags.cwe).toContain('CWE-134');
+      // Verify FF1014 requirement (buffer/gets, error level)
+      const ff1014 = result.baselines[0].requirements.find((r: any) => r.id === 'FF1014');
+      expect(ff1014).toBeDefined();
+      expect(ff1014.title).toBe('buffer/gets');
+      expect(ff1014.descriptions[0].data).toContain('Does not check for buffer overflows');
+      expect(ff1014.impact).toBe(0.7);
+      expect(ff1014.tags.severity).toBe('error');
+      expect(ff1014.tags.cwe).toContain('CWE-120');
+      expect(ff1014.tags.cwe).toContain('CWE-20');
+      expect(ff1014.tags.nist).toContain('SI-10');
+      expect(ff1014.results.length).toBeGreaterThan(0);
+      expect(ff1014.results[0].status).toBe('failed');
+      expect(ff1014.results[0].codeDesc).toContain('test/test-patched.c');
     });
 
     it('should handle empty results array', () => {
@@ -391,14 +381,17 @@ describe('SARIF Converter', () => {
   // --- Kind → status mapping tests ---
 
   describe('Kind to status mapping', () => {
+    // Impact is now determined at rule level, not per-result kind.
+    // Without a rule definition, resolveRuleLevel falls back to first fail-kind
+    // result's level or "warning". Non-fail-only results get "warning" → 0.5.
     const kindTests = [
-      { kind: 'pass', expectedStatus: 'passed', expectedImpact: 0.0 },
+      { kind: 'pass', expectedStatus: 'passed', expectedImpact: 0.5 },
       { kind: 'fail', expectedStatus: 'failed', expectedImpact: 0.7 },
       { kind: undefined, expectedStatus: 'failed', expectedImpact: 0.7 },
-      { kind: 'open', expectedStatus: 'failed', expectedImpact: 0.0 },
-      { kind: 'review', expectedStatus: 'notReviewed', expectedImpact: 0.0 },
-      { kind: 'informational', expectedStatus: 'notApplicable', expectedImpact: 0.0 },
-      { kind: 'notApplicable', expectedStatus: 'notApplicable', expectedImpact: 0.0 },
+      { kind: 'open', expectedStatus: 'failed', expectedImpact: 0.5 },
+      { kind: 'review', expectedStatus: 'notReviewed', expectedImpact: 0.5 },
+      { kind: 'informational', expectedStatus: 'notApplicable', expectedImpact: 0.5 },
+      { kind: 'notApplicable', expectedStatus: 'notApplicable', expectedImpact: 0.5 },
     ];
 
     for (const tt of kindTests) {
@@ -883,65 +876,59 @@ describe('SARIF Converter', () => {
       expect(result.baselines).toHaveLength(1);
       const baseline = result.baselines[0];
       expect(baseline.name).toBe('SecurityScanner');
-      expect(baseline.requirements).toHaveLength(10);
+      expect(baseline.requirements).toHaveLength(5);
 
-      // Result 0: SEC-001 fail with full metadata
-      const r0 = baseline.requirements[0];
-      expect(r0.id).toBe('SEC-001');
-      expect(r0.title).toBe('SqlInjection');
-      expect(r0.impact).toBe(0.7);
-      expect(r0.results).toHaveLength(1);
-      expect(r0.results[0].status).toBe('failed');
-      expect(r0.results[0].codeDesc).toContain('db.Query');
-      expect(r0.results[0].backtrace).toHaveLength(3);
-      expect(r0.results[0].backtrace[0]).toContain('src/handlers/user.go:22');
-      expect(r0.tags.cwe).toContain('CWE-89');
-      expect(r0.tags.helpUri).toBe('https://example.com/rules/SEC-001');
-      const fix = r0.descriptions.find((d: { label: string }) => d.label === 'fix');
+      // SEC-001: SqlInjection — 3 SARIF results (fail, informational, open)
+      const sec001 = baseline.requirements[0];
+      expect(sec001.id).toBe('SEC-001');
+      expect(sec001.title).toBe('SqlInjection');
+      expect(sec001.impact).toBe(0.7); // error → 0.7 (rule-level)
+      expect(sec001.tags.cwe).toContain('CWE-89');
+      expect(sec001.tags.helpUri).toBe('https://example.com/rules/SEC-001');
+      const fix = sec001.descriptions.find((d: { label: string }) => d.label === 'fix');
       expect(fix).toBeDefined();
       expect(fix.data).toContain('parameterized query');
-      expect(r0.tags.fingerprints).toBeDefined();
+      expect(sec001.results).toHaveLength(3);
+      expect(sec001.results[0].status).toBe('failed');
+      expect(sec001.results[0].codeDesc).toContain('db.Query');
+      expect(sec001.results[0].backtrace).toHaveLength(3);
+      expect(sec001.results[0].backtrace[0]).toContain('src/handlers/user.go:22');
+      expect(sec001.results[1].status).toBe('notApplicable'); // informational
+      expect(sec001.results[2].status).toBe('failed'); // open
 
-      // Result 1: SEC-002 with no level → falls back to rule default "warning"
-      const r1 = baseline.requirements[1];
-      expect(r1.id).toBe('SEC-002');
-      expect(r1.title).toBe('WeakCrypto');
-      expect(r1.impact).toBe(0.5);
-      expect(r1.tags.severity).toBe('warning');
+      // SEC-002: WeakCrypto — 1 result, rule default level "warning"
+      const sec002 = baseline.requirements[1];
+      expect(sec002.id).toBe('SEC-002');
+      expect(sec002.title).toBe('WeakCrypto');
+      expect(sec002.impact).toBe(0.5);
+      expect(sec002.tags.severity).toBe('warning');
+      expect(sec002.results).toHaveLength(1);
+      expect(sec002.results[0].status).toBe('failed');
 
-      // Result 2: SEC-003 with accepted suppression
-      const r2 = baseline.requirements[2];
-      expect(r2.results[0].status).toBe('notReviewed');
-      expect(r2.results[0].message).toContain('test API key');
+      // SEC-003: HardcodedCredential — 3 results (accepted supp, rejected supp, multiple supps)
+      const sec003 = baseline.requirements[2];
+      expect(sec003.id).toBe('SEC-003');
+      expect(sec003.impact).toBe(0.7); // error
+      expect(sec003.results).toHaveLength(3);
+      expect(sec003.results[0].status).toBe('notReviewed'); // accepted suppression
+      expect(sec003.results[0].message).toContain('test API key');
+      expect(sec003.results[1].status).toBe('failed'); // rejected suppression
+      expect(sec003.results[2].status).toBe('notReviewed'); // multiple suppressions
 
-      // Result 3: SEC-003 with rejected suppression → still failed
-      const r3 = baseline.requirements[3];
-      expect(r3.results[0].status).toBe('failed');
+      // SEC-004: InfoLeak — 2 results (pass, review)
+      const sec004 = baseline.requirements[3];
+      expect(sec004.id).toBe('SEC-004');
+      expect(sec004.impact).toBe(0.3); // note
+      expect(sec004.results).toHaveLength(2);
+      expect(sec004.results[0].status).toBe('passed');
+      expect(sec004.results[1].status).toBe('notReviewed');
 
-      // Result 4: kind=pass
-      const r4 = baseline.requirements[4];
-      expect(r4.results[0].status).toBe('passed');
-      expect(r4.impact).toBe(0.0);
-
-      // Result 5: kind=notApplicable
-      const r5 = baseline.requirements[5];
-      expect(r5.results[0].status).toBe('notApplicable');
-
-      // Result 6: kind=review
-      const r6 = baseline.requirements[6];
-      expect(r6.results[0].status).toBe('notReviewed');
-
-      // Result 7: kind=informational
-      const r7 = baseline.requirements[7];
-      expect(r7.results[0].status).toBe('notApplicable');
-
-      // Result 8: kind=open
-      const r8 = baseline.requirements[8];
-      expect(r8.results[0].status).toBe('failed');
-
-      // Result 9: multiple suppressions
-      const r9 = baseline.requirements[9];
-      expect(r9.results[0].status).toBe('notReviewed');
+      // SEC-005: DeprecatedAPI — 1 result (notApplicable)
+      const sec005 = baseline.requirements[4];
+      expect(sec005.id).toBe('SEC-005');
+      expect(sec005.impact).toBe(0.3); // note
+      expect(sec005.results).toHaveLength(1);
+      expect(sec005.results[0].status).toBe('notApplicable');
     });
   });
 

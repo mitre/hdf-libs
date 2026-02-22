@@ -20,9 +20,9 @@ func fixturePath(filename string) string {
 
 // --- Backward compatibility tests (updated for enriched behavior) ---
 
-func TestConvertSarifToHDF_Minimal(t *testing.T) {
-	inputData, err := os.ReadFile(fixturePath("minimal.sarif"))
-	require.NoError(t, err, "Failed to read minimal.sarif fixture")
+func TestConvertSarifToHDF_SarifInput(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("sarif_input.sarif"))
+	require.NoError(t, err, "Failed to read sarif_input.sarif fixture")
 
 	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
 	require.NoError(t, err, "Conversion should succeed")
@@ -33,42 +33,37 @@ func TestConvertSarifToHDF_Minimal(t *testing.T) {
 	assert.Equal(t, "sarif-to-hdf", result.Generator.Name)
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 
-	// Verify structure — minimal.sarif has no rules[], so baseline name falls back to tool name
+	// Verify structure — sarif_input.sarif has rules[], baseline name = tool name
 	require.Len(t, result.Baselines, 1, "Should have 1 baseline")
 	baseline := result.Baselines[0]
 	assert.Equal(t, "Flawfinder", baseline.Name)
 	assert.Equal(t, "2.1.0", *baseline.Version)
-	require.Len(t, baseline.Requirements, 2, "Should have 2 requirements")
+	assert.Len(t, baseline.Requirements, 21, "Should have 21 requirements (one per rule)")
 
-	// Verify first requirement — no rule metadata so falls back to message parsing
-	req1 := baseline.Requirements[0]
-	assert.Equal(t, "RULE-001", req1.ID)
-	assert.Equal(t, "buffer/strcpy", *req1.Title)
-	assert.Contains(t, req1.Descriptions[0].Data, "Does not check for buffer overflows")
-	assert.Equal(t, 0.7, req1.Impact)
-	assert.Equal(t, "error", req1.Tags["severity"])
-	cwe1, ok := req1.Tags["cwe"].([]string)
+	// Verify first requirement (FF1014 - buffer/gets, error level)
+	var ff1014 *hdf.EvaluatedRequirement
+	for i := range baseline.Requirements {
+		if baseline.Requirements[i].ID == "FF1014" {
+			ff1014 = &baseline.Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, ff1014, "Expected FF1014 requirement")
+	assert.Equal(t, "buffer/gets", *ff1014.Title)
+	assert.Contains(t, ff1014.Descriptions[0].Data, "Does not check for buffer overflows")
+	assert.Equal(t, 0.7, ff1014.Impact)
+	assert.Equal(t, "error", ff1014.Tags["severity"])
+	cwe1, ok := ff1014.Tags["cwe"].([]string)
 	require.True(t, ok, "CWE should be string slice")
-	assert.Len(t, cwe1, 2)
-	require.NotNil(t, req1.SourceLocation, "SourceLocation should not be nil")
-	require.NotNil(t, req1.SourceLocation.Ref)
-	assert.Equal(t, "src/main.c", *req1.SourceLocation.Ref)
-	require.NotNil(t, req1.SourceLocation.Line)
-	assert.Equal(t, float64(42), *req1.SourceLocation.Line)
-	require.Len(t, req1.Results, 1)
-	assert.Equal(t, hdf.Failed, req1.Results[0].Status)
-	assert.Contains(t, req1.Results[0].CodeDesc, "src/main.c")
-
-	// Verify second requirement
-	req2 := baseline.Requirements[1]
-	assert.Equal(t, "RULE-002", req2.ID)
-	assert.Equal(t, "format/printf", *req2.Title)
-	assert.Equal(t, 0.5, req2.Impact)
-	assert.Equal(t, "warning", req2.Tags["severity"])
+	assert.Contains(t, cwe1, "CWE-120")
+	assert.Contains(t, cwe1, "CWE-20")
+	require.NotEmpty(t, ff1014.Results)
+	assert.Equal(t, hdf.Failed, ff1014.Results[0].Status)
+	assert.Contains(t, ff1014.Results[0].CodeDesc, "test/test-patched.c")
 }
 
 func TestConvertSarifToHDF_DataSource(t *testing.T) {
-	inputData, err := os.ReadFile(fixturePath("minimal.sarif"))
+	inputData, err := os.ReadFile(fixturePath("sarif_input.sarif"))
 	require.NoError(t, err)
 
 	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
@@ -225,54 +220,6 @@ func TestImpactMapping(t *testing.T) {
 			require.NotNil(t, result)
 
 			assert.Equal(t, tt.expectedImpact, result.Baselines[0].Requirements[0].Impact)
-		})
-	}
-}
-
-func TestResolveLevel(t *testing.T) {
-	tests := []struct {
-		name     string
-		result   SarifResult
-		rule     *ReportingDescriptor
-		expected string
-	}{
-		{
-			"result.level present",
-			SarifResult{Level: "error"},
-			nil,
-			"error",
-		},
-		{
-			"result.level absent, rule default present",
-			SarifResult{},
-			&ReportingDescriptor{
-				DefaultConfiguration: &ReportingConfiguration{Level: "note"},
-			},
-			"note",
-		},
-		{
-			"both absent, defaults to warning",
-			SarifResult{},
-			nil,
-			"warning",
-		},
-		{
-			"non-fail kind always returns none",
-			SarifResult{Kind: "pass", Level: "error"},
-			nil,
-			"none",
-		},
-		{
-			"kind=fail uses result level",
-			SarifResult{Kind: "fail", Level: "error"},
-			nil,
-			"error",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, resolveLevel(tt.result, tt.rule))
 		})
 	}
 }
@@ -493,13 +440,16 @@ func TestKindMappingIntegration(t *testing.T) {
 		expectedStatus hdf.ResultStatus
 		expectedImpact float64
 	}{
-		{"pass", hdf.Passed, 0.0},
+		// Impact is now determined at rule level, not per-result kind.
+		// Without a rule definition, resolveRuleLevel falls back to first fail-kind
+		// result's level or "warning". Non-fail-only results get "warning" → 0.5.
+		{"pass", hdf.Passed, 0.5},
 		{"fail", hdf.Failed, 0.7},
-		{"", hdf.Failed, 0.7},       // default kind=fail
-		{"open", hdf.Failed, 0.0},
-		{"review", hdf.NotReviewed, 0.0},
-		{"informational", hdf.NotApplicable, 0.0},
-		{"notApplicable", hdf.NotApplicable, 0.0},
+		{"", hdf.Failed, 0.7},       // default kind=fail, level=error → 0.7
+		{"open", hdf.Failed, 0.5},
+		{"review", hdf.NotReviewed, 0.5},
+		{"informational", hdf.NotApplicable, 0.5},
+		{"notApplicable", hdf.NotApplicable, 0.5},
 	}
 
 	for _, tt := range tests {
@@ -1090,92 +1040,71 @@ func TestConvertSarifToHDF_RichFixture(t *testing.T) {
 	baseline := result.Baselines[0]
 	assert.Equal(t, "SecurityScanner", baseline.Name)
 	assert.Equal(t, "2.1.0", *baseline.Version)
-	require.Len(t, baseline.Requirements, 10, "rich.sarif has 10 results")
+	require.Len(t, baseline.Requirements, 5, "rich.sarif has 5 distinct rules")
 
-	// Result 0: SEC-001 fail with full metadata
-	r0 := baseline.Requirements[0]
-	assert.Equal(t, "SEC-001", r0.ID)
-	assert.Equal(t, "SqlInjection", *r0.Title) // from rule name
-	assert.Equal(t, 0.7, r0.Impact)            // error → 0.7
-	require.Len(t, r0.Results, 1)
-	assert.Equal(t, hdf.Failed, r0.Results[0].Status)
-	// Should have snippet in codeDesc
-	assert.Contains(t, r0.Results[0].CodeDesc, "db.Query")
-	// Should have backtrace from codeFlows
-	require.Len(t, r0.Results[0].Backtrace, 3)
-	assert.Contains(t, r0.Results[0].Backtrace[0], "src/handlers/user.go:22")
-	// Should have CWE from relationships
-	cweIds := r0.Tags["cwe"].([]string)
+	// SEC-001: SqlInjection — 3 SARIF results (fail, informational, open)
+	sec001 := baseline.Requirements[0]
+	assert.Equal(t, "SEC-001", sec001.ID)
+	assert.Equal(t, "SqlInjection", *sec001.Title)
+	assert.Equal(t, 0.7, sec001.Impact) // error → 0.7 (rule-level)
+	cweIds := sec001.Tags["cwe"].([]string)
 	assert.Contains(t, cweIds, "CWE-89")
-	// Should have helpUri
-	assert.Equal(t, "https://example.com/rules/SEC-001", r0.Tags["helpUri"])
-	// Should have fix description
+	assert.Equal(t, "https://example.com/rules/SEC-001", sec001.Tags["helpUri"])
+	// Fix description from first result
 	hasFix := false
-	for _, d := range r0.Descriptions {
+	for _, d := range sec001.Descriptions {
 		if d.Label == "fix" {
 			assert.Contains(t, d.Data, "parameterized query")
 			hasFix = true
 		}
 	}
 	assert.True(t, hasFix)
-	// Should have fingerprints
-	_, hasFP := r0.Tags["fingerprints"]
-	assert.True(t, hasFP)
+	// 3 results: fail (with backtrace+snippet), informational, open
+	require.Len(t, sec001.Results, 3)
+	assert.Equal(t, hdf.Failed, sec001.Results[0].Status)
+	assert.Contains(t, sec001.Results[0].CodeDesc, "db.Query")
+	require.Len(t, sec001.Results[0].Backtrace, 3)
+	assert.Contains(t, sec001.Results[0].Backtrace[0], "src/handlers/user.go:22")
+	assert.Equal(t, hdf.NotApplicable, sec001.Results[1].Status) // informational
+	assert.Equal(t, hdf.Failed, sec001.Results[2].Status)        // open
 
-	// Result 1: SEC-002 with no explicit level → falls back to rule default "warning"
-	r1 := baseline.Requirements[1]
-	assert.Equal(t, "SEC-002", r1.ID)
-	assert.Equal(t, "WeakCrypto", *r1.Title)
-	assert.Equal(t, 0.5, r1.Impact)      // warning → 0.5
-	assert.Equal(t, "warning", r1.Tags["severity"])
+	// SEC-002: WeakCrypto — 1 result, rule default level "warning"
+	sec002 := baseline.Requirements[1]
+	assert.Equal(t, "SEC-002", sec002.ID)
+	assert.Equal(t, "WeakCrypto", *sec002.Title)
+	assert.Equal(t, 0.5, sec002.Impact)
+	assert.Equal(t, "warning", sec002.Tags["severity"])
+	require.Len(t, sec002.Results, 1)
+	assert.Equal(t, hdf.Failed, sec002.Results[0].Status)
 
-	// Result 2: SEC-003 with accepted suppression → NotReviewed
-	r2 := baseline.Requirements[2]
-	assert.Equal(t, "SEC-003", r2.ID)
-	require.Len(t, r2.Results, 1)
-	assert.Equal(t, hdf.NotReviewed, r2.Results[0].Status)
-	require.NotNil(t, r2.Results[0].Message)
-	assert.Contains(t, *r2.Results[0].Message, "test API key")
+	// SEC-003: HardcodedCredential — 3 results (accepted suppression, rejected, multiple supps)
+	sec003 := baseline.Requirements[2]
+	assert.Equal(t, "SEC-003", sec003.ID)
+	assert.Equal(t, 0.7, sec003.Impact) // error
+	require.Len(t, sec003.Results, 3)
+	// First result: accepted suppression → NotReviewed
+	assert.Equal(t, hdf.NotReviewed, sec003.Results[0].Status)
+	require.NotNil(t, sec003.Results[0].Message)
+	assert.Contains(t, *sec003.Results[0].Message, "test API key")
+	// Second result: rejected suppression → Failed
+	assert.Equal(t, hdf.Failed, sec003.Results[1].Status)
+	// Third result: multiple suppressions (underReview + accepted) → NotReviewed
+	assert.Equal(t, hdf.NotReviewed, sec003.Results[2].Status)
 
-	// Result 3: SEC-003 with rejected suppression → still Failed
-	r3 := baseline.Requirements[3]
-	assert.Equal(t, "SEC-003", r3.ID)
-	require.Len(t, r3.Results, 1)
-	assert.Equal(t, hdf.Failed, r3.Results[0].Status)
+	// SEC-004: InfoDisclosure — 2 results (pass, review)
+	sec004 := baseline.Requirements[3]
+	assert.Equal(t, "SEC-004", sec004.ID)
+	assert.Equal(t, 0.3, sec004.Impact) // note
+	require.Len(t, sec004.Results, 2)
+	assert.Equal(t, hdf.Passed, sec004.Results[0].Status)
+	assert.Equal(t, hdf.NotReviewed, sec004.Results[1].Status)
 
-	// Result 4: SEC-004 kind=pass → Passed
-	r4 := baseline.Requirements[4]
-	assert.Equal(t, "SEC-004", r4.ID)
-	require.Len(t, r4.Results, 1)
-	assert.Equal(t, hdf.Passed, r4.Results[0].Status)
-	assert.Equal(t, 0.0, r4.Impact) // non-fail kind → 0 impact
-
-	// Result 5: SEC-005 kind=notApplicable → NotApplicable
-	r5 := baseline.Requirements[5]
-	assert.Equal(t, "SEC-005", r5.ID)
-	require.Len(t, r5.Results, 1)
-	assert.Equal(t, hdf.NotApplicable, r5.Results[0].Status)
-	assert.Equal(t, 0.0, r5.Impact)
-
-	// Result 6: SEC-004 kind=review → NotReviewed
-	r6 := baseline.Requirements[6]
-	require.Len(t, r6.Results, 1)
-	assert.Equal(t, hdf.NotReviewed, r6.Results[0].Status)
-
-	// Result 7: SEC-001 kind=informational → NotApplicable
-	r7 := baseline.Requirements[7]
-	require.Len(t, r7.Results, 1)
-	assert.Equal(t, hdf.NotApplicable, r7.Results[0].Status)
-
-	// Result 8: SEC-001 kind=open → Failed
-	r8 := baseline.Requirements[8]
-	require.Len(t, r8.Results, 1)
-	assert.Equal(t, hdf.Failed, r8.Results[0].Status)
-
-	// Result 9: SEC-003 with multiple suppressions (underReview + accepted) → NotReviewed
-	r9 := baseline.Requirements[9]
-	require.Len(t, r9.Results, 1)
-	assert.Equal(t, hdf.NotReviewed, r9.Results[0].Status)
+	// SEC-005: DeprecatedAPI — 1 result (notApplicable)
+	sec005 := baseline.Requirements[4]
+	assert.Equal(t, "SEC-005", sec005.ID)
+	assert.Equal(t, 0.3, sec005.Impact) // note
+	require.Len(t, sec005.Results, 1)
+	assert.Equal(t, hdf.NotApplicable, sec005.Results[0].Status)
 }
 
 func TestConvertSarifToHDF_GosecFixture(t *testing.T) {

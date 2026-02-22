@@ -194,9 +194,23 @@ export function convertSarifToHdf(input: string): string {
 function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum): EvaluatedBaseline {
   const ruleMap = buildRuleMap(run);
 
-  const requirements = run.results.map(result => {
-    const rule = ruleMap.get(result.ruleId);
-    return convertResult(result, rule);
+  // Group SARIF results by ruleId — each group becomes one EvaluatedRequirement
+  const groupOrder: string[] = [];
+  const groupMap = new Map<string, { rule?: ReportingDescriptor; results: SarifResult[] }>();
+  for (const result of run.results) {
+    let group = groupMap.get(result.ruleId);
+    if (!group) {
+      const rule = ruleMap.get(result.ruleId);
+      group = { rule, results: [] };
+      groupMap.set(result.ruleId, group);
+      groupOrder.push(result.ruleId);
+    }
+    group.results.push(result);
+  }
+
+  const requirements = groupOrder.map(ruleId => {
+    const group = groupMap.get(ruleId)!;
+    return convertResultGroup(ruleId, group.rule, group.results);
   });
 
   // Use tool name for baseline name if available
@@ -219,29 +233,74 @@ function buildRuleMap(run: SarifRun): Map<string, ReportingDescriptor> {
   return map;
 }
 
-// --- Result-level conversion ---
+// --- Result-group conversion (one EvaluatedRequirement per ruleId) ---
 
-function convertResult(result: SarifResult, rule?: ReportingDescriptor): EvaluatedRequirement {
-  const messageText = result.message.text;
+function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefined, sarifResults: SarifResult[]): EvaluatedRequirement {
+  const firstResult = sarifResults[0]!;
 
-  // Determine title and description
-  const { title, description } = deriveMetadata(result, rule);
+  // Derive requirement-level metadata from the rule and first result
+  const { title, description } = deriveMetadata(firstResult, rule);
 
-  // Extract CWE IDs with priority: relationships > properties.tags > message regex
+  // Extract CWE IDs from rule (or first result message as fallback)
   let cweIds = extractCweFromRule(rule);
   if (cweIds.length === 0) {
-    cweIds = extractCweIds(messageText);
+    cweIds = extractCweIds(firstResult.message.text);
   }
 
   const nistControls = mapCweToNist(cweIds);
   const cciControls = nistToCci(nistControls);
 
-  // Resolve level with fallback chain
-  const resolvedLevel = resolveLevel(result, rule);
+  // Determine requirement-level impact from the rule's inherent severity
+  const ruleLevel = resolveRuleLevel(rule, sarifResults);
+  const impact = IMPACT_MAPPING[ruleLevel] || 0.1;
 
-  // Map level to impact
-  let impact = IMPACT_MAPPING[resolvedLevel] || 0.1;
+  // Source location from first result's first location
+  const sourceLocation = firstResult.locations && firstResult.locations.length > 0
+    ? extractSourceLocation(firstResult.locations[0]!)
+    : undefined;
 
+  // Convert each SARIF result into RequirementResult(s)
+  const results: RequirementResult[] = [];
+  for (const sr of sarifResults) {
+    results.push(...convertSarifResultToHDFResults(sr));
+  }
+
+  // Build descriptions from rule metadata and first result
+  const descriptions = buildDescriptions(description, rule, firstResult);
+
+  // Build tags
+  const tags = buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls);
+
+  const options: {
+    sourceLocation?: { ref: string; line: number };
+    tags: Record<string, unknown>;
+  } = { tags };
+
+  if (sourceLocation) {
+    options.sourceLocation = sourceLocation;
+  }
+
+  return createRequirement(ruleId, title, descriptions, impact, results, options);
+}
+
+// Determines the inherent severity level for a rule, independent of per-result kind overrides.
+function resolveRuleLevel(rule: ReportingDescriptor | undefined, results: SarifResult[]): string {
+  if (rule?.defaultConfiguration?.level) {
+    return rule.defaultConfiguration.level;
+  }
+  // Find first result that represents a failure with an explicit level
+  for (const r of results) {
+    if (!r.kind || r.kind === 'fail') {
+      if (r.level) {
+        return r.level;
+      }
+    }
+  }
+  return 'warning';
+}
+
+// Converts a single SARIF result into one or more HDF RequirementResults.
+function convertSarifResultToHDFResults(result: SarifResult): RequirementResult[] {
   // Map kind to HDF status
   let status = mapKindToStatus(result.kind);
 
@@ -255,47 +314,13 @@ function convertResult(result: SarifResult, rule?: ReportingDescriptor): Evaluat
     }
   }
 
-  // For non-fail kinds, impact is 0
-  if (result.kind && result.kind !== 'fail') {
-    impact = 0.0;
-  }
-
-  // Source location from first location
-  const sourceLocation = result.locations && result.locations.length > 0
-    ? extractSourceLocation(result.locations[0]!)
-    : undefined;
-
   // Build backtrace from code flows
   const backtrace = extractBacktrace(result.codeFlows);
 
   // Create results for each location
-  const results: RequirementResult[] = (result.locations || [])
+  return (result.locations || [])
     .filter(loc => loc.physicalLocation?.artifactLocation?.uri)
     .map(loc => createHDFResult(loc, status, backtrace, suppressionJustification));
-
-  // Build descriptions
-  const descriptions = buildDescriptions(description, rule, result);
-
-  // Build tags
-  const tags = buildTags(result, rule, resolvedLevel, cweIds, nistControls, cciControls);
-
-  const options: {
-    sourceLocation?: { ref: string; line: number };
-    tags: Record<string, unknown>;
-  } = { tags };
-
-  if (sourceLocation) {
-    options.sourceLocation = sourceLocation;
-  }
-
-  return createRequirement(
-    result.ruleId,
-    title,
-    descriptions,
-    impact,
-    results,
-    options
-  );
 }
 
 // --- Metadata derivation ---
@@ -330,7 +355,8 @@ function extractCweFromRule(rule?: ReportingDescriptor): string[] {
     const cweIds: string[] = [];
     for (const rel of rule.relationships) {
       if (rel.target.toolComponent?.name?.toLowerCase() === 'cwe') {
-        cweIds.push(`CWE-${rel.target.id}`);
+        const id = rel.target.id.startsWith('CWE-') ? rel.target.id : `CWE-${rel.target.id}`;
+        cweIds.push(id);
       }
     }
     if (cweIds.length > 0) {
@@ -402,21 +428,6 @@ function mapCweToNist(cweIds: string[]): string[] {
   }
 
   return Array.from(nistSet);
-}
-
-// --- Level resolution ---
-
-function resolveLevel(result: SarifResult, rule?: ReportingDescriptor): string {
-  if (result.kind && result.kind !== 'fail') {
-    return 'none';
-  }
-  if (result.level) {
-    return result.level;
-  }
-  if (rule?.defaultConfiguration?.level) {
-    return rule.defaultConfiguration.level;
-  }
-  return 'warning';
 }
 
 // --- Kind → Status mapping ---

@@ -239,10 +239,29 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 	// Build rule lookup by ID
 	ruleMap := buildRuleMap(run)
 
-	requirements := make([]hdf.EvaluatedRequirement, 0, len(run.Results))
+	// Group SARIF results by ruleId — each group becomes one EvaluatedRequirement
+	type resultGroup struct {
+		ruleID  string
+		rule    *ReportingDescriptor
+		results []SarifResult
+	}
+	groupOrder := []string{}
+	groupMap := make(map[string]*resultGroup)
 	for _, result := range run.Results {
-		rule := lookupRule(ruleMap, result)
-		req := convertResult(result, rule, timestamp)
+		g, exists := groupMap[result.RuleID]
+		if !exists {
+			rule := lookupRule(ruleMap, result)
+			g = &resultGroup{ruleID: result.RuleID, rule: rule}
+			groupMap[result.RuleID] = g
+			groupOrder = append(groupOrder, result.RuleID)
+		}
+		g.results = append(g.results, result)
+	}
+
+	requirements := make([]hdf.EvaluatedRequirement, 0, len(groupOrder))
+	for _, ruleID := range groupOrder {
+		g := groupMap[ruleID]
+		req := convertResultGroup(g.ruleID, g.rule, g.results, timestamp)
 		requirements = append(requirements, req)
 	}
 
@@ -282,32 +301,83 @@ func lookupRule(ruleMap map[string]ReportingDescriptor, result SarifResult) *Rep
 	return nil
 }
 
-// --- Result-level conversion ---
+// --- Result-group conversion (one EvaluatedRequirement per ruleId) ---
 
-func convertResult(result SarifResult, rule *ReportingDescriptor, timestamp time.Time) hdf.EvaluatedRequirement {
-	messageText := result.Message.Text
+func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults []SarifResult, timestamp time.Time) hdf.EvaluatedRequirement {
+	// Derive requirement-level metadata from the rule and first result
+	firstResult := sarifResults[0]
+	title, description := deriveMetadata(firstResult, rule)
 
-	// Determine title and description
-	title, description := deriveMetadata(result, rule)
-
-	// Extract CWE IDs with priority: relationships > properties.tags > message regex
+	// Extract CWE IDs from rule (or first result message as fallback)
 	cweIds := extractCweFromRule(rule)
 	if len(cweIds) == 0 {
-		cweIds = extractCweIds(messageText)
+		cweIds = extractCweIds(firstResult.Message.Text)
 	}
 
 	nistControls := mapCweToNist(cweIds)
 	cciControls := cci.NISTToCCI(nistControls)
 
-	// Resolve level with fallback chain
-	resolvedLevel := resolveLevel(result, rule)
-
-	// Map level to impact
-	impact := impactMapping[resolvedLevel]
+	// Determine requirement-level impact from the rule's inherent severity.
+	// Use the rule's defaultConfiguration.level, falling back to the first result's level,
+	// then to the SARIF default "warning".
+	ruleLevel := resolveRuleLevel(rule, sarifResults)
+	impact := impactMapping[ruleLevel]
 	if impact == 0 {
 		impact = 0.1
 	}
 
+	// Source location from first result's first location
+	var sourceLocationPtr *hdf.SourceLocation
+	if len(firstResult.Locations) > 0 {
+		sourceLocation := extractSourceLocation(firstResult.Locations[0])
+		if sourceLocation.Ref != nil || sourceLocation.Line != nil {
+			sourceLocationPtr = &sourceLocation
+		}
+	}
+
+	// Convert each SARIF result into RequirementResult(s)
+	var results []hdf.RequirementResult
+	for _, sr := range sarifResults {
+		results = append(results, convertSarifResultToHDFResults(sr, rule, timestamp)...)
+	}
+
+	// Build descriptions from rule metadata and first result
+	descriptions := buildDescriptions(description, rule, firstResult)
+
+	// Build tags — use rule-level severity and the aggregated suppression/fingerprint data from first result
+	tags := buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls)
+
+	return hdf.EvaluatedRequirement{
+		ID:             ruleID,
+		Title:          &title,
+		Descriptions:   descriptions,
+		Impact:         impact,
+		Tags:           tags,
+		Results:        results,
+		SourceLocation: sourceLocationPtr,
+	}
+}
+
+// resolveRuleLevel determines the inherent severity level for a rule, independent of
+// per-result kind overrides. Priority: rule.defaultConfiguration.level > first fail-kind
+// result's level > SARIF default "warning".
+func resolveRuleLevel(rule *ReportingDescriptor, results []SarifResult) string {
+	if rule != nil && rule.DefaultConfiguration != nil && rule.DefaultConfiguration.Level != "" {
+		return rule.DefaultConfiguration.Level
+	}
+	// Find first result that represents a failure (kind="" or "fail") with an explicit level
+	for _, r := range results {
+		if r.Kind == "" || r.Kind == "fail" {
+			if r.Level != "" {
+				return r.Level
+			}
+		}
+	}
+	return "warning"
+}
+
+// convertSarifResultToHDFResults converts a single SARIF result into one or more HDF RequirementResults.
+func convertSarifResultToHDFResults(result SarifResult, rule *ReportingDescriptor, timestamp time.Time) []hdf.RequirementResult {
 	// Map kind to HDF status
 	status := mapKindToStatus(result.Kind)
 
@@ -320,30 +390,22 @@ func convertResult(result SarifResult, rule *ReportingDescriptor, timestamp time
 		}
 	}
 
-	// For non-fail kinds, impact is 0 (informational)
-	if result.Kind != "" && result.Kind != "fail" {
-		impact = 0.0
-	}
-
-	// Source location from first location
-	var sourceLocationPtr *hdf.SourceLocation
-	if len(result.Locations) > 0 {
-		sourceLocation := extractSourceLocation(result.Locations[0])
-		if sourceLocation.Ref != nil || sourceLocation.Line != nil {
-			sourceLocationPtr = &sourceLocation
-		}
-	}
-
 	// Build backtrace from code flows
 	backtrace := extractBacktrace(result.CodeFlows)
 
 	// Create results for each location
-	results := make([]hdf.RequirementResult, 0)
+	var results []hdf.RequirementResult
 	for _, loc := range result.Locations {
 		if loc.PhysicalLocation != nil && loc.PhysicalLocation.ArtifactLocation != nil {
 			res := createHDFResult(loc, status, timestamp, backtrace)
 			results = append(results, res)
 		}
+	}
+
+	// If no locations produced results but the SARIF result exists, create a location-less result
+	if len(results) == 0 && len(result.Locations) == 0 {
+		// No location — skip (matching previous behavior where empty locations = no results)
+		return results
 	}
 
 	// Add suppression justification as message on results
@@ -354,23 +416,7 @@ func convertResult(result SarifResult, rule *ReportingDescriptor, timestamp time
 		}
 	}
 
-	// Build descriptions
-	descriptions := buildDescriptions(description, rule, result)
-
-	// Build tags
-	tags := buildTags(result, rule, resolvedLevel, cweIds, nistControls, cciControls)
-
-	req := hdf.EvaluatedRequirement{
-		ID:             result.RuleID,
-		Title:          &title,
-		Descriptions:   descriptions,
-		Impact:         impact,
-		Tags:           tags,
-		Results:        results,
-		SourceLocation: sourceLocationPtr,
-	}
-
-	return req
+	return results
 }
 
 // --- Metadata derivation ---
@@ -406,7 +452,11 @@ func extractCweFromRule(rule *ReportingDescriptor) []string {
 	var cweIds []string
 	for _, rel := range rule.Relationships {
 		if rel.Target.ToolComponent != nil && strings.EqualFold(rel.Target.ToolComponent.Name, "CWE") {
-			cweIds = append(cweIds, "CWE-"+rel.Target.ID)
+			id := rel.Target.ID
+			if !strings.HasPrefix(id, "CWE-") {
+				id = "CWE-" + id
+			}
+			cweIds = append(cweIds, id)
 		}
 	}
 	if len(cweIds) > 0 {
@@ -478,26 +528,6 @@ func mapCweToNist(cweIds []string) []string {
 		return result
 	}
 	return shared.DefaultStaticAnalysisNIST
-}
-
-// --- Level resolution ---
-
-// resolveLevel determines the effective SARIF level using the fallback chain:
-// 1. Non-fail kind → "none"
-// 2. result.level if present
-// 3. rule.defaultConfiguration.level if present
-// 4. "warning" (SARIF spec default for kind=fail)
-func resolveLevel(result SarifResult, rule *ReportingDescriptor) string {
-	if result.Kind != "" && result.Kind != "fail" {
-		return "none"
-	}
-	if result.Level != "" {
-		return result.Level
-	}
-	if rule != nil && rule.DefaultConfiguration != nil && rule.DefaultConfiguration.Level != "" {
-		return rule.DefaultConfiguration.Level
-	}
-	return "warning"
 }
 
 // --- Kind → Status mapping ---
