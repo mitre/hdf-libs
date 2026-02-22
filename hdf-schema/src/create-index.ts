@@ -46,7 +46,8 @@ export function createIndex(): void {
     copyFileSync(helpersDts, join(ROOT_DIR, 'dist/helpers.d.ts'));
   }
 
-  const indexContent = `/**
+  // index.d.ts uses named type exports (valid in declaration files)
+  const indexDtsContent = `/**
  * Main entry point for @mitre/hdf-schema
  * Re-exports all types from generated TypeScript definitions
  */
@@ -54,8 +55,24 @@ export function createIndex(): void {
 // Re-export all types from hdf-results (includes most common types)
 export * from './ts/hdf-results.js';
 
-// Re-export HdfBaseline specifically from hdf-baseline
-export { HdfBaseline, BaselineRequirement } from './ts/hdf-baseline.js';
+// Re-export types from hdf-baseline (export type for interface-only names)
+export type { HdfBaseline, BaselineRequirement } from './ts/hdf-baseline.js';
+export * from './ts/hdf-baseline.js';
+
+// Re-export helper functions
+export * from './helpers.js';
+`;
+
+  // index.js uses only export * (named exports of type-only symbols crash Node ESM).
+  // hdf-baseline.js only contains enums (HashAlgorithm, Severity) that are already
+  // exported by hdf-results.js, so we skip it to avoid ESM ambiguous-export collisions.
+  const indexJsContent = `/**
+ * Main entry point for @mitre/hdf-schema
+ * Re-exports all types from generated TypeScript definitions
+ */
+
+// Re-export all values from hdf-results (enums like ResultStatus, HashAlgorithm, Severity)
+export * from './ts/hdf-results.js';
 
 // Re-export helper functions
 export * from './helpers.js';
@@ -64,8 +81,8 @@ export * from './helpers.js';
   // Write both .js and .d.ts files to dist directory
   const distDir = join(ROOT_DIR, 'dist');
   if (existsSync(distDir)) {
-    writeFileSync(join(distDir, 'index.js'), indexContent);
-    writeFileSync(join(distDir, 'index.d.ts'), indexContent);
+    writeFileSync(join(distDir, 'index.js'), indexJsContent);
+    writeFileSync(join(distDir, 'index.d.ts'), indexDtsContent);
 
     // eslint-disable-next-line no-console
     console.log('Created dist/index.js and dist/index.d.ts');
