@@ -2,30 +2,13 @@
  * Query functions for CWE to NIST mappings
  */
 
-import { readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { CweNistMapping, CweNistMappings } from './types.js';
+import rawMappings from '../data/cwe-nist-mappings.json' with { type: 'json' };
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-let mappings: CweNistMappings | null = null;
-let indexById: Map<number, CweNistMapping> | null = null;
-
-function loadMappings(): void {
-  if (mappings === null) {
-    const dataPath = join(__dirname, '../data/cwe-nist-mappings.json');
-    const data = readFileSync(dataPath, 'utf-8');
-    mappings = JSON.parse(data) as CweNistMappings;
-
-    // Build index for fast lookups
-    indexById = new Map();
-    for (const mapping of mappings) {
-      indexById.set(mapping['CWE-ID'], mapping);
-    }
-  }
-}
+const mappings = rawMappings as CweNistMappings;
+const indexById = new Map<number, CweNistMapping>(
+  mappings.map(m => [m['CWE-ID'], m])
+);
 
 /**
  * Get the full mapping for a CWE ID
@@ -33,8 +16,7 @@ function loadMappings(): void {
  * @returns The mapping object or undefined if not found
  */
 export function getCweNistMapping(cweId: number): CweNistMapping | undefined {
-  loadMappings();
-  return indexById!.get(cweId);
+  return indexById.get(cweId);
 }
 
 /**
@@ -62,8 +44,7 @@ export function getCweName(cweId: number): string | undefined {
  * @returns Array of all CWE IDs
  */
 export function getAllCweIds(): number[] {
-  loadMappings();
-  return Array.from(indexById!.keys());
+  return Array.from(indexById.keys());
 }
 
 /**
@@ -72,8 +53,7 @@ export function getAllCweIds(): number[] {
  * @returns True if the CWE ID exists
  */
 export function cweExists(cweId: number): boolean {
-  loadMappings();
-  return indexById!.has(cweId);
+  return indexById.has(cweId);
 }
 
 /**
@@ -81,6 +61,5 @@ export function cweExists(cweId: number): boolean {
  * @returns Array of all mappings
  */
 export function getAllCweMappings(): CweNistMappings {
-  loadMappings();
-  return [...mappings!];
+  return [...mappings];
 }

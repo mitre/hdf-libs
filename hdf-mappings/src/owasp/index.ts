@@ -2,37 +2,13 @@
  * OWASP Top 10 to NIST mapping functions
  */
 
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import type { OwaspNistMappings, OwaspNistMapping } from './types.js';
+import rawOwaspData from '../data/owasp-nist-mappings.json' with { type: 'json' };
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Lazy-load OWASP data
-let owaspData: OwaspNistMappings | null = null;
-let owaspIndex: Map<string, OwaspNistMapping> | null = null;
-
-function loadOwaspData(): OwaspNistMappings {
-  if (owaspData === null) {
-    const dataPath = join(__dirname, '..', 'data', 'owasp-nist-mappings.json');
-    const content = readFileSync(dataPath, 'utf-8');
-    owaspData = JSON.parse(content) as OwaspNistMappings;
-  }
-  return owaspData;
-}
-
-function getOwaspIndex(): Map<string, OwaspNistMapping> {
-  if (owaspIndex === null) {
-    const data = loadOwaspData();
-    owaspIndex = new Map();
-    for (const item of data) {
-      owaspIndex.set(item['OWASP-ID'], item);
-    }
-  }
-  return owaspIndex;
-}
+const owaspData = rawOwaspData as OwaspNistMappings;
+const owaspIndex = new Map<string, OwaspNistMapping>(
+  owaspData.map(item => [item['OWASP-ID'], item])
+);
 
 /**
  * Get the NIST mapping for an OWASP Top 10 ID.
@@ -51,8 +27,7 @@ export function getOwaspNistMapping(owaspId: string): OwaspNistMapping | undefin
     return undefined;
   }
 
-  const index = getOwaspIndex();
-  return index.get(owaspId);
+  return owaspIndex.get(owaspId);
 }
 
 /**
@@ -101,8 +76,7 @@ export function getOwaspName(owaspId: string): string | undefined {
  * ```
  */
 export function getAllOwaspIds(): string[] {
-  const index = getOwaspIndex();
-  return Array.from(index.keys());
+  return Array.from(owaspIndex.keys());
 }
 
 /**
@@ -123,8 +97,7 @@ export function owaspExists(owaspId: string): boolean {
     return false;
   }
 
-  const index = getOwaspIndex();
-  return index.has(owaspId);
+  return owaspIndex.has(owaspId);
 }
 
 /**
@@ -139,7 +112,7 @@ export function owaspExists(owaspId: string): boolean {
  * ```
  */
 export function getAllOwaspMappings(): OwaspNistMappings {
-  return loadOwaspData();
+  return owaspData;
 }
 
 // Re-export types

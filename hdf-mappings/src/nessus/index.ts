@@ -2,23 +2,10 @@
  * Query functions for Nessus to NIST mappings
  */
 
-import { readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { NessusNistMappings } from './types.js';
+import rawMappings from '../data/nessus-nist-mappings.json' with { type: 'json' };
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-let mappings: NessusNistMappings | null = null;
-
-function loadMappings(): void {
-  if (mappings === null) {
-    const dataPath = join(__dirname, '../data/nessus-nist-mappings.json');
-    const data = readFileSync(dataPath, 'utf-8');
-    mappings = JSON.parse(data) as NessusNistMappings;
-  }
-}
+const mappings = rawMappings as NessusNistMappings;
 
 /**
  * Get the NIST control ID for a Nessus plugin family and plugin ID
@@ -30,10 +17,8 @@ export function getNessusNistControl(
   pluginFamily: string,
   pluginId = '*'
 ): string | undefined {
-  loadMappings();
-
   // First try exact match with plugin ID
-  const exactMatch = mappings!.find(
+  const exactMatch = mappings.find(
     (m) => m.pluginFamily === pluginFamily && m.pluginID === pluginId
   );
   if (exactMatch) {
@@ -41,7 +26,7 @@ export function getNessusNistControl(
   }
 
   // Fall back to wildcard match
-  const wildcardMatch = mappings!.find(
+  const wildcardMatch = mappings.find(
     (m) => m.pluginFamily === pluginFamily && m.pluginID === '*'
   );
   return wildcardMatch?.['NIST-ID'];
@@ -55,8 +40,7 @@ export function getNessusNistControl(
 export function getNessusPluginFamilyMappings(
   pluginFamily: string
 ): NessusNistMappings {
-  loadMappings();
-  return mappings!.filter((m) => m.pluginFamily === pluginFamily);
+  return mappings.filter((m) => m.pluginFamily === pluginFamily);
 }
 
 /**
@@ -64,8 +48,7 @@ export function getNessusPluginFamilyMappings(
  * @returns Array of all plugin families
  */
 export function getAllNessusPluginFamilies(): string[] {
-  loadMappings();
-  const families = new Set(mappings!.map((m) => m.pluginFamily));
+  const families = new Set(mappings.map((m) => m.pluginFamily));
   return Array.from(families);
 }
 
@@ -75,8 +58,7 @@ export function getAllNessusPluginFamilies(): string[] {
  * @returns True if the plugin family exists
  */
 export function nessusPluginFamilyExists(pluginFamily: string): boolean {
-  loadMappings();
-  return mappings!.some((m) => m.pluginFamily === pluginFamily);
+  return mappings.some((m) => m.pluginFamily === pluginFamily);
 }
 
 /**
@@ -84,6 +66,5 @@ export function nessusPluginFamilyExists(pluginFamily: string): boolean {
  * @returns Array of all mappings
  */
 export function getAllNessusMappings(): NessusNistMappings {
-  loadMappings();
-  return [...mappings!];
+  return [...mappings];
 }

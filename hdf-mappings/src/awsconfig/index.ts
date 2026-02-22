@@ -2,33 +2,16 @@
  * Query functions for AWS Config to NIST mappings
  */
 
-import { readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { AwsConfigNistMapping, AwsConfigNistMappings } from './types.js';
+import rawMappings from '../data/awsconfig-mappings.json' with { type: 'json' };
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-let mappings: AwsConfigNistMappings | null = null;
-let indexByIdentifier: Map<string, AwsConfigNistMapping> | null = null;
-let indexByRuleName: Map<string, AwsConfigNistMapping> | null = null;
-
-function loadMappings(): void {
-  if (mappings === null) {
-    const dataPath = join(__dirname, '../data/awsconfig-mappings.json');
-    const data = readFileSync(dataPath, 'utf-8');
-    mappings = JSON.parse(data) as AwsConfigNistMappings;
-
-    // Build indexes for fast lookups
-    indexByIdentifier = new Map();
-    indexByRuleName = new Map();
-    for (const mapping of mappings) {
-      indexByIdentifier.set(mapping.AwsConfigRuleSourceIdentifier, mapping);
-      indexByRuleName.set(mapping.AwsConfigRuleName, mapping);
-    }
-  }
-}
+const mappings = rawMappings as AwsConfigNistMappings;
+const indexByIdentifier = new Map<string, AwsConfigNistMapping>(
+  mappings.map(m => [m.AwsConfigRuleSourceIdentifier, m])
+);
+const indexByRuleName = new Map<string, AwsConfigNistMapping>(
+  mappings.map(m => [m.AwsConfigRuleName, m])
+);
 
 /**
  * Get the full mapping for an AWS Config rule by source identifier
@@ -38,8 +21,7 @@ function loadMappings(): void {
 export function getAwsConfigNistMappingByIdentifier(
   identifier: string
 ): AwsConfigNistMapping | undefined {
-  loadMappings();
-  return indexByIdentifier!.get(identifier);
+  return indexByIdentifier.get(identifier);
 }
 
 /**
@@ -50,8 +32,7 @@ export function getAwsConfigNistMappingByIdentifier(
 export function getAwsConfigNistMappingByName(
   ruleName: string
 ): AwsConfigNistMapping | undefined {
-  loadMappings();
-  return indexByRuleName!.get(ruleName);
+  return indexByRuleName.get(ruleName);
 }
 
 /**
@@ -79,8 +60,7 @@ export function getAwsConfigNistControlByName(ruleName: string): string | undefi
  * @returns Array of all rule source identifiers
  */
 export function getAllAwsConfigIdentifiers(): string[] {
-  loadMappings();
-  return Array.from(indexByIdentifier!.keys());
+  return Array.from(indexByIdentifier.keys());
 }
 
 /**
@@ -88,8 +68,7 @@ export function getAllAwsConfigIdentifiers(): string[] {
  * @returns Array of all rule names
  */
 export function getAllAwsConfigRuleNames(): string[] {
-  loadMappings();
-  return Array.from(indexByRuleName!.keys());
+  return Array.from(indexByRuleName.keys());
 }
 
 /**
@@ -98,8 +77,7 @@ export function getAllAwsConfigRuleNames(): string[] {
  * @returns True if the rule exists
  */
 export function awsConfigIdentifierExists(identifier: string): boolean {
-  loadMappings();
-  return indexByIdentifier!.has(identifier);
+  return indexByIdentifier.has(identifier);
 }
 
 /**
@@ -108,8 +86,7 @@ export function awsConfigIdentifierExists(identifier: string): boolean {
  * @returns True if the rule exists
  */
 export function awsConfigRuleNameExists(ruleName: string): boolean {
-  loadMappings();
-  return indexByRuleName!.has(ruleName);
+  return indexByRuleName.has(ruleName);
 }
 
 /**
@@ -117,6 +94,5 @@ export function awsConfigRuleNameExists(ruleName: string): boolean {
  * @returns Array of all mappings
  */
 export function getAllAwsConfigMappings(): AwsConfigNistMappings {
-  loadMappings();
-  return [...mappings!];
+  return [...mappings];
 }

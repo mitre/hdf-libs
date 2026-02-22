@@ -2,25 +2,12 @@
  * CCI (Control Correlation Identifier) mapping functions
  */
 
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import type { CCIMappings, NistCCIMappings } from './types.js';
+import rawCCIData from '../data/cci-mappings.json' with { type: 'json' };
+import rawNistCCIData from '../data/nist-cci-mappings.json' with { type: 'json' };
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Lazy-load CCI data
-let cciData: CCIMappings | null = null;
-
-function loadCCIData(): CCIMappings {
-  if (cciData === null) {
-    const dataPath = join(__dirname, '..', 'data', 'cci-mappings.json');
-    const content = readFileSync(dataPath, 'utf-8');
-    cciData = JSON.parse(content) as CCIMappings;
-  }
-  return cciData;
-}
+const cciData = rawCCIData as CCIMappings;
+const nistCCIData = rawNistCCIData as NistCCIMappings;
 
 /**
  * Get the definition/description for a CCI ID.
@@ -39,8 +26,7 @@ export function getCCIDescription(cciId: string): string | undefined {
     return undefined;
   }
 
-  const data = loadCCIData();
-  const item = data[cciId];
+  const item = cciData[cciId];
   return item?.def;
 }
 
@@ -61,8 +47,7 @@ export function getCCINistMappings(cciId: string): string[] | undefined {
     return undefined;
   }
 
-  const data = loadCCIData();
-  const item = data[cciId];
+  const item = cciData[cciId];
   return item?.nist;
 }
 
@@ -78,8 +63,7 @@ export function getCCINistMappings(cciId: string): string[] | undefined {
  * ```
  */
 export function getAllCCIIds(): string[] {
-  const data = loadCCIData();
-  return Object.keys(data);
+  return Object.keys(cciData);
 }
 
 /**
@@ -100,20 +84,7 @@ export function cciExists(cciId: string): boolean {
     return false;
   }
 
-  const data = loadCCIData();
-  return cciId in data;
-}
-
-// Lazy-load NIST → CCI curated mapping data
-let nistCCIData: NistCCIMappings | null = null;
-
-function loadNistCCIData(): NistCCIMappings {
-  if (nistCCIData === null) {
-    const dataPath = join(__dirname, '..', 'data', 'nist-cci-mappings.json');
-    const content = readFileSync(dataPath, 'utf-8');
-    nistCCIData = JSON.parse(content) as NistCCIMappings;
-  }
-  return nistCCIData;
+  return cciId in cciData;
 }
 
 /**
@@ -143,8 +114,7 @@ export function getNistCCIMappings(nistControl: string): string[] | undefined {
     return undefined;
   }
   const base = baseNistControl(nistControl);
-  const data = loadNistCCIData();
-  return data[base];
+  return nistCCIData[base];
 }
 
 /**
