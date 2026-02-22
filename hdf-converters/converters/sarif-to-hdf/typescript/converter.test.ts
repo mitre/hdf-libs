@@ -932,6 +932,108 @@ describe('SARIF Converter', () => {
     });
   });
 
+  // --- Multi-tool fixture tests (DefectDojo-sourced, schema-validated) ---
+
+  describe('CodeQL fixture integration', () => {
+    it('should convert codeQL-output.sarif with grouping, codeFlows, and fingerprints', () => {
+      const input = loadFixture('input', 'codeQL-output.sarif');
+      const result = JSON.parse(convertSarifToHdf(input));
+
+      const baseline = result.baselines[0];
+      expect(baseline.name).toBe('CodeQL');
+      expect(baseline.version).toBe('2.1.0');
+      expect(baseline.requirements).toHaveLength(13);
+
+      // py/sql-injection — has codeFlows
+      const sqlInj = baseline.requirements.find((r: any) => r.id === 'py/sql-injection');
+      expect(sqlInj).toBeDefined();
+      expect(sqlInj.results).toHaveLength(2);
+      expect(sqlInj.results[0].backtrace.length).toBeGreaterThan(0);
+      expect(sqlInj.impact).toBe(0.7); // defaultConfiguration.level = "error"
+
+      // Fingerprints from CodeQL
+      expect(sqlInj.tags.fingerprints).toBeDefined();
+      expect(sqlInj.tags.fingerprints.partialFingerprints).toBeDefined();
+
+      // py/unused-import — heaviest grouping: 40 results
+      const unusedImport = baseline.requirements.find((r: any) => r.id === 'py/unused-import');
+      expect(unusedImport).toBeDefined();
+      expect(unusedImport.results).toHaveLength(40);
+    });
+  });
+
+  describe('Gitleaks fixture integration', () => {
+    it('should handle results with no ruleId (all grouped under empty string)', () => {
+      const input = loadFixture('input', 'gitleaks_7.5.0.sarif');
+      const result = JSON.parse(convertSarifToHdf(input));
+
+      const baseline = result.baselines[0];
+      expect(baseline.name).toBe('Gitleaks');
+
+      // Known edge case (bead hdf-asy): all results have no ruleId,
+      // so they all group under a single requirement with undefined id
+      expect(baseline.requirements).toHaveLength(1);
+      expect(baseline.requirements[0].id).toBeUndefined();
+      expect(baseline.requirements[0].results).toHaveLength(8);
+
+      // Results should have location info with snippets
+      for (const r of baseline.requirements[0].results) {
+        expect(r.codeDesc).toContain('URL :');
+        expect(r.codeDesc).toContain('LINE :');
+      }
+    });
+  });
+
+  describe('SpotBugs fixture integration', () => {
+    it('should convert spotbugs.sarif with all note-level rules', () => {
+      const input = loadFixture('input', 'spotbugs.sarif');
+      const result = JSON.parse(convertSarifToHdf(input));
+
+      const baseline = result.baselines[0];
+      expect(baseline.name).toBe('SpotBugs');
+      expect(baseline.requirements).toHaveLength(9);
+
+      // All SpotBugs results are note level → 0.3 impact
+      for (const req of baseline.requirements) {
+        expect(req.impact).toBe(0.3);
+        expect(req.tags.severity).toBe('note');
+      }
+
+      // NM_METHOD_NAMING_CONVENTION — 33 results
+      const nmMethod = baseline.requirements.find((r: any) => r.id === 'NM_METHOD_NAMING_CONVENTION');
+      expect(nmMethod).toBeDefined();
+      expect(nmMethod.results).toHaveLength(33);
+      expect(nmMethod.tags.helpUri).toBeDefined();
+    });
+  });
+
+  describe('Dockle fixture integration', () => {
+    it('should handle results with no locations (0 RequirementResults)', () => {
+      const input = loadFixture('input', 'dockle_0_3_15.sarif');
+      const result = JSON.parse(convertSarifToHdf(input));
+
+      const baseline = result.baselines[0];
+      expect(baseline.name).toBe('Dockle');
+      expect(baseline.requirements).toHaveLength(4);
+
+      // Known edge case (bead hdf-79h): no locations → 0 results per requirement
+      for (const req of baseline.requirements) {
+        expect(req.results).toHaveLength(0);
+      }
+
+      // CIS-DI-0010 is error, others are note
+      const cis0010 = baseline.requirements.find((r: any) => r.id === 'CIS-DI-0010');
+      expect(cis0010.impact).toBe(0.7);
+      const cis0005 = baseline.requirements.find((r: any) => r.id === 'CIS-DI-0005');
+      expect(cis0005.impact).toBe(0.3);
+
+      // Dockle rules have help → check description
+      const check = cis0010.descriptions.find((d: any) => d.label === 'check');
+      expect(check).toBeDefined();
+      expect(check.data).toContain('CHECKPOINT');
+    });
+  });
+
   describe('Gosec fixture integration', () => {
     it('should convert gosec.sarif with CWE taxonomy', () => {
       const input = loadFixture('input', 'gosec.sarif');
