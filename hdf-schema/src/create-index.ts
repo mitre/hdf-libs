@@ -55,9 +55,10 @@ export function createIndex(): void {
 // Re-export all types from hdf-results (includes most common types)
 export * from './ts/hdf-results.js';
 
-// Re-export types from hdf-baseline (export type for interface-only names)
+// Re-export baseline-only types (interfaces not in hdf-results).
+// No export * from hdf-baseline — its enums (HashAlgorithm, Severity) duplicate
+// hdf-results and cause ambiguous-export collisions.
 export type { HdfBaseline, BaselineRequirement } from './ts/hdf-baseline.js';
-export * from './ts/hdf-baseline.js';
 
 // Re-export helper functions
 export * from './helpers.js';
