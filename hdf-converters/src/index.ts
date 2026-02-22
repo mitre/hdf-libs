@@ -14,3 +14,6 @@ export {
 
 // SARIF to HDF converter
 export { convertSarifToHdf } from '../converters/sarif-to-hdf/typescript/index.js';
+
+// JUnit XML to HDF converter
+export { convertJunitToHdf } from '../converters/junit-to-hdf/typescript/index.js';
