@@ -7,13 +7,13 @@ import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-describe('SonarQube to HDF Converter', () => {
-  describe('convertSonarqubeToHdf', () => {
-    it('should convert minimal SonarQube issues to HDF', () => {
+describe('SonarQube to HDF Converter', async () => {
+  describe('convertSonarqubeToHdf', async () => {
+    it('should convert minimal SonarQube issues to HDF', async () => {
       const inputPath = join(__dirname, '../fixtures/input/minimal.json');
       const input = readFileSync(inputPath, 'utf-8');
 
-      const result = convertSonarqubeToHdf(input);
+      const result = await convertSonarqubeToHdf(input);
       expect(result).toBeTruthy();
 
       const hdf: HdfResults = JSON.parse(result);
@@ -30,11 +30,11 @@ describe('SonarQube to HDF Converter', () => {
       expect(hdf.dataSource?.format).toBeUndefined();
     });
 
-    it('should create baselines per project', () => {
+    it('should create baselines per project', async () => {
       const inputPath = join(__dirname, '../fixtures/input/minimal.json');
       const input = readFileSync(inputPath, 'utf-8');
 
-      const result = convertSonarqubeToHdf(input);
+      const result = await convertSonarqubeToHdf(input);
       const hdf: HdfResults = JSON.parse(result);
 
       // Minimal fixture has 1 project
@@ -45,11 +45,11 @@ describe('SonarQube to HDF Converter', () => {
       expect(baseline.requirements).toBeInstanceOf(Array);
     });
 
-    it('should create requirements per rule', () => {
+    it('should create requirements per rule', async () => {
       const inputPath = join(__dirname, '../fixtures/input/minimal.json');
       const input = readFileSync(inputPath, 'utf-8');
 
-      const result = convertSonarqubeToHdf(input);
+      const result = await convertSonarqubeToHdf(input);
       const hdf: HdfResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
@@ -62,11 +62,11 @@ describe('SonarQube to HDF Converter', () => {
       expect(ruleIds).toEqual(['java:S1144', 'java:S2259']);
     });
 
-    it('should map severity to impact correctly', () => {
+    it('should map severity to impact correctly', async () => {
       const inputPath = join(__dirname, '../fixtures/input/minimal.json');
       const input = readFileSync(inputPath, 'utf-8');
 
-      const result = convertSonarqubeToHdf(input);
+      const result = await convertSonarqubeToHdf(input);
       const hdf: HdfResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
@@ -82,11 +82,11 @@ describe('SonarQube to HDF Converter', () => {
       expect(majorRule!.impact).toBe(0.7); // MAJOR = 0.7
     });
 
-    it('should extract CWE tags from issues and rules', () => {
+    it('should extract CWE tags from issues and rules', async () => {
       const inputPath = join(__dirname, '../fixtures/input/minimal.json');
       const input = readFileSync(inputPath, 'utf-8');
 
-      const result = convertSonarqubeToHdf(input);
+      const result = await convertSonarqubeToHdf(input);
       const hdf: HdfResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
@@ -97,11 +97,11 @@ describe('SonarQube to HDF Converter', () => {
       expect(ruleWithCwe!.tags.cwe).toContain('CWE-476');
     });
 
-    it('should map CWE to NIST controls', () => {
+    it('should map CWE to NIST controls', async () => {
       const inputPath = join(__dirname, '../fixtures/input/minimal.json');
       const input = readFileSync(inputPath, 'utf-8');
 
-      const result = convertSonarqubeToHdf(input);
+      const result = await convertSonarqubeToHdf(input);
       const hdf: HdfResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
@@ -118,11 +118,11 @@ describe('SonarQube to HDF Converter', () => {
       }
     });
 
-    it('should create results for each issue', () => {
+    it('should create results for each issue', async () => {
       const inputPath = join(__dirname, '../fixtures/input/minimal.json');
       const input = readFileSync(inputPath, 'utf-8');
 
-      const result = convertSonarqubeToHdf(input);
+      const result = await convertSonarqubeToHdf(input);
       const hdf: HdfResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
@@ -140,11 +140,11 @@ describe('SonarQube to HDF Converter', () => {
       }
     });
 
-    it('should include component path in code description', () => {
+    it('should include component path in code description', async () => {
       const inputPath = join(__dirname, '../fixtures/input/minimal.json');
       const input = readFileSync(inputPath, 'utf-8');
 
-      const result = convertSonarqubeToHdf(input);
+      const result = await convertSonarqubeToHdf(input);
       const hdf: HdfResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
@@ -157,11 +157,11 @@ describe('SonarQube to HDF Converter', () => {
       expect(result0.codeDesc).toMatch(/LINE : \d+/);
     });
 
-    it('should include source location for issues with line numbers', () => {
+    it('should include source location for issues with line numbers', async () => {
       const inputPath = join(__dirname, '../fixtures/input/minimal.json');
       const input = readFileSync(inputPath, 'utf-8');
 
-      const result = convertSonarqubeToHdf(input);
+      const result = await convertSonarqubeToHdf(input);
       const hdf: HdfResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
@@ -173,19 +173,15 @@ describe('SonarQube to HDF Converter', () => {
       expect(reqWithLocation!.sourceLocation?.line).toBeGreaterThan(0);
     });
 
-    it('should throw error for invalid JSON', () => {
-      expect(() => {
-        convertSonarqubeToHdf('not valid json');
-      }).toThrow();
+    it('should throw error for invalid JSON', async () => {
+      await expect(convertSonarqubeToHdf('not valid json')).rejects.toThrow();
     });
 
-    it('should throw error for missing issues field', () => {
-      expect(() => {
-        convertSonarqubeToHdf('{"total": 0}');
-      }).toThrow('Invalid SonarQube structure: missing or invalid issues field');
+    it('should throw error for missing issues field', async () => {
+      await expect(convertSonarqubeToHdf('{"total": 0}')).rejects.toThrow('Invalid SonarQube structure: missing or invalid issues field');
     });
 
-    it('should handle empty issues array', () => {
+    it('should handle empty issues array', async () => {
       const input = JSON.stringify({
         total: 0,
         p: 1,
@@ -196,13 +192,13 @@ describe('SonarQube to HDF Converter', () => {
         rules: [],
       });
 
-      const result = convertSonarqubeToHdf(input);
+      const result = await convertSonarqubeToHdf(input);
       const hdf: HdfResults = JSON.parse(result);
 
       expect(hdf.baselines).toEqual([]);
     });
 
-    it('should set default NIST tags for non-security issues', () => {
+    it('should set default NIST tags for non-security issues', async () => {
       const input = JSON.stringify({
         total: 1,
         p: 1,
@@ -226,7 +222,7 @@ describe('SonarQube to HDF Converter', () => {
         rules: [],
       });
 
-      const result = convertSonarqubeToHdf(input);
+      const result = await convertSonarqubeToHdf(input);
       const hdf: HdfResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
@@ -236,7 +232,7 @@ describe('SonarQube to HDF Converter', () => {
       expect(requirement.tags.nist).toEqual(['SA-11']);
     });
 
-    it('should set security NIST tags for vulnerability issues', () => {
+    it('should set security NIST tags for vulnerability issues', async () => {
       const input = JSON.stringify({
         total: 1,
         p: 1,
@@ -260,7 +256,7 @@ describe('SonarQube to HDF Converter', () => {
         rules: [],
       });
 
-      const result = convertSonarqubeToHdf(input);
+      const result = await convertSonarqubeToHdf(input);
       const hdf: HdfResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;

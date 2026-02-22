@@ -6,7 +6,7 @@ import { convertNessusToHdf } from './index.js';
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
 // Helper to find a requirement across all baselines
-function findReqAcrossBaselines(result: ReturnType<typeof convertNessusToHdf>, id: string) {
+function findReqAcrossBaselines(result: Awaited<ReturnType<typeof convertNessusToHdf>>, id: string) {
   for (const baseline of result.baselines) {
     const req = baseline.requirements.find(r => r.id === id);
     if (req) return req;
@@ -14,15 +14,15 @@ function findReqAcrossBaselines(result: ReturnType<typeof convertNessusToHdf>, i
   return undefined;
 }
 
-describe('Nessus to HDF Converter', () => {
-  describe('convertNessusToHdf', () => {
-    it('should convert real Nessus scan to HDF format', () => {
+describe('Nessus to HDF Converter', async () => {
+  describe('convertNessusToHdf', async () => {
+    it('should convert real Nessus scan to HDF format', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
 
       // Should return valid HDF Results
       expect(result).toBeDefined();
@@ -34,13 +34,13 @@ describe('Nessus to HDF Converter', () => {
       expect(result.dataSource?.format).toBeUndefined();
     });
 
-    it('should create one baseline per report with correct metadata', () => {
+    it('should create one baseline per report with correct metadata', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
 
       expect(result.baselines).toHaveLength(3); // one per scanned host
       const baseline = result.baselines[0];
@@ -50,26 +50,26 @@ describe('Nessus to HDF Converter', () => {
       expect(baseline.status).toBe('loaded');
     });
 
-    it('should convert ReportItems to requirements', () => {
+    it('should convert ReportItems to requirements', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
 
       // Real scan has many requirements across 3 baselines (one per host)
       const totalReqs = result.baselines.reduce((sum, b) => sum + b.requirements.length, 0);
       expect(totalReqs).toBeGreaterThan(10);
     });
 
-    it('should map Nessus fields to HDF requirement fields correctly', () => {
+    it('should map Nessus fields to HDF requirement fields correctly', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       // Find SSL Certificate Cannot Be Trusted (plugin 51192, severity 2)
       const req = findReqAcrossBaselines(result, '51192');
       expect(req).toBeDefined();
@@ -92,13 +92,13 @@ describe('Nessus to HDF Converter', () => {
       expect(fixDesc?.data).toContain('proper SSL certificate');
     });
 
-    it('should map Nessus severity to HDF impact', () => {
+    it('should map Nessus severity to HDF impact', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
 
       // Severity 2 (Medium) should map to 0.5
       const req2 = findReqAcrossBaselines(result, '51192');
@@ -109,13 +109,13 @@ describe('Nessus to HDF Converter', () => {
       expect(req3?.impact).toBe(0.7);
     });
 
-    it('should map Nessus plugin family to NIST tags using hdf-mappings', () => {
+    it('should map Nessus plugin family to NIST tags using hdf-mappings', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       const req = findReqAcrossBaselines(result, '51192');
 
       // Should have tags object with nist array
@@ -124,13 +124,13 @@ describe('Nessus to HDF Converter', () => {
       expect(Array.isArray(req?.tags.nist)).toBe(true);
     });
 
-    it('should include additional Nessus tags in requirement tags', () => {
+    it('should include additional Nessus tags in requirement tags', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       // Use plugin 51192 (SSL Certificate Cannot Be Trusted)
       const req = findReqAcrossBaselines(result, '51192');
 
@@ -142,13 +142,13 @@ describe('Nessus to HDF Converter', () => {
       expect(req?.tags.cvss_base_score).toBe('6.4');
     });
 
-    it('should map see_also to refs array', () => {
+    it('should map see_also to refs array', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       // Use plugin 51192 which has see_also URLs
       const req = findReqAcrossBaselines(result, '51192');
 
@@ -159,13 +159,13 @@ describe('Nessus to HDF Converter', () => {
       expect(refUrls).toContain('X.509');
     });
 
-    it('should create requirement results with proper status mapping', () => {
+    it('should create requirement results with proper status mapping', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       // Use plugin 51192 (medium severity, non-compliance)
       const req = findReqAcrossBaselines(result, '51192');
 
@@ -190,13 +190,13 @@ describe('Nessus to HDF Converter', () => {
       expect(testResult.startTime).toBeDefined();
     });
 
-    it('should include code as JSON stringified ReportItem', () => {
+    it('should include code as JSON stringified ReportItem', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       const req = findReqAcrossBaselines(result, '51192');
 
       expect(req?.code).toBeDefined();
@@ -208,13 +208,13 @@ describe('Nessus to HDF Converter', () => {
       expect(parsedCode.pluginName).toBe('SSL Certificate Cannot Be Trusted');
     });
 
-    it('should create targets from ReportHosts', () => {
+    it('should create targets from ReportHosts', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
 
       expect(result.targets).toBeDefined();
       expect(result.targets?.length).toBe(3);
@@ -226,38 +226,38 @@ describe('Nessus to HDF Converter', () => {
       expect(target?.attributes?.['host-ip']).toBe('10.0.0.3');
     });
 
-    it('should set generator metadata', () => {
+    it('should set generator metadata', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
 
       expect(result.generator).toBeDefined();
       expect(result.generator?.name).toBe('hdf-converters');
       expect(result.generator?.version).toBeDefined();
     });
 
-    it('should calculate statistics', () => {
+    it('should calculate statistics', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
 
       expect(result.statistics).toBeDefined();
       expect(result.statistics.duration).toBeGreaterThan(0);
     });
 
-    it('should filter out empty refs', () => {
+    it('should filter out empty refs', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
 
       // All refs should have url defined across all baselines
       for (const baseline of result.baselines) {
@@ -271,66 +271,66 @@ describe('Nessus to HDF Converter', () => {
     });
   });
 
-  describe('Compliance Scan Conversion', () => {
-    it('should convert compliance scan to HDF format', () => {
+  describe('Compliance Scan Conversion', async () => {
+    it('should convert compliance scan to HDF format', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
 
       expect(result).toBeDefined();
       expect(result.baselines).toBeDefined();
       expect(result.baselines).toHaveLength(1);
     });
 
-    it('should extract ID from compliance-reference Vuln-ID field', () => {
+    it('should extract ID from compliance-reference Vuln-ID field', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       const req = result.baselines[0].requirements[0];
 
       // Should extract Vuln-ID from compliance-reference
       expect(req.id).toBe('V-71849');
     });
 
-    it('should use compliance-check-name for title', () => {
+    it('should use compliance-check-name for title', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       const req = result.baselines[0].requirements[0];
 
       expect(req.title).toContain('RHEL-07-010010');
       expect(req.title).toContain('Standard Mandatory DoD Notice');
     });
 
-    it('should use compliance-info for default description', () => {
+    it('should use compliance-info for default description', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       const req = result.baselines[0].requirements[0];
 
       const defaultDesc = req.descriptions.find(d => d.label === 'default');
       expect(defaultDesc?.data).toContain('standardized and approved use notification');
     });
 
-    it('should use compliance-solution for fix description', () => {
+    it('should use compliance-solution for fix description', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       const req = result.baselines[0].requirements[0];
 
       const fixDesc = req.descriptions.find(d => d.label === 'fix');
@@ -338,13 +338,13 @@ describe('Nessus to HDF Converter', () => {
       expect(fixDesc?.data).toContain('dconf');
     });
 
-    it('should map CAT levels to impact scores', () => {
+    it('should map CAT levels to impact scores', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
 
       // CAT I (High) = 0.7
       const catI = result.baselines[0].requirements.find(r => r.id === 'V-71971');
@@ -359,26 +359,26 @@ describe('Nessus to HDF Converter', () => {
       expect(catIII?.impact).toBe(0.3);
     });
 
-    it('should extract CCI from compliance-reference', () => {
+    it('should extract CCI from compliance-reference', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       const req = result.baselines[0].requirements[0];
 
       expect(req.tags.cci).toBeDefined();
       expect(req.tags.cci).toContain('CCI-000366');
     });
 
-    it('should map CCI to NIST controls using hdf-mappings', () => {
+    it('should map CCI to NIST controls using hdf-mappings', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       const req = result.baselines[0].requirements[0];
 
       // CCI-000366 should map to NIST controls
@@ -389,13 +389,13 @@ describe('Nessus to HDF Converter', () => {
       expect(req.tags.nist).toContain('CM-6 b');
     });
 
-    it('should deduplicate NIST controls when mapping from CCI', () => {
+    it('should deduplicate NIST controls when mapping from CCI', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       const req = result.baselines[0].requirements[0];
 
       // Verify no duplicates exist
@@ -404,37 +404,37 @@ describe('Nessus to HDF Converter', () => {
       expect(nistTags.length).toBe(uniqueNist.length);
     });
 
-    it('should extract STIG ID from compliance-reference', () => {
+    it('should extract STIG ID from compliance-reference', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       const req = result.baselines[0].requirements[0];
 
       expect(req.tags.stig_id).toBe('RHEL-07-010010');
     });
 
-    it('should extract Rule-ID as rid from compliance-reference', () => {
+    it('should extract Rule-ID as rid from compliance-reference', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       const req = result.baselines[0].requirements[0];
 
       expect(req.tags.rid).toBe('SV-86473r2_rule');
     });
 
-    it('should map compliance-result to HDF status', () => {
+    it('should map compliance-result to HDF status', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
 
       // PASSED -> passed
       const passed = result.baselines[0].requirements.find(r => r.id === 'V-72083');
@@ -453,21 +453,21 @@ describe('Nessus to HDF Converter', () => {
       expect(error?.results[0].status).toBe('error');
     });
 
-    it('should use compliance-actual-value for result message', () => {
+    it('should use compliance-actual-value for result message', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'compliance.nessus'),
         'utf-8'
       );
 
-      const result = convertNessusToHdf(nessusXml);
+      const result = await convertNessusToHdf(nessusXml);
       const req = result.baselines[0].requirements[0];
 
       expect(req.results[0].message).toContain('banner-message-enable : not set');
     });
   });
 
-  describe('Edge Cases', () => {
-    it('should handle missing optional fields gracefully', () => {
+  describe('Edge Cases', async () => {
+    it('should handle missing optional fields gracefully', async () => {
       const minimalXml = `<?xml version="1.0"?>
 <NessusClientData_v2>
   <Policy><policyName>Test</policyName></Policy>
@@ -483,12 +483,12 @@ describe('Nessus to HDF Converter', () => {
   </Report>
 </NessusClientData_v2>`;
 
-      const result = convertNessusToHdf(minimalXml);
+      const result = await convertNessusToHdf(minimalXml);
       expect(result).toBeDefined();
       expect(result.baselines[0].version).toBeUndefined();
     });
 
-    it('should handle ReportHost without HostProperties', () => {
+    it('should handle ReportHost without HostProperties', async () => {
       const xml = `<?xml version="1.0"?>
 <NessusClientData_v2>
   <Policy><policyName>Test</policyName></Policy>
@@ -501,11 +501,11 @@ describe('Nessus to HDF Converter', () => {
   </Report>
 </NessusClientData_v2>`;
 
-      const result = convertNessusToHdf(xml);
+      const result = await convertNessusToHdf(xml);
       expect(result.targets).toBeDefined();
     });
 
-    it('should handle ReportHost without ReportItems', () => {
+    it('should handle ReportHost without ReportItems', async () => {
       const xml = `<?xml version="1.0"?>
 <NessusClientData_v2>
   <Policy><policyName>Test</policyName></Policy>
@@ -518,11 +518,11 @@ describe('Nessus to HDF Converter', () => {
   </Report>
 </NessusClientData_v2>`;
 
-      const result = convertNessusToHdf(xml);
+      const result = await convertNessusToHdf(xml);
       expect(result.baselines[0].requirements).toHaveLength(0);
     });
 
-    it('should handle ReportItem without see_also', () => {
+    it('should handle ReportItem without see_also', async () => {
       const xml = `<?xml version="1.0"?>
 <NessusClientData_v2>
   <Policy><policyName>Test</policyName></Policy>
@@ -538,12 +538,12 @@ describe('Nessus to HDF Converter', () => {
   </Report>
 </NessusClientData_v2>`;
 
-      const result = convertNessusToHdf(xml);
+      const result = await convertNessusToHdf(xml);
       const req = result.baselines[0].requirements[0];
       expect(req.refs).toBeUndefined();
     });
 
-    it('should handle compliance item without solution', () => {
+    it('should handle compliance item without solution', async () => {
       const xml = `<?xml version="1.0"?>
 <NessusClientData_v2>
   <Policy><policyName>Test</policyName></Policy>
@@ -563,12 +563,12 @@ describe('Nessus to HDF Converter', () => {
   </Report>
 </NessusClientData_v2>`;
 
-      const result = convertNessusToHdf(xml);
+      const result = await convertNessusToHdf(xml);
       const fixDesc = result.baselines[0].requirements[0].descriptions.find(d => d.label === 'fix');
       expect(fixDesc).toBeUndefined();
     });
 
-    it('should handle compliance result without actual value', () => {
+    it('should handle compliance result without actual value', async () => {
       const xml = `<?xml version="1.0"?>
 <NessusClientData_v2>
   <Policy><policyName>Test</policyName></Policy>
@@ -588,7 +588,7 @@ describe('Nessus to HDF Converter', () => {
   </Report>
 </NessusClientData_v2>`;
 
-      const result = convertNessusToHdf(xml);
+      const result = await convertNessusToHdf(xml);
       expect(result.baselines[0].requirements[0].results[0].message).toBeUndefined();
     });
   });

@@ -1,4 +1,3 @@
-import {createHash} from 'crypto';
 import {
   type Checksum,
   createMinimalBaseline,
@@ -11,7 +10,7 @@ import {
   ResultStatus,
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
-import {parseJSON} from '@mitre/hdf-utilities';
+import {parseJSON, sha256} from '@mitre/hdf-utilities';
 
 // Input types for Anchore Grype JSON
 
@@ -315,11 +314,11 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
   return requirement;
 }
 
-export function convertAnchoreGrypeToHdf(input: string): string {
+export async function convertAnchoreGrypeToHdf(input: string): Promise<string> {
   // Calculate checksum of input data
   const resultsChecksum: Checksum = {
     algorithm: HashAlgorithm.Sha256,
-    value: createHash('sha256').update(input).digest('hex'),
+    value: await sha256(input),
   };
 
   // Parse Grype JSON

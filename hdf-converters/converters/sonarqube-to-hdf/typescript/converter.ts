@@ -1,5 +1,4 @@
-import { createHash } from 'crypto';
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, sha256 } from '@mitre/hdf-utilities';
 import {
   getCweNistControl,
   nistToCci,
@@ -126,11 +125,11 @@ const DEFAULT_NIST_TAGS = ['SA-11'];
  * @param input - JSON string from SonarQube /api/issues/search endpoint
  * @returns HDF JSON string
  */
-export function convertSonarqubeToHdf(input: string): string {
+export async function convertSonarqubeToHdf(input: string): Promise<string> {
   // Calculate checksum of source scan data
   const resultsChecksum: Checksum = {
     algorithm: HashAlgorithm.Sha256,
-    value: createHash('sha256').update(input).digest('hex'),
+    value: await sha256(input),
   };
 
   // Parse SonarQube JSON
