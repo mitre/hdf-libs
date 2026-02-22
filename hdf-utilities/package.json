@@ -9,6 +9,22 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./json": {
+      "import": "./dist/json/index.js",
+      "types": "./dist/json/index.d.ts"
+    },
+    "./hash": {
+      "import": "./dist/hash/index.js",
+      "types": "./dist/hash/index.d.ts"
+    },
+    "./xml": {
+      "import": "./dist/xml/index.js",
+      "types": "./dist/xml/index.d.ts"
+    },
+    "./csv": {
+      "import": "./dist/csv/index.js",
+      "types": "./dist/csv/index.d.ts"
     }
   },
   "files": [
