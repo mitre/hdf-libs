@@ -178,3 +178,57 @@ export function impactToSeverity(impact) {
   if (impact > 0.0) return 'low';
   return 'informational';
 }
+
+/**
+ * Compute the effective status of a requirement from its results and impact.
+ *
+ * When effectiveStatus is already set on the requirement, returns it directly.
+ * Otherwise derives status using standard HDF/InSpec precedence:
+ *   1. effectiveStatus already set → return it
+ *   2. impact === 0 → notApplicable
+ *   3. No results → notReviewed
+ *   4. Any "error" result → error
+ *   5. Any "failed" result → failed
+ *   6. All "passed" → passed
+ *   7. Otherwise → notReviewed
+ *
+ * @param {import('../dist/ts/hdf-results.js').EvaluatedRequirement} requirement
+ * @returns {import('../dist/ts/hdf-results.js').ResultStatus}
+ */
+export function computeEffectiveStatus(requirement) {
+  if (requirement.effectiveStatus) {
+    return requirement.effectiveStatus;
+  }
+
+  if (requirement.impact === 0) {
+    return 'notApplicable';
+  }
+
+  const results = requirement.results;
+  if (!results || results.length === 0) {
+    return 'notReviewed';
+  }
+
+  let hasError = false;
+  let hasFailed = false;
+  let hasPassed = false;
+
+  for (const result of results) {
+    switch (result.status) {
+      case 'error':
+        hasError = true;
+        break;
+      case 'failed':
+        hasFailed = true;
+        break;
+      case 'passed':
+        hasPassed = true;
+        break;
+    }
+  }
+
+  if (hasError) return 'error';
+  if (hasFailed) return 'failed';
+  if (hasPassed) return 'passed';
+  return 'notReviewed';
+}

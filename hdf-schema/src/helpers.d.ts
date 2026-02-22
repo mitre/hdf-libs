@@ -70,3 +70,7 @@ export function createSourceLocation(ref: string, line: number): SourceLocation;
 export function severityToImpact(severity: string): number;
 
 export function impactToSeverity(impact: number): string;
+
+export function computeEffectiveStatus(
+  requirement: EvaluatedRequirement
+): ResultStatus;
