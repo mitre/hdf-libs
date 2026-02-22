@@ -53,6 +53,7 @@ type ReportingDescriptor struct {
 	DefaultConfiguration *ReportingConfiguration         `json:"defaultConfiguration,omitempty"`
 	Relationships        []ReportingDescriptorRelation   `json:"relationships,omitempty"`
 	Properties           map[string]interface{}          `json:"properties,omitempty"`
+	MessageStrings       map[string]MultiformatMessage   `json:"messageStrings,omitempty"`
 }
 
 // MultiformatMessage carries text and optional markdown.
@@ -111,7 +112,9 @@ type SarifResult struct {
 
 // SarifMessage carries the human-readable message.
 type SarifMessage struct {
-	Text string `json:"text"`
+	Text      string   `json:"text,omitempty"`
+	ID        string   `json:"id,omitempty"`
+	Arguments []string `json:"arguments,omitempty"`
 }
 
 // Suppression records a suppression on a result.
@@ -239,7 +242,8 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 	// Build rule lookup by ID
 	ruleMap := buildRuleMap(run)
 
-	// Group SARIF results by ruleId — each group becomes one EvaluatedRequirement
+	// Group SARIF results by ruleId — each group becomes one EvaluatedRequirement.
+	// When ruleId is absent, fall back to message text as the grouping key.
 	type resultGroup struct {
 		ruleID  string
 		rule    *ReportingDescriptor
@@ -248,12 +252,16 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 	groupOrder := []string{}
 	groupMap := make(map[string]*resultGroup)
 	for _, result := range run.Results {
-		g, exists := groupMap[result.RuleID]
+		groupKey := result.RuleID
+		if groupKey == "" {
+			groupKey = resolveMessageText(result.Message, nil)
+		}
+		g, exists := groupMap[groupKey]
 		if !exists {
 			rule := lookupRule(ruleMap, result)
-			g = &resultGroup{ruleID: result.RuleID, rule: rule}
-			groupMap[result.RuleID] = g
-			groupOrder = append(groupOrder, result.RuleID)
+			g = &resultGroup{ruleID: groupKey, rule: rule}
+			groupMap[groupKey] = g
+			groupOrder = append(groupOrder, groupKey)
 		}
 		g.results = append(g.results, result)
 	}
@@ -311,7 +319,7 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 	// Extract CWE IDs from rule (or first result message as fallback)
 	cweIds := extractCweFromRule(rule)
 	if len(cweIds) == 0 {
-		cweIds = extractCweIds(firstResult.Message.Text)
+		cweIds = extractCweIds(resolveMessageText(firstResult.Message, rule))
 	}
 
 	nistControls := mapCweToNist(cweIds)
@@ -402,10 +410,14 @@ func convertSarifResultToHDFResults(result SarifResult, rule *ReportingDescripto
 		}
 	}
 
-	// If no locations produced results but the SARIF result exists, create a location-less result
-	if len(results) == 0 && len(result.Locations) == 0 {
-		// No location — skip (matching previous behavior where empty locations = no results)
-		return results
+	// If no locations, create a location-less result so the finding isn't silently dropped
+	if len(results) == 0 {
+		results = append(results, hdf.RequirementResult{
+			Status:    status,
+			CodeDesc:  "No source location",
+			StartTime: timestamp,
+			Backtrace: backtrace,
+		})
 	}
 
 	// Add suppression justification as message on results
@@ -419,16 +431,39 @@ func convertSarifResultToHDFResults(result SarifResult, rule *ReportingDescripto
 	return results
 }
 
+// --- Message resolution ---
+
+// resolveMessageText resolves a SARIF message to its text content.
+// Priority: message.text > rule.messageStrings[message.id] with argument substitution.
+func resolveMessageText(msg SarifMessage, rule *ReportingDescriptor) string {
+	if msg.Text != "" {
+		return msg.Text
+	}
+	if msg.ID != "" && rule != nil {
+		if tmpl, ok := rule.MessageStrings[msg.ID]; ok {
+			text := tmpl.Text
+			for i, arg := range msg.Arguments {
+				text = strings.ReplaceAll(text, fmt.Sprintf("{%d}", i), arg)
+			}
+			return text
+		}
+	}
+	return ""
+}
+
 // --- Metadata derivation ---
 
 // deriveMetadata determines title and description from rule metadata or message text.
 func deriveMetadata(result SarifResult, rule *ReportingDescriptor) (string, string) {
+	messageText := resolveMessageText(result.Message, rule)
 	if rule != nil && rule.Name != "" {
-		// Use rule name as title, message text as description
-		return rule.Name, result.Message.Text
+		return rule.Name, messageText
 	}
-	// Fall back to message-based parsing
-	return parseMessage(result.Message.Text)
+	// If rule has shortDescription, use it as title and message as description
+	if rule != nil && rule.ShortDescription != nil && rule.ShortDescription.Text != "" {
+		return rule.ShortDescription.Text, messageText
+	}
+	return parseMessage(messageText)
 }
 
 func parseMessage(text string) (string, string) {

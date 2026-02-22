@@ -73,7 +73,9 @@ describe('SARIF Converter', () => {
       const result = JSON.parse(convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.sourceLocation).toBeUndefined();
-      expect(req.results).toHaveLength(0);
+      expect(req.results).toHaveLength(1);
+      expect(req.results[0].status).toBe('failed');
+      expect(req.results[0].codeDesc).toBe('No source location');
     });
   });
 
@@ -970,14 +972,21 @@ describe('SARIF Converter', () => {
       const baseline = result.baselines[0];
       expect(baseline.name).toBe('Gitleaks');
 
-      // Known edge case (bead hdf-asy): all results have no ruleId,
-      // so they all group under a single requirement with undefined id
-      expect(baseline.requirements).toHaveLength(1);
-      expect(baseline.requirements[0].id).toBeUndefined();
-      expect(baseline.requirements[0].results).toHaveLength(8);
+      // All 8 results lack ruleId. Should group by message text:
+      // 6x "AWS Access Key secret detected" → 1 requirement
+      // 2x "Asymmetric Private Key secret detected" → 1 requirement
+      expect(baseline.requirements).toHaveLength(2);
+
+      const awsReq = baseline.requirements.find((r: any) => r.id === 'AWS Access Key secret detected');
+      expect(awsReq).toBeDefined();
+      expect(awsReq.results).toHaveLength(6);
+
+      const asymReq = baseline.requirements.find((r: any) => r.id === 'Asymmetric Private Key secret detected');
+      expect(asymReq).toBeDefined();
+      expect(asymReq.results).toHaveLength(2);
 
       // Results should have location info with snippets
-      for (const r of baseline.requirements[0].results) {
+      for (const r of awsReq.results) {
         expect(r.codeDesc).toContain('URL :');
         expect(r.codeDesc).toContain('LINE :');
       }
@@ -1004,6 +1013,14 @@ describe('SARIF Converter', () => {
       expect(nmMethod).toBeDefined();
       expect(nmMethod.results).toHaveLength(33);
       expect(nmMethod.tags.helpUri).toBeDefined();
+
+      // SpotBugs uses message.id + arguments instead of message.text.
+      // The converter should resolve messageStrings templates.
+      const dmiRule = baseline.requirements.find((r: any) => r.id === 'DMI_HARDCODED_ABSOLUTE_FILENAME');
+      expect(dmiRule).toBeDefined();
+      // messageStrings.default.text = "Hard coded reference to an absolute pathname in {0}."
+      // arguments = ["Boot.main(String[])"]
+      expect(dmiRule.descriptions[0].data).toContain('Boot.main(String[])');
     });
   });
 
@@ -1016,9 +1033,11 @@ describe('SARIF Converter', () => {
       expect(baseline.name).toBe('Dockle');
       expect(baseline.requirements).toHaveLength(4);
 
-      // Known edge case (bead hdf-79h): no locations → 0 results per requirement
+      // All Dockle results have 0 locations (container-level findings).
+      // Each should still produce 1 RequirementResult with a generic codeDesc.
       for (const req of baseline.requirements) {
-        expect(req.results).toHaveLength(0);
+        expect(req.results).toHaveLength(1);
+        expect(req.results[0].status).toBe('failed');
       }
 
       // CIS-DI-0010 is error, others are note
