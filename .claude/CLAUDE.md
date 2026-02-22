@@ -37,3 +37,11 @@ If bd errors with "LEGACY DATABASE DETECTED", run `bd migrate --update-repo-id` 
   1. Converter implementation and tests in `hdf-converters/converters/{name}/{typescript,go}/`
   2. CLI integration in `hdf-cli/cmd/hdf/cmd/converter_{name}.go` with corresponding tests
 - Spot check converter output via CLI before committing: `hdf convert {from} to {to} input.json output.{ext}`
+
+## Fixture Integrity
+- **Never fabricate fixture data.** Every converter fixture must be either:
+  1. Real tool output from an actual run or public CI pipeline
+  2. Copied/adapted from heimdall2 (`~/repos/heimdall2/libs/hdf-converters/test/sample_input_report/`) or SAF CLI (`~/repos/saf/test/sample_data/`)
+  3. Validated against the format's official schema (JSON Schema, XSD, etc.) with proof logged in a comment or commit message
+- If no real data source exists and no schema exists to validate against, **stop and ask** — do not invent data.
+- A converter tested against fabricated fixtures is untrusted. The fixture determines whether the converter works on real data; if the fixture is fake, the test proves nothing.

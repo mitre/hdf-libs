@@ -48,8 +48,11 @@ Before writing any code:
 
 ## Step 2 — Source Real Fixtures
 
-**Never fabricate fixture data.** Fixtures must come from one of:
-1. Real tool output captured from an actual run
+**Never fabricate fixture data.** A converter tested against fabricated fixtures is untrusted — if the fixture is fake, the test proves nothing about real-world data. Every fixture must be **provably valid**: either sourced from real tool output or validated against the format's official schema.
+
+### Fixture sources (in priority order)
+
+1. **Real tool output** captured from an actual run or public CI pipeline (e.g., GitHub Actions artifacts, open-source project test resources)
 2. The heimdall2 repo at `~/repos/heimdall2/libs/hdf-converters/test/sample_input_report/`
 3. The SAF CLI repo at `~/repos/saf/test/sample_data/`
 4. Sanitized/anonymized copies of real customer data
@@ -59,6 +62,30 @@ Before writing any fixtures, check both repos:
 ls ~/repos/heimdall2/libs/hdf-converters/test/sample_input_report/
 ls ~/repos/saf/test/sample_data/
 ```
+
+### Fixture validation requirement
+
+Every fixture MUST satisfy at least one of:
+1. **Provenance documented** — commit message states exactly where the data came from (repo URL, file path, or how it was generated)
+2. **Schema-validated** — validated against the format's official schema (JSON Schema, XSD, OpenAPI spec) with the validation command logged in the commit message or a comment in the test file
+
+If the format has an official schema, validate against it even if the data is real. Common schemas:
+- **SARIF**: `https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json`
+- **JUnit XML**: Windyroad XSD or tool-specific DTD
+- **Nessus**: Tenable's `.nessus` XML format (no public XSD, but structure is documented)
+- **Grype**: `anchore/grype` JSON output schema
+- **AWS Config**: AWS API response schemas in AWS SDK docs
+- **SonarQube**: REST API response schema from SonarQube docs
+- **HDF**: Our own `hdf-schema` package (use `hdf-validators` to validate)
+
+If no real data source exists AND no schema exists to validate against, **stop and ask the user** — do not invent data.
+
+### Sourcing from open-source projects
+
+When real tool output isn't available locally, look for it in public repos:
+- GitHub search: `filename:<format-extension> path:test` (e.g., `filename:.nessus path:test`)
+- Tool's own test suite (e.g., apache/maven-surefire for JUnit XML, anchore/grype for Grype JSON)
+- CI artifacts from open-source projects that use the tool
 
 Also read the heimdall2 converter source to understand what input format it actually expects — the original converter may use live SDK calls rather than a static file, which changes the design significantly.
 
@@ -709,7 +736,8 @@ pnpm test
 ## Done Checklist
 
 **All converters:**
-- [ ] Fixtures created (`fixtures/input/minimal.*` at minimum, sourced from real tool output)
+- [ ] Fixtures sourced from real tool output or validated against format schema — provenance documented in commit message
+- [ ] No fabricated fixtures — every fixture is either from a real run, a public repo, heimdall2/SAF CLI samples, or schema-validated
 - [ ] **Go:** Unit tests written and passing (`go/converter_test.go`)
 - [ ] **Go:** Implementation complete (`go/converter.go`)
 - [ ] **TypeScript:** Unit tests written and passing (`typescript/converter.test.ts`)
