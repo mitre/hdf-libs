@@ -115,7 +115,9 @@ func TestConvertSarifToHDF_MissingLocations(t *testing.T) {
 
 	req := result.Baselines[0].Requirements[0]
 	assert.Nil(t, req.SourceLocation, "Should have no source location when locations array is empty")
-	assert.Len(t, req.Results, 0, "Should have no results")
+	require.Len(t, req.Results, 1, "Should create a location-less result")
+	assert.Equal(t, hdf.Failed, req.Results[0].Status)
+	assert.Equal(t, "No source location", req.Results[0].CodeDesc)
 }
 
 func TestMultipleLocations(t *testing.T) {
@@ -1171,15 +1173,27 @@ func TestConvertSarifToHDF_GitleaksFixture(t *testing.T) {
 	baseline := result.Baselines[0]
 	assert.Equal(t, "Gitleaks", baseline.Name)
 
-	// Known edge case (tracked in bead hdf-asy): all 8 results have no ruleId,
-	// so they all group under a single requirement with id=""
-	require.Len(t, baseline.Requirements, 1, "All results grouped under empty ruleId")
-	req := baseline.Requirements[0]
-	assert.Equal(t, "", req.ID)
-	assert.Len(t, req.Results, 8, "All 8 Gitleaks results under one requirement")
+	// All 8 results lack ruleId. They should group by message text:
+	// 6x "AWS Access Key secret detected" → 1 requirement
+	// 2x "Asymmetric Private Key secret detected" → 1 requirement
+	require.Len(t, baseline.Requirements, 2, "Should group by message text when ruleId is absent")
+
+	var awsReq, asymReq *hdf.EvaluatedRequirement
+	for i := range baseline.Requirements {
+		if baseline.Requirements[i].ID == "AWS Access Key secret detected" {
+			awsReq = &baseline.Requirements[i]
+		}
+		if baseline.Requirements[i].ID == "Asymmetric Private Key secret detected" {
+			asymReq = &baseline.Requirements[i]
+		}
+	}
+	require.NotNil(t, awsReq, "Expected requirement for AWS Access Key findings")
+	assert.Len(t, awsReq.Results, 6)
+	require.NotNil(t, asymReq, "Expected requirement for Asymmetric Private Key findings")
+	assert.Len(t, asymReq.Results, 2)
 
 	// Results should have snippets from the SARIF locations
-	for _, r := range req.Results {
+	for _, r := range awsReq.Results {
 		assert.Contains(t, r.CodeDesc, "URL :")
 		assert.Contains(t, r.CodeDesc, "LINE :")
 	}
@@ -1219,6 +1233,23 @@ func TestConvertSarifToHDF_SpotBugsFixture(t *testing.T) {
 	helpUri, ok := nmMethod.Tags["helpUri"]
 	assert.True(t, ok, "SpotBugs rules should have helpUri")
 	assert.NotEmpty(t, helpUri)
+
+	// SpotBugs uses message.id + arguments instead of message.text.
+	// The converter should resolve messageStrings templates.
+	var dmiRule *hdf.EvaluatedRequirement
+	for i := range baseline.Requirements {
+		if baseline.Requirements[i].ID == "DMI_HARDCODED_ABSOLUTE_FILENAME" {
+			dmiRule = &baseline.Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, dmiRule, "Expected DMI_HARDCODED_ABSOLUTE_FILENAME requirement")
+	// messageStrings.default.text = "Hard coded reference to an absolute pathname in {0}."
+	// arguments = ["Boot.main(String[])"]
+	// → resolved: "Hard coded reference to an absolute pathname in Boot.main(String[])."
+	require.NotEmpty(t, dmiRule.Descriptions)
+	assert.Contains(t, dmiRule.Descriptions[0].Data, "Boot.main(String[])",
+		"Should resolve message.id template with arguments")
 }
 
 func TestConvertSarifToHDF_DockleFixture(t *testing.T) {
@@ -1233,11 +1264,11 @@ func TestConvertSarifToHDF_DockleFixture(t *testing.T) {
 	assert.Equal(t, "Dockle", baseline.Name)
 	require.Len(t, baseline.Requirements, 4, "4 rules with 4 results")
 
-	// Known edge case (tracked in bead hdf-79h): all Dockle results have 0 locations,
-	// so no RequirementResults are produced. The finding data is preserved in the
-	// requirement metadata but no individual results exist.
+	// All Dockle results have 0 locations (container-level findings).
+	// Each should still produce 1 RequirementResult with a generic codeDesc.
 	for _, req := range baseline.Requirements {
-		assert.Empty(t, req.Results, "Dockle rule %s should have 0 results (no locations)", req.ID)
+		require.Len(t, req.Results, 1, "Dockle rule %s should have 1 result even without locations", req.ID)
+		assert.Equal(t, hdf.Failed, req.Results[0].Status)
 	}
 
 	// CIS-DI-0010 is error level, the rest are note

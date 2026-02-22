@@ -41,6 +41,7 @@ interface ReportingDescriptor {
   defaultConfiguration?: ReportingConfiguration;
   relationships?: ReportingDescriptorRelation[];
   properties?: Record<string, unknown>;
+  messageStrings?: Record<string, MultiformatMessage>;
 }
 
 interface MultiformatMessage {
@@ -81,7 +82,9 @@ interface SarifResult {
   kind?: string;
   level?: string;
   message: {
-    text: string;
+    text?: string;
+    id?: string;
+    arguments?: string[];
   };
   locations?: SarifLocation[];
   relatedLocations?: SarifLocation[];
@@ -194,16 +197,18 @@ export function convertSarifToHdf(input: string): string {
 function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum): EvaluatedBaseline {
   const ruleMap = buildRuleMap(run);
 
-  // Group SARIF results by ruleId — each group becomes one EvaluatedRequirement
+  // Group SARIF results by ruleId — each group becomes one EvaluatedRequirement.
+  // When ruleId is absent, fall back to message text as the grouping key.
   const groupOrder: string[] = [];
   const groupMap = new Map<string, { rule?: ReportingDescriptor; results: SarifResult[] }>();
   for (const result of run.results) {
-    let group = groupMap.get(result.ruleId);
+    const groupKey = result.ruleId || resolveMessageText(result.message, undefined);
+    let group = groupMap.get(groupKey);
     if (!group) {
       const rule = ruleMap.get(result.ruleId);
       group = { rule, results: [] };
-      groupMap.set(result.ruleId, group);
-      groupOrder.push(result.ruleId);
+      groupMap.set(groupKey, group);
+      groupOrder.push(groupKey);
     }
     group.results.push(result);
   }
@@ -244,7 +249,7 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
   // Extract CWE IDs from rule (or first result message as fallback)
   let cweIds = extractCweFromRule(rule);
   if (cweIds.length === 0) {
-    cweIds = extractCweIds(firstResult.message?.text ?? '');
+    cweIds = extractCweIds(resolveMessageText(firstResult.message, rule));
   }
 
   const nistControls = mapCweToNist(cweIds);
@@ -318,17 +323,55 @@ function convertSarifResultToHDFResults(result: SarifResult): RequirementResult[
   const backtrace = extractBacktrace(result.codeFlows);
 
   // Create results for each location
-  return (result.locations || [])
+  const results = (result.locations || [])
     .filter(loc => loc.physicalLocation?.artifactLocation?.uri)
     .map(loc => createHDFResult(loc, status, backtrace, suppressionJustification));
+
+  // If no locations, create a location-less result so the finding isn't silently dropped
+  if (results.length === 0) {
+    const locationlessResult: RequirementResult = {
+      status,
+      codeDesc: 'No source location',
+      startTime: new Date(),
+      backtrace,
+    };
+    if (suppressionJustification) {
+      locationlessResult.message = `Suppressed: ${suppressionJustification}`;
+    }
+    results.push(locationlessResult);
+  }
+
+  return results;
+}
+
+// --- Message resolution ---
+
+function resolveMessageText(msg: SarifResult['message'], rule?: ReportingDescriptor): string {
+  if (msg?.text) {
+    return msg.text;
+  }
+  if (msg?.id && rule) {
+    const tmpl = rule.messageStrings?.[msg.id];
+    if (tmpl) {
+      let text = tmpl.text;
+      for (const [i, arg] of (msg.arguments ?? []).entries()) {
+        text = text.split(`{${i}}`).join(arg);
+      }
+      return text;
+    }
+  }
+  return '';
 }
 
 // --- Metadata derivation ---
 
 function deriveMetadata(result: SarifResult, rule?: ReportingDescriptor): { title: string; description: string } {
-  const messageText = result.message?.text ?? '';
+  const messageText = resolveMessageText(result.message, rule);
   if (rule?.name) {
     return { title: rule.name, description: messageText };
+  }
+  if (rule?.shortDescription?.text) {
+    return { title: rule.shortDescription.text, description: messageText };
   }
   return parseMessage(messageText);
 }
