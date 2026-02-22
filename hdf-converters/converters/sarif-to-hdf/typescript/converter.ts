@@ -244,7 +244,7 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
   // Extract CWE IDs from rule (or first result message as fallback)
   let cweIds = extractCweFromRule(rule);
   if (cweIds.length === 0) {
-    cweIds = extractCweIds(firstResult.message.text);
+    cweIds = extractCweIds(firstResult.message?.text ?? '');
   }
 
   const nistControls = mapCweToNist(cweIds);
@@ -326,14 +326,15 @@ function convertSarifResultToHDFResults(result: SarifResult): RequirementResult[
 // --- Metadata derivation ---
 
 function deriveMetadata(result: SarifResult, rule?: ReportingDescriptor): { title: string; description: string } {
+  const messageText = result.message?.text ?? '';
   if (rule?.name) {
-    return { title: rule.name, description: result.message.text };
+    return { title: rule.name, description: messageText };
   }
-  return parseMessage(result.message.text);
+  return parseMessage(messageText);
 }
 
 function parseMessage(text: string): { title: string; description: string } {
-  const colonIndex = text.indexOf(':');
+  const colonIndex = (text ?? '').indexOf(':');
   if (colonIndex === -1) {
     return { title: text, description: '' };
   }
