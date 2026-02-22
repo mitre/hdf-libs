@@ -283,6 +283,77 @@ func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedR
 	return nil
 }
 
+// --- Testsuites root with mixed statuses (schema-validated against Windyroad XSD) ---
+
+func TestConvertJUnitToHDF_TestsuitesMixed(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// testsuites has no name attr — should default
+	assert.Equal(t, "JUnit Test Results", result.Baselines[0].Name)
+}
+
+func TestTestsuitesMixed_RequirementCount(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
+	require.NoError(t, err)
+
+	// 2 suites: MathTest (3 tests) + StringTest (2 tests) = 5 requirements
+	assert.Len(t, result.Baselines[0].Requirements, 5)
+}
+
+func TestTestsuitesMixed_SkippedStatus(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "com.example.math.MathTest.testSquareRoot")
+	require.NotNil(t, req)
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+	require.NotNil(t, req.Results[0].Message)
+	assert.Contains(t, *req.Results[0].Message, "Requires math library upgrade")
+}
+
+func TestTestsuitesMixed_PassedStatus(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "com.example.math.MathTest.testAddition")
+	require.NotNil(t, req)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+}
+
+func TestTestsuitesMixed_FailedStatus(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "com.example.math.MathTest.testDivisionByZero")
+	require.NotNil(t, req)
+	assert.Equal(t, hdf.Failed, req.Results[0].Status)
+	require.NotNil(t, req.Results[0].Message)
+	assert.Contains(t, *req.Results[0].Message, "Expected exception was not thrown")
+}
+
+func TestTestsuitesMixed_ErrorStatus(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "com.example.string.StringTest.testParseInt")
+	require.NotNil(t, req)
+	assert.Equal(t, hdf.Error, req.Results[0].Status)
+	require.NotNil(t, req.Results[0].Message)
+	assert.Contains(t, *req.Results[0].Message, "NullPointerException")
+}
+
+func TestTestsuitesMixed_Timestamp(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "testsuites-mixed.xml"), converterVersion)
+	require.NoError(t, err)
+
+	// First suite has timestamp="2024-11-15T10:30:00" — should be parsed into startTime
+	req := findRequirement(result.Baselines[0].Requirements, "com.example.math.MathTest.testAddition")
+	require.NotNil(t, req)
+	assert.False(t, req.Results[0].StartTime.IsZero(), "startTime should be set from suite timestamp")
+}
+
 // --- JSON serialization round-trip ---
 
 func TestJSONRoundTrip(t *testing.T) {
