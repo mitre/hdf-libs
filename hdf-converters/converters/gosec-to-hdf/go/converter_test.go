@@ -33,7 +33,7 @@ func TestConvertGosecToHDF_EmptyInput(t *testing.T) {
 }
 
 func TestConvertGosecToHDF_Generator(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -42,7 +42,7 @@ func TestConvertGosecToHDF_Generator(t *testing.T) {
 }
 
 func TestConvertGosecToHDF_DataSource(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -50,12 +50,12 @@ func TestConvertGosecToHDF_DataSource(t *testing.T) {
 	require.NotNil(t, result.DataSource.Name)
 	assert.Equal(t, "gosec", *result.DataSource.Name)
 	require.NotNil(t, result.DataSource.Version)
-	assert.Equal(t, "2.18.0", *result.DataSource.Version)
+	assert.Equal(t, "dev", *result.DataSource.Version)
 	assert.Nil(t, result.DataSource.Format)
 }
 
 func TestConvertGosecToHDF_BaselineCount(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -63,7 +63,7 @@ func TestConvertGosecToHDF_BaselineCount(t *testing.T) {
 }
 
 func TestConvertGosecToHDF_BaselineName(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -71,7 +71,7 @@ func TestConvertGosecToHDF_BaselineName(t *testing.T) {
 }
 
 func TestConvertGosecToHDF_Checksum(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -83,17 +83,17 @@ func TestConvertGosecToHDF_Checksum(t *testing.T) {
 // ---- Grouping by rule_id ----
 
 func TestConvertGosecToHDF_GroupsByRuleID(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	// minimal.json has G304 (2 issues) and G404 (1 issue) → 2 requirements
+	// ethereum.json has G104, G301, G302, G304, G404 → 5 requirements
 	reqs := result.Baselines[0].Requirements
-	assert.Len(t, reqs, 2)
+	assert.Len(t, reqs, 5)
 }
 
 func TestConvertGosecToHDF_MultipleResultsPerRequirement(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -106,13 +106,13 @@ func TestConvertGosecToHDF_MultipleResultsPerRequirement(t *testing.T) {
 		}
 	}
 	require.NotNil(t, g304, "expected requirement G304")
-	assert.Len(t, g304.Results, 2, "G304 should have 2 results (one per issue)")
+	assert.Len(t, g304.Results, 6, "G304 should have 6 results (one per issue)")
 }
 
 // ---- Requirement fields ----
 
 func TestConvertGosecToHDF_RequirementID(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -122,10 +122,13 @@ func TestConvertGosecToHDF_RequirementID(t *testing.T) {
 	}
 	assert.True(t, ids["G304"], "expected requirement ID G304")
 	assert.True(t, ids["G404"], "expected requirement ID G404")
+	assert.True(t, ids["G104"], "expected requirement ID G104")
+	assert.True(t, ids["G301"], "expected requirement ID G301")
+	assert.True(t, ids["G302"], "expected requirement ID G302")
 }
 
 func TestConvertGosecToHDF_RequirementTitle(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -140,7 +143,7 @@ func TestConvertGosecToHDF_RequirementTitle(t *testing.T) {
 // ---- Impact mapping ----
 
 func TestConvertGosecToHDF_ImpactHigh(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -152,7 +155,7 @@ func TestConvertGosecToHDF_ImpactHigh(t *testing.T) {
 }
 
 func TestConvertGosecToHDF_ImpactMedium(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -164,27 +167,21 @@ func TestConvertGosecToHDF_ImpactMedium(t *testing.T) {
 }
 
 func TestConvertGosecToHDF_ImpactLow(t *testing.T) {
-	input := []byte(`{
-		"Golang errors": {},
-		"Issues": [{
-			"severity": "LOW", "confidence": "HIGH",
-			"cwe": {"id": "703", "url": "https://cwe.mitre.org/data/definitions/703.html"},
-			"rule_id": "G104", "details": "Errors unhandled",
-			"file": "/app/main.go", "code": "defer f.Close()\n",
-			"line": "5", "column": "2", "nosec": false, "suppressions": null
-		}],
-		"Stats": {"files": 1, "lines": 10, "nosec": 0, "found": 1},
-		"GosecVersion": "2.18.0"
-	}`)
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
-	assert.InDelta(t, 0.3, result.Baselines[0].Requirements[0].Impact, 0.001)
+
+	for _, req := range result.Baselines[0].Requirements {
+		if req.ID == "G104" {
+			assert.InDelta(t, 0.3, req.Impact, 0.001)
+		}
+	}
 }
 
 // ---- Status mapping ----
 
 func TestConvertGosecToHDF_StatusFailed(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -198,21 +195,44 @@ func TestConvertGosecToHDF_StatusFailed(t *testing.T) {
 }
 
 func TestConvertGosecToHDF_StatusNotReviewedWhenSuppressed(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
+	// G301 has 2 issues, both with external suppression → notReviewed
 	for _, req := range result.Baselines[0].Requirements {
-		if req.ID == "G404" {
-			require.Len(t, req.Results, 1)
-			assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+		if req.ID == "G301" {
+			require.Len(t, req.Results, 2)
+			for _, r := range req.Results {
+				assert.Equal(t, hdf.NotReviewed, r.Status)
+			}
 		}
 	}
 }
 
 func TestConvertGosecToHDF_StatusNotReviewedWhenNosec(t *testing.T) {
-	// suppressed.json has G104 with nosec=true and no suppressions → notReviewed
-	input := loadFixture(t, "input/suppressed.json")
+	// Use inline fixture since real Go Ethereum data has no nosec=true issues
+	input := []byte(`{
+		"Golang errors": {},
+		"Issues": [
+			{
+				"severity": "LOW", "confidence": "HIGH",
+				"cwe": {"id": "703", "url": "https://cwe.mitre.org/data/definitions/703.html"},
+				"rule_id": "G104", "details": "Errors unhandled.",
+				"file": "/app/main.go", "code": "defer f.Close()\n",
+				"line": "5", "column": "2", "nosec": true, "suppressions": null
+			},
+			{
+				"severity": "LOW", "confidence": "HIGH",
+				"cwe": {"id": "703", "url": "https://cwe.mitre.org/data/definitions/703.html"},
+				"rule_id": "G104", "details": "Errors unhandled.",
+				"file": "/app/util.go", "code": "_ = conn.Close()\n",
+				"line": "10", "column": "8", "nosec": false, "suppressions": null
+			}
+		],
+		"Stats": {"files": 2, "lines": 50, "nosec": 1, "found": 2},
+		"GosecVersion": "dev"
+	}`)
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -232,16 +252,16 @@ func TestConvertGosecToHDF_StatusNotReviewedWhenNosec(t *testing.T) {
 // ---- Skip message ----
 
 func TestConvertGosecToHDF_SkipMessageWithJustification(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
 	for _, req := range result.Baselines[0].Requirements {
-		if req.ID == "G404" {
+		if req.ID == "G301" {
 			r := req.Results[0]
 			require.NotNil(t, r.Message)
-			assert.Contains(t, *r.Message, "Acceptable for non-security context.")
-			assert.Contains(t, *r.Message, "inSource")
+			assert.Contains(t, *r.Message, "Globally suppressed.")
+			assert.Contains(t, *r.Message, "external")
 		}
 	}
 }
@@ -272,7 +292,7 @@ func TestConvertGosecToHDF_SkipMessageNoJustification(t *testing.T) {
 // ---- CodeDesc and Message ----
 
 func TestConvertGosecToHDF_CodeDesc(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -282,7 +302,7 @@ func TestConvertGosecToHDF_CodeDesc(t *testing.T) {
 			for _, r := range req.Results {
 				if r.CodeDesc != "" {
 					assert.Contains(t, r.CodeDesc, "G304")
-					assert.Contains(t, r.CodeDesc, "/app/main.go")
+					assert.Contains(t, r.CodeDesc, "go-ethereum-master")
 					found = true
 					break
 				}
@@ -293,7 +313,7 @@ func TestConvertGosecToHDF_CodeDesc(t *testing.T) {
 }
 
 func TestConvertGosecToHDF_Message(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -302,7 +322,7 @@ func TestConvertGosecToHDF_Message(t *testing.T) {
 			r := req.Results[0]
 			require.NotNil(t, r.Message)
 			assert.Contains(t, *r.Message, "HIGH")
-			assert.Contains(t, *r.Message, "os.Open")
+			assert.Contains(t, *r.Message, "os.OpenFile")
 		}
 	}
 }
@@ -310,7 +330,7 @@ func TestConvertGosecToHDF_Message(t *testing.T) {
 // ---- Descriptions ----
 
 func TestConvertGosecToHDF_DescriptionDefault(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -324,7 +344,7 @@ func TestConvertGosecToHDF_DescriptionDefault(t *testing.T) {
 }
 
 func TestConvertGosecToHDF_DescriptionCheck(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -351,7 +371,7 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 func TestConvertGosecToHDF_NISTTagsFromCWE(t *testing.T) {
 	// CWE-338 → SC-13 (from cwe-nist-mappings.json)
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -386,7 +406,7 @@ func TestConvertGosecToHDF_NISTFallback(t *testing.T) {
 }
 
 func TestConvertGosecToHDF_CWETag(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
@@ -423,8 +443,6 @@ func TestConvertGosecToHDF_RealFixture(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 	assert.NotEmpty(t, reqs)
-	// real.json has 7 issues across 2 rule IDs (G304 x5, G302 x1, G304 appears w/ G302)
-	// Just verify all requirements have non-empty IDs and at least one result
 	for _, req := range reqs {
 		assert.NotEmpty(t, req.ID)
 		assert.NotEmpty(t, req.Results)
@@ -564,7 +582,7 @@ func TestConvertGosecToHDF_SARIFRouting(t *testing.T) {
 
 func TestConvertGosecToHDF_NativeJSONNotRoutedToSARIF(t *testing.T) {
 	// Native gosec JSON should not be detected as SARIF
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 

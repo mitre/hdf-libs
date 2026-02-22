@@ -24,11 +24,11 @@ func TestSarifConverter_IsRegistered(t *testing.T) {
 	assert.Equal(t, "SARIF to HDF", converter.Name())
 }
 
-func TestSarifConverter_Convert_Minimal(t *testing.T) {
+func TestSarifConverter_Convert_SarifInput(t *testing.T) {
 	ensureSarifRegistered()
 
-	inputData, err := os.ReadFile(converterFixturePath(t, "sarif-to-hdf", "input/minimal.sarif"))
-	require.NoError(t, err, "Failed to read minimal.sarif fixture")
+	inputData, err := os.ReadFile(converterFixturePath(t, "sarif-to-hdf", "input/sarif_input.sarif"))
+	require.NoError(t, err, "Failed to read sarif_input.sarif fixture")
 
 	converter, err := GetConverter("sarif", "hdf")
 	require.NoError(t, err, "Failed to get SARIF converter")

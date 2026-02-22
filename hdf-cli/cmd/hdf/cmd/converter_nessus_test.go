@@ -15,9 +15,9 @@ func TestNessusConverter_IsRegistered(t *testing.T) {
 	assert.Equal(t, "Nessus to HDF", converter.Name())
 }
 
-func TestNessusConverter_Convert_Minimal(t *testing.T) {
-	inputData, err := os.ReadFile(converterFixturePath(t, "nessus-to-hdf", "input/minimal.nessus"))
-	require.NoError(t, err, "Failed to read minimal.nessus fixture")
+func TestNessusConverter_Convert_Sample(t *testing.T) {
+	inputData, err := os.ReadFile(converterFixturePath(t, "nessus-to-hdf", "input/sample.nessus"))
+	require.NoError(t, err, "Failed to read sample.nessus fixture")
 
 	converter, err := GetConverter("nessus", "hdf")
 	require.NoError(t, err, "Failed to get Nessus converter")
