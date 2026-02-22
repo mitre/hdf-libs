@@ -8,6 +8,7 @@
 - **Never commit without explicit permission** for each individual commit. Prepare detailed commit messages for approval first.
 - **Never push.** User handles all pushes.
 - **No authorship attribution.** Do not add "written by Claude Code", "Co-Authored-By: Claude", or similar to commits, comments, or documentation.
+- **Verbose commit messages.** Use a short subject line (conventional commit format), then a blank line, then a body that explains *what* changed and *why*. List affected files or modules when helpful. A reviewer reading only the commit log should understand the change without opening the diff.
 
 ## Development Practices
 - **Test-driven development (TDD).** Write tests before implementation.
