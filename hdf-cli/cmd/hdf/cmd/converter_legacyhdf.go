@@ -41,5 +41,7 @@ func (c *legacyHDFConverter) Convert(input []byte) ([]byte, error) {
 }
 
 func init() {
-	RegisterConverter("legacyhdf", "hdf", &legacyHDFConverter{})
+	converter := &legacyHDFConverter{}
+	RegisterConverter("legacyhdf", "hdf", converter)
+	RegisterConverter("inspec", "hdf", converter)
 }
