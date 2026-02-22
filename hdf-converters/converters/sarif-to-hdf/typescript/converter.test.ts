@@ -13,11 +13,11 @@ function loadFixture(type: 'input' | 'expected', filename: string): string {
 
 // --- Backward compatibility tests ---
 
-describe('SARIF Converter', () => {
-  describe('Basic conversion', () => {
-    it('should convert real Flawfinder SARIF to HDF', () => {
+describe('SARIF Converter', async () => {
+  describe('Basic conversion', async () => {
+    it('should convert real Flawfinder SARIF to HDF', async () => {
       const input = loadFixture('input', 'sarif_input.sarif');
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
 
       expect(result.dataSource?.format).toBe('SARIF');
       expect(result.dataSource?.name).toBe('Flawfinder');
@@ -42,7 +42,7 @@ describe('SARIF Converter', () => {
       expect(ff1014.results[0].codeDesc).toContain('test/test-patched.c');
     });
 
-    it('should handle empty results array', () => {
+    it('should handle empty results array', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -51,12 +51,12 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       expect(result.baselines).toHaveLength(1);
       expect(result.baselines[0].requirements).toHaveLength(0);
     });
 
-    it('should handle missing locations', () => {
+    it('should handle missing locations', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -70,7 +70,7 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.sourceLocation).toBeUndefined();
       expect(req.results).toHaveLength(1);
@@ -81,23 +81,23 @@ describe('SARIF Converter', () => {
 
   // --- Level resolution / impact tests ---
 
-  describe('Impact mapping', () => {
-    it('should map error level to 0.7', () => {
-      const result = convertWithLevel('error');
+  describe('Impact mapping', async () => {
+    it('should map error level to 0.7', async () => {
+      const result = await convertWithLevel('error');
       expect(result.baselines[0].requirements[0].impact).toBe(0.7);
     });
 
-    it('should map warning level to 0.5', () => {
-      const result = convertWithLevel('warning');
+    it('should map warning level to 0.5', async () => {
+      const result = await convertWithLevel('warning');
       expect(result.baselines[0].requirements[0].impact).toBe(0.5);
     });
 
-    it('should map note level to 0.3', () => {
-      const result = convertWithLevel('note');
+    it('should map note level to 0.3', async () => {
+      const result = await convertWithLevel('note');
       expect(result.baselines[0].requirements[0].impact).toBe(0.3);
     });
 
-    it('should default to warning (0.5) for missing level', () => {
+    it('should default to warning (0.5) for missing level', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -110,13 +110,13 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       expect(result.baselines[0].requirements[0].impact).toBe(0.5);
     });
   });
 
-  describe('Level fallback to rule default', () => {
-    it('should use rule defaultConfiguration.level when result level is absent', () => {
+  describe('Level fallback to rule default', async () => {
+    it('should use rule defaultConfiguration.level when result level is absent', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -139,7 +139,7 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.impact).toBe(0.7);
       expect(req.tags.severity).toBe('error');
@@ -148,8 +148,8 @@ describe('SARIF Converter', () => {
 
   // --- CWE extraction priority tests ---
 
-  describe('CWE extraction', () => {
-    it('should extract CWE IDs from message text with commas', () => {
+  describe('CWE extraction', async () => {
+    it('should extract CWE IDs from message text with commas', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -163,13 +163,13 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const cwes = result.baselines[0].requirements[0].tags.cwe;
       expect(cwes).toContain('CWE-79');
       expect(cwes).toContain('CWE-89');
     });
 
-    it('should extract CWE IDs from message text with !/', () => {
+    it('should extract CWE IDs from message text with !/', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -183,13 +183,13 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const cwes = result.baselines[0].requirements[0].tags.cwe;
       expect(cwes).toContain('CWE-119');
       expect(cwes).toContain('CWE-120');
     });
 
-    it('should handle message with no CWE IDs', () => {
+    it('should handle message with no CWE IDs', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -203,11 +203,11 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       expect(result.baselines[0].requirements[0].tags.cwe).toEqual([]);
     });
 
-    it('should prefer CWE from rule relationships over message', () => {
+    it('should prefer CWE from rule relationships over message', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -234,12 +234,12 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const cwes = result.baselines[0].requirements[0].tags.cwe;
       expect(cwes).toEqual(['CWE-89']);
     });
 
-    it('should fall back to CWE from properties.tags', () => {
+    it('should fall back to CWE from properties.tags', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -262,12 +262,12 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const cwes = result.baselines[0].requirements[0].tags.cwe;
       expect(cwes).toEqual(['CWE-798']);
     });
 
-    it('should fall back to default NIST when no CWE anywhere', () => {
+    it('should fall back to default NIST when no CWE anywhere', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -286,7 +286,7 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const nist = result.baselines[0].requirements[0].tags.nist;
       expect(nist).toContain('SA-11');
       expect(nist).toContain('RA-5');
@@ -295,8 +295,8 @@ describe('SARIF Converter', () => {
 
   // --- Message parsing tests ---
 
-  describe('Message parsing', () => {
-    it('should split title and description on first colon', () => {
+  describe('Message parsing', async () => {
+    it('should split title and description on first colon', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -310,13 +310,13 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.title).toBe('buffer/strcpy');
       expect(req.descriptions[0].data).toBe('Does not check for buffer overflows (CWE-120).');
     });
 
-    it('should handle message without colon', () => {
+    it('should handle message without colon', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -330,7 +330,7 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.title).toBe('Simple message without colon');
       expect(req.descriptions[0].data).toBe('');
@@ -339,8 +339,8 @@ describe('SARIF Converter', () => {
 
   // --- Multiple locations tests ---
 
-  describe('Multiple locations', () => {
-    it('should create one result per location', () => {
+  describe('Multiple locations', async () => {
+    it('should create one result per location', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -367,7 +367,7 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
 
       expect(req.sourceLocation.ref).toBe('file1.c');
@@ -382,7 +382,7 @@ describe('SARIF Converter', () => {
 
   // --- Kind → status mapping tests ---
 
-  describe('Kind to status mapping', () => {
+  describe('Kind to status mapping', async () => {
     // Impact is now determined at rule level, not per-result kind.
     // Without a rule definition, resolveRuleLevel falls back to first fail-kind
     // result's level or "warning". Non-fail-only results get "warning" → 0.5.
@@ -397,7 +397,7 @@ describe('SARIF Converter', () => {
     ];
 
     for (const tt of kindTests) {
-      it(`should map kind="${tt.kind ?? 'undefined'}" to status=${tt.expectedStatus}`, () => {
+      it(`should map kind="${tt.kind ?? 'undefined'}" to status=${tt.expectedStatus}`, async () => {
         const input = JSON.stringify({
           version: '2.1.0',
           runs: [{
@@ -417,7 +417,7 @@ describe('SARIF Converter', () => {
           }]
         });
 
-        const result = JSON.parse(convertSarifToHdf(input));
+        const result = JSON.parse(await convertSarifToHdf(input));
         const req = result.baselines[0].requirements[0];
         expect(req.impact).toBe(tt.expectedImpact);
         expect(req.results).toHaveLength(1);
@@ -428,8 +428,8 @@ describe('SARIF Converter', () => {
 
   // --- Suppression tests ---
 
-  describe('Suppressions', () => {
-    it('should mark accepted suppression as notReviewed', () => {
+  describe('Suppressions', async () => {
+    it('should mark accepted suppression as notReviewed', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -451,14 +451,14 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.results).toHaveLength(1);
       expect(req.results[0].status).toBe('notReviewed');
       expect(req.results[0].message).toContain('false positive');
     });
 
-    it('should keep failed status for rejected suppression', () => {
+    it('should keep failed status for rejected suppression', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -480,13 +480,13 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.results).toHaveLength(1);
       expect(req.results[0].status).toBe('failed');
     });
 
-    it('should store suppressions in tags', () => {
+    it('should store suppressions in tags', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -504,7 +504,7 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       const supps = req.tags.suppressions;
       expect(supps).toHaveLength(2);
@@ -517,8 +517,8 @@ describe('SARIF Converter', () => {
 
   // --- Rule metadata tests ---
 
-  describe('Rule metadata', () => {
-    it('should use rule name as title when available', () => {
+  describe('Rule metadata', async () => {
+    it('should use rule name as title when available', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -544,7 +544,7 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
 
       expect(req.title).toBe('SqlInjection');
@@ -562,7 +562,7 @@ describe('SARIF Converter', () => {
       expect(req.tags.helpUri).toBe('https://example.com/rules/R1');
     });
 
-    it('should fall back to message parsing when rule has no name', () => {
+    it('should fall back to message parsing when rule has no name', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -581,13 +581,13 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.title).toBe('category/name');
       expect(req.descriptions[0].data).toBe('Description here.');
     });
 
-    it('should use tool name as baseline name', () => {
+    it('should use tool name as baseline name', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -596,11 +596,11 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       expect(result.baselines[0].name).toBe('gosec');
     });
 
-    it('should fall back to SARIF when tool name is empty', () => {
+    it('should fall back to SARIF when tool name is empty', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -609,15 +609,15 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       expect(result.baselines[0].name).toBe('SARIF');
     });
   });
 
   // --- Fix tests ---
 
-  describe('Fixes', () => {
-    it('should add fix description when present', () => {
+  describe('Fixes', async () => {
+    it('should add fix description when present', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -634,14 +634,14 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       const fix = req.descriptions.find((d: { label: string }) => d.label === 'fix');
       expect(fix).toBeDefined();
       expect(fix.data).toBe('Replace with safe alternative.');
     });
 
-    it('should not add fix description when absent', () => {
+    it('should not add fix description when absent', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -655,7 +655,7 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       const fix = req.descriptions.find((d: { label: string }) => d.label === 'fix');
       expect(fix).toBeUndefined();
@@ -664,8 +664,8 @@ describe('SARIF Converter', () => {
 
   // --- Code flow / backtrace tests ---
 
-  describe('Code flows', () => {
-    it('should build backtrace from code flow', () => {
+  describe('Code flows', async () => {
+    it('should build backtrace from code flow', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -710,7 +710,7 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.results).toHaveLength(1);
       const bt = req.results[0].backtrace;
@@ -719,7 +719,7 @@ describe('SARIF Converter', () => {
       expect(bt[1]).toBe('sink.go:50 - Unsanitized use');
     });
 
-    it('should have empty backtrace when no code flows', () => {
+    it('should have empty backtrace when no code flows', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -738,7 +738,7 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.results).toHaveLength(1);
       expect(req.results[0].backtrace).toEqual([]);
@@ -747,8 +747,8 @@ describe('SARIF Converter', () => {
 
   // --- Snippet tests ---
 
-  describe('Snippets', () => {
-    it('should include snippet in codeDesc when present', () => {
+  describe('Snippets', async () => {
+    it('should include snippet in codeDesc when present', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -771,14 +771,14 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.results).toHaveLength(1);
       expect(req.results[0].codeDesc).toContain('URL : file.go LINE : 42 COLUMN : 5');
       expect(req.results[0].codeDesc).toContain('db.Query(sql + input)');
     });
 
-    it('should not include snippet when absent', () => {
+    it('should not include snippet when absent', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -797,7 +797,7 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.results).toHaveLength(1);
       expect(req.results[0].codeDesc).toBe('URL : file.go LINE : 42 COLUMN : 5');
@@ -806,8 +806,8 @@ describe('SARIF Converter', () => {
 
   // --- Fingerprint tests ---
 
-  describe('Fingerprints', () => {
-    it('should store fingerprints in tags', () => {
+  describe('Fingerprints', async () => {
+    it('should store fingerprints in tags', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -823,14 +823,14 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.tags.fingerprints).toBeDefined();
       expect(req.tags.fingerprints.fingerprints.primaryLocationHash).toBe('abc123');
       expect(req.tags.fingerprints.partialFingerprints.lineHash).toBe('def456');
     });
 
-    it('should not include fingerprints when absent', () => {
+    it('should not include fingerprints when absent', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -844,7 +844,7 @@ describe('SARIF Converter', () => {
         }]
       });
 
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.tags.fingerprints).toBeUndefined();
     });
@@ -852,28 +852,28 @@ describe('SARIF Converter', () => {
 
   // --- Error handling ---
 
-  describe('Error handling', () => {
-    it('should error on invalid JSON', () => {
-      expect(() => convertSarifToHdf('not valid json')).toThrow();
+  describe('Error handling', async () => {
+    it('should error on invalid JSON', async () => {
+      await expect(convertSarifToHdf('not valid json')).rejects.toThrow();
     });
 
-    it('should error on missing runs', () => {
+    it('should error on missing runs', async () => {
       const input = JSON.stringify({ version: '2.1.0' });
-      expect(() => convertSarifToHdf(input)).toThrow('Invalid SARIF structure');
+      await expect(convertSarifToHdf(input)).rejects.toThrow('Invalid SARIF structure');
     });
 
-    it('should error on non-array runs', () => {
+    it('should error on non-array runs', async () => {
       const input = JSON.stringify({ version: '2.1.0', runs: {} });
-      expect(() => convertSarifToHdf(input)).toThrow('Invalid SARIF structure');
+      await expect(convertSarifToHdf(input)).rejects.toThrow('Invalid SARIF structure');
     });
   });
 
   // --- Integration tests with fixtures ---
 
-  describe('Rich fixture integration', () => {
-    it('should convert rich.sarif with all enriched fields', () => {
+  describe('Rich fixture integration', async () => {
+    it('should convert rich.sarif with all enriched fields', async () => {
       const input = loadFixture('input', 'rich.sarif');
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
 
       expect(result.baselines).toHaveLength(1);
       const baseline = result.baselines[0];
@@ -936,10 +936,10 @@ describe('SARIF Converter', () => {
 
   // --- Multi-tool fixture tests (DefectDojo-sourced, schema-validated) ---
 
-  describe('CodeQL fixture integration', () => {
-    it('should convert codeQL-output.sarif with grouping, codeFlows, and fingerprints', () => {
+  describe('CodeQL fixture integration', async () => {
+    it('should convert codeQL-output.sarif with grouping, codeFlows, and fingerprints', async () => {
       const input = loadFixture('input', 'codeQL-output.sarif');
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
 
       const baseline = result.baselines[0];
       expect(baseline.name).toBe('CodeQL');
@@ -964,10 +964,10 @@ describe('SARIF Converter', () => {
     });
   });
 
-  describe('Gitleaks fixture integration', () => {
-    it('should handle results with no ruleId (all grouped under empty string)', () => {
+  describe('Gitleaks fixture integration', async () => {
+    it('should handle results with no ruleId (all grouped under empty string)', async () => {
       const input = loadFixture('input', 'gitleaks_7.5.0.sarif');
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
 
       const baseline = result.baselines[0];
       expect(baseline.name).toBe('Gitleaks');
@@ -993,10 +993,10 @@ describe('SARIF Converter', () => {
     });
   });
 
-  describe('SpotBugs fixture integration', () => {
-    it('should convert spotbugs.sarif with all note-level rules', () => {
+  describe('SpotBugs fixture integration', async () => {
+    it('should convert spotbugs.sarif with all note-level rules', async () => {
       const input = loadFixture('input', 'spotbugs.sarif');
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
 
       const baseline = result.baselines[0];
       expect(baseline.name).toBe('SpotBugs');
@@ -1024,10 +1024,10 @@ describe('SARIF Converter', () => {
     });
   });
 
-  describe('Dockle fixture integration', () => {
-    it('should handle results with no locations (0 RequirementResults)', () => {
+  describe('Dockle fixture integration', async () => {
+    it('should handle results with no locations (0 RequirementResults)', async () => {
       const input = loadFixture('input', 'dockle_0_3_15.sarif');
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
 
       const baseline = result.baselines[0];
       expect(baseline.name).toBe('Dockle');
@@ -1053,10 +1053,10 @@ describe('SARIF Converter', () => {
     });
   });
 
-  describe('Gosec fixture integration', () => {
-    it('should convert gosec.sarif with CWE taxonomy', () => {
+  describe('Gosec fixture integration', async () => {
+    it('should convert gosec.sarif with CWE taxonomy', async () => {
       const input = loadFixture('input', 'gosec.sarif');
-      const result = JSON.parse(convertSarifToHdf(input));
+      const result = JSON.parse(await convertSarifToHdf(input));
 
       const baseline = result.baselines[0];
       expect(baseline.name).toBe('gosec');
@@ -1088,7 +1088,7 @@ describe('SARIF Converter', () => {
 
 // --- Helpers ---
 
-function convertWithLevel(level: string) {
+async function convertWithLevel(level: string) {
   const input = JSON.stringify({
     version: '2.1.0',
     runs: [{
@@ -1102,5 +1102,5 @@ function convertWithLevel(level: string) {
     }]
   });
 
-  return JSON.parse(convertSarifToHdf(input));
+  return JSON.parse(await convertSarifToHdf(input));
 }

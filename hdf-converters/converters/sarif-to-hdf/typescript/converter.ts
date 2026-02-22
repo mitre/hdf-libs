@@ -1,5 +1,4 @@
-import { createHash } from 'crypto';
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, sha256 } from '@mitre/hdf-utilities';
 import {
   getCweNistControl,
   nistToCci,
@@ -151,10 +150,10 @@ const IMPACT_MAPPING: Record<string, number> = {
 
 // --- Conversion entry point ---
 
-export function convertSarifToHdf(input: string): string {
+export async function convertSarifToHdf(input: string): Promise<string> {
   const resultsChecksum: Checksum = {
     algorithm: HashAlgorithm.Sha256,
-    value: createHash('sha256').update(input).digest('hex'),
+    value: await sha256(input),
   };
 
   const sarif = parseJSON<SarifFile>(input);

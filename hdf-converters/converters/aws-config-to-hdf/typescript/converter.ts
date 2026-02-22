@@ -1,5 +1,4 @@
-import { createHash } from 'crypto';
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, sha256 } from '@mitre/hdf-utilities';
 import {
   getAwsConfigNistControlByIdentifier,
   getAwsConfigNistControlByName,
@@ -158,10 +157,10 @@ function buildRequirement(rule: ConfigRule): EvaluatedRequirement {
  *                with get-compliance-details-by-config-rule
  * @returns HDF JSON string
  */
-export function convertAwsConfigToHdf(input: string): string {
+export async function convertAwsConfigToHdf(input: string): Promise<string> {
   const resultsChecksum: Checksum = {
     algorithm: HashAlgorithm.Sha256,
-    value: createHash('sha256').update(input).digest('hex'),
+    value: await sha256(input),
   };
 
   const data = parseJSON<ConfigRulesFile>(input);

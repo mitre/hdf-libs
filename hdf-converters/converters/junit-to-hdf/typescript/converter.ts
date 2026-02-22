@@ -1,5 +1,4 @@
-import { createHash } from 'crypto';
-import { parseXmlWithArrays } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, sha256 } from '@mitre/hdf-utilities';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -72,7 +71,7 @@ const ARRAY_TAGS = ['testsuite', 'testcase'];
 /**
  * Converts JUnit XML test results to HDF format.
  */
-export function convertJunitToHdf(input: string): string {
+export async function convertJunitToHdf(input: string): Promise<string> {
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
@@ -82,7 +81,7 @@ export function convertJunitToHdf(input: string): string {
 
   const resultsChecksum: Checksum = {
     algorithm: HashAlgorithm.Sha256,
-    value: createHash('sha256').update(input).digest('hex'),
+    value: await sha256(input),
   };
 
   const baseline = createMinimalBaseline(name, requirements, {
