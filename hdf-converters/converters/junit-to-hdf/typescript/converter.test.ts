@@ -240,6 +240,70 @@ describe('junit to HDF converter', () => {
     });
   });
 
+  // --- Testsuites root with mixed statuses (schema-validated against Windyroad XSD) ---
+
+  describe('testsuites-mixed fixture', () => {
+    it('should handle <testsuites> root element', () => {
+      const hdf = parseHdf('testsuites-mixed.xml');
+      // testsuites has no name attr — should default
+      expect(hdf.baselines[0]!.name).toBe('JUnit Test Results');
+    });
+
+    it('should produce 5 requirements from 2 suites', () => {
+      const hdf = parseHdf('testsuites-mixed.xml');
+      expect(hdf.baselines[0]!.requirements).toHaveLength(5);
+    });
+
+    it('should map skipped test to notReviewed with message', () => {
+      const hdf = parseHdf('testsuites-mixed.xml');
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'com.example.math.MathTest.testSquareRoot'
+      );
+      expect(req).toBeDefined();
+      expect(req?.results[0]?.status).toBe(ResultStatus.NotReviewed);
+      expect(req?.results[0]?.message).toContain(
+        'Requires math library upgrade'
+      );
+    });
+
+    it('should map passing test to passed', () => {
+      const hdf = parseHdf('testsuites-mixed.xml');
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'com.example.math.MathTest.testAddition'
+      );
+      expect(req?.results[0]?.status).toBe(ResultStatus.Passed);
+    });
+
+    it('should map failed test with failure message', () => {
+      const hdf = parseHdf('testsuites-mixed.xml');
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'com.example.math.MathTest.testDivisionByZero'
+      );
+      expect(req?.results[0]?.status).toBe(ResultStatus.Failed);
+      expect(req?.results[0]?.message).toContain(
+        'Expected exception was not thrown'
+      );
+    });
+
+    it('should map error test with error message', () => {
+      const hdf = parseHdf('testsuites-mixed.xml');
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'com.example.string.StringTest.testParseInt'
+      );
+      expect(req?.results[0]?.status).toBe(ResultStatus.Error);
+      expect(req?.results[0]?.message).toContain('NullPointerException');
+    });
+
+    it('should parse timestamp from suite', () => {
+      const hdf = parseHdf('testsuites-mixed.xml');
+      const req = hdf.baselines[0]!.requirements.find(
+        (r) => r.id === 'com.example.math.MathTest.testAddition'
+      );
+      // Suite has timestamp="2024-11-15T10:30:00" — should appear as startTime
+      expect(req?.results[0]?.startTime).toBeTruthy();
+    });
+  });
+
   // --- JSON round-trip ---
 
   describe('JSON round-trip', () => {
