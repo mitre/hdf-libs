@@ -1,17 +1,37 @@
 /**
- * CSV parsing and generation utilities using papaparse
+ * CSV parsing and generation utilities using d3-dsv
  *
  * SECURITY WARNING: CSV files opened in Excel/LibreOffice may execute formulas.
  * Use sanitization options when exporting data that may contain user-controlled content.
  */
 
-import Papa from 'papaparse';
-import type { ParseConfig, UnparseConfig } from 'papaparse';
+import { dsvFormat } from 'd3-dsv';
+
+/**
+ * Options for parsing CSV
+ */
+export interface CsvParseOptions {
+  header?: boolean;
+  skipEmptyLines?: boolean;
+  transformHeader?: (header: string, index: number) => string;
+  dynamicTyping?: boolean;
+  delimiter?: string;
+}
+
+/**
+ * Options for building CSV
+ */
+export interface CsvBuildOptions {
+  header?: boolean;
+  newline?: string;
+  skipEmptyLines?: boolean;
+  delimiter?: string;
+}
 
 /**
  * Default options for parsing CSV with headers
  */
-const DEFAULT_PARSE_OPTIONS: ParseConfig = {
+const DEFAULT_PARSE_OPTIONS: CsvParseOptions = {
   header: true,
   skipEmptyLines: true,
   transformHeader: undefined,
@@ -21,7 +41,7 @@ const DEFAULT_PARSE_OPTIONS: ParseConfig = {
 /**
  * Default options for parsing CSV without headers
  */
-const DEFAULT_PARSE_ARRAY_OPTIONS: ParseConfig = {
+const DEFAULT_PARSE_ARRAY_OPTIONS: CsvParseOptions = {
   header: false,
   skipEmptyLines: true,
   dynamicTyping: false,
@@ -30,66 +50,119 @@ const DEFAULT_PARSE_ARRAY_OPTIONS: ParseConfig = {
 /**
  * Default options for building CSV
  */
-const DEFAULT_BUILD_OPTIONS: UnparseConfig = {
+const DEFAULT_BUILD_OPTIONS: CsvBuildOptions = {
   header: true,
   newline: '\n',
   skipEmptyLines: true,
 };
 
 /**
+ * Validate CSV quoting — throws if unclosed quotes are found
+ */
+function validateQuoting(csv: string): void {
+  let inQuotes = false;
+  let row = 0;
+  for (let i = 0; i < csv.length; i++) {
+    if (csv[i] === '"') {
+      if (inQuotes && i + 1 < csv.length && csv[i + 1] === '"') {
+        i++; // skip escaped quote ""
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (csv[i] === '\n' && !inQuotes) {
+      row++;
+    }
+  }
+  if (inQuotes) {
+    throw new Error(`CSV parsing failed: Row ${row}: Unclosed quote`);
+  }
+}
+
+/**
+ * Convert string value to number or boolean when appropriate
+ */
+function dynamicTypeConvert(value: string): unknown {
+  if (value === '') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  const num = Number(value);
+  if (!isNaN(num) && value.trim() !== '') return num;
+  return value;
+}
+
+/**
  * Parse CSV string into array of objects with headers as keys
  * @param csv - CSV string to parse
- * @param options - Optional papaparse configuration
+ * @param options - Optional parse configuration
  * @returns Array of objects representing rows
  * @throws Error if parsing fails
  */
 export function parseCsv<T = Record<string, unknown>>(
   csv: string,
-  options?: Partial<ParseConfig>
+  options?: Partial<CsvParseOptions>
 ): T[] {
-  const mergedOptions = {
-    ...DEFAULT_PARSE_OPTIONS,
-    ...options,
-  };
+  const opts = { ...DEFAULT_PARSE_OPTIONS, ...options };
+  const trimmed = csv.trim();
 
-  const result = Papa.parse<T>(csv.trim(), mergedOptions);
+  validateQuoting(trimmed);
 
-  if (result.errors.length > 0) {
-    const errorMessages = result.errors
-      .map((err) => `Row ${err.row}: ${err.message}`)
-      .join('; ');
-    throw new Error(`CSV parsing failed: ${errorMessages}`);
+  const dsv = dsvFormat(opts.delimiter ?? ',');
+  const parsed = dsv.parse(trimmed);
+  const { columns } = parsed;
+
+  // Pre-compute transformed headers
+  const headers = opts.transformHeader
+    ? columns.map((col, i) => opts.transformHeader!(col, i))
+    : columns;
+
+  let rows: Record<string, unknown>[] = parsed.map((row) => {
+    const obj: Record<string, unknown> = {};
+    columns.forEach((col, i) => {
+      let value: unknown = row[col] ?? '';
+      if (opts.dynamicTyping && typeof value === 'string') {
+        value = dynamicTypeConvert(value);
+      }
+      const key = headers[i];
+      if (key !== undefined) {
+        obj[key] = value;
+      }
+    });
+    return obj;
+  });
+
+  if (opts.skipEmptyLines) {
+    rows = rows.filter((row) =>
+      Object.values(row).some((v) => v !== '' && v !== null && v !== undefined)
+    );
   }
 
-  return result.data;
+  return rows as T[];
 }
 
 /**
  * Parse CSV string into array of arrays without treating first row as headers
  * @param csv - CSV string to parse
- * @param options - Optional papaparse configuration
+ * @param options - Optional parse configuration
  * @returns Array of arrays representing rows
  * @throws Error if parsing fails
  */
 export function parseCsvArray(
   csv: string,
-  options?: Partial<ParseConfig>
+  options?: Partial<CsvParseOptions>
 ): string[][] {
-  const mergedOptions = {
-    ...DEFAULT_PARSE_ARRAY_OPTIONS,
-    ...options,
-  };
+  const opts = { ...DEFAULT_PARSE_ARRAY_OPTIONS, ...options };
+  const trimmed = csv.trim();
 
-  const result = Papa.parse<string[]>(csv.trim(), mergedOptions);
+  validateQuoting(trimmed);
 
-  if (result.errors.length > 0) {
-    const errorMessages = result.errors
-      .map((err) => `Row ${err.row}: ${err.message}`)
-      .join('; ');
-    throw new Error(`CSV parsing failed: ${errorMessages}`);
+  const dsv = dsvFormat(opts.delimiter ?? ',');
+  let rows = dsv.parseRows(trimmed);
+
+  if (opts.skipEmptyLines) {
+    rows = rows.filter((row) => !(row.length === 1 && row[0] === ''));
   }
 
-  return result.data;
+  return rows;
 }
 
 /**
@@ -99,29 +172,17 @@ export function parseCsvArray(
  * to prevent CSV formula injection attacks in Excel/LibreOffice.
  *
  * @param data - Array of objects to convert to CSV
- * @param options - Optional papaparse configuration and sanitize flag
+ * @param options - Optional build configuration and sanitize flag
  * @returns CSV string
- *
- * @example
- * ```typescript
- * // Without sanitization (default)
- * buildCsv([{name: '=1+1', value: 'test'}]);
- *
- * // With sanitization (recommended for user data)
- * buildCsv([{name: '=1+1', value: 'test'}], { sanitize: true });
- * // Result: '=1+1' becomes "'=1+1"
- * ```
  */
 export function buildCsv<T = Record<string, unknown>>(
   data: T[],
-  options?: Partial<UnparseConfig> & { sanitize?: boolean }
+  options?: Partial<CsvBuildOptions> & { sanitize?: boolean }
 ): string {
-  const { sanitize, ...unparseOptions } = options || {};
+  const { sanitize, ...buildOpts } = options || {};
+  const opts = { ...DEFAULT_BUILD_OPTIONS, ...buildOpts };
 
-  const mergedOptions = {
-    ...DEFAULT_BUILD_OPTIONS,
-    ...unparseOptions,
-  };
+  if (data.length === 0) return '';
 
   let processedData = data;
   if (sanitize) {
@@ -130,7 +191,23 @@ export function buildCsv<T = Record<string, unknown>>(
     ) as T[];
   }
 
-  return Papa.unparse(processedData, mergedOptions);
+  const dsv = dsvFormat(opts.delimiter ?? ',');
+  let result: string;
+
+  if (opts.header === false) {
+    const rows = processedData.map((row) =>
+      Object.values(row as Record<string, unknown>).map(String)
+    );
+    result = dsv.formatRows(rows);
+  } else {
+    result = dsv.format(processedData as Record<string, unknown>[]);
+  }
+
+  if (opts.newline && opts.newline !== '\n') {
+    result = result.replace(/\n/g, opts.newline);
+  }
+
+  return result;
 }
 
 /**
@@ -140,34 +217,31 @@ export function buildCsv<T = Record<string, unknown>>(
  * to prevent CSV formula injection attacks in Excel/LibreOffice.
  *
  * @param data - Array of arrays to convert to CSV
- * @param options - Optional papaparse configuration and sanitize flag
+ * @param options - Optional build configuration and sanitize flag
  * @returns CSV string
- *
- * @example
- * ```typescript
- * // With sanitization for security tool output
- * const rows = [['Title', 'Description'], ['Test', '=cmd|calc']];
- * buildCsvArray(rows, { sanitize: true });
- * ```
  */
 export function buildCsvArray(
   data: string[][],
-  options?: Partial<UnparseConfig> & { sanitize?: boolean }
+  options?: Partial<CsvBuildOptions> & { sanitize?: boolean }
 ): string {
-  const { sanitize, ...unparseOptions } = options || {};
+  const { sanitize, ...buildOpts } = options || {};
+  const opts = { ...DEFAULT_BUILD_OPTIONS, header: false, ...buildOpts };
 
-  const mergedOptions = {
-    ...DEFAULT_BUILD_OPTIONS,
-    header: false,
-    ...unparseOptions,
-  };
+  if (data.length === 0) return '';
 
   let processedData = data;
   if (sanitize) {
     processedData = data.map((row) => sanitizeCsvArray(row));
   }
 
-  return Papa.unparse(processedData, mergedOptions);
+  const dsv = dsvFormat(opts.delimiter ?? ',');
+  let result = dsv.formatRows(processedData);
+
+  if (opts.newline && opts.newline !== '\n') {
+    result = result.replace(/\n/g, opts.newline);
+  }
+
+  return result;
 }
 
 /**
@@ -176,16 +250,20 @@ export function buildCsvArray(
  * @returns True if valid CSV, false otherwise
  */
 export function isValidCsv(csv: string): boolean {
-  if (!csv || csv.trim().length === 0) {
+  if (!csv || csv.trim().length === 0) return false;
+
+  const trimmed = csv.trim();
+
+  // CSV must have at least one delimiter (comma) to be considered CSV structure
+  if (!trimmed.includes(',')) return false;
+
+  try {
+    validateQuoting(trimmed);
+  } catch {
     return false;
   }
 
-  const result = Papa.parse(csv.trim(), {
-    preview: 1,
-    skipEmptyLines: true,
-  });
-
-  return result.errors.length === 0;
+  return true;
 }
 
 /**
@@ -196,12 +274,6 @@ export function isValidCsv(csv: string): boolean {
  *
  * @param value - Value to sanitize
  * @returns Sanitized value
- *
- * @example
- * ```typescript
- * sanitizeCsvValue('=1+1'); // Returns: '=1+1'
- * sanitizeCsvValue('normal'); // Returns: 'normal'
- * ```
  */
 export function sanitizeCsvValue(value: unknown): string {
   const str = String(value);
