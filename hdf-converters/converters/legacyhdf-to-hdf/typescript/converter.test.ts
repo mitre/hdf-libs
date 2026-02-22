@@ -1,5 +1,11 @@
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertV1ToV2, isHDFV1, HDFV1Results } from './converter.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
 describe('HDF v1.0 to v2.0 Converter', () => {
   describe('convertV1ToV2', () => {
@@ -557,6 +563,81 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
       const v2 = convertV1ToV2(v1);
       expect(v2.baselines[0]).toHaveProperty('custom_profile_field', 'custom');
+    });
+  });
+
+  // --- Real InSpec fixture (ubi9 STIG scan, 452 controls) ---
+
+  describe('ubi9-scan fixture (real InSpec exec-json)', () => {
+    const raw = readFileSync(
+      join(FIXTURES_DIR, 'input', 'ubi9-scan.json'),
+      'utf-8'
+    );
+    const v1 = JSON.parse(raw) as HDFV1Results;
+
+    it('should be detected as valid HDF v1.0', () => {
+      expect(isHDFV1(v1)).toBe(true);
+    });
+
+    it('should convert without throwing', () => {
+      expect(() => convertV1ToV2(v1)).not.toThrow();
+    });
+
+    it('should produce one baseline from one profile', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines).toHaveLength(1);
+      expect(v2.baselines[0].name).toBe(
+        'redhat-enterprise-linux-9-stig-baseline'
+      );
+    });
+
+    it('should convert all 452 controls to requirements', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements).toHaveLength(452);
+    });
+
+    it('should map platform to target', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.targets).toHaveLength(1);
+      expect(v2.targets![0]).toMatchObject({
+        type: 'host',
+        name: 'redhat',
+        release: '9.7',
+      });
+    });
+
+    it('should preserve statistics', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.statistics).toMatchObject({ duration: 47.904315 });
+    });
+
+    it('should normalize status values', () => {
+      const v2 = convertV1ToV2(v1);
+      const reqs = v2.baselines[0].requirements!;
+      const statuses = reqs.map((r) => r.effectiveStatus);
+      expect(statuses).toContain('passed');
+      expect(statuses).toContain('failed');
+      expect(statuses).toContain('notApplicable');
+      expect(statuses).toContain('notReviewed');
+      // skipped in v1 → notReviewed in v2 (no raw 'skipped' should remain)
+      expect(statuses).not.toContain('skipped');
+      expect(statuses).not.toContain('not_applicable');
+    });
+
+    it('should preserve NIST tags on controls', () => {
+      const v2 = convertV1ToV2(v1);
+      const withNist = v2.baselines[0].requirements!.filter(
+        (r) => r.tags?.['nist']
+      );
+      expect(withNist.length).toBeGreaterThan(0);
+    });
+
+    it('should preserve sha256 as checksum', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].checksum).toEqual({
+        algorithm: 'sha256',
+        value: expect.stringMatching(/^[a-f0-9]{64}$/),
+      });
     });
   });
 
