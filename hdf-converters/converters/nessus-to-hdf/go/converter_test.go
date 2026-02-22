@@ -13,11 +13,11 @@ import (
 
 const converterVersion = "0.1.0"
 
-func TestConvertNessusToHDF_Minimal(t *testing.T) {
-	// Load minimal fixture
-	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "minimal.nessus")
+func TestConvertNessusToHDF_Sample(t *testing.T) {
+	// Load real Nessus scan fixture
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
 	inputData, err := os.ReadFile(inputPath)
-	require.NoError(t, err, "Failed to read minimal.nessus fixture")
+	require.NoError(t, err, "Failed to read sample.nessus fixture")
 
 	// Convert
 	result, err := ConvertNessusToHDF(inputData, converterVersion)
@@ -27,26 +27,21 @@ func TestConvertNessusToHDF_Minimal(t *testing.T) {
 	// Verify basic structure
 	assert.Equal(t, "nessus-to-hdf", result.Generator.Name)
 	assert.Equal(t, converterVersion, result.Generator.Version)
-	assert.Len(t, result.Baselines, 1, "Should have 1 baseline")
-	assert.Len(t, result.Targets, 1, "Should have 1 target")
+	assert.Len(t, result.Baselines, 3, "Should have 3 baselines (one per scanned host)")
+	assert.Len(t, result.Targets, 3, "Should have 3 targets (3 scanned hosts)")
 
-	// Verify baseline
-	baseline := result.Baselines[0]
-	assert.Equal(t, "Nessus Basic Network Scan", baseline.Name)
-	require.NotNil(t, baseline.Version)
-	assert.Equal(t, "5.19.0", *baseline.Version)
-	assert.Greater(t, len(baseline.Requirements), 0, "Should have requirements")
-
-	// Verify target
-	target := result.Targets[0]
-	assert.Equal(t, "192.168.1.100", target.Name)
+	// Verify each baseline has requirements
+	for _, baseline := range result.Baselines {
+		assert.Equal(t, "Nessus Basic Network Scan", baseline.Name)
+		assert.Greater(t, len(baseline.Requirements), 0, "Should have requirements")
+	}
 
 	// Write output for differential testing
-	shared.WriteOutput(t, "nessus-to-hdf", "minimal.json", result)
+	shared.WriteOutput(t, "nessus-to-hdf", "sample.json", result)
 }
 
 func TestConvertNessusToHDF_DataSource(t *testing.T) {
-	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "minimal.nessus")
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
 

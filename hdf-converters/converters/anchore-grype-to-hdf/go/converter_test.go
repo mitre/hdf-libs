@@ -23,7 +23,7 @@ func loadFixture(t *testing.T, name string) []byte {
 }
 
 func TestConvertAnchoreGrypeToHDF(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/amazon.json")
 	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
@@ -43,18 +43,19 @@ func TestConvertAnchoreGrypeToHDF(t *testing.T) {
 		t.Errorf("Expected generator version %q, got '%s'", testConverterVersion, hdfResults.Generator.Version)
 	}
 
-	expectedTime, _ := time.Parse(time.RFC3339, "2024-01-15T10:30:00Z")
+	// Timestamp from real Grype output: "2024-08-29T13:47:41.623667-04:00"
+	expectedTime, _ := time.Parse(time.RFC3339Nano, "2024-08-29T13:47:41.623667-04:00")
 	if hdfResults.Timestamp == nil || !hdfResults.Timestamp.Equal(expectedTime) {
 		if hdfResults.Timestamp == nil {
 			t.Error("Expected timestamp to be defined")
 		} else {
-			t.Errorf("Expected timestamp '2024-01-15T10:30:00Z', got '%s'", hdfResults.Timestamp.Format(time.RFC3339))
+			t.Errorf("Expected timestamp %q, got %q", expectedTime.Format(time.RFC3339Nano), hdfResults.Timestamp.Format(time.RFC3339Nano))
 		}
 	}
 }
 
 func TestConvertAnchoreGrypeToHDF_DataSource(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/amazon.json")
 	result, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
@@ -75,20 +76,20 @@ func TestConvertAnchoreGrypeToHDF_DataSource(t *testing.T) {
 }
 
 func TestBaselineName(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/amazon.json")
 	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
 
-	if hdfResults.Baselines[0].Name != "alpine:3.18" {
-		t.Errorf("Expected baseline name 'alpine:3.18', got '%s'", hdfResults.Baselines[0].Name)
+	if hdfResults.Baselines[0].Name != "cloudwatch_to_s3:latest" {
+		t.Errorf("Expected baseline name 'cloudwatch_to_s3:latest', got '%s'", hdfResults.Baselines[0].Name)
 	}
 }
 
 func TestMatchesConvertedToRequirements(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/amazon.json")
 	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
@@ -96,57 +97,73 @@ func TestMatchesConvertedToRequirements(t *testing.T) {
 	}
 
 	requirements := hdfResults.Baselines[0].Requirements
-	if len(requirements) != 3 { // 2 matches + 1 ignoredMatch
-		t.Errorf("Expected 3 requirements, got %d", len(requirements))
+	if len(requirements) != 16 {
+		t.Errorf("Expected 16 requirements (16 matches), got %d", len(requirements))
 	}
 
-	// Check regular match
-	var cve12345 *hdf.EvaluatedRequirement
+	// Check a Low severity match: ALAS-2024-2607 (ca-certificates)
+	var alas2607 *hdf.EvaluatedRequirement
 	for i := range requirements {
-		if requirements[i].ID == "Grype/CVE-2023-12345" {
-			cve12345 = &requirements[i]
+		if requirements[i].ID == "Grype/ALAS-2024-2607" {
+			alas2607 = &requirements[i]
 			break
 		}
 	}
 
-	if cve12345 == nil {
-		t.Fatal("Expected requirement 'Grype/CVE-2023-12345' not found")
+	if alas2607 == nil {
+		t.Fatal("Expected requirement 'Grype/ALAS-2024-2607' not found")
 	}
 
-	if cve12345.Impact != 0.7 { // High severity
-		t.Errorf("Expected impact 0.7, got %f", cve12345.Impact)
+	if alas2607.Impact != 0.3 { // Low severity
+		t.Errorf("Expected impact 0.3 for Low severity, got %f", alas2607.Impact)
 	}
 
-	if len(cve12345.Results) != 1 {
-		t.Errorf("Expected 1 result, got %d", len(cve12345.Results))
+	if len(alas2607.Results) != 1 {
+		t.Errorf("Expected 1 result, got %d", len(alas2607.Results))
 	}
 
-	if cve12345.Results[0].Status != hdf.Failed {
-		t.Errorf("Expected status 'failed', got '%s'", cve12345.Results[0].Status)
+	if alas2607.Results[0].Status != hdf.Failed {
+		t.Errorf("Expected status 'failed', got '%s'", alas2607.Results[0].Status)
 	}
 
-	// Check critical vulnerability
-	var cve67890 *hdf.EvaluatedRequirement
+	// Check a High severity match: CVE-2024-7592 (python binary)
+	var cve7592 *hdf.EvaluatedRequirement
 	for i := range requirements {
-		if requirements[i].ID == "Grype/CVE-2023-67890" {
-			cve67890 = &requirements[i]
+		if requirements[i].ID == "Grype/CVE-2024-7592" {
+			cve7592 = &requirements[i]
 			break
 		}
 	}
 
-	if cve67890 == nil {
-		t.Fatal("Expected requirement 'Grype/CVE-2023-67890' not found")
+	if cve7592 == nil {
+		t.Fatal("Expected requirement 'Grype/CVE-2024-7592' not found")
 	}
 
-	if cve67890.Impact != 0.9 { // Critical severity
-		t.Errorf("Expected impact 0.9, got %f", cve67890.Impact)
+	if cve7592.Impact != 0.7 { // High severity
+		t.Errorf("Expected impact 0.7 for High severity, got %f", cve7592.Impact)
 	}
 }
 
 func TestIgnoredMatches(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
-	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
+	// Use inline fixture with ignoredMatches since the real amazon.json
+	// scan has no ignored matches. Structure mirrors real Grype output.
+	ignoredReport := `{
+		"descriptor": {"name": "grype", "version": "0.79.3"},
+		"source": {"target": {"userInput": "test-image"}},
+		"matches": [],
+		"ignoredMatches": [{
+			"vulnerability": {
+				"id": "CVE-2024-0001",
+				"severity": "Low",
+				"urls": ["https://nvd.nist.gov/vuln/detail/CVE-2024-0001"],
+				"description": "Test ignored vulnerability"
+			},
+			"matchDetails": [{"type": "exact-direct-match", "matcher": "rpm-matcher"}],
+			"artifact": {"name": "test-pkg", "version": "1.0.0", "type": "rpm"}
+		}]
+	}`
 
+	hdfResults, err := ConvertAnchoreGrypeToHDF([]byte(ignoredReport), testConverterVersion)
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
@@ -154,14 +171,14 @@ func TestIgnoredMatches(t *testing.T) {
 	requirements := hdfResults.Baselines[0].Requirements
 	var ignored *hdf.EvaluatedRequirement
 	for i := range requirements {
-		if requirements[i].ID == "Grype-Ignored-Match/CVE-2022-99999" {
+		if requirements[i].ID == "Grype-Ignored-Match/CVE-2024-0001" {
 			ignored = &requirements[i]
 			break
 		}
 	}
 
 	if ignored == nil {
-		t.Fatal("Expected ignored requirement 'Grype-Ignored-Match/CVE-2022-99999' not found")
+		t.Fatal("Expected ignored requirement 'Grype-Ignored-Match/CVE-2024-0001' not found")
 	}
 
 	if ignored.Results[0].Status != hdf.NotReviewed {
@@ -174,7 +191,7 @@ func TestIgnoredMatches(t *testing.T) {
 }
 
 func TestNISTAndCCITags(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/amazon.json")
 	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
@@ -225,7 +242,7 @@ func TestNISTAndCCITags(t *testing.T) {
 }
 
 func TestDescriptions(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/amazon.json")
 	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
@@ -267,13 +284,14 @@ func TestDescriptions(t *testing.T) {
 }
 
 func TestReferences(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/amazon.json")
 	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
 
+	// First match (ALAS-2024-2607) has URLs including the ALAS advisory URL
 	req := hdfResults.Baselines[0].Requirements[0]
 
 	if len(req.Refs) == 0 {
@@ -282,7 +300,7 @@ func TestReferences(t *testing.T) {
 }
 
 func TestChecksumCalculation(t *testing.T) {
-	input := loadFixture(t, "input/minimal.json")
+	input := loadFixture(t, "input/amazon.json")
 	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {

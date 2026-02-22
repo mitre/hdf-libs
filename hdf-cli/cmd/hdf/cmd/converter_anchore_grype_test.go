@@ -26,8 +26,8 @@ func TestAnchoreGrypeConverter_IsRegistered(t *testing.T) {
 func TestAnchoreGrypeConverter_Convert_Minimal(t *testing.T) {
 	ensureAnchoreGrypeRegistered()
 
-	inputData, err := os.ReadFile(converterFixturePath(t, "anchore-grype-to-hdf", "input/minimal.json"))
-	require.NoError(t, err, "Failed to read minimal.json fixture")
+	inputData, err := os.ReadFile(converterFixturePath(t, "anchore-grype-to-hdf", "input/amazon.json"))
+	require.NoError(t, err, "Failed to read amazon.json fixture")
 
 	converter, err := GetConverter("anchore-grype", "hdf")
 	require.NoError(t, err, "Failed to get Anchore Grype converter")

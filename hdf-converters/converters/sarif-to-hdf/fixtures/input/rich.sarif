@@ -262,7 +262,27 @@
             {
               "description": {
                 "text": "Use parameterized query: db.Query(\"SELECT * FROM users WHERE name = ?\", userInput)"
-              }
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "src/db/queries.go"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "startLine": 45,
+                        "startColumn": 12,
+                        "endLine": 45,
+                        "endColumn": 78
+                      },
+                      "insertedContent": {
+                        "text": "db.Query(\"SELECT * FROM users WHERE name = ?\", userInput)"
+                      }
+                    }
+                  ]
+                }
+              ]
             }
           ],
           "fingerprints": {
@@ -298,7 +318,27 @@
             {
               "description": {
                 "text": "Replace md5.New() with sha256.New() or use bcrypt for password hashing."
-              }
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "src/auth/hash.go"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "startLine": 18,
+                        "startColumn": 3,
+                        "endLine": 18,
+                        "endColumn": 17
+                      },
+                      "insertedContent": {
+                        "text": "h := sha256.New()"
+                      }
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
