@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { convertV1ToV2, isHDFV1 } from '../src/index.js';
+import { convertV1ToV2, isHDFV1, convertJunitToHdf } from '../src/index.js';
 
 describe('Main exports', () => {
   it('should export convertV1ToV2 from main index', () => {
@@ -23,6 +23,11 @@ describe('Main exports', () => {
     const v2 = convertV1ToV2(v1);
     expect(v2.baselines).toEqual([]);
     expect(v2.targets).toBeDefined();
+  });
+
+  it('should export convertJunitToHdf from main index', () => {
+    expect(convertJunitToHdf).toBeDefined();
+    expect(typeof convertJunitToHdf).toBe('function');
   });
 
   it('should have working validator from main export', () => {
