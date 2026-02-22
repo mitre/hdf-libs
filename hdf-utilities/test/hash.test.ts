@@ -9,23 +9,23 @@ import {
 
 describe('Hash Utilities', () => {
   describe('generateHash', () => {
-    it('should generate SHA-256 hash by default', () => {
-      const hash = generateHash('hello world');
+    it('should generate SHA-256 hash by default', async () => {
+      const hash = await generateHash('hello world');
       expect(hash).toBe(
         'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9'
       );
     });
 
-    it('should generate SHA-512 hash when specified', () => {
-      const hash = generateHash('hello world', { algorithm: 'sha512' });
+    it('should generate SHA-512 hash when specified', async () => {
+      const hash = await generateHash('hello world', { algorithm: 'sha512' });
       expect(hash).toBe(
         '309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f'
       );
     });
 
-    it('should support different encodings', () => {
-      const hexHash = generateHash('hello world', { encoding: 'hex' });
-      const base64Hash = generateHash('hello world', { encoding: 'base64' });
+    it('should support different encodings', async () => {
+      const hexHash = await generateHash('hello world', { encoding: 'hex' });
+      const base64Hash = await generateHash('hello world', { encoding: 'base64' });
 
       expect(hexHash).toBe(
         'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9'
@@ -33,101 +33,101 @@ describe('Hash Utilities', () => {
       expect(base64Hash).toBe('uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=');
     });
 
-    it('should generate consistent hashes for same input', () => {
-      const hash1 = generateHash('test data');
-      const hash2 = generateHash('test data');
+    it('should generate consistent hashes for same input', async () => {
+      const hash1 = await generateHash('test data');
+      const hash2 = await generateHash('test data');
       expect(hash1).toBe(hash2);
     });
 
-    it('should generate different hashes for different inputs', () => {
-      const hash1 = generateHash('test data 1');
-      const hash2 = generateHash('test data 2');
+    it('should generate different hashes for different inputs', async () => {
+      const hash1 = await generateHash('test data 1');
+      const hash2 = await generateHash('test data 2');
       expect(hash1).not.toBe(hash2);
     });
 
-    it('should handle empty strings', () => {
-      const hash = generateHash('');
+    it('should handle empty strings', async () => {
+      const hash = await generateHash('');
       expect(hash).toBe(
         'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
       );
     });
 
-    it('should handle unicode characters', () => {
-      const hash = generateHash('Hello 世界 🌍');
+    it('should handle unicode characters', async () => {
+      const hash = await generateHash('Hello 世界 🌍');
       expect(hash).toHaveLength(64); // SHA-256 produces 64 hex characters
       expect(typeof hash).toBe('string');
     });
 
-    it('should handle special characters', () => {
-      const hash = generateHash('!@#$%^&*()_+-=[]{}|;:,.<>?');
+    it('should handle special characters', async () => {
+      const hash = await generateHash('!@#$%^&*()_+-=[]{}|;:,.<>?');
       expect(hash).toHaveLength(64);
       expect(typeof hash).toBe('string');
     });
   });
 
   describe('sha256', () => {
-    it('should generate SHA-256 hash', () => {
-      const hash = sha256('hello world');
+    it('should generate SHA-256 hash', async () => {
+      const hash = await sha256('hello world');
       expect(hash).toBe(
         'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9'
       );
     });
 
-    it('should be equivalent to generateHash with sha256 algorithm', () => {
+    it('should be equivalent to generateHash with sha256 algorithm', async () => {
       const data = 'test data';
-      expect(sha256(data)).toBe(generateHash(data, { algorithm: 'sha256' }));
+      expect(await sha256(data)).toBe(await generateHash(data, { algorithm: 'sha256' }));
     });
 
-    it('should handle long strings', () => {
+    it('should handle long strings', async () => {
       const longString = 'a'.repeat(10000);
-      const hash = sha256(longString);
+      const hash = await sha256(longString);
       expect(hash).toHaveLength(64);
     });
   });
 
   describe('sha512', () => {
-    it('should generate SHA-512 hash', () => {
-      const hash = sha512('hello world');
+    it('should generate SHA-512 hash', async () => {
+      const hash = await sha512('hello world');
       expect(hash).toBe(
         '309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f'
       );
     });
 
-    it('should be equivalent to generateHash with sha512 algorithm', () => {
+    it('should be equivalent to generateHash with sha512 algorithm', async () => {
       const data = 'test data';
-      expect(sha512(data)).toBe(generateHash(data, { algorithm: 'sha512' }));
+      expect(await sha512(data)).toBe(await generateHash(data, { algorithm: 'sha512' }));
     });
 
-    it('should produce 128 character hex string', () => {
-      const hash = sha512('test');
+    it('should produce 128 character hex string', async () => {
+      const hash = await sha512('test');
       expect(hash).toHaveLength(128);
     });
   });
 
   describe('hashObject', () => {
-    it('should hash an object by stringifying it', () => {
+    it('should hash an object by stringifying it', async () => {
       const obj = { id: 'V-12345', title: 'Test Control' };
-      const hash = hashObject(obj);
+      const hash = await hashObject(obj);
       expect(hash).toHaveLength(64); // SHA-256 default
       expect(typeof hash).toBe('string');
     });
 
-    it('should generate consistent hashes for same object', () => {
+    it('should generate consistent hashes for same object', async () => {
       const obj = { a: 1, b: 2, c: 3 };
-      const hash1 = hashObject(obj);
-      const hash2 = hashObject(obj);
+      const hash1 = await hashObject(obj);
+      const hash2 = await hashObject(obj);
       expect(hash1).toBe(hash2);
     });
 
-    it('should generate different hashes for different objects', () => {
+    it('should generate different hashes for different objects', async () => {
       const obj1 = { a: 1, b: 2 };
       const obj2 = { a: 1, b: 3 };
-      const hash1 = hashObject(obj1);
-      const hash2 = hashObject(obj2);
+      const hash1 = await hashObject(obj1);
+      const hash2 = await hashObject(obj2);
       expect(hash1).not.toBe(hash2);
     });
 
-    it('should handle nested objects', () => {
+    it('should handle nested objects', async () => {
       const obj = {
         control: {
           id: 'V-12345',
@@ -137,112 +137,112 @@ describe('Hash Utilities', () => {
           ],
         },
       };
-      const hash = hashObject(obj);
+      const hash = await hashObject(obj);
       expect(hash).toHaveLength(64);
     });
 
-    it('should handle arrays', () => {
+    it('should handle arrays', async () => {
       const arr = [1, 2, 3, 4, 5];
-      const hash = hashObject(arr);
+      const hash = await hashObject(arr);
       expect(hash).toHaveLength(64);
     });
 
-    it('should handle null and undefined', () => {
-      const hashNull = hashObject(null);
-      const hashUndef = hashObject(undefined);
+    it('should handle null and undefined', async () => {
+      const hashNull = await hashObject(null);
+      const hashUndef = await hashObject(undefined);
       expect(hashNull).toHaveLength(64);
       expect(hashUndef).toHaveLength(64);
       expect(hashNull).not.toBe(hashUndef);
     });
 
-    it('should support different algorithms', () => {
+    it('should support different algorithms', async () => {
       const obj = { test: 'data' };
-      const sha256Hash = hashObject(obj, { algorithm: 'sha256' });
-      const sha512Hash = hashObject(obj, { algorithm: 'sha512' });
+      const sha256Hash = await hashObject(obj, { algorithm: 'sha256' });
+      const sha512Hash = await hashObject(obj, { algorithm: 'sha512' });
       expect(sha256Hash).toHaveLength(64);
       expect(sha512Hash).toHaveLength(128);
     });
 
-    it('should be sensitive to property order', () => {
+    it('should be sensitive to property order', async () => {
       // JSON.stringify is sensitive to property order
       const obj1 = { a: 1, b: 2 };
       const obj2 = { b: 2, a: 1 };
-      const hash1 = hashObject(obj1);
-      const hash2 = hashObject(obj2);
+      const hash1 = await hashObject(obj1);
+      const hash2 = await hashObject(obj2);
       // These will be different because JSON.stringify preserves insertion order
       expect(hash1).not.toBe(hash2);
     });
   });
 
   describe('verifyHash', () => {
-    it('should verify correct hash', () => {
+    it('should verify correct hash', async () => {
       const data = 'hello world';
-      const hash = sha256(data);
-      expect(verifyHash(data, hash)).toBe(true);
+      const hash = await sha256(data);
+      expect(await verifyHash(data, hash)).toBe(true);
     });
 
-    it('should reject incorrect hash', () => {
+    it('should reject incorrect hash', async () => {
       const data = 'hello world';
-      const wrongHash = sha256('different data');
-      expect(verifyHash(data, wrongHash)).toBe(false);
+      const wrongHash = await sha256('different data');
+      expect(await verifyHash(data, wrongHash)).toBe(false);
     });
 
-    it('should work with different algorithms', () => {
+    it('should work with different algorithms', async () => {
       const data = 'test data';
-      const sha256Hash = sha256(data);
-      expect(verifyHash(data, sha256Hash, { algorithm: 'sha256' })).toBe(true);
+      const sha256Hash = await sha256(data);
+      expect(await verifyHash(data, sha256Hash, { algorithm: 'sha256' })).toBe(true);
 
-      const sha512Hash = sha512(data);
-      expect(verifyHash(data, sha512Hash, { algorithm: 'sha512' })).toBe(true);
+      const sha512Hash = await sha512(data);
+      expect(await verifyHash(data, sha512Hash, { algorithm: 'sha512' })).toBe(true);
     });
 
-    it('should be case-sensitive for hash value', () => {
+    it('should be case-sensitive for hash value', async () => {
       const data = 'test';
-      const hash = sha256(data).toUpperCase();
+      const hash = (await sha256(data)).toUpperCase();
       // Crypto hashes are lowercase hex by default
-      expect(verifyHash(data, hash)).toBe(false);
+      expect(await verifyHash(data, hash)).toBe(false);
     });
 
-    it('should handle empty data', () => {
+    it('should handle empty data', async () => {
       const data = '';
-      const hash = sha256(data);
-      expect(verifyHash(data, hash)).toBe(true);
+      const hash = await sha256(data);
+      expect(await verifyHash(data, hash)).toBe(true);
     });
 
-    it('should fail for partial hash', () => {
+    it('should fail for partial hash', async () => {
       const data = 'test';
-      const fullHash = sha256(data);
+      const fullHash = await sha256(data);
       const partialHash = fullHash.substring(0, 32);
-      expect(verifyHash(data, partialHash)).toBe(false);
+      expect(await verifyHash(data, partialHash)).toBe(false);
     });
   });
 
   describe('explicit algorithm option', () => {
-    it('explicit sha256 algorithm matches default', () => {
+    it('explicit sha256 algorithm matches default', async () => {
       const data = 'test data for algorithm option';
-      const defaultHash = generateHash(data);
-      const explicitHash = generateHash(data, { algorithm: 'sha256' });
+      const defaultHash = await generateHash(data);
+      const explicitHash = await generateHash(data, { algorithm: 'sha256' });
       expect(explicitHash).toBe(defaultHash);
     });
   });
 
   describe('hashObject undefined handling', () => {
-    it('undefined value is serialized as string "undefined"', () => {
+    it('undefined value is serialized as string "undefined"', async () => {
       // hashObject serializes undefined as the string 'undefined', not JSON.stringify(undefined) = undefined
-      const hashUndef = hashObject(undefined);
-      const hashStrUndef = generateHash('undefined');
+      const hashUndef = await hashObject(undefined);
+      const hashStrUndef = await generateHash('undefined');
       expect(hashUndef).toBe(hashStrUndef);
     });
 
-    it('null is distinct from undefined', () => {
-      const hashNull = hashObject(null);
-      const hashUndef = hashObject(undefined);
+    it('null is distinct from undefined', async () => {
+      const hashNull = await hashObject(null);
+      const hashUndef = await hashObject(undefined);
       expect(hashNull).not.toBe(hashUndef);
     });
   });
 
   describe('Real-world HDF use cases', () => {
-    it('should hash HDF control object consistently', () => {
+    it('should hash HDF control object consistently', async () => {
       const control = {
         id: 'V-67373',
         title: 'The Ubuntu operating system must display the Standard Mandatory DoD Notice',
@@ -268,13 +268,13 @@ describe('Hash Utilities', () => {
         ],
       };
 
-      const hash1 = hashObject(control);
-      const hash2 = hashObject(control);
+      const hash1 = await hashObject(control);
+      const hash2 = await hashObject(control);
       expect(hash1).toBe(hash2);
       expect(hash1).toHaveLength(64);
     });
 
-    it('should generate different hashes for controls with different results', () => {
+    it('should generate different hashes for controls with different results', async () => {
       const baseControl = {
         id: 'V-67373',
         title: 'Test Control',
@@ -291,12 +291,12 @@ describe('Hash Utilities', () => {
         results: [{ status: 'failed' }],
       };
 
-      const hash1 = hashObject(control1);
-      const hash2 = hashObject(control2);
+      const hash1 = await hashObject(control1);
+      const hash2 = await hashObject(control2);
       expect(hash1).not.toBe(hash2);
     });
 
-    it('should hash profile metadata', () => {
+    it('should hash profile metadata', async () => {
       const profile = {
         name: 'canonical-ubuntu-16.04-lts-stig-baseline',
         version: '1.0.0',
@@ -307,7 +307,7 @@ describe('Hash Utilities', () => {
         copyright: 'MITRE',
       };
 
-      const hash = hashObject(profile);
+      const hash = await hashObject(profile);
       expect(hash).toHaveLength(64);
       expect(typeof hash).toBe('string');
     });
