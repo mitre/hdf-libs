@@ -37,4 +37,6 @@ export {
   sanitizeCsvValue,
   sanitizeCsvArray,
   sanitizeCsvObject,
+  type CsvParseOptions,
+  type CsvBuildOptions,
 } from './csv/index.js';
