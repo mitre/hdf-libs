@@ -125,17 +125,26 @@ import (
 
 const converterVersion = "0.1.0"
 
-func TestConvert_Minimal(t *testing.T) {
-    inputPath := filepath.Join(shared.GetConvertersDir(), "<name>", "fixtures", "input", "minimal.<ext>")
-    inputData, err := os.ReadFile(inputPath)
-    require.NoError(t, err)
+func fixtureDir() string {
+    return filepath.Join(shared.GetConvertersDir(), "<name>", "fixtures", "input")
+}
 
-    result, err := Convert<Name>(inputData, converterVersion)
+func loadFixture(t *testing.T, name string) []byte {
+    t.Helper()
+    data, err := os.ReadFile(filepath.Join(fixtureDir(), name))
+    require.NoError(t, err)
+    return data
+}
+
+func TestConvert_Minimal(t *testing.T) {
+    result, err := Convert<Name>(loadFixture(t, "minimal.<ext>"), converterVersion)
     require.NoError(t, err)
     require.NotNil(t, result)
 
+    require.NotNil(t, result.Generator)
     assert.Equal(t, "hdf-converters", result.Generator.Name)
     assert.Equal(t, converterVersion, result.Generator.Version)
+    require.NotNil(t, result.Timestamp)
     assert.Len(t, result.Baselines, 1)
     // ... assert specific field values from your fixture
 }
@@ -186,7 +195,7 @@ describe('<name> to HDF converter', () => {
     const hdf = JSON.parse(output) as HdfResults;
 
     expect(hdf.timestamp).toBeTruthy();
-    expect(hdf.generator?.name).toBe('<name>-to-hdf');
+    expect(hdf.generator?.name).toBe('hdf-converters');
     expect(hdf.baselines).toHaveLength(1);
   });
 
@@ -208,33 +217,37 @@ File: `hdf-converters/converters/<name>/go/converter.go`
 package <pkg>
 
 import (
-    "crypto/sha256"
-    "encoding/hex"
     "fmt"
     "time"
 
     hdf "github.com/mitre/hdf-schema"
+    shared "github.com/mitre/hdf-converters/shared/go"
 )
 
 // Convert<Name> converts <Source> to HDF format.
 func Convert<Name>(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-    hash := sha256.Sum256(input)
-    checksum := &hdf.Checksum{
-        Algorithm: hdf.Sha256,
-        Value:     hex.EncodeToString(hash[:]),
+    if len(input) == 0 {
+        return nil, fmt.Errorf("empty input")
     }
+
+    resultsChecksum := shared.InputChecksum(input)
 
     // ... parse input, build baselines, targets
 
+    now := time.Now().UTC()
     return &hdf.HDFResults{
-        Generator: hdf.Generator{
+        Generator: &hdf.Generator{
             Name:    "hdf-converters",
             Version: converterVersion,
+        },
+        DataSource: &hdf.DataSource{
+            Name:   shared.Ptr("<Source Tool Name>"),
+            Format: shared.Ptr("<Format>"), // e.g. "XML", "JSON", "CSV"
         },
         Baselines:  baselines,
         Targets:    targets,
         Statistics: hdf.Statistics{Duration: duration},
-        Timestamp:  time.Now().UTC().Format(time.RFC3339),
+        Timestamp:  &now,
     }, nil
 }
 ```
@@ -339,6 +352,7 @@ tags := map[string]interface{}{
 | `getNiktoNistControl(testId)` | Nikto test → NIST control |
 | `getScoutsuiteNistControl(rule)` | ScoutSuite rule → NIST control |
 | `getAwsConfigNistControlByIdentifier(id)` | AWS Config → NIST control |
+| `DEFAULT_STATIC_ANALYSIS_NIST_TAGS` | Default NIST tags (`["SA-11", "RA-5"]`) when no CWE→NIST mapping applies |
 
 If a mapping package for the source tool doesn't exist yet, create it in `hdf-mappings/go/<tool>/` and `hdf-mappings/src/<tool>/` rather than embedding a map in the converter.
 
@@ -355,9 +369,20 @@ If a mapping package for the source tool doesn't exist yet, create it in `hdf-ma
 | `parseCsv<T>(input)` | Parse CSV to typed records |
 | `buildCsv<T>(records)` | Build CSV from records |
 | `parseXml(input)` | Parse XML to JS object |
+| `parseXmlWithArrays(input, arrayTags)` | Parse XML, forcing specified tags to always be arrays (use for JUnit `testsuite`/`testcase`, or any tag that can appear once or many times) |
 | `buildXml(obj)` | Build XML from JS object |
 
 **Go**: Use stdlib (`encoding/json`, `encoding/csv`, `encoding/xml`, `crypto/sha256`).
+
+Also available from `shared "github.com/mitre/hdf-converters/shared/go"`:
+
+| Function | Use for |
+|----------|---------|
+| `shared.InputChecksum(input)` | SHA-256 checksum of raw input bytes → `*hdf.Checksum` |
+| `shared.Ptr(s)` | Convert string to `*string` (avoids `&` on string literals) |
+| `shared.ParseTimestamp(s)` | Parse ISO 8601 / RFC 3339 timestamps with multiple fallback formats |
+| `shared.DefaultStaticAnalysisNIST` | Default NIST tags (`["SA-11", "RA-5"]`) when no CWE mapping applies |
+| `shared.GetConvertersDir()` | Absolute path to `hdf-converters/converters/` (for test fixture loading) |
 
 ### `hdf-validators` — output validation
 
@@ -389,12 +414,21 @@ File: `hdf-converters/converters/<name>/typescript/converter.ts`
 
 ```typescript
 import { createHash } from 'crypto';
-import { parseJSON } from '@mitre/hdf-utilities';
-import { getCweNistControl } from '@mitre/hdf-mappings'; // adjust imports to what you need
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description } from '@mitre/hdf-schema';
-import { ResultStatus, HashAlgorithm, createMinimalBaseline, createRequirement, createResult } from '@mitre/hdf-schema';
+import { parseJSON } from '@mitre/hdf-utilities'; // or parseXmlWithArrays for XML formats
+import type {
+  HdfResults, EvaluatedBaseline, EvaluatedRequirement,
+  RequirementResult, Checksum, Description,
+} from '@mitre/hdf-schema';
+import {
+  ResultStatus, HashAlgorithm,
+  createMinimalBaseline, createRequirement, createResult, createDescription,
+} from '@mitre/hdf-schema';
 
 export function convert<Name>ToHdf(input: string): string {
+  if (!input?.trim()) {
+    throw new Error('Empty input');
+  }
+
   const resultsChecksum: Checksum = {
     algorithm: HashAlgorithm.Sha256,
     value: createHash('sha256').update(input).digest('hex'),
@@ -403,7 +437,7 @@ export function convert<Name>ToHdf(input: string): string {
   const data = parseJSON<<SourceType>>(input);
   // ... validate structure, convert, build requirements ...
 
-  const baseline: EvaluatedBaseline = createMinimalBaseline(
+  const baseline = createMinimalBaseline(
     '<baseline name>',
     requirements,
     { resultsChecksum }
@@ -411,7 +445,8 @@ export function convert<Name>ToHdf(input: string): string {
 
   const hdf: HdfResults = {
     baselines: [baseline],
-    generator: { name: '<name>-to-hdf', version: '1.0.0' },
+    generator: { name: 'hdf-converters', version: '1.0.0' },
+    dataSource: { name: '<Source Tool Name>', format: '<Format>' },
     timestamp: new Date(),
   };
 
@@ -428,11 +463,12 @@ export function convert<Name>ToHdf(input: string): string {
 - `ResultStatus.Passed / Failed / NotReviewed / NotApplicable / Error` — status enum values
 - `HashAlgorithm.Sha256` — checksum algorithm constant
 
-**`createDescription` is NOT exported.** Build description objects inline:
+**`createDescription` IS exported** from `@mitre/hdf-schema`. Use it to build description objects:
 ```typescript
+import { createDescription } from '@mitre/hdf-schema';
 const descriptions: Description[] = [
-  { label: 'default', data: 'the primary description text' },
-  { label: 'check',   data: 'CWE-22: https://cwe.mitre.org/...' },
+  createDescription('default', 'the primary description text'),
+  createDescription('check', 'CWE-22: https://cwe.mitre.org/...'),
 ];
 ```
 
@@ -448,6 +484,14 @@ cd hdf-mappings && pnpm build
 cd hdf-schema && pnpm build
 cd hdf-converters && pnpm test   # should now pass
 ```
+
+#### TypeScript gotchas (lessons from SARIF development)
+
+1. **ES2020 target**: `String.prototype.replaceAll` is not available. Use `str.split(search).join(replacement)` instead.
+2. **`undefined` vs empty string**: JSON fields omitted from input arrive as `undefined`, not `""`. Always use optional chaining (`obj?.field`) and nullish coalescing (`obj?.field ?? ''`). Test assertions should use `toBeUndefined()` for truly absent fields, not `toBe('')`.
+3. **`timestamp` is `Date`, not `string`**: The HDF schema `timestamp` field expects a `Date` object. Use `new Date()`, not `new Date().toISOString()`.
+4. **Always run `pnpm lint && pnpm test` at root level** for final validation. Root `pnpm test` includes a `pretest` build step that catches TypeScript compilation errors that `vitest` alone does not — vitest transpiles on the fly and won't surface type errors.
+5. **Optional fields in interfaces**: When defining TypeScript interfaces for parsed input, mark fields as optional (`field?: type`) when the source format doesn't guarantee their presence. This prevents runtime crashes from accessing undefined properties.
 
 ---
 
@@ -698,29 +742,25 @@ func Test<Name>Converter_Convert_InvalidInput(t *testing.T) {
 ## Step 7 — Verify and Spot Check
 
 ```bash
-# Run Go unit tests
+# Quick iteration: run Go and TS tests for your converter
 cd hdf-converters && go test ./converters/<name>/go/...
-
-# Run TypeScript unit tests (build sibling packages first if needed)
-cd hdf-utilities && pnpm build
-cd hdf-mappings && pnpm build
-cd hdf-schema && pnpm build
-cd hdf-converters && pnpm test
+cd hdf-converters && pnpm vitest run converters/<name>
 
 # Run CLI tests
-cd hdf-cli && go test ./cmd/hdf/cmd/...
+cd hdf-cli && go test ./cmd/hdf/cmd/ -run <Name> -v
+
+# MANDATORY: Run lint + full test suite at root level before committing.
+# Root `pnpm test` includes a `pretest` build step that catches TypeScript
+# compilation errors that vitest alone does not surface.
+cd /path/to/hdf-libs && pnpm lint && pnpm test
 
 # Spot check real output via CLI binary
 cd hdf-cli && go build -o hdf ./cmd/hdf
 ./hdf convert <source> to hdf path/to/input.ext output.json
 cat output.json | head -40
-
-# Lint
-pnpm lint
-
-# Full test suite
-pnpm test
 ```
+
+**Do not consider the converter done until `pnpm lint && pnpm test` passes at root level.** Individual package tests may pass while the TypeScript build is broken (wrong types, missing exports, etc.).
 
 ---
 
