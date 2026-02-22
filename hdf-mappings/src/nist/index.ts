@@ -2,25 +2,10 @@
  * NIST SP 800-53 control description functions
  */
 
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import type { NISTDescriptions } from './types.js';
+import rawNistData from '../data/nist-descriptions.json' with { type: 'json' };
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Lazy-load NIST data
-let nistData: NISTDescriptions | null = null;
-
-function loadNISTData(): NISTDescriptions {
-  if (nistData === null) {
-    const dataPath = join(__dirname, '..', 'data', 'nist-descriptions.json');
-    const content = readFileSync(dataPath, 'utf-8');
-    nistData = JSON.parse(content) as NISTDescriptions;
-  }
-  return nistData;
-}
+const nistData = rawNistData as NISTDescriptions;
 
 /**
  * Get the description for a NIST control ID.
@@ -39,8 +24,7 @@ export function getNISTDescription(nistId: string): string | undefined {
     return undefined;
   }
 
-  const data = loadNISTData();
-  return data[nistId];
+  return nistData[nistId];
 }
 
 /**
@@ -55,8 +39,7 @@ export function getNISTDescription(nistId: string): string | undefined {
  * ```
  */
 export function getAllNISTIds(): string[] {
-  const data = loadNISTData();
-  return Object.keys(data);
+  return Object.keys(nistData);
 }
 
 /**
@@ -77,8 +60,7 @@ export function nistExists(nistId: string): boolean {
     return false;
   }
 
-  const data = loadNISTData();
-  return nistId in data;
+  return nistId in nistData;
 }
 
 /**
@@ -111,9 +93,8 @@ export function getNISTFamily(nistId: string): string | undefined {
 
   // Validate that this family exists in our database by checking
   // if any controls start with this family
-  const data = loadNISTData();
   const familyPrefix = `${family}-`;
-  const hasFamily = Object.keys(data).some((key) => key.startsWith(familyPrefix));
+  const hasFamily = Object.keys(nistData).some((key) => key.startsWith(familyPrefix));
 
   return hasFamily ? family : undefined;
 }
