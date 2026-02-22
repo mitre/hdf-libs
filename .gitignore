@@ -22,6 +22,7 @@ coverage/
 coverage.out
 .nyc_output/
 test-output/
+.stryker-tmp/
 
 # Environment variables
 .env
