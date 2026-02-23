@@ -14,6 +14,10 @@ const (
 	FormatSARIF InputFormat = "sarif"
 	// FormatJUnit indicates JUnit XML input.
 	FormatJUnit InputFormat = "junit"
+	// FormatXCCDF indicates XCCDF 1.2 XML input.
+	FormatXCCDF InputFormat = "xccdf"
+	// FormatARF indicates ARF 1.1 XML input (wraps XCCDF).
+	FormatARF InputFormat = "arf"
 	// FormatUnknown indicates the format could not be determined.
 	FormatUnknown InputFormat = "unknown"
 )
@@ -74,6 +78,10 @@ func detectXML(input []byte) InputFormat {
 			switch se.Name.Local {
 			case "testsuites", "testsuite":
 				return FormatJUnit
+			case "Benchmark":
+				return FormatXCCDF
+			case "asset-report-collection":
+				return FormatARF
 			default:
 				return FormatUnknown
 			}

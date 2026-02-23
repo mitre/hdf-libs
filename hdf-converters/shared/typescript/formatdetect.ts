@@ -5,7 +5,7 @@
  * should handle it, allowing tool-specific converters to delegate.
  */
 
-export type InputFormat = 'sarif' | 'junit' | 'unknown';
+export type InputFormat = 'sarif' | 'junit' | 'xccdf' | 'arf' | 'unknown';
 
 /**
  * Detects the format of raw input by examining structural characteristics.
@@ -47,18 +47,25 @@ function detectJSON(input: string): InputFormat {
 }
 
 function detectXML(input: string): InputFormat {
-  // Extract root element name by finding the first opening tag after XML declaration/comments
-  const rootMatch = input.match(/<(?!\?|!--)([a-zA-Z_][\w.-]*)/);
+  // Extract root element name by finding the first opening tag after XML declaration/comments.
+  // Handles both prefixed (e.g. <arf:asset-report-collection>) and unprefixed elements.
+  const rootMatch = input.match(/<(?!\?|!--)(?:[a-zA-Z_][\w.-]*:)?([a-zA-Z_][\w.-]*)/);
   if (!rootMatch) {
     return 'unknown';
   }
 
   const rootElement = rootMatch[1];
-  if (rootElement === 'testsuites' || rootElement === 'testsuite') {
-    return 'junit';
+  switch (rootElement) {
+    case 'testsuites':
+    case 'testsuite':
+      return 'junit';
+    case 'Benchmark':
+      return 'xccdf';
+    case 'asset-report-collection':
+      return 'arf';
+    default:
+      return 'unknown';
   }
-
-  return 'unknown';
 }
 
 function isSARIF(obj: Record<string, unknown>): boolean {
