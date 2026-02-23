@@ -1,8 +1,9 @@
-import { parseJSON, sha256 } from '@mitre/hdf-utilities';
+import { parseJSON } from '@mitre/hdf-utilities';
 import {
   getCweNistControl,
   nistToCci,
 } from '@mitre/hdf-mappings';
+import { inputChecksum } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -13,7 +14,6 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  HashAlgorithm,
   createMinimalBaseline,
   createRequirement,
   createDescription,
@@ -127,10 +127,7 @@ const DEFAULT_NIST_TAGS = ['SA-11'];
  */
 export async function convertSonarqubeToHdf(input: string): Promise<string> {
   // Calculate checksum of source scan data
-  const resultsChecksum: Checksum = {
-    algorithm: HashAlgorithm.Sha256,
-    value: await sha256(input),
-  };
+  const resultsChecksum: Checksum = await inputChecksum(input);
 
   // Parse SonarQube JSON
   const sonarData = parseJSON<SonarQubeIssuesResponse>(input);

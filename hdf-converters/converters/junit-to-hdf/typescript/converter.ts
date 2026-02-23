@@ -1,4 +1,5 @@
-import { parseXmlWithArrays, sha256 } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays } from '@mitre/hdf-utilities';
+import { inputChecksum } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -9,7 +10,6 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  HashAlgorithm,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -79,10 +79,7 @@ export async function convertJunitToHdf(input: string): Promise<string> {
   const { suites, name } = parseJUnitXML(input);
   const requirements = buildRequirements(suites);
 
-  const resultsChecksum: Checksum = {
-    algorithm: HashAlgorithm.Sha256,
-    value: await sha256(input),
-  };
+  const resultsChecksum: Checksum = await inputChecksum(input);
 
   const baseline = createMinimalBaseline(name, requirements, {
     resultsChecksum,

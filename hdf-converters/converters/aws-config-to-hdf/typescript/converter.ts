@@ -1,8 +1,9 @@
-import { parseJSON, sha256 } from '@mitre/hdf-utilities';
+import { parseJSON } from '@mitre/hdf-utilities';
 import {
   getAwsConfigNistControlByIdentifier,
   getAwsConfigNistControlByName,
 } from '@mitre/hdf-mappings';
+import { inputChecksum } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -14,7 +15,6 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  HashAlgorithm,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -158,10 +158,7 @@ function buildRequirement(rule: ConfigRule): EvaluatedRequirement {
  * @returns HDF JSON string
  */
 export async function convertAwsConfigToHdf(input: string): Promise<string> {
-  const resultsChecksum: Checksum = {
-    algorithm: HashAlgorithm.Sha256,
-    value: await sha256(input),
-  };
+  const resultsChecksum: Checksum = await inputChecksum(input);
 
   const data = parseJSON<ConfigRulesFile>(input);
 

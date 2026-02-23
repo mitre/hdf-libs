@@ -25,8 +25,8 @@
     "test:differential": "vitest run converters/**/differential.test.ts",
     "test:parity": "pnpm test:differential && pnpm test:go && node shared/typescript/compare-all.js",
     "type-check": "tsc --noEmit",
-    "lint": "eslint src converters",
-    "lint:fix": "eslint src converters --fix"
+    "lint": "eslint src converters shared",
+    "lint:fix": "eslint src converters shared --fix"
   },
   "repository": {
     "type": "git",

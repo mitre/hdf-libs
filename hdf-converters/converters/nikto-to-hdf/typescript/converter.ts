@@ -5,7 +5,6 @@ import {
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
-  HashAlgorithm,
   type HdfResults,
   ResultStatus,
 } from '@mitre/hdf-schema';
@@ -14,7 +13,8 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import {parseJSON, sha256} from '@mitre/hdf-utilities';
+import {parseJSON} from '@mitre/hdf-utilities';
+import {inputChecksum, buildNistCciTags} from '../../../shared/typescript/converterutil.js';
 
 // Nikto JSON input types
 
@@ -63,15 +63,11 @@ function convertVulnToRequirement(vuln: NiktoVulnerability): EvaluatedRequiremen
     startTime: new Date('0001-01-01T00:00:00Z'),
   };
 
-  const tags: Record<string, unknown> = {
-    nist: nistTags,
-  };
-  if (cciTags.length > 0) {
-    tags.cci = cciTags;
-  }
+  const extras: Record<string, unknown> = {};
   if (vuln.OSVDB && vuln.OSVDB !== '0') {
-    tags.osvdb = vuln.OSVDB;
+    extras.osvdb = vuln.OSVDB;
   }
+  const tags = buildNistCciTags(nistTags, cciTags, Object.keys(extras).length > 0 ? extras : undefined);
 
   return {
     id: vuln.id,
@@ -86,10 +82,7 @@ function convertVulnToRequirement(vuln: NiktoVulnerability): EvaluatedRequiremen
 }
 
 export async function convertNiktoToHdf(input: string): Promise<string> {
-  const resultsChecksum: Checksum = {
-    algorithm: HashAlgorithm.Sha256,
-    value: await sha256(input),
-  };
+  const resultsChecksum: Checksum = await inputChecksum(input);
 
   const niktoData = parseJSON<NiktoReport>(input);
 

@@ -1,11 +1,12 @@
-import { parseJSON, sha256 } from '@mitre/hdf-utilities';
+import { parseJSON } from '@mitre/hdf-utilities';
 import {
   getCweNistControl,
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
+import { inputChecksum } from '../../../shared/typescript/converterutil.js';
 import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, DataSource, Description } from '@mitre/hdf-schema';
-import { ResultStatus, HashAlgorithm, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
+import { ResultStatus, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 // --- SARIF 2.1.0 type definitions ---
 
@@ -151,10 +152,7 @@ const IMPACT_MAPPING: Record<string, number> = {
 // --- Conversion entry point ---
 
 export async function convertSarifToHdf(input: string): Promise<string> {
-  const resultsChecksum: Checksum = {
-    algorithm: HashAlgorithm.Sha256,
-    value: await sha256(input),
-  };
+  const resultsChecksum: Checksum = await inputChecksum(input);
 
   const sarif = parseJSON<SarifFile>(input);
 

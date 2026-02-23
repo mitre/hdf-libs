@@ -1,7 +1,8 @@
-import { parseJSON, sha256 } from '@mitre/hdf-utilities';
+import { parseJSON } from '@mitre/hdf-utilities';
 import { getCweNistControl, DEFAULT_REMEDIATION_NIST_TAGS } from '@mitre/hdf-mappings';
 import { detectFormat } from '../../../shared/typescript/formatdetect.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
+import { inputChecksum } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -12,7 +13,6 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  HashAlgorithm,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -166,10 +166,7 @@ export async function convertGosecToHdf(input: string): Promise<string> {
     return convertSarifToHdf(input);
   }
 
-  const resultsChecksum: Checksum = {
-    algorithm: HashAlgorithm.Sha256,
-    value: await sha256(input),
-  };
+  const resultsChecksum: Checksum = await inputChecksum(input);
 
   const report = parseJSON<GosecReport>(input);
 
