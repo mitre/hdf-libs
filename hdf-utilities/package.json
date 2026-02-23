@@ -29,6 +29,10 @@
     "./object": {
       "import": "./dist/object/index.js",
       "types": "./dist/object/index.d.ts"
+    },
+    "./string": {
+      "import": "./dist/string/index.js",
+      "types": "./dist/string/index.d.ts"
     }
   },
   "files": [
