@@ -1,7 +1,7 @@
 /**
  * Script to create index.js and index.d.ts files after type generation
  */
-import { writeFileSync, copyFileSync, existsSync } from 'fs';
+import { writeFileSync, copyFileSync, existsSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
@@ -10,7 +10,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
 
-export function createIndex(): void {
+export interface CreateIndexOptions {
+  /** Override the compile step (for testing) */
+  compile?: (cwd: string) => void;
+}
+
+export function createIndex(options: CreateIndexOptions = {}): void {
   // Check if TypeScript files exist before compiling
   const tsDir = join(ROOT_DIR, 'dist/ts');
   const resultsTs = join(tsDir, 'hdf-results.ts');
@@ -22,13 +27,27 @@ export function createIndex(): void {
     return;
   }
 
+  // Clean stale .d.ts and .js output so tsc doesn't refuse to overwrite its own input
+  for (const name of ['hdf-results', 'hdf-baseline']) {
+    for (const ext of ['.d.ts', '.js']) {
+      const file = join(tsDir, `${name}${ext}`);
+      if (existsSync(file)) {
+        rmSync(file);
+      }
+    }
+  }
+
   // Compile TypeScript files in dist/ts to JavaScript
   // This creates .js and .d.ts files from the generated .ts files
-  try {
+  const compile = options.compile ?? ((cwd: string) => {
     execSync('tsc dist/ts/*.ts --declaration --module esnext --target es2020 --moduleResolution bundler --skipLibCheck', {
-      cwd: ROOT_DIR,
+      cwd,
       stdio: 'inherit',
     });
+  });
+
+  try {
+    compile(ROOT_DIR);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.warn('Failed to compile TypeScript files:', error);
@@ -91,6 +110,7 @@ export * from './helpers.js';
 }
 
 // Run if called directly
+/* v8 ignore next 3 -- CLI entry point, not testable in vitest */
 if (import.meta.url === `file://${process.argv[1]}`) {
   createIndex();
 }

@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-validators/go
 
-go 1.23
+go 1.25
 
 require (
 	github.com/stretchr/testify v1.10.0
