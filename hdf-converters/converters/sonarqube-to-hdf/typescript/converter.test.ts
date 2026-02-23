@@ -79,7 +79,7 @@ describe('SonarQube to HDF Converter', async () => {
       // Find MAJOR severity rule (java:S1144)
       const majorRule = baseline.requirements.find(r => r.id === 'java:S1144');
       expect(majorRule).toBeDefined();
-      expect(majorRule!.impact).toBe(0.7); // MAJOR = 0.7
+      expect(majorRule!.impact).toBe(0.5); // MAJOR = 0.5
     });
 
     it('should extract CWE tags from issues and rules', async () => {

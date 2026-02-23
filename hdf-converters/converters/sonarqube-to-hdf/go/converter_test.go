@@ -114,7 +114,7 @@ func TestConvertSonarqubeToHDF_ImpactMapping(t *testing.T) {
 	assert.Equal(t, 0.7, impactByRule["r:CRITICAL"], "CRITICAL should map to 0.7")
 	assert.Equal(t, 0.0, impactByRule["r:INFO"], "INFO should map to 0.0")
 	assert.Equal(t, 1.0, impactByRule["r:BLOCKER"], "BLOCKER should map to 1.0")
-	assert.Equal(t, 0.7, impactByRule["r:MAJOR"], "MAJOR should map to 0.7")
+	assert.Equal(t, 0.5, impactByRule["r:MAJOR"], "MAJOR should map to 0.5")
 }
 
 func TestConvertSonarqubeToHDF_CWENISTMapping(t *testing.T) {
@@ -310,7 +310,7 @@ func TestConvertSonarqubeToHDF_SeverityMapImpact(t *testing.T) {
 	assert.Equal(t, 1.0, blockerRule.Impact, "BLOCKER should have impact 1.0")
 
 	require.NotNil(t, majorRule, "expected rule java:S1144")
-	assert.Equal(t, 0.7, majorRule.Impact, "MAJOR should have impact 0.7")
+	assert.Equal(t, 0.5, majorRule.Impact, "MAJOR should have impact 0.5")
 }
 
 func TestConvertSonarqubeToHDF_ExtractCWETags(t *testing.T) {
@@ -423,7 +423,7 @@ func TestMapSeverityToImpact(t *testing.T) {
 		}
 	}
 	require.NotNil(t, majorRule)
-	assert.Equal(t, 0.7, majorRule.Impact)
+	assert.Equal(t, 0.5, majorRule.Impact)
 }
 
 func TestConvertSonarqubeToHDF_CWETagsAreStringSlice(t *testing.T) {
@@ -474,4 +474,22 @@ func TestConvertSonarqubeToHDF_NoStringsImportNeeded(t *testing.T) {
 	require.True(t, ok)
 	// Severity tag should be lowercased
 	assert.Equal(t, "critical", severityTag.(string))
+}
+
+func TestSeverityImpactMappingParity(t *testing.T) {
+	// Authoritative mapping from heimdall2 sonarqube-mapper.ts IMPACT_MAPPING.
+	// This test ensures our Go mapping stays in sync with the canonical source.
+	expected := map[string]float64{
+		"BLOCKER":  1.0,
+		"CRITICAL": 0.7,
+		"MAJOR":    0.5,
+		"MINOR":    0.3,
+		"INFO":     0.0,
+	}
+	for sev, impact := range expected {
+		actual, ok := severityImpactMapping[sev]
+		assert.True(t, ok, "Missing severity %s", sev)
+		assert.Equal(t, impact, actual, "Severity %s impact mismatch", sev)
+	}
+	assert.Equal(t, len(expected), len(severityImpactMapping), "Unexpected extra severities")
 }

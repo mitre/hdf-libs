@@ -93,11 +93,13 @@ type Rule struct {
 	Scope    string   `json:"scope,omitempty"`
 }
 
+// severityImpactMapping maps SonarQube severity levels to HDF impact scores.
+// Canonical reference: heimdall2 sonarqube-mapper.ts IMPACT_MAPPING.
 var severityImpactMapping = map[string]float64{
 	"BLOCKER":  1.0,
 	"CRITICAL": 0.7,
-	"MAJOR":    0.7,
-	"MINOR":    0.5,
+	"MAJOR":    0.5,
+	"MINOR":    0.3,
 	"INFO":     0.0,
 }
 

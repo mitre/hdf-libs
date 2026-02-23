@@ -229,6 +229,11 @@ type ArfReportContent struct {
 // ---------------------------------------------------------------------------
 
 // severityToImpact maps XCCDF severity strings to HDF impact values.
+// Audit (2026-02): XCCDF 1.2 defines three severity levels (high, medium, low).
+// This mapping matches heimdall2 xccdf-results-mapper.ts IMPACT_MAPPING for
+// these three levels. hdf-schema severityToImpact() maps "critical"=1.0 but
+// XCCDF does not define a "critical" severity, so that is not relevant here.
+// Default for unknown severity is 0.5 (see determineImpact).
 var severityToImpact = map[string]float64{
 	"high":   0.7,
 	"medium": 0.5,

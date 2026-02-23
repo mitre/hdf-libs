@@ -101,15 +101,15 @@ interface SonarQubeRule {
 }
 
 /**
- * Severity to impact mapping
- * Based on SonarQube severity levels
+ * Severity to impact mapping.
+ * Canonical reference: heimdall2 sonarqube-mapper.ts IMPACT_MAPPING.
  */
 const SEVERITY_IMPACT_MAPPING: Record<string, number> = {
   BLOCKER: 1.0,
-  CRITICAL: 0.9,
-  MAJOR: 0.7,
-  MINOR: 0.5,
-  INFO: 0.3,
+  CRITICAL: 0.7,
+  MAJOR: 0.5,
+  MINOR: 0.3,
+  INFO: 0.0,
 };
 
 /**
