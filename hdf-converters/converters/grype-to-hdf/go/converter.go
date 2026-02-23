@@ -1,4 +1,4 @@
-package anchore_grype_to_hdf
+package grype_to_hdf
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"github.com/mitre/hdf-mappings/go/cci"
 )
 
-// Grype report input structures
+// Grype JSON report input structures
 
 type GrypeReport struct {
 	Descriptor     GrypeDescriptor `json:"descriptor"`
@@ -262,7 +262,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 		messageParts = append(messageParts, "This vulnerability was ignored by configured rules.")
 	}
 	if isNegligibleOrUnknown(severity) && !isIgnored {
-		messageParts = append(messageParts, "Manual review required because an Anchore Grype rating severity is set to `negligible` or `unknown`.")
+		messageParts = append(messageParts, "Manual review required because a Grype rating severity is set to `negligible` or `unknown`.")
 	}
 	if severity != "" {
 		messageParts = append(messageParts, fmt.Sprintf("Severity: %s", severity))
@@ -340,15 +340,15 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 	return requirement
 }
 
-// ConvertAnchoreGrypeToHDF converts Anchore Grype JSON to HDF
-func ConvertAnchoreGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// ConvertGrypeToHDF converts Grype JSON to HDF
+func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	// Calculate checksum of input data
 	resultsChecksum := shared.InputChecksum(input)
 
 	// Parse Grype JSON
 	var grypeData GrypeReport
 	if err := json.Unmarshal(input, &grypeData); err != nil {
-		return nil, fmt.Errorf("invalid Anchore Grype JSON: %w", err)
+		return nil, fmt.Errorf("invalid Grype JSON: %w", err)
 	}
 
 	// Build requirements from matches
@@ -367,7 +367,7 @@ func ConvertAnchoreGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFRe
 	// Build baseline name from source
 	targetName := grypeData.Source.Target.UserInput
 	if targetName == "" {
-		targetName = "Anchore Grype Scan"
+		targetName = "Grype Scan"
 	}
 
 	// Create baseline
@@ -400,7 +400,7 @@ func ConvertAnchoreGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFRe
 	hdfResult := &hdf.HDFResults{
 		Baselines: []hdf.EvaluatedBaseline{baseline},
 		Generator: &hdf.Generator{
-			Name:    "anchore-grype-to-hdf",
+			Name:    "grype-to-hdf",
 			Version: converterVersion,
 		},
 		DataSource: dataSource,

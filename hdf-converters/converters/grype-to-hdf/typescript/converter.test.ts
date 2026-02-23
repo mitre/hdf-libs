@@ -1,7 +1,7 @@
 import {readFileSync} from 'fs';
 import {join} from 'path';
 import {describe, expect, it} from 'vitest';
-import {convertAnchoreGrypeToHdf} from './converter';
+import {convertGrypeToHdf} from './converter';
 import {parseJSON} from '@mitre/hdf-utilities';
 import type {HdfResults} from '@mitre/hdf-schema';
 
@@ -11,11 +11,11 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
-describe('Anchore Grype Converter', async () => {
-  describe('convertAnchoreGrypeToHdf', async () => {
+describe('Grype Converter', async () => {
+  describe('convertGrypeToHdf', async () => {
     it('should convert real Grype report to HDF', async () => {
       const input = loadFixture('amazon.json');
-      const output = await convertAnchoreGrypeToHdf(input);
+      const output = await convertGrypeToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
       expect(hdf.baselines).toHaveLength(1);
@@ -30,7 +30,7 @@ describe('Anchore Grype Converter', async () => {
 
     it('should create baseline with correct name from scan target', async () => {
       const input = loadFixture('amazon.json');
-      const output = await convertAnchoreGrypeToHdf(input);
+      const output = await convertGrypeToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
       expect(hdf.baselines[0].name).toBe('cloudwatch_to_s3:latest');
@@ -38,7 +38,7 @@ describe('Anchore Grype Converter', async () => {
 
     it('should convert matches to requirements', async () => {
       const input = loadFixture('amazon.json');
-      const output = await convertAnchoreGrypeToHdf(input);
+      const output = await convertGrypeToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
       const requirements = hdf.baselines[0].requirements;
@@ -75,7 +75,7 @@ describe('Anchore Grype Converter', async () => {
         }],
       });
 
-      const output = await convertAnchoreGrypeToHdf(ignoredReport);
+      const output = await convertGrypeToHdf(ignoredReport);
       const hdf = parseJSON<HdfResults>(output);
 
       const requirements = hdf.baselines[0].requirements;
@@ -88,7 +88,7 @@ describe('Anchore Grype Converter', async () => {
 
     it('should include NIST and CCI tags', async () => {
       const input = loadFixture('amazon.json');
-      const output = await convertAnchoreGrypeToHdf(input);
+      const output = await convertGrypeToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
       const req = hdf.baselines[0].requirements[0];
@@ -99,7 +99,7 @@ describe('Anchore Grype Converter', async () => {
 
     it('should include descriptions for vulnerability, fix, and check', async () => {
       const input = loadFixture('amazon.json');
-      const output = await convertAnchoreGrypeToHdf(input);
+      const output = await convertGrypeToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
       const req = hdf.baselines[0].requirements[0];
@@ -117,7 +117,7 @@ describe('Anchore Grype Converter', async () => {
 
     it('should include references from vulnerability URLs', async () => {
       const input = loadFixture('amazon.json');
-      const output = await convertAnchoreGrypeToHdf(input);
+      const output = await convertGrypeToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
       // First match (ALAS-2024-2607) has URLs including the ALAS advisory URL
@@ -129,7 +129,7 @@ describe('Anchore Grype Converter', async () => {
 
     it('should calculate SHA256 checksum of input', async () => {
       const input = loadFixture('amazon.json');
-      const output = await convertAnchoreGrypeToHdf(input);
+      const output = await convertGrypeToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
       const baseline = hdf.baselines[0];
@@ -140,7 +140,7 @@ describe('Anchore Grype Converter', async () => {
 
     it('should handle fix information correctly', async () => {
       const input = loadFixture('amazon.json');
-      const output = await convertAnchoreGrypeToHdf(input);
+      const output = await convertGrypeToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
       // ALAS-2024-2607 has fix state "fixed" with version "2023.2.68-1.amzn2.0.1"
@@ -153,7 +153,7 @@ describe('Anchore Grype Converter', async () => {
 
     it('should include code description with package details', async () => {
       const input = loadFixture('amazon.json');
-      const output = await convertAnchoreGrypeToHdf(input);
+      const output = await convertGrypeToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
       // First match is ca-certificates rpm package
@@ -164,11 +164,11 @@ describe('Anchore Grype Converter', async () => {
     });
 
     it('should throw error for invalid JSON', async () => {
-      await expect(convertAnchoreGrypeToHdf('not valid json')).rejects.toThrow();
+      await expect(convertGrypeToHdf('not valid json')).rejects.toThrow();
     });
 
     it('should throw error for empty input', async () => {
-      await expect(convertAnchoreGrypeToHdf('')).rejects.toThrow();
+      await expect(convertGrypeToHdf('')).rejects.toThrow();
     });
 
     it('should handle missing optional fields gracefully', async () => {
@@ -185,7 +185,7 @@ describe('Anchore Grype Converter', async () => {
         matches: []
       });
 
-      const output = await convertAnchoreGrypeToHdf(minimalReport);
+      const output = await convertGrypeToHdf(minimalReport);
       const hdf = parseJSON<HdfResults>(output);
 
       expect(hdf.baselines).toHaveLength(1);
@@ -194,7 +194,7 @@ describe('Anchore Grype Converter', async () => {
 
     it('should default to epoch time for start time', async () => {
       const input = loadFixture('amazon.json');
-      const output = await convertAnchoreGrypeToHdf(input);
+      const output = await convertGrypeToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
       const req = hdf.baselines[0].requirements[0];

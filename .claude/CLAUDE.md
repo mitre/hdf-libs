@@ -14,6 +14,7 @@
 - **Test-driven development (TDD).** Write tests before implementation.
 - **>90% code coverage required.** Code is not considered working without unit tests meeting this threshold.
 - Tests define the spec; implementation fulfills the spec.
+- **Zero lint warnings.** Fix all warnings in `pnpm lint` output, even pre-existing ones, unless explicitly told to ignore them.
 
 ## Issue Tracking (Beads)
 

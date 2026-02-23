@@ -23,3 +23,24 @@ export { convertXccdfResultsToHdf } from '../converters/xccdf-results-to-hdf/typ
 
 // Snyk to HDF converter
 export { convertSnykToHdf } from '../converters/snyk-to-hdf/typescript/index.js';
+
+// Grype to HDF converter
+export { convertGrypeToHdf } from '../converters/grype-to-hdf/typescript/index.js';
+
+// Nessus to HDF converter
+export { convertNessusToHdf } from '../converters/nessus-to-hdf/typescript/index.js';
+
+// SonarQube to HDF converter
+export { convertSonarqubeToHdf } from '../converters/sonarqube-to-hdf/typescript/index.js';
+
+// AWS Config to HDF converter
+export { convertAwsConfigToHdf } from '../converters/aws-config-to-hdf/typescript/index.js';
+
+// Gosec to HDF converter
+export { convertGosecToHdf } from '../converters/gosec-to-hdf/typescript/index.js';
+
+// HDF to CSV converter
+export { convertHdfToCsv } from '../converters/hdf-to-csv/typescript/index.js';
+
+// HDF to XML converter
+export { convertHdfToXml } from '../converters/hdf-to-xml/typescript/index.js';

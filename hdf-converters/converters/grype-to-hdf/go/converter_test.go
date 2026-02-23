@@ -1,4 +1,4 @@
-package anchore_grype_to_hdf
+package grype_to_hdf
 
 import (
 	"os"
@@ -22,9 +22,9 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func TestConvertAnchoreGrypeToHDF(t *testing.T) {
+func TestConvertGrypeToHDF(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
-	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
@@ -35,8 +35,8 @@ func TestConvertAnchoreGrypeToHDF(t *testing.T) {
 		t.Errorf("Expected 1 baseline, got %d", len(hdfResults.Baselines))
 	}
 
-	if hdfResults.Generator.Name != "anchore-grype-to-hdf" {
-		t.Errorf("Expected generator name 'anchore-grype-to-hdf', got '%s'", hdfResults.Generator.Name)
+	if hdfResults.Generator.Name != "grype-to-hdf" {
+		t.Errorf("Expected generator name 'grype-to-hdf', got '%s'", hdfResults.Generator.Name)
 	}
 
 	if hdfResults.Generator.Version != testConverterVersion {
@@ -54,9 +54,9 @@ func TestConvertAnchoreGrypeToHDF(t *testing.T) {
 	}
 }
 
-func TestConvertAnchoreGrypeToHDF_DataSource(t *testing.T) {
+func TestConvertGrypeToHDF_DataSource(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
-	result, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
+	result, err := ConvertGrypeToHDF(input, testConverterVersion)
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestConvertAnchoreGrypeToHDF_DataSource(t *testing.T) {
 
 func TestBaselineName(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
-	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
@@ -90,7 +90,7 @@ func TestBaselineName(t *testing.T) {
 
 func TestMatchesConvertedToRequirements(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
-	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
@@ -163,7 +163,7 @@ func TestIgnoredMatches(t *testing.T) {
 		}]
 	}`
 
-	hdfResults, err := ConvertAnchoreGrypeToHDF([]byte(ignoredReport), testConverterVersion)
+	hdfResults, err := ConvertGrypeToHDF([]byte(ignoredReport), testConverterVersion)
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
@@ -192,7 +192,7 @@ func TestIgnoredMatches(t *testing.T) {
 
 func TestNISTAndCCITags(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
-	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
@@ -243,7 +243,7 @@ func TestNISTAndCCITags(t *testing.T) {
 
 func TestDescriptions(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
-	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
@@ -285,7 +285,7 @@ func TestDescriptions(t *testing.T) {
 
 func TestReferences(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
-	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
@@ -301,7 +301,7 @@ func TestReferences(t *testing.T) {
 
 func TestChecksumCalculation(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
-	hdfResults, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
 
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
@@ -325,7 +325,7 @@ func TestChecksumCalculation(t *testing.T) {
 
 func TestInvalidJSON(t *testing.T) {
 	input := []byte("not valid json")
-	_, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
+	_, err := ConvertGrypeToHDF(input, testConverterVersion)
 
 	if err == nil {
 		t.Error("Expected error for invalid JSON")
@@ -334,7 +334,7 @@ func TestInvalidJSON(t *testing.T) {
 
 func TestEmptyInput(t *testing.T) {
 	input := []byte("")
-	_, err := ConvertAnchoreGrypeToHDF(input, testConverterVersion)
+	_, err := ConvertGrypeToHDF(input, testConverterVersion)
 
 	if err == nil {
 		t.Error("Expected error for empty input")
@@ -412,7 +412,7 @@ func TestMinimalReport(t *testing.T) {
 		"matches": []
 	}`
 
-	hdfResults, err := ConvertAnchoreGrypeToHDF([]byte(minimalReport), testConverterVersion)
+	hdfResults, err := ConvertGrypeToHDF([]byte(minimalReport), testConverterVersion)
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
