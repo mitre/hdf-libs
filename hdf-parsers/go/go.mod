@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-parsers/go
 
-go 1.23
+go 1.24
 
 require (
 	github.com/mitre/hdf-schema v0.0.0
