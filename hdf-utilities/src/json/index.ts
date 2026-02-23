@@ -1,3 +1,5 @@
+export { findValuesByKey as findJsonValues } from '../object/index.js';
+
 /**
  * Options for JSON stringification
  */

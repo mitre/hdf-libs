@@ -4,7 +4,7 @@
  */
 
 // JSON utilities
-export { parseJSON, stringifyJSON, isValidJSON, type StringifyOptions } from './json/index.js';
+export { parseJSON, stringifyJSON, isValidJSON, findJsonValues, type StringifyOptions } from './json/index.js';
 
 // Hash utilities
 export {
@@ -25,6 +25,7 @@ export {
   isValidXml,
   parseXmlWithArrays,
   extractTextFromXml,
+  findXmlValues,
 } from './xml/index.js';
 
 // CSV utilities
@@ -37,6 +38,11 @@ export {
   sanitizeCsvValue,
   sanitizeCsvArray,
   sanitizeCsvObject,
+  extractCsvColumn,
+  findCsvRows,
   type CsvParseOptions,
   type CsvBuildOptions,
 } from './csv/index.js';
+
+// Object utilities (generic traversal)
+export { findValuesByKey, extractColumn, findRows } from './object/index.js';
