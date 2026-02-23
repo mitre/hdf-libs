@@ -1,18 +1,16 @@
-import { createRequire } from 'module';
 import Ajv, { type ValidateFunction, type ErrorObject } from 'ajv';
 import addFormats from 'ajv-formats';
 
-// Load all schemas via createRequire (compatible with both Node ESM and Vite SSR)
-const _require = createRequire(import.meta.url);
-const hdfResultsSchema = _require('@mitre/hdf-schema/schemas/hdf-results.schema.json');
-const hdfBaselineSchema = _require('@mitre/hdf-schema/schemas/hdf-baseline.schema.json');
-const commonSchema = _require('@mitre/hdf-schema/schemas/primitives/common.schema.json');
-const extensionsSchema = _require('@mitre/hdf-schema/schemas/primitives/extensions.schema.json');
-const platformSchema = _require('@mitre/hdf-schema/schemas/primitives/platform.schema.json');
-const resultSchema = _require('@mitre/hdf-schema/schemas/primitives/result.schema.json');
-const runnerSchema = _require('@mitre/hdf-schema/schemas/primitives/runner.schema.json');
-const statisticsSchema = _require('@mitre/hdf-schema/schemas/primitives/statistics.schema.json');
-const targetSchema = _require('@mitre/hdf-schema/schemas/primitives/target.schema.json');
+// Import all schemas (bare JSON imports — bundled by Vite via noExternal config)
+import hdfResultsSchema from '@mitre/hdf-schema/schemas/hdf-results.schema.json';
+import hdfBaselineSchema from '@mitre/hdf-schema/schemas/hdf-baseline.schema.json';
+import commonSchema from '@mitre/hdf-schema/schemas/primitives/common.schema.json';
+import extensionsSchema from '@mitre/hdf-schema/schemas/primitives/extensions.schema.json';
+import platformSchema from '@mitre/hdf-schema/schemas/primitives/platform.schema.json';
+import resultSchema from '@mitre/hdf-schema/schemas/primitives/result.schema.json';
+import runnerSchema from '@mitre/hdf-schema/schemas/primitives/runner.schema.json';
+import statisticsSchema from '@mitre/hdf-schema/schemas/primitives/statistics.schema.json';
+import targetSchema from '@mitre/hdf-schema/schemas/primitives/target.schema.json';
 
 /**
  * Validation error details
