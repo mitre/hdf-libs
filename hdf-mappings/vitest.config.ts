@@ -9,7 +9,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.d.ts', 'dist/**', 'test/**', '**/*.config.*', '**/node_modules/**'],
+      exclude: ['src/**/*.d.ts', 'src/**/types.ts', 'dist/**', 'test/**', '**/*.config.*', '**/node_modules/**'],
       thresholds: {
         statements: 95,
         branches: 95,
