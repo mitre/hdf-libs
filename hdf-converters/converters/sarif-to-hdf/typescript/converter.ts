@@ -4,7 +4,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
 import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, DataSource, Description } from '@mitre/hdf-schema';
 import { ResultStatus, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
@@ -177,7 +177,14 @@ export async function convertSarifToHdf(input: string): Promise<string> {
 
   const hdf: HdfResults = {
     timestamp: new Date(),
-    baselines: sarif.runs.map(run => convertRun(run, sarif.version, resultsChecksum)),
+    baselines: (() => {
+      const { items: limitedRuns, truncated: truncatedRuns } = limitArray(sarif.runs);
+      if (truncatedRuns) {
+        // eslint-disable-next-line no-console
+        console.warn(`WARNING: Input truncated at ${limitedRuns.length} run items (original: ${sarif.runs.length})`);
+      }
+      return limitedRuns.map(run => convertRun(run, sarif.version, resultsChecksum));
+    })(),
     targets: [],
     generator: {
       name: 'sarif-to-hdf',
@@ -196,9 +203,14 @@ function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum): 
 
   // Group SARIF results by ruleId — each group becomes one EvaluatedRequirement.
   // When ruleId is absent, fall back to message text as the grouping key.
+  const { items: limitedResults, truncated: truncatedResults } = limitArray(run.results);
+  if (truncatedResults) {
+    // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedResults.length} result items (original: ${run.results.length})`);
+  }
   const groupOrder: string[] = [];
   const groupMap = new Map<string, { rule?: ReportingDescriptor; results: SarifResult[] }>();
-  for (const result of run.results) {
+  for (const result of limitedResults) {
     const groupKey = result.ruleId || resolveMessageText(result.message, undefined);
     let group = groupMap.get(groupKey);
     if (!group) {

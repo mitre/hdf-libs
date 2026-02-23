@@ -134,6 +134,56 @@ func TestParseTimestamp(t *testing.T) {
 	})
 }
 
+func TestLimitSlice(t *testing.T) {
+	t.Run("returns full slice when under limit", func(t *testing.T) {
+		items := []string{"a", "b", "c"}
+		result, truncated := LimitSlice(items, 10)
+		assert.Equal(t, items, result)
+		assert.False(t, truncated)
+	})
+
+	t.Run("truncates when over limit", func(t *testing.T) {
+		items := []int{1, 2, 3, 4, 5}
+		result, truncated := LimitSlice(items, 3)
+		assert.Equal(t, []int{1, 2, 3}, result)
+		assert.True(t, truncated)
+	})
+
+	t.Run("uses default when maxItems is zero", func(t *testing.T) {
+		items := []string{"a"}
+		result, truncated := LimitSlice(items, 0)
+		assert.Equal(t, items, result)
+		assert.False(t, truncated)
+	})
+
+	t.Run("uses default when maxItems is negative", func(t *testing.T) {
+		items := []string{"a"}
+		result, truncated := LimitSlice(items, -1)
+		assert.Equal(t, items, result)
+		assert.False(t, truncated)
+	})
+
+	t.Run("handles empty slice", func(t *testing.T) {
+		result, truncated := LimitSlice([]string{}, 10)
+		assert.Empty(t, result)
+		assert.False(t, truncated)
+	})
+
+	t.Run("handles nil slice", func(t *testing.T) {
+		var items []string
+		result, truncated := LimitSlice(items, 10)
+		assert.Empty(t, result)
+		assert.False(t, truncated)
+	})
+
+	t.Run("handles exact limit boundary", func(t *testing.T) {
+		items := []string{"a", "b", "c"}
+		result, truncated := LimitSlice(items, 3)
+		assert.Equal(t, items, result)
+		assert.False(t, truncated)
+	})
+}
+
 func TestStringsToInterfaces(t *testing.T) {
 	t.Run("converts string slice to interface slice", func(t *testing.T) {
 		input := []string{"SA-11", "RA-5"}

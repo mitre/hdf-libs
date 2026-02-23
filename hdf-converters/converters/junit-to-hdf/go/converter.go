@@ -3,6 +3,7 @@ package junit
 import (
 	"encoding/xml"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -122,10 +123,18 @@ func parseJUnitXML(input []byte) ([]junitTestSuite, string, error) {
 
 // buildRequirements creates HDF requirements from all test cases across all suites.
 func buildRequirements(suites []junitTestSuite) []hdf.EvaluatedRequirement {
+	limitedSuites, truncatedSuites := shared.LimitSlice(suites, 0)
+	if truncatedSuites {
+		log.Printf("WARNING: Input truncated at %d test suite items (original: %d)", len(limitedSuites), len(suites))
+	}
 	var requirements []hdf.EvaluatedRequirement
 
-	for _, suite := range suites {
-		for _, tc := range suite.TestCases {
+	for _, suite := range limitedSuites {
+		limitedTestCases, truncatedTC := shared.LimitSlice(suite.TestCases, 0)
+		if truncatedTC {
+			log.Printf("WARNING: Input truncated at %d test case items (original: %d)", len(limitedTestCases), len(suite.TestCases))
+		}
+		for _, tc := range limitedTestCases {
 			requirements = append(requirements, testCaseToRequirement(tc, suite.Timestamp))
 		}
 	}

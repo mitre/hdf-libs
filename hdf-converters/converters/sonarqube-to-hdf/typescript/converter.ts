@@ -3,7 +3,7 @@ import {
   getCweNistControl,
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { inputChecksum } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -156,8 +156,13 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
   }
 
   // Group issues by project (each project becomes a baseline)
+  const { items: limitedIssues, truncated: truncatedIssues } = limitArray(sonarData.issues);
+  if (truncatedIssues) {
+    // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedIssues.length} issue items (original: ${sonarData.issues.length})`);
+  }
   const issuesByProject = new Map<string, SonarQubeIssue[]>();
-  for (const issue of sonarData.issues) {
+  for (const issue of limitedIssues) {
     const projectKey = issue.project;
     if (!issuesByProject.has(projectKey)) {
       issuesByProject.set(projectKey, []);

@@ -119,6 +119,24 @@ func SafeStringSlice(v interface{}) []string {
 	return result
 }
 
+// DefaultMaxItems is the maximum number of items processed from any single
+// input array. Truncation is silent (returns partial results with a boolean
+// flag) to avoid breaking legitimate large scans while capping memory usage.
+const DefaultMaxItems = 100000
+
+// LimitSlice returns at most maxItems elements from items. The second return
+// value is true if the slice was truncated. If maxItems <= 0, DefaultMaxItems
+// is used.
+func LimitSlice[T any](items []T, maxItems int) ([]T, bool) {
+	if maxItems <= 0 {
+		maxItems = DefaultMaxItems
+	}
+	if len(items) <= maxItems {
+		return items, false
+	}
+	return items[:maxItems], true
+}
+
 // ParseTimestamp tries multiple common timestamp formats and returns the first
 // successful parse. Returns zero time if none match.
 //

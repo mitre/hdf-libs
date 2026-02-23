@@ -6,7 +6,7 @@ import {
 } from '@mitre/hdf-mappings';
 import { detectFormat } from '../../../shared/typescript/formatdetect.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { inputChecksum } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -144,8 +144,13 @@ function convertSingleProject(
   resultsChecksum: Checksum
 ): EvaluatedBaseline {
   // Group vulnerabilities by ID, preserving insertion order
+  const { items: limitedVulns, truncated: truncatedVulns } = limitArray(report.vulnerabilities);
+  if (truncatedVulns) {
+    // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedVulns.length} vulnerability items (original: ${report.vulnerabilities.length})`);
+  }
   const groups = new Map<string, SnykVuln[]>();
-  for (const vuln of report.vulnerabilities) {
+  for (const vuln of limitedVulns) {
     const existing = groups.get(vuln.id);
     if (existing) {
       existing.push(vuln);
@@ -204,8 +209,13 @@ export async function convertSnykToHdf(input: string): Promise<string> {
 
   if (Array.isArray(parsed)) {
     // Multi-project output
-    baselines = parsed.map(report => convertSingleProject(report, resultsChecksum));
-    targetName = parsed[0]?.projectName ?? parsed[0]?.path ?? '';
+    const { items: limitedProjects, truncated: truncatedProjects } = limitArray(parsed);
+    if (truncatedProjects) {
+      // eslint-disable-next-line no-console
+      console.warn(`WARNING: Input truncated at ${limitedProjects.length} project items (original: ${parsed.length})`);
+    }
+    baselines = limitedProjects.map(report => convertSingleProject(report, resultsChecksum));
+    targetName = limitedProjects[0]?.projectName ?? limitedProjects[0]?.path ?? '';
   } else {
     // Single project
     baselines = [convertSingleProject(parsed, resultsChecksum)];

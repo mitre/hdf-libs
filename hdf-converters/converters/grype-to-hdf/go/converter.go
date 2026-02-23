@@ -3,6 +3,7 @@ package grype_to_hdf
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -344,12 +345,20 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	requirements := []hdf.EvaluatedRequirement{}
 
 	// Process regular matches
-	for _, match := range grypeData.Matches {
+	limitedMatches, truncatedMatches := shared.LimitSlice(grypeData.Matches, 0)
+	if truncatedMatches {
+		log.Printf("WARNING: Input truncated at %d match items (original: %d)", len(limitedMatches), len(grypeData.Matches))
+	}
+	for _, match := range limitedMatches {
 		requirements = append(requirements, convertMatchToRequirement(match, false))
 	}
 
 	// Process ignored matches
-	for _, match := range grypeData.IgnoredMatches {
+	limitedIgnored, truncatedIgnored := shared.LimitSlice(grypeData.IgnoredMatches, 0)
+	if truncatedIgnored {
+		log.Printf("WARNING: Input truncated at %d ignoredMatch items (original: %d)", len(limitedIgnored), len(grypeData.IgnoredMatches))
+	}
+	for _, match := range limitedIgnored {
 		requirements = append(requirements, convertMatchToRequirement(match, true))
 	}
 

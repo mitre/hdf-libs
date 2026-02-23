@@ -10,7 +10,7 @@ import {
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, limitArray} from '../../../shared/typescript/converterutil.js';
 
 // Input types for Grype JSON
 
@@ -321,14 +321,24 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
 
   // Process regular matches
   if (grypeData.matches && grypeData.matches.length > 0) {
-    for (const match of grypeData.matches) {
+    const { items: limitedMatches, truncated: truncatedMatches } = limitArray(grypeData.matches);
+    if (truncatedMatches) {
+      // eslint-disable-next-line no-console
+      console.warn(`WARNING: Input truncated at ${limitedMatches.length} match items (original: ${grypeData.matches.length})`);
+    }
+    for (const match of limitedMatches) {
       requirements.push(convertMatchToRequirement(match, false));
     }
   }
 
   // Process ignored matches
   if (grypeData.ignoredMatches && grypeData.ignoredMatches.length > 0) {
-    for (const match of grypeData.ignoredMatches) {
+    const { items: limitedIgnored, truncated: truncatedIgnored } = limitArray(grypeData.ignoredMatches);
+    if (truncatedIgnored) {
+      // eslint-disable-next-line no-console
+      console.warn(`WARNING: Input truncated at ${limitedIgnored.length} ignoredMatch items (original: ${grypeData.ignoredMatches.length})`);
+    }
+    for (const match of limitedIgnored) {
       requirements.push(convertMatchToRequirement(match, true));
     }
   }

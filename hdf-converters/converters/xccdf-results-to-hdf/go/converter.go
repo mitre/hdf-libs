@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -313,9 +314,13 @@ func convertBenchmarkToHDF(input []byte, converterVersion string, resultsChecksu
 	ruleMap := buildRuleMap(&benchmark)
 	startTime, duration := calculateTiming(&benchmark.TestResult)
 
+	limitedRuleResults, truncatedRR := shared.LimitSlice(benchmark.TestResult.RuleResults, 0)
+	if truncatedRR {
+		log.Printf("WARNING: Input truncated at %d rule-result items (original: %d)", len(limitedRuleResults), len(benchmark.TestResult.RuleResults))
+	}
 	var requirements []hdf.EvaluatedRequirement
-	for i := range benchmark.TestResult.RuleResults {
-		rr := &benchmark.TestResult.RuleResults[i]
+	for i := range limitedRuleResults {
+		rr := &limitedRuleResults[i]
 		rule := ruleMap[rr.IDRef]
 		req := convertRuleResult(rr, rule)
 		requirements = append(requirements, req)
@@ -413,9 +418,13 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		totalDuration += duration
 
 		// Convert rule-results
+		limitedARFRuleResults, truncatedARFRR := shared.LimitSlice(tr.RuleResults, 0)
+		if truncatedARFRR {
+			log.Printf("WARNING: Input truncated at %d rule-result items (original: %d)", len(limitedARFRuleResults), len(tr.RuleResults))
+		}
 		var requirements []hdf.EvaluatedRequirement
-		for j := range tr.RuleResults {
-			rr := &tr.RuleResults[j]
+		for j := range limitedARFRuleResults {
+			rr := &limitedARFRuleResults[j]
 			rule := ruleMap[rr.IDRef]
 			req := convertRuleResult(rr, rule)
 			requirements = append(requirements, req)

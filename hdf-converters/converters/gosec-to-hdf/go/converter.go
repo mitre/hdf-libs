@@ -3,6 +3,7 @@ package gosec
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -222,7 +223,11 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 	checksum := shared.InputChecksum(input)
 
-	order, groups := groupByRuleID(report.Issues)
+	limitedIssues, truncatedIssues := shared.LimitSlice(report.Issues, 0)
+	if truncatedIssues {
+		log.Printf("WARNING: Input truncated at %d issue items (original: %d)", len(limitedIssues), len(report.Issues))
+	}
+	order, groups := groupByRuleID(limitedIssues)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, ruleID := range order {
 		requirements[i] = buildRequirement(ruleID, groups[ruleID])

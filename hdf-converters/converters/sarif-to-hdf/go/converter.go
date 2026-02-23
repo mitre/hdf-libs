@@ -3,6 +3,7 @@ package sarif
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -201,9 +202,14 @@ func ConvertSarifToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	}
 
 	timestamp := time.Now()
-	baselines := make([]hdf.EvaluatedBaseline, 0, len(sarif.Runs))
 
-	for _, run := range sarif.Runs {
+	limitedRuns, truncatedRuns := shared.LimitSlice(sarif.Runs, 0)
+	if truncatedRuns {
+		log.Printf("WARNING: Input truncated at %d run items (original: %d)", len(limitedRuns), len(sarif.Runs))
+	}
+	baselines := make([]hdf.EvaluatedBaseline, 0, len(limitedRuns))
+
+	for _, run := range limitedRuns {
 		baseline := convertRun(run, sarif.Version, timestamp, resultsChecksum)
 		baselines = append(baselines, baseline)
 	}
@@ -249,9 +255,13 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 		rule    *ReportingDescriptor
 		results []SarifResult
 	}
+	limitedResults, truncatedResults := shared.LimitSlice(run.Results, 0)
+	if truncatedResults {
+		log.Printf("WARNING: Input truncated at %d result items (original: %d)", len(limitedResults), len(run.Results))
+	}
 	groupOrder := []string{}
 	groupMap := make(map[string]*resultGroup)
-	for _, result := range run.Results {
+	for _, result := range limitedResults {
 		groupKey := result.RuleID
 		if groupKey == "" {
 			groupKey = resolveMessageText(result.Message, nil)
