@@ -75,7 +75,7 @@ The following tools must be installed before running `pnpm lint` or `pnpm test`:
 |------|---------|---------|
 | [Node.js](https://nodejs.org/) | ≥20.0.0 | TypeScript build and test runner |
 | [pnpm](https://pnpm.io/) | ≥9.0.0 | Package manager |
-| [Go](https://go.dev/) | 1.23.x | Go packages and CLI tool |
+| [Go](https://go.dev/) | 1.24.x | Go packages and CLI tool |
 | [golangci-lint](https://golangci-lint.run/) | latest | Go linter (required for `pnpm lint`) |
 
 **macOS (Homebrew):**
