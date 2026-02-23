@@ -1,9 +1,61 @@
 ---
 description: Build a new HDF converter end-to-end following hdf-libs monorepo patterns. Use when asked to implement a new converter (e.g. "add a foo-to-hdf converter").
-allowed-tools: Read, Glob, Grep, Bash, Edit, Write
+allowed-tools: Read, Glob, Grep, Bash, Edit, Write, Task, EnterPlanMode, ExitPlanMode, AskUserQuestion
 ---
 
-Build the `$ARGUMENTS` converter end-to-end per the workflow and patterns below. Follow TDD: write tests and fixtures before implementation. Do not consider the converter done until CLI integration is complete and passing.
+## Execution Strategy
+
+Converters are multi-file, multi-language projects that span fixtures, tests, implementations, and CLI integration. **Do not attempt to build the entire converter in one shot.** Instead, follow this phased approach:
+
+### Phase 1 — Research & Plan (enter plan mode)
+
+1. **Enter plan mode** immediately. Use `EnterPlanMode` before writing any code.
+2. In plan mode, research the source format:
+   - Read sample input files if provided; otherwise ask the user.
+   - Identify what maps to HDF fields (Requirement.ID, Impact, Status, NIST tags).
+   - Check whether the tool supports common output formats (SARIF, JUnit, CycloneDX, XCCDF) — if so, plan format detection and routing.
+   - Check heimdall2 and SAF CLI repos for existing fixtures and converter logic.
+   - Read the exports of `hdf-schema`, `hdf-utilities`, `hdf-mappings`, and `hdf-validators` to know what's available — converters that reinvent library functionality will be rejected.
+3. Write a detailed plan covering:
+   - Source format structure and field mappings to HDF
+   - Fixture sourcing strategy (where real data comes from)
+   - Test scenarios for both Go and TypeScript
+   - Implementation approach (parsing, mapping, edge cases)
+   - CLI integration (command name, aliases, flags)
+   - Format detection routing if applicable
+4. **Exit plan mode** and get user approval before proceeding.
+
+### Phase 2 — Fixtures & Tests (TDD)
+
+After plan approval, implement in order:
+1. Source real fixtures (never fabricate)
+2. Write Go tests (`converter_test.go`)
+3. Write TypeScript tests (`converter.test.ts`)
+4. Confirm all tests fail (red phase)
+
+### Phase 3 — Implementation
+
+1. Implement Go converter (`converter.go`) — run Go tests until green
+2. Implement TypeScript converter (`converter.ts`) — run TS tests until green
+3. Wire TypeScript barrel exports
+
+### Phase 4 — CLI Integration
+
+1. Write CLI registration (`converter_<snake>.go`)
+2. Write CLI tests (`converter_<snake>_test.go`)
+3. Spot-check output via CLI binary
+
+### Phase 5 — Verification
+
+1. `pnpm lint` clean
+2. `pnpm test` passes at root level (catches cross-package type errors)
+3. Run the Done Checklist at the bottom of this file
+
+**If context is running low between phases**, use `/prep-compact` to save state, compact, then resume with `/restore-context`. Each phase is designed to be independently resumable.
+
+---
+
+Build the `$ARGUMENTS` converter following the phases above and the reference patterns below. Follow TDD: write tests and fixtures before implementation. Do not consider the converter done until CLI integration is complete and passing.
 
 ---
 
@@ -365,12 +417,19 @@ If a mapping package for the source tool doesn't exist yet, create it in `hdf-ma
 | `parseJSON<T>(input)` | Parse JSON with error handling (use instead of raw `JSON.parse`) |
 | `stringifyJSON(value, options)` | Serialize JSON with options |
 | `isValidJSON(input)` | Check if string is valid JSON |
-| `sha256(data)` | SHA-256 hash (use instead of raw `createHash`) |
-| `parseCsv<T>(input)` | Parse CSV to typed records |
+| `sha256(data)` | SHA-256 hash — async, returns `Promise<string>` (uses Web Crypto API, works in browser + Node) |
+| `parseCsv<T>(input, options?)` | Parse CSV to typed records. Supports `{ maxSize: N }` |
 | `buildCsv<T>(records)` | Build CSV from records |
-| `parseXml(input)` | Parse XML to JS object |
-| `parseXmlWithArrays(input, arrayTags)` | Parse XML, forcing specified tags to always be arrays (use for JUnit `testsuite`/`testcase`, or any tag that can appear once or many times) |
+| `parseXml(input, options?)` | Parse XML to JS object. Pass `{ maxSize: N }` to reject inputs over N chars |
+| `parseXmlWithArrays(input, arrayTags, options?)` | Parse XML, forcing specified tags to always be arrays. Supports `{ maxSize: N }` |
 | `buildXml(obj)` | Build XML from JS object |
+| `findValuesByKey(obj, key)` | Recursively find all values for a key in nested object trees (parsed XML/JSON) |
+| `findXmlValues(obj, key)` | Alias for `findValuesByKey` — use when working with parsed XML |
+| `findJsonValues(obj, key)` | Alias for `findValuesByKey` — use when working with parsed JSON |
+| `extractColumn(rows, column)` | Extract a named field from an array of objects, skipping undefined |
+| `extractCsvColumn(rows, column)` | Alias for `extractColumn` — use when working with parsed CSV |
+| `findRows(rows, column, value)` | Filter array of objects by strict equality on a column |
+| `findCsvRows(rows, column, value)` | Alias for `findRows` — use when working with parsed CSV |
 
 **Go**: Use stdlib (`encoding/json`, `encoding/csv`, `encoding/xml`, `crypto/sha256`).
 
@@ -400,11 +459,14 @@ Already wired into `hdf-cli/cmd/hdf/cmd/input.go`. CLI integration tests MUST ca
 1. **Never hardcode a NIST/CCI/CWE lookup table in a converter.** Use `hdf-mappings`.
 2. **Never iterate all CCI IDs to find which ones match a NIST control.** Use `cci.NISTToCCI()` (Go) or `nistToCci()` (TypeScript).
 3. **Never redefine HDF types.** Import from `hdf-schema`.
-4. **Never write raw `JSON.parse()` in TypeScript converters.** Use `parseJSON()` from `hdf-utilities`.
-5. **Never write ad-hoc severity-to-impact maps in TypeScript.** Use `severityToImpact()` from `hdf-schema`. (Go converters may define their own if the source tool uses non-standard severity labels.)
-6. **Never roll your own CSV/XML parser.** Use `hdf-utilities` (TypeScript) or Go stdlib.
-7. **If a new mapping package is created:** export it from `hdf-mappings/src/index.ts`, add it to the supported mappings table in `hdf-mappings/README.md`, and add usage examples for every exported function.
-8. **If you find yourself writing general-purpose infrastructure** (a lookup table, a format parser, a hash function, a schema validator), stop and check whether it belongs in a sibling package instead.
+4. **Never import `crypto` in TypeScript converters.** Use `sha256()` from `hdf-utilities` (async, uses Web Crypto API for browser compatibility).
+5. **Never write raw `JSON.parse()` in TypeScript converters.** Use `parseJSON()` from `hdf-utilities`.
+6. **Never write ad-hoc severity-to-impact maps in TypeScript.** Use `severityToImpact()` from `hdf-schema`. (Go converters may define their own if the source tool uses non-standard severity labels.)
+7. **Never roll your own CSV/XML parser.** Use `hdf-utilities` (TypeScript) or Go stdlib.
+8. **Never write recursive key-search loops in TypeScript converters.** Use `findValuesByKey()` / `findXmlValues()` / `findJsonValues()` from `hdf-utilities`.
+9. **Never write manual column extraction or row filtering on arrays of objects in TypeScript.** Use `extractColumn()` / `findRows()` (or their CSV aliases) from `hdf-utilities`.
+10. **If a new mapping package is created:** export it from `hdf-mappings/src/index.ts`, add it to the supported mappings table in `hdf-mappings/README.md`, and add usage examples for every exported function.
+11. **If you find yourself writing general-purpose infrastructure** (a lookup table, a format parser, a hash function, a schema validator), stop and check whether it belongs in a sibling package instead.
 
 ---
 
@@ -413,8 +475,7 @@ Already wired into `hdf-cli/cmd/hdf/cmd/input.go`. CLI integration tests MUST ca
 File: `hdf-converters/converters/<name>/typescript/converter.ts`
 
 ```typescript
-import { createHash } from 'crypto';
-import { parseJSON } from '@mitre/hdf-utilities'; // or parseXmlWithArrays for XML formats
+import { parseJSON, sha256 } from '@mitre/hdf-utilities'; // or parseXmlWithArrays for XML formats
 import type {
   HdfResults, EvaluatedBaseline, EvaluatedRequirement,
   RequirementResult, Checksum, Description,
@@ -424,14 +485,14 @@ import {
   createMinimalBaseline, createRequirement, createResult, createDescription,
 } from '@mitre/hdf-schema';
 
-export function convert<Name>ToHdf(input: string): string {
+export async function convert<Name>ToHdf(input: string): Promise<string> {
   if (!input?.trim()) {
     throw new Error('Empty input');
   }
 
   const resultsChecksum: Checksum = {
     algorithm: HashAlgorithm.Sha256,
-    value: createHash('sha256').update(input).digest('hex'),
+    value: await sha256(input),
   };
 
   const data = parseJSON<<SourceType>>(input);
@@ -489,9 +550,10 @@ cd hdf-converters && pnpm test   # should now pass
 
 1. **ES2020 target**: `String.prototype.replaceAll` is not available. Use `str.split(search).join(replacement)` instead.
 2. **`undefined` vs empty string**: JSON fields omitted from input arrive as `undefined`, not `""`. Always use optional chaining (`obj?.field`) and nullish coalescing (`obj?.field ?? ''`). Test assertions should use `toBeUndefined()` for truly absent fields, not `toBe('')`.
-3. **`timestamp` is `Date`, not `string`**: The HDF schema `timestamp` field expects a `Date` object. Use `new Date()`, not `new Date().toISOString()`.
-4. **Always run `pnpm lint && pnpm test` at root level** for final validation. Root `pnpm test` includes a `pretest` build step that catches TypeScript compilation errors that `vitest` alone does not — vitest transpiles on the fly and won't surface type errors.
-5. **Optional fields in interfaces**: When defining TypeScript interfaces for parsed input, mark fields as optional (`field?: type`) when the source format doesn't guarantee their presence. This prevents runtime crashes from accessing undefined properties.
+3. **Converter functions are `async`**: Because `sha256()` from `hdf-utilities` is async (Web Crypto API), all converter functions must be `async function convert<Name>ToHdf(input: string): Promise<string>`. Tests must `await` the result.
+5. **`timestamp` is `Date`, not `string`**: The HDF schema `timestamp` field expects a `Date` object. Use `new Date()`, not `new Date().toISOString()`.
+6. **Always run `pnpm lint && pnpm test` at root level** for final validation. Root `pnpm test` includes a `pretest` build step that catches TypeScript compilation errors that `vitest` alone does not — vitest transpiles on the fly and won't surface type errors.
+7. **Optional fields in interfaces**: When defining TypeScript interfaces for parsed input, mark fields as optional (`field?: type`) when the source format doesn't guarantee their presence. This prevents runtime crashes from accessing undefined properties.
 
 ---
 
@@ -782,6 +844,8 @@ cat output.json | head -40
 - [ ] **Go:** Implementation complete (`go/converter.go`)
 - [ ] **TypeScript:** Unit tests written and passing (`typescript/converter.test.ts`)
 - [ ] **TypeScript:** Implementation complete (`typescript/converter.ts`)
+- [ ] **TypeScript:** Barrel export (`typescript/index.ts`) and re-export from `hdf-converters/src/index.ts`
+- [ ] **TypeScript:** Export existence test in `hdf-converters/test/index.test.ts`
 - [ ] CLI registration file (`converter_<snake>.go`) — add `//nolint:dupl` if lint flags it as a duplicate of another thin converter wrapper
 - [ ] CLI tests passing (`converter_<snake>_test.go`)
 - [ ] `pnpm lint` clean
