@@ -69,6 +69,30 @@ func StringsToInterfaces(ss []string) []interface{} {
 	return result
 }
 
+// BuildNISTCCITags creates a tags map with NIST and optional CCI string slices
+// converted to []interface{} for JSON serialization. If cci is empty, the "cci"
+// key is omitted.
+func BuildNISTCCITags(nist, cci []string) map[string]interface{} {
+	tags := map[string]interface{}{
+		"nist": StringsToInterfaces(nist),
+	}
+	if len(cci) > 0 {
+		tags["cci"] = StringsToInterfaces(cci)
+	}
+	return tags
+}
+
+// BuildNISTCCITagsWithExtras creates a tags map with NIST, optional CCI, and
+// additional key-value pairs. Extras are added after NIST/CCI so they can
+// override those keys if needed.
+func BuildNISTCCITagsWithExtras(nist, cci []string, extras map[string]interface{}) map[string]interface{} {
+	tags := BuildNISTCCITags(nist, cci)
+	for k, v := range extras {
+		tags[k] = v
+	}
+	return tags
+}
+
 // SafeString extracts a string from an interface{} value.
 // Returns the zero string if v is nil or not a string.
 func SafeString(v interface{}) string {
