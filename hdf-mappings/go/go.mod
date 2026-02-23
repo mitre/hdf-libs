@@ -1,3 +1,3 @@
 module github.com/mitre/hdf-mappings/go
 
-go 1.22
+go 1.25

@@ -4,6 +4,8 @@ import {
   getCCINistMappings,
   getAllCCIIds,
   cciExists,
+  getNistCCIMappings,
+  nistToCci,
 } from '../src/cci/index.js';
 
 describe('CCI Mapping Functions', () => {
@@ -133,6 +135,84 @@ describe('CCI Mapping Functions', () => {
       vi.resetModules();
       const { getCCIDescription: getCCIDescFresh } = await import('../src/cci/index.js');
       expect(getCCIDescFresh('CCI-000001')).toBeDefined();
+    });
+  });
+
+  describe('getNistCCIMappings', () => {
+    it('should return CCI IDs for a known NIST control', () => {
+      const ccis = getNistCCIMappings('AC-3');
+      expect(ccis).toBeDefined();
+      expect(Array.isArray(ccis)).toBe(true);
+      expect(ccis!.length).toBeGreaterThan(0);
+      expect(ccis![0]).toMatch(/^CCI-\d{6}$/);
+    });
+
+    it('should normalize qualified controls to base control', () => {
+      // 'AC-6 (2)' should be looked up as 'AC-6'
+      const fromQualified = getNistCCIMappings('AC-6 (2)');
+      const fromBase = getNistCCIMappings('AC-6');
+      expect(fromQualified).toEqual(fromBase);
+    });
+
+    it('should normalize space-delimited enhancements to base control', () => {
+      // 'AC-4 a 1' should be looked up as 'AC-4'
+      const fromEnhancement = getNistCCIMappings('AC-4 a 1');
+      const fromBase = getNistCCIMappings('AC-4');
+      expect(fromEnhancement).toEqual(fromBase);
+    });
+
+    it('should return undefined for unknown NIST control', () => {
+      expect(getNistCCIMappings('ZZ-999')).toBeUndefined();
+    });
+
+    it('should return undefined for empty string', () => {
+      expect(getNistCCIMappings('')).toBeUndefined();
+    });
+
+    it('should return undefined for null', () => {
+      expect(getNistCCIMappings(null as unknown as string)).toBeUndefined();
+    });
+
+    it('should return undefined for non-string input', () => {
+      expect(getNistCCIMappings(42 as unknown as string)).toBeUndefined();
+    });
+  });
+
+  describe('nistToCci', () => {
+    it('should return CCI IDs for an array of NIST controls', () => {
+      const ccis = nistToCci(['AC-3', 'AU-12']);
+      expect(Array.isArray(ccis)).toBe(true);
+      expect(ccis.length).toBeGreaterThan(0);
+      expect(ccis[0]).toMatch(/^CCI-\d{6}$/);
+    });
+
+    it('should return sorted results', () => {
+      const ccis = nistToCci(['AC-3', 'AU-12']);
+      const sorted = [...ccis].sort();
+      expect(ccis).toEqual(sorted);
+    });
+
+    it('should deduplicate CCI IDs', () => {
+      // Same control twice should not produce duplicates
+      const ccis = nistToCci(['AC-3', 'AC-3']);
+      const unique = new Set(ccis);
+      expect(unique.size).toBe(ccis.length);
+    });
+
+    it('should return empty array for unknown controls', () => {
+      const ccis = nistToCci(['ZZ-999', 'ZZ-888']);
+      expect(ccis).toEqual([]);
+    });
+
+    it('should return empty array for empty input', () => {
+      const ccis = nistToCci([]);
+      expect(ccis).toEqual([]);
+    });
+
+    it('should skip controls with no mappings', () => {
+      const ccisWithUnknown = nistToCci(['AC-3', 'ZZ-999']);
+      const ccisWithoutUnknown = nistToCci(['AC-3']);
+      expect(ccisWithUnknown).toEqual(ccisWithoutUnknown);
     });
   });
 

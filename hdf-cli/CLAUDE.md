@@ -11,18 +11,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Build tasks are run via `pnpm`. The Go binary is the only artifact.
 
 ```bash
-pnpm build           # Sync schemas + compile Go binary
+pnpm build           # Compile Go binary (go build -o hdf ./cmd/hdf)
 pnpm build:release   # Build with version info embedded (git tag, commit, timestamp)
 pnpm clean           # Remove binary and coverage files
-pnpm sync-schemas    # Copy schemas from ../hdf-schema/dist/schemas/
 ```
 
-Before building, `../hdf-schema` must be built. The `prebuild` hook auto-runs `sync-schemas`.
-
-```bash
-# Manual Go build (without schema sync)
-go build -o hdf ./cmd/hdf
-```
+Schema validation is provided by `hdf-validators/go` via `//go:embed` — no schema copying step is needed. The `go.mod` `replace` directive points at `../hdf-validators/go`.
 
 ## Testing
 
