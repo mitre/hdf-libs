@@ -2,11 +2,10 @@
  * OWASP Top 10 to NIST mapping functions
  */
 
-import { createRequire } from 'module';
 import type { OwaspNistMappings, OwaspNistMapping } from './types.js';
+import rawOwaspData from '../data/owasp-nist-mappings.json';
 
-const _require = createRequire(import.meta.url);
-const owaspData = _require('../data/owasp-nist-mappings.json') as OwaspNistMappings;
+const owaspData = rawOwaspData as OwaspNistMappings;
 const owaspIndex = new Map<string, OwaspNistMapping>(
   owaspData.map(item => [item['OWASP-ID'], item])
 );

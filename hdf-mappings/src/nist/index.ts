@@ -2,11 +2,10 @@
  * NIST SP 800-53 control description functions
  */
 
-import { createRequire } from 'module';
 import type { NISTDescriptions } from './types.js';
+import rawNistData from '../data/nist-descriptions.json';
 
-const _require = createRequire(import.meta.url);
-const nistData = _require('../data/nist-descriptions.json') as NISTDescriptions;
+const nistData = rawNistData as NISTDescriptions;
 
 /**
  * Get the description for a NIST control ID.
