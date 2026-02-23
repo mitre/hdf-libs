@@ -133,3 +133,76 @@ func TestParseTimestamp(t *testing.T) {
 		assert.Equal(t, 2024, result.Year())
 	})
 }
+
+func TestStringsToInterfaces(t *testing.T) {
+	t.Run("converts string slice to interface slice", func(t *testing.T) {
+		input := []string{"SA-11", "RA-5"}
+		result := StringsToInterfaces(input)
+		require.Len(t, result, 2)
+		assert.Equal(t, "SA-11", result[0])
+		assert.Equal(t, "RA-5", result[1])
+	})
+
+	t.Run("handles empty slice", func(t *testing.T) {
+		result := StringsToInterfaces([]string{})
+		assert.Empty(t, result)
+		assert.NotNil(t, result) // should be empty slice, not nil
+	})
+
+	t.Run("handles nil slice", func(t *testing.T) {
+		result := StringsToInterfaces(nil)
+		assert.Empty(t, result)
+	})
+
+	t.Run("preserves order", func(t *testing.T) {
+		input := []string{"c", "a", "b"}
+		result := StringsToInterfaces(input)
+		assert.Equal(t, "c", result[0])
+		assert.Equal(t, "a", result[1])
+		assert.Equal(t, "b", result[2])
+	})
+}
+
+func TestSafeString(t *testing.T) {
+	t.Run("extracts string value", func(t *testing.T) {
+		assert.Equal(t, "hello", SafeString("hello"))
+	})
+
+	t.Run("returns empty for nil", func(t *testing.T) {
+		assert.Equal(t, "", SafeString(nil))
+	})
+
+	t.Run("returns empty for non-string", func(t *testing.T) {
+		assert.Equal(t, "", SafeString(42))
+		assert.Equal(t, "", SafeString(true))
+		assert.Equal(t, "", SafeString([]string{"a"}))
+	})
+}
+
+func TestSafeStringSlice(t *testing.T) {
+	t.Run("extracts string slice from interface slice", func(t *testing.T) {
+		input := []interface{}{"SA-11", "RA-5"}
+		result := SafeStringSlice(input)
+		assert.Equal(t, []string{"SA-11", "RA-5"}, result)
+	})
+
+	t.Run("returns nil for nil input", func(t *testing.T) {
+		assert.Nil(t, SafeStringSlice(nil))
+	})
+
+	t.Run("returns nil for non-slice input", func(t *testing.T) {
+		assert.Nil(t, SafeStringSlice("not a slice"))
+	})
+
+	t.Run("skips non-string elements", func(t *testing.T) {
+		input := []interface{}{"SA-11", 42, "RA-5", true}
+		result := SafeStringSlice(input)
+		assert.Equal(t, []string{"SA-11", "RA-5"}, result)
+	})
+
+	t.Run("handles empty interface slice", func(t *testing.T) {
+		input := []interface{}{}
+		result := SafeStringSlice(input)
+		assert.Empty(t, result)
+	})
+}

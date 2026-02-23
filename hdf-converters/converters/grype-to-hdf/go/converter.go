@@ -185,7 +185,10 @@ func getCVSSInfo(vuln GrypeVulnerability, relatedVulns []GrypeRelatedVulnerabili
 		}
 	}
 
-	jsonBytes, _ := json.Marshal(cvssData)
+	jsonBytes, err := json.Marshal(cvssData)
+	if err != nil {
+		return "{}"
+	}
 	return string(jsonBytes)
 }
 
@@ -287,20 +290,11 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 	cciTags := cci.NISTToCCI(shared.DefaultStaticAnalysisNIST)
 
 	// Build tags - only include cci if not empty
-	nistInterfaces := make([]interface{}, len(shared.DefaultStaticAnalysisNIST))
-	for i, tag := range shared.DefaultStaticAnalysisNIST {
-		nistInterfaces[i] = tag
-	}
-
 	tags := map[string]interface{}{
-		"nist": nistInterfaces,
+		"nist": shared.StringsToInterfaces(shared.DefaultStaticAnalysisNIST),
 	}
 	if len(cciTags) > 0 {
-		cciInterfaces := make([]interface{}, len(cciTags))
-		for i, tag := range cciTags {
-			cciInterfaces[i] = tag
-		}
-		tags["cci"] = cciInterfaces
+		tags["cci"] = shared.StringsToInterfaces(cciTags)
 	}
 
 	// Build requirement ID

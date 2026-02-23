@@ -35,6 +35,14 @@ func StripHTML(html string) string {
 	return strings.TrimSpace(ws.ReplaceAllString(stripped, " "))
 }
 
+// Severity-to-impact mapping audit (2026-02):
+// Each converter defines its own severity-to-impact map because different tools
+// have different severity levels (e.g. SonarQube uses BLOCKER/CRITICAL/MAJOR/
+// MINOR/INFO while Grype uses Critical/High/Medium/Low/Negligible).
+// Canonical reference: heimdall2 sonarqube-mapper.ts IMPACT_MAPPING.
+// Grype uses critical=0.9 consistently in both Go/TS -- this is intentional,
+// not a parity bug (grype's "Critical" is broader than SonarQube's "CRITICAL").
+
 // DefaultStaticAnalysisNIST is the canonical NIST 800-53 fallback for static
 // analysis and vulnerability scanning tools (SA-11: Developer Security Testing
 // and Evaluation, RA-5: Vulnerability Monitoring and Scanning).
@@ -49,6 +57,43 @@ var DefaultRemediationNIST = []string{"SI-2", "RA-5"}
 // DefaultComponentManagementNIST is the canonical NIST 800-53 fallback for
 // dependency/inventory management tools (CM-8: System Component Inventory).
 var DefaultComponentManagementNIST = []string{"CM-8"}
+
+// StringsToInterfaces converts a string slice to an interface slice.
+// This is needed because Go's type system does not allow direct assignment
+// of []string to []interface{} in JSON-serializable map values.
+func StringsToInterfaces(ss []string) []interface{} {
+	result := make([]interface{}, len(ss))
+	for i, s := range ss {
+		result[i] = s
+	}
+	return result
+}
+
+// SafeString extracts a string from an interface{} value.
+// Returns the zero string if v is nil or not a string.
+func SafeString(v interface{}) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
+}
+
+// SafeStringSlice extracts a string slice from an interface{} value.
+// Returns nil if v is nil or not a []interface{} containing strings.
+// Non-string elements within the slice are skipped.
+func SafeStringSlice(v interface{}) []string {
+	items, ok := v.([]interface{})
+	if !ok {
+		return nil
+	}
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		if s, ok := item.(string); ok {
+			result = append(result, s)
+		}
+	}
+	return result
+}
 
 // ParseTimestamp tries multiple common timestamp formats and returns the first
 // successful parse. Returns zero time if none match.
