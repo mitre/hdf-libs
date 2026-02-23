@@ -107,6 +107,62 @@ describe('findValuesByKey', () => {
     expect(results).toEqual(['value']);
     expect(results).not.toContain('key');
   });
+
+  describe('depth limiting', () => {
+    it('should find values within default depth limit', () => {
+      // Build a chain of 10 levels — well within the 100 default
+      let obj: Record<string, unknown> = { target: 'found' };
+      for (let i = 0; i < 10; i++) {
+        obj = { nested: obj };
+      }
+      expect(findValuesByKey(obj, 'target')).toEqual(['found']);
+    });
+
+    it('should not find values beyond custom maxDepth', () => {
+      // Build a chain of 5 levels, set maxDepth to 3
+      let obj: Record<string, unknown> = { target: 'deep' };
+      for (let i = 0; i < 5; i++) {
+        obj = { nested: obj };
+      }
+      // With maxDepth=3, we should NOT reach the target at depth 6
+      expect(findValuesByKey(obj, 'target', 3)).toEqual([]);
+    });
+
+    it('should find values exactly at maxDepth boundary', () => {
+      // Build a chain where target is exactly at depth N
+      let obj: Record<string, unknown> = { target: 'boundary' };
+      for (let i = 0; i < 3; i++) {
+        obj = { nested: obj };
+      }
+      // walk starts at depth 0 for the outermost object.
+      // Each Object.values recursion increments depth by 1.
+      // The { target: 'boundary' } object is reached at depth 3.
+      // maxDepth=3 allows depth 3 (guard is depth > maxDepth), so it finds the value.
+      // maxDepth=2 stops at depth 3 (3 > 2), so it does not find the value.
+      expect(findValuesByKey(obj, 'target', 3)).toEqual(['boundary']);
+      expect(findValuesByKey(obj, 'target', 2)).toEqual([]);
+    });
+
+    it('should handle arrays within depth counting', () => {
+      const obj = {
+        items: [
+          { nested: { target: 'in-array' } },
+        ],
+      };
+      // Array traversal counts as depth
+      expect(findValuesByKey(obj, 'target')).toEqual(['in-array']);
+      expect(findValuesByKey(obj, 'target', 1)).toEqual([]);
+    });
+
+    it('should not throw when depth limit exceeded', () => {
+      let obj: Record<string, unknown> = { target: 'deep' };
+      for (let i = 0; i < 100; i++) {
+        obj = { nested: obj };
+      }
+      // Should silently truncate, not throw
+      expect(() => findValuesByKey(obj, 'target', 5)).not.toThrow();
+    });
+  });
 });
 
 describe('extractColumn', () => {

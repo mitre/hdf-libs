@@ -14,22 +14,37 @@
  *
  * @param obj - Object tree to search (parsed XML, JSON, etc.)
  * @param key - Property name to search for
+ * @param maxDepth - Maximum recursion depth (default 100). Nodes beyond this depth are silently skipped.
  * @returns Flat array of all matched values
  */
-export function findValuesByKey(obj: unknown, key: string): unknown[] {
+export function findValuesByKey(
+  obj: unknown,
+  key: string,
+  maxDepth = 100,
+): unknown[] {
   const results: unknown[] = [];
-  walk(obj, key, results);
+  walk(obj, key, results, 0, maxDepth);
   return results;
 }
 
-function walk(node: unknown, key: string, results: unknown[]): void {
+function walk(
+  node: unknown,
+  key: string,
+  results: unknown[],
+  depth: number,
+  maxDepth: number,
+): void {
+  if (depth > maxDepth) {
+    return;
+  }
+
   if (node === null || node === undefined || typeof node !== 'object') {
     return;
   }
 
   if (Array.isArray(node)) {
     for (const item of node) {
-      walk(item, key, results);
+      walk(item, key, results, depth + 1, maxDepth);
     }
     return;
   }
@@ -39,7 +54,7 @@ function walk(node: unknown, key: string, results: unknown[]): void {
     results.push(record[key]);
   }
   for (const value of Object.values(record)) {
-    walk(value, key, results);
+    walk(value, key, results, depth + 1, maxDepth);
   }
 }
 
