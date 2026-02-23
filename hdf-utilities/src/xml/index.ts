@@ -6,6 +6,8 @@
 import { XMLParser, XMLBuilder, XMLValidator } from 'fast-xml-parser';
 import type { X2jOptions, XmlBuilderOptions } from 'fast-xml-parser';
 
+export { findValuesByKey as findXmlValues } from '../object/index.js';
+
 /**
  * Default options for XML parsing optimized for security tool converters
  */

@@ -7,6 +7,11 @@
 
 import { dsvFormat } from 'd3-dsv';
 
+export {
+  extractColumn as extractCsvColumn,
+  findRows as findCsvRows,
+} from '../object/index.js';
+
 /**
  * Options for parsing CSV
  */
