@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { existsSync, rmSync, readFileSync, renameSync } from 'fs';
+import { existsSync, readFileSync, renameSync } from 'fs';
 import { join } from 'path';
 import { bundleSchemas } from '../src/bundle-schemas';
 import { generateTypes } from '../src/generate-types';
@@ -10,14 +10,10 @@ const SCHEMAS_DIR = join(DIST_DIR, 'schemas');
 
 describe('generate-types', () => {
   beforeAll(async () => {
-    // Clean type output directories before tests
-    for (const lang of ['ts', 'go', 'python']) {
-      const dir = join(DIST_DIR, lang);
-      if (existsSync(dir)) {
-        rmSync(dir, { recursive: true });
-      }
-    }
-    // First bundle schemas, then generate types
+    // Regenerate types from bundled schemas (overwrites existing files)
+    // NOTE: Do NOT delete dist/{ts,go,python} here — other CI steps and parallel
+    // test runs (e.g. hdf-cli Go tests) depend on dist/go/ existing. If pnpm aborts
+    // this test mid-flight, deleted directories won't be restored.
     await bundleSchemas();
     await generateTypes();
   });
