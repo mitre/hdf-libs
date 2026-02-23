@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	validators "github.com/mitre/hdf-validators/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // converterFixturePath returns the absolute path to a fixture file for a named converter.
@@ -22,11 +24,14 @@ func converterFixturePath(t *testing.T, converterDirName, name string) string {
 	return path
 }
 
-// assertHDFOutput verifies that output bytes contain the expected top-level HDF JSON structure fields.
+// assertHDFOutput validates converter output against the HDF JSON Schema.
+// This ensures converters produce structurally valid HDF, not just JSON
+// containing the right field names.
 func assertHDFOutput(t *testing.T, output []byte) {
 	t.Helper()
-	s := string(output)
-	assert.Contains(t, s, "\"baselines\"")
-	assert.Contains(t, s, "\"generator\"")
-	assert.Contains(t, s, "\"timestamp\"")
+	require.NotEmpty(t, output, "Converter output should not be empty")
+
+	result := validators.ValidateResults(output)
+	assert.True(t, result.Valid,
+		"Converter output must pass HDF schema validation: %s", result.Error())
 }

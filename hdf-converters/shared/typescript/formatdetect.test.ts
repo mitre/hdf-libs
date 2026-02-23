@@ -81,4 +81,29 @@ describe('detectFormat', () => {
   it('returns unknown for invalid XML', () => {
     expect(detectFormat('<unclosed')).toBe('unknown');
   });
+
+  // XCCDF and ARF detection tests
+  it('detects XCCDF Benchmark XML', () => {
+    const input =
+      '<?xml version="1.0"?><Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="test"><status>incomplete</status></Benchmark>';
+    expect(detectFormat(input)).toBe('xccdf');
+  });
+
+  it('detects ARF asset-report-collection XML', () => {
+    const input =
+      '<?xml version="1.0"?><asset-report-collection xmlns="http://scap.nist.gov/schema/asset-reporting-format/1.1"></asset-report-collection>';
+    expect(detectFormat(input)).toBe('arf');
+  });
+
+  it('detects ARF with namespace prefix', () => {
+    const input =
+      '<?xml version="1.0"?><arf:asset-report-collection xmlns:arf="http://scap.nist.gov/schema/asset-reporting-format/1.1"></arf:asset-report-collection>';
+    expect(detectFormat(input)).toBe('arf');
+  });
+
+  it('detects XCCDF with namespace prefix', () => {
+    const input =
+      '<?xml version="1.0"?><xccdf:Benchmark xmlns:xccdf="http://checklists.nist.gov/xccdf/1.2" id="test"></xccdf:Benchmark>';
+    expect(detectFormat(input)).toBe('xccdf');
+  });
 });
