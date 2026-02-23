@@ -8,10 +8,11 @@ on:
   pull_request:
     branches:
       - main
+      - hdf-libs-development
 
 jobs:
-  test:
-    name: Test
+  build:
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -27,9 +28,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.x'
-
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -60,27 +58,221 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build hdf-schema
-        run: pnpm -r --filter hdf-schema run build
+      - name: Build TypeScript packages
+        run: pnpm build:ts
 
-      - name: Build other packages
-        run: pnpm -r --filter '!hdf-schema' run build
+      - name: Build Go CLI
+        run: pnpm build:go
 
-      - name: Lint
-        run: pnpm lint
+      - name: Verify build artifacts
+        run: |
+          for pkg in hdf-schema hdf-utilities hdf-mappings hdf-validators hdf-parsers hdf-converters; do
+            if [ ! -d "$pkg/dist" ]; then
+              echo "FAIL: $pkg/dist not found"
+              exit 1
+            fi
+            echo "OK: $pkg/dist exists"
+          done
+          if [ ! -f "hdf-cli/hdf" ]; then
+            echo "FAIL: hdf-cli/hdf binary not found"
+            exit 1
+          fi
+          echo "OK: hdf-cli/hdf binary exists"
 
-      - name: Test TypeScript
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Build first — Go lint needs generated types, TS lint needs compiled output
+      - name: Build
+        run: pnpm build
+
+      - name: Lint TypeScript
+        run: pnpm -r --filter '!hdf-cli' run lint
+
+      - name: Lint Go
+        run: pnpm --filter hdf-cli run lint
+
+  test-ts:
+    name: Test (TypeScript)
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build TypeScript packages
+        run: pnpm build:ts
+
+      - name: Run TypeScript tests
         run: pnpm test:ts
 
-      - name: Test Go
-        run: pnpm test:go
+      - name: Run TypeScript tests with coverage
+        run: pnpm test:coverage
+        continue-on-error: true
 
-      - name: Upload coverage reports
+      - name: Upload TS coverage
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: coverage-reports
-          path: |
-            **/coverage
-            **/coverage.out
+          name: coverage-ts
+          path: '**/coverage'
           retention-days: 30
+
+  test-go:
+    name: Test (Go)
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Go tests need hdf-schema built (for fixtures and types)
+      - name: Build TypeScript packages
+        run: pnpm build:ts
+
+      - name: Run Go tests
+        run: pnpm test:go
+
+      - name: Run Go tests with race detector
+        run: cd hdf-cli && go test -race ./...
+
+      - name: Upload Go coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-go
+          path: '**/coverage.out'
+          retention-days: 30
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: npm audit (TypeScript dependencies)
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
+
+      - name: govulncheck (Go vulnerability scan)
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          cd hdf-cli && govulncheck ./...
+
+      - name: gosec (Go SAST)
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          cd hdf-cli && gosec ./...
+        continue-on-error: true
+
+  # Verify TypeScript-only build works without Go (for submodule consumers)
+  build-ts-only:
+    name: Build (TypeScript only, no Go)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build TypeScript packages
+        run: pnpm build:ts
+
+      - name: Verify TypeScript build artifacts
+        run: |
+          for pkg in hdf-schema hdf-utilities hdf-mappings hdf-validators hdf-parsers hdf-converters; do
+            if [ ! -d "$pkg/dist" ]; then
+              echo "FAIL: $pkg/dist not found"
+              exit 1
+            fi
+            echo "OK: $pkg/dist exists"
+          done
+
+      - name: Test TypeScript
+        run: pnpm test:ts

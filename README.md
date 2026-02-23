@@ -119,21 +119,22 @@ pnpm install
 
 ### Building
 
-`pnpm build` handles ordering automatically — hdf-schema is built first since other packages depend on its generated types.
+Build scripts are split by language so consumers can build only what they need:
 
 ```bash
+# Build everything (TypeScript + Go)
 pnpm build
+
+# Build TypeScript packages only (no Go required)
+pnpm build:ts
+
+# Build Go CLI only (requires Go 1.23+)
+pnpm build:go
 ```
 
-To build packages individually:
+`build:ts` handles dependency ordering automatically — hdf-schema is built first since other packages depend on its generated types.
 
-```bash
-# Build hdf-schema first (generates TypeScript, Python, and Go types)
-pnpm -r --filter hdf-schema run build
-
-# Then build other packages
-pnpm -r --filter '!hdf-schema' run build
-```
+**Submodule consumers** that only need the npm packages should use `pnpm build:ts`. Go is not required.
 
 ### Linting
 
