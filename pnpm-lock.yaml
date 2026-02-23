@@ -109,7 +109,7 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
       fast-xml-parser:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
     devDependencies:
       '@stryker-mutator/core':

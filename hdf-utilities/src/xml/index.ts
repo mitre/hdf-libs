@@ -9,7 +9,12 @@ import type { X2jOptions, XmlBuilderOptions } from 'fast-xml-parser';
 export { findValuesByKey as findXmlValues } from '../object/index.js';
 
 /**
- * Default options for XML parsing optimized for security tool converters
+ * Default options for XML parsing optimized for security tool converters.
+ *
+ * **XXE Safety**: fast-xml-parser v5.x does not process DTD or external entities
+ * by default. The `processEntities: false` option is set as defense-in-depth to
+ * ensure entity expansion is disabled even if future versions change defaults.
+ * See: https://github.com/NaturalIntelligence/fast-xml-parser/blob/master/docs/v5/2.XMLparseOptions.md
  */
 const DEFAULT_PARSE_OPTIONS: Partial<X2jOptions> = {
   attributeNamePrefix: '',
@@ -19,6 +24,7 @@ const DEFAULT_PARSE_OPTIONS: Partial<X2jOptions> = {
   parseAttributeValue: false,
   parseTagValue: false,
   removeNSPrefix: true,
+  processEntities: false,
 };
 
 /**
