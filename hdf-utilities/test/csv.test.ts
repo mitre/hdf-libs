@@ -11,6 +11,49 @@ import {
 } from '../src/csv';
 
 describe('CSV Utilities', () => {
+  describe('maxSize option', () => {
+    const smallCsv = 'name,age\nJohn,30';
+
+    it('parseCsv should accept input within maxSize limit', () => {
+      expect(() => parseCsv(smallCsv, { maxSize: 1000 })).not.toThrow();
+    });
+
+    it('parseCsv should reject input exceeding maxSize limit', () => {
+      expect(() => parseCsv(smallCsv, { maxSize: 5 })).toThrow(
+        /exceeds maximum allowed size/
+      );
+    });
+
+    it('parseCsv should not enforce a limit when maxSize is omitted', () => {
+      const largeCsv = 'a,b\n' + 'x,y\n'.repeat(5_000);
+      expect(() => parseCsv(largeCsv)).not.toThrow();
+    });
+
+    it('parseCsvArray should accept input within maxSize limit', () => {
+      expect(() => parseCsvArray(smallCsv, { maxSize: 1000 })).not.toThrow();
+    });
+
+    it('parseCsvArray should reject input exceeding maxSize limit', () => {
+      expect(() => parseCsvArray(smallCsv, { maxSize: 5 })).toThrow(
+        /exceeds maximum allowed size/
+      );
+    });
+
+    it('should report actual size and limit in error message', () => {
+      expect(() => parseCsv(smallCsv, { maxSize: 10 })).toThrow(
+        new RegExp(`${smallCsv.length} bytes.*10 bytes`)
+      );
+    });
+
+    it('should check size before doing any parsing work', () => {
+      // Even malformed CSV should fail on size first
+      const badCsv = '"unclosed quote';
+      expect(() => parseCsv(badCsv, { maxSize: 3 })).toThrow(
+        /exceeds maximum allowed size/
+      );
+    });
+  });
+
   describe('parseCsv', () => {
     it('should parse simple CSV with headers', () => {
       const csv = `name,age,city

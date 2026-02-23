@@ -47,8 +47,14 @@ const DEFAULT_BUILD_OPTIONS: Partial<XmlBuilderOptions> = {
  */
 export function parseXml(
   xml: string,
-  options?: Partial<X2jOptions>
+  options?: Partial<X2jOptions> & { maxSize?: number }
 ): Record<string, unknown> {
+  if (options?.maxSize !== undefined && xml.length > options.maxSize) {
+    throw new Error(
+      `Input exceeds maximum allowed size: ${xml.length} bytes exceeds limit of ${options.maxSize} bytes`
+    );
+  }
+
   // Validate XML first
   const validation = XMLValidator.validate(xml);
   if (validation !== true) {
@@ -132,8 +138,14 @@ export function isValidXml(xml: string): boolean {
 export function parseXmlWithArrays(
   xml: string,
   arrayTags: string[],
-  options?: Partial<X2jOptions>
+  options?: Partial<X2jOptions> & { maxSize?: number }
 ): Record<string, unknown> {
+  if (options?.maxSize !== undefined && xml.length > options.maxSize) {
+    throw new Error(
+      `Input exceeds maximum allowed size: ${xml.length} bytes exceeds limit of ${options.maxSize} bytes`
+    );
+  }
+
   // Validate XML first (consistency with parseXml)
   const validation = XMLValidator.validate(xml);
   if (validation !== true) {

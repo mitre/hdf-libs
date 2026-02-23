@@ -344,6 +344,51 @@ describe('XML Utilities', () => {
     });
   });
 
+  describe('maxSize option', () => {
+    const smallXml = '<root><item>Test</item></root>';
+
+    it('parseXml should accept input within maxSize limit', () => {
+      expect(() => parseXml(smallXml, { maxSize: 1000 })).not.toThrow();
+    });
+
+    it('parseXml should reject input exceeding maxSize limit', () => {
+      expect(() => parseXml(smallXml, { maxSize: 5 })).toThrow(
+        /exceeds maximum allowed size/
+      );
+    });
+
+    it('parseXml should not enforce a limit when maxSize is omitted', () => {
+      const largeXml = '<r>' + 'x'.repeat(10_000) + '</r>';
+      expect(() => parseXml(largeXml)).not.toThrow();
+    });
+
+    it('parseXmlWithArrays should accept input within maxSize limit', () => {
+      expect(() =>
+        parseXmlWithArrays(smallXml, ['item'], { maxSize: 1000 })
+      ).not.toThrow();
+    });
+
+    it('parseXmlWithArrays should reject input exceeding maxSize limit', () => {
+      expect(() =>
+        parseXmlWithArrays(smallXml, ['item'], { maxSize: 5 })
+      ).toThrow(/exceeds maximum allowed size/);
+    });
+
+    it('should report actual size and limit in error message', () => {
+      expect(() => parseXml(smallXml, { maxSize: 10 })).toThrow(
+        new RegExp(`${smallXml.length} bytes.*10 bytes`)
+      );
+    });
+
+    it('should check size before doing any parsing work', () => {
+      // Even invalid XML should fail on size before reaching the parser
+      const invalidXml = '<root><unclosed';
+      expect(() => parseXml(invalidXml, { maxSize: 3 })).toThrow(
+        /exceeds maximum allowed size/
+      );
+    });
+  });
+
   describe('Real-world security tool XML scenarios', () => {
     it('should parse Nessus-like vulnerability XML', () => {
       const xml = `
