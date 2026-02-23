@@ -2,10 +2,11 @@
  * Query functions for CWE to NIST mappings
  */
 
+import { createRequire } from 'module';
 import type { CweNistMapping, CweNistMappings } from './types.js';
-import rawMappings from '../data/cwe-nist-mappings.json' with { type: 'json' };
 
-const mappings = rawMappings as CweNistMappings;
+const _require = createRequire(import.meta.url);
+const mappings = _require('../data/cwe-nist-mappings.json') as CweNistMappings;
 const indexById = new Map<number, CweNistMapping>(
   mappings.map(m => [m['CWE-ID'], m])
 );

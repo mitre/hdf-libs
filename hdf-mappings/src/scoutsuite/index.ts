@@ -2,10 +2,11 @@
  * Query functions for ScoutSuite to NIST mappings
  */
 
+import { createRequire } from 'module';
 import type { ScoutsuiteNistMapping, ScoutsuiteNistMappings } from './types.js';
-import rawMappings from '../data/scoutsuite-nist-mappings.json' with { type: 'json' };
 
-const mappings = rawMappings as ScoutsuiteNistMappings;
+const _require = createRequire(import.meta.url);
+const mappings = _require('../data/scoutsuite-nist-mappings.json') as ScoutsuiteNistMappings;
 const indexByRule = new Map<string, ScoutsuiteNistMapping>(
   mappings.map(m => [m.RULE, m])
 );
