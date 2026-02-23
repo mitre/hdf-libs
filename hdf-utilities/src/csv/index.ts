@@ -16,6 +16,7 @@ export interface CsvParseOptions {
   transformHeader?: (header: string, index: number) => string;
   dynamicTyping?: boolean;
   delimiter?: string;
+  maxSize?: number;
 }
 
 /**
@@ -101,6 +102,12 @@ export function parseCsv<T = Record<string, unknown>>(
   csv: string,
   options?: Partial<CsvParseOptions>
 ): T[] {
+  if (options?.maxSize !== undefined && csv.length > options.maxSize) {
+    throw new Error(
+      `Input exceeds maximum allowed size: ${csv.length} bytes exceeds limit of ${options.maxSize} bytes`
+    );
+  }
+
   const opts = { ...DEFAULT_PARSE_OPTIONS, ...options };
   const trimmed = csv.trim();
 
@@ -150,6 +157,12 @@ export function parseCsvArray(
   csv: string,
   options?: Partial<CsvParseOptions>
 ): string[][] {
+  if (options?.maxSize !== undefined && csv.length > options.maxSize) {
+    throw new Error(
+      `Input exceeds maximum allowed size: ${csv.length} bytes exceeds limit of ${options.maxSize} bytes`
+    );
+  }
+
   const opts = { ...DEFAULT_PARSE_ARRAY_OPTIONS, ...options };
   const trimmed = csv.trim();
 
