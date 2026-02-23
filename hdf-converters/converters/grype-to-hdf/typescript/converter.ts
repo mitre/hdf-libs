@@ -12,7 +12,7 @@ import {
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {parseJSON, sha256} from '@mitre/hdf-utilities';
 
-// Input types for Anchore Grype JSON
+// Input types for Grype JSON
 
 interface GrypeReport {
   descriptor: GrypeDescriptor;
@@ -271,7 +271,7 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
   }
   if (isNegligibleOrUnknown(severity) && !isIgnored) {
     messageParts.push(
-      'Manual review required because an Anchore Grype rating severity is set to `negligible` or `unknown`.'
+      'Manual review required because a Grype rating severity is set to `negligible` or `unknown`.'
     );
   }
   messageParts.push(`Severity: ${severity || 'unknown'}`);
@@ -314,7 +314,7 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
   return requirement;
 }
 
-export async function convertAnchoreGrypeToHdf(input: string): Promise<string> {
+export async function convertGrypeToHdf(input: string): Promise<string> {
   // Calculate checksum of input data
   const resultsChecksum: Checksum = {
     algorithm: HashAlgorithm.Sha256,
@@ -342,7 +342,7 @@ export async function convertAnchoreGrypeToHdf(input: string): Promise<string> {
   }
 
   // Build baseline name from source
-  const targetName = grypeData.source?.target?.userInput || 'Anchore Grype Scan';
+  const targetName = grypeData.source?.target?.userInput || 'Grype Scan';
 
   // Create baseline
   const baseline: EvaluatedBaseline = createMinimalBaseline(targetName, requirements, {

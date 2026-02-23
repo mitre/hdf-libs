@@ -59,8 +59,6 @@ linters:
         - style
       disabled-checks:
         - whyNoLint      # We don't require nolint comments to have explanations
-        - hugeParam      # CLI tool doesn't need micro-optimization
-        - rangeValCopy   # CLI tool doesn't need micro-optimization
         - unnamedResult  # Not required for simple return types
 
     gosec:
