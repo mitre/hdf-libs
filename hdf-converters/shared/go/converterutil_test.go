@@ -163,6 +163,60 @@ func TestStringsToInterfaces(t *testing.T) {
 	})
 }
 
+func TestBuildNISTCCITags(t *testing.T) {
+	t.Run("builds tags with nist only", func(t *testing.T) {
+		tags := BuildNISTCCITags([]string{"SA-11", "RA-5"}, nil)
+		assert.Len(t, tags, 1)
+		nist, ok := tags["nist"].([]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "SA-11", nist[0])
+		assert.Equal(t, "RA-5", nist[1])
+		_, hasCCI := tags["cci"]
+		assert.False(t, hasCCI)
+	})
+
+	t.Run("builds tags with nist and cci", func(t *testing.T) {
+		tags := BuildNISTCCITags(
+			[]string{"SA-11"},
+			[]string{"CCI-001453"},
+		)
+		assert.Len(t, tags, 2)
+		cci, ok := tags["cci"].([]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "CCI-001453", cci[0])
+	})
+
+	t.Run("omits cci when empty slice", func(t *testing.T) {
+		tags := BuildNISTCCITags([]string{"SA-11"}, []string{})
+		_, hasCCI := tags["cci"]
+		assert.False(t, hasCCI)
+	})
+}
+
+func TestBuildNISTCCITagsWithExtras(t *testing.T) {
+	t.Run("adds extra keys", func(t *testing.T) {
+		extras := map[string]interface{}{
+			"cveid": "CVE-2024-1234",
+		}
+		tags := BuildNISTCCITagsWithExtras(
+			[]string{"SA-11"},
+			[]string{"CCI-001453"},
+			extras,
+		)
+		assert.Len(t, tags, 3)
+		assert.Equal(t, "CVE-2024-1234", tags["cveid"])
+	})
+
+	t.Run("handles nil extras", func(t *testing.T) {
+		tags := BuildNISTCCITagsWithExtras(
+			[]string{"SA-11"},
+			nil,
+			nil,
+		)
+		assert.Len(t, tags, 1)
+	})
+}
+
 func TestSafeString(t *testing.T) {
 	t.Run("extracts string value", func(t *testing.T) {
 		assert.Equal(t, "hello", SafeString("hello"))

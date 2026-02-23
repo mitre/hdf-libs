@@ -62,27 +62,12 @@ func convertVulnToRequirement(vuln NiktoVulnerability) hdf.EvaluatedRequirement 
 		StartTime: zeroTime,
 	}
 
-	// Build NIST tag interfaces
-	nistInterfaces := make([]interface{}, len(nistTags))
-	for i, tag := range nistTags {
-		nistInterfaces[i] = tag
-	}
-
-	tags := map[string]interface{}{
-		"nist": nistInterfaces,
-	}
-
-	if len(cciTags) > 0 {
-		cciInterfaces := make([]interface{}, len(cciTags))
-		for i, tag := range cciTags {
-			cciInterfaces[i] = tag
-		}
-		tags["cci"] = cciInterfaces
-	}
-
+	// Build tags with NIST/CCI and optional osvdb extra
+	var extras map[string]interface{}
 	if vuln.OSVDB != "" && vuln.OSVDB != "0" {
-		tags["osvdb"] = vuln.OSVDB
+		extras = map[string]interface{}{"osvdb": vuln.OSVDB}
 	}
+	tags := shared.BuildNISTCCITagsWithExtras(nistTags, cciTags, extras)
 
 	return hdf.EvaluatedRequirement{
 		ID:      vuln.ID,

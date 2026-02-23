@@ -166,8 +166,8 @@ func TestConvertSnyk_CweToNist(t *testing.T) {
 	req := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
 	require.NotNil(t, req)
 
-	nist, ok := req.Tags["nist"].([]string)
-	require.True(t, ok, "nist tag should be []string")
+	nist := shared.SafeStringSlice(req.Tags["nist"])
+	require.NotNil(t, nist, "nist tag should be present")
 	assert.NotEmpty(t, nist)
 }
 
@@ -232,14 +232,14 @@ func TestConvertSnyk_Tags(t *testing.T) {
 	assert.Contains(t, ghsaid, "GHSA-3v6h-hqm4-2rg6")
 
 	// nist
-	nist, ok := req.Tags["nist"].([]string)
-	require.True(t, ok, "nist should be []string")
+	nist := shared.SafeStringSlice(req.Tags["nist"])
+	require.NotNil(t, nist, "nist should be present")
 	assert.NotEmpty(t, nist)
 
 	// cci
-	cci, ok := req.Tags["cci"].([]string)
-	require.True(t, ok, "cci should be []string")
-	assert.NotEmpty(t, cci)
+	cciSlice := shared.SafeStringSlice(req.Tags["cci"])
+	require.NotNil(t, cciSlice, "cci should be present")
+	assert.NotEmpty(t, cciSlice)
 }
 
 // ---- Status: all results are Failed ----

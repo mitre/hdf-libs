@@ -118,20 +118,17 @@ func buildRequirement(vulnID string, vulns []SnykVuln) hdf.EvaluatedRequirement 
 	nist := nistTagsForCWEs(rep.Identifiers.CWE)
 	cciTags := cci.NISTToCCI(nist)
 
-	tags := map[string]interface{}{
-		"nist": nist,
-		"cci":  cciTags,
-	}
-
+	extras := map[string]interface{}{}
 	if len(rep.Identifiers.CWE) > 0 {
-		tags["cweid"] = rep.Identifiers.CWE
+		extras["cweid"] = rep.Identifiers.CWE
 	}
 	if len(rep.Identifiers.CVE) > 0 {
-		tags["cveid"] = rep.Identifiers.CVE
+		extras["cveid"] = rep.Identifiers.CVE
 	}
 	if len(rep.Identifiers.GHSA) > 0 {
-		tags["ghsaid"] = rep.Identifiers.GHSA
+		extras["ghsaid"] = rep.Identifiers.GHSA
 	}
+	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
 	descriptions := []hdf.Description{
 		{Label: "default", Data: rep.Description},

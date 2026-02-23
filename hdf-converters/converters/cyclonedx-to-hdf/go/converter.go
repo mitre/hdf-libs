@@ -271,22 +271,18 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		nist := nistTagsForCWEs(vuln.CWEs)
 		cciTags := cci.NISTToCCI(nist)
 
-		tags := map[string]interface{}{
-			"nist": nist,
-			"cci":  cciTags,
-		}
-
+		extras := map[string]interface{}{}
 		if len(vuln.CWEs) > 0 {
 			cweids := make([]string, len(vuln.CWEs))
 			for i, c := range vuln.CWEs {
 				cweids[i] = fmt.Sprintf("CWE-%d", c)
 			}
-			tags["cweid"] = cweids
+			extras["cweid"] = cweids
 		}
-
 		if len(ratings) > 0 {
-			tags["ratings"] = formatRatingsTag(ratings)
+			extras["ratings"] = formatRatingsTag(ratings)
 		}
+		tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
 		// Build descriptions (must always include a 'default' label per HDF schema)
 		descriptions := []hdf.Description{}

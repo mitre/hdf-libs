@@ -290,12 +290,7 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 	cciTags := cci.NISTToCCI(shared.DefaultStaticAnalysisNIST)
 
 	// Build tags - only include cci if not empty
-	tags := map[string]interface{}{
-		"nist": shared.StringsToInterfaces(shared.DefaultStaticAnalysisNIST),
-	}
-	if len(cciTags) > 0 {
-		tags["cci"] = shared.StringsToInterfaces(cciTags)
-	}
+	tags := shared.BuildNISTCCITags(shared.DefaultStaticAnalysisNIST, cciTags)
 
 	// Build requirement ID
 	var requirementID string

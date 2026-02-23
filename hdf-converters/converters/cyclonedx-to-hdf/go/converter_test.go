@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -167,8 +168,8 @@ func TestConvertCycloneDX_CweToNist(t *testing.T) {
 	req := findRequirement(result.Baselines[0].Requirements, "CVE-2020-25649")
 	require.NotNil(t, req)
 
-	nist, ok := req.Tags["nist"].([]string)
-	require.True(t, ok, "nist tag should be []string")
+	nist := shared.SafeStringSlice(req.Tags["nist"])
+	require.NotNil(t, nist, "nist tag should be present")
 	assert.NotEmpty(t, nist)
 }
 
@@ -188,8 +189,8 @@ func TestConvertCycloneDX_FallbackNist(t *testing.T) {
 	result, err := ConvertCycloneDXToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	nist, ok := result.Baselines[0].Requirements[0].Tags["nist"].([]string)
-	require.True(t, ok)
+	nist := shared.SafeStringSlice(result.Baselines[0].Requirements[0].Tags["nist"])
+	require.NotNil(t, nist)
 	assert.Contains(t, nist, "SA-11")
 	assert.Contains(t, nist, "RA-5")
 }
@@ -205,14 +206,14 @@ func TestConvertCycloneDX_Tags(t *testing.T) {
 	require.NotNil(t, req)
 
 	// nist
-	nist, ok := req.Tags["nist"].([]string)
-	require.True(t, ok)
+	nist := shared.SafeStringSlice(req.Tags["nist"])
+	require.NotNil(t, nist)
 	assert.NotEmpty(t, nist)
 
 	// cci
-	cciTags, ok := req.Tags["cci"].([]string)
-	require.True(t, ok)
-	assert.NotEmpty(t, cciTags)
+	cciSlice := shared.SafeStringSlice(req.Tags["cci"])
+	require.NotNil(t, cciSlice)
+	assert.NotEmpty(t, cciSlice)
 
 	// cweid
 	cweid, ok := req.Tags["cweid"].([]string)
