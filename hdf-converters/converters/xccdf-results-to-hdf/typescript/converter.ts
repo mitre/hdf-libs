@@ -1,4 +1,5 @@
-import { parseXmlWithArrays, sha256 } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays } from '@mitre/hdf-utilities';
+import { inputChecksum } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -10,7 +11,6 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  HashAlgorithm,
   Copyright,
   createMinimalBaseline,
   createRequirement,
@@ -272,10 +272,7 @@ async function convertBenchmarkToHdf(
     ruleResultToRequirement(rr, ruleIndex)
   );
 
-  const resultsChecksum: Checksum = {
-    algorithm: HashAlgorithm.Sha256,
-    value: await sha256(rawInput),
-  };
+  const resultsChecksum: Checksum = await inputChecksum(rawInput);
 
   const baselineName = extractText(benchmark.title) || 'XCCDF Benchmark';
 
@@ -323,10 +320,7 @@ async function convertArfCollection(
   arc: ArfCollectionElement,
   rawInput: string
 ): Promise<string> {
-  const resultsChecksum: Checksum = {
-    algorithm: HashAlgorithm.Sha256,
-    value: await sha256(rawInput),
-  };
+  const resultsChecksum: Checksum = await inputChecksum(rawInput);
 
   // Find the Benchmark from data-stream-collection components
   const benchmark = findBenchmarkInArf(arc);

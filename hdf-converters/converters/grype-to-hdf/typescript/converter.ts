@@ -5,12 +5,12 @@ import {
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
-  HashAlgorithm,
   type HdfResults,
   ResultStatus,
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
-import {parseJSON, sha256} from '@mitre/hdf-utilities';
+import {parseJSON} from '@mitre/hdf-utilities';
+import {inputChecksum, buildNistCciTags} from '../../../shared/typescript/converterutil.js';
 
 // Input types for Grype JSON
 
@@ -290,12 +290,7 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
   const cciTags = nistToCci(DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
 
   // Build tags object - only include cci if not empty
-  const tags: Record<string, unknown> = {
-    nist: DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
-  };
-  if (cciTags.length > 0) {
-    tags.cci = cciTags;
-  }
+  const tags = buildNistCciTags(DEFAULT_STATIC_ANALYSIS_NIST_TAGS, cciTags);
 
   // Build requirement
   const requirement: EvaluatedRequirement = {
@@ -316,10 +311,7 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
 
 export async function convertGrypeToHdf(input: string): Promise<string> {
   // Calculate checksum of input data
-  const resultsChecksum: Checksum = {
-    algorithm: HashAlgorithm.Sha256,
-    value: await sha256(input),
-  };
+  const resultsChecksum: Checksum = await inputChecksum(input);
 
   // Parse Grype JSON
   const grypeData = parseJSON<GrypeReport>(input);

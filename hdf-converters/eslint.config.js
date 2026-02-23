@@ -30,7 +30,7 @@ export default [
     },
   },
   {
-    files: ['converters/**/*.ts'],
+    files: ['converters/**/*.ts', 'shared/**/*.ts'],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
     languageOptions: {
       parser: tsparser,
@@ -57,7 +57,7 @@ export default [
     },
   },
   {
-    files: ['test/**/*.ts', 'converters/**/*.test.ts'],
+    files: ['test/**/*.ts', 'converters/**/*.test.ts', 'shared/**/*.test.ts'],
     languageOptions: {
       parser: tsparser,
       parserOptions: {

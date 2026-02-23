@@ -1,5 +1,6 @@
-import { parseXmlWithArrays, sha256 } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
+import { inputChecksum } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -11,7 +12,7 @@ import type {
   Checksum,
   DataSource,
 } from '@mitre/hdf-schema';
-import { ResultStatus, HashAlgorithm, Copyright as TargetType, createMinimalBaseline } from '@mitre/hdf-schema';
+import { ResultStatus, Copyright as TargetType, createMinimalBaseline } from '@mitre/hdf-schema';
 import { version as converterVersion } from '../../../package.json' with { type: 'json' };
 
 interface NessusXml {
@@ -100,10 +101,7 @@ function parseHtml(html: string): string {
  */
 export async function convertNessusToHdf(nessusXml: string): Promise<HdfResults> {
   // Calculate checksum of source scan data for integrity verification
-  const resultsChecksum: Checksum = {
-    algorithm: HashAlgorithm.Sha256,
-    value: await sha256(nessusXml),
-  };
+  const resultsChecksum: Checksum = await inputChecksum(nessusXml);
 
   const parsed = parseXmlWithArrays(nessusXml, ['preference', 'tag', 'ReportItem', 'ReportHost']) as unknown as NessusXml;
 

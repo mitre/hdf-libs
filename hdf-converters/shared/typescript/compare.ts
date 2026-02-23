@@ -6,6 +6,8 @@
  * Exit code 0 = identical, 1 = different, 2 = error
  */
 
+/* eslint-disable no-console -- CLI tool requires console output */
+
 import { readFileSync } from 'fs';
 import { deepStrictEqual } from 'assert';
 
@@ -14,14 +16,19 @@ interface CompareOptions {
   ignoreArrayOrder?: boolean;
 }
 
+interface AssertionErrorLike extends Error {
+  actual?: unknown;
+  expected?: unknown;
+}
+
 function compareJSON(
   file1: string,
   file2: string,
   options: CompareOptions = {}
 ): boolean {
   try {
-    const data1 = JSON.parse(readFileSync(file1, 'utf-8'));
-    const data2 = JSON.parse(readFileSync(file2, 'utf-8'));
+    const data1: unknown = JSON.parse(readFileSync(file1, 'utf-8'));
+    const data2: unknown = JSON.parse(readFileSync(file2, 'utf-8'));
 
     // Normalize if needed
     const normalized1 = normalizeData(data1, options);
@@ -33,14 +40,14 @@ function compareJSON(
     return true;
   } catch (error) {
     if (error instanceof Error && error.name === 'AssertionError') {
-      console.error('❌ Files differ:');
+      console.error('Files differ:');
       console.error(`   Left:  ${file1}`);
       console.error(`   Right: ${file2}`);
       console.error();
-      console.error('Difference:', (error as any).message);
+      console.error('Difference:', error.message);
 
       // Show detailed diff
-      showDetailedDiff(error);
+      showDetailedDiff(error as AssertionErrorLike);
 
       return false;
     }
@@ -48,7 +55,7 @@ function compareJSON(
   }
 }
 
-function normalizeData(data: any, options: CompareOptions): any {
+function normalizeData(data: unknown, options: CompareOptions): unknown {
   if (typeof data !== 'object' || data === null) {
     return data;
   }
@@ -58,8 +65,8 @@ function normalizeData(data: any, options: CompareOptions): any {
     return options.ignoreArrayOrder ? normalized.sort() : normalized;
   }
 
-  const result: any = {};
-  for (const [key, value] of Object.entries(data)) {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
     // Skip ignored fields
     if (options.ignoreFields?.includes(key)) {
       continue;
@@ -70,7 +77,7 @@ function normalizeData(data: any, options: CompareOptions): any {
   return result;
 }
 
-function showDetailedDiff(error: any): void {
+function showDetailedDiff(error: AssertionErrorLike): void {
   if (error.actual && error.expected) {
     console.error('\nExpected:');
     console.error(JSON.stringify(error.expected, null, 2).split('\n').slice(0, 20).join('\n'));
@@ -91,14 +98,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const options: CompareOptions = {};
   for (const arg of optionArgs) {
     if (arg.startsWith('--ignore-fields=')) {
-      options.ignoreFields = arg.split('=')[1].split(',');
+      options.ignoreFields = arg.split('=')[1]?.split(',');
     }
   }
 
   try {
     const identical = compareJSON(file1, file2, options);
     if (identical) {
-      console.log('✅ Files are identical');
+      console.log('Files are identical');
       process.exit(0);
     } else {
       process.exit(1);
@@ -109,4 +116,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 }
 
-export { compareJSON, CompareOptions };
+export { compareJSON, type CompareOptions };

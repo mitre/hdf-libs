@@ -1,9 +1,10 @@
-import { parseJSON, sha256 } from '@mitre/hdf-utilities';
+import { parseJSON } from '@mitre/hdf-utilities';
 import {
   getCweNistControl,
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
+import { inputChecksum } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -13,7 +14,6 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  HashAlgorithm,
   Copyright,
   createMinimalBaseline,
   createRequirement,
@@ -237,10 +237,7 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
     );
   }
 
-  const resultsChecksum: Checksum = {
-    algorithm: HashAlgorithm.Sha256,
-    value: await sha256(input),
-  };
+  const resultsChecksum: Checksum = await inputChecksum(input);
 
   // Flatten nested components and build lookup by bom-ref
   const allComponents = flattenComponents(bom.components ?? []);
