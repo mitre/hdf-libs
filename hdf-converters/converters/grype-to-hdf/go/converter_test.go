@@ -1,6 +1,7 @@
 package grype_to_hdf
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -396,6 +397,68 @@ func TestGetVulnDescription_RelatedFallback(t *testing.T) {
 			t.Errorf("expected fallback to contain CVE ID, got %q", result)
 		}
 	})
+}
+
+func TestGetCVSSInfo_EmptyVulnerability(t *testing.T) {
+	// getCVSSInfo with no CVSS data should return valid JSON
+	vuln := GrypeVulnerability{}
+	result := getCVSSInfo(vuln, nil)
+	if !json.Valid([]byte(result)) {
+		t.Errorf("getCVSSInfo should return valid JSON for empty vulnerability, got: %s", result)
+	}
+}
+
+func TestGetCVSSInfo_WithCVSSData(t *testing.T) {
+	vuln := GrypeVulnerability{
+		ID: "CVE-2024-1234",
+		CVSS: []GrypeCVSS{
+			{
+				Version: "3.1",
+				Vector:  "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+				Metrics: &CVSSMetrics{BaseScore: 9.8},
+			},
+		},
+	}
+	related := []GrypeRelatedVulnerability{
+		{
+			ID:         "CVE-2024-1234",
+			DataSource: "https://nvd.nist.gov",
+			CVSS: []GrypeCVSS{
+				{
+					Version: "2.0",
+					Vector:  "AV:N/AC:L/Au:N/C:C/I:C/A:C",
+					Metrics: &CVSSMetrics{BaseScore: 10.0},
+				},
+			},
+		},
+	}
+
+	result := getCVSSInfo(vuln, related)
+	if !json.Valid([]byte(result)) {
+		t.Errorf("getCVSSInfo should return valid JSON, got: %s", result)
+	}
+
+	// Verify that the JSON contains both primary and related data
+	var parsed map[string]interface{}
+	if err := json.Unmarshal([]byte(result), &parsed); err != nil {
+		t.Fatalf("Failed to parse getCVSSInfo result: %v", err)
+	}
+	if _, ok := parsed["primary"]; !ok {
+		t.Error("Expected 'primary' key in CVSS info")
+	}
+	if _, ok := parsed["related"]; !ok {
+		t.Error("Expected 'related' key in CVSS info")
+	}
+}
+
+func TestGetCVSSInfo_NilRelated(t *testing.T) {
+	vuln := GrypeVulnerability{
+		CVSS: []GrypeCVSS{},
+	}
+	result := getCVSSInfo(vuln, nil)
+	if !json.Valid([]byte(result)) {
+		t.Errorf("getCVSSInfo should return valid JSON for nil related vulns, got: %s", result)
+	}
 }
 
 func TestMinimalReport(t *testing.T) {
