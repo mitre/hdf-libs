@@ -12,7 +12,10 @@ import type {
   DataSource,
 } from '@mitre/hdf-schema';
 import { ResultStatus, HashAlgorithm, Copyright as TargetType, createMinimalBaseline } from '@mitre/hdf-schema';
-import { version as converterVersion } from '../../../package.json' with { type: 'json' };
+import { createRequire } from 'module';
+
+const _require = createRequire(import.meta.url);
+const { version: converterVersion } = _require('@mitre/hdf-converters/package.json');
 
 interface NessusXml {
   NessusClientData_v2: {

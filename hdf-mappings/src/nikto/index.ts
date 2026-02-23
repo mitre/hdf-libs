@@ -2,10 +2,11 @@
  * Query functions for Nikto to NIST mappings
  */
 
+import { createRequire } from 'module';
 import type { NiktoNistMappings } from './types.js';
-import rawMappings from '../data/nikto-nist-mappings.json' with { type: 'json' };
 
-const mappings = rawMappings as NiktoNistMappings;
+const _require = createRequire(import.meta.url);
+const mappings = _require('../data/nikto-nist-mappings.json') as NiktoNistMappings;
 
 /**
  * Get the NIST control ID for a Nikto test ID

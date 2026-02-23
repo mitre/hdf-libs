@@ -2,10 +2,11 @@
  * Query functions for AWS Config to NIST mappings
  */
 
+import { createRequire } from 'module';
 import type { AwsConfigNistMapping, AwsConfigNistMappings } from './types.js';
-import rawMappings from '../data/awsconfig-mappings.json' with { type: 'json' };
 
-const mappings = rawMappings as AwsConfigNistMappings;
+const _require = createRequire(import.meta.url);
+const mappings = _require('../data/awsconfig-mappings.json') as AwsConfigNistMappings;
 const indexByIdentifier = new Map<string, AwsConfigNistMapping>(
   mappings.map(m => [m.AwsConfigRuleSourceIdentifier, m])
 );
