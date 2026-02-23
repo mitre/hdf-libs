@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { convertV1ToV2, isHDFV1, convertJunitToHdf, convertXccdfResultsToHdf } from '../src/index.js';
+import { convertV1ToV2, isHDFV1, convertJunitToHdf, convertXccdfResultsToHdf, convertSnykToHdf } from '../src/index.js';
 
 describe('Main exports', () => {
   it('should export convertV1ToV2 from main index', () => {
@@ -33,6 +33,11 @@ describe('Main exports', () => {
   it('should export convertXccdfResultsToHdf from main index', () => {
     expect(convertXccdfResultsToHdf).toBeDefined();
     expect(typeof convertXccdfResultsToHdf).toBe('function');
+  });
+
+  it('should export convertSnykToHdf from main index', () => {
+    expect(convertSnykToHdf).toBeDefined();
+    expect(typeof convertSnykToHdf).toBe('function');
   });
 
   it('should have working validator from main export', () => {
