@@ -2,7 +2,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import { getCweNistControl, DEFAULT_REMEDIATION_NIST_TAGS } from '@mitre/hdf-mappings';
 import { detectFormat } from '../../../shared/typescript/formatdetect.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { inputChecksum } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -179,8 +179,13 @@ export async function convertGosecToHdf(input: string): Promise<string> {
   }
 
   // Group issues by rule_id, preserving insertion order.
+  const { items: limitedIssues, truncated: truncatedIssues } = limitArray(report.Issues);
+  if (truncatedIssues) {
+    // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedIssues.length} issue items (original: ${report.Issues.length})`);
+  }
   const groups = new Map<string, GosecIssue[]>();
-  for (const issue of report.Issues) {
+  for (const issue of limitedIssues) {
     const existing = groups.get(issue.rule_id);
     if (existing) {
       existing.push(issue);

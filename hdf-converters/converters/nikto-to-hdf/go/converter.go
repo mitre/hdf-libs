@@ -3,6 +3,7 @@ package nikto_to_hdf
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
@@ -98,7 +99,11 @@ func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	groups := make(map[string]*vulnGroup)
 	var order []string // Preserve insertion order
 
-	for _, vuln := range niktoData.Vulnerabilities {
+	limitedVulns, truncatedVulns := shared.LimitSlice(niktoData.Vulnerabilities, 0)
+	if truncatedVulns {
+		log.Printf("WARNING: Input truncated at %d vulnerability items (original: %d)", len(limitedVulns), len(niktoData.Vulnerabilities))
+	}
+	for _, vuln := range limitedVulns {
 		if g, ok := groups[vuln.ID]; ok {
 			g.extras = append(g.extras, vuln)
 		} else {

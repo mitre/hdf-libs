@@ -3,7 +3,7 @@ import {
   getAwsConfigNistControlByIdentifier,
   getAwsConfigNistControlByName,
 } from '@mitre/hdf-mappings';
-import { inputChecksum } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -169,7 +169,12 @@ export async function convertAwsConfigToHdf(input: string): Promise<string> {
     throw new Error('Invalid AWS Config export: ConfigRules field is required');
   }
 
-  const requirements = data.ConfigRules.map(buildRequirement);
+  const { items: limitedRules, truncated: truncatedRules } = limitArray(data.ConfigRules);
+  if (truncatedRules) {
+    // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedRules.length} ConfigRule items (original: ${data.ConfigRules.length})`);
+  }
+  const requirements = limitedRules.map(buildRequirement);
 
   const baseline: EvaluatedBaseline = {
     ...createMinimalBaseline('AWS Config', requirements, { resultsChecksum }),

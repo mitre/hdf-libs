@@ -3,6 +3,7 @@ package sonarqube
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -139,8 +140,12 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}
 
 	// Group issues by project
+	limitedIssues, truncatedIssues := shared.LimitSlice(sonarData.Issues, 0)
+	if truncatedIssues {
+		log.Printf("WARNING: Input truncated at %d issue items (original: %d)", len(limitedIssues), len(sonarData.Issues))
+	}
 	issuesByProject := make(map[string][]Issue)
-	for _, issue := range sonarData.Issues {
+	for _, issue := range limitedIssues {
 		projectKey := issue.Project
 		issuesByProject[projectKey] = append(issuesByProject[projectKey], issue)
 	}

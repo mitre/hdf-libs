@@ -14,7 +14,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, limitArray} from '../../../shared/typescript/converterutil.js';
 
 // Nikto JSON input types
 
@@ -89,7 +89,12 @@ export async function convertNiktoToHdf(input: string): Promise<string> {
   // Group vulnerabilities by ID to handle duplicates
   const vulnGroups = new Map<string, NiktoVulnerability[]>();
   if (niktoData.vulnerabilities) {
-    for (const vuln of niktoData.vulnerabilities) {
+    const { items: limitedVulns, truncated: truncatedVulns } = limitArray(niktoData.vulnerabilities);
+    if (truncatedVulns) {
+      // eslint-disable-next-line no-console
+      console.warn(`WARNING: Input truncated at ${limitedVulns.length} vulnerability items (original: ${niktoData.vulnerabilities.length})`);
+    }
+    for (const vuln of limitedVulns) {
       const existing = vulnGroups.get(vuln.id);
       if (existing) {
         existing.push(vuln);

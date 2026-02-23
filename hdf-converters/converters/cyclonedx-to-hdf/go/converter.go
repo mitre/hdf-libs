@@ -3,6 +3,7 @@ package cyclonedx_to_hdf
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -261,11 +262,15 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		}
 	}
 
-	requirements := make([]hdf.EvaluatedRequirement, 0, len(bom.Vulnerabilities))
+	limitedVulns, truncatedVulns := shared.LimitSlice(bom.Vulnerabilities, 0)
+	if truncatedVulns {
+		log.Printf("WARNING: Input truncated at %d vulnerability items (original: %d)", len(limitedVulns), len(bom.Vulnerabilities))
+	}
+	requirements := make([]hdf.EvaluatedRequirement, 0, len(limitedVulns))
 
 	infoUnknownMsg := "Manual review required because a CycloneDX rating severity is set to `info` or `unknown`."
 
-	for _, vuln := range bom.Vulnerabilities {
+	for _, vuln := range limitedVulns {
 		ratings := vuln.Ratings
 		impact := maxImpact(ratings)
 		nist := nistTagsForCWEs(vuln.CWEs)

@@ -1,5 +1,5 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
-import { inputChecksum } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -268,7 +268,12 @@ async function convertBenchmarkToHdf(
   const ruleIndex = buildRuleIndex(benchmark);
 
   const ruleResults = testResult['rule-result'] ?? [];
-  const requirements = ruleResults.map((rr) =>
+  const { items: limitedRuleResults, truncated: truncatedRR } = limitArray(ruleResults);
+  if (truncatedRR) {
+    // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedRuleResults.length} rule-result items (original: ${ruleResults.length})`);
+  }
+  const requirements = limitedRuleResults.map((rr) =>
     ruleResultToRequirement(rr, ruleIndex)
   );
 
@@ -373,7 +378,12 @@ async function convertArfCollection(
 
     // Convert rule-results
     const ruleResults = testResult['rule-result'] ?? [];
-    const requirements = ruleResults.map((rr) =>
+    const { items: limitedARFRuleResults, truncated: truncatedARFRR } = limitArray(ruleResults);
+    if (truncatedARFRR) {
+      // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedARFRuleResults.length} rule-result items (original: ${ruleResults.length})`);
+    }
+    const requirements = limitedARFRuleResults.map((rr) =>
       ruleResultToRequirement(rr, ruleIndex)
     );
 

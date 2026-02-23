@@ -1,5 +1,5 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
-import { inputChecksum } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -119,11 +119,21 @@ function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string 
 }
 
 function buildRequirements(suites: JUnitTestSuite[]): EvaluatedRequirement[] {
+  const { items: limitedSuites, truncated: truncatedSuites } = limitArray(suites);
+  if (truncatedSuites) {
+    // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedSuites.length} test suite items (original: ${suites.length})`);
+  }
   const requirements: EvaluatedRequirement[] = [];
 
-  for (const suite of suites) {
+  for (const suite of limitedSuites) {
     const testcases = suite.testcase ?? [];
-    for (const tc of testcases) {
+    const { items: limitedTestCases, truncated: truncatedTC } = limitArray(testcases);
+    if (truncatedTC) {
+      // eslint-disable-next-line no-console
+      console.warn(`WARNING: Input truncated at ${limitedTestCases.length} test case items (original: ${testcases.length})`);
+    }
+    for (const tc of limitedTestCases) {
       requirements.push(testCaseToRequirement(tc, suite.timestamp));
     }
   }

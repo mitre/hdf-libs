@@ -4,7 +4,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -250,7 +250,12 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
 
   const requirements: EvaluatedRequirement[] = [];
 
-  for (const vuln of bom.vulnerabilities ?? []) {
+  const { items: limitedVulns, truncated: truncatedVulns } = limitArray(bom.vulnerabilities ?? []);
+  if (truncatedVulns) {
+    // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedVulns.length} vulnerability items (original: ${(bom.vulnerabilities ?? []).length})`);
+  }
+  for (const vuln of limitedVulns) {
     const ratings = vuln.ratings ?? [];
     const impact = maxImpact(ratings);
     const cwes = vuln.cwes ?? [];

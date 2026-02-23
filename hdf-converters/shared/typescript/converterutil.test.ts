@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { inputChecksum, buildNistCciTags, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from './converterutil.js';
+import { inputChecksum, buildNistCciTags, DEFAULT_STATIC_ANALYSIS_NIST_TAGS, limitArray } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -52,6 +52,38 @@ describe('buildNistCciTags', () => {
   it('should handle undefined extras', () => {
     const tags = buildNistCciTags(['SA-11'], []);
     expect(Object.keys(tags)).toEqual(['nist']);
+  });
+});
+
+describe('limitArray', () => {
+  it('should return full array when under limit', () => {
+    const result = limitArray(['a', 'b', 'c'], 10);
+    expect(result.items).toEqual(['a', 'b', 'c']);
+    expect(result.truncated).toBe(false);
+  });
+
+  it('should truncate when over limit', () => {
+    const result = limitArray([1, 2, 3, 4, 5], 3);
+    expect(result.items).toEqual([1, 2, 3]);
+    expect(result.truncated).toBe(true);
+  });
+
+  it('should use default limit when not specified', () => {
+    const result = limitArray(['a']);
+    expect(result.items).toEqual(['a']);
+    expect(result.truncated).toBe(false);
+  });
+
+  it('should handle empty array', () => {
+    const result = limitArray([], 10);
+    expect(result.items).toEqual([]);
+    expect(result.truncated).toBe(false);
+  });
+
+  it('should handle exact boundary', () => {
+    const result = limitArray(['a', 'b', 'c'], 3);
+    expect(result.items).toEqual(['a', 'b', 'c']);
+    expect(result.truncated).toBe(false);
   });
 });
 

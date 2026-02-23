@@ -1,6 +1,6 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
-import { inputChecksum } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -110,14 +110,20 @@ export async function convertNessusToHdf(nessusXml: string): Promise<HdfResults>
   // parseXmlWithArrays ensures ReportHost is always an array
   const reportHosts = parsed.NessusClientData_v2.Report.ReportHost as ReportHost[];
 
+  const { items: limitedHosts, truncated: truncatedHosts } = limitArray(reportHosts);
+  if (truncatedHosts) {
+    // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedHosts.length} ReportHost items (original: ${reportHosts.length})`);
+  }
+
   // Calculate start and end times from first and last host
-  const { startTime, duration } = calculateTiming(reportHosts);
+  const { startTime, duration } = calculateTiming(limitedHosts);
 
   const baselines: EvaluatedBaseline[] = [];
   const targets: Target[] = [];
 
   // Process each ReportHost
-  reportHosts.forEach(host => {
+  limitedHosts.forEach(host => {
     const baseline = convertReportHostToBaseline(host, policyName, version, resultsChecksum);
     baselines.push(baseline);
 
@@ -190,9 +196,17 @@ function convertReportHostToBaseline(
 ): EvaluatedBaseline {
   const items = host.ReportItem;
   // parseXmlWithArrays ensures ReportItem is always an array
-  const requirements = items
-    ? (items as ReportItem[]).map(item => convertReportItemToRequirement(item, host))
-    : [];
+  let requirements: EvaluatedRequirement[];
+  if (items) {
+    const { items: limitedItems, truncated: truncatedItems } = limitArray(items as ReportItem[]);
+    if (truncatedItems) {
+      // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedItems.length} ReportItem items (original: ${(items as ReportItem[]).length})`);
+    }
+    requirements = limitedItems.map(item => convertReportItemToRequirement(item, host));
+  } else {
+    requirements = [];
+  }
 
   return createMinimalBaseline(`Nessus ${policyName}`, requirements, {
     title: `Nessus ${policyName}`,

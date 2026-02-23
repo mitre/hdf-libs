@@ -52,5 +52,28 @@ export function buildNistCciTags(
   return tags;
 }
 
+/** Maximum number of items processed from any single input array. */
+export const DEFAULT_MAX_ITEMS = 100_000;
+
+/**
+ * Limit an array to at most maxItems elements.
+ *
+ * Returns the (possibly truncated) array and a flag indicating whether
+ * truncation occurred. When truncated, callers should log a warning.
+ *
+ * @param items - Array to limit
+ * @param maxItems - Maximum items (defaults to DEFAULT_MAX_ITEMS)
+ * @returns Object with limited items array and truncated flag
+ */
+export function limitArray<T>(
+  items: T[],
+  maxItems = DEFAULT_MAX_ITEMS,
+): { items: T[]; truncated: boolean } {
+  if (items.length <= maxItems) {
+    return { items, truncated: false };
+  }
+  return { items: items.slice(0, maxItems), truncated: true };
+}
+
 // Re-export shared constants for converter convenience
 export { DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
