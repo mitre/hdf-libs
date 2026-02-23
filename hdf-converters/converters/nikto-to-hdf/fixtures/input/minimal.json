@@ -1,0 +1,36 @@
+{
+    "banner": "Apache/2.4.41",
+    "host": "example.com",
+    "ip": "93.184.216.34",
+    "port": "80",
+    "vulnerabilities": [
+        {
+            "OSVDB": "0",
+            "id": "600050",
+            "method": "HEAD",
+            "msg": "Apache/2.4.41 appears to be outdated (current is at least Apache/2.4.54).",
+            "url": "/"
+        },
+        {
+            "OSVDB": "0",
+            "id": "999957",
+            "method": "GET",
+            "msg": "The anti-clickjacking X-Frame-Options header is not present.",
+            "url": "/"
+        },
+        {
+            "OSVDB": "877",
+            "id": "999971",
+            "method": "TRACE",
+            "msg": "HTTP TRACE method is active, suggesting the host is vulnerable to XST",
+            "url": "/"
+        },
+        {
+            "OSVDB": "0",
+            "id": "800132",
+            "method": "GET",
+            "msg": "mod_ssl 2.8.7 and lower are vulnerable to a remote buffer overflow. CVE-2002-0082, OSVDB-756.",
+            "url": "/admin"
+        }
+    ]
+}

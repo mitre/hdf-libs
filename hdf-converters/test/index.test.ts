@@ -10,6 +10,7 @@ import {
   convertSonarqubeToHdf,
   convertAwsConfigToHdf,
   convertGosecToHdf,
+  convertNiktoToHdf,
   convertCyclonedxToHdf,
   convertHdfToCsv,
   convertHdfToXml,
@@ -77,6 +78,11 @@ describe('Main exports', () => {
   it('should export convertGosecToHdf from main index', () => {
     expect(convertGosecToHdf).toBeDefined();
     expect(typeof convertGosecToHdf).toBe('function');
+  });
+
+  it('should export convertNiktoToHdf from main index', () => {
+    expect(convertNiktoToHdf).toBeDefined();
+    expect(typeof convertNiktoToHdf).toBe('function');
   });
 
   it('should export convertCyclonedxToHdf from main index', () => {
