@@ -99,6 +99,7 @@ If output path is omitted, the result is written to stdout.
 | `sarif` | `hdf` | SARIF (Static Analysis Results Interchange Format) |
 | `cyclonedx` | `hdf` | CycloneDX SBOM/VEX JSON |
 | `grype` | `hdf` | Grype vulnerability scan JSON |
+| `nikto` | `hdf` | Nikto web server scanner JSON |
 | `sonarqube` | `hdf` | SonarQube issues JSON export |
 | `legacyhdf` | `hdf` | HDF v1.0 to current (v2.0) |
 | `hdf` | `csv` | Export HDF controls to CSV |
@@ -111,6 +112,7 @@ hdf convert nessus to hdf scan.nessus results.json
 hdf convert sarif to hdf findings.sarif results.json
 hdf convert cyclonedx to hdf bom.json results.json
 hdf convert grype to hdf grype-output.json results.json
+hdf convert nikto to hdf nikto-output.json results.json
 hdf convert sonarqube to hdf sonar-issues.json results.json
 hdf convert legacyhdf to hdf old-scan.json new-scan.json
 hdf convert hdf to csv results.json controls.csv
