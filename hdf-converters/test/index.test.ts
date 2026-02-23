@@ -10,6 +10,7 @@ import {
   convertSonarqubeToHdf,
   convertAwsConfigToHdf,
   convertGosecToHdf,
+  convertCyclonedxToHdf,
   convertHdfToCsv,
   convertHdfToXml,
 } from '../src/index.js';
@@ -76,6 +77,11 @@ describe('Main exports', () => {
   it('should export convertGosecToHdf from main index', () => {
     expect(convertGosecToHdf).toBeDefined();
     expect(typeof convertGosecToHdf).toBe('function');
+  });
+
+  it('should export convertCyclonedxToHdf from main index', () => {
+    expect(convertCyclonedxToHdf).toBeDefined();
+    expect(typeof convertCyclonedxToHdf).toBe('function');
   });
 
   it('should export convertHdfToCsv from main index', () => {
