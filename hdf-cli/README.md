@@ -97,6 +97,7 @@ If output path is omitted, the result is written to stdout.
 |--------|-------------|-------------|
 | `nessus` | `hdf` | Nessus `.nessus` XML scan results |
 | `sarif` | `hdf` | SARIF (Static Analysis Results Interchange Format) |
+| `cyclonedx` | `hdf` | CycloneDX SBOM/VEX JSON |
 | `grype` | `hdf` | Grype vulnerability scan JSON |
 | `sonarqube` | `hdf` | SonarQube issues JSON export |
 | `legacyhdf` | `hdf` | HDF v1.0 to current (v2.0) |
@@ -108,6 +109,7 @@ If output path is omitted, the result is written to stdout.
 ```bash
 hdf convert nessus to hdf scan.nessus results.json
 hdf convert sarif to hdf findings.sarif results.json
+hdf convert cyclonedx to hdf bom.json results.json
 hdf convert grype to hdf grype-output.json results.json
 hdf convert sonarqube to hdf sonar-issues.json results.json
 hdf convert legacyhdf to hdf old-scan.json new-scan.json

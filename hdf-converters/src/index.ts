@@ -39,6 +39,9 @@ export { convertAwsConfigToHdf } from '../converters/aws-config-to-hdf/typescrip
 // Gosec to HDF converter
 export { convertGosecToHdf } from '../converters/gosec-to-hdf/typescript/index.js';
 
+// CycloneDX SBOM/VEX to HDF converter
+export { convertCyclonedxToHdf } from '../converters/cyclonedx-to-hdf/typescript/index.js';
+
 // HDF to CSV converter
 export { convertHdfToCsv } from '../converters/hdf-to-csv/typescript/index.js';
 

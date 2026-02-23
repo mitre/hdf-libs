@@ -1,0 +1,133 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:00000000-0000-4000-8000-000000000001",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2024-07-08T17:30:28Z",
+    "tools": [
+      {
+        "vendor": "OWASP",
+        "name": "Dependency-Track",
+        "version": "4.11.4"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "bom-ref": "minimal-test-app",
+      "name": "minimal-test",
+      "version": "1.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "1a021b8e-d143-4072-84f0-0e18292f1967",
+      "group": "com.google.guava",
+      "name": "guava",
+      "version": "24.1.1-jre",
+      "description": "Guava is a suite of core and expanded libraries that include utility classes, google's collections, io classes, and much much more."
+    },
+    {
+      "type": "library",
+      "bom-ref": "1e0c53af-376a-4ca0-9d2e-38811dd17cba",
+      "group": "com.fasterxml.jackson.core",
+      "name": "jackson-databind",
+      "version": "2.9.10",
+      "description": "General data-binding functionality for Jackson: works on core streaming API"
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "b7a12947-7a8d-4031-b59d-640d33dbad6a",
+      "id": "GHSA-5mg8-w23w-74h3",
+      "source": {
+        "name": "GITHUB",
+        "url": "https://github.com/advisories"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "GITHUB",
+            "url": "https://github.com/advisories"
+          },
+          "severity": "low",
+          "method": "other"
+        }
+      ],
+      "cwes": [
+        173,
+        200,
+        378,
+        732
+      ],
+      "description": "A temp directory creation vulnerability exists in Guava prior to version 32.0.0 allowing an attacker with access to the machine to potentially access data in a temporary directory created by the Guava `com.google.common.io.Files.createTempDir()`. The permissions granted to the directory created default to the standard unix-like /tmp ones, leaving the files open. Maintainers recommend explicitly changing the permissions after the creation of the directory, or removing uses of the vulnerable method.",
+      "published": "2021-03-25T17:04:19Z",
+      "updated": "2023-11-09T18:44:38Z",
+      "affects": [
+        {
+          "ref": "1a021b8e-d143-4072-84f0-0e18292f1967"
+        }
+      ]
+    },
+    {
+      "bom-ref": "bb03c210-ea12-450d-85df-17d81a75ede2",
+      "id": "GHSA-7g45-4rm6-3mm3",
+      "source": {
+        "name": "GITHUB",
+        "url": "https://github.com/advisories"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "GITHUB",
+            "url": "https://github.com/advisories"
+          },
+          "severity": "medium",
+          "method": "other"
+        }
+      ],
+      "cwes": [
+        379,
+        552
+      ],
+      "description": "Use of Java's default temporary directory for file creation in `FileBackedOutputStream` in Google Guava versions 1.0 to 31.1 on Unix systems and Android Ice Cream Sandwich allows other users and apps on the machine with access to the default Java temporary directory to be able to access the files created by the class. Even though the security vulnerability is fixed in version 32.0.0, maintainers recommend using version 32.0.1 as version 32.0.0 breaks some functionality under Windows.",
+      "published": "2023-06-14T18:30:38Z",
+      "updated": "2024-02-13T21:49:15Z",
+      "affects": [
+        {
+          "ref": "1a021b8e-d143-4072-84f0-0e18292f1967"
+        }
+      ]
+    },
+    {
+      "bom-ref": "d097e083-0b0a-4e3c-9f29-fc936f27ec6f",
+      "id": "GHSA-5p34-5m6p-p58g",
+      "source": {
+        "name": "GITHUB",
+        "url": "https://github.com/advisories"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "GITHUB",
+            "url": "https://github.com/advisories"
+          },
+          "severity": "critical",
+          "method": "other"
+        }
+      ],
+      "cwes": [
+        502
+      ],
+      "description": "FasterXML jackson-databind 2.x before 2.9.10.4 mishandles the interaction between serialization gadgets and typing, related to org.apache.hadoop.shaded.com.zaxxer.hikari.HikariConfig (aka shaded hikari-config).",
+      "published": "2020-04-23T21:08:40Z",
+      "updated": "2023-02-01T05:02:59Z",
+      "affects": [
+        {
+          "ref": "1e0c53af-376a-4ca0-9d2e-38811dd17cba"
+        }
+      ]
+    }
+  ]
+}
