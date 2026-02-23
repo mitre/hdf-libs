@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-converters
 
-go 1.24
+go 1.25
 
 require (
 	github.com/mitre/hdf-mappings/go v0.0.0
