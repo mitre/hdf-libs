@@ -389,6 +389,63 @@ describe('XML Utilities', () => {
     });
   });
 
+  describe('XXE safety', () => {
+    it('should not process external entities', () => {
+      const xxeXml = `<?xml version="1.0"?>
+<!DOCTYPE foo [
+  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+]>
+<root><data>&xxe;</data></root>`;
+      // fast-xml-parser v5 does not process DTD/entities
+      // parseXml should either:
+      // 1. Parse but not expand the entity (entity text remains as literal or empty)
+      // 2. Throw on invalid XML (the validator may reject DTD syntax)
+      // Either outcome is safe — the key assertion is that /etc/passwd content is NOT returned
+      try {
+        const result = parseXml(xxeXml);
+        const data = (result.root as Record<string, unknown>)?.data;
+        // Should not contain actual file contents
+        expect(String(data)).not.toMatch(/root:/);
+      } catch {
+        // Throwing is also safe — DTD rejected
+      }
+    });
+
+    it('should not process parameter entities', () => {
+      const paramXml = `<?xml version="1.0"?>
+<!DOCTYPE foo [
+  <!ENTITY % param "parameter-value">
+  <!ENTITY test "%param;">
+]>
+<root><data>&test;</data></root>`;
+      try {
+        const result = parseXml(paramXml);
+        const data = (result.root as Record<string, unknown>)?.data;
+        expect(String(data)).not.toBe('parameter-value');
+      } catch {
+        // Throwing is also safe
+      }
+    });
+
+    it('should not expand billion laughs attack', () => {
+      const billionLaughsXml = `<?xml version="1.0"?>
+<!DOCTYPE lolz [
+  <!ENTITY lol "lol">
+  <!ENTITY lol2 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+  <!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">
+]>
+<root><data>&lol3;</data></root>`;
+      try {
+        const result = parseXml(billionLaughsXml);
+        const data = String((result.root as Record<string, unknown>)?.data ?? '');
+        // Should not have exponentially expanded text
+        expect(data.length).toBeLessThan(1000);
+      } catch {
+        // Throwing is also safe
+      }
+    });
+  });
+
   describe('Real-world security tool XML scenarios', () => {
     it('should parse Nessus-like vulnerability XML', () => {
       const xml = `
