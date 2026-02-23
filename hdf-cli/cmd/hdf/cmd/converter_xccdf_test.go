@@ -8,7 +8,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// ensureXccdfRegistered ensures the xccdf/arf converter is registered.
+// Call this at the start of each test since some tests reset the global registry.
+func ensureXccdfRegistered() {
+	converter := &xccdfConverter{}
+	RegisterConverter("xccdf", "hdf", converter)
+	RegisterConverter("arf", "hdf", converter)
+}
+
 func TestXccdfConverter_IsRegistered(t *testing.T) {
+	ensureXccdfRegistered()
+
 	converter, err := GetConverter("xccdf", "hdf")
 	require.NoError(t, err, "XCCDF converter should be registered")
 	assert.NotNil(t, converter, "Converter should not be nil")
@@ -16,6 +26,8 @@ func TestXccdfConverter_IsRegistered(t *testing.T) {
 }
 
 func TestXccdfConverter_Convert_StigRhel7(t *testing.T) {
+	ensureXccdfRegistered()
+
 	inputData, err := os.ReadFile(
 		converterFixturePath(t, "xccdf-results-to-hdf", "input/stig-rhel7.xml"),
 	)
@@ -32,6 +44,8 @@ func TestXccdfConverter_Convert_StigRhel7(t *testing.T) {
 }
 
 func TestXccdfConverter_Convert_Minimal(t *testing.T) {
+	ensureXccdfRegistered()
+
 	inputData, err := os.ReadFile(
 		converterFixturePath(t, "xccdf-results-to-hdf", "input/minimal.xml"),
 	)
@@ -48,6 +62,8 @@ func TestXccdfConverter_Convert_Minimal(t *testing.T) {
 }
 
 func TestXccdfConverter_Convert_InvalidXML(t *testing.T) {
+	ensureXccdfRegistered()
+
 	converter, err := GetConverter("xccdf", "hdf")
 	require.NoError(t, err, "Failed to get XCCDF converter")
 
@@ -60,6 +76,8 @@ func TestXccdfConverter_Convert_InvalidXML(t *testing.T) {
 // --- ARF alias tests ---
 
 func TestArfConverter_IsRegistered(t *testing.T) {
+	ensureXccdfRegistered()
+
 	converter, err := GetConverter("arf", "hdf")
 	require.NoError(t, err, "ARF converter should be registered as alias")
 	assert.NotNil(t, converter, "Converter should not be nil")
@@ -67,6 +85,8 @@ func TestArfConverter_IsRegistered(t *testing.T) {
 }
 
 func TestArfConverter_Convert_Minimal(t *testing.T) {
+	ensureXccdfRegistered()
+
 	inputData, err := os.ReadFile(
 		converterFixturePath(t, "xccdf-results-to-hdf", "input/arf-minimal.xml"),
 	)
