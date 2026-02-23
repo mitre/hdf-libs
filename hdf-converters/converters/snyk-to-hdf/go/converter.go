@@ -1,0 +1,272 @@
+package snyk
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
+
+	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
+	shared "github.com/mitre/hdf-converters/shared/go"
+	"github.com/mitre/hdf-mappings/go/cci"
+	"github.com/mitre/hdf-mappings/go/cwe"
+	hdf "github.com/mitre/hdf-schema"
+)
+
+// SnykReport is the top-level Snyk test JSON output structure.
+type SnykReport struct {
+	OK              bool              `json:"ok"`
+	Vulnerabilities []SnykVuln        `json:"vulnerabilities"`
+	DependencyCount int               `json:"dependencyCount"`
+	Org             string            `json:"org"`
+	PackageManager  string            `json:"packageManager"`
+	Summary         string            `json:"summary"`
+	ProjectName     string            `json:"projectName"`
+	Path            string            `json:"path"`
+}
+
+// SnykVuln represents a single vulnerability entry from Snyk output.
+type SnykVuln struct {
+	ID          string          `json:"id"`
+	Title       string          `json:"title"`
+	Description string          `json:"description"`
+	Severity    string          `json:"severity"`
+	CvssScore   float64         `json:"cvssScore"`
+	CVSSv3      string          `json:"CVSSv3"`
+	Identifiers SnykIdentifiers `json:"identifiers"`
+	Language    string          `json:"language"`
+	PackageName string          `json:"packageName"`
+	ModuleName  string          `json:"moduleName"`
+	Version     string          `json:"version"`
+	From        []string        `json:"from"`
+	UpgradePath []interface{}   `json:"upgradePath"`
+	FixedIn     []string        `json:"fixedIn"`
+	Exploit     string          `json:"exploit"`
+}
+
+// SnykIdentifiers holds the CVE, CWE, and GHSA identifiers for a vulnerability.
+type SnykIdentifiers struct {
+	CVE  []string `json:"CVE"`
+	CWE  []string `json:"CWE"`
+	GHSA []string `json:"GHSA"`
+}
+
+// getImpact maps Snyk severity strings to HDF impact values.
+func getImpact(severity string) float64 {
+	switch strings.ToLower(severity) {
+	case "critical":
+		return 1.0
+	case "high":
+		return 0.7
+	case "medium":
+		return 0.5
+	case "low":
+		return 0.3
+	default:
+		return 0.5
+	}
+}
+
+// nistTagsForCWEs looks up NIST controls for the given CWE identifiers,
+// falling back to DefaultStaticAnalysisNIST when no mapping is found.
+func nistTagsForCWEs(cweIDs []string) []string {
+	seen := make(map[string]bool)
+	for _, cweID := range cweIDs {
+		// Strip "CWE-" prefix if present
+		numericID := strings.TrimPrefix(cweID, "CWE-")
+		controls := cwe.NISTControls(numericID)
+		for _, c := range controls {
+			seen[c] = true
+		}
+	}
+	if len(seen) == 0 {
+		return shared.DefaultStaticAnalysisNIST
+	}
+	result := make([]string, 0, len(seen))
+	for c := range seen {
+		result = append(result, c)
+	}
+	return result
+}
+
+// formatDependencyPath formats the "from" array as a human-readable dependency path.
+func formatDependencyPath(from []string) string {
+	if len(from) == 0 {
+		return "Unknown dependency path"
+	}
+	return fmt.Sprintf("From: [ %s ]", strings.Join(from, ", "))
+}
+
+// groupByID groups vulnerabilities by ID, preserving insertion order.
+func groupByID(vulns []SnykVuln) ([]string, map[string][]SnykVuln) {
+	order := []string{}
+	groups := map[string][]SnykVuln{}
+	for _, vuln := range vulns {
+		if _, seen := groups[vuln.ID]; !seen {
+			order = append(order, vuln.ID)
+		}
+		groups[vuln.ID] = append(groups[vuln.ID], vuln)
+	}
+	return order, groups
+}
+
+// buildRequirement converts a group of vulnerabilities sharing an ID into one
+// EvaluatedRequirement with multiple results.
+func buildRequirement(vulnID string, vulns []SnykVuln) hdf.EvaluatedRequirement {
+	rep := vulns[0]
+
+	nist := nistTagsForCWEs(rep.Identifiers.CWE)
+	cciTags := cci.NISTToCCI(nist)
+
+	tags := map[string]interface{}{
+		"nist": nist,
+		"cci":  cciTags,
+	}
+
+	if len(rep.Identifiers.CWE) > 0 {
+		tags["cweid"] = rep.Identifiers.CWE
+	}
+	if len(rep.Identifiers.CVE) > 0 {
+		tags["cveid"] = rep.Identifiers.CVE
+	}
+	if len(rep.Identifiers.GHSA) > 0 {
+		tags["ghsaid"] = rep.Identifiers.GHSA
+	}
+
+	descriptions := []hdf.Description{
+		{Label: "default", Data: rep.Description},
+	}
+
+	results := make([]hdf.RequirementResult, len(vulns))
+	for i, vuln := range vulns {
+		results[i] = hdf.RequirementResult{
+			Status:   hdf.Failed,
+			CodeDesc: formatDependencyPath(vuln.From),
+		}
+	}
+
+	title := rep.Title
+	return hdf.EvaluatedRequirement{
+		ID:           vulnID,
+		Title:        &title,
+		Impact:       getImpact(rep.Severity),
+		Tags:         tags,
+		Descriptions: descriptions,
+		Results:      results,
+	}
+}
+
+// convertSingleProject converts a single Snyk project report to an HDF baseline.
+func convertSingleProject(report SnykReport, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
+	order, groups := groupByID(report.Vulnerabilities)
+	requirements := make([]hdf.EvaluatedRequirement, len(order))
+	for i, vulnID := range order {
+		requirements[i] = buildRequirement(vulnID, groups[vulnID])
+	}
+
+	baseline := hdf.EvaluatedBaseline{
+		Name:            "Snyk Scan",
+		Requirements:    requirements,
+		ResultsChecksum: checksum,
+	}
+
+	title := fmt.Sprintf("Snyk Project: %s Snyk Path: %s", report.ProjectName, report.Path)
+	baseline.Title = &title
+
+	if report.Summary != "" {
+		baseline.Summary = &report.Summary
+	}
+
+	return baseline
+}
+
+// ConvertSnykToHDF converts Snyk output to HDF format.
+// Accepts both native Snyk JSON and SARIF format — SARIF input is detected
+// automatically and delegated to the shared SARIF converter.
+// Handles both single-project (object) and multi-project (array) input.
+func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("snyk: empty input")
+	}
+
+	// Detect format: if SARIF, delegate to the shared SARIF converter
+	if shared.DetectFormat(input) == shared.FormatSARIF {
+		return sarif.ConvertSarifToHDF(input, converterVersion)
+	}
+
+	checksum := shared.InputChecksum(input)
+
+	// Try single project first
+	var report SnykReport
+	if err := json.Unmarshal(input, &report); err != nil {
+		// Try array of projects
+		var reports []SnykReport
+		if arrErr := json.Unmarshal(input, &reports); arrErr != nil {
+			return nil, fmt.Errorf("snyk: invalid JSON: %w", err)
+		}
+		return convertMultiProject(reports, checksum, converterVersion)
+	}
+
+	// Validate structure — must have vulnerabilities field
+	// (json.Unmarshal succeeds on any JSON; check for expected content)
+	if report.Vulnerabilities == nil {
+		// Re-check: maybe it was actually an array
+		var reports []SnykReport
+		if arrErr := json.Unmarshal(input, &reports); arrErr == nil && len(reports) > 0 {
+			return convertMultiProject(reports, checksum, converterVersion)
+		}
+		// Default to empty vulnerabilities — Snyk output for clean projects
+		// has "vulnerabilities": [] which parses as nil slice vs null
+	}
+
+	baseline := convertSingleProject(report, checksum)
+
+	targetName := report.ProjectName
+	if targetName == "" {
+		targetName = report.Path
+	}
+
+	toolName := "Snyk"
+	formatName := "JSON"
+	now := time.Now().UTC()
+
+	return &hdf.HDFResults{
+		Generator: &hdf.Generator{
+			Name:    "snyk-to-hdf",
+			Version: converterVersion,
+		},
+		DataSource: &hdf.DataSource{
+			Name:   &toolName,
+			Format: &formatName,
+		},
+		Baselines: []hdf.EvaluatedBaseline{baseline},
+		Targets: []hdf.Target{
+			{Name: targetName, Type: hdf.Application},
+		},
+		Timestamp: &now,
+	}, nil
+}
+
+func convertMultiProject(reports []SnykReport, checksum *hdf.Checksum, converterVersion string) (*hdf.HDFResults, error) {
+	baselines := make([]hdf.EvaluatedBaseline, len(reports))
+	for i, report := range reports {
+		baselines[i] = convertSingleProject(report, checksum)
+	}
+
+	toolName := "Snyk"
+	formatName := "JSON"
+	now := time.Now().UTC()
+
+	return &hdf.HDFResults{
+		Generator: &hdf.Generator{
+			Name:    "snyk-to-hdf",
+			Version: converterVersion,
+		},
+		DataSource: &hdf.DataSource{
+			Name:   &toolName,
+			Format: &formatName,
+		},
+		Baselines: baselines,
+		Timestamp: &now,
+	}, nil
+}
