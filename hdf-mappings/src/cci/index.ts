@@ -2,12 +2,12 @@
  * CCI (Control Correlation Identifier) mapping functions
  */
 
+import { createRequire } from 'module';
 import type { CCIMappings, NistCCIMappings } from './types.js';
-import rawCCIData from '../data/cci-mappings.json' with { type: 'json' };
-import rawNistCCIData from '../data/nist-cci-mappings.json' with { type: 'json' };
 
-const cciData = rawCCIData as CCIMappings;
-const nistCCIData = rawNistCCIData as NistCCIMappings;
+const _require = createRequire(import.meta.url);
+const cciData = _require('../data/cci-mappings.json') as CCIMappings;
+const nistCCIData = _require('../data/nist-cci-mappings.json') as NistCCIMappings;
 
 /**
  * Get the definition/description for a CCI ID.
