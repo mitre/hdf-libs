@@ -24,7 +24,7 @@
  *
  * CONSUMER CONFIGURATION (nuxt.config.ts):
  *   vite: { ssr: { noExternal: ['@mitre/hdf-mappings', ...] } }
- *   nitro: { noExternal: ['@mitre/hdf-mappings', ...] }
+ *   nitro: { externals: { inline: ['@mitre/hdf-mappings', ...] } }
  *
  * If these tests fail, the fix is NOT to add createRequire or import
  * attributes — it's to ensure bare JSON imports are used and the consumer
