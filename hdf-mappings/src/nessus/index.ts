@@ -2,11 +2,10 @@
  * Query functions for Nessus to NIST mappings
  */
 
-import { createRequire } from 'module';
 import type { NessusNistMappings } from './types.js';
+import rawMappings from '../data/nessus-nist-mappings.json';
 
-const _require = createRequire(import.meta.url);
-const mappings = _require('../data/nessus-nist-mappings.json') as NessusNistMappings;
+const mappings = rawMappings as NessusNistMappings;
 
 /**
  * Get the NIST control ID for a Nessus plugin family and plugin ID
