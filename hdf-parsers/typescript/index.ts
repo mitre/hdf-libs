@@ -1,4 +1,6 @@
 import type { HdfResults, HdfBaseline } from '@mitre/hdf-schema';
+export { flattenOverlays } from './flatten.js';
+export type { FlattenResult, FlattenMetadata, BaselineMerge } from './flatten.js';
 import { validateResults, validateBaseline, validate as autoValidate } from '@mitre/hdf-validators';
 
 /**

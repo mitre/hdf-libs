@@ -4,6 +4,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfparsers "github.com/mitre/hdf-parsers/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -235,5 +236,8 @@ func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 	}
 	v2.Targets = []hdf.Target{target}
 
-	return v2
+	// Flatten overlays: merge overlay/wrapper baselines so every requirement
+	// has results and consumers don't see duplicated controls (741→247 fix).
+	flat := hdfparsers.FlattenOverlays(*v2)
+	return &flat.Results
 }
