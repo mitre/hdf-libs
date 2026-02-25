@@ -80,12 +80,9 @@ func validateSonarqubeURL(rawURL string) error {
 	if rawURL == "" {
 		return fmt.Errorf("SonarQube URL is required")
 	}
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return fmt.Errorf("invalid SonarQube URL %q: %w", rawURL, err)
-	}
-	if u.Scheme != schemeHTTP && u.Scheme != schemeHTTPS {
-		return fmt.Errorf("invalid SonarQube URL %q: must use http or https scheme", rawURL)
+	// Reuse buildSonarQubeAPIURL for scheme validation (single source of truth)
+	if _, err := buildSonarQubeAPIURL(rawURL); err != nil {
+		return err
 	}
 	return nil
 }
@@ -238,7 +235,9 @@ func (f *SonarqubeFetcher) fetchPage(ctx context.Context, token string, page int
 		return nil, fmt.Errorf("SonarQube API returned HTTP %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	// Limit response body to 10MB to prevent memory exhaustion from malicious servers
+	const maxResponseSize = 10 * 1024 * 1024
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 	if err != nil {
 		return nil, fmt.Errorf("reading response body: %w", err)
 	}

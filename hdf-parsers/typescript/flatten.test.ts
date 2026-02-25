@@ -386,6 +386,43 @@ describe('flattenOverlays', () => {
 
   // ── Integration: real fixtures ────────────────────────────
 
+  /**
+   * Load an InSpec v1 exec-json fixture and convert to HDF v2 baselines
+   * for testing flattenOverlays with real data.
+   */
+  function loadV1FixtureAsHdfResults(fixturePath: string): HdfResults {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const raw = JSON.parse(readFileSync(fixturePath, 'utf-8')) as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const baselines: EvaluatedBaseline[] = raw.profiles.map((p: any) => ({
+      name: p.name,
+      parentBaseline: p.parent_profile || undefined,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      requirements: (p.controls || []).map((c: any) => ({
+        id: c.id,
+        impact: c.impact ?? 0.5,
+        tags: c.tags || {},
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        results: (c.results || []).map((r: any) => ({
+          status: r.status,
+          codeDesc: r.code_desc || '',
+          message: r.message || undefined,
+          runTime: r.run_time || undefined,
+        })),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        descriptions: (c.descriptions || []).map((d: any) => ({
+          label: d.label,
+          data: d.data,
+        })),
+        code: c.code || '',
+        title: c.title || '',
+      })),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      depends: (p.depends || []).map((d: any) => ({ name: d.name })),
+    }));
+    return { baselines };
+  }
+
   describe('integration — real fixtures', () => {
     const fixturesDir = resolve(
       dirname(fileURLToPath(import.meta.url)),
@@ -393,76 +430,23 @@ describe('flattenOverlays', () => {
     );
 
     it('Three_Layer_RHEL7: 3 profiles → 1 baseline, 247 controls', () => {
-      // This fixture is InSpec exec-json (v1) with profiles[].controls[]
-      // flattenOverlays works on HDF v2 (baselines[].requirements[])
-      // We simulate the v1→v2 structure: profiles→baselines, controls→requirements,
-      // parent_profile→parentBaseline
-      const raw = JSON.parse(readFileSync(resolve(fixturesDir, 'Three_Layer_RHEL7_Overlay_Example.json'), 'utf-8'));
-
-      // Convert v1 structure to v2-like for testing
-      const baselines: EvaluatedBaseline[] = raw.profiles.map((p: any) => ({
-        name: p.name,
-        parentBaseline: p.parent_profile || undefined,
-        requirements: (p.controls || []).map((c: any) => ({
-          id: c.id,
-          impact: c.impact,
-          tags: c.tags || {},
-          results: (c.results || []).map((r: any) => ({
-            status: r.status,
-            codeDesc: r.code_desc || '',
-            message: r.message || undefined,
-            runTime: r.run_time || undefined,
-          })),
-          descriptions: (c.descriptions || []).map((d: any) => ({
-            label: d.label,
-            data: d.data,
-          })),
-          code: c.code || '',
-          title: c.title || '',
-          desc: c.desc || '',
-        })),
-        depends: (p.depends || []).map((d: any) => ({ name: d.name })),
-      }));
-
-      const results: HdfResults = { baselines };
-      const { results: flat, metadata } = flattenOverlays(results);
+      const { results: flat, metadata } = flattenOverlays(
+        loadV1FixtureAsHdfResults(resolve(fixturesDir, 'Three_Layer_RHEL7_Overlay_Example.json'))
+      );
 
       expect(flat.baselines).toHaveLength(1);
       expect(flat.baselines[0].requirements).toHaveLength(247);
       expect(metadata.originalBaselineCount).toBe(3);
       expect(metadata.flattenedBaselineCount).toBe(1);
 
-      // Verify results are present (from base profile)
       const withResults = flat.baselines[0].requirements.filter(r => r.results.length > 0);
       expect(withResults.length).toBe(247);
     });
 
     it('wrapper.json: 4 profiles → 1 baseline, 534 controls', () => {
-      const raw = JSON.parse(readFileSync(resolve(fixturesDir, 'wrapper.json'), 'utf-8'));
-
-      const baselines: EvaluatedBaseline[] = raw.profiles.map((p: any) => ({
-        name: p.name,
-        parentBaseline: p.parent_profile || undefined,
-        requirements: (p.controls || []).map((c: any) => ({
-          id: c.id,
-          impact: c.impact ?? 0.5,
-          tags: c.tags || {},
-          results: (c.results || []).map((r: any) => ({
-            status: r.status,
-            codeDesc: r.code_desc || '',
-          })),
-          descriptions: (c.descriptions || []).map((d: any) => ({
-            label: d.label,
-            data: d.data,
-          })),
-          code: c.code || '',
-          title: c.title || '',
-        })),
-        depends: (p.depends || []).map((d: any) => ({ name: d.name })),
-      }));
-
-      const results: HdfResults = { baselines };
-      const { results: flat, metadata } = flattenOverlays(results);
+      const { results: flat, metadata } = flattenOverlays(
+        loadV1FixtureAsHdfResults(resolve(fixturesDir, 'wrapper.json'))
+      );
 
       expect(flat.baselines).toHaveLength(1);
       expect(flat.baselines[0].requirements).toHaveLength(534);

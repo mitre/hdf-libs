@@ -468,81 +468,87 @@ func TestFlattenOverlays_EdgeCases(t *testing.T) {
 
 // ── Integration: real fixtures ────────────────────────────
 
+// loadV1FixtureAsHDFResults reads an InSpec v1 exec-json fixture and converts
+// it to HDF v2 baselines for testing flattenOverlays with real data.
+func loadV1FixtureAsHDFResults(t *testing.T, path string) hdf.HDFResults {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	var raw struct {
+		Profiles []struct {
+			Name          string `json:"name"`
+			ParentProfile string `json:"parent_profile"`
+			Controls      []struct {
+				ID           string                 `json:"id"`
+				Impact       float64                `json:"impact"`
+				Tags         map[string]interface{} `json:"tags"`
+				Results      []json.RawMessage      `json:"results"`
+				Descriptions []hdf.Description      `json:"descriptions"`
+				Code         string                 `json:"code"`
+				Title        string                 `json:"title"`
+			} `json:"controls"`
+			Depends []struct {
+				Name string `json:"name"`
+			} `json:"depends"`
+		} `json:"profiles"`
+	}
+	require.NoError(t, json.Unmarshal(data, &raw))
+
+	baselines := make([]hdf.EvaluatedBaseline, len(raw.Profiles))
+	for i, p := range raw.Profiles {
+		reqs := make([]hdf.EvaluatedRequirement, len(p.Controls))
+		for j, c := range p.Controls {
+			var results []hdf.RequirementResult
+			for _, r := range c.Results {
+				var rr struct {
+					Status   string  `json:"status"`
+					CodeDesc string  `json:"code_desc"`
+					Message  *string `json:"message"`
+				}
+				require.NoError(t, json.Unmarshal(r, &rr))
+				results = append(results, hdf.RequirementResult{
+					Status:   hdf.ResultStatus(rr.Status),
+					CodeDesc: rr.CodeDesc,
+					Message:  rr.Message,
+				})
+			}
+			code := c.Code
+			title := c.Title
+			reqs[j] = hdf.EvaluatedRequirement{
+				ID:           c.ID,
+				Impact:       c.Impact,
+				Tags:         c.Tags,
+				Results:      results,
+				Descriptions: c.Descriptions,
+				Code:         &code,
+				Title:        &title,
+			}
+		}
+		b := hdf.EvaluatedBaseline{
+			Name:         p.Name,
+			Requirements: reqs,
+		}
+		if p.ParentProfile != "" {
+			b.ParentBaseline = ptr(p.ParentProfile)
+		}
+		deps := make([]hdf.Dependency, len(p.Depends))
+		for k, d := range p.Depends {
+			deps[k] = hdf.Dependency{Name: ptr(d.Name)}
+		}
+		if len(deps) > 0 {
+			b.Depends = deps
+		}
+		baselines[i] = b
+	}
+	return hdf.HDFResults{Baselines: baselines}
+}
+
 func TestFlattenOverlays_Integration(t *testing.T) {
 	fixturesDir := filepath.Join("..", "..", "hdf-schema", "test", "fixtures")
 
 	t.Run("Three_Layer_RHEL7 3 profiles to 1 baseline 247 controls", func(t *testing.T) {
-		data, err := os.ReadFile(filepath.Join(fixturesDir, "Three_Layer_RHEL7_Overlay_Example.json"))
-		require.NoError(t, err)
-
-		var raw struct {
-			Profiles []struct {
-				Name          string `json:"name"`
-				ParentProfile string `json:"parent_profile"`
-				Controls      []struct {
-					ID           string                 `json:"id"`
-					Impact       float64                `json:"impact"`
-					Tags         map[string]interface{} `json:"tags"`
-					Results      []json.RawMessage      `json:"results"`
-					Descriptions []hdf.Description      `json:"descriptions"`
-					Code         string                 `json:"code"`
-					Title        string                 `json:"title"`
-				} `json:"controls"`
-				Depends []struct {
-					Name string `json:"name"`
-				} `json:"depends"`
-			} `json:"profiles"`
-		}
-		require.NoError(t, json.Unmarshal(data, &raw))
-
-		baselines := make([]hdf.EvaluatedBaseline, len(raw.Profiles))
-		for i, p := range raw.Profiles {
-			reqs := make([]hdf.EvaluatedRequirement, len(p.Controls))
-			for j, c := range p.Controls {
-				var results []hdf.RequirementResult
-				for _, r := range c.Results {
-					var rr struct {
-						Status   string  `json:"status"`
-						CodeDesc string  `json:"code_desc"`
-						Message  *string `json:"message"`
-					}
-					_ = json.Unmarshal(r, &rr)
-					results = append(results, hdf.RequirementResult{
-						Status:   hdf.ResultStatus(rr.Status),
-						CodeDesc: rr.CodeDesc,
-						Message:  rr.Message,
-					})
-				}
-				code := c.Code
-				title := c.Title
-				reqs[j] = hdf.EvaluatedRequirement{
-					ID:           c.ID,
-					Impact:       c.Impact,
-					Tags:         c.Tags,
-					Results:      results,
-					Descriptions: c.Descriptions,
-					Code:         &code,
-					Title:        &title,
-				}
-			}
-			b := hdf.EvaluatedBaseline{
-				Name:         p.Name,
-				Requirements: reqs,
-			}
-			if p.ParentProfile != "" {
-				b.ParentBaseline = ptr(p.ParentProfile)
-			}
-			deps := make([]hdf.Dependency, len(p.Depends))
-			for k, d := range p.Depends {
-				deps[k] = hdf.Dependency{Name: ptr(d.Name)}
-			}
-			if len(deps) > 0 {
-				b.Depends = deps
-			}
-			baselines[i] = b
-		}
-
-		results := hdf.HDFResults{Baselines: baselines}
+		results := loadV1FixtureAsHDFResults(t, filepath.Join(fixturesDir, "Three_Layer_RHEL7_Overlay_Example.json"))
 		flat := FlattenOverlays(results)
 
 		assert.Len(t, flat.Results.Baselines, 1)
@@ -550,7 +556,6 @@ func TestFlattenOverlays_Integration(t *testing.T) {
 		assert.Equal(t, 3, flat.Metadata.OriginalBaselineCount)
 		assert.Equal(t, 1, flat.Metadata.FlattenedBaselineCount)
 
-		// Verify all controls have results (from base profile)
 		withResults := 0
 		for _, r := range flat.Results.Baselines[0].Requirements {
 			if len(r.Results) > 0 {
@@ -561,75 +566,7 @@ func TestFlattenOverlays_Integration(t *testing.T) {
 	})
 
 	t.Run("wrapper.json 4 profiles to 1 baseline 534 controls", func(t *testing.T) {
-		data, err := os.ReadFile(filepath.Join(fixturesDir, "wrapper.json"))
-		require.NoError(t, err)
-
-		var raw struct {
-			Profiles []struct {
-				Name          string `json:"name"`
-				ParentProfile string `json:"parent_profile"`
-				Controls      []struct {
-					ID           string                 `json:"id"`
-					Impact       float64                `json:"impact"`
-					Tags         map[string]interface{} `json:"tags"`
-					Results      []json.RawMessage      `json:"results"`
-					Descriptions []hdf.Description      `json:"descriptions"`
-					Code         string                 `json:"code"`
-					Title        string                 `json:"title"`
-				} `json:"controls"`
-				Depends []struct {
-					Name string `json:"name"`
-				} `json:"depends"`
-			} `json:"profiles"`
-		}
-		require.NoError(t, json.Unmarshal(data, &raw))
-
-		baselines := make([]hdf.EvaluatedBaseline, len(raw.Profiles))
-		for i, p := range raw.Profiles {
-			reqs := make([]hdf.EvaluatedRequirement, len(p.Controls))
-			for j, c := range p.Controls {
-				var results []hdf.RequirementResult
-				for _, r := range c.Results {
-					var rr struct {
-						Status   string `json:"status"`
-						CodeDesc string `json:"code_desc"`
-					}
-					_ = json.Unmarshal(r, &rr)
-					results = append(results, hdf.RequirementResult{
-						Status:   hdf.ResultStatus(rr.Status),
-						CodeDesc: rr.CodeDesc,
-					})
-				}
-				code := c.Code
-				title := c.Title
-				reqs[j] = hdf.EvaluatedRequirement{
-					ID:           c.ID,
-					Impact:       c.Impact,
-					Tags:         c.Tags,
-					Results:      results,
-					Descriptions: c.Descriptions,
-					Code:         &code,
-					Title:        &title,
-				}
-			}
-			b := hdf.EvaluatedBaseline{
-				Name:         p.Name,
-				Requirements: reqs,
-			}
-			if p.ParentProfile != "" {
-				b.ParentBaseline = ptr(p.ParentProfile)
-			}
-			deps := make([]hdf.Dependency, len(p.Depends))
-			for k, d := range p.Depends {
-				deps[k] = hdf.Dependency{Name: ptr(d.Name)}
-			}
-			if len(deps) > 0 {
-				b.Depends = deps
-			}
-			baselines[i] = b
-		}
-
-		results := hdf.HDFResults{Baselines: baselines}
+		results := loadV1FixtureAsHDFResults(t, filepath.Join(fixturesDir, "wrapper.json"))
 		flat := FlattenOverlays(results)
 
 		assert.Len(t, flat.Results.Baselines, 1)

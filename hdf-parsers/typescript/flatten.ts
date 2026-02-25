@@ -152,6 +152,9 @@ export function flattenOverlays(results: HdfResults): FlattenResult {
   // Index baselines by name
   const byName = new Map<string, EvaluatedBaseline>();
   for (const b of baselines) {
+    if (byName.has(b.name)) {
+      warnings.push(`Duplicate baseline name "${b.name}" — later entry overwrites earlier`);
+    }
     byName.set(b.name, b);
   }
 
@@ -188,12 +191,19 @@ export function flattenOverlays(results: HdfResults): FlattenResult {
     }
   }
 
-  // Mark reachable from roots (for cycle detection)
-  function markReachable(name: string): void {
-    if (visited.has(name)) return;
-    visited.add(name);
-    for (const child of (childrenMap.get(name) || [])) {
-      markReachable(child);
+  // Mark reachable from roots (iterative BFS to avoid stack overflow on deep trees)
+  function markReachable(start: string): void {
+    const stack = [start];
+    while (stack.length > 0) {
+      const name = stack.pop()!;
+      if (visited.has(name)) continue;
+      visited.add(name);
+      const children = childrenMap.get(name);
+      if (children) {
+        for (const child of children) {
+          stack.push(child);
+        }
+      }
     }
   }
   for (const r of roots) {

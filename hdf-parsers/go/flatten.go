@@ -181,6 +181,10 @@ func FlattenOverlays(results hdf.HDFResults) FlattenResult {
 	// Index by name
 	byName := make(map[string]hdf.EvaluatedBaseline, len(baselines))
 	for _, b := range baselines {
+		if _, exists := byName[b.Name]; exists {
+			warnings = append(warnings,
+				fmt.Sprintf("Duplicate baseline name %q — later entry overwrites earlier", b.Name))
+		}
 		byName[b.Name] = b
 	}
 
@@ -214,15 +218,17 @@ func FlattenOverlays(results hdf.HDFResults) FlattenResult {
 		}
 	}
 
-	// Mark reachable from roots (for cycle detection)
-	var markReachable func(string)
-	markReachable = func(name string) {
-		if visited[name] {
-			return
-		}
-		visited[name] = true
-		for _, child := range childrenMap[name] {
-			markReachable(child)
+	// Mark reachable from roots (iterative to avoid stack overflow on deep trees)
+	markReachable := func(start string) {
+		stack := []string{start}
+		for len(stack) > 0 {
+			name := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			if visited[name] {
+				continue
+			}
+			visited[name] = true
+			stack = append(stack, childrenMap[name]...)
 		}
 	}
 	for _, r := range roots {

@@ -335,7 +335,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       });
     });
 
-    it('should preserve unknown status values', () => {
+    it('should default unknown status values to notReviewed', () => {
       const v1: HDFV1Results = {
         version: '1.0.0',
         platform: { name: 'test' },
@@ -352,8 +352,8 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       };
 
       const v2 = convertV1ToV2(v1);
-      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('custom_status');
-      expect(v2.baselines[0].requirements![0].results[0].status).toBe('custom_result_status');
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notReviewed');
+      expect(v2.baselines[0].requirements![0].results![0].status).toBe('notReviewed');
     });
 
     it('should convert group with all optional fields', () => {

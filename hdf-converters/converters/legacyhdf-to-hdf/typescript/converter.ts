@@ -223,7 +223,7 @@ function normalizeStatus(status: string): string {
     'not_reviewed': 'notReviewed',
     'skipped': 'notReviewed', // v1.0 skipped → v2.0 notReviewed
   };
-  return statusMap[status] || status;
+  return statusMap[status] || 'notReviewed'; // unknown statuses default to notReviewed (matches Go)
 }
 
 /**
