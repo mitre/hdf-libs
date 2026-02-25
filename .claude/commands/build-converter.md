@@ -326,6 +326,60 @@ hdf.Sha512  hdf.ChecksumAlgorithm = "sha512"
 hdf.Md5     hdf.ChecksumAlgorithm = "md5"
 ```
 
+### Baseline.Name Convention
+
+`Baseline.Name` is a **fixed scan label**, not dynamic data. Examples: `"Snyk Scan"`, `"gosec Scan"`, `"OWASP ZAP Scan"`. Dynamic context (host, project, URL) belongs in `Baseline.Title` instead.
+
+```go
+// CORRECT — fixed label
+baseline := hdf.EvaluatedBaseline{
+    Name:  "Nessus Scan",
+    Title: shared.Ptr("Nessus Scan of 192.168.1.0/24"),
+}
+
+// WRONG — dynamic data in Name
+baseline := hdf.EvaluatedBaseline{
+    Name:  "192.168.1.0/24",   // Do not put dynamic data here
+}
+```
+
+TypeScript follows the same pattern:
+```typescript
+createMinimalBaseline('Nessus Scan', requirements, {
+  title: `Nessus Scan of ${targetHost}`,
+})
+```
+
+### Targets Convention
+
+Every converter that scans a specific target (host, URL, repo, cloud account) MUST populate `Targets`. The `Type` field uses the `Copyright` enum (Go: `hdf.Application`, TS: `Copyright.Application`).
+
+Choose the target type based on what the tool scans:
+
+| Tool category | Target type | Example converters |
+|---------------|-------------|-------------------|
+| DAST (web scanners) | `Application` | ZAP, Burp, Nikto |
+| SAST (code scanners) | `Repository` | gosec, Snyk, CodeQL, Semgrep |
+| Container scanners | `ContainerImage` | Grype, Trivy |
+| Host scanners | `Host` | Nessus, OpenSCAP |
+| Cloud security | `CloudAccount` | AWS Config, ScoutSuite |
+| Network scanners | `Network` | Nmap |
+
+**Go:**
+```go
+targets := []hdf.Target{
+    {Name: targetName, Type: hdf.Application, URL: &siteURL},
+}
+```
+
+**TypeScript:**
+```typescript
+import { Copyright } from '@mitre/hdf-schema';
+targets: [{ name: targetName, type: Copyright.Application, url: siteURL }],
+```
+
+Set `URL` for DAST targets, `FQDN`/`IPAddress` for host targets, and `Digest`/`ImageID` for container targets, when the source data provides them. If the source provides no identifiable target (e.g., empty input or missing host), omit `Targets` entirely rather than creating an "Unknown" target.
+
 ### Standard Impact Mapping (use heimdall2 values)
 
 ```go
@@ -440,8 +494,31 @@ Also available from `shared "github.com/mitre/hdf-converters/shared/go"`:
 | `shared.InputChecksum(input)` | SHA-256 checksum of raw input bytes → `*hdf.Checksum` |
 | `shared.Ptr(s)` | Convert string to `*string` (avoids `&` on string literals) |
 | `shared.ParseTimestamp(s)` | Parse ISO 8601 / RFC 3339 timestamps with multiple fallback formats |
+| `shared.StripHTML(html)` | Strip HTML tags from a string, collapsing whitespace |
+| `shared.BuildNISTCCITags(nist, cci)` | Build tags `map[string]interface{}` with NIST + CCI arrays |
+| `shared.BuildNISTCCITagsWithExtras(nist, cci, extras)` | Same as above, plus extra key-value pairs merged in |
+| `shared.LimitSlice(items, max)` | Truncate large input arrays; returns `(limited, truncated bool)` |
+| `shared.DetectFormat(input)` | Detect input format (SARIF, JUnit, XCCDF, etc.) — see Step 4c |
+| `shared.FormatSARIF` / `shared.FormatUnknown` | Format detection result constants |
 | `shared.DefaultStaticAnalysisNIST` | Default NIST tags (`["SA-11", "RA-5"]`) when no CWE mapping applies |
 | `shared.GetConvertersDir()` | Absolute path to `hdf-converters/converters/` (for test fixture loading) |
+
+Also available from `hdf-converters/shared/typescript/converterutil.ts`:
+
+| Function | Use for |
+|----------|---------|
+| `inputChecksum(input)` | Async SHA-256 checksum → `Promise<Checksum>` |
+| `buildNistCciTags(nist, cci, extras?)` | Build tags object with NIST + CCI arrays + optional extras |
+| `limitArray(items, maxItems?)` | Truncate large arrays; returns `{ items, truncated }` |
+| `stripHTML(html)` | Strip HTML tags, collapse whitespace (mirrors Go `shared.StripHTML`) |
+| `DEFAULT_MAX_ITEMS` | Maximum items constant (100,000) |
+| `DEFAULT_STATIC_ANALYSIS_NIST_TAGS` | Re-export from `@mitre/hdf-mappings` |
+
+Also available from `hdf-converters/shared/typescript/formatdetect.ts`:
+
+| Function | Use for |
+|----------|---------|
+| `detectFormat(input)` | Detect input format → `'sarif' \| 'junit' \| 'xccdf' \| 'arf' \| 'unknown'` |
 
 ### `hdf-validators` — output validation
 
@@ -467,6 +544,9 @@ Already wired into `hdf-cli/cmd/hdf/cmd/input.go`. CLI integration tests MUST ca
 9. **Never write manual column extraction or row filtering on arrays of objects in TypeScript.** Use `extractColumn()` / `findRows()` (or their CSV aliases) from `hdf-utilities`.
 10. **If a new mapping package is created:** export it from `hdf-mappings/src/index.ts`, add it to the supported mappings table in `hdf-mappings/README.md`, and add usage examples for every exported function.
 11. **If you find yourself writing general-purpose infrastructure** (a lookup table, a format parser, a hash function, a schema validator), stop and check whether it belongs in a sibling package instead.
+12. **Never write a local `stripHTML()` function.** Use `shared.StripHTML()` (Go) or `stripHTML()` from `shared/typescript/converterutil.ts`.
+13. **Never write a local `isSarif()` or format detection function.** Use `shared.DetectFormat()` (Go) or `detectFormat()` from `shared/typescript/formatdetect.ts`.
+14. **Never build NIST/CCI tag objects by hand.** Use `shared.BuildNISTCCITags()` / `shared.BuildNISTCCITagsWithExtras()` (Go) or `buildNistCciTags()` from `shared/typescript/converterutil.ts`.
 
 ---
 
@@ -612,6 +692,12 @@ export function convert<Name>ToHdf(input: string): string {
   // ... native format parsing continues below
 }
 ```
+
+### Anti-patterns (do NOT do these)
+
+1. **Do NOT return an error when SARIF is detected.** The converter must transparently delegate — the user should not need to know which format their file is in. Returning `fmt.Errorf("input appears to be SARIF; use the SARIF converter")` forces the user to guess.
+2. **Do NOT use dynamic imports for SARIF delegation in TypeScript.** Use a static import (`import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js'`), not `await import(...)`. Dynamic imports add unnecessary complexity and prevent tree-shaking.
+3. **Do NOT write custom SARIF detection logic.** Use `shared.DetectFormat()` (Go) or `detectFormat()` (TypeScript) from the shared modules. Custom `isSarif()` functions duplicate logic and diverge over time.
 
 ### Required tests
 
@@ -866,6 +952,13 @@ cat output.json | head -40
 - [ ] SARIF routing test: tool's SARIF output produces valid HDF via shared converter
 - [ ] Native format test: native input is NOT routed to shared converter
 - [ ] SARIF fixture exists in `sarif-to-hdf/fixtures/input/` for the tool (or reuses existing one)
+
+**All converters — Baseline.Name and Targets (review HDF Type Reference):**
+- [ ] `Baseline.Name` is a fixed scan label (e.g., `"Nessus Scan"`), NOT dynamic data like a hostname or project name
+- [ ] `Baseline.Title` contains dynamic context (e.g., `"Nessus Scan of 192.168.1.0/24"`)
+- [ ] `Targets` populated when the source tool scans an identifiable target (URL, host, repo, cloud account)
+- [ ] Target `Type` matches tool category (`Application` for DAST, `Repository` for SAST, `Host` for host scanners, etc.)
+- [ ] Target omitted (not set to "Unknown") when no identifiable target exists
 
 **All converters — library usage check (review Step 4b):**
 - [ ] NIST/CCI lookups delegate to `hdf-mappings` — no hardcoded lookup tables in converter code
