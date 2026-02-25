@@ -335,7 +335,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       });
     });
 
-    it('should preserve unknown status values', () => {
+    it('should default unknown status values to notReviewed', () => {
       const v1: HDFV1Results = {
         version: '1.0.0',
         platform: { name: 'test' },
@@ -352,8 +352,8 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       };
 
       const v2 = convertV1ToV2(v1);
-      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('custom_status');
-      expect(v2.baselines[0].requirements![0].results[0].status).toBe('custom_result_status');
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notReviewed');
+      expect(v2.baselines[0].requirements![0].results![0].status).toBe('notReviewed');
     });
 
     it('should convert group with all optional fields', () => {
@@ -463,7 +463,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(baseline.attributes).toEqual([{ name: 'attr1', options: {} }]);
       expect(baseline.status).toBe('loaded');
       expect(baseline.checksum).toEqual({ algorithm: 'sha256', value: 'abc123' });
-      expect(baseline.parentProfile).toBe('parent-profile');
+      expect(baseline.parentBaseline).toBe('parent-profile');
       expect(baseline.statusMessage).toBe('Status message');
       expect(baseline.skipMessage).toBe('Skip message');
     });
@@ -638,6 +638,85 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         algorithm: 'sha256',
         value: expect.stringMatching(/^[a-f0-9]{64}$/),
       });
+    });
+  });
+
+  describe('overlay flattening — deep nesting (3-layer overlay)', () => {
+    const raw = readFileSync(
+      join(FIXTURES_DIR, 'input', 'three-layer-overlay.json'),
+      'utf-8'
+    );
+    const v1 = JSON.parse(raw) as HDFV1Results;
+
+    it('should flatten 3 profiles into 1 baseline', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines).toHaveLength(1);
+    });
+
+    it('should produce exactly 247 deduplicated requirements', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements).toHaveLength(247);
+    });
+
+    it('should have results on every requirement (from base profile)', () => {
+      const v2 = convertV1ToV2(v1);
+      const withResults = v2.baselines[0].requirements!.filter(
+        (r) => r.results && r.results.length > 0
+      );
+      expect(withResults).toHaveLength(247);
+    });
+
+    it('should clear parentBaseline on flattened output', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].parentBaseline).toBeUndefined();
+    });
+
+    it('should use top overlay name as baseline name', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].name).toContain('second-layer');
+    });
+  });
+
+  describe('overlay flattening — wide nesting (wrapper)', () => {
+    const raw = readFileSync(
+      join(FIXTURES_DIR, 'input', 'wrapper.json'),
+      'utf-8'
+    );
+    const v1 = JSON.parse(raw) as HDFV1Results;
+
+    it('should flatten 4 profiles into 1 baseline', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines).toHaveLength(1);
+    });
+
+    it('should produce 534 aggregated requirements', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements).toHaveLength(534);
+    });
+
+    it('should use wrapper name as baseline name', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].name).toBe('wrapper');
+    });
+  });
+
+  describe('overlay flattening — passthrough (no overlays)', () => {
+    it('should pass through single-profile input unchanged', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'simple-profile',
+          controls: [
+            { id: 'V-1', impact: 0.5, results: [{ status: 'passed', code_desc: 'test' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines).toHaveLength(1);
+      expect(v2.baselines[0].name).toBe('simple-profile');
+      expect(v2.baselines[0].requirements).toHaveLength(1);
     });
   });
 
