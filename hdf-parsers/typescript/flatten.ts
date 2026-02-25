@@ -62,10 +62,8 @@ function mergeRequirement(
 ): EvaluatedRequirement {
   const result: EvaluatedRequirement = { ...existing };
 
-  // Impact: incoming always wins
-  if (incoming.impact !== undefined) {
-    result.impact = incoming.impact;
-  }
+  // Impact: incoming always wins (required field, always present)
+  result.impact = incoming.impact;
 
   // Results: keep whichever is non-empty (base has them, overlay doesn't)
   if (incoming.results && incoming.results.length > 0) {
@@ -191,7 +189,7 @@ export function flattenOverlays(results: HdfResults): FlattenResult {
     }
   }
 
-  // Mark reachable from roots (iterative BFS to avoid stack overflow on deep trees)
+  // Mark reachable from roots (iterative DFS to avoid stack overflow on deep trees)
   function markReachable(start: string): void {
     const stack = [start];
     while (stack.length > 0) {

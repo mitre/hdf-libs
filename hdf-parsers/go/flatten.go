@@ -218,7 +218,7 @@ func FlattenOverlays(results hdf.HDFResults) FlattenResult {
 		}
 	}
 
-	// Mark reachable from roots (iterative to avoid stack overflow on deep trees)
+	// Mark reachable from roots (iterative DFS to avoid stack overflow on deep trees)
 	markReachable := func(start string) {
 		stack := []string{start}
 		for len(stack) > 0 {
