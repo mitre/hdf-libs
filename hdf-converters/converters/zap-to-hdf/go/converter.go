@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	"github.com/mitre/hdf-mappings/go/cwe"
@@ -57,22 +58,6 @@ type ZapInstance struct {
 	Param    string `json:"param,omitempty"`
 	Evidence string `json:"evidence,omitempty"`
 	Attack   string `json:"attack,omitempty"`
-}
-
-// --- SARIF detection ---
-
-type sarifCandidate struct {
-	Schema  string `json:"$schema"`
-	Version string `json:"version"`
-	Runs    []json.RawMessage `json:"runs"`
-}
-
-func isSarif(input []byte) bool {
-	var candidate sarifCandidate
-	if err := json.Unmarshal(input, &candidate); err != nil {
-		return false
-	}
-	return len(candidate.Runs) > 0 && len(candidate.Version) >= 3 && candidate.Version[:3] == "2.1"
 }
 
 // --- ZAP timestamp parsing ---
@@ -186,9 +171,9 @@ func selectSite(sites []ZapSite) *ZapSite {
 // ConvertZapToHDF converts OWASP ZAP JSON to HDF Results.
 // If the input is detected as SARIF, it delegates to the SARIF converter.
 func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	// SARIF routing
-	if isSarif(input) {
-		return nil, fmt.Errorf("input appears to be SARIF format; use the SARIF converter instead")
+	// SARIF routing — delegate to the shared SARIF converter
+	if shared.DetectFormat(input) == shared.FormatSARIF {
+		return sarif.ConvertSarifToHDF(input, converterVersion)
 	}
 
 	resultsChecksum := shared.InputChecksum(input)
@@ -312,8 +297,9 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 	}
 	summary := fmt.Sprintf("ZAP Version %s", zapData.Version)
 
+	scanLabel := "OWASP ZAP Scan"
 	baseline := hdf.EvaluatedBaseline{
-		Name:            targetName,
+		Name:            scanLabel,
 		Title:           &baselineName,
 		Summary:         &summary,
 		Requirements:    requirements,
@@ -330,8 +316,24 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 		dataSource.Version = &zapData.Version
 	}
 
+	// Build targets — ZAP is a DAST tool scanning web applications
+	var targets []hdf.Target
+	if siteName != "" {
+		targets = append(targets, hdf.Target{
+			Name: targetName,
+			Type: hdf.Application,
+			URL:  &siteName,
+		})
+	} else if targetName != "Unknown Host" {
+		targets = append(targets, hdf.Target{
+			Name: targetName,
+			Type: hdf.Application,
+		})
+	}
+
 	hdfResult := &hdf.HDFResults{
 		Baselines: []hdf.EvaluatedBaseline{baseline},
+		Targets:   targets,
 		Generator: &hdf.Generator{
 			Name:    "zap-to-hdf",
 			Version: converterVersion,
@@ -352,11 +354,6 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 // RiskCodeToImpact is exported for testing
 func RiskCodeToImpact(riskCode string) float64 {
 	return riskCodeToImpact(riskCode)
-}
-
-// IsSarif is exported for testing
-func IsSarif(input []byte) bool {
-	return isSarif(input)
 }
 
 // StripHTMLForTest is exported for testing

@@ -75,5 +75,20 @@ export function limitArray<T>(
   return { items: items.slice(0, maxItems), truncated: true };
 }
 
+/**
+ * Strip HTML tags from a string, collapsing whitespace.
+ *
+ * Mirrors the Go shared.StripHTML() in shared/go/converterutil.go.
+ *
+ * @param html - String potentially containing HTML tags
+ * @returns Plain text with tags removed and whitespace normalized
+ */
+export function stripHTML(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // Re-export shared constants for converter convenience
 export { DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';

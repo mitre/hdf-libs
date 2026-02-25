@@ -1,10 +1,12 @@
 import {readFileSync} from 'fs';
-import {join} from 'path';
+import {dirname, join} from 'path';
+import {fileURLToPath} from 'url';
 import {describe, expect, it} from 'vitest';
 import {convertZapToHdf} from './converter';
 import {parseJSON} from '@mitre/hdf-utilities';
 import type {HdfResults} from '@mitre/hdf-schema';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
 function loadFixture(name: string): string {
@@ -48,12 +50,12 @@ describe('ZAP Converter', () => {
       expect(hdf.baselines[0].requirements).toHaveLength(2);
     });
 
-    it('should set baseline name to host', async () => {
+    it('should set baseline name to scan label', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.baselines[0].name).toBe('example.com');
+      expect(hdf.baselines[0].name).toBe('OWASP ZAP Scan');
     });
 
     it('should set baseline title with site name', async () => {
@@ -70,6 +72,27 @@ describe('ZAP Converter', () => {
       const hdf = parseJSON<HdfResults>(output);
 
       expect(hdf.baselines[0].summary).toBe('ZAP Version 2.7.0');
+    });
+  });
+
+  describe('targets', () => {
+    it('should populate target with host name and application type', async () => {
+      const input = loadFixture('minimal.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HdfResults>(output);
+
+      expect(hdf.targets).toHaveLength(1);
+      expect(hdf.targets![0].name).toBe('example.com');
+      expect(hdf.targets![0].type).toBe('application');
+      expect(hdf.targets![0].url).toBe('https://example.com');
+    });
+
+    it('should omit targets when host is unknown', async () => {
+      const input = JSON.stringify({'@version': '2.7.0', site: [{alerts: []}]});
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HdfResults>(output);
+
+      expect(hdf.targets).toHaveLength(0);
     });
   });
 
@@ -331,7 +354,10 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.baselines[0].name).toBe('mymac.com');
+      // Baseline.Name is the fixed scan label; the host goes into targets
+      expect(hdf.baselines[0].name).toBe('OWASP ZAP Scan');
+      expect(hdf.targets).toHaveLength(1);
+      expect(hdf.targets![0].name).toBe('mymac.com');
     });
 
     it('should produce 15 unique requirements from 25 alerts with deduplication', async () => {

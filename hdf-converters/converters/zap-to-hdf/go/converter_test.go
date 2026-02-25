@@ -62,6 +62,9 @@ func TestConvertZapToHDF_EmptySiteArray(t *testing.T) {
 }
 
 // --- Minimal fixture tests ---
+// minimal.json: Hand-crafted fixture matching ZAP JSON report format.
+// Covers 2 alerts (pluginids 10021, 90022), 3 instances, CWE-16 + empty CWE,
+// risk codes 1 and 2, HTML in descriptions, and attack field.
 
 func TestConvertZapToHDF_BasicStructure(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
@@ -97,7 +100,7 @@ func TestConvertZapToHDF_BaselineName(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	assert.Equal(t, "example.com", result.Baselines[0].Name)
+	assert.Equal(t, "OWASP ZAP Scan", result.Baselines[0].Name)
 }
 
 func TestConvertZapToHDF_BaselineTitle(t *testing.T) {
@@ -137,6 +140,28 @@ func TestConvertZapToHDF_Timestamp(t *testing.T) {
 	assert.Equal(t, 2018, result.Timestamp.Year())
 	assert.Equal(t, time.December, result.Timestamp.Month())
 	assert.Equal(t, 6, result.Timestamp.Day())
+}
+
+// --- Targets ---
+
+func TestConvertZapToHDF_Target(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Targets, 1)
+	assert.Equal(t, "example.com", result.Targets[0].Name)
+	assert.Equal(t, hdf.Application, result.Targets[0].Type)
+	require.NotNil(t, result.Targets[0].URL)
+	assert.Equal(t, "https://example.com", *result.Targets[0].URL)
+}
+
+func TestConvertZapToHDF_NoTargetForUnknownHost(t *testing.T) {
+	input := []byte(`{"@version": "2.7.0", "site": [{"alerts": []}]}`)
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+
+	assert.Empty(t, result.Targets)
 }
 
 // --- Impact mapping ---
@@ -339,24 +364,14 @@ func TestConvertZapToHDF_CheckDescription(t *testing.T) {
 	assert.Contains(t, req.Descriptions[1].Data, "error type pages")
 }
 
-// --- SARIF detection ---
-
-func TestIsSarif(t *testing.T) {
-	sarifInput := []byte(`{"$schema":"test","version":"2.1.0","runs":[{}]}`)
-	assert.True(t, IsSarif(sarifInput))
-
-	zapInput := []byte(`{"@version":"2.7.0","site":[]}`)
-	assert.False(t, IsSarif(zapInput))
-
-	invalidJSON := []byte(`not json`)
-	assert.False(t, IsSarif(invalidJSON))
-}
+// --- SARIF routing ---
 
 func TestConvertZapToHDF_SARIFInput(t *testing.T) {
-	sarifInput := []byte(`{"$schema":"test","version":"2.1.0","runs":[{"tool":{"driver":{"name":"Test"}},"results":[]}]}`)
-	_, err := ConvertZapToHDF(sarifInput, testConverterVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "SARIF")
+	// SARIF input should be transparently delegated to the SARIF converter
+	sarifInput := []byte(`{"$schema":"test","version":"2.1.0","runs":[{"tool":{"driver":{"name":"Test","version":"1.0"}},"results":[]}]}`)
+	result, err := ConvertZapToHDF(sarifInput, testConverterVersion)
+	require.NoError(t, err)
+	assert.NotEqual(t, "OWASP ZAP Scan", result.Baselines[0].Name)
 }
 
 // --- Site selection ---
@@ -403,13 +418,18 @@ func TestStripHTML(t *testing.T) {
 }
 
 // --- Webgoat fixture ---
+// webgoat.json: ZAP scan results from the OWASP WebGoat deliberately vulnerable application.
+// Contains 2 sites, 25 alerts in the primary site (mymac.com), 15 unique plugin IDs.
 
 func TestConvertZapToHDF_Webgoat_SelectsSiteWithMostAlerts(t *testing.T) {
 	input := loadFixture(t, "input/webgoat.json")
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	assert.Equal(t, "mymac.com", result.Baselines[0].Name)
+	// Baseline.Name is the fixed scan label; the host goes into Targets
+	assert.Equal(t, "OWASP ZAP Scan", result.Baselines[0].Name)
+	require.Len(t, result.Targets, 1)
+	assert.Equal(t, "mymac.com", result.Targets[0].Name)
 }
 
 func TestConvertZapToHDF_Webgoat_RequirementCount(t *testing.T) {

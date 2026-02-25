@@ -1,6 +1,7 @@
 import {
   type Checksum,
   createMinimalBaseline,
+  Copyright,
   type DataSource,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
@@ -14,7 +15,9 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, limitArray} from '../../../shared/typescript/converterutil.js';
+import {detectFormat} from '../../../shared/typescript/formatdetect.js';
+import {convertSarifToHdf} from '../../sarif-to-hdf/typescript/converter.js';
+import {inputChecksum, buildNistCciTags, limitArray, stripHTML} from '../../../shared/typescript/converterutil.js';
 
 // --- ZAP JSON input types ---
 
@@ -56,35 +59,6 @@ interface ZapInstance {
   param?: string;
   evidence?: string;
   attack?: string;
-}
-
-// --- SARIF detection ---
-
-interface SarifCandidate {
-  $schema?: string;
-  version?: string;
-  runs?: unknown[];
-}
-
-function isSarif(input: string): boolean {
-  try {
-    const obj = JSON.parse(input) as SarifCandidate;
-    return (
-      Array.isArray(obj.runs) &&
-      (typeof obj.version === 'string' && obj.version.startsWith('2.1'))
-    );
-  } catch {
-    return false;
-  }
-}
-
-// --- HTML stripping ---
-
-function stripHTML(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
 }
 
 // --- Risk code to impact ---
@@ -173,9 +147,8 @@ function selectSite(sites: ZapSite[]): ZapSite | undefined {
 // --- Main converter ---
 
 export async function convertZapToHdf(input: string): Promise<string> {
-  // SARIF routing: if input looks like SARIF, delegate
-  if (isSarif(input)) {
-    const {convertSarifToHdf} = await import('../../sarif-to-hdf/typescript/converter.js');
+  // SARIF routing — delegate to the shared SARIF converter
+  if (detectFormat(input) === 'sarif') {
     return convertSarifToHdf(input);
   }
 
@@ -305,9 +278,10 @@ export async function convertZapToHdf(input: string): Promise<string> {
   }
 
   const targetName = site['@host'] ?? 'Unknown Host';
-  const baselineName = `OWASP ZAP Scan of ${site['@name'] ?? targetName}`;
+  const siteName = site['@name'] ?? targetName;
+  const baselineName = `OWASP ZAP Scan of ${siteName}`;
 
-  const baseline: EvaluatedBaseline = createMinimalBaseline(targetName, requirements, {
+  const baseline: EvaluatedBaseline = createMinimalBaseline('OWASP ZAP Scan', requirements, {
     resultsChecksum,
     title: baselineName,
     summary: `ZAP Version ${zapData['@version'] ?? 'unknown'}`,
@@ -321,8 +295,17 @@ export async function convertZapToHdf(input: string): Promise<string> {
     dataSource.version = zapData['@version'];
   }
 
+  // Build targets — ZAP is a DAST tool scanning web applications
+  const targets: Array<{name: string; type: Copyright; url?: string}> = [];
+  if (site['@name']) {
+    targets.push({name: targetName, type: Copyright.Application, url: site['@name']});
+  } else if (targetName !== 'Unknown Host') {
+    targets.push({name: targetName, type: Copyright.Application});
+  }
+
   const hdf: HdfResults = {
     baselines: [baseline],
+    targets,
     generator: {
       name: 'zap-to-hdf',
       version: 'unknown',
