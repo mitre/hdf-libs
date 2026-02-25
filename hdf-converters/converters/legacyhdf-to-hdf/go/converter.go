@@ -113,6 +113,12 @@ func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 		v2.EffectiveStatus = &status
 	}
 
+	// InSpec: impact 0.0 means "Not Applicable" regardless of result statuses
+	if v1.Impact == 0 && v2.EffectiveStatus == nil {
+		na := hdf.NotApplicable
+		v2.EffectiveStatus = &na
+	}
+
 	// Transform results array
 	if v1.Results != nil {
 		v2.Results = make([]hdf.RequirementResult, len(v1.Results))
