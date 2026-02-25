@@ -8,6 +8,52 @@ import (
 	hdf "github.com/mitre/hdf-schema"
 )
 
+// computeEffectiveStatus derives effectiveStatus from impact and v2 results.
+// Implements InSpec enhanced outcomes precedence:
+//
+//	impact=0 → notApplicable
+//	error > failed > passed > notApplicable > notReviewed
+//
+// See docs/design/status-determination.md for full specification.
+func computeEffectiveStatus(impact float64, results []hdf.RequirementResult) hdf.ResultStatus {
+	if impact == 0 {
+		return hdf.NotApplicable
+	}
+	if len(results) == 0 {
+		return hdf.NotReviewed
+	}
+
+	hasFailed := false
+	hasPassed := false
+	hasNotApplicable := false
+
+	for _, r := range results {
+		switch r.Status {
+		case hdf.Error:
+			return hdf.Error // fail-fast: highest precedence
+		case hdf.Failed:
+			hasFailed = true
+		case hdf.Passed:
+			hasPassed = true
+		case hdf.NotApplicable:
+			hasNotApplicable = true
+		case hdf.NotReviewed:
+			// lowest precedence
+		}
+	}
+
+	if hasFailed {
+		return hdf.Failed
+	}
+	if hasPassed {
+		return hdf.Passed
+	}
+	if hasNotApplicable {
+		return hdf.NotApplicable
+	}
+	return hdf.NotReviewed
+}
+
 // normalizeStatus converts v1.0 status values to v2.0 ResultStatus.
 // Converts snake_case to camelCase and maps to enum values.
 func normalizeStatus(status string) hdf.ResultStatus {
@@ -113,18 +159,20 @@ func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 		v2.EffectiveStatus = &status
 	}
 
-	// InSpec: impact 0.0 means "Not Applicable" regardless of result statuses
-	if v1.Impact == 0 && v2.EffectiveStatus == nil {
-		na := hdf.NotApplicable
-		v2.EffectiveStatus = &na
-	}
-
 	// Transform results array
 	if v1.Results != nil {
 		v2.Results = make([]hdf.RequirementResult, len(v1.Results))
 		for i, r := range v1.Results {
 			v2.Results[i] = convertResult(r)
 		}
+	}
+
+	// Always compute effectiveStatus when not explicitly set.
+	// Uses InSpec enhanced outcomes precedence:
+	// impact=0 → notApplicable, error > failed > passed > notApplicable > notReviewed
+	if v2.EffectiveStatus == nil {
+		es := computeEffectiveStatus(v1.Impact, v2.Results)
+		v2.EffectiveStatus = &es
 	}
 
 	return v2
