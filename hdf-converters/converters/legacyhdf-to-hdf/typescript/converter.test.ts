@@ -720,6 +720,60 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
   });
 
+  describe('impact=0 → effectiveStatus notApplicable', () => {
+    it('should set effectiveStatus to notApplicable when impact is 0 and no explicit status', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0, results: [{ status: 'skipped' }] },
+            { id: 'V-2', impact: 0.7, results: [{ status: 'passed' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      const reqs = v2.baselines[0].requirements!;
+      expect(reqs.find(r => r.id === 'V-1')!.effectiveStatus).toBe('notApplicable');
+      expect(reqs.find(r => r.id === 'V-2')!.effectiveStatus).toBeUndefined();
+    });
+
+    it('should not override explicit effectiveStatus even if impact is 0', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0, status: 'passed', results: [{ status: 'passed' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('passed');
+    });
+
+    it('should classify 27 impact=0 controls as notApplicable in Three_Layer fixture', () => {
+      const raw = readFileSync(
+        join(FIXTURES_DIR, 'input', 'three-layer-overlay.json'),
+        'utf-8'
+      );
+      const v1 = JSON.parse(raw) as HDFV1Results;
+      const v2 = convertV1ToV2(v1);
+      const reqs = v2.baselines[0].requirements!;
+      const notApplicable = reqs.filter(r => r.effectiveStatus === 'notApplicable');
+      expect(notApplicable).toHaveLength(27);
+
+      // All 27 should have impact=0
+      for (const r of notApplicable) {
+        expect(r.impact).toBe(0);
+      }
+    });
+  });
+
   describe('isHDFV1', () => {
     it('should return true for valid v1.0 structure', () => {
       const data = {

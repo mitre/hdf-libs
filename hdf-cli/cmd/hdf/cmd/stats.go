@@ -96,9 +96,9 @@ func calculateStats(results hdf.HdfResults) controlStats {
 }
 
 func determineControlStatus(control hdf.EvaluatedRequirement) string {
-	// If effective_status is set, use that
+	// If effectiveStatus is set, use the shared schema→display mapping
 	if control.EffectiveStatus != nil {
-		return string(*control.EffectiveStatus)
+		return SchemaStatusToDisplay(*control.EffectiveStatus)
 	}
 
 	// Otherwise, derive from results
@@ -110,40 +110,38 @@ func determineControlStatus(control hdf.EvaluatedRequirement) string {
 		return StatusNotReviewed
 	}
 
+	// Apply InSpec precedence: error > failed > passed > notApplicable > notReviewed
+	// Fail-fast on error (highest precedence). Collect flags for the rest.
 	hasFailed := false
-	hasError := false
 	hasPassed := false
-	hasSkipped := false
+	hasNotApplicable := false
 
 	for _, result := range control.Results {
 		if result.Status == nil {
 			continue
 		}
 		switch *result.Status {
+		case hdf.Error:
+			return StatusError // highest precedence — no need to scan further
 		case hdf.Failed:
 			hasFailed = true
-		case hdf.Error:
-			hasError = true
 		case hdf.Passed:
 			hasPassed = true
 		case hdf.NotApplicable:
-			return StatusNotApplicable
+			hasNotApplicable = true
 		case hdf.NotReviewed:
-			return StatusNotReviewed
+			// lowest precedence — only returned if nothing else matches
 		}
 	}
 
-	if hasError {
-		return StatusError
-	}
 	if hasFailed {
 		return StatusFailed
 	}
-	if hasSkipped {
-		return StatusSkipped
-	}
 	if hasPassed {
 		return StatusPassed
+	}
+	if hasNotApplicable {
+		return StatusNotApplicable
 	}
 
 	return StatusNotReviewed
