@@ -477,6 +477,95 @@ func TestConvertProfile_AllOptionalFields(t *testing.T) {
 	require.Len(t, v2.Depends, 1)
 }
 
+// ── Overlay flattening integration tests ──────────────────
+
+func TestConvertV1ToV2_DeepOverlayFlatten(t *testing.T) {
+	inputPath := filepath.Join(getFixturesDir(), "input", "three-layer-overlay.json")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	var v1 HDFV1Results
+	require.NoError(t, json.Unmarshal(inputData, &v1))
+	require.Len(t, v1.Profiles, 3, "fixture should have 3 profiles before conversion")
+
+	v2 := ConvertV1ToV2(&v1)
+
+	t.Run("flattens 3 profiles into 1 baseline", func(t *testing.T) {
+		assert.Len(t, v2.Baselines, 1)
+	})
+
+	t.Run("produces 247 deduplicated requirements", func(t *testing.T) {
+		assert.Len(t, v2.Baselines[0].Requirements, 247)
+	})
+
+	t.Run("every requirement has results from base profile", func(t *testing.T) {
+		withResults := 0
+		for _, r := range v2.Baselines[0].Requirements {
+			if len(r.Results) > 0 {
+				withResults++
+			}
+		}
+		assert.Equal(t, 247, withResults)
+	})
+
+	t.Run("parentBaseline cleared on output", func(t *testing.T) {
+		assert.Nil(t, v2.Baselines[0].ParentBaseline)
+	})
+
+	t.Run("uses top overlay name as baseline name", func(t *testing.T) {
+		assert.Contains(t, v2.Baselines[0].Name, "second-layer")
+	})
+}
+
+func TestConvertV1ToV2_WideWrapperFlatten(t *testing.T) {
+	inputPath := filepath.Join(getFixturesDir(), "input", "wrapper.json")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	var v1 HDFV1Results
+	require.NoError(t, json.Unmarshal(inputData, &v1))
+	require.Len(t, v1.Profiles, 4, "fixture should have 4 profiles before conversion")
+
+	v2 := ConvertV1ToV2(&v1)
+
+	t.Run("flattens 4 profiles into 1 baseline", func(t *testing.T) {
+		assert.Len(t, v2.Baselines, 1)
+	})
+
+	t.Run("produces 534 aggregated requirements", func(t *testing.T) {
+		assert.Len(t, v2.Baselines[0].Requirements, 534)
+	})
+
+	t.Run("uses wrapper name as baseline name", func(t *testing.T) {
+		assert.Equal(t, "wrapper", v2.Baselines[0].Name)
+	})
+}
+
+func TestConvertV1ToV2_PassthroughNoOverlays(t *testing.T) {
+	v1 := &HDFV1Results{
+		Version:  "1.0.0",
+		Platform: V1Platform{Name: "test"},
+		Profiles: []V1Profile{{
+			Name: "simple-profile",
+			Controls: []V1Control{{
+				ID:     "V-1",
+				Impact: 0.5,
+				Results: []V1Result{{Status: "passed"}},
+			}},
+		}},
+	}
+
+	v2 := ConvertV1ToV2(v1)
+
+	t.Run("single profile passes through as single baseline", func(t *testing.T) {
+		assert.Len(t, v2.Baselines, 1)
+		assert.Equal(t, "simple-profile", v2.Baselines[0].Name)
+		assert.Len(t, v2.Baselines[0].Requirements, 1)
+	})
+}
+
+func strPtr(s string) *string { return &s }
+
 func TestParseTime(t *testing.T) {
 	// Valid RFC3339
 	ts := parseTime("2024-01-01T00:00:00Z")

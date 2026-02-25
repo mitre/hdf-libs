@@ -6,7 +6,11 @@
  * - Baseline: sha256 → checksum, controls → requirements
  * - Control: source_location → sourceLocation, waiver_data → waiverData, status → effectiveStatus
  * - Results: snake_case → camelCase for all fields
+ * - Overlay flattening: merge overlay/wrapper baselines so every requirement has results
  */
+
+import { flattenOverlays } from '@mitre/hdf-parsers';
+import type { HdfResults } from '@mitre/hdf-schema';
 
 // ===== V1.0 Type Definitions =====
 
@@ -183,7 +187,7 @@ export interface V2Baseline {
     value: string;
   };
   depends?: V2Dependency[];
-  parentProfile?: string;
+  parentBaseline?: string;
   status?: string;
   statusMessage?: string;
   skipMessage?: string;
@@ -402,7 +406,7 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
 
   // Transform snake_case to camelCase
   if (v1Profile.parent_profile !== undefined) {
-    v2Baseline.parentProfile = v1Profile.parent_profile;
+    v2Baseline.parentBaseline = v1Profile.parent_profile;
   }
   if (v1Profile.status_message !== undefined) {
     v2Baseline.statusMessage = v1Profile.status_message;
@@ -511,7 +515,10 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
     };
   }
 
-  return v2;
+  // Flatten overlays: merge overlay/wrapper baselines so every requirement
+  // has results and consumers don't see duplicated controls (741→247 fix).
+  const flat = flattenOverlays(v2 as unknown as HdfResults);
+  return flat.results as unknown as HDFV2Results;
 }
 
 /**
