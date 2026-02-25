@@ -1,3 +1,4 @@
+//nolint:dupl // CLI converter test wrappers are structurally similar by design
 package cmd
 
 import (

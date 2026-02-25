@@ -1,0 +1,67 @@
+{
+    "@generated": "Thu, 6 Dec 2018 10:53:11",
+    "@version": "2.7.0",
+    "site": [
+        {
+            "@host": "example.com",
+            "@name": "https://example.com",
+            "@port": "443",
+            "@ssl": "true",
+            "alerts": [
+                {
+                    "alert": "X-Content-Type-Options Header Missing",
+                    "confidence": "2",
+                    "count": "1",
+                    "cweid": "16",
+                    "desc": "<p>The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'.</p>",
+                    "instances": [
+                        {
+                            "method": "GET",
+                            "param": "X-Content-Type-Options",
+                            "uri": "https://example.com/login"
+                        }
+                    ],
+                    "name": "X-Content-Type-Options Header Missing",
+                    "otherinfo": "<p>This issue still applies to error type pages.</p>",
+                    "pluginid": "10021",
+                    "reference": "<p>http://msdn.microsoft.com/en-us/library/ie/gg622941%28v=vs.85%29.aspx</p>",
+                    "riskcode": "1",
+                    "riskdesc": "Low (Medium)",
+                    "solution": "<p>Ensure that the application/web server sets the Content-Type header appropriately.</p>",
+                    "sourceid": "3",
+                    "wascid": "15"
+                },
+                {
+                    "alert": "Application Error Disclosure",
+                    "confidence": "1",
+                    "count": "2",
+                    "cweid": "",
+                    "desc": "<p>This page contains an error/warning message.</p>",
+                    "instances": [
+                        {
+                            "evidence": "HTTP/1.1 500 Internal Server Error",
+                            "method": "POST",
+                            "uri": "https://example.com/api/submit"
+                        },
+                        {
+                            "attack": "' OR 1=1 --",
+                            "evidence": "HTTP/1.1 500 Internal Server Error",
+                            "method": "POST",
+                            "param": "username",
+                            "uri": "https://example.com/api/login"
+                        }
+                    ],
+                    "name": "Application Error Disclosure",
+                    "otherinfo": "",
+                    "pluginid": "90022",
+                    "reference": "",
+                    "riskcode": "2",
+                    "riskdesc": "Medium (Low)",
+                    "solution": "<p>Review the source code.</p>",
+                    "sourceid": "5",
+                    "wascid": "13"
+                }
+            ]
+        }
+    ]
+}

@@ -11,6 +11,7 @@ import {
   convertAwsConfigToHdf,
   convertGosecToHdf,
   convertNiktoToHdf,
+  convertZapToHdf,
   convertCyclonedxToHdf,
   convertHdfToCsv,
   convertHdfToXml,
@@ -83,6 +84,11 @@ describe('Main exports', () => {
   it('should export convertNiktoToHdf from main index', () => {
     expect(convertNiktoToHdf).toBeDefined();
     expect(typeof convertNiktoToHdf).toBe('function');
+  });
+
+  it('should export convertZapToHdf from main index', () => {
+    expect(convertZapToHdf).toBeDefined();
+    expect(typeof convertZapToHdf).toBe('function');
   });
 
   it('should export convertCyclonedxToHdf from main index', () => {

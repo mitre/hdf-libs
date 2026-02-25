@@ -42,6 +42,9 @@ export { convertGosecToHdf } from '../converters/gosec-to-hdf/typescript/index.j
 // Nikto to HDF converter
 export { convertNiktoToHdf } from '../converters/nikto-to-hdf/typescript/index.js';
 
+// OWASP ZAP to HDF converter
+export { convertZapToHdf } from '../converters/zap-to-hdf/typescript/index.js';
+
 // CycloneDX SBOM/VEX to HDF converter
 export { convertCyclonedxToHdf } from '../converters/cyclonedx-to-hdf/typescript/index.js';
 
