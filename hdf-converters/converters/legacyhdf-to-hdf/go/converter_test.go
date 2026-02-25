@@ -582,7 +582,8 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 
 		require.NotNil(t, reqs[0].EffectiveStatus)
 		assert.Equal(t, hdf.NotApplicable, *reqs[0].EffectiveStatus)
-		assert.Nil(t, reqs[1].EffectiveStatus) // impact 0.7 → no auto-set
+		require.NotNil(t, reqs[1].EffectiveStatus)
+		assert.Equal(t, hdf.Passed, *reqs[1].EffectiveStatus) // derived from results
 	})
 
 	t.Run("does not override explicit effectiveStatus even if impact is 0", func(t *testing.T) {
@@ -621,6 +622,112 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 			}
 		}
 		assert.Equal(t, 27, notApplicable)
+	})
+}
+
+func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
+	t.Run("passed when all results passed", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name:     "test",
+				Controls: []V1Control{{ID: "V-1", Impact: 0.7, Results: []V1Result{{Status: "passed"}}}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+	})
+
+	t.Run("failed when any result failed", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name:     "test",
+				Controls: []V1Control{{ID: "V-1", Impact: 0.7, Results: []V1Result{{Status: "passed"}, {Status: "failed"}}}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.Failed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+	})
+
+	t.Run("passed when mixed passed and skipped", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name:     "test",
+				Controls: []V1Control{{ID: "V-1", Impact: 0.7, Results: []V1Result{{Status: "skipped"}, {Status: "passed"}}}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+	})
+
+	t.Run("notReviewed when all results skipped", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name:     "test",
+				Controls: []V1Control{{ID: "V-1", Impact: 0.5, Results: []V1Result{{Status: "skipped"}}}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.NotReviewed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+	})
+
+	t.Run("notReviewed when no results", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name:     "test",
+				Controls: []V1Control{{ID: "V-1", Impact: 0.5, Results: []V1Result{}}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.NotReviewed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+	})
+
+	t.Run("every control has effectiveStatus in Three_Layer fixture", func(t *testing.T) {
+		inputPath := filepath.Join(getFixturesDir(), "input", "three-layer-overlay.json")
+		inputData, err := os.ReadFile(inputPath)
+		require.NoError(t, err)
+		var v1 HDFV1Results
+		require.NoError(t, json.Unmarshal(inputData, &v1))
+		v2 := ConvertV1ToV2(&v1)
+
+		for _, r := range v2.Baselines[0].Requirements {
+			assert.NotNilf(t, r.EffectiveStatus, "control %s missing effectiveStatus", r.ID)
+		}
+	})
+
+	t.Run("Three_Layer counts: 73 passed, 138 failed, 27 NA, 9 NR", func(t *testing.T) {
+		inputPath := filepath.Join(getFixturesDir(), "input", "three-layer-overlay.json")
+		inputData, err := os.ReadFile(inputPath)
+		require.NoError(t, err)
+		var v1 HDFV1Results
+		require.NoError(t, json.Unmarshal(inputData, &v1))
+		v2 := ConvertV1ToV2(&v1)
+
+		counts := map[hdf.ResultStatus]int{}
+		for _, r := range v2.Baselines[0].Requirements {
+			if r.EffectiveStatus != nil {
+				counts[*r.EffectiveStatus]++
+			}
+		}
+		assert.Equal(t, 73, counts[hdf.Passed])
+		assert.Equal(t, 138, counts[hdf.Failed])
+		assert.Equal(t, 27, counts[hdf.NotApplicable])
+		assert.Equal(t, 9, counts[hdf.NotReviewed])
+		assert.Equal(t, 0, counts[hdf.Error])
 	})
 }
 

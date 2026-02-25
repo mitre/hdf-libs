@@ -737,7 +737,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       const v2 = convertV1ToV2(v1);
       const reqs = v2.baselines[0].requirements!;
       expect(reqs.find(r => r.id === 'V-1')!.effectiveStatus).toBe('notApplicable');
-      expect(reqs.find(r => r.id === 'V-2')!.effectiveStatus).toBeUndefined();
+      expect(reqs.find(r => r.id === 'V-2')!.effectiveStatus).toBe('passed');
     });
 
     it('should not override explicit effectiveStatus even if impact is 0', () => {
@@ -771,6 +771,136 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       for (const r of notApplicable) {
         expect(r.impact).toBe(0);
       }
+    });
+  });
+
+  describe('effectiveStatus always computed from results', () => {
+    it('should set effectiveStatus=passed when all results passed', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0.7, results: [{ status: 'passed' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('passed');
+    });
+
+    it('should set effectiveStatus=failed when any result failed', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0.7, results: [{ status: 'passed' }, { status: 'failed' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('failed');
+    });
+
+    it('should set effectiveStatus=passed when mixed passed+skipped (not all passed)', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0.7, results: [{ status: 'skipped' }, { status: 'passed' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('passed');
+    });
+
+    it('should set effectiveStatus=notReviewed when all results skipped', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0.5, results: [{ status: 'skipped' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notReviewed');
+    });
+
+    it('should set effectiveStatus=notReviewed when no results', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0.5, results: [] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notReviewed');
+    });
+
+    it('should set effectiveStatus=error when any result errored', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0.7, results: [{ status: 'passed' }, { status: 'error' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('error');
+    });
+
+    it('Three_Layer fixture: every control has effectiveStatus set', () => {
+      const raw = readFileSync(
+        join(FIXTURES_DIR, 'input', 'three-layer-overlay.json'),
+        'utf-8'
+      );
+      const v1 = JSON.parse(raw) as HDFV1Results;
+      const v2 = convertV1ToV2(v1);
+      const reqs = v2.baselines[0].requirements!;
+      const withoutES = reqs.filter(r => r.effectiveStatus === undefined);
+      expect(withoutES).toHaveLength(0);
+    });
+
+    it('Three_Layer fixture: counts match expected (73 passed, 138 failed, 27 NA, 9 NR)', () => {
+      const raw = readFileSync(
+        join(FIXTURES_DIR, 'input', 'three-layer-overlay.json'),
+        'utf-8'
+      );
+      const v1 = JSON.parse(raw) as HDFV1Results;
+      const v2 = convertV1ToV2(v1);
+      const reqs = v2.baselines[0].requirements!;
+      const counts = { passed: 0, failed: 0, notApplicable: 0, notReviewed: 0, error: 0 };
+      for (const r of reqs) {
+        const es = r.effectiveStatus as string;
+        if (es in counts) counts[es as keyof typeof counts]++;
+      }
+      expect(counts.passed).toBe(73);
+      expect(counts.failed).toBe(138);
+      expect(counts.notApplicable).toBe(27);
+      expect(counts.notReviewed).toBe(9);
+      expect(counts.error).toBe(0);
     });
   });
 
