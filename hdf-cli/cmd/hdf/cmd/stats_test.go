@@ -152,20 +152,19 @@ func syntheticHDFForStats() map[string]interface{} {
 }
 
 func TestCalculateStats_AllStatuses(t *testing.T) {
-	// The CLI uses snake_case status strings ("not_applicable", "not_reviewed")
-	// while hdf.NotApplicable = "notApplicable" (camelCase). Using EffectiveStatus
-	// with the CLI's snake_case constants covers all switch branches directly.
+	// Uses HDF v2 schema enum values (camelCase). SchemaStatusToDisplay maps
+	// them to CLI snake_case constants. This tests the full pipeline:
+	// schema EffectiveStatus → determineControlStatus → calculateStats counter.
 	tests := []struct {
 		name   string
-		status hdf.ResultStatus // The CLI-internal status string
+		status hdf.ResultStatus
 		field  func(controlStats) int
 	}{
 		{"passed", hdf.Passed, func(s controlStats) int { return s.Passed }},
 		{"failed", hdf.Failed, func(s controlStats) int { return s.Failed }},
-		{"not_applicable", hdf.ResultStatus(StatusNotApplicable), func(s controlStats) int { return s.NotApplicable }},
-		{"not_reviewed", hdf.ResultStatus(StatusNotReviewed), func(s controlStats) int { return s.NotReviewed }},
+		{"not_applicable", hdf.NotApplicable, func(s controlStats) int { return s.NotApplicable }},
+		{"not_reviewed", hdf.NotReviewed, func(s controlStats) int { return s.NotReviewed }},
 		{"error", hdf.Error, func(s controlStats) int { return s.Error }},
-		{"skipped", hdf.ResultStatus(StatusSkipped), func(s controlStats) int { return s.Skipped }},
 	}
 
 	for _, tt := range tests {
@@ -187,6 +186,49 @@ func TestCalculateStats_AllStatuses(t *testing.T) {
 				t.Errorf("expected %s counter=1, got %d", tt.name, tt.field(stats))
 			}
 		})
+	}
+}
+
+func TestDetermineControlStatus_MixedPassedAndNotReviewed(t *testing.T) {
+	// Regression: V-81005 has results {notReviewed, passed}. InSpec precedence:
+	// passed wins over notReviewed. Old code did early return on notReviewed.
+	control := hdf.EvaluatedRequirement{
+		Impact: 0.7,
+		Results: []hdf.RequirementResult{
+			{Status: ptrResultStatus(hdf.NotReviewed)},
+			{Status: ptrResultStatus(hdf.Passed)},
+		},
+	}
+	result := determineControlStatus(control)
+	if result != StatusPassed {
+		t.Errorf("determineControlStatus() = %v, want %v (passed wins over notReviewed)", result, StatusPassed)
+	}
+}
+
+func TestDetermineControlStatus_EffectiveStatusNotApplicable(t *testing.T) {
+	// Regression: effectiveStatus=notApplicable (camelCase from v2 schema)
+	// must map to "not_applicable" (snake_case CLI constant)
+	control := hdf.EvaluatedRequirement{
+		Impact:          0,
+		EffectiveStatus: ptrResultStatus(hdf.NotApplicable),
+		Results:         []hdf.RequirementResult{},
+	}
+	result := determineControlStatus(control)
+	if result != StatusNotApplicable {
+		t.Errorf("determineControlStatus() = %v, want %v", result, StatusNotApplicable)
+	}
+}
+
+func TestDetermineControlStatus_EffectiveStatusNotReviewed(t *testing.T) {
+	// Regression: effectiveStatus=notReviewed (camelCase) must map to "not_reviewed" (snake_case)
+	control := hdf.EvaluatedRequirement{
+		Impact:          0.5,
+		EffectiveStatus: ptrResultStatus(hdf.NotReviewed),
+		Results:         []hdf.RequirementResult{},
+	}
+	result := determineControlStatus(control)
+	if result != StatusNotReviewed {
+		t.Errorf("determineControlStatus() = %v, want %v", result, StatusNotReviewed)
 	}
 }
 

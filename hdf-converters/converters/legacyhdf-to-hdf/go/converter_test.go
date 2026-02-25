@@ -564,6 +564,66 @@ func TestConvertV1ToV2_PassthroughNoOverlays(t *testing.T) {
 	})
 }
 
+func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
+	t.Run("sets effectiveStatus to notApplicable when impact is 0 and no explicit status", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name: "test",
+				Controls: []V1Control{
+					{ID: "V-1", Impact: 0, Results: []V1Result{{Status: "skipped"}}},
+					{ID: "V-2", Impact: 0.7, Results: []V1Result{{Status: "passed"}}},
+				},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		reqs := v2.Baselines[0].Requirements
+
+		require.NotNil(t, reqs[0].EffectiveStatus)
+		assert.Equal(t, hdf.NotApplicable, *reqs[0].EffectiveStatus)
+		assert.Nil(t, reqs[1].EffectiveStatus) // impact 0.7 → no auto-set
+	})
+
+	t.Run("does not override explicit effectiveStatus even if impact is 0", func(t *testing.T) {
+		passed := "passed"
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name: "test",
+				Controls: []V1Control{
+					{ID: "V-1", Impact: 0, Status: &passed, Results: []V1Result{{Status: "passed"}}},
+				},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+	})
+
+	t.Run("classifies 27 impact-0 controls as notApplicable in Three_Layer fixture", func(t *testing.T) {
+		inputPath := filepath.Join(getFixturesDir(), "input", "three-layer-overlay.json")
+		inputData, err := os.ReadFile(inputPath)
+		require.NoError(t, err)
+
+		var v1 HDFV1Results
+		require.NoError(t, json.Unmarshal(inputData, &v1))
+
+		v2 := ConvertV1ToV2(&v1)
+		reqs := v2.Baselines[0].Requirements
+
+		notApplicable := 0
+		for _, r := range reqs {
+			if r.EffectiveStatus != nil && *r.EffectiveStatus == hdf.NotApplicable {
+				assert.Equal(t, 0.0, r.Impact)
+				notApplicable++
+			}
+		}
+		assert.Equal(t, 27, notApplicable)
+	})
+}
+
 func strPtr(s string) *string { return &s }
 
 func TestParseTime(t *testing.T) {

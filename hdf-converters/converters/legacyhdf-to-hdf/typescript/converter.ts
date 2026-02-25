@@ -292,6 +292,11 @@ function convertControl(v1Control: V1Control): V2Requirement {
     v2Req.effectiveStatus = normalizeStatus(v1Control.status);
   }
 
+  // InSpec: impact 0.0 means "Not Applicable" regardless of result statuses
+  if (v1Control.impact === 0 && !v2Req.effectiveStatus) {
+    v2Req.effectiveStatus = 'notApplicable';
+  }
+
   // Transform results array
   if (v1Control.results && Array.isArray(v1Control.results)) {
     v2Req.results = v1Control.results.map(convertResult);

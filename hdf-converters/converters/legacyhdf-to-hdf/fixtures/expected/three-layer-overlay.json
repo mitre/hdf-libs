@@ -1674,6 +1674,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71859.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -1736,6 +1737,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71861.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -1868,6 +1870,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71891.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -1925,6 +1928,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71893.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -2049,6 +2053,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71899.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -2106,6 +2111,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71901.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -3034,6 +3040,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71933.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -3980,6 +3987,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71953.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -4037,6 +4045,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71955.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -4206,6 +4215,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71961.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -4263,6 +4273,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71963.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -14547,6 +14558,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72227.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -14604,6 +14616,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72229.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -14661,6 +14674,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72231.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -15001,6 +15015,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72241.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -15296,6 +15311,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72251.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -16931,6 +16947,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72305.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -17153,6 +17170,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72313.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -17265,6 +17283,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72317.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -17570,6 +17589,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72427.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -17692,6 +17712,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-73155.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -17749,6 +17770,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-73157.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -18392,6 +18414,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-77819.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -18642,6 +18665,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-78995.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -18699,6 +18723,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-78997.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -19050,6 +19075,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-81007.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -19688,6 +19714,7 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-94843.rb"
           },
           "waiverData": {},
+          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
