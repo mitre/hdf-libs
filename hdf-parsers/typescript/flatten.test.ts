@@ -391,25 +391,25 @@ describe('flattenOverlays', () => {
    * for testing flattenOverlays with real data.
    */
   function loadV1FixtureAsHdfResults(fixturePath: string): HdfResults {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const raw = JSON.parse(readFileSync(fixturePath, 'utf-8')) as any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const baselines: EvaluatedBaseline[] = raw.profiles.map((p: any) => ({
       name: p.name,
       parentBaseline: p.parent_profile || undefined,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
       requirements: (p.controls || []).map((c: any) => ({
         id: c.id,
         impact: c.impact ?? 0.5,
         tags: c.tags || {},
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    
         results: (c.results || []).map((r: any) => ({
           status: r.status,
           codeDesc: r.code_desc || '',
           message: r.message || undefined,
           runTime: r.run_time || undefined,
         })),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    
         descriptions: (c.descriptions || []).map((d: any) => ({
           label: d.label,
           data: d.data,
@@ -417,7 +417,7 @@ describe('flattenOverlays', () => {
         code: c.code || '',
         title: c.title || '',
       })),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
       depends: (p.depends || []).map((d: any) => ({ name: d.name })),
     }));
     return { baselines };
