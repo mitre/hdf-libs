@@ -227,6 +227,37 @@ function normalizeStatus(status: string): string {
 }
 
 /**
+ * Compute effectiveStatus from impact and v2 results.
+ * Implements InSpec enhanced outcomes precedence:
+ *   impact=0 → notApplicable
+ *   error > failed > passed > notApplicable > notReviewed
+ *
+ * See docs/design/status-determination.md for full specification.
+ */
+function computeEffectiveStatus(impact: number, results: V2Result[]): string {
+  if (impact === 0) return 'notApplicable';
+  if (results.length === 0) return 'notReviewed';
+
+  let hasFailed = false;
+  let hasPassed = false;
+  let hasNotApplicable = false;
+
+  for (const r of results) {
+    switch (r.status) {
+      case 'error': return 'error'; // fail-fast: highest precedence
+      case 'failed': hasFailed = true; break;
+      case 'passed': hasPassed = true; break;
+      case 'notApplicable': hasNotApplicable = true; break;
+    }
+  }
+
+  if (hasFailed) return 'failed';
+  if (hasPassed) return 'passed';
+  if (hasNotApplicable) return 'notApplicable';
+  return 'notReviewed';
+}
+
+/**
  * Convert v1.0 result to v2.0 result.
  * Transforms snake_case field names to camelCase.
  */
@@ -292,14 +323,16 @@ function convertControl(v1Control: V1Control): V2Requirement {
     v2Req.effectiveStatus = normalizeStatus(v1Control.status);
   }
 
-  // InSpec: impact 0.0 means "Not Applicable" regardless of result statuses
-  if (v1Control.impact === 0 && !v2Req.effectiveStatus) {
-    v2Req.effectiveStatus = 'notApplicable';
-  }
-
   // Transform results array
   if (v1Control.results && Array.isArray(v1Control.results)) {
     v2Req.results = v1Control.results.map(convertResult);
+  }
+
+  // Always compute effectiveStatus when not explicitly set.
+  // Uses InSpec enhanced outcomes precedence:
+  // impact=0 → notApplicable, error > failed > passed > notApplicable > notReviewed
+  if (!v2Req.effectiveStatus) {
+    v2Req.effectiveStatus = computeEffectiveStatus(v1Control.impact, v2Req.results ?? []);
   }
 
   // Preserve any other fields

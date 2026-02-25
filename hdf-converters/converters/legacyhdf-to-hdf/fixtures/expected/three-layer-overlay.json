@@ -1566,7 +1566,8 @@
               "skipMessage": "This control consistently takes a long time to run and has been disabled\n            using the disable_slow_controls attribute. You must enable this control for a\n            full accredidation for production.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notReviewed"
         },
         {
           "id": "V-71855",
@@ -1623,7 +1624,8 @@
               "skipMessage": "This control consistently takes a long to run and has been disabled\n      using the disable_slow_controls attribute. You must enable this control for a\n      full accredidation for production.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notReviewed"
         },
         {
           "id": "V-71859",
@@ -1674,7 +1676,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71859.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -1686,7 +1687,8 @@
               "skipMessage": "The GNOME desktop is not installed, this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-71861",
@@ -1737,7 +1739,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71861.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -1749,7 +1750,8 @@
               "skipMessage": "The system does not have GNOME installed, this requirement is Not\n        Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-71863",
@@ -1820,7 +1822,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71891",
@@ -1870,7 +1873,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71891.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -1882,7 +1884,8 @@
               "skipMessage": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-71893",
@@ -1928,7 +1931,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71893.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -1940,7 +1942,8 @@
               "skipMessage": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-71897",
@@ -2007,7 +2010,8 @@
               "resourceClass": "package",
               "resourceParams": "[\"screen\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71899",
@@ -2053,7 +2057,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71899.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -2065,7 +2068,8 @@
               "skipMessage": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-71901",
@@ -2111,7 +2115,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71901.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -2123,7 +2126,8 @@
               "skipMessage": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-71903",
@@ -2179,7 +2183,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71905",
@@ -2235,7 +2240,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71907",
@@ -2291,7 +2297,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71909",
@@ -2347,7 +2354,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71911",
@@ -2403,7 +2411,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71913",
@@ -2459,7 +2468,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71915",
@@ -2514,7 +2524,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71917",
@@ -2569,7 +2580,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71919",
@@ -2633,7 +2645,8 @@
               "resourceClass": "pam",
               "resourceParams": "[\"/etc/pam.d/system-auth\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71921",
@@ -2689,7 +2702,8 @@
               "resourceClass": "login_defs",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71923",
@@ -2745,7 +2759,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"cat /etc/libuser.conf | grep -i sha512\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71925",
@@ -2801,7 +2816,8 @@
               "resourceClass": "login_defs",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71927",
@@ -2866,7 +2882,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71929",
@@ -2922,7 +2939,8 @@
               "resourceClass": "login_defs",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71931",
@@ -2986,7 +3004,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71933",
@@ -3040,7 +3059,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71933.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -3052,7 +3070,8 @@
               "skipMessage": "This is Not Applicable for the project since we have an approved risk-based decision on 10/1/2021 allowing reuse of old passwords",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-71935",
@@ -3116,7 +3135,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71937",
@@ -3409,7 +3429,8 @@
               "resourceClass": "pam",
               "resourceParams": "[\"/etc/pam.d/postgresql\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71939",
@@ -3465,7 +3486,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71941",
@@ -3529,7 +3551,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/default/useradd\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71943",
@@ -3663,7 +3686,8 @@
               "resourceClass": "pam",
               "resourceParams": "[\"/etc/pam.d/system-auth\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71945",
@@ -3748,7 +3772,8 @@
               "resourceClass": "pam",
               "resourceParams": "[\"/etc/pam.d/system-auth\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71947",
@@ -3825,7 +3850,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71949",
@@ -3885,7 +3911,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"grep -ir authenticate /etc/sudoers /etc/sudoers.d/*\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71951",
@@ -3941,7 +3968,8 @@
               "resourceClass": "login_defs",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71953",
@@ -3987,7 +4015,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71953.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -3999,7 +4026,8 @@
               "skipMessage": "The system does not have GDM installed, this requirement is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-71955",
@@ -4045,7 +4073,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71955.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -4057,7 +4084,8 @@
               "skipMessage": "The system does not have GDM installed, this requirement is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-71957",
@@ -4113,7 +4141,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71959",
@@ -4169,7 +4198,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71961",
@@ -4215,7 +4245,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71961.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -4227,7 +4256,8 @@
               "skipMessage": "The System is running version 7.9.2009 of RHEL, this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-71963",
@@ -4273,7 +4303,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-71963.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -4285,7 +4314,8 @@
               "skipMessage": "The System is running BIOS, this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-71965",
@@ -4368,7 +4398,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"authconfig --test | grep -i smartcard\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71967",
@@ -4423,7 +4454,8 @@
               "resourceClass": "package",
               "resourceParams": "[\"rsh-server\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71969",
@@ -4478,7 +4510,8 @@
               "resourceClass": "package",
               "resourceParams": "[\"ypserv\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71971",
@@ -4560,7 +4593,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71973",
@@ -4655,7 +4689,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71975",
@@ -4740,7 +4775,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71977",
@@ -4795,7 +4831,8 @@
               "resourceClass": "ini",
               "resourceParams": "[\"/etc/yum.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71979",
@@ -4850,7 +4887,8 @@
               "resourceClass": "ini",
               "resourceParams": "[\"/etc/yum.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71983",
@@ -4923,7 +4961,8 @@
               "resourceClass": "kernel_module",
               "resourceParams": "[\"usb_storage\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71985",
@@ -5003,7 +5042,8 @@
               "resourceClass": "systemd_service",
               "resourceParams": "[\"autofs.service\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71987",
@@ -5059,7 +5099,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/yum.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-71989",
@@ -5116,7 +5157,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"getenforce\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71991",
@@ -5173,7 +5215,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"sestatus\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71993",
@@ -5236,7 +5279,8 @@
               "resourceClass": "systemd_service",
               "resourceParams": "[\"ctrl-alt-del.target\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71995",
@@ -5291,7 +5335,8 @@
               "resourceClass": "login_defs",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71997",
@@ -5346,7 +5391,8 @@
               "resourceClass": "file",
               "resourceParams": "[\"/etc/redhat-release\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-71999",
@@ -5769,7 +5815,8 @@
               "resourceClass": "package",
               "resourceParams": "[\"samba-common-libs\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72001",
@@ -6051,7 +6098,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72003",
@@ -6322,7 +6370,8 @@
               "resourceClass": "etc_group",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72005",
@@ -6385,7 +6434,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72007",
@@ -6456,7 +6506,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"find / -xdev -xautofs -fstype iso9660 -nouser\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72009",
@@ -6527,7 +6578,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"find / -xdev -xautofs -fstype iso9660 -nogroup\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72011",
@@ -6590,7 +6642,8 @@
               "resourceClass": "directory",
               "resourceParams": "[\"/home/vagrant\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72013",
@@ -6645,7 +6698,8 @@
               "resourceClass": "login_defs",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72015",
@@ -6708,7 +6762,8 @@
               "resourceClass": "directory",
               "resourceParams": "[\"/home/vagrant\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72017",
@@ -6763,7 +6818,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72019",
@@ -6842,7 +6898,8 @@
               "resourceClass": "directory",
               "resourceParams": "[\"/home/vagrant\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72021",
@@ -6897,7 +6954,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72023",
@@ -6953,7 +7011,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72025",
@@ -7008,7 +7067,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72027",
@@ -7064,7 +7124,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72029",
@@ -7119,7 +7180,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72031",
@@ -7175,7 +7237,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72033",
@@ -7231,7 +7294,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72035",
@@ -7298,7 +7362,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72037",
@@ -7355,7 +7420,8 @@
               "skipMessage": "This control consistently takes a long to run and has been disabled\n  using the disable_slow_controls attribute. You must enable this control for a\n  full accredidation for production.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notReviewed"
         },
         {
           "id": "V-72039",
@@ -7418,7 +7484,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72041",
@@ -7474,7 +7541,8 @@
               "resourceClass": "mount",
               "resourceParams": "[\"/home\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72043",
@@ -7546,7 +7614,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72045",
@@ -7601,7 +7670,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72047",
@@ -7761,7 +7831,8 @@
               "resourceClass": "file",
               "resourceParams": "[\"/share\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72049",
@@ -7832,7 +7903,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72051",
@@ -7887,7 +7959,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"grep cron /etc/rsyslog.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72053",
@@ -7942,7 +8015,8 @@
               "resourceClass": "file",
               "resourceParams": "[\"/etc/cron.allow\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72055",
@@ -7997,7 +8071,8 @@
               "resourceClass": "file",
               "resourceParams": "[\"/etc/cron.allow\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72057",
@@ -8052,7 +8127,8 @@
               "resourceClass": "systemd_service",
               "resourceParams": "[\"kdump.service\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72059",
@@ -8116,7 +8192,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72061",
@@ -8172,7 +8249,8 @@
               "resourceClass": "mount",
               "resourceParams": "[\"/var\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72063",
@@ -8228,7 +8306,8 @@
               "resourceClass": "mount",
               "resourceParams": "[\"/var/log/audit\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72065",
@@ -8305,7 +8384,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72067",
@@ -8410,7 +8490,8 @@
               "resourceClass": "file",
               "resourceParams": "[\"/proc/sys/crypto/fips_enabled\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72069",
@@ -8473,7 +8554,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72071",
@@ -8536,7 +8618,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72073",
@@ -8599,7 +8682,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72075",
@@ -8708,7 +8792,8 @@
               "resourceClass": "file",
               "resourceParams": "[\"UUID=8ac075e3-1124-4bb6-bef7-a6811bf8b870\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72077",
@@ -8763,7 +8848,8 @@
               "resourceClass": "package",
               "resourceParams": "[\"telnet-server\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72079",
@@ -8827,7 +8913,8 @@
               "resourceClass": "service",
               "resourceParams": "[\"auditd\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72081",
@@ -8886,7 +8973,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72083",
@@ -8947,7 +9035,8 @@
               "skipMessage": "File '/etc/audisp/audisp-remote.conf' cannot be found. This check must be performed manually",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notReviewed"
         },
         {
           "id": "V-72085",
@@ -9008,7 +9097,8 @@
               "skipMessage": "Can't find file: /etc/audisp/audisp-remote.conf",
               "resource": "Parse Config File /etc/audisp/audisp-remote.conf"
             }
-          ]
+          ],
+          "effectiveStatus": "notReviewed"
         },
         {
           "id": "V-72087",
@@ -9075,7 +9165,8 @@
               "skipMessage": "Can't find file: /etc/audisp/audisp-remote.conf",
               "resource": "Parse Config File /etc/audisp/audisp-remote.conf"
             }
-          ]
+          ],
+          "effectiveStatus": "notReviewed"
         },
         {
           "id": "V-72089",
@@ -9131,7 +9222,8 @@
               "resourceClass": "auditd_conf",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72091",
@@ -9187,7 +9279,8 @@
               "resourceClass": "auditd_conf",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72093",
@@ -9242,7 +9335,8 @@
               "resourceClass": "auditd_conf",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72095",
@@ -9343,7 +9437,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72097",
@@ -9434,7 +9529,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72099",
@@ -9525,7 +9621,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72101",
@@ -9616,7 +9713,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72103",
@@ -9707,7 +9805,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72105",
@@ -9795,7 +9894,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72107",
@@ -9883,7 +9983,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72109",
@@ -9971,7 +10072,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72111",
@@ -10059,7 +10161,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72113",
@@ -10147,7 +10250,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72115",
@@ -10235,7 +10339,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72117",
@@ -10323,7 +10428,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72119",
@@ -10411,7 +10517,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72121",
@@ -10499,7 +10606,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72123",
@@ -10662,7 +10770,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72125",
@@ -10825,7 +10934,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72127",
@@ -10988,7 +11098,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72129",
@@ -11151,7 +11262,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72131",
@@ -11314,7 +11426,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72133",
@@ -11477,7 +11590,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72135",
@@ -11548,7 +11662,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72137",
@@ -11619,7 +11734,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72139",
@@ -11690,7 +11806,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72141",
@@ -11761,7 +11878,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72145",
@@ -11834,7 +11952,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72147",
@@ -11907,7 +12026,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72149",
@@ -11980,7 +12100,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72151",
@@ -12053,7 +12174,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72153",
@@ -12126,7 +12248,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72155",
@@ -12199,7 +12322,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72157",
@@ -12272,7 +12396,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72159",
@@ -12349,7 +12474,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72161",
@@ -12426,7 +12552,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72163",
@@ -12520,7 +12647,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72165",
@@ -12597,7 +12725,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72167",
@@ -12674,7 +12803,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72171",
@@ -12781,7 +12911,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72173",
@@ -12851,7 +12982,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72175",
@@ -12921,7 +13053,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72177",
@@ -12991,7 +13124,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72179",
@@ -13064,7 +13198,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72183",
@@ -13137,7 +13272,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72185",
@@ -13201,7 +13337,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72187",
@@ -13288,7 +13425,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72189",
@@ -13375,7 +13513,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72191",
@@ -13443,7 +13582,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72197",
@@ -13521,7 +13661,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72199",
@@ -13612,7 +13753,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72201",
@@ -13703,7 +13845,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72203",
@@ -13794,7 +13937,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72205",
@@ -13885,7 +14029,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72207",
@@ -13976,7 +14121,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72209",
@@ -14032,7 +14178,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"grep @ /etc/rsyslog.conf | grep -v \\\"^#\\\"\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72211",
@@ -14103,7 +14250,8 @@
               "resourceClass": "file",
               "resourceParams": "[\"/etc/rsyslog.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72213",
@@ -14180,7 +14328,8 @@
               "resourceClass": "service",
               "resourceParams": "[\"ds_agent\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72217",
@@ -14244,7 +14393,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72219",
@@ -14306,7 +14456,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72221",
@@ -14373,7 +14524,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72223",
@@ -14439,7 +14591,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72225",
@@ -14512,7 +14665,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72227",
@@ -14558,7 +14712,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72227.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -14570,7 +14723,8 @@
               "skipMessage": "LDAP not enabled using any known mechanisms, this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-72229",
@@ -14616,7 +14770,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72229.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -14628,7 +14781,8 @@
               "skipMessage": "LDAP not enabled using any known mechanisms, this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-72231",
@@ -14674,7 +14828,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72231.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -14686,7 +14839,8 @@
               "skipMessage": "LDAP not enabled using any known mechanisms, this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-72233",
@@ -14761,7 +14915,8 @@
               "resourceClass": "package",
               "resourceParams": "[\"openssh-clients\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72235",
@@ -14828,7 +14983,8 @@
               "resourceClass": "systemd_service",
               "resourceParams": "[\"sshd.service\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72237",
@@ -14907,7 +15063,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72239",
@@ -14963,7 +15120,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72241",
@@ -15015,7 +15173,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72241.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -15027,7 +15184,8 @@
               "skipMessage": "The release is newer than 7.4; this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-72243",
@@ -15083,7 +15241,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72245",
@@ -15147,7 +15306,8 @@
               "resourceClass": "pam",
               "resourceParams": "[\"/etc/pam.d/sshd\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72247",
@@ -15203,7 +15363,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72249",
@@ -15259,7 +15420,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72251",
@@ -15311,7 +15473,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72251.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -15323,7 +15484,8 @@
               "skipMessage": "The release is newer than 7.4; this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-72253",
@@ -15379,7 +15541,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72255",
@@ -15434,7 +15597,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72257",
@@ -15505,7 +15669,8 @@
               "resourceClass": "file",
               "resourceParams": "[\"/etc/ssh/ssh_host_ed25519_key\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72259",
@@ -15569,7 +15734,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72261",
@@ -15633,7 +15799,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72263",
@@ -15689,7 +15856,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72265",
@@ -15756,7 +15924,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72267",
@@ -15823,7 +15992,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72269",
@@ -15917,7 +16087,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72273",
@@ -16005,7 +16176,8 @@
               "resourceClass": "systemd_service",
               "resourceParams": "[\"iptables.service\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72275",
@@ -16080,7 +16252,8 @@
               "resourceClass": "pam",
               "resourceParams": "[\"/etc/pam.d/postlogin\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72277",
@@ -16135,7 +16308,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"find / -xdev -xautofs -name '*.shosts'\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72279",
@@ -16190,7 +16364,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"find / -xdev -xautofs -name shosts.equiv\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72281",
@@ -16253,7 +16428,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72283",
@@ -16308,7 +16484,8 @@
               "resourceClass": "kernel_parameter",
               "resourceParams": "[\"net.ipv4.conf.all.accept_source_route\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72285",
@@ -16363,7 +16540,8 @@
               "resourceClass": "kernel_parameter",
               "resourceParams": "[\"net.ipv4.conf.default.accept_source_route\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72287",
@@ -16418,7 +16596,8 @@
               "resourceClass": "kernel_parameter",
               "resourceParams": "[\"net.ipv4.icmp_echo_ignore_broadcasts\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72289",
@@ -16474,7 +16653,8 @@
               "resourceClass": "kernel_parameter",
               "resourceParams": "[\"net.ipv4.conf.default.accept_redirects\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72291",
@@ -16530,7 +16710,8 @@
               "resourceClass": "kernel_parameter",
               "resourceParams": "[\"net.ipv4.conf.default.send_redirects\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72293",
@@ -16586,7 +16767,8 @@
               "resourceClass": "kernel_parameter",
               "resourceParams": "[\"net.ipv4.conf.all.send_redirects\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72295",
@@ -16641,7 +16823,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"ip link | grep -i promisc\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72297",
@@ -16728,7 +16911,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"postconf -n smtpd_client_restrictions\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72299",
@@ -16783,7 +16967,8 @@
               "resourceClass": "package",
               "resourceParams": "[\"vsftpd\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72301",
@@ -16846,7 +17031,8 @@
               "resourceClass": "package",
               "resourceParams": "[\"tftp-server\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72303",
@@ -16901,7 +17087,8 @@
               "resourceClass": "sshd_config",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72305",
@@ -16947,7 +17134,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72305.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -16959,7 +17145,8 @@
               "skipMessage": "If a TFTP server is not installed, this is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-72307",
@@ -17014,7 +17201,8 @@
               "resourceClass": "package",
               "resourceParams": "[\"xorg-x11-server-common\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72309",
@@ -17069,7 +17257,8 @@
               "resourceClass": "kernel_parameter",
               "resourceParams": "[\"net.ipv4.ip_forward\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72311",
@@ -17124,7 +17313,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72313",
@@ -17170,7 +17360,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72313.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -17182,7 +17371,8 @@
               "skipMessage": "The snmpd.conf file does not exist, this control is Not Applicable",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-72315",
@@ -17237,7 +17427,8 @@
               "resourceClass": "package",
               "resourceParams": "[\"tcp_wrappers\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72317",
@@ -17283,7 +17474,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72317.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -17295,7 +17485,8 @@
               "skipMessage": "The system does not have libreswan installed or the ipsec.service isn't running, this requirement is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-72319",
@@ -17350,7 +17541,8 @@
               "resourceClass": "kernel_parameter",
               "resourceParams": "[\"net.ipv6.conf.all.accept_source_route\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-72417",
@@ -17534,7 +17726,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-72427",
@@ -17589,7 +17782,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-72427.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -17601,7 +17793,8 @@
               "skipMessage": "This control is Not Appliciable without the SSSD Package installed.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-72433",
@@ -17666,7 +17859,8 @@
               "resourceClass": "file",
               "resourceParams": "[\"/etc/pam_pkcs11/pam_pkcs11.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-73155",
@@ -17712,7 +17906,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-73155.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -17724,7 +17917,8 @@
               "skipMessage": "The GNOME desktop is not installed, this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-73157",
@@ -17770,7 +17964,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-73157.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -17782,7 +17975,8 @@
               "skipMessage": "The GNOME desktop is not installed, this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-73159",
@@ -17853,7 +18047,8 @@
               "resourceClass": "pam",
               "resourceParams": "[\"/etc/pam.d/passwd\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-73161",
@@ -17908,7 +18103,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-73163",
@@ -17965,7 +18161,8 @@
               "skipMessage": "Can't find file: /etc/audisp/audisp-remote.conf",
               "resource": "Parse Config File /etc/audisp/audisp-remote.conf"
             }
-          ]
+          ],
+          "effectiveStatus": "notReviewed"
         },
         {
           "id": "V-73165",
@@ -18035,7 +18232,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-73167",
@@ -18105,7 +18303,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-73171",
@@ -18175,7 +18374,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-73173",
@@ -18245,7 +18445,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-73175",
@@ -18301,7 +18502,8 @@
               "resourceClass": "kernel_parameter",
               "resourceParams": "[\"net.ipv4.conf.all.accept_redirects\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-73177",
@@ -18360,7 +18562,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"nmcli device\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-77819",
@@ -18414,7 +18617,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-77819.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -18446,7 +18648,8 @@
               "skipMessage": "The esc package is not installed, this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-77821",
@@ -18509,7 +18712,8 @@
               "resourceClass": "kernel_module",
               "resourceParams": "[\"dccp\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-77823",
@@ -18564,7 +18768,8 @@
               "resourceClass": "command",
               "resourceParams": "[\"grep -i execstart /usr/lib/systemd/system/rescue.service\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-77825",
@@ -18619,7 +18824,8 @@
               "resourceClass": "kernel_parameter",
               "resourceParams": "[\"kernel.randomize_va_space\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-78995",
@@ -18665,7 +18871,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-78995.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -18677,7 +18882,8 @@
               "skipMessage": "The GNOME desktop is not installed, this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-78997",
@@ -18723,7 +18929,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-78997.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -18735,7 +18940,8 @@
               "skipMessage": "The GNOME desktop is not installed, this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-78999",
@@ -18822,7 +19028,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-79001",
@@ -18909,7 +19116,8 @@
               "resourceClass": "FilterTable::Table",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-81003",
@@ -18964,7 +19172,8 @@
               "resourceClass": "Object",
               "resourceParams": "[]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-81005",
@@ -19029,7 +19238,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/boot/grub2/grub.cfg\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-81007",
@@ -19075,7 +19285,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-81007.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -19087,7 +19296,8 @@
               "skipMessage": "The System is running BIOS, this control is Not Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         },
         {
           "id": "V-81009",
@@ -19142,7 +19352,8 @@
               "resourceClass": "mount",
               "resourceParams": "[\"/dev/shm\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-81011",
@@ -19197,7 +19408,8 @@
               "resourceClass": "mount",
               "resourceParams": "[\"/dev/shm\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-81013",
@@ -19253,7 +19465,8 @@
               "resourceClass": "mount",
               "resourceParams": "[\"/dev/shm\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-81015",
@@ -19314,7 +19527,8 @@
               "skipMessage": "File '/etc/audisp/plugins.d/au-remote.conf' cannot be found. This check must be performed manually",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notReviewed"
         },
         {
           "id": "V-81017",
@@ -19375,7 +19589,8 @@
               "skipMessage": "File '/etc/audisp/plugins.d/au-remote.conf' cannot be found. This check must be performed manually",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notReviewed"
         },
         {
           "id": "V-81019",
@@ -19434,7 +19649,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/audisp/audispd.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-81021",
@@ -19493,7 +19709,8 @@
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/audisp/audispd.conf\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-92251",
@@ -19548,7 +19765,8 @@
               "resourceClass": "kernel_parameter",
               "resourceParams": "[\"net.ipv4.conf.all.rp_filter\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-92253",
@@ -19603,7 +19821,8 @@
               "resourceClass": "kernel_parameter",
               "resourceParams": "[\"net.ipv4.conf.default.rp_filter\"]"
             }
-          ]
+          ],
+          "effectiveStatus": "passed"
         },
         {
           "id": "V-92255",
@@ -19668,7 +19887,8 @@
               "resourceClass": "processes",
               "resourceParams": "[/hipclient/]"
             }
-          ]
+          ],
+          "effectiveStatus": "failed"
         },
         {
           "id": "V-94843",
@@ -19714,7 +19934,6 @@
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-94843.rb"
           },
           "waiverData": {},
-          "effectiveStatus": "notApplicable",
           "results": [
             {
               "status": "notReviewed",
@@ -19726,7 +19945,8 @@
               "skipMessage": "The system does not have GNOME installed, this requirement is Not\n      Applicable.",
               "resource": ""
             }
-          ]
+          ],
+          "effectiveStatus": "notApplicable"
         }
       ]
     }
