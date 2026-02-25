@@ -5,19 +5,40 @@ import (
 	"fmt"
 	"os"
 
+	hdf "github.com/mitre/hdf-cli/pkg/hdf"
 	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
 
-// Status constants for control evaluation.
+// Status constants for CLI display output (snake_case for JSON and user-facing text).
 const (
 	StatusPassed        = "passed"
 	StatusFailed        = "failed"
 	StatusError         = "error"
 	StatusNotApplicable = "not_applicable"
 	StatusNotReviewed   = "not_reviewed"
-	StatusSkipped       = "skipped"
+	StatusSkipped       = "skipped" // deprecated in v2, kept for display compatibility
 )
+
+// SchemaStatusToDisplay maps HDF v2 schema ResultStatus values (camelCase)
+// to CLI display constants (snake_case). This is the single source of truth
+// for the schema→CLI status translation.
+func SchemaStatusToDisplay(status hdf.ResultStatus) string {
+	switch status {
+	case hdf.Passed:
+		return StatusPassed
+	case hdf.Failed:
+		return StatusFailed
+	case hdf.NotApplicable:
+		return StatusNotApplicable
+	case hdf.NotReviewed:
+		return StatusNotReviewed
+	case hdf.Error:
+		return StatusError
+	default:
+		return StatusNotReviewed
+	}
+}
 
 var (
 	// Version information, set at build time.
