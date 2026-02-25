@@ -104,18 +104,27 @@ func mergeRequirement(existing, incoming hdf.EvaluatedRequirement) hdf.Evaluated
 		result.Tags = merged
 	}
 
-	// Descriptions: merge by label
+	// Descriptions: merge by label with deterministic order (existing first, then new from incoming)
 	if len(incoming.Descriptions) > 0 {
-		descMap := make(map[string]hdf.Description)
+		descMap := make(map[string]hdf.Description, len(existing.Descriptions)+len(incoming.Descriptions))
+		orderedLabels := make([]string, 0, len(existing.Descriptions)+len(incoming.Descriptions))
+
 		for _, d := range existing.Descriptions {
+			if _, seen := descMap[d.Label]; !seen {
+				orderedLabels = append(orderedLabels, d.Label)
+			}
 			descMap[d.Label] = d
 		}
 		for _, d := range incoming.Descriptions {
+			if _, seen := descMap[d.Label]; !seen {
+				orderedLabels = append(orderedLabels, d.Label)
+			}
 			descMap[d.Label] = d
 		}
-		descs := make([]hdf.Description, 0, len(descMap))
-		for _, d := range descMap {
-			descs = append(descs, d)
+
+		descs := make([]hdf.Description, 0, len(orderedLabels))
+		for _, label := range orderedLabels {
+			descs = append(descs, descMap[label])
 		}
 		result.Descriptions = descs
 	}
