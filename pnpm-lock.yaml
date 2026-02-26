@@ -43,6 +43,9 @@ importers:
       '@mitre/hdf-mappings':
         specifier: workspace:*
         version: link:../hdf-mappings
+      '@mitre/hdf-parsers':
+        specifier: workspace:*
+        version: link:../hdf-parsers
       '@mitre/hdf-schema':
         specifier: workspace:*
         version: link:../hdf-schema

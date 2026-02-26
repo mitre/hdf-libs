@@ -477,6 +477,395 @@ func TestConvertProfile_AllOptionalFields(t *testing.T) {
 	require.Len(t, v2.Depends, 1)
 }
 
+// ── Overlay flattening integration tests ──────────────────
+
+func TestConvertV1ToV2_DeepOverlayFlatten(t *testing.T) {
+	inputPath := filepath.Join(getFixturesDir(), "input", "three-layer-overlay.json")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	var v1 HDFV1Results
+	require.NoError(t, json.Unmarshal(inputData, &v1))
+	require.Len(t, v1.Profiles, 3, "fixture should have 3 profiles before conversion")
+
+	v2 := ConvertV1ToV2(&v1)
+
+	t.Run("flattens 3 profiles into 1 baseline", func(t *testing.T) {
+		assert.Len(t, v2.Baselines, 1)
+	})
+
+	t.Run("produces 247 deduplicated requirements", func(t *testing.T) {
+		assert.Len(t, v2.Baselines[0].Requirements, 247)
+	})
+
+	t.Run("every requirement has results from base profile", func(t *testing.T) {
+		withResults := 0
+		for _, r := range v2.Baselines[0].Requirements {
+			if len(r.Results) > 0 {
+				withResults++
+			}
+		}
+		assert.Equal(t, 247, withResults)
+	})
+
+	t.Run("parentBaseline cleared on output", func(t *testing.T) {
+		assert.Nil(t, v2.Baselines[0].ParentBaseline)
+	})
+
+	t.Run("uses top overlay name as baseline name", func(t *testing.T) {
+		assert.Contains(t, v2.Baselines[0].Name, "second-layer")
+	})
+}
+
+func TestConvertV1ToV2_WideWrapperFlatten(t *testing.T) {
+	inputPath := filepath.Join(getFixturesDir(), "input", "wrapper.json")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	var v1 HDFV1Results
+	require.NoError(t, json.Unmarshal(inputData, &v1))
+	require.Len(t, v1.Profiles, 4, "fixture should have 4 profiles before conversion")
+
+	v2 := ConvertV1ToV2(&v1)
+
+	t.Run("flattens 4 profiles into 1 baseline", func(t *testing.T) {
+		assert.Len(t, v2.Baselines, 1)
+	})
+
+	t.Run("produces 534 aggregated requirements", func(t *testing.T) {
+		assert.Len(t, v2.Baselines[0].Requirements, 534)
+	})
+
+	t.Run("uses wrapper name as baseline name", func(t *testing.T) {
+		assert.Equal(t, "wrapper", v2.Baselines[0].Name)
+	})
+}
+
+func TestConvertV1ToV2_PassthroughNoOverlays(t *testing.T) {
+	v1 := &HDFV1Results{
+		Version:  "1.0.0",
+		Platform: V1Platform{Name: "test"},
+		Profiles: []V1Profile{{
+			Name: "simple-profile",
+			Controls: []V1Control{{
+				ID:     "V-1",
+				Impact: 0.5,
+				Results: []V1Result{{Status: "passed"}},
+			}},
+		}},
+	}
+
+	v2 := ConvertV1ToV2(v1)
+
+	t.Run("single profile passes through as single baseline", func(t *testing.T) {
+		assert.Len(t, v2.Baselines, 1)
+		assert.Equal(t, "simple-profile", v2.Baselines[0].Name)
+		assert.Len(t, v2.Baselines[0].Requirements, 1)
+	})
+}
+
+func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
+	t.Run("sets effectiveStatus to notApplicable when impact is 0 and no explicit status", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name: "test",
+				Controls: []V1Control{
+					{ID: "V-1", Impact: 0, Results: []V1Result{{Status: "skipped"}}},
+					{ID: "V-2", Impact: 0.7, Results: []V1Result{{Status: "passed"}}},
+				},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		reqs := v2.Baselines[0].Requirements
+
+		require.NotNil(t, reqs[0].EffectiveStatus)
+		assert.Equal(t, hdf.NotApplicable, *reqs[0].EffectiveStatus)
+		require.NotNil(t, reqs[1].EffectiveStatus)
+		assert.Equal(t, hdf.Passed, *reqs[1].EffectiveStatus) // derived from results
+	})
+
+	t.Run("does not override explicit effectiveStatus even if impact is 0", func(t *testing.T) {
+		passed := "passed"
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name: "test",
+				Controls: []V1Control{
+					{ID: "V-1", Impact: 0, Status: &passed, Results: []V1Result{{Status: "passed"}}},
+				},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+	})
+
+	t.Run("classifies 27 impact-0 controls as notApplicable in Three_Layer fixture", func(t *testing.T) {
+		inputPath := filepath.Join(getFixturesDir(), "input", "three-layer-overlay.json")
+		inputData, err := os.ReadFile(inputPath)
+		require.NoError(t, err)
+
+		var v1 HDFV1Results
+		require.NoError(t, json.Unmarshal(inputData, &v1))
+
+		v2 := ConvertV1ToV2(&v1)
+		reqs := v2.Baselines[0].Requirements
+
+		notApplicable := 0
+		for _, r := range reqs {
+			if r.EffectiveStatus != nil && *r.EffectiveStatus == hdf.NotApplicable {
+				assert.Equal(t, 0.0, r.Impact)
+				notApplicable++
+			}
+		}
+		assert.Equal(t, 27, notApplicable)
+	})
+}
+
+func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
+	t.Run("passed when all results passed", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name:     "test",
+				Controls: []V1Control{{ID: "V-1", Impact: 0.7, Results: []V1Result{{Status: "passed"}}}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+	})
+
+	t.Run("failed when any result failed", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name:     "test",
+				Controls: []V1Control{{ID: "V-1", Impact: 0.7, Results: []V1Result{{Status: "passed"}, {Status: "failed"}}}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.Failed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+	})
+
+	t.Run("passed when mixed passed and skipped", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name:     "test",
+				Controls: []V1Control{{ID: "V-1", Impact: 0.7, Results: []V1Result{{Status: "skipped"}, {Status: "passed"}}}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+	})
+
+	t.Run("notReviewed when all results skipped", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name:     "test",
+				Controls: []V1Control{{ID: "V-1", Impact: 0.5, Results: []V1Result{{Status: "skipped"}}}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.NotReviewed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+	})
+
+	t.Run("notReviewed when no results", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name:     "test",
+				Controls: []V1Control{{ID: "V-1", Impact: 0.5, Results: []V1Result{}}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.NotReviewed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+	})
+
+	t.Run("every control has effectiveStatus in Three_Layer fixture", func(t *testing.T) {
+		inputPath := filepath.Join(getFixturesDir(), "input", "three-layer-overlay.json")
+		inputData, err := os.ReadFile(inputPath)
+		require.NoError(t, err)
+		var v1 HDFV1Results
+		require.NoError(t, json.Unmarshal(inputData, &v1))
+		v2 := ConvertV1ToV2(&v1)
+
+		for _, r := range v2.Baselines[0].Requirements {
+			assert.NotNilf(t, r.EffectiveStatus, "control %s missing effectiveStatus", r.ID)
+		}
+	})
+
+	t.Run("Three_Layer counts: 73 passed, 138 failed, 27 NA, 9 NR", func(t *testing.T) {
+		inputPath := filepath.Join(getFixturesDir(), "input", "three-layer-overlay.json")
+		inputData, err := os.ReadFile(inputPath)
+		require.NoError(t, err)
+		var v1 HDFV1Results
+		require.NoError(t, json.Unmarshal(inputData, &v1))
+		v2 := ConvertV1ToV2(&v1)
+
+		counts := map[hdf.ResultStatus]int{}
+		for _, r := range v2.Baselines[0].Requirements {
+			if r.EffectiveStatus != nil {
+				counts[*r.EffectiveStatus]++
+			}
+		}
+		assert.Equal(t, 73, counts[hdf.Passed])
+		assert.Equal(t, 138, counts[hdf.Failed])
+		assert.Equal(t, 27, counts[hdf.NotApplicable])
+		assert.Equal(t, 9, counts[hdf.NotReviewed])
+		assert.Equal(t, 0, counts[hdf.Error])
+	})
+}
+
+func strPtr(s string) *string { return &s }
+
+// ── Severity from tags.severity ──────────────────
+
+func TestSeverityFromTagsSeverity(t *testing.T) {
+	t.Run("populates severity from tags.severity for NA controls (impact=0)", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name: "test",
+				Controls: []V1Control{{
+					ID:      "V-1",
+					Impact:  0,
+					Tags:    map[string]interface{}{"severity": "medium", "nist": []string{"AC-1"}},
+					Results: []V1Result{{Status: "skipped"}},
+				}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		req := v2.Baselines[0].Requirements[0]
+		require.NotNil(t, req.Severity, "severity should be set")
+		assert.Equal(t, hdf.Medium, *req.Severity)
+		require.NotNil(t, req.EffectiveStatus)
+		assert.Equal(t, hdf.NotApplicable, *req.EffectiveStatus)
+	})
+
+	t.Run("populates severity from tags.severity for non-NA controls", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name: "test",
+				Controls: []V1Control{{
+					ID:      "V-1",
+					Impact:  0.7,
+					Tags:    map[string]interface{}{"severity": "high"},
+					Results: []V1Result{{Status: "passed"}},
+				}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
+		assert.Equal(t, hdf.High, *v2.Baselines[0].Requirements[0].Severity)
+	})
+
+	t.Run("falls back to impact-derived severity when tags.severity missing", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name: "test",
+				Controls: []V1Control{{
+					ID:      "V-1",
+					Impact:  0.7,
+					Results: []V1Result{{Status: "passed"}},
+				}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
+		assert.Equal(t, hdf.High, *v2.Baselines[0].Requirements[0].Severity)
+	})
+
+	t.Run("maps impact values to correct severity levels", func(t *testing.T) {
+		cases := []struct {
+			impact   float64
+			expected hdf.Severity
+		}{
+			{0.9, hdf.Critical},
+			{0.7, hdf.High},
+			{0.5, hdf.Medium},
+			{0.3, hdf.Low},
+		}
+		for _, tc := range cases {
+			v1 := &HDFV1Results{
+				Version:  "1.0.0",
+				Platform: V1Platform{Name: "test"},
+				Profiles: []V1Profile{{
+					Name:     "test",
+					Controls: []V1Control{{ID: "V-1", Impact: tc.impact, Results: []V1Result{}}},
+				}},
+			}
+			v2 := ConvertV1ToV2(v1)
+			require.NotNilf(t, v2.Baselines[0].Requirements[0].Severity, "impact=%.1f should have severity", tc.impact)
+			assert.Equalf(t, tc.expected, *v2.Baselines[0].Requirements[0].Severity, "impact=%.1f", tc.impact)
+		}
+	})
+
+	t.Run("ignores invalid tags.severity and falls back to impact", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name: "test",
+				Controls: []V1Control{{
+					ID:      "V-1",
+					Impact:  0.7,
+					Tags:    map[string]interface{}{"severity": "bogus"},
+					Results: []V1Result{{Status: "passed"}},
+				}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
+		assert.Equal(t, hdf.High, *v2.Baselines[0].Requirements[0].Severity)
+	})
+
+	t.Run("ubi9 fixture: NA controls have severity from tags not none", func(t *testing.T) {
+		inputPath := filepath.Join(getFixturesDir(), "input", "ubi9-scan.json")
+		inputData, err := os.ReadFile(inputPath)
+		require.NoError(t, err)
+
+		var v1 HDFV1Results
+		require.NoError(t, json.Unmarshal(inputData, &v1))
+
+		v2 := ConvertV1ToV2(&v1)
+		reqs := v2.Baselines[0].Requirements
+
+		// Find SV-257779: impact=0, tags.severity=medium
+		var sv257779 *hdf.EvaluatedRequirement
+		for i := range reqs {
+			if reqs[i].ID == "SV-257779" {
+				sv257779 = &reqs[i]
+				break
+			}
+		}
+		require.NotNil(t, sv257779, "SV-257779 should exist")
+		require.NotNil(t, sv257779.EffectiveStatus)
+		assert.Equal(t, hdf.NotApplicable, *sv257779.EffectiveStatus)
+		require.NotNil(t, sv257779.Severity)
+		assert.Equal(t, hdf.Medium, *sv257779.Severity)
+	})
+}
+
 func TestParseTime(t *testing.T) {
 	// Valid RFC3339
 	ts := parseTime("2024-01-01T00:00:00Z")
