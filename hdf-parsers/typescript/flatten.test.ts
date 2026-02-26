@@ -325,6 +325,73 @@ describe('flattenOverlays', () => {
       const { results: flat } = flattenOverlays(results);
       expect(flat.baselines[0].requirements[0].impact).toBe(0.0);
     });
+
+    it('severity from overlay wins over base', () => {
+      const results = makeResults([
+        makeBaseline('overlay', [makeReq('V-1', { impact: 0.0, severity: 'medium' })]),
+        makeBaseline('base', [
+          makeReq('V-1', { impact: 0.7, severity: 'high', results: [{ status: 'passed', codeDesc: 'test' }] }),
+        ], { parentBaseline: 'overlay' }),
+      ]);
+      const { results: flat } = flattenOverlays(results);
+      // Overlay sets impact=0 (NA) but severity=medium (original STIG severity).
+      // Severity must survive the merge — not be lost.
+      expect(flat.baselines[0].requirements[0].severity).toBe('medium');
+    });
+
+    it('base severity preserved when overlay has no severity', () => {
+      const results = makeResults([
+        makeBaseline('overlay', [makeReq('V-1', { impact: 0.0 })]),
+        makeBaseline('base', [
+          makeReq('V-1', { impact: 0.7, severity: 'high', results: [{ status: 'passed', codeDesc: 'test' }] }),
+        ], { parentBaseline: 'overlay' }),
+      ]);
+      const { results: flat } = flattenOverlays(results);
+      // Base had severity=high, overlay didn't set one. Base value must survive.
+      expect(flat.baselines[0].requirements[0].severity).toBe('high');
+    });
+
+    it('severity survives three-layer merge', () => {
+      const results = makeResults([
+        makeBaseline('top', [makeReq('V-1', { impact: 0.0, severity: 'medium' })]),
+        makeBaseline('mid', [makeReq('V-1', { impact: 0.0 })], { parentBaseline: 'top' }),
+        makeBaseline('base', [
+          makeReq('V-1', { impact: 0.7, severity: 'high', results: [{ status: 'passed', codeDesc: 'test' }] }),
+        ], { parentBaseline: 'mid' }),
+      ]);
+      const { results: flat } = flattenOverlays(results);
+      // Top overlay explicitly sets severity=medium. Must propagate through all layers.
+      expect(flat.baselines[0].requirements[0].severity).toBe('medium');
+    });
+
+    it('effectiveStatus from overlay wins when overlay has results', () => {
+      // Overlay with its own results — effectiveStatus is meaningful
+      const results = makeResults([
+        makeBaseline('overlay', [makeReq('V-1', {
+          impact: 0.0,
+          effectiveStatus: 'notApplicable',
+          results: [{ status: 'notApplicable', codeDesc: 'NA check' }],
+        })]),
+        makeBaseline('base', [
+          makeReq('V-1', { impact: 0.7, effectiveStatus: 'passed', results: [{ status: 'passed', codeDesc: 'test' }] }),
+        ], { parentBaseline: 'overlay' }),
+      ]);
+      const { results: flat } = flattenOverlays(results);
+      expect(flat.baselines[0].requirements[0].effectiveStatus).toBe('notApplicable');
+    });
+
+    it('base effectiveStatus preserved when overlay has no results', () => {
+      // Overlay with empty results — its effectiveStatus is a computed artifact, not intentional
+      const results = makeResults([
+        makeBaseline('overlay', [makeReq('V-1', { impact: 0.0, effectiveStatus: 'notReviewed' })]),
+        makeBaseline('base', [
+          makeReq('V-1', { impact: 0.7, effectiveStatus: 'passed', results: [{ status: 'passed', codeDesc: 'test' }] }),
+        ], { parentBaseline: 'overlay' }),
+      ]);
+      const { results: flat } = flattenOverlays(results);
+      // Base had real results → its effectiveStatus is authoritative
+      expect(flat.baselines[0].requirements[0].effectiveStatus).toBe('passed');
+    });
   });
 
   // ── Edge cases ────────────────────────────────────────────
