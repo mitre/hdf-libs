@@ -904,6 +904,127 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
   });
 
+  describe('severity from tags.severity', () => {
+    it('should populate severity from tags.severity for NA controls (impact=0)', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'V-1',
+            impact: 0,
+            tags: { severity: 'medium', nist: ['AC-1'] },
+            results: [{ status: 'skipped' }],
+          }],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      const req = v2.baselines[0].requirements![0];
+      expect(req.severity).toBe('medium');
+      expect(req.effectiveStatus).toBe('notApplicable');
+    });
+
+    it('should populate severity from tags.severity for non-NA controls', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'V-1',
+            impact: 0.7,
+            tags: { severity: 'high' },
+            results: [{ status: 'passed' }],
+          }],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].severity).toBe('high');
+    });
+
+    it('should fall back to impact-derived severity when tags.severity missing', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'V-1',
+            impact: 0.7,
+            results: [{ status: 'passed' }],
+          }],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].severity).toBe('high');
+    });
+
+    it('should map impact values to correct severity levels', () => {
+      const cases = [
+        { impact: 0.9, expected: 'critical' },
+        { impact: 0.7, expected: 'high' },
+        { impact: 0.5, expected: 'medium' },
+        { impact: 0.3, expected: 'low' },
+        { impact: 0, expected: 'none' }, // NA control without tags.severity
+      ];
+      for (const { impact, expected } of cases) {
+        const v1: HDFV1Results = {
+          version: '1.0.0',
+          platform: { name: 'test' },
+          profiles: [{
+            name: 'test',
+            controls: [{ id: 'V-1', impact, results: [] }],
+          }],
+          statistics: {},
+        };
+        const v2 = convertV1ToV2(v1);
+        expect(v2.baselines[0].requirements![0].severity).toBe(expected);
+      }
+    });
+
+    it('should ignore invalid tags.severity values and fall back to impact', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'V-1',
+            impact: 0.7,
+            tags: { severity: 'bogus' },
+            results: [{ status: 'passed' }],
+          }],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].severity).toBe('high');
+    });
+
+    it('ubi9 fixture: NA controls should have severity from tags, not "none"', () => {
+      const raw = readFileSync(join(FIXTURES_DIR, 'input', 'ubi9-scan.json'), 'utf-8');
+      const v1 = JSON.parse(raw) as HDFV1Results;
+      const v2 = convertV1ToV2(v1);
+      const reqs = v2.baselines[0].requirements!;
+
+      // SV-257779 has impact=0 (NA) but tags.severity=medium
+      const sv257779 = reqs.find(r => r.id === 'SV-257779');
+      expect(sv257779).toBeDefined();
+      expect(sv257779!.effectiveStatus).toBe('notApplicable');
+      expect(sv257779!.severity).toBe('medium');
+
+      // No NA control should have severity "none" when tags.severity exists
+      const naWithNone = reqs.filter(
+        r => r.effectiveStatus === 'notApplicable' && r.severity === 'none'
+      );
+      expect(naWithNone).toHaveLength(0);
+    });
+  });
+
   describe('isHDFV1', () => {
     it('should return true for valid v1.0 structure', () => {
       const data = {
