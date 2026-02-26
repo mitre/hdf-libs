@@ -1567,7 +1567,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notReviewed"
+          "effectiveStatus": "notReviewed",
+          "severity": "high"
         },
         {
           "id": "V-71855",
@@ -1625,7 +1626,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notReviewed"
+          "effectiveStatus": "notReviewed",
+          "severity": "high"
         },
         {
           "id": "V-71859",
@@ -1688,7 +1690,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-71861",
@@ -1751,7 +1754,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-71863",
@@ -1823,7 +1827,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71891",
@@ -1885,7 +1890,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-71893",
@@ -1943,7 +1949,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-71897",
@@ -2011,7 +2018,8 @@
               "resourceParams": "[\"screen\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71899",
@@ -2069,7 +2077,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-71901",
@@ -2127,7 +2136,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-71903",
@@ -2184,7 +2194,8 @@
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71905",
@@ -2241,7 +2252,8 @@
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71907",
@@ -2298,7 +2310,8 @@
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71909",
@@ -2355,7 +2368,8 @@
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71911",
@@ -2412,7 +2426,8 @@
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71913",
@@ -2469,7 +2484,8 @@
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71915",
@@ -2525,7 +2541,8 @@
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-71917",
@@ -2581,7 +2598,8 @@
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-71919",
@@ -2646,7 +2664,8 @@
               "resourceParams": "[\"/etc/pam.d/system-auth\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71921",
@@ -2703,7 +2722,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71923",
@@ -2760,7 +2780,8 @@
               "resourceParams": "[\"cat /etc/libuser.conf | grep -i sha512\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71925",
@@ -2817,7 +2838,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71927",
@@ -2883,7 +2905,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71929",
@@ -2940,7 +2963,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71931",
@@ -3005,7 +3029,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71933",
@@ -3071,7 +3096,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-71935",
@@ -3136,7 +3162,8 @@
               "resourceParams": "[\"/etc/security/pwquality.conf\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71937",
@@ -3430,7 +3457,8 @@
               "resourceParams": "[\"/etc/pam.d/postgresql\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "high"
         },
         {
           "id": "V-71939",
@@ -3487,7 +3515,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "high"
         },
         {
           "id": "V-71941",
@@ -3552,7 +3581,8 @@
               "resourceParams": "[\"/etc/default/useradd\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71943",
@@ -3687,7 +3717,8 @@
               "resourceParams": "[\"/etc/pam.d/system-auth\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71945",
@@ -3773,7 +3804,8 @@
               "resourceParams": "[\"/etc/pam.d/system-auth\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71947",
@@ -3851,7 +3883,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71949",
@@ -3912,7 +3945,8 @@
               "resourceParams": "[\"grep -ir authenticate /etc/sudoers /etc/sudoers.d/*\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-71951",
@@ -3969,7 +4003,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71953",
@@ -4027,7 +4062,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-71955",
@@ -4085,7 +4121,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-71957",
@@ -4142,7 +4179,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71959",
@@ -4199,7 +4237,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71961",
@@ -4257,7 +4296,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-71963",
@@ -4315,7 +4355,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-71965",
@@ -4399,7 +4440,8 @@
               "resourceParams": "[\"authconfig --test | grep -i smartcard\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71967",
@@ -4455,7 +4497,8 @@
               "resourceParams": "[\"rsh-server\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-71969",
@@ -4511,7 +4554,8 @@
               "resourceParams": "[\"ypserv\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-71971",
@@ -4594,7 +4638,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71973",
@@ -4690,7 +4735,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71975",
@@ -4776,7 +4822,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71977",
@@ -4832,7 +4879,8 @@
               "resourceParams": "[\"/etc/yum.conf\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-71979",
@@ -4888,7 +4936,8 @@
               "resourceParams": "[\"/etc/yum.conf\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-71983",
@@ -4962,7 +5011,8 @@
               "resourceParams": "[\"usb_storage\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-71985",
@@ -5043,7 +5093,8 @@
               "resourceParams": "[\"autofs.service\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-71987",
@@ -5100,7 +5151,8 @@
               "resourceParams": "[\"/etc/yum.conf\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "low"
         },
         {
           "id": "V-71989",
@@ -5158,7 +5210,8 @@
               "resourceParams": "[\"getenforce\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-71991",
@@ -5216,7 +5269,8 @@
               "resourceParams": "[\"sestatus\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-71993",
@@ -5280,7 +5334,8 @@
               "resourceParams": "[\"ctrl-alt-del.target\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-71995",
@@ -5336,7 +5391,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-71997",
@@ -5392,7 +5448,8 @@
               "resourceParams": "[\"/etc/redhat-release\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-71999",
@@ -5816,7 +5873,8 @@
               "resourceParams": "[\"samba-common-libs\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72001",
@@ -6099,7 +6157,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72003",
@@ -6371,7 +6430,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "low"
         },
         {
           "id": "V-72005",
@@ -6435,7 +6495,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-72007",
@@ -6507,7 +6568,8 @@
               "resourceParams": "[\"find / -xdev -xautofs -fstype iso9660 -nouser\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72009",
@@ -6579,7 +6641,8 @@
               "resourceParams": "[\"find / -xdev -xautofs -fstype iso9660 -nogroup\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72011",
@@ -6643,7 +6706,8 @@
               "resourceParams": "[\"/home/vagrant\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72013",
@@ -6699,7 +6763,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72015",
@@ -6763,7 +6828,8 @@
               "resourceParams": "[\"/home/vagrant\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72017",
@@ -6819,7 +6885,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72019",
@@ -6899,7 +6966,8 @@
               "resourceParams": "[\"/home/vagrant\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72021",
@@ -6955,7 +7023,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72023",
@@ -7012,7 +7081,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72025",
@@ -7068,7 +7138,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72027",
@@ -7125,7 +7196,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72029",
@@ -7181,7 +7253,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72031",
@@ -7238,7 +7311,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72033",
@@ -7295,7 +7369,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72035",
@@ -7363,7 +7438,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72037",
@@ -7421,7 +7497,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notReviewed"
+          "effectiveStatus": "notReviewed",
+          "severity": "medium"
         },
         {
           "id": "V-72039",
@@ -7485,7 +7562,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72041",
@@ -7542,7 +7620,8 @@
               "resourceParams": "[\"/home\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72043",
@@ -7615,7 +7694,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72045",
@@ -7671,7 +7751,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72047",
@@ -7832,7 +7913,8 @@
               "resourceParams": "[\"/share\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72049",
@@ -7904,7 +7986,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72051",
@@ -7960,7 +8043,8 @@
               "resourceParams": "[\"grep cron /etc/rsyslog.conf\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72053",
@@ -8016,7 +8100,8 @@
               "resourceParams": "[\"/etc/cron.allow\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72055",
@@ -8072,7 +8157,8 @@
               "resourceParams": "[\"/etc/cron.allow\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72057",
@@ -8128,7 +8214,8 @@
               "resourceParams": "[\"kdump.service\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72059",
@@ -8193,7 +8280,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "low"
         },
         {
           "id": "V-72061",
@@ -8250,7 +8338,8 @@
               "resourceParams": "[\"/var\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "low"
         },
         {
           "id": "V-72063",
@@ -8307,7 +8396,8 @@
               "resourceParams": "[\"/var/log/audit\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "low"
         },
         {
           "id": "V-72065",
@@ -8385,7 +8475,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "low"
         },
         {
           "id": "V-72067",
@@ -8491,7 +8582,8 @@
               "resourceParams": "[\"/proc/sys/crypto/fips_enabled\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "high"
         },
         {
           "id": "V-72069",
@@ -8555,7 +8647,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "low"
         },
         {
           "id": "V-72071",
@@ -8619,7 +8712,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "low"
         },
         {
           "id": "V-72073",
@@ -8683,7 +8777,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72075",
@@ -8793,7 +8888,8 @@
               "resourceParams": "[\"UUID=8ac075e3-1124-4bb6-bef7-a6811bf8b870\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72077",
@@ -8849,7 +8945,8 @@
               "resourceParams": "[\"telnet-server\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-72079",
@@ -8914,7 +9011,8 @@
               "resourceParams": "[\"auditd\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-72081",
@@ -8974,7 +9072,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72083",
@@ -9036,7 +9135,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notReviewed"
+          "effectiveStatus": "notReviewed",
+          "severity": "medium"
         },
         {
           "id": "V-72085",
@@ -9098,7 +9198,8 @@
               "resource": "Parse Config File /etc/audisp/audisp-remote.conf"
             }
           ],
-          "effectiveStatus": "notReviewed"
+          "effectiveStatus": "notReviewed",
+          "severity": "medium"
         },
         {
           "id": "V-72087",
@@ -9166,7 +9267,8 @@
               "resource": "Parse Config File /etc/audisp/audisp-remote.conf"
             }
           ],
-          "effectiveStatus": "notReviewed"
+          "effectiveStatus": "notReviewed",
+          "severity": "medium"
         },
         {
           "id": "V-72089",
@@ -9223,7 +9325,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72091",
@@ -9280,7 +9383,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72093",
@@ -9336,7 +9440,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72095",
@@ -9438,7 +9543,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72097",
@@ -9530,7 +9636,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72099",
@@ -9622,7 +9729,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72101",
@@ -9714,7 +9822,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72103",
@@ -9806,7 +9915,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72105",
@@ -9895,7 +10005,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72107",
@@ -9984,7 +10095,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72109",
@@ -10073,7 +10185,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72111",
@@ -10162,7 +10275,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72113",
@@ -10251,7 +10365,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72115",
@@ -10340,7 +10455,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72117",
@@ -10429,7 +10545,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72119",
@@ -10518,7 +10635,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72121",
@@ -10607,7 +10725,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72123",
@@ -10771,7 +10890,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72125",
@@ -10935,7 +11055,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72127",
@@ -11099,7 +11220,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72129",
@@ -11263,7 +11385,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72131",
@@ -11427,7 +11550,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72133",
@@ -11591,7 +11715,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72135",
@@ -11663,7 +11788,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72137",
@@ -11735,7 +11861,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72139",
@@ -11807,7 +11934,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72141",
@@ -11879,7 +12007,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72145",
@@ -11953,7 +12082,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72147",
@@ -12027,7 +12157,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72149",
@@ -12101,7 +12232,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72151",
@@ -12175,7 +12307,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72153",
@@ -12249,7 +12382,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72155",
@@ -12323,7 +12457,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72157",
@@ -12397,7 +12532,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72159",
@@ -12475,7 +12611,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72161",
@@ -12553,7 +12690,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72163",
@@ -12648,7 +12786,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72165",
@@ -12726,7 +12865,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72167",
@@ -12804,7 +12944,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72171",
@@ -12912,7 +13053,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72173",
@@ -12983,7 +13125,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72175",
@@ -13054,7 +13197,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72177",
@@ -13125,7 +13269,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72179",
@@ -13199,7 +13344,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72183",
@@ -13273,7 +13419,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72185",
@@ -13338,7 +13485,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72187",
@@ -13426,7 +13574,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72189",
@@ -13514,7 +13663,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72191",
@@ -13583,7 +13733,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72197",
@@ -13662,7 +13813,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72199",
@@ -13754,7 +13906,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72201",
@@ -13846,7 +13999,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72203",
@@ -13938,7 +14092,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72205",
@@ -14030,7 +14185,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72207",
@@ -14122,7 +14278,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72209",
@@ -14179,7 +14336,8 @@
               "resourceParams": "[\"grep @ /etc/rsyslog.conf | grep -v \\\"^#\\\"\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72211",
@@ -14251,7 +14409,8 @@
               "resourceParams": "[\"/etc/rsyslog.conf\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72213",
@@ -14329,7 +14488,8 @@
               "resourceParams": "[\"ds_agent\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "high"
         },
         {
           "id": "V-72217",
@@ -14394,7 +14554,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "low"
         },
         {
           "id": "V-72219",
@@ -14457,7 +14618,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72221",
@@ -14525,7 +14687,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72223",
@@ -14592,7 +14755,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72225",
@@ -14666,7 +14830,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72227",
@@ -14724,7 +14889,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-72229",
@@ -14782,7 +14948,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-72231",
@@ -14840,7 +15007,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-72233",
@@ -14916,7 +15084,8 @@
               "resourceParams": "[\"openssh-clients\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72235",
@@ -14984,7 +15153,8 @@
               "resourceParams": "[\"sshd.service\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72237",
@@ -15064,7 +15234,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72239",
@@ -15121,7 +15292,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72241",
@@ -15185,7 +15357,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-72243",
@@ -15242,7 +15415,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72245",
@@ -15307,7 +15481,8 @@
               "resourceParams": "[\"/etc/pam.d/sshd\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72247",
@@ -15364,7 +15539,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72249",
@@ -15421,7 +15597,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72251",
@@ -15485,7 +15662,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-72253",
@@ -15542,7 +15720,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72255",
@@ -15598,7 +15777,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72257",
@@ -15670,7 +15850,8 @@
               "resourceParams": "[\"/etc/ssh/ssh_host_ed25519_key\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72259",
@@ -15735,7 +15916,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72261",
@@ -15800,7 +15982,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72263",
@@ -15857,7 +16040,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72265",
@@ -15925,7 +16109,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72267",
@@ -15993,7 +16178,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72269",
@@ -16088,7 +16274,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72273",
@@ -16177,7 +16364,8 @@
               "resourceParams": "[\"iptables.service\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72275",
@@ -16253,7 +16441,8 @@
               "resourceParams": "[\"/etc/pam.d/postlogin\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "low"
         },
         {
           "id": "V-72277",
@@ -16309,7 +16498,8 @@
               "resourceParams": "[\"find / -xdev -xautofs -name '*.shosts'\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-72279",
@@ -16365,7 +16555,8 @@
               "resourceParams": "[\"find / -xdev -xautofs -name shosts.equiv\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-72281",
@@ -16429,7 +16620,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "low"
         },
         {
           "id": "V-72283",
@@ -16485,7 +16677,8 @@
               "resourceParams": "[\"net.ipv4.conf.all.accept_source_route\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72285",
@@ -16541,7 +16734,8 @@
               "resourceParams": "[\"net.ipv4.conf.default.accept_source_route\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72287",
@@ -16597,7 +16791,8 @@
               "resourceParams": "[\"net.ipv4.icmp_echo_ignore_broadcasts\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72289",
@@ -16654,7 +16849,8 @@
               "resourceParams": "[\"net.ipv4.conf.default.accept_redirects\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72291",
@@ -16711,7 +16907,8 @@
               "resourceParams": "[\"net.ipv4.conf.default.send_redirects\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72293",
@@ -16768,7 +16965,8 @@
               "resourceParams": "[\"net.ipv4.conf.all.send_redirects\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72295",
@@ -16824,7 +17022,8 @@
               "resourceParams": "[\"ip link | grep -i promisc\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72297",
@@ -16912,7 +17111,8 @@
               "resourceParams": "[\"postconf -n smtpd_client_restrictions\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72299",
@@ -16968,7 +17168,8 @@
               "resourceParams": "[\"vsftpd\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-72301",
@@ -17032,7 +17233,8 @@
               "resourceParams": "[\"tftp-server\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-72303",
@@ -17088,7 +17290,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-72305",
@@ -17146,7 +17349,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-72307",
@@ -17202,7 +17406,8 @@
               "resourceParams": "[\"xorg-x11-server-common\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72309",
@@ -17258,7 +17463,8 @@
               "resourceParams": "[\"net.ipv4.ip_forward\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72311",
@@ -17314,7 +17520,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72313",
@@ -17372,7 +17579,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-72315",
@@ -17428,7 +17636,8 @@
               "resourceParams": "[\"tcp_wrappers\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72317",
@@ -17486,7 +17695,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-72319",
@@ -17542,7 +17752,8 @@
               "resourceParams": "[\"net.ipv6.conf.all.accept_source_route\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-72417",
@@ -17727,7 +17938,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-72427",
@@ -17794,7 +18006,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-72433",
@@ -17860,7 +18073,8 @@
               "resourceParams": "[\"/etc/pam_pkcs11/pam_pkcs11.conf\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-73155",
@@ -17918,7 +18132,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-73157",
@@ -17976,7 +18191,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-73159",
@@ -18048,7 +18264,8 @@
               "resourceParams": "[\"/etc/pam.d/passwd\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-73161",
@@ -18104,7 +18321,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-73163",
@@ -18162,7 +18380,8 @@
               "resource": "Parse Config File /etc/audisp/audisp-remote.conf"
             }
           ],
-          "effectiveStatus": "notReviewed"
+          "effectiveStatus": "notReviewed",
+          "severity": "medium"
         },
         {
           "id": "V-73165",
@@ -18233,7 +18452,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-73167",
@@ -18304,7 +18524,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-73171",
@@ -18375,7 +18596,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-73173",
@@ -18446,7 +18668,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-73175",
@@ -18503,7 +18726,8 @@
               "resourceParams": "[\"net.ipv4.conf.all.accept_redirects\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-73177",
@@ -18563,7 +18787,8 @@
               "resourceParams": "[\"nmcli device\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-77819",
@@ -18649,7 +18874,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-77821",
@@ -18713,7 +18939,8 @@
               "resourceParams": "[\"dccp\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-77823",
@@ -18769,7 +18996,8 @@
               "resourceParams": "[\"grep -i execstart /usr/lib/systemd/system/rescue.service\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-77825",
@@ -18825,7 +19053,8 @@
               "resourceParams": "[\"kernel.randomize_va_space\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-78995",
@@ -18883,7 +19112,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-78997",
@@ -18941,7 +19171,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-78999",
@@ -19029,7 +19260,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-79001",
@@ -19117,7 +19349,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-81003",
@@ -19173,7 +19406,8 @@
               "resourceParams": "[]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-81005",
@@ -19239,7 +19473,8 @@
               "resourceParams": "[\"/boot/grub2/grub.cfg\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "high"
         },
         {
           "id": "V-81007",
@@ -19297,7 +19532,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         },
         {
           "id": "V-81009",
@@ -19353,7 +19589,8 @@
               "resourceParams": "[\"/dev/shm\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "low"
         },
         {
           "id": "V-81011",
@@ -19409,7 +19646,8 @@
               "resourceParams": "[\"/dev/shm\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "low"
         },
         {
           "id": "V-81013",
@@ -19466,7 +19704,8 @@
               "resourceParams": "[\"/dev/shm\"]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "low"
         },
         {
           "id": "V-81015",
@@ -19528,7 +19767,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notReviewed"
+          "effectiveStatus": "notReviewed",
+          "severity": "medium"
         },
         {
           "id": "V-81017",
@@ -19590,7 +19830,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notReviewed"
+          "effectiveStatus": "notReviewed",
+          "severity": "medium"
         },
         {
           "id": "V-81019",
@@ -19650,7 +19891,8 @@
               "resourceParams": "[\"/etc/audisp/audispd.conf\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-81021",
@@ -19710,7 +19952,8 @@
               "resourceParams": "[\"/etc/audisp/audispd.conf\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-92251",
@@ -19766,7 +20009,8 @@
               "resourceParams": "[\"net.ipv4.conf.all.rp_filter\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-92253",
@@ -19822,7 +20066,8 @@
               "resourceParams": "[\"net.ipv4.conf.default.rp_filter\"]"
             }
           ],
-          "effectiveStatus": "passed"
+          "effectiveStatus": "passed",
+          "severity": "medium"
         },
         {
           "id": "V-92255",
@@ -19888,7 +20133,8 @@
               "resourceParams": "[/hipclient/]"
             }
           ],
-          "effectiveStatus": "failed"
+          "effectiveStatus": "failed",
+          "severity": "medium"
         },
         {
           "id": "V-94843",
@@ -19946,7 +20192,8 @@
               "resource": ""
             }
           ],
-          "effectiveStatus": "notApplicable"
+          "effectiveStatus": "notApplicable",
+          "severity": "none"
         }
       ]
     }

@@ -3287,7 +3287,8 @@
               "skipMessage": "Control not applicable in this mission context.",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257778",
@@ -3399,7 +3400,8 @@
               "resourceParams": "[\"systemd-rpm-macros\"]",
               "resourceId": "systemd-rpm-macros"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257779",
@@ -3467,7 +3469,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257781",
@@ -3525,7 +3528,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable inside the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257782",
@@ -3581,7 +3585,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-257783",
@@ -3639,7 +3644,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container without sudo enabled",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257784",
@@ -3697,7 +3703,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257785",
@@ -3755,7 +3762,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257786",
@@ -3813,7 +3821,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257787",
@@ -3871,7 +3880,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container without sudo enabled",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257788",
@@ -3929,7 +3939,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container without sudo enabled",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257789",
@@ -3987,7 +3998,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container without sudo enabled",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257790",
@@ -4045,7 +4057,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257791",
@@ -4103,7 +4116,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257792",
@@ -4167,7 +4181,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257793",
@@ -4230,7 +4245,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257794",
@@ -4292,7 +4308,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257795",
@@ -4350,7 +4367,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-257796",
@@ -4426,7 +4444,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-257797",
@@ -4484,7 +4503,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257798",
@@ -4542,7 +4562,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257799",
@@ -4602,7 +4623,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257800",
@@ -4662,7 +4684,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257801",
@@ -4726,7 +4749,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257802",
@@ -4790,7 +4814,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257803",
@@ -4847,7 +4872,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257804",
@@ -4903,7 +4929,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257805",
@@ -4959,7 +4986,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257806",
@@ -5015,7 +5043,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257807",
@@ -5071,7 +5100,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257808",
@@ -5127,7 +5157,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257809",
@@ -5185,7 +5216,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257810",
@@ -5243,7 +5275,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257811",
@@ -5307,7 +5340,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257812",
@@ -5364,7 +5398,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257813",
@@ -5421,7 +5456,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257814",
@@ -5478,7 +5514,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257815",
@@ -5535,7 +5572,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257816",
@@ -5591,7 +5629,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257817",
@@ -5647,7 +5686,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257818",
@@ -5705,7 +5745,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257819",
@@ -5800,7 +5841,8 @@
               "resourceParams": "[\"gpg -q --keyid-format short --with-fingerprint /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release\"]",
               "resourceId": "Command: `gpg -q --keyid-format short --with-fingerprint /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release`"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257820",
@@ -5859,7 +5901,8 @@
               "resourceParams": "[]",
               "resourceId": "gpgcheck"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257821",
@@ -5917,7 +5960,8 @@
               "resourceParams": "[\"/etc/dnf/dnf.conf\"]",
               "resourceId": "/etc/dnf/dnf.conf"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257822",
@@ -5976,7 +6020,8 @@
               "resourceParams": "[]",
               "resourceId": "All repositories"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257823",
@@ -6033,7 +6078,8 @@
               "resourceParams": "[]",
               "resourceId": "All system file hashes"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257824",
@@ -6088,7 +6134,8 @@
               "resourceParams": "[\"/etc/dnf/dnf.conf\"]",
               "resourceId": "/etc/dnf/dnf.conf"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-257825",
@@ -6147,7 +6194,8 @@
               "resourceParams": "[\"subscription-manager\"]",
               "resourceId": "subscription-manager"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257826",
@@ -6206,7 +6254,8 @@
               "resourceParams": "[\"vsftpd\"]",
               "resourceId": "vsftpd"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257827",
@@ -6263,7 +6312,8 @@
               "resourceParams": "[\"sendmail\"]",
               "resourceId": "sendmail"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257828",
@@ -6320,7 +6370,8 @@
               "resourceParams": "[\"nfs-utils\"]",
               "resourceId": "nfs-utils"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257829",
@@ -6377,7 +6428,8 @@
               "resourceParams": "[\"ypserv\"]",
               "resourceId": "ypserv"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257830",
@@ -6436,7 +6488,8 @@
               "resourceParams": "[\"rsh-server\"]",
               "resourceId": "rsh-server"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257831",
@@ -6491,7 +6544,8 @@
               "resourceParams": "[\"telnet-server\"]",
               "resourceId": "telnet-server"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257832",
@@ -6548,7 +6602,8 @@
               "resourceParams": "[\"gssproxy\"]",
               "resourceId": "gssproxy"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257833",
@@ -6605,7 +6660,8 @@
               "resourceParams": "[\"iprutils\"]",
               "resourceId": "iprutils"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257834",
@@ -6662,7 +6718,8 @@
               "resourceParams": "[\"tuned\"]",
               "resourceId": "tuned"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257835",
@@ -6719,7 +6776,8 @@
               "resourceParams": "[\"tftp-server\"]",
               "resourceId": "tftp-server"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257836",
@@ -6776,7 +6834,8 @@
               "resourceParams": "[\"quagga\"]",
               "resourceId": "quagga"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257837",
@@ -6858,7 +6917,8 @@
               "resourceParams": "[\"xorg-x11-server-Xwayland\"]",
               "resourceId": "xorg-x11-server-Xwayland"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257838",
@@ -6921,7 +6981,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257839",
@@ -6979,7 +7040,8 @@
               "resourceParams": "[\"gnutls-utils\"]",
               "resourceId": "gnutls-utils"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257840",
@@ -7037,7 +7099,8 @@
               "resourceParams": "[\"nss-tools\"]",
               "resourceId": "nss-tools"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257841",
@@ -7093,7 +7156,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257842",
@@ -7151,7 +7215,8 @@
               "resourceParams": "[\"s-nail\"]",
               "resourceId": "s-nail"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257843",
@@ -7207,7 +7272,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable inside a container; the host manages the container filesystem",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257844",
@@ -7263,7 +7329,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257845",
@@ -7319,7 +7386,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-257846",
@@ -7375,7 +7443,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-257847",
@@ -7433,7 +7502,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-257848",
@@ -7489,7 +7559,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257849",
@@ -7548,7 +7619,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257850",
@@ -7606,7 +7678,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257851",
@@ -7664,7 +7737,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257852",
@@ -7720,7 +7794,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257854",
@@ -7776,7 +7851,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257855",
@@ -7832,7 +7908,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257856",
@@ -7888,7 +7965,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257857",
@@ -7944,7 +8022,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257858",
@@ -8000,7 +8079,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257859",
@@ -8056,7 +8136,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257860",
@@ -8114,7 +8195,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257861",
@@ -8172,7 +8254,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257862",
@@ -8230,7 +8313,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257863",
@@ -8286,7 +8370,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257864",
@@ -8342,7 +8427,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257865",
@@ -8398,7 +8484,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257866",
@@ -8454,7 +8541,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257867",
@@ -8510,7 +8598,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257868",
@@ -8566,7 +8655,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257869",
@@ -8624,7 +8714,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257870",
@@ -8680,7 +8771,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257871",
@@ -8736,7 +8828,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257872",
@@ -8792,7 +8885,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257873",
@@ -8848,7 +8942,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257874",
@@ -8904,7 +8999,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257875",
@@ -8960,7 +9056,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257876",
@@ -9016,7 +9113,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257877",
@@ -9072,7 +9170,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257878",
@@ -9128,7 +9227,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257879",
@@ -9192,7 +9292,8 @@
               "skipMessage": "Disk Encryption and Data At Rest Implementation is handled on the Container Host",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257880",
@@ -9248,7 +9349,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-257881",
@@ -9304,7 +9406,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257882",
@@ -9359,7 +9462,8 @@
               "resourceParams": "[]",
               "resourceId": "System commands"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257883",
@@ -9415,7 +9519,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257884",
@@ -9470,7 +9575,8 @@
               "resourceParams": "[]",
               "resourceId": "System libraries"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257885",
@@ -9534,7 +9640,8 @@
               "resourceParams": "[\"/var/log\"]",
               "resourceId": "/var/log"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257886",
@@ -9590,7 +9697,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257887",
@@ -9647,7 +9755,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257888",
@@ -9705,7 +9814,8 @@
               "resourceParams": "[]",
               "resourceId": "Cron configuration files and directories"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257889",
@@ -9761,7 +9871,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257890",
@@ -9817,7 +9928,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257891",
@@ -9883,7 +9995,8 @@
               "resourceParams": "[\"/etc/group\"]",
               "resourceId": "/etc/group"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257892",
@@ -9949,7 +10062,8 @@
               "resourceParams": "[\"/etc/group-\"]",
               "resourceId": "/etc/group-"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257893",
@@ -10015,7 +10129,8 @@
               "resourceParams": "[\"/etc/gshadow\"]",
               "resourceId": "/etc/gshadow"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257894",
@@ -10081,7 +10196,8 @@
               "resourceParams": "[\"/etc/gshadow-\"]",
               "resourceId": "/etc/gshadow-"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257895",
@@ -10147,7 +10263,8 @@
               "resourceParams": "[\"/etc/passwd\"]",
               "resourceId": "/etc/passwd"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257896",
@@ -10213,7 +10330,8 @@
               "resourceParams": "[\"/etc/passwd-\"]",
               "resourceId": "/etc/passwd-"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257897",
@@ -10279,7 +10397,8 @@
               "resourceParams": "[\"/etc/shadow-\"]",
               "resourceId": "/etc/shadow-"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257898",
@@ -10345,7 +10464,8 @@
               "resourceParams": "[\"/etc/group\"]",
               "resourceId": "/etc/group"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257899",
@@ -10411,7 +10531,8 @@
               "resourceParams": "[\"/etc/group\"]",
               "resourceId": "/etc/group"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257900",
@@ -10477,7 +10598,8 @@
               "resourceParams": "[\"/etc/group-\"]",
               "resourceId": "/etc/group-"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257901",
@@ -10543,7 +10665,8 @@
               "resourceParams": "[\"/etc/group-\"]",
               "resourceId": "/etc/group-"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257902",
@@ -10609,7 +10732,8 @@
               "resourceParams": "[\"/etc/gshadow\"]",
               "resourceId": "/etc/gshadow"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257903",
@@ -10675,7 +10799,8 @@
               "resourceParams": "[\"/etc/gshadow\"]",
               "resourceId": "/etc/gshadow"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257904",
@@ -10741,7 +10866,8 @@
               "resourceParams": "[\"/etc/gshadow-\"]",
               "resourceId": "/etc/gshadow-"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257905",
@@ -10807,7 +10933,8 @@
               "resourceParams": "[\"/etc/gshadow-\"]",
               "resourceId": "/etc/gshadow-"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257906",
@@ -10873,7 +11000,8 @@
               "resourceParams": "[\"/etc/passwd\"]",
               "resourceId": "/etc/passwd"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257907",
@@ -10939,7 +11067,8 @@
               "resourceParams": "[\"/etc/passwd\"]",
               "resourceId": "/etc/passwd"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257908",
@@ -11005,7 +11134,8 @@
               "resourceParams": "[\"/etc/passwd-\"]",
               "resourceId": "/etc/passwd-"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257909",
@@ -11071,7 +11201,8 @@
               "resourceParams": "[\"/etc/passwd-\"]",
               "resourceId": "/etc/passwd-"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257910",
@@ -11137,7 +11268,8 @@
               "resourceParams": "[\"/etc/shadow\"]",
               "resourceId": "/etc/shadow"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257911",
@@ -11203,7 +11335,8 @@
               "resourceParams": "[\"/etc/shadow\"]",
               "resourceId": "/etc/shadow"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257912",
@@ -11269,7 +11402,8 @@
               "resourceParams": "[\"/etc/shadow-\"]",
               "resourceId": "/etc/shadow-"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257913",
@@ -11335,7 +11469,8 @@
               "resourceParams": "[\"/etc/shadow-\"]",
               "resourceId": "/etc/shadow-"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257914",
@@ -11399,7 +11534,8 @@
               "resourceParams": "[\"/var/log\"]",
               "resourceId": "/var/log"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257915",
@@ -11463,7 +11599,8 @@
               "resourceParams": "[\"/var/log\"]",
               "resourceId": "/var/log"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257916",
@@ -11519,7 +11656,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257917",
@@ -11575,7 +11713,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257918",
@@ -11630,7 +11769,8 @@
               "resourceParams": "[]",
               "resourceId": "System commands"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257919",
@@ -11686,7 +11826,8 @@
               "resourceParams": "[]",
               "resourceId": "System commands"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257920",
@@ -11741,7 +11882,8 @@
               "resourceParams": "[]",
               "resourceId": "System libraries"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257921",
@@ -11797,7 +11939,8 @@
               "resourceParams": "[]",
               "resourceId": "System libraries"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257922",
@@ -11854,7 +11997,8 @@
               "resourceParams": "[]",
               "resourceId": "System libraries"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257923",
@@ -11911,7 +12055,8 @@
               "resourceParams": "[]",
               "resourceId": "System libraries"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257924",
@@ -11973,7 +12118,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257925",
@@ -12035,7 +12181,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257926",
@@ -12092,7 +12239,8 @@
               "resourceParams": "[]",
               "resourceId": "Crontabs"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257927",
@@ -12149,7 +12297,8 @@
               "resourceParams": "[]",
               "resourceId": "Crontabs"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257928",
@@ -12206,7 +12355,8 @@
               "resourceParams": "[]",
               "resourceId": "Any world-writeable directories"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257929",
@@ -12261,7 +12411,8 @@
               "resourceParams": "[]",
               "resourceId": "List of world-writable directories on the target"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257930",
@@ -12316,7 +12467,8 @@
               "resourceParams": "[]",
               "resourceId": "All files on RHEL 9"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257931",
@@ -12371,7 +12523,8 @@
               "resourceParams": "[]",
               "resourceId": "All local files and directories"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257932",
@@ -12429,7 +12582,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257934",
@@ -12495,7 +12649,8 @@
               "resourceParams": "[\"/etc/shadow\"]",
               "resourceId": "/etc/shadow"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257935",
@@ -12557,7 +12712,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257936",
@@ -12616,7 +12772,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirment is Not Applicable in the container, the container management platform manages the firewall service",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257937",
@@ -12679,7 +12836,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257939",
@@ -12736,7 +12894,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257940",
@@ -12792,7 +12951,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257941",
@@ -12848,7 +13008,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257942",
@@ -12904,7 +13065,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257943",
@@ -12964,7 +13126,8 @@
               "resourceParams": "[\"chrony\"]",
               "resourceId": "chrony"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257944",
@@ -13034,7 +13197,8 @@
               "resourceParams": "[\"chronyd\"]",
               "resourceId": "chronyd"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257945",
@@ -13103,7 +13267,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257946",
@@ -13161,7 +13326,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-257947",
@@ -13219,7 +13385,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-257948",
@@ -13284,7 +13451,8 @@
               "resourceParams": "[]",
               "resourceId": "The number of nameservers"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257949",
@@ -13342,7 +13510,8 @@
               "resourceParams": "[]",
               "resourceId": "NetworkManager"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257950",
@@ -13408,7 +13577,8 @@
               "resourceParams": "[\"ipsec\"]",
               "resourceId": "ipsec"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257951",
@@ -13465,7 +13635,8 @@
               "skipMessage": "The `postfix` package is not installed; this control is Not Applicable",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257953",
@@ -13522,7 +13693,8 @@
               "resourceParams": "[\"/etc/aliases\", {:assignment_regex=>/^(\\S+):\\s*(\\S+)/}]",
               "resourceId": "/etc/aliases"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257954",
@@ -13586,7 +13758,8 @@
               "resourceParams": "[\"libreswan\"]",
               "resourceId": "libreswan"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257955",
@@ -13641,7 +13814,8 @@
               "resourceParams": "[]",
               "resourceId": "The filesystem"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257956",
@@ -13696,7 +13870,8 @@
               "resourceParams": "[]",
               "resourceId": "The RHEL8 filesystem"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257957",
@@ -13763,7 +13938,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257958",
@@ -13819,7 +13995,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257959",
@@ -13875,7 +14052,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257960",
@@ -13933,7 +14111,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257961",
@@ -13991,7 +14170,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257962",
@@ -14047,7 +14227,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257963",
@@ -14103,7 +14284,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257964",
@@ -14159,7 +14341,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257965",
@@ -14217,7 +14400,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257966",
@@ -14273,7 +14457,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257967",
@@ -14331,7 +14516,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257968",
@@ -14387,7 +14573,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257969",
@@ -14461,7 +14648,8 @@
               "resourceParams": "[]",
               "resourceId": "Kernel config files"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257970",
@@ -14537,7 +14725,8 @@
               "resourceParams": "[]",
               "resourceId": "Kernel config files"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257971",
@@ -14593,7 +14782,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257972",
@@ -14649,7 +14839,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257973",
@@ -14705,7 +14896,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257974",
@@ -14765,7 +14957,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257975",
@@ -14821,7 +15014,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257976",
@@ -14877,7 +15071,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257977",
@@ -14933,7 +15128,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257978",
@@ -15001,7 +15197,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in a container without OpenSSH installed or when physical protections are employed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257979",
@@ -15068,7 +15265,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257980",
@@ -15126,7 +15324,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257981",
@@ -15195,7 +15394,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable - SSH is not installed within containerized RHEL",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257982",
@@ -15254,7 +15454,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257983",
@@ -15325,7 +15526,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257984",
@@ -15391,7 +15593,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257985",
@@ -15451,7 +15654,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257986",
@@ -15510,7 +15714,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-257987",
@@ -15573,7 +15778,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container without open-ssh installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257988",
@@ -15632,7 +15838,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container without open-ssh installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257989",
@@ -15695,7 +15902,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable - SSH is not installed within containerized RHEL",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257991",
@@ -15758,7 +15966,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable - SSH is not installed within containerized RHEL",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257992",
@@ -15817,7 +16026,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257993",
@@ -15874,7 +16084,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable inside a container, the containers host manages the containers filesystems",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257994",
@@ -15940,7 +16151,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH enabled",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257995",
@@ -16004,7 +16216,8 @@
               "skipMessage": "Skipped control due to only_if condition: SSH is not installed on the system this requirement is Not Applicable",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257996",
@@ -16073,7 +16286,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container without open-ssh installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257997",
@@ -16132,7 +16346,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257998",
@@ -16191,7 +16406,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-257999",
@@ -16258,7 +16474,8 @@
               "resourceParams": "[\"/etc/ssh/sshd_config\"]",
               "resourceId": "/etc/ssh/sshd_config"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258000",
@@ -16315,7 +16532,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258001",
@@ -16372,7 +16590,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258002",
@@ -16431,7 +16650,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258003",
@@ -16490,7 +16710,8 @@
               "skipMessage": "The OpenSSH Server is not installed",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258004",
@@ -16549,7 +16770,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258005",
@@ -16608,7 +16830,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258006",
@@ -16665,7 +16888,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258007",
@@ -16722,7 +16946,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258008",
@@ -16779,7 +17004,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without SSH installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258009",
@@ -16838,7 +17064,8 @@
               "skipMessage": "Control not applicable - SSH is not installed within containerized RHEL",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258011",
@@ -16895,7 +17122,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258012",
@@ -16963,7 +17191,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258013",
@@ -17033,7 +17262,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258014",
@@ -17099,7 +17329,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258015",
@@ -17165,7 +17396,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258016",
@@ -17223,7 +17455,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258017",
@@ -17289,7 +17522,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258018",
@@ -17345,7 +17579,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable inside a container, the containers host manages the containers filesystems",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-258019",
@@ -17408,7 +17643,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258020",
@@ -17473,7 +17709,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258021",
@@ -17536,7 +17773,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258022",
@@ -17602,7 +17840,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258023",
@@ -17664,7 +17903,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258024",
@@ -17727,7 +17967,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258025",
@@ -17788,7 +18029,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258026",
@@ -17849,7 +18091,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258027",
@@ -17907,7 +18150,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258028",
@@ -17965,7 +18209,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258029",
@@ -18023,7 +18268,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258030",
@@ -18081,7 +18327,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258031",
@@ -18139,7 +18386,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258032",
@@ -18197,7 +18445,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258033",
@@ -18253,7 +18502,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258034",
@@ -18319,7 +18569,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258035",
@@ -18377,7 +18628,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258036",
@@ -18435,7 +18687,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement does not apply to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258037",
@@ -18495,7 +18748,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-258038",
@@ -18551,7 +18805,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers or virtualized environments",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258039",
@@ -18609,7 +18864,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258040",
@@ -18676,7 +18932,8 @@
               "resourceParams": "[\"nmcli device\"]",
               "resourceId": "Command: `nmcli device`"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258041",
@@ -18734,7 +18991,8 @@
               "resourceParams": "[]",
               "resourceId": "/etc/login.defs does not have `PASS_MAX_DAYS` configured"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258042",
@@ -18791,7 +19049,8 @@
               "resourceParams": "[]",
               "resourceId": "Users are not be able"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258043",
@@ -18846,7 +19105,8 @@
               "resourceParams": "[]",
               "resourceId": "/etc/login.defs"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258044",
@@ -18902,7 +19162,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258045",
@@ -18966,7 +19227,8 @@
               "resourceParams": "[]",
               "resourceId": "Count of interactive unique user IDs should match interactive user count (1): UID count"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258046",
@@ -19023,7 +19285,8 @@
               "resourceParams": "[]",
               "resourceId": "Non-interactive system accounts"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258047",
@@ -19079,7 +19342,8 @@
               "resourceParams": "[]",
               "resourceId": "Temporary accounts"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258048",
@@ -19136,7 +19400,8 @@
               "resourceParams": "[]",
               "resourceId": "Interactive users"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258049",
@@ -19233,7 +19498,8 @@
               "resourceParams": "[]",
               "resourceId": "when INACTIVE is set"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258050",
@@ -19288,7 +19554,8 @@
               "resourceParams": "[]",
               "resourceId": "Initialization files"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258051",
@@ -19344,7 +19611,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258052",
@@ -19400,7 +19668,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258053",
@@ -19456,7 +19725,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258054",
@@ -19527,7 +19797,8 @@
               "resourceParams": "[\"/etc/security/faillock.conf\"]",
               "resourceId": "/etc/security/faillock.conf"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258055",
@@ -19591,7 +19862,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258056",
@@ -19653,7 +19925,8 @@
               "resourceParams": "[\"/etc/security/faillock.conf\"]",
               "resourceId": "/etc/security/faillock.conf"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258057",
@@ -19717,7 +19990,8 @@
               "resourceParams": "[\"/etc/security/faillock.conf\"]",
               "resourceId": "/etc/security/faillock.conf"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258058",
@@ -19773,7 +20047,8 @@
               "resourceParams": "[]",
               "resourceId": "All users"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258059",
@@ -19837,7 +20112,8 @@
               "resourceParams": "[]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-258060",
@@ -19897,7 +20173,8 @@
               "resourceParams": "[\"/etc/security/faillock.conf\"]",
               "resourceId": "/etc/security/faillock.conf"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258061",
@@ -19954,7 +20231,8 @@
               "resourceParams": "[]",
               "resourceId": "All GIDs"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258062",
@@ -20008,7 +20286,8 @@
               "resourceParams": "[]",
               "resourceId": "Interactive user initialization files"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258068",
@@ -20072,7 +20351,8 @@
               "resourceParams": "[]",
               "resourceId": "The system"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258069",
@@ -20128,7 +20408,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-258070",
@@ -20188,7 +20469,8 @@
               "resourceParams": "[\"/etc/security/faillock.conf\"]",
               "resourceId": "/etc/security/faillock.conf"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258071",
@@ -20244,7 +20526,8 @@
               "resourceParams": "[]",
               "resourceId": "/etc/login.defs"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258072",
@@ -20306,7 +20589,8 @@
               "resourceParams": "[]",
               "resourceId": "UMASK should be set in /etc/bashrc"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258073",
@@ -20368,7 +20652,8 @@
               "resourceParams": "[]",
               "resourceId": "UMASK should be set in /etc/csh.cshrc"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258074",
@@ -20424,7 +20709,8 @@
               "resourceParams": "[]",
               "resourceId": "/etc/login.defs"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258075",
@@ -20486,7 +20772,8 @@
               "resourceParams": "[]",
               "resourceId": "UMASK should be set in /etc/profile"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258076",
@@ -20552,7 +20839,8 @@
               "resourceParams": "[\"/etc/pam.d/postlogin\"]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-258077",
@@ -20610,7 +20898,8 @@
               "resourceParams": "[\"/etc/systemd/logind.conf\"]",
               "resourceId": "/etc/systemd/logind.conf"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258078",
@@ -20668,7 +20957,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-258079",
@@ -20724,7 +21014,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258080",
@@ -20784,7 +21075,8 @@
               "skipMessage": "SELinux controls Not Applicable in a container",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258081",
@@ -20842,7 +21134,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258082",
@@ -20900,7 +21193,8 @@
               "resourceParams": "[\"policycoreutils-python-utils\"]",
               "resourceId": "policycoreutils-python-utils"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258083",
@@ -20958,7 +21252,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258084",
@@ -21017,7 +21312,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in a container with no sudo installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258085",
@@ -21075,7 +21371,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without sudo installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258086",
@@ -21139,7 +21436,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container without sudo installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258087",
@@ -21195,7 +21493,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers without sudo installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258088",
@@ -21260,7 +21559,8 @@
               "resourceParams": "[\"/etc/pam.d/su\"]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258089",
@@ -21323,7 +21623,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258090",
@@ -21386,7 +21687,8 @@
               "skipMessage": "This requirement is Not Applicable in the container",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258091",
@@ -21448,7 +21750,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable for containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258094",
@@ -21506,7 +21809,8 @@
               "resourceParams": "[]",
               "resourceId": "The system should be configureed"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-258095",
@@ -21586,7 +21890,8 @@
               "resourceParams": "[\"/etc/pam.d/system-auth\"]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258096",
@@ -21666,7 +21971,8 @@
               "resourceParams": "[\"/etc/pam.d/password-auth\"]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258097",
@@ -21735,7 +22041,8 @@
               "resourceParams": "[\"/etc/pam.d/system-auth\"]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258098",
@@ -21801,7 +22108,8 @@
               "resourceParams": "[\"/etc/pam.d/system-auth\"]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258099",
@@ -21867,7 +22175,8 @@
               "resourceParams": "[\"/etc/pam.d/password-auth\"]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258100",
@@ -21933,7 +22242,8 @@
               "resourceParams": "[\"/etc/pam.d/system-auth\"]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258101",
@@ -22010,7 +22320,8 @@
               "resourceParams": "[]",
               "resourceId": "The root account"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258102",
@@ -22088,7 +22399,8 @@
               "resourceParams": "[]",
               "resourceId": "pwquality.conf settings"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258103",
@@ -22166,7 +22478,8 @@
               "resourceParams": "[]",
               "resourceId": "pwquality.conf settings"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258104",
@@ -22223,7 +22536,8 @@
               "resourceParams": "[]",
               "resourceId": "/etc/login.defs does not have `PASS_MIN_DAYS` configured"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258105",
@@ -22281,7 +22595,8 @@
               "resourceParams": "[]",
               "resourceId": "Users should not"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258106",
@@ -22345,7 +22660,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container without sudo installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258107",
@@ -22403,7 +22719,8 @@
               "resourceParams": "[\"/etc/security/pwquality.conf\"]",
               "resourceId": "/etc/security/pwquality.conf"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258109",
@@ -22480,7 +22797,8 @@
               "resourceParams": "[]",
               "resourceId": "pwquality.conf settings"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258110",
@@ -22536,7 +22854,8 @@
               "resourceParams": "[\"/etc/security/pwquality.conf\"]",
               "resourceId": "/etc/security/pwquality.conf"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258111",
@@ -22614,7 +22933,8 @@
               "resourceParams": "[]",
               "resourceId": "pwquality.conf:"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258112",
@@ -22694,7 +23014,8 @@
               "resourceParams": "[]",
               "resourceId": "Password settings for the root account"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258113",
@@ -22771,7 +23092,8 @@
               "resourceParams": "[]",
               "resourceId": "pwquality.conf settings"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258114",
@@ -22848,7 +23170,8 @@
               "resourceParams": "[]",
               "resourceId": "pwquality.conf settings"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258115",
@@ -22925,7 +23248,8 @@
               "resourceParams": "[]",
               "resourceId": "pwquality.conf settings"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258116",
@@ -22984,7 +23308,8 @@
               "resourceParams": "[\"/etc/libuser.conf\"]",
               "resourceId": "/etc/libuser.conf"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258117",
@@ -23043,7 +23368,8 @@
               "resourceParams": "[]",
               "resourceId": "/etc/login.defs"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258118",
@@ -23109,7 +23435,8 @@
               "skipMessage": "Control not applicable within a container without sudo enabled",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258120",
@@ -23166,7 +23493,8 @@
               "resourceParams": "[]",
               "resourceId": "All users"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258121",
@@ -23248,7 +23576,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258122",
@@ -23317,7 +23646,8 @@
               "skipMessage": "Skipped control due to only_if condition: If the System Administrator demonstrates the use of an approved alternate multifactor authentication method, this requirement is not applicable.",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258123",
@@ -23381,7 +23711,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable inside the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258124",
@@ -23441,7 +23772,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258125",
@@ -23501,7 +23833,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258126",
@@ -23567,7 +23900,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258127",
@@ -23624,7 +23958,8 @@
               "skipMessage": "Control not applicable within a container",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258128",
@@ -23680,7 +24015,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258129",
@@ -23737,7 +24073,8 @@
               "resourceParams": "[\"/usr/lib/systemd/system/rescue.service\"]",
               "resourceId": "/usr/lib/systemd/system/rescue.service"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258131",
@@ -23802,7 +24139,8 @@
               "resourceParams": "[\"/etc/sssd/pki/sssd_auth_ca_db.pem\"]",
               "resourceId": "/etc/sssd/pki/sssd_auth_ca_db.pem"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258132",
@@ -23859,7 +24197,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258133",
@@ -23915,7 +24254,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258134",
@@ -23975,7 +24315,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258135",
@@ -24042,7 +24383,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258136",
@@ -24100,7 +24442,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258137",
@@ -24161,7 +24504,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258138",
@@ -24217,7 +24561,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-258139",
@@ -24273,7 +24618,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-258140",
@@ -24333,7 +24679,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258141",
@@ -24391,7 +24738,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258142",
@@ -24447,7 +24795,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258143",
@@ -24506,7 +24855,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258144",
@@ -24563,7 +24913,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable; remote access not configured within containerized RHEL",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258146",
@@ -24623,7 +24974,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258147",
@@ -24683,7 +25035,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258148",
@@ -24745,7 +25098,8 @@
               "resourceParams": "[]",
               "resourceId": "Rsyslogd DefaultNetstreamDriver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258149",
@@ -24804,7 +25158,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258150",
@@ -24860,7 +25215,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258151",
@@ -24987,7 +25343,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258152",
@@ -25113,7 +25470,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258153",
@@ -25169,7 +25527,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258154",
@@ -25225,7 +25584,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258155",
@@ -25283,7 +25643,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258156",
@@ -25339,7 +25700,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258157",
@@ -25395,7 +25757,8 @@
               "skipMessage": "Skipped control due to only_if condition: This requirement is Not Applicable in the container",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258158",
@@ -25453,7 +25816,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258159",
@@ -25511,7 +25875,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258160",
@@ -25569,7 +25934,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258161",
@@ -25627,7 +25993,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258162",
@@ -25687,7 +26054,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258163",
@@ -25745,7 +26113,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258164",
@@ -25803,7 +26172,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258165",
@@ -25870,7 +26240,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258166",
@@ -25937,7 +26308,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258167",
@@ -26004,7 +26376,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258168",
@@ -26062,7 +26435,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258169",
@@ -26120,7 +26494,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258170",
@@ -26178,7 +26553,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258171",
@@ -26234,7 +26610,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258172",
@@ -26292,7 +26669,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258173",
@@ -26350,7 +26728,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container without sudo enabled",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "low"
         },
         {
           "id": "SV-258174",
@@ -26406,7 +26785,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258175",
@@ -26464,7 +26844,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258176",
@@ -26526,7 +26907,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258177",
@@ -26601,7 +26983,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258178",
@@ -26677,7 +27060,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258179",
@@ -26755,7 +27139,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258180",
@@ -26826,7 +27211,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258181",
@@ -26899,7 +27285,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258182",
@@ -26971,7 +27358,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258183",
@@ -27046,7 +27434,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258184",
@@ -27120,7 +27509,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258185",
@@ -27194,7 +27584,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258186",
@@ -27268,7 +27659,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258187",
@@ -27343,7 +27735,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258188",
@@ -27418,7 +27811,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258189",
@@ -27492,7 +27886,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258190",
@@ -27566,7 +27961,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258191",
@@ -27639,7 +28035,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258192",
@@ -27711,7 +28108,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258193",
@@ -27783,7 +28181,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258194",
@@ -27855,7 +28254,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258195",
@@ -27929,7 +28329,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258196",
@@ -28001,7 +28402,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258197",
@@ -28073,7 +28475,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258198",
@@ -28145,7 +28548,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258199",
@@ -28217,7 +28621,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258200",
@@ -28289,7 +28694,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258201",
@@ -28361,7 +28767,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258202",
@@ -28433,7 +28840,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258203",
@@ -28508,7 +28916,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258204",
@@ -28581,7 +28990,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258205",
@@ -28655,7 +29065,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258206",
@@ -28727,7 +29138,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258207",
@@ -28800,7 +29212,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258208",
@@ -28872,7 +29285,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258209",
@@ -28945,7 +29359,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258210",
@@ -29017,7 +29432,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258211",
@@ -29075,7 +29491,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258212",
@@ -29133,7 +29550,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258213",
@@ -29191,7 +29609,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258214",
@@ -29249,7 +29668,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258215",
@@ -29319,7 +29739,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258216",
@@ -29390,7 +29811,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258217",
@@ -29481,7 +29903,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258218",
@@ -29572,7 +29995,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258219",
@@ -29663,7 +30087,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258220",
@@ -29753,7 +30178,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258221",
@@ -29843,7 +30269,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258222",
@@ -29941,7 +30368,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258223",
@@ -30031,7 +30459,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258224",
@@ -30096,7 +30525,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258225",
@@ -30170,7 +30600,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258226",
@@ -30235,7 +30666,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258227",
@@ -30299,7 +30731,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258228",
@@ -30367,7 +30800,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258229",
@@ -30431,7 +30865,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258230",
@@ -30500,7 +30935,8 @@
               "skipMessage": "The host OS controls the FIPS mode settings. The host OS should also be scanned with the applicable OS validation profile.",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-258231",
@@ -30559,7 +30995,8 @@
               "resourceParams": "[]",
               "resourceId": "All stored passwords"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258232",
@@ -30617,7 +31054,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258233",
@@ -30676,7 +31114,8 @@
               "resourceParams": "[\"/etc/pam.d/system-auth\"]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258234",
@@ -30742,7 +31181,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258236",
@@ -30808,7 +31248,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "SV-258237",
@@ -30865,7 +31306,8 @@
               "resourceParams": "[\"/etc/crypto-policies/back-ends/krb5.config\"]",
               "resourceId": "/usr/share/crypto-policies/DEFAULT/krb5.txt"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258241",
@@ -30931,7 +31373,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable to containers",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-258242",
@@ -30995,7 +31438,8 @@
               "skipMessage": "Skipped control due to only_if condition: This control is Not Applicable since bind is not installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-270174",
@@ -31056,7 +31500,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container or when GDM is not installed",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-270175",
@@ -31122,7 +31567,8 @@
               "resourceParams": "[\"/etc/audit/\"]",
               "resourceId": "/etc/audit/"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-270176",
@@ -31188,7 +31634,8 @@
               "resourceParams": "[\"/etc/audit/\"]",
               "resourceId": "/etc/audit/"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-270177",
@@ -31245,7 +31692,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable - SSH is not installed within containerized RHEL",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-270178",
@@ -31302,7 +31750,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable - SSH is not installed within containerized RHEL",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-270180",
@@ -31393,7 +31842,8 @@
               "resourceParams": "[\"/etc/fapolicyd/compiled.rules\"]",
               "resourceId": "/etc/fapolicyd/compiled.rules"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-272488",
@@ -31455,7 +31905,8 @@
               "resourceParams": "[\"postfix\"]",
               "resourceId": "postfix"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "SV-272496",
@@ -31516,7 +31967,8 @@
               "skipMessage": "Skipped control due to only_if condition: Control not applicable within a container without sudo enabled",
               "resource": "No-op"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242376",
@@ -31579,7 +32031,8 @@
               "skipMessage": "Process kube-controller-manager does not exist on the target node.",
               "resource": "Process arguments for kube-controller-manager"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242377",
@@ -31642,7 +32095,8 @@
               "skipMessage": "Process kube-scheduler does not exist on the target node.",
               "resource": "Process arguments for kube-scheduler"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242378",
@@ -31705,7 +32159,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242379",
@@ -31764,7 +32219,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242380",
@@ -31823,7 +32279,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242381",
@@ -31886,7 +32343,8 @@
               "skipMessage": "Process kube-controller-manager does not exist on the target node.",
               "resource": "Process arguments for kube-controller-manager"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "V-242382",
@@ -31953,7 +32411,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242384",
@@ -32016,7 +32475,8 @@
               "skipMessage": "Process kube-scheduler does not exist on the target node.",
               "resource": "Process arguments for kube-scheduler"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242385",
@@ -32079,7 +32539,8 @@
               "skipMessage": "Process kube-controller-manager does not exist on the target node.",
               "resource": "Process arguments for kube-controller-manager"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242386",
@@ -32142,7 +32603,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "V-242387",
@@ -32212,7 +32674,8 @@
               "resourceParams": "[]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "V-242388",
@@ -32275,7 +32738,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "V-242389",
@@ -32338,7 +32802,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242390",
@@ -32401,7 +32866,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "V-242391",
@@ -32471,7 +32937,8 @@
               "resourceParams": "[]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "V-242392",
@@ -32541,7 +33008,8 @@
               "resourceParams": "[]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "V-242393",
@@ -32598,7 +33066,8 @@
               "resourceParams": "[\"sshd\"]",
               "resourceId": "sshd"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242394",
@@ -32655,7 +33124,8 @@
               "resourceParams": "[\"sshd\"]",
               "resourceId": "sshd"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242396",
@@ -32718,7 +33188,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242397",
@@ -32788,7 +33259,8 @@
               "skipMessage": "Kubelet Config file /etc/kubernetes/kubelet-config.yaml does not exist.",
               "resource": "Kubelet Config File /etc/kubernetes/kubelet-config.yaml"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "V-242398",
@@ -32891,7 +33363,8 @@
               "skipMessage": "Kubelet Config file /etc/kubernetes/kubelet-config.yaml does not exist.",
               "resource": "Kubelet Config File /etc/kubernetes/kubelet-config.yaml"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242399",
@@ -32981,7 +33454,8 @@
               "resourceParams": "[]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242400",
@@ -33084,7 +33558,8 @@
               "skipMessage": "Kubelet Config file /etc/kubernetes/kubelet-config.yaml does not exist.",
               "resource": "Kubelet Config File /etc/kubernetes/kubelet-config.yaml"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242401",
@@ -33147,7 +33622,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242402",
@@ -33210,7 +33686,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242403",
@@ -33321,7 +33798,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242404",
@@ -33380,7 +33858,8 @@
               "skipMessage": "Process kubelet does not exist on the target node.",
               "resource": "Process arguments for kubelet"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242405",
@@ -33443,7 +33922,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242406",
@@ -33502,7 +33982,8 @@
               "skipMessage": "Process kubelet does not exist on the target node.",
               "resource": "Process arguments for kubelet"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242407",
@@ -33561,7 +34042,8 @@
               "skipMessage": "Process kubelet does not exist on the target node.",
               "resource": "Process arguments for kubelet"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242408",
@@ -33628,7 +34110,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242409",
@@ -33691,7 +34174,8 @@
               "skipMessage": "Process kube-controller-manager does not exist on the target node.",
               "resource": "Process arguments for kube-controller-manager"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242416",
@@ -33779,7 +34263,8 @@
               "resourceParams": "[]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242418",
@@ -33842,7 +34327,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242419",
@@ -33905,7 +34391,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242420",
@@ -33975,7 +34462,8 @@
               "resourceParams": "[]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242421",
@@ -34038,7 +34526,8 @@
               "skipMessage": "Process kube-controller-manager does not exist on the target node.",
               "resource": "Process arguments for kube-controller-manager"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242422",
@@ -34101,7 +34590,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242423",
@@ -34160,7 +34650,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242424",
@@ -34230,7 +34721,8 @@
               "resourceParams": "[]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242425",
@@ -34300,7 +34792,8 @@
               "resourceParams": "[]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242426",
@@ -34359,7 +34852,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242427",
@@ -34418,7 +34912,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242428",
@@ -34477,7 +34972,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242429",
@@ -34540,7 +35036,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242430",
@@ -34603,7 +35100,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242431",
@@ -34666,7 +35164,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242432",
@@ -34725,7 +35224,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242433",
@@ -34784,7 +35284,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242434",
@@ -34854,7 +35355,8 @@
               "resourceParams": "[]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "V-242435",
@@ -34926,7 +35428,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "V-242436",
@@ -34989,7 +35492,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "V-242438",
@@ -35052,7 +35556,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242439",
@@ -35115,7 +35620,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "high"
         },
         {
           "id": "V-242440",
@@ -35178,7 +35684,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242441",
@@ -35241,7 +35748,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242444",
@@ -35304,7 +35812,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242445",
@@ -35363,7 +35872,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242446",
@@ -35444,7 +35954,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242447",
@@ -35507,7 +36018,8 @@
               "skipMessage": "Process kube-proxy does not exist on the target node.",
               "resource": "Process arguments for kube-proxy"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242448",
@@ -35570,7 +36082,8 @@
               "skipMessage": "Process kube-proxy does not exist on the target node.",
               "resource": "Process arguments for kube-proxy"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242449",
@@ -35640,7 +36153,8 @@
               "resourceParams": "[]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242450",
@@ -35721,7 +36235,8 @@
               "resourceParams": "[]",
               "resourceId": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242451",
@@ -35784,7 +36299,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242452",
@@ -35843,7 +36359,8 @@
               "skipMessage": "Process kubelet does not exist on the target node.",
               "resource": "Process arguments for kubelet"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242453",
@@ -35902,7 +36419,8 @@
               "skipMessage": "Process kubelet does not exist on the target node.",
               "resource": "Process arguments for kubelet"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242454",
@@ -35961,7 +36479,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242455",
@@ -36020,7 +36539,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242456",
@@ -36079,7 +36599,8 @@
               "skipMessage": "Process kubelet does not exist on the target node.",
               "resource": "Process arguments for kubelet"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242457",
@@ -36138,7 +36659,8 @@
               "skipMessage": "Process kubelet does not exist on the target node.",
               "resource": "Process arguments for kubelet"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242458",
@@ -36201,7 +36723,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242459",
@@ -36260,7 +36783,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242460",
@@ -36341,7 +36865,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242461",
@@ -36404,7 +36929,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242462",
@@ -36467,7 +36993,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242463",
@@ -36530,7 +37057,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242464",
@@ -36593,7 +37121,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242465",
@@ -36656,7 +37185,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242466",
@@ -36719,7 +37249,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242467",
@@ -36782,7 +37313,8 @@
               "skipMessage": "",
               "resource": ""
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "V-242468",
@@ -36845,7 +37377,8 @@
               "skipMessage": "Process kube-apiserver does not exist on the target node.",
               "resource": "Process arguments for kube-apiserver"
             }
-          ]
+          ],
+          "severity": "medium"
         },
         {
           "id": "added control",
@@ -36877,7 +37410,8 @@
               "resourceParams": "[\"/tmp\"]",
               "resourceId": "/tmp"
             }
-          ]
+          ],
+          "severity": "high"
         }
       ]
     }
