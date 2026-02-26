@@ -108,6 +108,26 @@ func TestFetchAWSConfigCmd_DataPipeline(t *testing.T) {
 	assert.True(t, strings.Contains(req["title"].(string), "access-keys-rotated"))
 }
 
+// TestFetchAWSConfigCmd_InvalidFormat verifies --format validation.
+func TestFetchAWSConfigCmd_InvalidFormat(t *testing.T) {
+	cmd := newFetchAWSConfigCmd()
+	cmd.Flags().Set("region", "us-east-1") //nolint:errcheck
+	cmd.Flags().Set("format", "xml")       //nolint:errcheck
+	err := cmd.RunE(cmd, []string{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid --format")
+}
+
+// TestFetchAWSConfigCmd_FormatFlagExists verifies --format is available.
+func TestFetchAWSConfigCmd_FormatFlagExists(t *testing.T) {
+	root := NewRootCmd()
+	root.SetArgs([]string{"fetch", "aws-config", "--help"})
+	var out bytes.Buffer
+	root.SetOut(&out)
+	_ = root.Execute()
+	assert.Contains(t, out.String(), "format")
+}
+
 // TestFetchAWSConfigCmd_ExecuteWithContext verifies the command wires context correctly.
 func TestFetchAWSConfigCmd_ExecuteWithContext(t *testing.T) {
 	cmd := newFetchAWSConfigCmd()
