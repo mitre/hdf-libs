@@ -246,6 +246,72 @@ func TestGitLabFetcher_ContextCancelled(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestGitLabFetcher_ResponseSizeLimit(t *testing.T) {
+	// Use a small limit for the test to avoid allocating 10MB.
+	const testLimit int64 = 1024
+
+	oversizedBody := make([]byte, testLimit+1)
+	for i := range oversizedBody {
+		oversizedBody[i] = 'x'
+	}
+
+	srv := gitlabServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(oversizedBody)
+	})
+
+	t.Run("exceeds limit", func(t *testing.T) {
+		f, err := newGitLabFetcherWithClient(GitLabParams{
+			URL:             srv.URL,
+			ProjectID:       "proj",
+			Ref:             "main",
+			ScanType:        "sast",
+			JobName:         "job",
+			MaxResponseSize: testLimit,
+		}, &http.Client{})
+		require.NoError(t, err)
+		t.Setenv("GITLAB_TOKEN", "tok")
+
+		_, err = f.Fetch(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "size limit")
+	})
+
+	t.Run("no limit allows large response", func(t *testing.T) {
+		f, err := newGitLabFetcherWithClient(GitLabParams{
+			URL:             srv.URL,
+			ProjectID:       "proj",
+			Ref:             "main",
+			ScanType:        "sast",
+			JobName:         "job",
+			MaxResponseSize: -1,
+		}, &http.Client{})
+		require.NoError(t, err)
+		t.Setenv("GITLAB_TOKEN", "tok")
+
+		data, err := f.Fetch(context.Background())
+		require.NoError(t, err)
+		assert.Len(t, data, int(testLimit+1))
+	})
+
+	t.Run("custom higher limit allows response", func(t *testing.T) {
+		f, err := newGitLabFetcherWithClient(GitLabParams{
+			URL:             srv.URL,
+			ProjectID:       "proj",
+			Ref:             "main",
+			ScanType:        "sast",
+			JobName:         "job",
+			MaxResponseSize: testLimit + 100,
+		}, &http.Client{})
+		require.NoError(t, err)
+		t.Setenv("GITLAB_TOKEN", "tok")
+
+		data, err := f.Fetch(context.Background())
+		require.NoError(t, err)
+		assert.Len(t, data, int(testLimit+1))
+	})
+}
+
 // contextCapturingGitLabTransport records the request context.
 type contextCapturingGitLabTransport struct {
 	inner       http.RoundTripper

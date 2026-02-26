@@ -13,14 +13,15 @@ import (
 
 func newFetchGitlabCmd() *cobra.Command {
 	var (
-		serverURL    string
-		projectID    string
-		ref          string
-		scanType     string
-		artifactPath string
-		jobName      string
-		format       string
-		outputPath   string
+		serverURL       string
+		projectID       string
+		ref             string
+		scanType        string
+		artifactPath    string
+		jobName         string
+		format          string
+		maxResponseSize int64
+		outputPath      string
 	)
 
 	cmd := &cobra.Command{
@@ -88,12 +89,13 @@ Output defaults to stdout when no output path is given.`,
 			}
 
 			f, err := fetchers.NewGitLabFetcher(fetchers.GitLabParams{
-				URL:          serverURL,
-				ProjectID:    projectID,
-				Ref:          ref,
-				ScanType:     scanType,
-				ArtifactPath: artifactPath,
-				JobName:      jobName,
+				URL:             serverURL,
+				ProjectID:       projectID,
+				Ref:             ref,
+				ScanType:        scanType,
+				ArtifactPath:    artifactPath,
+				JobName:         jobName,
+				MaxResponseSize: maxResponseSize,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to initialize GitLab fetcher: %w", err)
@@ -131,6 +133,7 @@ Output defaults to stdout when no output path is given.`,
 	cmd.Flags().StringVar(&artifactPath, "artifact-path", "", "Override default artifact filename")
 	cmd.Flags().StringVar(&jobName, "job", "", "CI job name that produced the artifact (required)")
 	cmd.Flags().StringVar(&format, "format", "hdf", "Output format: hdf (convert to HDF) or raw (native GitLab report)")
+	cmd.Flags().Int64Var(&maxResponseSize, "max-response-size", 0, "Maximum response size in bytes (default: 10MB, -1 for no limit)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file path (default: stdout)")
 
 	_ = cmd.MarkFlagRequired("project")
