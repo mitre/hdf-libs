@@ -115,6 +115,53 @@ func convertResult(v1 V1Result) hdf.RequirementResult {
 	return v2
 }
 
+// validSeverities maps lowercase severity strings to hdf.Severity values.
+var validSeverities = map[string]hdf.Severity{
+	"critical":      hdf.Critical,
+	"high":          hdf.High,
+	"medium":        hdf.Medium,
+	"low":           hdf.Low,
+	"informational": hdf.Informational,
+}
+
+// tagSeverityToSeverity extracts a valid severity from a tags map value.
+// Returns nil if the value is not a recognized severity string.
+func tagSeverityToSeverity(raw interface{}) *hdf.Severity {
+	s, ok := raw.(string)
+	if !ok {
+		return nil
+	}
+	// strings.ToLower is already imported indirectly; use inline lowercase
+	lower := ""
+	for _, c := range s {
+		if c >= 'A' && c <= 'Z' {
+			lower += string(rune(c + 32))
+		} else {
+			lower += string(c)
+		}
+	}
+	if sev, found := validSeverities[lower]; found {
+		return &sev
+	}
+	return nil
+}
+
+// impactToSeverity derives severity from numeric impact score.
+func impactToSeverity(impact float64) hdf.Severity {
+	switch {
+	case impact >= 0.9:
+		return hdf.Critical
+	case impact >= 0.7:
+		return hdf.High
+	case impact >= 0.5:
+		return hdf.Medium
+	case impact > 0:
+		return hdf.Low
+	default:
+		return hdf.Informational // impact=0, no tags.severity
+	}
+}
+
 // convertControl converts a v1.0 control to v2.0 EvaluatedRequirement.
 func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 	v2 := hdf.EvaluatedRequirement{
@@ -173,6 +220,19 @@ func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 	if v2.EffectiveStatus == nil {
 		es := computeEffectiveStatus(v1.Impact, v2.Results)
 		v2.EffectiveStatus = &es
+	}
+
+	// Populate severity: prefer tags.severity (preserves original STIG severity),
+	// fall back to impact-derived. InSpec sets impact=0 for NA controls, losing
+	// the original severity — tags.severity preserves it.
+	if v1.Tags != nil {
+		if sev := tagSeverityToSeverity(v1.Tags["severity"]); sev != nil {
+			v2.Severity = sev
+		}
+	}
+	if v2.Severity == nil {
+		sev := impactToSeverity(v1.Impact)
+		v2.Severity = &sev
 	}
 
 	return v2
