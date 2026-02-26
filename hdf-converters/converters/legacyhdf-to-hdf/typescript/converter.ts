@@ -6,7 +6,11 @@
  * - Baseline: sha256 → checksum, controls → requirements
  * - Control: source_location → sourceLocation, waiver_data → waiverData, status → effectiveStatus
  * - Results: snake_case → camelCase for all fields
+ * - Overlay flattening: merge overlay/wrapper baselines so every requirement has results
  */
+
+import { flattenOverlays } from '@mitre/hdf-parsers';
+import type { HdfResults } from '@mitre/hdf-schema';
 
 // ===== V1.0 Type Definitions =====
 
@@ -183,7 +187,7 @@ export interface V2Baseline {
     value: string;
   };
   depends?: V2Dependency[];
-  parentProfile?: string;
+  parentBaseline?: string;
   status?: string;
   statusMessage?: string;
   skipMessage?: string;
@@ -204,6 +208,33 @@ export interface HDFV2Results {
   extensions?: Record<string, unknown>;
 }
 
+// ===== Severity Helpers =====
+
+/** Valid severity values per HDF v2.0 schema. */
+const VALID_SEVERITIES = new Set(['critical', 'high', 'medium', 'low', 'informational', 'none']);
+
+/**
+ * Convert tags.severity string to a valid severity value.
+ * Returns null if the value is not a recognized severity.
+ */
+function tagSeverityToSeverity(tagSeverity: unknown): string | null {
+  if (typeof tagSeverity !== 'string') return null;
+  const normalized = tagSeverity.toLowerCase().trim();
+  return VALID_SEVERITIES.has(normalized) ? normalized : null;
+}
+
+/**
+ * Derive severity from numeric impact score.
+ * Follows InSpec conventions: 0.9+ critical, 0.7+ high, 0.5+ medium, >0 low, 0 none.
+ */
+function impactToSeverity(impact: number): string {
+  if (impact >= 0.9) return 'critical';
+  if (impact >= 0.7) return 'high';
+  if (impact >= 0.5) return 'medium';
+  if (impact > 0) return 'low';
+  return 'none';
+}
+
 // ===== Conversion Functions =====
 
 /**
@@ -219,7 +250,38 @@ function normalizeStatus(status: string): string {
     'not_reviewed': 'notReviewed',
     'skipped': 'notReviewed', // v1.0 skipped → v2.0 notReviewed
   };
-  return statusMap[status] || status;
+  return statusMap[status] || 'notReviewed'; // unknown statuses default to notReviewed (matches Go)
+}
+
+/**
+ * Compute effectiveStatus from impact and v2 results.
+ * Implements InSpec enhanced outcomes precedence:
+ *   impact=0 → notApplicable
+ *   error > failed > passed > notApplicable > notReviewed
+ *
+ * See docs/design/status-determination.md for full specification.
+ */
+function computeEffectiveStatus(impact: number, results: V2Result[]): string {
+  if (impact === 0) return 'notApplicable';
+  if (results.length === 0) return 'notReviewed';
+
+  let hasFailed = false;
+  let hasPassed = false;
+  let hasNotApplicable = false;
+
+  for (const r of results) {
+    switch (r.status) {
+      case 'error': return 'error'; // fail-fast: highest precedence
+      case 'failed': hasFailed = true; break;
+      case 'passed': hasPassed = true; break;
+      case 'notApplicable': hasNotApplicable = true; break;
+    }
+  }
+
+  if (hasFailed) return 'failed';
+  if (hasPassed) return 'passed';
+  if (hasNotApplicable) return 'notApplicable';
+  return 'notReviewed';
 }
 
 /**
@@ -292,6 +354,18 @@ function convertControl(v1Control: V1Control): V2Requirement {
   if (v1Control.results && Array.isArray(v1Control.results)) {
     v2Req.results = v1Control.results.map(convertResult);
   }
+
+  // Always compute effectiveStatus when not explicitly set.
+  // Uses InSpec enhanced outcomes precedence:
+  // impact=0 → notApplicable, error > failed > passed > notApplicable > notReviewed
+  if (!v2Req.effectiveStatus) {
+    v2Req.effectiveStatus = computeEffectiveStatus(v1Control.impact, v2Req.results ?? []);
+  }
+
+  // Populate severity: prefer tags.severity (preserves original STIG severity),
+  // fall back to impact-derived. InSpec sets impact=0 for NA controls, losing
+  // the original severity — tags.severity preserves it.
+  v2Req.severity = tagSeverityToSeverity(v1Control.tags?.severity) ?? impactToSeverity(v1Control.impact);
 
   // Preserve any other fields
   const knownFields = new Set([
@@ -402,7 +476,7 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
 
   // Transform snake_case to camelCase
   if (v1Profile.parent_profile !== undefined) {
-    v2Baseline.parentProfile = v1Profile.parent_profile;
+    v2Baseline.parentBaseline = v1Profile.parent_profile;
   }
   if (v1Profile.status_message !== undefined) {
     v2Baseline.statusMessage = v1Profile.status_message;
@@ -511,7 +585,10 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
     };
   }
 
-  return v2;
+  // Flatten overlays: merge overlay/wrapper baselines so every requirement
+  // has results and consumers don't see duplicated controls (741→247 fix).
+  const flat = flattenOverlays(v2 as unknown as HdfResults);
+  return flat.results as unknown as HDFV2Results;
 }
 
 /**

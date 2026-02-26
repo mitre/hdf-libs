@@ -37,7 +37,9 @@
               "runTime": 0.1,
               "startTime": "2024-01-01T00:00:00Z"
             }
-          ]
+          ],
+          "effectiveStatus": "passed",
+          "severity": "medium"
         }
       ],
       "depends": []

@@ -335,7 +335,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       });
     });
 
-    it('should preserve unknown status values', () => {
+    it('should default unknown status values to notReviewed', () => {
       const v1: HDFV1Results = {
         version: '1.0.0',
         platform: { name: 'test' },
@@ -352,8 +352,8 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       };
 
       const v2 = convertV1ToV2(v1);
-      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('custom_status');
-      expect(v2.baselines[0].requirements![0].results[0].status).toBe('custom_result_status');
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notReviewed');
+      expect(v2.baselines[0].requirements![0].results![0].status).toBe('notReviewed');
     });
 
     it('should convert group with all optional fields', () => {
@@ -463,7 +463,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(baseline.attributes).toEqual([{ name: 'attr1', options: {} }]);
       expect(baseline.status).toBe('loaded');
       expect(baseline.checksum).toEqual({ algorithm: 'sha256', value: 'abc123' });
-      expect(baseline.parentProfile).toBe('parent-profile');
+      expect(baseline.parentBaseline).toBe('parent-profile');
       expect(baseline.statusMessage).toBe('Status message');
       expect(baseline.skipMessage).toBe('Skip message');
     });
@@ -638,6 +638,390 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         algorithm: 'sha256',
         value: expect.stringMatching(/^[a-f0-9]{64}$/),
       });
+    });
+  });
+
+  describe('overlay flattening — deep nesting (3-layer overlay)', () => {
+    const raw = readFileSync(
+      join(FIXTURES_DIR, 'input', 'three-layer-overlay.json'),
+      'utf-8'
+    );
+    const v1 = JSON.parse(raw) as HDFV1Results;
+
+    it('should flatten 3 profiles into 1 baseline', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines).toHaveLength(1);
+    });
+
+    it('should produce exactly 247 deduplicated requirements', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements).toHaveLength(247);
+    });
+
+    it('should have results on every requirement (from base profile)', () => {
+      const v2 = convertV1ToV2(v1);
+      const withResults = v2.baselines[0].requirements!.filter(
+        (r) => r.results && r.results.length > 0
+      );
+      expect(withResults).toHaveLength(247);
+    });
+
+    it('should clear parentBaseline on flattened output', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].parentBaseline).toBeUndefined();
+    });
+
+    it('should use top overlay name as baseline name', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].name).toContain('second-layer');
+    });
+  });
+
+  describe('overlay flattening — wide nesting (wrapper)', () => {
+    const raw = readFileSync(
+      join(FIXTURES_DIR, 'input', 'wrapper.json'),
+      'utf-8'
+    );
+    const v1 = JSON.parse(raw) as HDFV1Results;
+
+    it('should flatten 4 profiles into 1 baseline', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines).toHaveLength(1);
+    });
+
+    it('should produce 534 aggregated requirements', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements).toHaveLength(534);
+    });
+
+    it('should use wrapper name as baseline name', () => {
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].name).toBe('wrapper');
+    });
+  });
+
+  describe('overlay flattening — passthrough (no overlays)', () => {
+    it('should pass through single-profile input unchanged', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'simple-profile',
+          controls: [
+            { id: 'V-1', impact: 0.5, results: [{ status: 'passed', code_desc: 'test' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines).toHaveLength(1);
+      expect(v2.baselines[0].name).toBe('simple-profile');
+      expect(v2.baselines[0].requirements).toHaveLength(1);
+    });
+  });
+
+  describe('impact=0 → effectiveStatus notApplicable', () => {
+    it('should set effectiveStatus to notApplicable when impact is 0 and no explicit status', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0, results: [{ status: 'skipped' }] },
+            { id: 'V-2', impact: 0.7, results: [{ status: 'passed' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      const reqs = v2.baselines[0].requirements!;
+      expect(reqs.find(r => r.id === 'V-1')!.effectiveStatus).toBe('notApplicable');
+      expect(reqs.find(r => r.id === 'V-2')!.effectiveStatus).toBe('passed');
+    });
+
+    it('should not override explicit effectiveStatus even if impact is 0', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0, status: 'passed', results: [{ status: 'passed' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('passed');
+    });
+
+    it('should classify 27 impact=0 controls as notApplicable in Three_Layer fixture', () => {
+      const raw = readFileSync(
+        join(FIXTURES_DIR, 'input', 'three-layer-overlay.json'),
+        'utf-8'
+      );
+      const v1 = JSON.parse(raw) as HDFV1Results;
+      const v2 = convertV1ToV2(v1);
+      const reqs = v2.baselines[0].requirements!;
+      const notApplicable = reqs.filter(r => r.effectiveStatus === 'notApplicable');
+      expect(notApplicable).toHaveLength(27);
+
+      // All 27 should have impact=0
+      for (const r of notApplicable) {
+        expect(r.impact).toBe(0);
+      }
+    });
+  });
+
+  describe('effectiveStatus always computed from results', () => {
+    it('should set effectiveStatus=passed when all results passed', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0.7, results: [{ status: 'passed' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('passed');
+    });
+
+    it('should set effectiveStatus=failed when any result failed', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0.7, results: [{ status: 'passed' }, { status: 'failed' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('failed');
+    });
+
+    it('should set effectiveStatus=passed when mixed passed+skipped (not all passed)', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0.7, results: [{ status: 'skipped' }, { status: 'passed' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('passed');
+    });
+
+    it('should set effectiveStatus=notReviewed when all results skipped', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0.5, results: [{ status: 'skipped' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notReviewed');
+    });
+
+    it('should set effectiveStatus=notReviewed when no results', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0.5, results: [] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notReviewed');
+    });
+
+    it('should set effectiveStatus=error when any result errored', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [
+            { id: 'V-1', impact: 0.7, results: [{ status: 'passed' }, { status: 'error' }] },
+          ],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('error');
+    });
+
+    it('Three_Layer fixture: every control has effectiveStatus set', () => {
+      const raw = readFileSync(
+        join(FIXTURES_DIR, 'input', 'three-layer-overlay.json'),
+        'utf-8'
+      );
+      const v1 = JSON.parse(raw) as HDFV1Results;
+      const v2 = convertV1ToV2(v1);
+      const reqs = v2.baselines[0].requirements!;
+      const withoutES = reqs.filter(r => r.effectiveStatus === undefined);
+      expect(withoutES).toHaveLength(0);
+    });
+
+    it('Three_Layer fixture: counts match expected (73 passed, 138 failed, 27 NA, 9 NR)', () => {
+      const raw = readFileSync(
+        join(FIXTURES_DIR, 'input', 'three-layer-overlay.json'),
+        'utf-8'
+      );
+      const v1 = JSON.parse(raw) as HDFV1Results;
+      const v2 = convertV1ToV2(v1);
+      const reqs = v2.baselines[0].requirements!;
+      const counts = { passed: 0, failed: 0, notApplicable: 0, notReviewed: 0, error: 0 };
+      for (const r of reqs) {
+        const es = r.effectiveStatus as string;
+        if (es in counts) counts[es as keyof typeof counts]++;
+      }
+      expect(counts.passed).toBe(73);
+      expect(counts.failed).toBe(138);
+      expect(counts.notApplicable).toBe(27);
+      expect(counts.notReviewed).toBe(9);
+      expect(counts.error).toBe(0);
+    });
+  });
+
+  describe('severity from tags.severity', () => {
+    it('should populate severity from tags.severity for NA controls (impact=0)', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'V-1',
+            impact: 0,
+            tags: { severity: 'medium', nist: ['AC-1'] },
+            results: [{ status: 'skipped' }],
+          }],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      const req = v2.baselines[0].requirements![0];
+      expect(req.severity).toBe('medium');
+      expect(req.effectiveStatus).toBe('notApplicable');
+    });
+
+    it('should populate severity from tags.severity for non-NA controls', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'V-1',
+            impact: 0.7,
+            tags: { severity: 'high' },
+            results: [{ status: 'passed' }],
+          }],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].severity).toBe('high');
+    });
+
+    it('should fall back to impact-derived severity when tags.severity missing', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'V-1',
+            impact: 0.7,
+            results: [{ status: 'passed' }],
+          }],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].severity).toBe('high');
+    });
+
+    it('should map impact values to correct severity levels', () => {
+      const cases = [
+        { impact: 0.9, expected: 'critical' },
+        { impact: 0.7, expected: 'high' },
+        { impact: 0.5, expected: 'medium' },
+        { impact: 0.3, expected: 'low' },
+        { impact: 0, expected: 'none' }, // NA control without tags.severity
+      ];
+      for (const { impact, expected } of cases) {
+        const v1: HDFV1Results = {
+          version: '1.0.0',
+          platform: { name: 'test' },
+          profiles: [{
+            name: 'test',
+            controls: [{ id: 'V-1', impact, results: [] }],
+          }],
+          statistics: {},
+        };
+        const v2 = convertV1ToV2(v1);
+        expect(v2.baselines[0].requirements![0].severity).toBe(expected);
+      }
+    });
+
+    it('should ignore invalid tags.severity values and fall back to impact', () => {
+      const v1: HDFV1Results = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'V-1',
+            impact: 0.7,
+            tags: { severity: 'bogus' },
+            results: [{ status: 'passed' }],
+          }],
+        }],
+        statistics: {},
+      };
+      const v2 = convertV1ToV2(v1);
+      expect(v2.baselines[0].requirements![0].severity).toBe('high');
+    });
+
+    it('ubi9 fixture: NA controls should have severity from tags, not "none"', () => {
+      const raw = readFileSync(join(FIXTURES_DIR, 'input', 'ubi9-scan.json'), 'utf-8');
+      const v1 = JSON.parse(raw) as HDFV1Results;
+      const v2 = convertV1ToV2(v1);
+      const reqs = v2.baselines[0].requirements!;
+
+      // SV-257779 has impact=0 (NA) but tags.severity=medium
+      const sv257779 = reqs.find(r => r.id === 'SV-257779');
+      expect(sv257779).toBeDefined();
+      expect(sv257779!.effectiveStatus).toBe('notApplicable');
+      expect(sv257779!.severity).toBe('medium');
+
+      // No NA control should have severity "none" when tags.severity exists
+      const naWithNone = reqs.filter(
+        r => r.effectiveStatus === 'notApplicable' && r.severity === 'none'
+      );
+      expect(naWithNone).toHaveLength(0);
     });
   });
 

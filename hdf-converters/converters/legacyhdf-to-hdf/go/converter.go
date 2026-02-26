@@ -4,8 +4,55 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfparsers "github.com/mitre/hdf-parsers/go"
 	hdf "github.com/mitre/hdf-schema"
 )
+
+// computeEffectiveStatus derives effectiveStatus from impact and v2 results.
+// Implements InSpec enhanced outcomes precedence:
+//
+//	impact=0 → notApplicable
+//	error > failed > passed > notApplicable > notReviewed
+//
+// See docs/design/status-determination.md for full specification.
+func computeEffectiveStatus(impact float64, results []hdf.RequirementResult) hdf.ResultStatus {
+	if impact == 0 {
+		return hdf.NotApplicable
+	}
+	if len(results) == 0 {
+		return hdf.NotReviewed
+	}
+
+	hasFailed := false
+	hasPassed := false
+	hasNotApplicable := false
+
+	for _, r := range results {
+		switch r.Status {
+		case hdf.Error:
+			return hdf.Error // fail-fast: highest precedence
+		case hdf.Failed:
+			hasFailed = true
+		case hdf.Passed:
+			hasPassed = true
+		case hdf.NotApplicable:
+			hasNotApplicable = true
+		case hdf.NotReviewed:
+			// lowest precedence
+		}
+	}
+
+	if hasFailed {
+		return hdf.Failed
+	}
+	if hasPassed {
+		return hdf.Passed
+	}
+	if hasNotApplicable {
+		return hdf.NotApplicable
+	}
+	return hdf.NotReviewed
+}
 
 // normalizeStatus converts v1.0 status values to v2.0 ResultStatus.
 // Converts snake_case to camelCase and maps to enum values.
@@ -68,6 +115,53 @@ func convertResult(v1 V1Result) hdf.RequirementResult {
 	return v2
 }
 
+// validSeverities maps lowercase severity strings to hdf.Severity values.
+var validSeverities = map[string]hdf.Severity{
+	"critical":      hdf.Critical,
+	"high":          hdf.High,
+	"medium":        hdf.Medium,
+	"low":           hdf.Low,
+	"informational": hdf.Informational,
+}
+
+// tagSeverityToSeverity extracts a valid severity from a tags map value.
+// Returns nil if the value is not a recognized severity string.
+func tagSeverityToSeverity(raw interface{}) *hdf.Severity {
+	s, ok := raw.(string)
+	if !ok {
+		return nil
+	}
+	// strings.ToLower is already imported indirectly; use inline lowercase
+	lower := ""
+	for _, c := range s {
+		if c >= 'A' && c <= 'Z' {
+			lower += string(rune(c + 32))
+		} else {
+			lower += string(c)
+		}
+	}
+	if sev, found := validSeverities[lower]; found {
+		return &sev
+	}
+	return nil
+}
+
+// impactToSeverity derives severity from numeric impact score.
+func impactToSeverity(impact float64) hdf.Severity {
+	switch {
+	case impact >= 0.9:
+		return hdf.Critical
+	case impact >= 0.7:
+		return hdf.High
+	case impact >= 0.5:
+		return hdf.Medium
+	case impact > 0:
+		return hdf.Low
+	default:
+		return hdf.Informational // impact=0, no tags.severity
+	}
+}
+
 // convertControl converts a v1.0 control to v2.0 EvaluatedRequirement.
 func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 	v2 := hdf.EvaluatedRequirement{
@@ -118,6 +212,27 @@ func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 		for i, r := range v1.Results {
 			v2.Results[i] = convertResult(r)
 		}
+	}
+
+	// Always compute effectiveStatus when not explicitly set.
+	// Uses InSpec enhanced outcomes precedence:
+	// impact=0 → notApplicable, error > failed > passed > notApplicable > notReviewed
+	if v2.EffectiveStatus == nil {
+		es := computeEffectiveStatus(v1.Impact, v2.Results)
+		v2.EffectiveStatus = &es
+	}
+
+	// Populate severity: prefer tags.severity (preserves original STIG severity),
+	// fall back to impact-derived. InSpec sets impact=0 for NA controls, losing
+	// the original severity — tags.severity preserves it.
+	if v1.Tags != nil {
+		if sev := tagSeverityToSeverity(v1.Tags["severity"]); sev != nil {
+			v2.Severity = sev
+		}
+	}
+	if v2.Severity == nil {
+		sev := impactToSeverity(v1.Impact)
+		v2.Severity = &sev
 	}
 
 	return v2
@@ -235,5 +350,8 @@ func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 	}
 	v2.Targets = []hdf.Target{target}
 
-	return v2
+	// Flatten overlays: merge overlay/wrapper baselines so every requirement
+	// has results and consumers don't see duplicated controls (741→247 fix).
+	flat := hdfparsers.FlattenOverlays(*v2)
+	return &flat.Results
 }
