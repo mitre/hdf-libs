@@ -733,6 +733,139 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 
 func strPtr(s string) *string { return &s }
 
+// ── Severity from tags.severity ──────────────────
+
+func TestSeverityFromTagsSeverity(t *testing.T) {
+	t.Run("populates severity from tags.severity for NA controls (impact=0)", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name: "test",
+				Controls: []V1Control{{
+					ID:      "V-1",
+					Impact:  0,
+					Tags:    map[string]interface{}{"severity": "medium", "nist": []string{"AC-1"}},
+					Results: []V1Result{{Status: "skipped"}},
+				}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		req := v2.Baselines[0].Requirements[0]
+		require.NotNil(t, req.Severity, "severity should be set")
+		assert.Equal(t, hdf.Medium, *req.Severity)
+		require.NotNil(t, req.EffectiveStatus)
+		assert.Equal(t, hdf.NotApplicable, *req.EffectiveStatus)
+	})
+
+	t.Run("populates severity from tags.severity for non-NA controls", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name: "test",
+				Controls: []V1Control{{
+					ID:      "V-1",
+					Impact:  0.7,
+					Tags:    map[string]interface{}{"severity": "high"},
+					Results: []V1Result{{Status: "passed"}},
+				}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
+		assert.Equal(t, hdf.High, *v2.Baselines[0].Requirements[0].Severity)
+	})
+
+	t.Run("falls back to impact-derived severity when tags.severity missing", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name: "test",
+				Controls: []V1Control{{
+					ID:      "V-1",
+					Impact:  0.7,
+					Results: []V1Result{{Status: "passed"}},
+				}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
+		assert.Equal(t, hdf.High, *v2.Baselines[0].Requirements[0].Severity)
+	})
+
+	t.Run("maps impact values to correct severity levels", func(t *testing.T) {
+		cases := []struct {
+			impact   float64
+			expected hdf.Severity
+		}{
+			{0.9, hdf.Critical},
+			{0.7, hdf.High},
+			{0.5, hdf.Medium},
+			{0.3, hdf.Low},
+		}
+		for _, tc := range cases {
+			v1 := &HDFV1Results{
+				Version:  "1.0.0",
+				Platform: V1Platform{Name: "test"},
+				Profiles: []V1Profile{{
+					Name:     "test",
+					Controls: []V1Control{{ID: "V-1", Impact: tc.impact, Results: []V1Result{}}},
+				}},
+			}
+			v2 := ConvertV1ToV2(v1)
+			require.NotNilf(t, v2.Baselines[0].Requirements[0].Severity, "impact=%.1f should have severity", tc.impact)
+			assert.Equalf(t, tc.expected, *v2.Baselines[0].Requirements[0].Severity, "impact=%.1f", tc.impact)
+		}
+	})
+
+	t.Run("ignores invalid tags.severity and falls back to impact", func(t *testing.T) {
+		v1 := &HDFV1Results{
+			Version:  "1.0.0",
+			Platform: V1Platform{Name: "test"},
+			Profiles: []V1Profile{{
+				Name: "test",
+				Controls: []V1Control{{
+					ID:      "V-1",
+					Impact:  0.7,
+					Tags:    map[string]interface{}{"severity": "bogus"},
+					Results: []V1Result{{Status: "passed"}},
+				}},
+			}},
+		}
+		v2 := ConvertV1ToV2(v1)
+		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
+		assert.Equal(t, hdf.High, *v2.Baselines[0].Requirements[0].Severity)
+	})
+
+	t.Run("ubi9 fixture: NA controls have severity from tags not none", func(t *testing.T) {
+		inputPath := filepath.Join(getFixturesDir(), "input", "ubi9-scan.json")
+		inputData, err := os.ReadFile(inputPath)
+		require.NoError(t, err)
+
+		var v1 HDFV1Results
+		require.NoError(t, json.Unmarshal(inputData, &v1))
+
+		v2 := ConvertV1ToV2(&v1)
+		reqs := v2.Baselines[0].Requirements
+
+		// Find SV-257779: impact=0, tags.severity=medium
+		var sv257779 *hdf.EvaluatedRequirement
+		for i := range reqs {
+			if reqs[i].ID == "SV-257779" {
+				sv257779 = &reqs[i]
+				break
+			}
+		}
+		require.NotNil(t, sv257779, "SV-257779 should exist")
+		require.NotNil(t, sv257779.EffectiveStatus)
+		assert.Equal(t, hdf.NotApplicable, *sv257779.EffectiveStatus)
+		require.NotNil(t, sv257779.Severity)
+		assert.Equal(t, hdf.Medium, *sv257779.Severity)
+	})
+}
+
 func TestParseTime(t *testing.T) {
 	// Valid RFC3339
 	ts := parseTime("2024-01-01T00:00:00Z")
