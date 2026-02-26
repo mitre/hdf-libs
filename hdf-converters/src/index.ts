@@ -53,3 +53,6 @@ export { convertHdfToCsv } from '../converters/hdf-to-csv/typescript/index.js';
 
 // HDF to XML converter
 export { convertHdfToXml } from '../converters/hdf-to-xml/typescript/index.js';
+
+// GitLab Security Report to HDF converter
+export { convertGitlabToHdf } from '../converters/gitlab-to-hdf/typescript/index.js';

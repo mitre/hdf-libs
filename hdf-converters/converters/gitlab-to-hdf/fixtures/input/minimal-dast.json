@@ -1,0 +1,43 @@
+{
+  "version": "15.1.0",
+  "scan": {
+    "analyzer": {
+      "id": "dast",
+      "name": "DAST",
+      "version": "3.0.0"
+    },
+    "scanner": {
+      "id": "zaproxy",
+      "name": "ZAProxy",
+      "version": "2.14.0"
+    },
+    "start_time": "2024-02-20T14:00:00",
+    "end_time": "2024-02-20T14:15:00",
+    "status": "success",
+    "type": "dast"
+  },
+  "vulnerabilities": [
+    {
+      "id": "d4e5f6a7-b8c9-0123-4567-890abcdef012",
+      "name": "Cross-Site Scripting (Reflected)",
+      "description": "The application reflects user input in the response without proper encoding, enabling reflected XSS attacks.",
+      "severity": "High",
+      "solution": "Encode all user input before including it in HTML responses.",
+      "identifiers": [
+        {
+          "type": "cwe",
+          "name": "CWE-79",
+          "value": "79",
+          "url": "https://cwe.mitre.org/data/definitions/79.html"
+        }
+      ],
+      "location": {
+        "hostname": "https://app.example.com",
+        "method": "GET",
+        "param": "q",
+        "path": "/search"
+      },
+      "links": []
+    }
+  ]
+}
