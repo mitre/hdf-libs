@@ -208,6 +208,33 @@ export interface HDFV2Results {
   extensions?: Record<string, unknown>;
 }
 
+// ===== Severity Helpers =====
+
+/** Valid severity values per HDF v2.0 schema. */
+const VALID_SEVERITIES = new Set(['critical', 'high', 'medium', 'low', 'informational', 'none']);
+
+/**
+ * Convert tags.severity string to a valid severity value.
+ * Returns null if the value is not a recognized severity.
+ */
+function tagSeverityToSeverity(tagSeverity: unknown): string | null {
+  if (typeof tagSeverity !== 'string') return null;
+  const normalized = tagSeverity.toLowerCase().trim();
+  return VALID_SEVERITIES.has(normalized) ? normalized : null;
+}
+
+/**
+ * Derive severity from numeric impact score.
+ * Follows InSpec conventions: 0.9+ critical, 0.7+ high, 0.5+ medium, >0 low, 0 none.
+ */
+function impactToSeverity(impact: number): string {
+  if (impact >= 0.9) return 'critical';
+  if (impact >= 0.7) return 'high';
+  if (impact >= 0.5) return 'medium';
+  if (impact > 0) return 'low';
+  return 'none';
+}
+
 // ===== Conversion Functions =====
 
 /**
@@ -334,6 +361,11 @@ function convertControl(v1Control: V1Control): V2Requirement {
   if (!v2Req.effectiveStatus) {
     v2Req.effectiveStatus = computeEffectiveStatus(v1Control.impact, v2Req.results ?? []);
   }
+
+  // Populate severity: prefer tags.severity (preserves original STIG severity),
+  // fall back to impact-derived. InSpec sets impact=0 for NA controls, losing
+  // the original severity — tags.severity preserves it.
+  v2Req.severity = tagSeverityToSeverity(v1Control.tags?.severity) ?? impactToSeverity(v1Control.impact);
 
   // Preserve any other fields
   const knownFields = new Set([
