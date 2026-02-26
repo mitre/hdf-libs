@@ -104,6 +104,18 @@ func mergeRequirement(existing, incoming hdf.EvaluatedRequirement) hdf.Evaluated
 		result.Tags = merged
 	}
 
+	// Severity: incoming wins if present, else keep existing
+	if incoming.Severity != nil {
+		result.Severity = incoming.Severity
+	}
+
+	// EffectiveStatus: incoming wins only if it has results (otherwise its
+	// EffectiveStatus is a computed artifact from empty results, not intentional).
+	// Overlays typically have empty results — the base has the real test results.
+	if incoming.EffectiveStatus != nil && len(incoming.Results) > 0 {
+		result.EffectiveStatus = incoming.EffectiveStatus
+	}
+
 	// Descriptions: merge by label with deterministic order (existing first, then new from incoming)
 	if len(incoming.Descriptions) > 0 {
 		descMap := make(map[string]hdf.Description, len(existing.Descriptions)+len(incoming.Descriptions))

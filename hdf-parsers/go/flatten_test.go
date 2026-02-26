@@ -68,6 +68,14 @@ func withDescriptions(descs ...hdf.Description) func(*hdf.EvaluatedRequirement) 
 	return func(r *hdf.EvaluatedRequirement) { r.Descriptions = descs }
 }
 
+func withSeverity(s *hdf.Severity) func(*hdf.EvaluatedRequirement) {
+	return func(r *hdf.EvaluatedRequirement) { r.Severity = s }
+}
+
+func withEffectiveStatus(s *hdf.ResultStatus) func(*hdf.EvaluatedRequirement) {
+	return func(r *hdf.EvaluatedRequirement) { r.EffectiveStatus = s }
+}
+
 func result(status string) hdf.RequirementResult {
 	return hdf.RequirementResult{Status: hdf.ResultStatus(status), CodeDesc: "test"}
 }
@@ -405,6 +413,94 @@ func TestFlattenOverlays_MergeSemantics(t *testing.T) {
 		})
 		flat := FlattenOverlays(results)
 		assert.Equal(t, 0.0, flat.Results.Baselines[0].Requirements[0].Impact)
+	})
+
+	t.Run("severity from overlay wins over base", func(t *testing.T) {
+		medium := hdf.Medium
+		high := hdf.High
+		results := makeResults([]hdf.EvaluatedBaseline{
+			makeBaseline("overlay", []hdf.EvaluatedRequirement{
+				makeReq("V-1", withImpact(0.0), withSeverity(&medium)),
+			}),
+			makeBaseline("base", []hdf.EvaluatedRequirement{
+				makeReq("V-1", withImpact(0.7), withSeverity(&high), withResults(result("passed"))),
+			}, withParent("overlay")),
+		})
+		flat := FlattenOverlays(results)
+		req := flat.Results.Baselines[0].Requirements[0]
+		require.NotNil(t, req.Severity)
+		assert.Equal(t, hdf.Medium, *req.Severity)
+	})
+
+	t.Run("base severity preserved when overlay has none", func(t *testing.T) {
+		high := hdf.High
+		results := makeResults([]hdf.EvaluatedBaseline{
+			makeBaseline("overlay", []hdf.EvaluatedRequirement{
+				makeReq("V-1", withImpact(0.0)),
+			}),
+			makeBaseline("base", []hdf.EvaluatedRequirement{
+				makeReq("V-1", withImpact(0.7), withSeverity(&high), withResults(result("passed"))),
+			}, withParent("overlay")),
+		})
+		flat := FlattenOverlays(results)
+		req := flat.Results.Baselines[0].Requirements[0]
+		require.NotNil(t, req.Severity)
+		assert.Equal(t, hdf.High, *req.Severity)
+	})
+
+	t.Run("severity survives three-layer merge", func(t *testing.T) {
+		medium := hdf.Medium
+		high := hdf.High
+		results := makeResults([]hdf.EvaluatedBaseline{
+			makeBaseline("top", []hdf.EvaluatedRequirement{
+				makeReq("V-1", withImpact(0.0), withSeverity(&medium)),
+			}),
+			makeBaseline("mid", []hdf.EvaluatedRequirement{
+				makeReq("V-1", withImpact(0.0)),
+			}, withParent("top")),
+			makeBaseline("base", []hdf.EvaluatedRequirement{
+				makeReq("V-1", withImpact(0.7), withSeverity(&high), withResults(result("passed"))),
+			}, withParent("mid")),
+		})
+		flat := FlattenOverlays(results)
+		req := flat.Results.Baselines[0].Requirements[0]
+		require.NotNil(t, req.Severity)
+		assert.Equal(t, hdf.Medium, *req.Severity)
+	})
+
+	t.Run("effectiveStatus from overlay wins when overlay has results", func(t *testing.T) {
+		na := hdf.NotApplicable
+		passed := hdf.Passed
+		naResult := hdf.RequirementResult{Status: hdf.NotApplicable, CodeDesc: "NA check"}
+		results := makeResults([]hdf.EvaluatedBaseline{
+			makeBaseline("overlay", []hdf.EvaluatedRequirement{
+				makeReq("V-1", withImpact(0.0), withEffectiveStatus(&na), withResults(naResult)),
+			}),
+			makeBaseline("base", []hdf.EvaluatedRequirement{
+				makeReq("V-1", withImpact(0.7), withEffectiveStatus(&passed), withResults(result("passed"))),
+			}, withParent("overlay")),
+		})
+		flat := FlattenOverlays(results)
+		req := flat.Results.Baselines[0].Requirements[0]
+		require.NotNil(t, req.EffectiveStatus)
+		assert.Equal(t, hdf.NotApplicable, *req.EffectiveStatus)
+	})
+
+	t.Run("base effectiveStatus preserved when overlay has no results", func(t *testing.T) {
+		nr := hdf.NotReviewed
+		passed := hdf.Passed
+		results := makeResults([]hdf.EvaluatedBaseline{
+			makeBaseline("overlay", []hdf.EvaluatedRequirement{
+				makeReq("V-1", withImpact(0.0), withEffectiveStatus(&nr)),
+			}),
+			makeBaseline("base", []hdf.EvaluatedRequirement{
+				makeReq("V-1", withImpact(0.7), withEffectiveStatus(&passed), withResults(result("passed"))),
+			}, withParent("overlay")),
+		})
+		flat := FlattenOverlays(results)
+		req := flat.Results.Baselines[0].Requirements[0]
+		require.NotNil(t, req.EffectiveStatus)
+		assert.Equal(t, hdf.Passed, *req.EffectiveStatus)
 	})
 }
 
