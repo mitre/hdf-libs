@@ -80,6 +80,18 @@ function mergeRequirement(
     result.tags = { ...existing.tags, ...incoming.tags };
   }
 
+  // Severity: incoming wins if present, else keep existing
+  if (incoming.severity !== undefined) {
+    result.severity = incoming.severity;
+  }
+
+  // EffectiveStatus: incoming wins only if it has results (otherwise its
+  // effectiveStatus is a computed artifact from empty results, not intentional).
+  // Overlays typically have empty results — the base has the real test results.
+  if (incoming.effectiveStatus !== undefined && incoming.results && incoming.results.length > 0) {
+    result.effectiveStatus = incoming.effectiveStatus;
+  }
+
   // Descriptions: merge by label (incoming overrides same label)
   if (incoming.descriptions && incoming.descriptions.length > 0) {
     const descMap = new Map(
