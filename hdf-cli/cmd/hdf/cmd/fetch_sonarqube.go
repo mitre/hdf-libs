@@ -18,6 +18,7 @@ func newFetchSonarqubeCmd() *cobra.Command {
 		branch       string
 		pullRequest  string
 		organization string
+		format       string
 		outputPath   string
 	)
 
@@ -57,6 +58,10 @@ Output defaults to stdout when no output path is given.`,
 				outputPath = args[0]
 			}
 
+			if err := validateFetchFormat(format); err != nil {
+				return err
+			}
+
 			token := os.Getenv("SONARQUBE_TOKEN")
 			if token == "" {
 				return fmt.Errorf(
@@ -84,6 +89,10 @@ Output defaults to stdout when no output path is given.`,
 			}
 			printDebug("Fetched %d bytes of raw SonarQube data", len(raw))
 
+			if format == fetchFormatRaw {
+				return writeConvertOutput(raw, outputPath)
+			}
+
 			result, err := sonarqube.ConvertSonarqubeToHDF(raw, version)
 			if err != nil {
 				return fmt.Errorf("sonarqube conversion failed: %w", err)
@@ -103,6 +112,7 @@ Output defaults to stdout when no output path is given.`,
 	cmd.Flags().StringVar(&branch, "branch", "", "Branch name (mutually exclusive with --pull-request)")
 	cmd.Flags().StringVar(&pullRequest, "pull-request", "", "Pull request ID (mutually exclusive with --branch)")
 	cmd.Flags().StringVar(&organization, "organization", "", "SonarCloud organization key")
+	cmd.Flags().StringVar(&format, "format", "hdf", "Output format: hdf (convert to HDF) or raw (native tool output)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file path (default: stdout)")
 
 	_ = cmd.MarkFlagRequired("url")

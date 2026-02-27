@@ -14,6 +14,7 @@ func newFetchAWSConfigCmd() *cobra.Command {
 	var (
 		region     string
 		profile    string
+		format     string
 		outputPath string
 	)
 
@@ -45,6 +46,10 @@ Output defaults to stdout when no output path is given.`,
 				outputPath = args[0]
 			}
 
+			if err := validateFetchFormat(format); err != nil {
+				return err
+			}
+
 			f, err := fetchers.NewAWSConfigFetcher(cmd.Context(), fetchers.AWSConfigParams{
 				Region:  region,
 				Profile: profile,
@@ -59,6 +64,10 @@ Output defaults to stdout when no output path is given.`,
 				return fmt.Errorf("failed to fetch AWS Config data: %w", err)
 			}
 			printDebug("Fetched %d bytes of raw AWS Config data", len(raw))
+
+			if format == fetchFormatRaw {
+				return writeConvertOutput(raw, outputPath)
+			}
 
 			result, err := awsconfig.ConvertAWSConfigToHDF(raw, version)
 			if err != nil {
@@ -76,6 +85,7 @@ Output defaults to stdout when no output path is given.`,
 
 	cmd.Flags().StringVarP(&region, "region", "r", "", "AWS region (required)")
 	cmd.Flags().StringVarP(&profile, "profile", "p", "", "AWS CLI named profile (from ~/.aws/credentials or ~/.aws/config)")
+	cmd.Flags().StringVar(&format, "format", "hdf", "Output format: hdf (convert to HDF) or raw (native tool output)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file path (default: stdout)")
 
 	_ = cmd.MarkFlagRequired("region")
