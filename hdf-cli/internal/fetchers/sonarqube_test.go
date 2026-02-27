@@ -383,6 +383,7 @@ func TestSonarqubeFetcher_FetchAndConvert(t *testing.T) {
 	assert.Equal(t, 1.0, req.Impact) // BLOCKER
 }
 
+//nolint:dupl // Token-leakage tests are structurally identical across fetchers by design
 func TestSonarqubeFetcher_TokenNotInErrorMessages(t *testing.T) {
 	srv := sonarqubeServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)

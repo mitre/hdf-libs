@@ -1,9 +1,8 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import {
-  getCweNistControl,
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -253,7 +252,7 @@ function convertRuleToRequirement(
 
   // Extract tags and mappings
   const { cweIds, owaspTags, allTags } = extractTags(rule, issues);
-  const nistControls = mapToNist(cweIds);
+  const nistControls = mapCWEToNIST(cweIds, DEFAULT_NIST_TAGS);
   const cciControls = nistToCci(nistControls);
 
   // Create results for each issue
@@ -403,32 +402,6 @@ function extractTags(
     allTags,
   };
 }
-
-function mapToNist(
-  cweIds: string[],
-): string[] {
-  const nistSet = new Set<string>();
-
-  // Map CWE to NIST
-  for (const cweId of cweIds) {
-    const numericId = parseInt(cweId.replace('CWE-', ''), 10);
-    if (!isNaN(numericId)) {
-      const nistControl = getCweNistControl(numericId);
-      if (nistControl) {
-        nistSet.add(nistControl);
-      }
-    }
-  }
-
-  // If no NIST mappings found, fall back to SA-11 for all issue types
-  if (nistSet.size === 0) {
-    return DEFAULT_NIST_TAGS;
-  }
-
-  return Array.from(nistSet).sort();
-}
-
-
 
 function createResultFromIssue(
   issue: SonarQubeIssue,

@@ -10,7 +10,6 @@ import (
 	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
-	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -68,28 +67,6 @@ func getImpact(severity string) float64 {
 	}
 }
 
-// nistTagsForCWEs looks up NIST controls for the given CWE identifiers,
-// falling back to DefaultStaticAnalysisNIST when no mapping is found.
-func nistTagsForCWEs(cweIDs []string) []string {
-	seen := make(map[string]bool)
-	for _, cweID := range cweIDs {
-		// Strip "CWE-" prefix if present
-		numericID := strings.TrimPrefix(cweID, "CWE-")
-		controls := cwe.NISTControls(numericID)
-		for _, c := range controls {
-			seen[c] = true
-		}
-	}
-	if len(seen) == 0 {
-		return shared.DefaultStaticAnalysisNIST
-	}
-	result := make([]string, 0, len(seen))
-	for c := range seen {
-		result = append(result, c)
-	}
-	return result
-}
-
 // formatDependencyPath formats the "from" array as a human-readable dependency path.
 func formatDependencyPath(from []string) string {
 	if len(from) == 0 {
@@ -116,7 +93,7 @@ func groupByID(vulns []SnykVuln) ([]string, map[string][]SnykVuln) {
 func buildRequirement(vulnID string, vulns []SnykVuln) hdf.EvaluatedRequirement {
 	rep := vulns[0]
 
-	nist := nistTagsForCWEs(rep.Identifiers.CWE)
+	nist := shared.MapCWEToNIST(rep.Identifiers.CWE, shared.DefaultStaticAnalysisNIST)
 	cciTags := cci.NISTToCCI(nist)
 
 	extras := map[string]interface{}{}

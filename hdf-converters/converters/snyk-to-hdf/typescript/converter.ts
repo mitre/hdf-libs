@@ -1,12 +1,11 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import {
-  getCweNistControl,
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import { detectFormat } from '../../../shared/typescript/formatdetect.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -64,25 +63,6 @@ interface SnykIdentifiers {
 }
 
 /**
- * Returns NIST controls for the given CWE IDs, falling back to DEFAULT_STATIC_ANALYSIS_NIST_TAGS.
- */
-function nistTagsForCWEs(cweIDs: string[]): string[] {
-  const controls = new Set<string>();
-  for (const cweID of cweIDs) {
-    // Strip "CWE-" prefix to get numeric ID
-    const numericStr = cweID.replace(/^CWE-/, '');
-    const numericId = parseInt(numericStr, 10);
-    if (!isNaN(numericId)) {
-      const nistControl = getCweNistControl(numericId);
-      if (nistControl) {
-        controls.add(nistControl);
-      }
-    }
-  }
-  return controls.size > 0 ? [...controls] : DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
-}
-
-/**
  * Formats the "from" array as a human-readable dependency path.
  */
 function formatDependencyPath(from: string[]): string {
@@ -98,7 +78,7 @@ function formatDependencyPath(from: string[]): string {
 function buildRequirement(vulnID: string, vulns: SnykVuln[]): EvaluatedRequirement {
   const rep = vulns[0]!;
   const cweIDs = rep.identifiers.CWE ?? [];
-  const nist = nistTagsForCWEs(cweIDs);
+  const nist = mapCWEToNIST(cweIDs, DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
   const cciTags = nistToCci(nist);
 
   const tags: Record<string, unknown> = {

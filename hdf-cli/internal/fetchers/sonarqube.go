@@ -23,10 +23,6 @@ const (
 
 	// sonarqubeFetchTimeout is applied when the caller has not set a deadline.
 	sonarqubeFetchTimeout = 5 * time.Minute
-
-	// URL scheme constants for SSRF validation.
-	schemeHTTP  = "http"
-	schemeHTTPS = "https"
 )
 
 // SonarqubeParams holds parameters for a live SonarQube fetch.
@@ -80,8 +76,8 @@ func validateSonarqubeURL(rawURL string) error {
 	if rawURL == "" {
 		return fmt.Errorf("SonarQube URL is required")
 	}
-	// Reuse buildSonarQubeAPIURL for scheme validation (single source of truth)
-	if _, err := buildSonarQubeAPIURL(rawURL); err != nil {
+	// Reuse ValidateAndBuildAPIURL for scheme validation (single source of truth)
+	if _, err := ValidateAndBuildAPIURL(rawURL, "/", "SonarQube"); err != nil {
 		return err
 	}
 	return nil
@@ -167,34 +163,8 @@ func (f *SonarqubeFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	return json.Marshal(result)
 }
 
-// fetchPage calls /api/issues/search for a single page.
-// buildSonarQubeAPIURL validates the base URL and constructs a safe API endpoint URL.
-// Returned URL has scheme validated to http/https and path set to the issues API.
-// Separate function breaks gosec G704 taint chain from user-provided URL.
-func buildSonarQubeAPIURL(rawURL string) (*url.URL, error) {
-	parsed, err := url.Parse(rawURL)
-	if err != nil {
-		return nil, fmt.Errorf("invalid SonarQube URL: %w", err)
-	}
-	// SSRF prevention: only allow http/https schemes
-	var scheme string
-	switch parsed.Scheme {
-	case schemeHTTPS:
-		scheme = schemeHTTPS
-	case schemeHTTP:
-		scheme = schemeHTTP
-	default:
-		return nil, fmt.Errorf("invalid SonarQube URL scheme %q: must use http or https", parsed.Scheme)
-	}
-	return &url.URL{
-		Scheme: scheme,
-		Host:   parsed.Host,
-		Path:   "/api/issues/search",
-	}, nil
-}
-
 func (f *SonarqubeFetcher) fetchPage(ctx context.Context, token string, page int) (*sonarqubeconv.IssuesResponse, error) {
-	apiURL, err := buildSonarQubeAPIURL(f.params.URL)
+	apiURL, err := ValidateAndBuildAPIURL(f.params.URL, "/api/issues/search", "SonarQube")
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +195,7 @@ func (f *SonarqubeFetcher) fetchPage(ctx context.Context, token string, page int
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := f.client.Do(req) //#nosec G704 -- host is user-configured SonarQube server; scheme validated in buildSonarQubeAPIURL
+	resp, err := f.client.Do(req) //#nosec G704 -- host is user-configured SonarQube server; scheme validated in ValidateAndBuildAPIURL
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
