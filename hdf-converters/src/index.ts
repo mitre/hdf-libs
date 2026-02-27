@@ -59,3 +59,6 @@ export { convertHdfToXml } from '../converters/hdf-to-xml/typescript/index.js';
 
 // GitLab Security Report to HDF converter
 export { convertGitlabToHdf } from '../converters/gitlab-to-hdf/typescript/index.js';
+
+// TruffleHog to HDF converter
+export { convertTrufflehogToHdf } from '../converters/trufflehog-to-hdf/typescript/index.js';
