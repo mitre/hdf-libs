@@ -60,7 +60,7 @@ func writeSplunkResultsResponse(w http.ResponseWriter, events []string) {
 
 // ---- URL validation tests ----
 
-func TestNewSplunkFetcher_URLValidation(t *testing.T) {
+func TestNewSplunkFetcher_URLValidation(t *testing.T) { //nolint:dupl // URL validation pattern shared across fetcher tests
 	valid := []string{
 		"http://splunk.example.com",
 		"https://splunk.example.com",

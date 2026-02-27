@@ -16,6 +16,7 @@ import {
   convertSplunkToHdf,
   convertHdfToCsv,
   convertHdfToXml,
+  convertGitlabToHdf,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -110,6 +111,11 @@ describe('Main exports', () => {
   it('should export convertHdfToXml from main index', () => {
     expect(convertHdfToXml).toBeDefined();
     expect(typeof convertHdfToXml).toBe('function');
+  });
+
+  it('should export convertGitlabToHdf from main index', () => {
+    expect(convertGitlabToHdf).toBeDefined();
+    expect(typeof convertGitlabToHdf).toBe('function');
   });
 
   it('should have working validator from main export', () => {
