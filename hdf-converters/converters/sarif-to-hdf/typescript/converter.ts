@@ -1,10 +1,9 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import {
-  getCweNistControl,
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST } from '../../../shared/typescript/converterutil.js';
 import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, DataSource, Description } from '@mitre/hdf-schema';
 import { ResultStatus, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
@@ -261,7 +260,7 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
     cweIds = extractCweIds(resolveMessageText(firstResult.message, rule));
   }
 
-  const nistControls = mapCweToNist(cweIds);
+  const nistControls = mapCWEToNIST(cweIds, DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
   const cciControls = nistToCci(nistControls);
 
   // Determine requirement-level impact from the rule's inherent severity
@@ -457,30 +456,6 @@ function extractCweIds(text: string): string[] {
   }
 
   return cweIds;
-}
-
-function mapCweToNist(cweIds: string[]): string[] {
-  if (cweIds.length === 0) {
-    return DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
-  }
-
-  const nistSet = new Set<string>();
-  for (const cweId of cweIds) {
-    const numericId = parseInt(cweId.replace('CWE-', ''), 10);
-    if (isNaN(numericId)) {
-      continue;
-    }
-    const nistControl = getCweNistControl(numericId);
-    if (nistControl) {
-      nistSet.add(nistControl);
-    }
-  }
-
-  if (nistSet.size === 0) {
-    return DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
-  }
-
-  return Array.from(nistSet);
 }
 
 // --- Kind → Status mapping ---

@@ -11,7 +11,6 @@ import (
 
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
-	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -227,7 +226,7 @@ func convertRuleToRequirement(
 
 	// Extract tags and mappings
 	cweIds, owaspTags, allTags := extractTags(&rule, hasRule, issues)
-	nistControls := mapToNist(cweIds)
+	nistControls := shared.MapCWEToNIST(cweIds, []string{defaultNistTag})
 	cciControls := mapNistToCCI(nistControls)
 
 	// Create results for each issue
@@ -390,29 +389,6 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 	}
 
 	return cweIds, owaspTags, allTags
-}
-
-// mapToNist maps CWE IDs to NIST controls using the CWE→NIST lookup table.
-// Falls back to SA-11 when no CWE mapping is found.
-func mapToNist(cweIDs []string) []string {
-	nistSet := make(map[string]bool)
-	for _, cweID := range cweIDs {
-		for _, ctrl := range cwe.NISTControls(cweID) {
-			nistSet[ctrl] = true
-		}
-	}
-
-	if len(nistSet) > 0 {
-		result := make([]string, 0, len(nistSet))
-		for ctrl := range nistSet {
-			result = append(result, ctrl)
-		}
-		sort.Strings(result)
-		return result
-	}
-
-	// Fall back to SA-11 for all issue types — SonarQube is a static analysis tool
-	return []string{defaultNistTag}
 }
 
 func mapNistToCCI(nistControls []string) []string {

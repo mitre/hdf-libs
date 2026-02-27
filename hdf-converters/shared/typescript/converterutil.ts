@@ -9,6 +9,7 @@
 import { sha256 } from '@mitre/hdf-utilities';
 import type { Checksum } from '@mitre/hdf-schema';
 import { HashAlgorithm } from '@mitre/hdf-schema';
+import { getCweNistControl } from '@mitre/hdf-mappings';
 
 /**
  * Compute a SHA-256 checksum of raw converter input.
@@ -88,6 +89,58 @@ export function stripHTML(html: string): string {
     .replace(/<[^>]*>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Limit an array and log a warning if truncated.
+ *
+ * Wraps {@link limitArray} with a console.warn call when items are truncated.
+ *
+ * @param items - Array to limit
+ * @param label - Item type label for warning message (e.g., "vulnerability")
+ * @param maxItems - Maximum items (defaults to DEFAULT_MAX_ITEMS)
+ * @returns Limited array (original if within limit)
+ */
+export function limitArrayWithWarning<T>(
+  items: T[],
+  label: string,
+  maxItems = DEFAULT_MAX_ITEMS,
+): T[] {
+  const { items: limited, truncated } = limitArray(items, maxItems);
+  if (truncated) {
+    // eslint-disable-next-line no-console -- Intentional warning for truncated input
+    console.warn(`WARNING: Input truncated at ${limited.length} ${label} items (original: ${items.length})`);
+  }
+  return limited;
+}
+
+/**
+ * Map CWE identifiers to NIST 800-53 controls.
+ *
+ * Looks up each CWE ID, deduplicates, sorts, and falls back to the provided
+ * default when no CWE has a mapping. CWE IDs may optionally have a "CWE-"
+ * prefix (e.g., "CWE-79" or "79").
+ *
+ * @param cweIDs - CWE identifiers (e.g., ["CWE-79", "89"])
+ * @param fallback - Default NIST controls when no mapping is found
+ * @returns Sorted, deduplicated NIST control identifiers
+ */
+export function mapCWEToNIST(
+  cweIDs: string[],
+  fallback: string[],
+): string[] {
+  const controls = new Set<string>();
+  for (const id of cweIDs) {
+    const numericStr = id.replace(/^CWE-/i, '');
+    const numericId = parseInt(numericStr, 10);
+    if (!isNaN(numericId)) {
+      const nistControl = getCweNistControl(numericId);
+      if (nistControl) {
+        controls.add(nistControl);
+      }
+    }
+  }
+  return controls.size > 0 ? [...controls].sort() : fallback;
 }
 
 // Re-export shared constants for converter convenience

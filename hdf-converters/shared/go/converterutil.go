@@ -4,10 +4,13 @@ package testing
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"log"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -135,6 +138,40 @@ func LimitSlice[T any](items []T, maxItems int) ([]T, bool) {
 		return items, false
 	}
 	return items[:maxItems], true
+}
+
+// MapCWEToNIST looks up NIST 800-53 controls for the given CWE identifiers,
+// deduplicates and sorts the results, and falls back to the provided default
+// when no CWE has a mapping. CWE IDs may optionally have a "CWE-" prefix
+// (e.g., "CWE-79" or "79").
+func MapCWEToNIST(cweIDs []string, fallback []string) []string {
+	seen := make(map[string]bool)
+	for _, id := range cweIDs {
+		numericID := strings.TrimPrefix(id, "CWE-")
+		for _, ctrl := range cwe.NISTControls(numericID) {
+			seen[ctrl] = true
+		}
+	}
+	if len(seen) == 0 {
+		return fallback
+	}
+	result := make([]string, 0, len(seen))
+	for ctrl := range seen {
+		result = append(result, ctrl)
+	}
+	sort.Strings(result)
+	return result
+}
+
+// LimitSliceWithWarning returns at most maxItems elements from items and logs
+// a warning if the slice was truncated. The label parameter identifies the item
+// type in the warning message (e.g., "issue", "vulnerability").
+func LimitSliceWithWarning[T any](items []T, maxItems int, label string) []T {
+	limited, truncated := LimitSlice(items, maxItems)
+	if truncated {
+		log.Printf("WARNING: Input truncated at %d %s items (original: %d)", len(limited), label, len(items))
+	}
+	return limited
 }
 
 // ParseTimestamp tries multiple common timestamp formats and returns the first

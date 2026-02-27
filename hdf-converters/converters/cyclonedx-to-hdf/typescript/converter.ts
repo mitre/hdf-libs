@@ -1,10 +1,9 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import {
-  getCweNistControl,
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -145,20 +144,6 @@ function isInfoOrUnknownOnly(ratings: CycloneDXRating[]): boolean {
 }
 
 /**
- * Returns NIST controls for the given CWE IDs, falling back to DEFAULT_STATIC_ANALYSIS_NIST_TAGS.
- */
-function nistTagsForCWEs(cwes: number[]): string[] {
-  const controls = new Set<string>();
-  for (const cweId of cwes) {
-    const nistControl = getCweNistControl(cweId);
-    if (nistControl) {
-      controls.add(nistControl);
-    }
-  }
-  return controls.size > 0 ? [...controls] : DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
-}
-
-/**
  * Formats the ratings as a human-readable tag string.
  */
 function formatRatingsTag(ratings: CycloneDXRating[]): string {
@@ -259,7 +244,7 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
     const ratings = vuln.ratings ?? [];
     const impact = maxImpact(ratings);
     const cwes = vuln.cwes ?? [];
-    const nist = nistTagsForCWEs(cwes);
+    const nist = mapCWEToNIST(cwes.map(c => `${c}`), DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
     const cciTags = nistToCci(nist);
 
     const tags: Record<string, unknown> = {

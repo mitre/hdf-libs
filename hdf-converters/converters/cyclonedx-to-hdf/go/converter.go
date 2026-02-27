@@ -9,7 +9,6 @@ import (
 
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
-	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -164,26 +163,6 @@ func isInfoOrUnknownOnly(ratings []CDXRating) bool {
 	return true
 }
 
-// nistTagsForCWEs returns NIST controls for the given CWE IDs, falling back
-// to DefaultStaticAnalysisNIST when no mapping is found.
-func nistTagsForCWEs(cwes []int) []string {
-	seen := make(map[string]bool)
-	for _, cweID := range cwes {
-		controls := cwe.NISTControls(fmt.Sprintf("%d", cweID))
-		for _, c := range controls {
-			seen[c] = true
-		}
-	}
-	if len(seen) == 0 {
-		return shared.DefaultStaticAnalysisNIST
-	}
-	result := make([]string, 0, len(seen))
-	for c := range seen {
-		result = append(result, c)
-	}
-	return result
-}
-
 // formatRatingsTag formats ratings as a human-readable tag string.
 func formatRatingsTag(ratings []CDXRating) string {
 	parts := make([]string, len(ratings))
@@ -273,7 +252,11 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	for _, vuln := range limitedVulns {
 		ratings := vuln.Ratings
 		impact := maxImpact(ratings)
-		nist := nistTagsForCWEs(vuln.CWEs)
+		cweStrs := make([]string, len(vuln.CWEs))
+		for i, c := range vuln.CWEs {
+			cweStrs[i] = fmt.Sprintf("%d", c)
+		}
+		nist := shared.MapCWEToNIST(cweStrs, shared.DefaultStaticAnalysisNIST)
 		cciTags := cci.NISTToCCI(nist)
 
 		extras := map[string]interface{}{}

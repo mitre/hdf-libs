@@ -10,7 +10,6 @@ import (
 
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
-	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -332,7 +331,7 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 		cweIds = extractCweIds(resolveMessageText(firstResult.Message, rule))
 	}
 
-	nistControls := mapCweToNist(cweIds)
+	nistControls := shared.MapCWEToNIST(cweIds, shared.DefaultStaticAnalysisNIST)
 	cciControls := cci.NISTToCCI(nistControls)
 
 	// Determine requirement-level impact from the rule's inherent severity.
@@ -554,25 +553,6 @@ func extractCweIds(text string) []string {
 	}
 
 	return cweIds
-}
-
-// mapCweToNist maps CWE IDs to NIST controls via the CWE→NIST lookup table.
-// Falls back to shared.DefaultStaticAnalysisNIST when no mapping is found.
-func mapCweToNist(cweIds []string) []string {
-	nistSet := make(map[string]bool)
-	for _, cweID := range cweIds {
-		for _, ctrl := range cwe.NISTControls(cweID) {
-			nistSet[ctrl] = true
-		}
-	}
-	if len(nistSet) > 0 {
-		result := make([]string, 0, len(nistSet))
-		for ctrl := range nistSet {
-			result = append(result, ctrl)
-		}
-		return result
-	}
-	return shared.DefaultStaticAnalysisNIST
 }
 
 // --- Kind → Status mapping ---
