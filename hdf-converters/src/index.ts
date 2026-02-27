@@ -51,5 +51,8 @@ export { convertCyclonedxToHdf } from '../converters/cyclonedx-to-hdf/typescript
 // HDF to CSV converter
 export { convertHdfToCsv } from '../converters/hdf-to-csv/typescript/index.js';
 
+// Splunk to HDF converter
+export { convertSplunkToHdf } from '../converters/splunk-to-hdf/typescript/index.js';
+
 // HDF to XML converter
 export { convertHdfToXml } from '../converters/hdf-to-xml/typescript/index.js';
