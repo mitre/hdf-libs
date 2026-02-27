@@ -26,7 +26,8 @@ func (m *mockConverter) Name() string {
 }
 
 func TestRegisterConverter(t *testing.T) {
-	// Reset registry before test
+	orig := converterRegistry
+	defer func() { converterRegistry = orig }()
 	converterRegistry = make(map[FormatPair]Converter)
 
 	mock := &mockConverter{name: "Test Converter"}
@@ -42,7 +43,8 @@ func TestRegisterConverter(t *testing.T) {
 }
 
 func TestGetConverter_NotFound(t *testing.T) {
-	// Reset registry before test
+	orig := converterRegistry
+	defer func() { converterRegistry = orig }()
 	converterRegistry = make(map[FormatPair]Converter)
 
 	_, err := GetConverter("unknown", "format")
@@ -55,7 +57,8 @@ func TestGetConverter_NotFound(t *testing.T) {
 }
 
 func TestGetConverter_Normalization(t *testing.T) {
-	// Reset registry before test
+	orig := converterRegistry
+	defer func() { converterRegistry = orig }()
 	converterRegistry = make(map[FormatPair]Converter)
 
 	mock := &mockConverter{name: "Normalized Converter"}
@@ -88,7 +91,8 @@ func TestGetConverter_Normalization(t *testing.T) {
 }
 
 func TestListConverters(t *testing.T) {
-	// Reset registry before test
+	orig := converterRegistry
+	defer func() { converterRegistry = orig }()
 	converterRegistry = make(map[FormatPair]Converter)
 
 	mock1 := &mockConverter{name: "Converter 1"}
@@ -124,7 +128,8 @@ func TestListConverters(t *testing.T) {
 }
 
 func TestListConverters_Empty(t *testing.T) {
-	// Reset registry before test
+	orig := converterRegistry
+	defer func() { converterRegistry = orig }()
 	converterRegistry = make(map[FormatPair]Converter)
 
 	pairs := ListConverters()

@@ -50,3 +50,7 @@ hdf-cli/hdf
 
 # Local research notes (to be converted to GitHub wiki pages)
 hdf-cli/SAF_CLI_COMPARISON.md
+.beads/recovery-context.md
+
+# bv (beads viewer) local config and caches
+.bv/
