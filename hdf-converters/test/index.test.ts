@@ -13,6 +13,7 @@ import {
   convertNiktoToHdf,
   convertZapToHdf,
   convertCyclonedxToHdf,
+  convertSplunkToHdf,
   convertHdfToCsv,
   convertHdfToXml,
 } from '../src/index.js';
@@ -94,6 +95,11 @@ describe('Main exports', () => {
   it('should export convertCyclonedxToHdf from main index', () => {
     expect(convertCyclonedxToHdf).toBeDefined();
     expect(typeof convertCyclonedxToHdf).toBe('function');
+  });
+
+  it('should export convertSplunkToHdf from main index', () => {
+    expect(convertSplunkToHdf).toBeDefined();
+    expect(typeof convertSplunkToHdf).toBe('function');
   });
 
   it('should export convertHdfToCsv from main index', () => {

@@ -1,0 +1,107 @@
+[
+    {
+        "meta": {
+            "guid": "PQhDfe2W10YJD6nlsvA2OLz8L326p9",
+            "filename": "rhel7-results.json",
+            "subtype": "header",
+            "hdf_splunk_schema": "1.0",
+            "filetype": "evaluation"
+        },
+        "profiles": [],
+        "platform": {
+            "name": "centos",
+            "release": "7.6.1810"
+        },
+        "statistics": {
+            "duration": 10.681128104
+        },
+        "version": "4.16.0"
+    },
+    {
+        "meta": {
+            "filename": "rhel7-results.json",
+            "filetype": "evaluation",
+            "guid": "PQhDfe2W10YJD6nlsvA2OLz8L326p9",
+            "hdf_splunk_schema": "1.0",
+            "is_baseline": true,
+            "profile_sha256": "d4ecb3e201285a383a4aa6af8d9028e8311cb1975af2b380f098a21c895246ff",
+            "subtype": "profile"
+        },
+        "summary": "The `disa_stig-el7` inspec profile helps scan your system aginst the DISA RHEL7 STIG",
+        "name": "disa_stig-el7",
+        "sha256": "d4ecb3e201285a383a4aa6af8d9028e8311cb1975af2b380f098a21c895246ff",
+        "supports": [],
+        "copyright": "SIMP Team",
+        "copyright_email": "simp-dev@googlegroups.com",
+        "maintainer": "SIMP Team",
+        "version": "0.2.0",
+        "license": "Apache-2.0",
+        "title": "DISA RedHat Enterprise Linux 7 STIG - v1r4",
+        "controls": [],
+        "attributes": [],
+        "groups": [
+            {
+                "id": "controls/V-77825.rb",
+                "controls": [
+                    "V-77825"
+                ]
+            }
+        ],
+        "status": "loaded"
+    },
+    {
+        "meta": {
+            "guid": "PQhDfe2W10YJD6nlsvA2OLz8L326p9",
+            "status": "Passed",
+            "profile_sha256": "d4ecb3e201285a383a4aa6af8d9028e8311cb1975af2b380f098a21c895246ff",
+            "filename": "rhel7-results.json",
+            "subtype": "control",
+            "hdf_splunk_schema": "1.0",
+            "filetype": "evaluation",
+            "is_baseline": true,
+            "is_waived": false,
+            "overlay_depth": 1
+        },
+        "code": "control \"V-77825\" do\n  title \"The operating system must implement virtual address space\nrandomization.\"\n  desc  \"Address space layout randomization (ASLR) makes it more difficult for\nan attacker to predict the location of attack code he or she has introduced\ninto a process's address space during an attempt at exploitation. Additionally,\nASLR also makes it more difficult for an attacker to know the location of\nexisting code in order to repurpose it using return-oriented programming (ROP)\ntechniques.\"\n  impact 0.5\n  tag \"gtitle\": \"SRG-OS-000480-GPOS-00227\"\n  tag \"gid\": \"V-77825\"\n  tag \"rid\": \"SV-92521r1_rule\"\n  tag \"stig_id\": \"RHEL-07-040201\"\n  tag \"cci\": [\"CCI-000366\"]\n  tag \"documentable\": false\n  tag \"nist\": [\"CM-6 b\", \"Rev_4\"]\n  tag \"subsystems\": ['ASLR', 'kernel_parameter']\n  desc \"check\", \"Verify the operating system implements virtual address space\nrandomization.\n\nCheck that the operating system implements virtual address space randomization\nwith the following command:\n\n# grep kernel.randomize_va_space /etc/sysctl.conf\n\nkernel.randomize_va_space=2\n\nIf \\\"kernel.randomize_va_space\\\" does not have a value of \\\"2\\\", this is a\nfinding.\"\n  desc \"fix\", \"Configure the operating system implement virtual address space\nrandomization.\n\nSet the system to the required kernel parameter by adding the following line to\n\\\"/etc/sysctl.conf\\\" (or modify the line to have the required value):\n\nkernel.randomize_va_space=2\"\n  tag \"fix_id\": \"F-84531r1_fix\"\n\ndescribe kernel_parameter('kernel.randomize_va_space') do\n  its('value') { should eq randomize_va_space }\nend\n\nend\n",
+        "desc": "Address space layout randomization (ASLR) makes it more difficult for\nan attacker to predict the location of attack code he or she has introduced\ninto a process's address space during an attempt at exploitation. Additionally,\nASLR also makes it more difficult for an attacker to know the location of\nexisting code in order to repurpose it using return-oriented programming (ROP)\ntechniques.",
+        "descriptions": {
+            "default": "Address space layout randomization (ASLR) makes it more difficult for\nan attacker to predict the location of attack code he or she has introduced\ninto a process's address space during an attempt at exploitation. Additionally,\nASLR also makes it more difficult for an attacker to know the location of\nexisting code in order to repurpose it using return-oriented programming (ROP)\ntechniques.",
+            "check": "Verify the operating system implements virtual address space\nrandomization.\n\nCheck that the operating system implements virtual address space randomization\nwith the following command:\n\n# grep kernel.randomize_va_space /etc/sysctl.conf\n\nkernel.randomize_va_space=2\n\nIf \"kernel.randomize_va_space\" does not have a value of \"2\", this is a\nfinding.",
+            "fix": "Configure the operating system implement virtual address space\nrandomization.\n\nSet the system to the required kernel parameter by adding the following line to\n\"/etc/sysctl.conf\" (or modify the line to have the required value):\n\nkernel.randomize_va_space=2"
+        },
+        "id": "V-77825",
+        "impact": 0.5,
+        "refs": [],
+        "source_location": {
+            "line": 7,
+            "ref": "inspec-profile-disa_stig-el7-master/controls/V-77825.rb"
+        },
+        "tags": {
+            "gtitle": "SRG-OS-000480-GPOS-00227",
+            "gid": "V-77825",
+            "rid": "SV-92521r1_rule",
+            "stig_id": "RHEL-07-040201",
+            "cci": [
+                "CCI-000366"
+            ],
+            "documentable": false,
+            "nist": [
+                "CM-6 b",
+                "Rev_4"
+            ],
+            "subsystems": [
+                "ASLR",
+                "kernel_parameter"
+            ],
+            "fix_id": "F-84531r1_fix"
+        },
+        "results": [
+            {
+                "status": "passed",
+                "code_desc": "Kernel Parameter kernel.randomize_va_space value should eq 2",
+                "start_time": "2019-11-04T16:17:17-05:00",
+                "run_time": 0.015331197
+            }
+        ]
+    }
+]
