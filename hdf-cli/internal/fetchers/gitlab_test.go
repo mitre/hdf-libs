@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -164,16 +165,51 @@ func TestGitLabFetcher_TokenResolution(t *testing.T) {
 }
 
 func TestGitLabFetcher_TokenFromGlabConfig(t *testing.T) {
-	configDir := t.TempDir()
-	configPath := filepath.Join(configDir, "config.yml")
-	configContent := "hosts:\n  127.0.0.1:\n    token: test-config-value\n" //nolint:gosec // test-only credential
-	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0o600))
+	t.Run("bare hostname", func(t *testing.T) {
+		configDir := t.TempDir()
+		configPath := filepath.Join(configDir, "config.yml")
+		configContent := "hosts:\n  127.0.0.1:\n    token: test-config-value\n" //nolint:gosec // test-only credential
+		require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0o600))
 
-	runGitLabTokenTest(t, gitlabTokenTestCase{ //nolint:gosec // test-only credential in config fixture
-		gitlabToken:   "",
-		glabToken:     "",
-		glabConfigDir: configDir,
-		expectedToken: "test-config-value",
+		runGitLabTokenTest(t, gitlabTokenTestCase{ //nolint:gosec // test-only credential in config fixture
+			gitlabToken:   "",
+			glabToken:     "",
+			glabConfigDir: configDir,
+			expectedToken: "test-config-value",
+		})
+	})
+
+	t.Run("hostname with port", func(t *testing.T) {
+		// glab stores "localhost:9090" as the config key when authenticating
+		// to a non-standard port. The fetcher must match the exact host:port.
+		srv := gitlabServer(t, func(w http.ResponseWriter, r *http.Request) {
+			_, _ = fmt.Fprint(w, minimalGitLabReport)
+		})
+
+		// Extract the test server's host:port so the config key matches.
+		srvURL, err := url.Parse(srv.URL)
+		require.NoError(t, err)
+
+		configDir := t.TempDir()
+		configPath := filepath.Join(configDir, "config.yml")
+		configContent := fmt.Sprintf("hosts:\n  %s:\n    token: port-config-value\n", srvURL.Host) //nolint:gosec // test-only credential
+		require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0o600))                 //#nosec G703 -- test fixture in t.TempDir()
+
+		f, err := newGitLabFetcherWithClient(GitLabParams{
+			URL:       srv.URL,
+			ProjectID: "test-project",
+			Ref:       "main",
+			ScanType:  "sast",
+			JobName:   "semgrep-sast",
+		}, &http.Client{})
+		require.NoError(t, err)
+
+		t.Setenv("GITLAB_TOKEN", "")
+		t.Setenv("GLAB_TOKEN", "")
+		t.Setenv("GLAB_CONFIG_DIR", configDir)
+
+		_, err = f.Fetch(context.Background())
+		require.NoError(t, err)
 	})
 }
 
@@ -397,6 +433,34 @@ func TestGitLabFetcher_URLPathConstruction(t *testing.T) {
 		_, err = f.Fetch(context.Background())
 		require.NoError(t, err)
 		assert.Contains(t, capturedPath, "custom/report.json")
+	})
+
+	t.Run("namespace project ID not double-encoded", func(t *testing.T) {
+		var capturedPath string
+		srv := gitlabServer(t, func(w http.ResponseWriter, r *http.Request) {
+			capturedPath = r.URL.RawPath // RawPath preserves %2F
+			if capturedPath == "" {
+				capturedPath = r.URL.Path
+			}
+			_, _ = fmt.Fprint(w, minimalGitLabReport)
+		})
+
+		f, err := newGitLabFetcherWithClient(GitLabParams{
+			URL:       srv.URL,
+			ProjectID: "namespace/project",
+			Ref:       "main",
+			ScanType:  "sast",
+			JobName:   "semgrep-sast",
+		}, &http.Client{})
+		require.NoError(t, err)
+		t.Setenv("GITLAB_TOKEN", "tok")
+
+		_, err = f.Fetch(context.Background())
+		require.NoError(t, err)
+		// The path must contain %2F, not %252F (double-encoded) or a bare /
+		// that would split the project ID into two path segments.
+		assert.Contains(t, capturedPath, "/projects/namespace%2Fproject/",
+			"namespace/project must be encoded as namespace%%2Fproject, not double-encoded")
 	})
 
 	t.Run("default ref", func(t *testing.T) {

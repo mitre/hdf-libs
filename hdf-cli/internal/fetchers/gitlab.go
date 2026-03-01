@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/adrg/xdg"
 	"gopkg.in/yaml.v3"
 )
 
@@ -136,7 +137,13 @@ func (f *GitLabFetcher) Fetch(ctx context.Context) ([]byte, error) {
 
 	// Build the API URL:
 	// GET /api/v4/projects/:id/jobs/artifacts/:ref/raw/*artifact_path?job=:job_name
-	apiPath := fmt.Sprintf("/api/v4/projects/%s/jobs/artifacts/%s/raw/%s",
+	//
+	// RawPath is set alongside Path to prevent double-encoding. PathEscape
+	// turns "/" → "%2F" in namespace-style project IDs like "group/project",
+	// but assigning that to url.URL.Path causes String() to re-encode the
+	// "%" → "%25", producing "%252F". Setting RawPath tells String() to use
+	// the pre-encoded form verbatim.
+	rawAPIPath := fmt.Sprintf("/api/v4/projects/%s/jobs/artifacts/%s/raw/%s",
 		url.PathEscape(f.params.ProjectID),
 		url.PathEscape(ref),
 		artifactPath,
@@ -145,9 +152,11 @@ func (f *GitLabFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	apiURL := &url.URL{
 		Scheme:   baseURL.Scheme,
 		Host:     baseURL.Host,
-		Path:     apiPath,
+		RawPath:  rawAPIPath,
 		RawQuery: url.Values{"job": {f.params.JobName}}.Encode(),
 	}
+	// Path must be set (unescaped) so EscapedPath() validates RawPath.
+	apiURL.Path, _ = url.PathUnescape(rawAPIPath)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL.String(), http.NoBody)
 	if err != nil {
@@ -234,19 +243,9 @@ type glabHost struct {
 
 // readGlabConfigToken reads a token from the glab CLI config for the given hostname.
 func readGlabConfigToken(hostname string) (string, error) {
-	configDir := os.Getenv("GLAB_CONFIG_DIR")
-	if configDir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("cannot determine home directory: %w", err)
-		}
-		configDir = filepath.Join(home, ".config", "glab-cli")
-	}
-
-	configPath := filepath.Join(configDir, "config.yml")
-	data, err := os.ReadFile(configPath) //#nosec G304,G703 -- path is from user's home dir or GLAB_CONFIG_DIR env var
+	data, err := readGlabConfigFile()
 	if err != nil {
-		return "", fmt.Errorf("reading glab config: %w", err)
+		return "", err
 	}
 
 	var cfg glabConfig
@@ -254,17 +253,38 @@ func readGlabConfigToken(hostname string) (string, error) {
 		return "", fmt.Errorf("parsing glab config: %w", err)
 	}
 
-	// Strip port from hostname for matching (glab config uses bare hostnames)
-	host := hostname
-	if h, _, err := splitHostPort(host); err == nil {
-		host = h
-	}
-
-	if hostCfg, ok := cfg.Hosts[host]; ok && hostCfg.Token != "" {
+	// Try exact hostname first (glab stores "localhost:9090" with port),
+	// then fall back to bare hostname for standard ports.
+	if hostCfg, ok := cfg.Hosts[hostname]; ok && hostCfg.Token != "" {
 		return hostCfg.Token, nil
+	}
+	if h, _, err := splitHostPort(hostname); err == nil {
+		if hostCfg, ok := cfg.Hosts[h]; ok && hostCfg.Token != "" {
+			return hostCfg.Token, nil
+		}
 	}
 
 	return "", fmt.Errorf("no token found for host %q in glab config", hostname)
+}
+
+// readGlabConfigFile finds and reads the glab CLI config file.
+// Checks GLAB_CONFIG_DIR env var first, then the platform's XDG config
+// directory (same resolution glab itself uses via adrg/xdg):
+//   - Linux:   ~/.config/glab-cli/config.yml
+//   - macOS:   ~/Library/Application Support/glab-cli/config.yml
+//   - Windows: %LOCALAPPDATA%\glab-cli\config.yml
+func readGlabConfigFile() ([]byte, error) {
+	configDir := os.Getenv("GLAB_CONFIG_DIR")
+	if configDir == "" {
+		configDir = filepath.Join(xdg.ConfigHome, "glab-cli")
+	}
+
+	configPath := filepath.Join(configDir, "config.yml")
+	data, err := os.ReadFile(configPath) //#nosec G304,G703 -- path from XDG config or GLAB_CONFIG_DIR env var
+	if err != nil {
+		return nil, fmt.Errorf("reading glab config at %s: %w", configPath, err)
+	}
+	return data, nil
 }
 
 // splitHostPort is a simple wrapper that handles hosts without ports.
