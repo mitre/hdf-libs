@@ -71,3 +71,6 @@ export { convertDbprotectToHdf } from '../converters/dbprotect-to-hdf/typescript
 
 // Twistlock to HDF converter
 export { convertTwistlockToHdf } from '../converters/twistlock-to-hdf/typescript/index.js';
+
+// Dependency-Track to HDF converter
+export { convertDeptrackToHdf } from '../converters/deptrack-to-hdf/typescript/index.js';

@@ -21,6 +21,7 @@ import {
   convertBurpsuiteToHdf,
   convertDbprotectToHdf,
   convertTwistlockToHdf,
+  convertDeptrackToHdf,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -125,6 +126,11 @@ describe('Main exports', () => {
   it('should export convertTrufflehogToHdf from main index', () => {
     expect(convertTrufflehogToHdf).toBeDefined();
     expect(typeof convertTrufflehogToHdf).toBe('function');
+  });
+
+  it('should export convertDeptrackToHdf from main index', () => {
+    expect(convertDeptrackToHdf).toBeDefined();
+    expect(typeof convertDeptrackToHdf).toBe('function');
   });
 
   it('should export convertTwistlockToHdf from main index', () => {
