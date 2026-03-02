@@ -68,3 +68,6 @@ export { convertBurpsuiteToHdf } from '../converters/burpsuite-to-hdf/typescript
 
 // DBProtect to HDF converter
 export { convertDbprotectToHdf } from '../converters/dbprotect-to-hdf/typescript/index.js';
+
+// Twistlock to HDF converter
+export { convertTwistlockToHdf } from '../converters/twistlock-to-hdf/typescript/index.js';
