@@ -74,3 +74,6 @@ export { convertTwistlockToHdf } from '../converters/twistlock-to-hdf/typescript
 
 // Dependency-Track to HDF converter
 export { convertDeptrackToHdf } from '../converters/deptrack-to-hdf/typescript/index.js';
+
+// JFrog Xray to HDF converter
+export { convertJfrogXrayToHdf } from '../converters/jfrog-xray-to-hdf/typescript/index.js';

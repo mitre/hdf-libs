@@ -22,6 +22,7 @@ import {
   convertDbprotectToHdf,
   convertTwistlockToHdf,
   convertDeptrackToHdf,
+  convertJfrogXrayToHdf,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -126,6 +127,11 @@ describe('Main exports', () => {
   it('should export convertTrufflehogToHdf from main index', () => {
     expect(convertTrufflehogToHdf).toBeDefined();
     expect(typeof convertTrufflehogToHdf).toBe('function');
+  });
+
+  it('should export convertJfrogXrayToHdf from main index', () => {
+    expect(convertJfrogXrayToHdf).toBeDefined();
+    expect(typeof convertJfrogXrayToHdf).toBe('function');
   });
 
   it('should export convertDeptrackToHdf from main index', () => {
