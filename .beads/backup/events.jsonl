@@ -164,3 +164,4 @@
 {"actor":"Will Dower","comment":null,"created_at":"2026-03-01T21:18:49Z","event_type":"created","id":164,"issue_id":"hdf-zdi","new_value":"","old_value":""}
 {"actor":"Will Dower","comment":null,"created_at":"2026-03-01T21:18:49Z","event_type":"created","id":165,"issue_id":"hdf-zk9","new_value":"","old_value":""}
 {"actor":"Will Dower","comment":null,"created_at":"2026-03-01T21:29:28Z","event_type":"closed","id":166,"issue_id":"hdf-libs-t7p","new_value":"Fixed: updated all three broken hook shims (pre-commit, post-merge, post-checkout) from 'bd hook X' to 'bd hooks run X'. Bug is in bd 0.56.1's hooks install command which still writes the old singular form.","old_value":""}
+{"actor":"Will Dower","comment":null,"created_at":"2026-03-01T22:28:12Z","event_type":"created","id":167,"issue_id":"hdf-libs-62x","new_value":"","old_value":""}
