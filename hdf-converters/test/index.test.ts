@@ -19,6 +19,7 @@ import {
   convertGitlabToHdf,
   convertTrufflehogToHdf,
   convertBurpsuiteToHdf,
+  convertDbprotectToHdf,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -123,6 +124,11 @@ describe('Main exports', () => {
   it('should export convertTrufflehogToHdf from main index', () => {
     expect(convertTrufflehogToHdf).toBeDefined();
     expect(typeof convertTrufflehogToHdf).toBe('function');
+  });
+
+  it('should export convertDbprotectToHdf from main index', () => {
+    expect(convertDbprotectToHdf).toBeDefined();
+    expect(typeof convertDbprotectToHdf).toBe('function');
   });
 
   it('should export convertBurpsuiteToHdf from main index', () => {

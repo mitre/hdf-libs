@@ -65,3 +65,6 @@ export { convertTrufflehogToHdf } from '../converters/trufflehog-to-hdf/typescri
 
 // BurpSuite to HDF converter
 export { convertBurpsuiteToHdf } from '../converters/burpsuite-to-hdf/typescript/index.js';
+
+// DBProtect to HDF converter
+export { convertDbprotectToHdf } from '../converters/dbprotect-to-hdf/typescript/index.js';
