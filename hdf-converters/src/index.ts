@@ -86,3 +86,6 @@ export { convertFortifyToHdf } from '../converters/fortify-to-hdf/typescript/ind
 
 // Prisma Cloud to HDF converter
 export { convertPrismaToHdf } from '../converters/prisma-to-hdf/typescript/index.js';
+
+// Netsparker/Invicti to HDF converter
+export { convertNetsparkerToHdf } from '../converters/netsparker-to-hdf/typescript/index.js';

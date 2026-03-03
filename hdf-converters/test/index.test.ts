@@ -26,6 +26,7 @@ import {
   convertNeuvectorToHdf,
   convertFortifyToHdf,
   convertPrismaToHdf,
+  convertNetsparkerToHdf,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -155,6 +156,11 @@ describe('Main exports', () => {
   it('should export convertBurpsuiteToHdf from main index', () => {
     expect(convertBurpsuiteToHdf).toBeDefined();
     expect(typeof convertBurpsuiteToHdf).toBe('function');
+  });
+
+  it('should export convertNetsparkerToHdf from main index', () => {
+    expect(convertNetsparkerToHdf).toBeDefined();
+    expect(typeof convertNetsparkerToHdf).toBe('function');
   });
 
   it('should export convertPrismaToHdf from main index', () => {
