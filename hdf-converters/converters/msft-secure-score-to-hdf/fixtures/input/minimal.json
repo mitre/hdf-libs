@@ -1,0 +1,173 @@
+{
+  "secureScore": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#security/secureScores",
+    "value": [
+      {
+        "id": "12345678-1234-1234-1234-1234567890abcd_2024-01-01",
+        "azureTenantId": "12345678-1234-1234-1234-1234567890abcd",
+        "activeUserCount": 1,
+        "createdDateTime": "2024-01-01T00:00:00Z",
+        "currentScore": 128,
+        "enabledServices": [
+          "HasOCAS",
+          "HasCLB",
+          "HasMDOP1",
+          "HasMDOP2",
+          "HasEXOP2",
+          "HasSPOP2",
+          "HasAADFree"
+        ],
+        "licensedUserCount": 0,
+        "maxScore": 274,
+        "vendorInformation": {
+          "provider": "SecureScore",
+          "providerVersion": null,
+          "subProvider": null,
+          "vendor": "Microsoft"
+        },
+        "averageComparativeScores": [
+          {
+            "basis": "AllTenants",
+            "averageScore": 54.65,
+            "appsScore": 29.65,
+            "appsScoreMax": 79,
+            "dataScore": 0.46,
+            "dataScoreMax": 3.27,
+            "deviceScore": 9.13,
+            "deviceScoreMax": 16.76,
+            "identityScore": 36.02,
+            "identityScoreMax": 59.42,
+            "infrastructureScore": 0,
+            "infrastructureScoreMax": 0
+          },
+          {
+            "basis": "TotalSeats",
+            "averageScore": 48.98,
+            "SeatSizeRangeLowerValue": "1",
+            "SeatSizeRangeUpperValue": "100",
+            "appsScore": 34.15,
+            "appsScoreMax": 94.46,
+            "dataScore": 0.5,
+            "dataScoreMax": 3.97,
+            "deviceScore": 6.87,
+            "deviceScoreMax": 12.65,
+            "identityScore": 34.16,
+            "identityScoreMax": 59.5,
+            "infrastructureScore": 0,
+            "infrastructureScoreMax": 0
+          }
+        ],
+        "controlScores": [
+          {
+            "controlCategory": "Apps",
+            "controlName": "spo_idle_session_timeout",
+            "description": "\n\t\t\tIdle session sign-out lets you specify a time at which users are warned and are later signed out of Microsoft 365 after a period of browser inactivity in SharePoint and OneDrive.\n            <br/>\n\t\t\tThis policy is one of several you can use with SharePoint and OneDrive to balance security and user productivity and help keep your data safe, regardless  of where users access the data from, what device they're working on, and how secure their network connection is.\n\t\t",
+            "score": 0,
+            "lastSynced": "2024-01-01T17:12:14Z",
+            "implementationStatus": "The setting is not compliant.",
+            "on": "false",
+            "scoreInPercentage": 0
+          },
+          {
+            "controlCategory": "Apps",
+            "controlName": "McasFirewallLogUpload",
+            "description": "Log collectors provide visibility into cloud app usage so you can identify if there are any apps that run without official approval, or if there is anomalous behavior. Log collectors automatically upload reports and parse the firewall/ proxy traffic logs to see if there is a match with your services in the Cloud App Catalog.",
+            "score": 0,
+            "lastSynced": "2024-01-01T04:34:13Z",
+            "implementationStatus": "Feature in place: false.",
+            "on": "false",
+            "scoreInPercentage": 0
+          },
+          {
+            "controlCategory": "Data",
+            "controlName": "dlp_datalossprevention",
+            "description": "Data Loss Prevention (DLP) policies allows content in multiple locations, such as, devices, Exchange online and Teams chats to be scanned for specific types of data like social security numbers, credit card numbers, or passwords.",
+            "score": 5,
+            "lastSynced": "2024-01-01T13:58:47Z",
+            "implementationStatus": "",
+            "on": "true",
+            "scoreInPercentage": 100
+          }
+        ]
+      }
+    ]
+  },
+  "profiles": {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#security/secureScoreControlProfiles",
+    "@odata.nextLink": "https://graph.microsoft.com/v1.0/security/secureScoreControlProfiles?$skiptoken=00000000-0000-0000-0000-00000000",
+    "value": [
+      {
+        "id": "dlp_datalossprevention",
+        "azureTenantId": "12345678-1234-1234-1234-1234567890abcd",
+        "actionType": "Config",
+        "actionUrl": "https://compliance.microsoft.com/datalossprevention?tid=12345678-1234-1234-1234-1234567890abcd",
+        "controlCategory": "Data",
+        "title": "Ensure DLP policies are enabled",
+        "deprecated": false,
+        "implementationCost": "Medium",
+        "lastModifiedDateTime": null,
+        "maxScore": 5,
+        "rank": 128,
+        "remediation": "\n    Ensure that at least one Microsoft 365 DLP policy exists in the <a href=\"https://compliance.microsoft.com/\">Microsoft 365 Compliance portal</a>\n    <br>\n    <b>Learn more</b>\n    <ul>\n        <li>\n            <a href=\"https://docs.microsoft.com//microsoft-365/compliance/dlp-learn-about-dlp\">Learn about data loss prevention | Microsoft Docs</a>\n        </li>\n    <li>\n        <a href=\"https://docs.microsoft.com/en-us/microsoft-365/compliance/create-test-tune-dlp-policy\">Create, test, and tune a DLP policy - Microsoft 365 Compliance | Microsoft Docs</a>\n    </li>\n    </ul>\n    ",
+        "remediationImpact": "Unknown",
+        "service": "MIP",
+        "threats": [],
+        "tier": "Core",
+        "userImpact": "High",
+        "vendorInformation": {
+          "provider": "SecureScore",
+          "providerVersion": null,
+          "subProvider": null,
+          "vendor": "Microsoft"
+        },
+        "complianceInformation": [],
+        "controlStateUpdates": [
+          {
+            "assignedTo": null,
+            "comment": null,
+            "state": "Default",
+            "updatedBy": null,
+            "updatedDateTime": null
+          }
+        ]
+      },
+      {
+        "id": "McasFirewallLogUpload",
+        "azureTenantId": "12345678-1234-1234-1234-1234567890abcd",
+        "actionType": "Config",
+        "actionUrl": "https://security.microsoft.com/cloudapps/settings?tabid=discovery-autoUpload",
+        "controlCategory": "Apps",
+        "title": "Deploy a log collector to discover shadow IT activity",
+        "deprecated": false,
+        "implementationCost": "Moderate",
+        "lastModifiedDateTime": null,
+        "maxScore": 1,
+        "rank": 82,
+        "remediation": " <ol> <li>In the Defender for Cloud Apps portal, go to the <a href=\"https://go.microsoft.com/fwlink/?linkid=2099424\" target=\"_blank\">Automatic log upload</a> page.</li>   <li>In the <b>Data sources</b> tab, select <b>Add data source</b> to create a data source for your appliance.</li> <li>In the <b>Log collector</b> tab, select <b>Add log collector</b> to add a new one.</li> <li>Follow the instructions provided to <a href=\"https://docs.microsoft.com/cloud-app-security/discovery-docker\" target=\"_blank\">deploy Docker</a> and the log collector container. </li> </ol>  </ul>",
+        "remediationImpact": "This change has no known impact on your users.",
+        "service": "MCAS",
+        "threats": [
+          "Data Exfiltration"
+        ],
+        "tier": "Advanced",
+        "userImpact": "Low",
+        "vendorInformation": {
+          "provider": "SecureScore",
+          "providerVersion": null,
+          "subProvider": null,
+          "vendor": "Microsoft"
+        },
+        "complianceInformation": [],
+        "controlStateUpdates": [
+          {
+            "assignedTo": null,
+            "comment": null,
+            "state": "Default",
+            "updatedBy": null,
+            "updatedDateTime": null
+          }
+        ]
+      }
+    ]
+  }
+}

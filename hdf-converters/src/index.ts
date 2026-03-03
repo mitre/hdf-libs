@@ -98,3 +98,6 @@ export { convertConveyorToHdf } from '../converters/conveyor-to-hdf/typescript/i
 
 // Veracode to HDF converter
 export { convertVeracodeToHdf } from '../converters/veracode-to-hdf/typescript/index.js';
+
+// Microsoft Secure Score to HDF converter
+export { convertMsftSecureScoreToHdf } from '../converters/msft-secure-score-to-hdf/typescript/index.js';
