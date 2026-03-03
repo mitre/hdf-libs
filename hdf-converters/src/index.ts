@@ -83,3 +83,6 @@ export { convertNeuvectorToHdf } from '../converters/neuvector-to-hdf/typescript
 
 // Fortify to HDF converter
 export { convertFortifyToHdf } from '../converters/fortify-to-hdf/typescript/index.js';
+
+// Prisma Cloud to HDF converter
+export { convertPrismaToHdf } from '../converters/prisma-to-hdf/typescript/index.js';
