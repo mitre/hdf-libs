@@ -30,6 +30,7 @@ import {
   convertScoutsuiteToHdf,
   convertConveyorToHdf,
   convertVeracodeToHdf,
+  convertMsftSecureScoreToHdf,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -159,6 +160,11 @@ describe('Main exports', () => {
   it('should export convertBurpsuiteToHdf from main index', () => {
     expect(convertBurpsuiteToHdf).toBeDefined();
     expect(typeof convertBurpsuiteToHdf).toBe('function');
+  });
+
+  it('should export convertMsftSecureScoreToHdf from main index', () => {
+    expect(convertMsftSecureScoreToHdf).toBeDefined();
+    expect(typeof convertMsftSecureScoreToHdf).toBe('function');
   });
 
   it('should export convertVeracodeToHdf from main index', () => {
