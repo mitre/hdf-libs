@@ -89,3 +89,6 @@ export { convertPrismaToHdf } from '../converters/prisma-to-hdf/typescript/index
 
 // Netsparker/Invicti to HDF converter
 export { convertNetsparkerToHdf } from '../converters/netsparker-to-hdf/typescript/index.js';
+
+// ScoutSuite to HDF converter
+export { convertScoutsuiteToHdf } from '../converters/scoutsuite-to-hdf/typescript/index.js';
