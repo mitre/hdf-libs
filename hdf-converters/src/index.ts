@@ -92,3 +92,6 @@ export { convertNetsparkerToHdf } from '../converters/netsparker-to-hdf/typescri
 
 // ScoutSuite to HDF converter
 export { convertScoutsuiteToHdf } from '../converters/scoutsuite-to-hdf/typescript/index.js';
+
+// Conveyor to HDF converter
+export { convertConveyorToHdf } from '../converters/conveyor-to-hdf/typescript/index.js';
