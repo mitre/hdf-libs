@@ -1,4 +1,4 @@
-package cmd
+package cmd //nolint:dupl // thin CLI converter test — intentionally follows standard pattern
 
 import (
 	"os"
