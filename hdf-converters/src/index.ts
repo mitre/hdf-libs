@@ -95,3 +95,6 @@ export { convertScoutsuiteToHdf } from '../converters/scoutsuite-to-hdf/typescri
 
 // Conveyor to HDF converter
 export { convertConveyorToHdf } from '../converters/conveyor-to-hdf/typescript/index.js';
+
+// Veracode to HDF converter
+export { convertVeracodeToHdf } from '../converters/veracode-to-hdf/typescript/index.js';
