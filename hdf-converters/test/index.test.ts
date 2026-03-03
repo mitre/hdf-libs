@@ -29,6 +29,7 @@ import {
   convertNetsparkerToHdf,
   convertScoutsuiteToHdf,
   convertConveyorToHdf,
+  convertVeracodeToHdf,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -158,6 +159,11 @@ describe('Main exports', () => {
   it('should export convertBurpsuiteToHdf from main index', () => {
     expect(convertBurpsuiteToHdf).toBeDefined();
     expect(typeof convertBurpsuiteToHdf).toBe('function');
+  });
+
+  it('should export convertVeracodeToHdf from main index', () => {
+    expect(convertVeracodeToHdf).toBeDefined();
+    expect(typeof convertVeracodeToHdf).toBe('function');
   });
 
   it('should export convertConveyorToHdf from main index', () => {
