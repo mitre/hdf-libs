@@ -24,6 +24,7 @@ import {
   convertDeptrackToHdf,
   convertJfrogXrayToHdf,
   convertNeuvectorToHdf,
+  convertFortifyToHdf,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -153,6 +154,11 @@ describe('Main exports', () => {
   it('should export convertBurpsuiteToHdf from main index', () => {
     expect(convertBurpsuiteToHdf).toBeDefined();
     expect(typeof convertBurpsuiteToHdf).toBe('function');
+  });
+
+  it('should export convertFortifyToHdf from main index', () => {
+    expect(convertFortifyToHdf).toBeDefined();
+    expect(typeof convertFortifyToHdf).toBe('function');
   });
 
   it('should export convertNeuvectorToHdf from main index', () => {
