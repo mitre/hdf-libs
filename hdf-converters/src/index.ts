@@ -77,3 +77,6 @@ export { convertDeptrackToHdf } from '../converters/deptrack-to-hdf/typescript/i
 
 // JFrog Xray to HDF converter
 export { convertJfrogXrayToHdf } from '../converters/jfrog-xray-to-hdf/typescript/index.js';
+
+// NeuVector to HDF converter
+export { convertNeuvectorToHdf } from '../converters/neuvector-to-hdf/typescript/index.js';
