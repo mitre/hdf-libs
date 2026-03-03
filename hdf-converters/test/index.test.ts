@@ -27,6 +27,7 @@ import {
   convertFortifyToHdf,
   convertPrismaToHdf,
   convertNetsparkerToHdf,
+  convertScoutsuiteToHdf,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -156,6 +157,11 @@ describe('Main exports', () => {
   it('should export convertBurpsuiteToHdf from main index', () => {
     expect(convertBurpsuiteToHdf).toBeDefined();
     expect(typeof convertBurpsuiteToHdf).toBe('function');
+  });
+
+  it('should export convertScoutsuiteToHdf from main index', () => {
+    expect(convertScoutsuiteToHdf).toBeDefined();
+    expect(typeof convertScoutsuiteToHdf).toBe('function');
   });
 
   it('should export convertNetsparkerToHdf from main index', () => {
