@@ -25,6 +25,7 @@ import {
   convertJfrogXrayToHdf,
   convertNeuvectorToHdf,
   convertFortifyToHdf,
+  convertPrismaToHdf,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -154,6 +155,11 @@ describe('Main exports', () => {
   it('should export convertBurpsuiteToHdf from main index', () => {
     expect(convertBurpsuiteToHdf).toBeDefined();
     expect(typeof convertBurpsuiteToHdf).toBe('function');
+  });
+
+  it('should export convertPrismaToHdf from main index', () => {
+    expect(convertPrismaToHdf).toBeDefined();
+    expect(typeof convertPrismaToHdf).toBe('function');
   });
 
   it('should export convertFortifyToHdf from main index', () => {
