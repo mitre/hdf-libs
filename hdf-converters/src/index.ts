@@ -80,3 +80,6 @@ export { convertJfrogXrayToHdf } from '../converters/jfrog-xray-to-hdf/typescrip
 
 // NeuVector to HDF converter
 export { convertNeuvectorToHdf } from '../converters/neuvector-to-hdf/typescript/index.js';
+
+// Fortify to HDF converter
+export { convertFortifyToHdf } from '../converters/fortify-to-hdf/typescript/index.js';
