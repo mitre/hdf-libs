@@ -1,5 +1,5 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, buildNistCciTags, limitArrayWithWarning } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, buildNistCciTags, limitArrayWithWarning, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -240,6 +240,7 @@ export async function convertTrufflehogToHdf(input: string): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('trufflehog: empty input');
   }
+  validateInputSize(input, 'trufflehog');
 
   const findings = parseFindings(input);
   if (findings.length === 0) {

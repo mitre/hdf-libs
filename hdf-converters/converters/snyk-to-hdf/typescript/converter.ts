@@ -5,7 +5,7 @@ import {
 } from '@mitre/hdf-mappings';
 import { detectFormat } from '../../../shared/typescript/formatdetect.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { inputChecksum, limitArray, mapCWEToNIST } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -170,6 +170,7 @@ export async function convertSnykToHdf(input: string): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('snyk: empty input');
   }
+  validateInputSize(input, 'snyk');
 
   // Detect format: if SARIF, delegate to the shared SARIF converter
   if (detectFormat(input) === 'sarif') {

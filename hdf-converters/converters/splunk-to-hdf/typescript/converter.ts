@@ -1,5 +1,5 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -148,6 +148,7 @@ function convertGroups(
  * @returns HDF Results JSON string
  */
 export async function convertSplunkToHdf(input: string): Promise<string> {
+  validateInputSize(input, 'splunk');
   const resultsChecksum: Checksum = await inputChecksum(input);
 
   const events = parseJSON<SplunkEvent[]>(input);

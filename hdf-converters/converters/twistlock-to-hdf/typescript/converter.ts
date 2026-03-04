@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, buildNistCciTags } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, buildNistCciTags, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -208,6 +208,7 @@ export async function convertTwistlockToHdf(input: string): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('twistlock: empty input');
   }
+  validateInputSize(input, 'twistlock');
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 

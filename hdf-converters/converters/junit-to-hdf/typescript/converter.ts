@@ -1,5 +1,5 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
-import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -75,6 +75,7 @@ export async function convertJunitToHdf(input: string): Promise<string> {
   if (!input || !input.trim()) {
     throw new Error('Empty input');
   }
+  validateInputSize(input, 'junit');
 
   const { suites, name } = parseJUnitXML(input);
   const requirements = buildRequirements(suites);
