@@ -310,3 +310,120 @@ func TestSafeStringSlice(t *testing.T) {
 		assert.Empty(t, result)
 	})
 }
+
+func TestExtractCWEIDs(t *testing.T) {
+	t.Run("extracts single CWE-NNN", func(t *testing.T) {
+		result := ExtractCWEIDs("CWE-79")
+		assert.Equal(t, []string{"79"}, result)
+	})
+
+	t.Run("extracts multiple CWEs sorted", func(t *testing.T) {
+		result := ExtractCWEIDs("CWE 89 and CWE-79")
+		assert.Equal(t, []string{"79", "89"}, result)
+	})
+
+	t.Run("case insensitive", func(t *testing.T) {
+		result := ExtractCWEIDs("cwe22")
+		assert.Equal(t, []string{"22"}, result)
+	})
+
+	t.Run("returns nil for no matches", func(t *testing.T) {
+		result := ExtractCWEIDs("no cwe here")
+		assert.Nil(t, result)
+	})
+
+	t.Run("returns nil for empty string", func(t *testing.T) {
+		result := ExtractCWEIDs("")
+		assert.Nil(t, result)
+	})
+
+	t.Run("deduplicates CWE IDs", func(t *testing.T) {
+		result := ExtractCWEIDs("CWE-79, CWE-79")
+		assert.Equal(t, []string{"79"}, result)
+	})
+
+	t.Run("handles mixed formats", func(t *testing.T) {
+		result := ExtractCWEIDs("CWE-79, cwe 89, CWE22")
+		assert.Equal(t, []string{"22", "79", "89"}, result)
+	})
+}
+
+func TestCWEPattern(t *testing.T) {
+	t.Run("matches CWE-NNN format", func(t *testing.T) {
+		matches := CWEPattern.FindAllStringSubmatch("CWE-79", -1)
+		require.Len(t, matches, 1)
+		assert.Equal(t, "79", matches[0][1])
+	})
+
+	t.Run("matches CWE NNN format", func(t *testing.T) {
+		matches := CWEPattern.FindAllStringSubmatch("CWE 89", -1)
+		require.Len(t, matches, 1)
+		assert.Equal(t, "89", matches[0][1])
+	})
+
+	t.Run("matches cweNNN format", func(t *testing.T) {
+		matches := CWEPattern.FindAllStringSubmatch("cwe22", -1)
+		require.Len(t, matches, 1)
+		assert.Equal(t, "22", matches[0][1])
+	})
+}
+
+func TestValidateXMLSize_Normal(t *testing.T) {
+	err := ValidateXMLSize([]byte("<root/>"), 0)
+	assert.NoError(t, err)
+}
+
+func TestValidateXMLSize_TooLarge(t *testing.T) {
+	big := make([]byte, 51*1024*1024)
+	err := ValidateXMLSize(big, 0)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "exceeds maximum")
+}
+
+func TestValidateXMLSize_CustomLimit(t *testing.T) {
+	err := ValidateXMLSize([]byte("<root/>"), 5)
+	assert.Error(t, err)
+}
+
+func TestContainsXMLEntityDeclarations_True(t *testing.T) {
+	xml := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
+	assert.True(t, ContainsXMLEntityDeclarations(xml))
+}
+
+func TestContainsXMLEntityDeclarations_False(t *testing.T) {
+	xml := []byte(`<?xml version="1.0"?><foo>bar</foo>`)
+	assert.False(t, ContainsXMLEntityDeclarations(xml))
+}
+
+func TestContainsXMLEntityDeclarations_CaseInsensitive(t *testing.T) {
+	xml := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!entity xxe "test">]><foo/>`)
+	assert.True(t, ContainsXMLEntityDeclarations(xml))
+}
+
+func TestContainsXMLEntityDeclarations_EmptyInput(t *testing.T) {
+	assert.False(t, ContainsXMLEntityDeclarations([]byte{}))
+}
+
+func TestValidateXMLInput_Clean(t *testing.T) {
+	assert.NoError(t, ValidateXMLInput([]byte("<root/>"), 0))
+}
+
+func TestValidateXMLInput_WithEntities(t *testing.T) {
+	xml := []byte(`<!DOCTYPE foo [<!ENTITY x "y">]><foo/>`)
+	err := ValidateXMLInput(xml, 0)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+func TestValidateXMLInput_TooLarge(t *testing.T) {
+	big := make([]byte, 51*1024*1024)
+	err := ValidateXMLInput(big, 0)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "exceeds maximum")
+}
+
+func TestValidateXMLInput_CustomSizeLimit(t *testing.T) {
+	err := ValidateXMLInput([]byte("<root/>"), 3)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "exceeds maximum")
+}

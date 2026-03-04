@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"regexp"
 	"strings"
 	"time"
 
@@ -510,11 +509,12 @@ func extractCweFromRule(rule *ReportingDescriptor) []string {
 	// Priority 2: rule.properties.tags containing CWE-\d+ patterns
 	if tags, ok := rule.Properties["tags"]; ok {
 		if tagSlice, ok := tags.([]interface{}); ok {
-			cweTagPattern := regexp.MustCompile(`^CWE-\d+$`)
 			for _, tag := range tagSlice {
 				if tagStr, ok := tag.(string); ok {
-					if cweTagPattern.MatchString(tagStr) {
-						cweIds = append(cweIds, tagStr)
+					if ids := shared.ExtractCWEIDs(tagStr); len(ids) > 0 {
+						for _, id := range ids {
+							cweIds = append(cweIds, "CWE-"+id)
+						}
 					}
 				}
 			}
@@ -528,31 +528,15 @@ func extractCweFromRule(rule *ReportingDescriptor) []string {
 }
 
 func extractCweIds(text string) []string {
-	cwePattern := regexp.MustCompile(`\(([^)]+)\)`)
-	matches := cwePattern.FindAllStringSubmatch(text, -1)
-
-	if len(matches) == 0 {
+	ids := shared.ExtractCWEIDs(text)
+	if len(ids) == 0 {
 		return []string{}
 	}
-
-	cweIds := []string{}
-	for _, match := range matches {
-		if len(match) < 2 {
-			continue
-		}
-		content := match[1]
-		if strings.Contains(content, "CWE-") {
-			parts := regexp.MustCompile(`,\s*|!/`).Split(content, -1)
-			for _, part := range parts {
-				trimmed := strings.TrimSpace(part)
-				if strings.HasPrefix(trimmed, "CWE-") {
-					cweIds = append(cweIds, trimmed)
-				}
-			}
-		}
+	result := make([]string, len(ids))
+	for i, id := range ids {
+		result[i] = "CWE-" + id
 	}
-
-	return cweIds
+	return result
 }
 
 // --- Kind → Status mapping ---

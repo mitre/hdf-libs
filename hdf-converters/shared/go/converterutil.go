@@ -2,8 +2,10 @@
 package testing
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"log"
 	"regexp"
 	"sort"
@@ -178,6 +180,30 @@ func LimitSliceWithWarning[T any](items []T, maxItems int, label string) []T {
 	return limited
 }
 
+// CWEPattern matches CWE identifiers like "CWE-79", "CWE 79", "cwe79".
+// Pre-compiled at package level to avoid per-call overhead.
+var CWEPattern = regexp.MustCompile(`(?i)CWE[- ]?(\d+)`)
+
+// ExtractCWEIDs extracts all numeric CWE IDs from a text string.
+// Returns deduplicated sorted list of numeric ID strings (e.g., ["79", "89"]).
+func ExtractCWEIDs(text string) []string {
+	matches := CWEPattern.FindAllStringSubmatch(text, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+	seen := make(map[string]bool)
+	var result []string
+	for _, m := range matches {
+		id := m[1]
+		if !seen[id] {
+			seen[id] = true
+			result = append(result, id)
+		}
+	}
+	sort.Strings(result)
+	return result
+}
+
 // ParseTimestamp tries multiple common timestamp formats and returns the first
 // successful parse. Returns zero time if none match.
 //
@@ -204,4 +230,50 @@ func ParseTimestamp(s string) time.Time {
 	}
 
 	return time.Time{}
+}
+
+// DefaultMaxXMLSize is the maximum allowed XML input size (50 MB).
+// This provides defense against entity expansion DoS when converters are used
+// as libraries outside the CLI (which has its own 50 MB input limit).
+const DefaultMaxXMLSize = 50 * 1024 * 1024
+
+// ValidateXMLSize checks that XML input doesn't exceed the maximum allowed size.
+// If maxSize <= 0, DefaultMaxXMLSize is used.
+func ValidateXMLSize(input []byte, maxSize int) error {
+	if maxSize <= 0 {
+		maxSize = DefaultMaxXMLSize
+	}
+	if len(input) > maxSize {
+		return fmt.Errorf("XML input exceeds maximum allowed size of %d bytes (%d bytes provided)", maxSize, len(input))
+	}
+	return nil
+}
+
+// ContainsXMLEntityDeclarations checks if XML input contains DOCTYPE entity
+// declarations which could be used for entity expansion DoS attacks (billion
+// laughs). Returns true if entities are found. Only inspects the first 4 KB
+// of the input since DOCTYPE declarations must appear before the root element.
+func ContainsXMLEntityDeclarations(input []byte) bool {
+	limit := len(input)
+	if limit > 4096 {
+		limit = 4096
+	}
+	upper := bytes.ToUpper(input[:limit])
+	return bytes.Contains(upper, []byte("<!ENTITY"))
+}
+
+// ValidateXMLInput performs safety checks on XML input:
+//  1. Size limit check (default 50 MB)
+//  2. Entity declaration detection (billion-laughs prevention)
+//
+// Returns nil if input passes all checks. If maxSize <= 0, DefaultMaxXMLSize
+// is used.
+func ValidateXMLInput(input []byte, maxSize int) error {
+	if err := ValidateXMLSize(input, maxSize); err != nil {
+		return err
+	}
+	if ContainsXMLEntityDeclarations(input) {
+		return fmt.Errorf("XML input contains entity declarations which are not supported (potential entity expansion attack)")
+	}
+	return nil
 }

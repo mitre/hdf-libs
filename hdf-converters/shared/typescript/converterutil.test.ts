@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { inputChecksum, buildNistCciTags, DEFAULT_STATIC_ANALYSIS_NIST_TAGS, limitArray } from './converterutil.js';
+import { inputChecksum, buildNistCciTags, DEFAULT_STATIC_ANALYSIS_NIST_TAGS, limitArray, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -84,6 +84,70 @@ describe('limitArray', () => {
     const result = limitArray(['a', 'b', 'c'], 3);
     expect(result.items).toEqual(['a', 'b', 'c']);
     expect(result.truncated).toBe(false);
+  });
+});
+
+describe('extractCWEIDs', () => {
+  it('should extract single CWE-NNN', () => {
+    expect(extractCWEIDs('CWE-79')).toEqual(['79']);
+  });
+
+  it('should extract multiple CWEs sorted', () => {
+    expect(extractCWEIDs('CWE 89 and CWE-79')).toEqual(['79', '89']);
+  });
+
+  it('should be case insensitive', () => {
+    expect(extractCWEIDs('cwe22')).toEqual(['22']);
+  });
+
+  it('should return empty array for no matches', () => {
+    expect(extractCWEIDs('no cwe here')).toEqual([]);
+  });
+
+  it('should return empty array for empty string', () => {
+    expect(extractCWEIDs('')).toEqual([]);
+  });
+
+  it('should deduplicate CWE IDs', () => {
+    expect(extractCWEIDs('CWE-79, CWE-79')).toEqual(['79']);
+  });
+
+  it('should handle mixed formats', () => {
+    expect(extractCWEIDs('CWE-79, cwe 89, CWE22')).toEqual(['22', '79', '89']);
+  });
+});
+
+describe('validateInputSize', () => {
+  it('should accept input within limit', () => {
+    expect(() => validateInputSize('hello', 'test')).not.toThrow();
+  });
+
+  it('should reject input exceeding limit', () => {
+    const big = 'x'.repeat(100);
+    expect(() => validateInputSize(big, 'test', 50)).toThrow('exceeds maximum');
+  });
+
+  it('should use default limit for normal input', () => {
+    expect(() => validateInputSize('normal input', 'test')).not.toThrow();
+  });
+
+  it('should include converter name in error message', () => {
+    const big = 'x'.repeat(100);
+    expect(() => validateInputSize(big, 'my-converter', 50)).toThrow('my-converter');
+  });
+
+  it('should accept input at exact limit', () => {
+    const exact = 'x'.repeat(50);
+    expect(() => validateInputSize(exact, 'test', 50)).not.toThrow();
+  });
+
+  it('should reject input one character over limit', () => {
+    const overByOne = 'x'.repeat(51);
+    expect(() => validateInputSize(overByOne, 'test', 50)).toThrow('exceeds maximum');
+  });
+
+  it('should export DEFAULT_MAX_INPUT_SIZE as 50MB', () => {
+    expect(DEFAULT_MAX_INPUT_SIZE).toBe(50 * 1024 * 1024);
   });
 });
 

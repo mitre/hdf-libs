@@ -2,7 +2,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import {
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -125,6 +125,7 @@ const DEFAULT_NIST_TAGS = ['SA-11'];
  * @returns HDF JSON string
  */
 export async function convertSonarqubeToHdf(input: string): Promise<string> {
+  validateInputSize(input, 'sonarqube');
   // Calculate checksum of source scan data
   const resultsChecksum: Checksum = await inputChecksum(input);
 
@@ -334,9 +335,8 @@ function extractTags(
 
       // Check for CWE tags
       if (lowerTag.startsWith('cwe-') || lowerTag.includes('cwe')) {
-        const cweMatch = tag.match(/cwe[- ]?(\d+)/i);
-        if (cweMatch) {
-          cweSet.add(`CWE-${cweMatch[1]}`);
+        for (const id of extractCWEIDs(tag)) {
+          cweSet.add(`CWE-${id}`);
         }
       }
 
@@ -364,9 +364,8 @@ function extractTags(
         const lowerTag = tag.toLowerCase();
 
         if (lowerTag.startsWith('cwe-')) {
-          const cweMatch = tag.match(/cwe[- ]?(\d+)/i);
-          if (cweMatch) {
-            cweSet.add(`CWE-${cweMatch[1]}`);
+          for (const id of extractCWEIDs(tag)) {
+            cweSet.add(`CWE-${id}`);
           }
         }
 
@@ -379,15 +378,9 @@ function extractTags(
 
   // Also parse CWE from rule description
   if (rule?.htmlDesc || rule?.mdDesc) {
-    const desc = rule.htmlDesc || rule.mdDesc || '';
-    const cweMatches = desc.match(/CWE[- ]?(\d+)/gi);
-    if (cweMatches) {
-      for (const match of cweMatches) {
-        const num = match.match(/\d+/);
-        if (num) {
-          cweSet.add(`CWE-${num[0]}`);
-        }
-      }
+    const desc = (rule.htmlDesc || '') + (rule.mdDesc || '');
+    for (const id of extractCWEIDs(desc)) {
+      cweSet.add(`CWE-${id}`);
     }
   }
 

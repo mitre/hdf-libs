@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -77,14 +77,12 @@ interface NeuVectorScanModule {
   source: string;
 }
 
-/** Regex to extract CWE identifiers from description text. */
-const CWE_REGEX = /CWE-\d+/g;
-
 /**
  * Extracts CWE identifiers from a vulnerability description string.
+ * Returns CWE-prefixed IDs (e.g., ["CWE-444"]) for use in tags and mapCWEToNIST.
  */
 function extractCWEs(description: string): string[] {
-  return description.match(CWE_REGEX) ?? [];
+  return extractCWEIDs(description).map(id => `CWE-${id}`);
 }
 
 /**
@@ -195,6 +193,7 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('neuvector: empty input');
   }
+  validateInputSize(input, 'neuvector');
 
   const scan = parseJSON<NeuVectorScan>(input);
 

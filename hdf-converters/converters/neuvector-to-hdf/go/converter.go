@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"regexp"
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
@@ -67,12 +66,18 @@ type NeuVectorScanModule struct {
 	Source  string `json:"source"`
 }
 
-// cweRegex matches CWE identifiers in description text (e.g., "CWE-444", "CWE-787").
-var cweRegex = regexp.MustCompile(`CWE-\d+`)
-
 // extractCWEs parses CWE identifiers from a vulnerability description string.
+// Returns CWE-prefixed IDs (e.g., ["CWE-444"]) for use in tags and MapCWEToNIST.
 func extractCWEs(description string) []string {
-	return cweRegex.FindAllString(description, -1)
+	ids := shared.ExtractCWEIDs(description)
+	if len(ids) == 0 {
+		return nil
+	}
+	result := make([]string, len(ids))
+	for i, id := range ids {
+		result[i] = "CWE-" + id
+	}
+	return result
 }
 
 // getImpact computes the HDF impact from NeuVector CVSS scores.
