@@ -354,3 +354,10 @@ func TestConvertDbprotect_WriteOutput(t *testing.T) {
 
 	shared.WriteOutput(t, "dbprotect-to-hdf", "sample-check-results.json", result)
 }
+
+func TestConvertDbprotectToHDF_EntityExpansion(t *testing.T) {
+	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
+	_, err := ConvertDbprotectToHDF(input, testVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
+}

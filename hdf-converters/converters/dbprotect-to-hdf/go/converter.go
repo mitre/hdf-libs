@@ -214,6 +214,9 @@ func ConvertDbprotectToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	if len(input) == 0 {
 		return nil, fmt.Errorf("dbprotect: empty input")
 	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return nil, fmt.Errorf("dbprotect: %w", err)
+	}
 
 	resultsChecksum := shared.InputChecksum(input)
 

@@ -312,3 +312,16 @@ func findRequirementByID(requirements []hdf.EvaluatedRequirement, id string) *hd
 	}
 	return nil
 }
+
+func TestConvertNessusToHDF_EntityExpansion(t *testing.T) {
+	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
+	_, err := ConvertNessusToHDF(input, converterVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+func TestConvertNessusToHDF_EmptyInput(t *testing.T) {
+	_, err := ConvertNessusToHDF([]byte{}, converterVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "empty input")
+}

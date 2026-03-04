@@ -398,3 +398,10 @@ func TestConvertNetsparker_NetsparkerRootElement(t *testing.T) {
 	require.NotNil(t, result.DataSource.Name)
 	assert.Equal(t, "Netsparker", *result.DataSource.Name)
 }
+
+func TestConvertNetsparkerToHDF_EntityExpansion(t *testing.T) {
+	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
+	_, err := ConvertNetsparkerToHDF(input, testVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
+}

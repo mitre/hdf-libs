@@ -66,6 +66,9 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return nil, fmt.Errorf("junit: %w", err)
+	}
 
 	suites, name, err := parseJUnitXML(input)
 	if err != nil {

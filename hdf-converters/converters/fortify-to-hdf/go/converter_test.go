@@ -252,3 +252,10 @@ func TestConvertFortifyToHDF_MinimalFVDL(t *testing.T) {
 	// With 1 description but 0 vulnerabilities matching, should have 1 requirement with 0 results
 	assert.Len(t, baseline.Requirements, 1)
 }
+
+func TestConvertFortifyToHDF_EntityExpansion(t *testing.T) {
+	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
+	_, err := ConvertFortifyToHDF(input, converterVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
+}
