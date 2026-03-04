@@ -46,25 +46,15 @@ type BurpHost struct {
 }
 
 // --- Severity to impact mapping ---
+// BurpSuite maps "information" to 0.3 (not the standard 0.0) and defaults to 0.3.
 
-var impactMapping = map[string]float64{
-	"high":        0.7,
-	"medium":      0.5,
-	"low":         0.3,
+var burpsuiteAliases = map[string]float64{
 	"information": 0.3,
 }
 
 // getImpact maps BurpSuite severity strings to HDF impact values.
 func getImpact(severity string) float64 {
-	if impact, ok := impactMapping[strings.ToLower(severity)]; ok {
-		return impact
-	}
-	return 0.3
-}
-
-// GetImpact is exported for testing.
-func GetImpact(severity string) float64 {
-	return getImpact(severity)
+	return shared.SeverityToImpactWithAliases(severity, burpsuiteAliases, 0.3)
 }
 
 // --- CWE parsing ---
@@ -81,11 +71,6 @@ func parseCWEIDs(html string) []string {
 		result[i] = "CWE-" + id
 	}
 	return result
-}
-
-// ParseCWEIDs is exported for testing.
-func ParseCWEIDs(html string) []string {
-	return parseCWEIDs(html)
 }
 
 // --- Format code desc ---
@@ -106,11 +91,6 @@ func formatCodeDesc(hostIP, hostURL, location, issueDetail, confidence string) s
 	parts = append(parts, fmt.Sprintf("confidence: %s", confidence))
 
 	return strings.Join(parts, "\n") + "\n"
-}
-
-// FormatCodeDesc is exported for testing.
-func FormatCodeDesc(hostIP, hostURL, location, issueDetail, confidence string) string {
-	return formatCodeDesc(hostIP, hostURL, location, issueDetail, confidence)
 }
 
 // --- Timestamp parsing ---

@@ -25,23 +25,18 @@ import (
 
 // veracodeSeverityToImpact maps Veracode severity levels (0-5) to HDF impact values.
 // Follows the heimdall2 IMPACT_MAPPING.
+
+var veracodeAliases = map[string]float64{
+	"5": 0.9,
+	"4": 0.7,
+	"3": 0.5,
+	"2": 0.3,
+	"1": 0.1,
+	"0": 0.0,
+}
+
 func veracodeSeverityToImpact(severity string) float64 {
-	switch severity {
-	case "5":
-		return 0.9
-	case "4":
-		return 0.7
-	case "3":
-		return 0.5
-	case "2":
-		return 0.3
-	case "1":
-		return 0.1
-	case "0":
-		return 0.0
-	default:
-		return 0.1
-	}
+	return shared.SeverityToImpactWithAliases(severity, veracodeAliases, 0.1)
 }
 
 

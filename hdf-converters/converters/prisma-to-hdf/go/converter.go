@@ -38,21 +38,14 @@ var requiredColumns = []string{"Hostname", "Compliance ID", "Severity", "Type", 
 
 // getImpact maps Prisma Cloud severity strings to HDF impact values.
 // Prisma uses "important" (0.9) and "moderate" (0.5) in addition to standard levels.
+
+var prismaAliases = map[string]float64{
+	"important": 0.9,
+	"moderate":  0.5,
+}
+
 func getImpact(severity string) float64 {
-	switch strings.ToLower(severity) {
-	case "critical":
-		return 1.0
-	case "important":
-		return 0.9
-	case "high":
-		return 0.7
-	case "moderate", "medium":
-		return 0.5
-	case "low":
-		return 0.3
-	default:
-		return 0.5
-	}
+	return shared.SeverityToImpactWithAliases(severity, prismaAliases, 0.5)
 }
 
 // nistTags returns the appropriate NIST 800-53 controls for a finding.

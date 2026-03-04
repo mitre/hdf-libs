@@ -44,13 +44,45 @@ func StripHTML(html string) string {
 	return strings.TrimSpace(whitespaceRe.ReplaceAllString(stripped, " "))
 }
 
-// Severity-to-impact mapping audit (2026-02):
-// Each converter defines its own severity-to-impact map because different tools
-// have different severity levels (e.g. SonarQube uses BLOCKER/CRITICAL/MAJOR/
-// MINOR/INFO while Grype uses Critical/High/Medium/Low/Negligible).
-// Canonical reference: heimdall2 sonarqube-mapper.ts IMPACT_MAPPING.
-// Grype uses critical=0.9 consistently in both Go/TS -- this is intentional,
-// not a parity bug (grype's "Critical" is broader than SonarQube's "CRITICAL").
+// standardSeverityMap defines the canonical severity-to-impact mappings used
+// across most HDF converters. Case-insensitive lookup is handled by the caller.
+// "informational" and "information" are common aliases for "info" across tools.
+var standardSeverityMap = map[string]float64{
+	"critical":      1.0,
+	"high":          0.7,
+	"medium":        0.5,
+	"low":           0.3,
+	"info":          0.0,
+	"none":          0.0,
+	"informational": 0.0,
+	"information":   0.0,
+}
+
+// SeverityToImpact maps a standard severity string to an HDF impact value.
+// Case-insensitive. Returns defaultVal if severity is not recognized.
+// Standard mappings: critical=1.0, high=0.7, medium=0.5, low=0.3,
+// info/none/informational/information=0.0.
+func SeverityToImpact(severity string, defaultVal float64) float64 {
+	if impact, ok := standardSeverityMap[strings.ToLower(severity)]; ok {
+		return impact
+	}
+	return defaultVal
+}
+
+// SeverityToImpactWithAliases maps severity to impact, checking custom aliases
+// first, then falling back to standard mappings. Use for tools with non-standard
+// severity labels (e.g., sonarqube BLOCKER, veracode numeric levels, grype
+// critical=0.9). Aliases are matched case-insensitively.
+func SeverityToImpactWithAliases(severity string, aliases map[string]float64, defaultVal float64) float64 {
+	lower := strings.ToLower(severity)
+	if impact, ok := aliases[lower]; ok {
+		return impact
+	}
+	if impact, ok := standardSeverityMap[lower]; ok {
+		return impact
+	}
+	return defaultVal
+}
 
 // DefaultStaticAnalysisNIST is the canonical NIST 800-53 fallback for static
 // analysis and vulnerability scanning tools (SA-11: Developer Security Testing

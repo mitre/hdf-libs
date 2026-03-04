@@ -62,20 +62,16 @@ type TwistlockDistribution struct {
 
 // getImpact maps Twistlock severity strings to HDF impact values.
 // Includes "important" (alias for critical) and "moderate" (alias for medium)
-// which appear in some Twistlock outputs.
+// which appear in some Twistlock outputs. Maps critical to 0.9 (not standard 1.0).
+
+var twistlockAliases = map[string]float64{
+	"critical":  0.9,
+	"important": 0.9,
+	"moderate":  0.5,
+}
+
 func getImpact(severity string) float64 {
-	switch strings.ToLower(severity) {
-	case "critical", "important":
-		return 0.9
-	case "high":
-		return 0.7
-	case "medium", "moderate":
-		return 0.5
-	case "low":
-		return 0.3
-	default:
-		return 0.5
-	}
+	return shared.SeverityToImpactWithAliases(severity, twistlockAliases, 0.5)
 }
 
 // buildTitle constructs the baseline title from scan result data.

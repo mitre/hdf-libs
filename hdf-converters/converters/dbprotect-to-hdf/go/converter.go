@@ -11,13 +11,8 @@ import (
 	hdf "github.com/mitre/hdf-schema"
 )
 
-// Impact mapping from heimdall2 DBProtect mapper
-var impactMapping = map[string]float64{
-	"high":          0.7,
-	"medium":        0.5,
-	"low":           0.3,
-	"informational": 0.0,
-}
+// Impact mapping was formerly a local map; now uses shared.SeverityToImpact.
+// DBProtect uses standard severity levels: high, medium, low, informational.
 
 // Dataset represents the root DBProtect Cognos XML dataset structure.
 type Dataset struct {
@@ -90,10 +85,7 @@ func getStatus(status string) hdf.ResultStatus {
 
 // getImpact maps DBProtect risk levels to HDF impact values.
 func getImpact(riskDV string) float64 {
-	if impact, ok := impactMapping[strings.ToLower(riskDV)]; ok {
-		return impact
-	}
-	return 0.5
+	return shared.SeverityToImpact(riskDV, 0.5)
 }
 
 // formatDesc creates a description string from the finding's task and check category.

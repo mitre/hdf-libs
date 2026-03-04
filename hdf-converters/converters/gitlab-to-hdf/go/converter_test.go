@@ -282,7 +282,7 @@ func TestConvertGitlabToHDF_Serializable(t *testing.T) {
 	assert.Equal(t, "gitlab-to-hdf", parsed.Generator.Name)
 }
 
-func TestSeverityToImpact(t *testing.T) {
+func Test_severityToImpact(t *testing.T) {
 	tests := []struct {
 		severity string
 		expected float64
@@ -299,16 +299,16 @@ func TestSeverityToImpact(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.severity, func(t *testing.T) {
-			assert.InDelta(t, tc.expected, SeverityToImpact(tc.severity), 0.001)
+			assert.InDelta(t, tc.expected, severityToImpact(tc.severity), 0.001)
 		})
 	}
 }
 
-func TestScanTypeLabel(t *testing.T) {
-	assert.Equal(t, "SAST", ScanTypeLabel("sast"))
-	assert.Equal(t, "DAST", ScanTypeLabel("dast"))
-	assert.Equal(t, "Dependency Scanning", ScanTypeLabel("dependency_scanning"))
-	assert.Equal(t, "Container Scanning", ScanTypeLabel("container_scanning"))
-	assert.Equal(t, "Secret Detection", ScanTypeLabel("secret_detection"))
-	assert.Equal(t, "CUSTOM", ScanTypeLabel("custom"))
+func Test_scanTypeLabel(t *testing.T) {
+	assert.Equal(t, "SAST", scanTypeLabel("sast"))
+	assert.Equal(t, "DAST", scanTypeLabel("dast"))
+	assert.Equal(t, "Dependency Scanning", scanTypeLabel("dependency_scanning"))
+	assert.Equal(t, "Container Scanning", scanTypeLabel("container_scanning"))
+	assert.Equal(t, "Secret Detection", scanTypeLabel("secret_detection"))
+	assert.Equal(t, "CUSTOM", scanTypeLabel("custom"))
 }

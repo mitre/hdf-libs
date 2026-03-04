@@ -451,25 +451,21 @@ func TestExtractVulnDiscussion(t *testing.T) {
 }
 
 func TestSeverityToImpactMapping(t *testing.T) {
+	// XCCDF uses standard severity levels via shared.SeverityToImpact with default 0.5.
 	tests := []struct {
 		severity string
 		expected float64
-		found    bool
 	}{
-		{"high", 0.7, true},
-		{"medium", 0.5, true},
-		{"low", 0.3, true},
-		{"critical", 0.0, false},
-		{"", 0.0, false},
+		{"high", 0.7},
+		{"medium", 0.5},
+		{"low", 0.3},
+		{"critical", 1.0}, // Standard mapping (XCCDF doesn't use critical, but it's valid)
+		{"", 0.5},         // Unknown/empty falls back to default
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.severity, func(t *testing.T) {
-			impact, ok := severityToImpact[tt.severity]
-			assert.Equal(t, tt.found, ok)
-			if ok {
-				assert.Equal(t, tt.expected, impact)
-			}
+			assert.Equal(t, tt.expected, shared.SeverityToImpact(tt.severity, 0.5))
 		})
 	}
 }

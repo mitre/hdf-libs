@@ -479,6 +479,7 @@ func TestConvertSonarqubeToHDF_NoStringsImportNeeded(t *testing.T) {
 func TestSeverityImpactMappingParity(t *testing.T) {
 	// Authoritative mapping from heimdall2 sonarqube-mapper.ts IMPACT_MAPPING.
 	// This test ensures our Go mapping stays in sync with the canonical source.
+	// Uses the shared SeverityToImpactWithAliases function with sonarqubeAliases.
 	expected := map[string]float64{
 		"BLOCKER":  1.0,
 		"CRITICAL": 0.7,
@@ -487,9 +488,7 @@ func TestSeverityImpactMappingParity(t *testing.T) {
 		"INFO":     0.0,
 	}
 	for sev, impact := range expected {
-		actual, ok := severityImpactMapping[sev]
-		assert.True(t, ok, "Missing severity %s", sev)
+		actual := shared.SeverityToImpactWithAliases(sev, sonarqubeAliases, 0.5)
 		assert.Equal(t, impact, actual, "Severity %s impact mismatch", sev)
 	}
-	assert.Equal(t, len(expected), len(severityImpactMapping), "Unexpected extra severities")
 }

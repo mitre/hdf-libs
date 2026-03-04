@@ -237,7 +237,7 @@ func TestImpactMapping(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.severity, func(t *testing.T) {
-			impact, ok := impactMapping[tt.severity]
+			impact, ok := nessusAliases[tt.severity]
 			assert.True(t, ok, "Severity should be in mapping")
 			assert.Equal(t, tt.expected, impact)
 		})

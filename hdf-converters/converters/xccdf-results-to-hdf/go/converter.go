@@ -229,17 +229,9 @@ type ArfReportContent struct {
 // Severity and status mappings
 // ---------------------------------------------------------------------------
 
-// severityToImpact maps XCCDF severity strings to HDF impact values.
-// Audit (2026-02): XCCDF 1.2 defines three severity levels (high, medium, low).
-// This mapping matches heimdall2 xccdf-results-mapper.ts IMPACT_MAPPING for
-// these three levels. hdf-schema severityToImpact() maps "critical"=1.0 but
-// XCCDF does not define a "critical" severity, so that is not relevant here.
-// Default for unknown severity is 0.5 (see determineImpact).
-var severityToImpact = map[string]float64{
-	"high":   0.7,
-	"medium": 0.5,
-	"low":    0.3,
-}
+// severityToImpact was formerly a local map; now uses shared.SeverityToImpact.
+// XCCDF 1.2 defines three severity levels (high, medium, low) which are all
+// covered by the standard mapping. Default for unknown severity is 0.5.
 
 // resultStatusMapping maps XCCDF result strings to HDF ResultStatus values.
 var resultStatusMapping = map[string]hdf.ResultStatus{
@@ -652,10 +644,7 @@ func determineImpact(rr *RuleResult, rule *Rule) float64 {
 	if severity == "" && rule != nil {
 		severity = strings.ToLower(rule.Severity)
 	}
-	if impact, ok := severityToImpact[severity]; ok {
-		return impact
-	}
-	return 0.5
+	return shared.SeverityToImpact(severity, 0.5)
 }
 
 // buildDescriptions creates HDF Description entries from the Rule definition.

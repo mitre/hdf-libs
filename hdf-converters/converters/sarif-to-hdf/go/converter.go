@@ -177,8 +177,11 @@ type ArtifactContent struct {
 }
 
 // --- Impact mapping ---
+// SARIF uses "error"/"warning"/"note" levels, not standard severity labels.
+// These are used as aliases; unknown levels fall through to 0.0 (then bumped
+// to 0.1 at the call site).
 
-var impactMapping = map[string]float64{
+var sarifAliases = map[string]float64{
 	"error":   0.7,
 	"warning": 0.5,
 	"note":    0.3,
@@ -337,7 +340,7 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 	// Use the rule's defaultConfiguration.level, falling back to the first result's level,
 	// then to the SARIF default "warning".
 	ruleLevel := resolveRuleLevel(rule, sarifResults)
-	impact := impactMapping[ruleLevel]
+	impact := shared.SeverityToImpactWithAliases(ruleLevel, sarifAliases, 0.0)
 	if impact == 0 {
 		impact = 0.1
 	}

@@ -14,15 +14,16 @@ import (
 	hdf "github.com/mitre/hdf-schema"
 )
 
-// Severity to impact mapping from heimdall2
-var impactMapping = map[string]float64{
+// nessusAliases maps Nessus numeric severity levels and CAT compliance categories
+// to HDF impact values. Canonical reference: heimdall2 nessus-mapper.ts.
+var nessusAliases = map[string]float64{
 	"4":   0.9, // Critical
 	"3":   0.7, // High
-	"i":   0.7,
+	"i":   0.7, // CAT I
 	"2":   0.5, // Medium
-	"ii":  0.5,
+	"ii":  0.5, // CAT II
 	"1":   0.3, // Low
-	"iii": 0.3,
+	"iii": 0.3, // CAT III
 	"0":   0.0, // Info
 }
 
@@ -255,17 +256,12 @@ func calculateImpact(item *ReportItem, isCompliance bool) float64 {
 		cats := parseComplianceRef(item.ComplianceReference, "CAT")
 		if len(cats) > 0 {
 			cat := strings.ToLower(cats[0])
-			if impact, ok := impactMapping[cat]; ok {
-				return impact
-			}
+			return shared.SeverityToImpactWithAliases(cat, nessusAliases, 0.5)
 		}
 		return 0.5 // Default for compliance
 	}
 
-	if impact, ok := impactMapping[item.Severity]; ok {
-		return impact
-	}
-	return 0.0
+	return shared.SeverityToImpactWithAliases(item.Severity, nessusAliases, 0.0)
 }
 
 func buildTags(item *ReportItem, isCompliance bool) map[string]interface{} {

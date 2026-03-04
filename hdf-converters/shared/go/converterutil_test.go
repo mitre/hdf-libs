@@ -368,6 +368,147 @@ func TestCWEPattern(t *testing.T) {
 	})
 }
 
+func TestSeverityToImpact(t *testing.T) {
+	t.Run("standard severity levels", func(t *testing.T) {
+		assert.Equal(t, 1.0, SeverityToImpact("critical", 0.5))
+		assert.Equal(t, 0.7, SeverityToImpact("high", 0.5))
+		assert.Equal(t, 0.5, SeverityToImpact("medium", 0.5))
+		assert.Equal(t, 0.3, SeverityToImpact("low", 0.5))
+		assert.Equal(t, 0.0, SeverityToImpact("info", 0.5))
+		assert.Equal(t, 0.0, SeverityToImpact("none", 0.5))
+		assert.Equal(t, 0.0, SeverityToImpact("informational", 0.5))
+		assert.Equal(t, 0.0, SeverityToImpact("information", 0.5))
+	})
+
+	t.Run("case insensitive", func(t *testing.T) {
+		assert.Equal(t, 1.0, SeverityToImpact("Critical", 0.5))
+		assert.Equal(t, 1.0, SeverityToImpact("CRITICAL", 0.5))
+		assert.Equal(t, 0.7, SeverityToImpact("HIGH", 0.5))
+		assert.Equal(t, 0.7, SeverityToImpact("High", 0.5))
+		assert.Equal(t, 0.5, SeverityToImpact("MEDIUM", 0.5))
+		assert.Equal(t, 0.3, SeverityToImpact("LOW", 0.5))
+		assert.Equal(t, 0.0, SeverityToImpact("INFO", 0.5))
+		assert.Equal(t, 0.0, SeverityToImpact("Info", 0.5))
+		assert.Equal(t, 0.0, SeverityToImpact("INFORMATIONAL", 0.5))
+		assert.Equal(t, 0.0, SeverityToImpact("Informational", 0.5))
+		assert.Equal(t, 0.0, SeverityToImpact("INFORMATION", 0.5))
+		assert.Equal(t, 0.0, SeverityToImpact("Information", 0.5))
+		assert.Equal(t, 0.0, SeverityToImpact("NONE", 0.5))
+		assert.Equal(t, 0.0, SeverityToImpact("None", 0.5))
+	})
+
+	t.Run("unknown severity returns defaultVal", func(t *testing.T) {
+		assert.Equal(t, 0.5, SeverityToImpact("unknown", 0.5))
+		assert.Equal(t, 0.3, SeverityToImpact("unknown", 0.3))
+		assert.Equal(t, 0.0, SeverityToImpact("unknown", 0.0))
+		assert.Equal(t, 1.0, SeverityToImpact("unknown", 1.0))
+	})
+
+	t.Run("empty string returns defaultVal", func(t *testing.T) {
+		assert.Equal(t, 0.5, SeverityToImpact("", 0.5))
+		assert.Equal(t, 0.3, SeverityToImpact("", 0.3))
+	})
+
+	t.Run("unrecognized strings return defaultVal", func(t *testing.T) {
+		assert.Equal(t, 0.5, SeverityToImpact("blocker", 0.5))
+		assert.Equal(t, 0.5, SeverityToImpact("important", 0.5))
+		assert.Equal(t, 0.5, SeverityToImpact("moderate", 0.5))
+		assert.Equal(t, 0.5, SeverityToImpact("negligible", 0.5))
+		assert.Equal(t, 0.5, SeverityToImpact("5", 0.5))
+	})
+}
+
+func TestSeverityToImpactWithAliases(t *testing.T) {
+	t.Run("aliases override standard mappings", func(t *testing.T) {
+		aliases := map[string]float64{
+			"critical": 0.9, // override standard 1.0
+		}
+		assert.Equal(t, 0.9, SeverityToImpactWithAliases("critical", aliases, 0.5))
+		assert.Equal(t, 0.9, SeverityToImpactWithAliases("Critical", aliases, 0.5))
+		assert.Equal(t, 0.9, SeverityToImpactWithAliases("CRITICAL", aliases, 0.5))
+	})
+
+	t.Run("falls back to standard mappings", func(t *testing.T) {
+		aliases := map[string]float64{
+			"negligible": 0.0,
+		}
+		// These should fall through aliases to standard map
+		assert.Equal(t, 1.0, SeverityToImpactWithAliases("critical", aliases, 0.5))
+		assert.Equal(t, 0.7, SeverityToImpactWithAliases("high", aliases, 0.5))
+		assert.Equal(t, 0.5, SeverityToImpactWithAliases("medium", aliases, 0.5))
+		assert.Equal(t, 0.3, SeverityToImpactWithAliases("low", aliases, 0.5))
+		assert.Equal(t, 0.0, SeverityToImpactWithAliases("info", aliases, 0.5))
+		// Alias value
+		assert.Equal(t, 0.0, SeverityToImpactWithAliases("negligible", aliases, 0.5))
+	})
+
+	t.Run("returns defaultVal when not in aliases or standard", func(t *testing.T) {
+		aliases := map[string]float64{
+			"blocker": 1.0,
+		}
+		assert.Equal(t, 0.5, SeverityToImpactWithAliases("unknown", aliases, 0.5))
+		assert.Equal(t, 0.1, SeverityToImpactWithAliases("unknown", aliases, 0.1))
+	})
+
+	t.Run("empty aliases map falls back to standard", func(t *testing.T) {
+		aliases := map[string]float64{}
+		assert.Equal(t, 1.0, SeverityToImpactWithAliases("critical", aliases, 0.5))
+		assert.Equal(t, 0.7, SeverityToImpactWithAliases("high", aliases, 0.5))
+	})
+
+	t.Run("nil aliases map falls back to standard", func(t *testing.T) {
+		assert.Equal(t, 1.0, SeverityToImpactWithAliases("critical", nil, 0.5))
+		assert.Equal(t, 0.7, SeverityToImpactWithAliases("high", nil, 0.5))
+		assert.Equal(t, 0.5, SeverityToImpactWithAliases("unknown", nil, 0.5))
+	})
+
+	t.Run("sonarqube-style aliases", func(t *testing.T) {
+		aliases := map[string]float64{
+			"blocker":  1.0,
+			"critical": 0.7, // SonarQube "critical" maps to 0.7, not standard 1.0
+			"major":    0.5,
+			"minor":    0.3,
+		}
+		assert.Equal(t, 1.0, SeverityToImpactWithAliases("BLOCKER", aliases, 0.5))
+		assert.Equal(t, 0.7, SeverityToImpactWithAliases("CRITICAL", aliases, 0.5))
+		assert.Equal(t, 0.5, SeverityToImpactWithAliases("MAJOR", aliases, 0.5))
+		assert.Equal(t, 0.3, SeverityToImpactWithAliases("MINOR", aliases, 0.5))
+		assert.Equal(t, 0.0, SeverityToImpactWithAliases("INFO", aliases, 0.5)) // falls through to standard
+	})
+
+	t.Run("veracode-style numeric aliases", func(t *testing.T) {
+		aliases := map[string]float64{
+			"5": 0.9,
+			"4": 0.7,
+			"3": 0.5,
+			"2": 0.3,
+			"1": 0.1,
+			"0": 0.0,
+		}
+		assert.Equal(t, 0.9, SeverityToImpactWithAliases("5", aliases, 0.1))
+		assert.Equal(t, 0.7, SeverityToImpactWithAliases("4", aliases, 0.1))
+		assert.Equal(t, 0.5, SeverityToImpactWithAliases("3", aliases, 0.1))
+		assert.Equal(t, 0.3, SeverityToImpactWithAliases("2", aliases, 0.1))
+		assert.Equal(t, 0.1, SeverityToImpactWithAliases("1", aliases, 0.1))
+		assert.Equal(t, 0.0, SeverityToImpactWithAliases("0", aliases, 0.1))
+		assert.Equal(t, 0.1, SeverityToImpactWithAliases("99", aliases, 0.1))
+	})
+
+	t.Run("case insensitive alias keys", func(t *testing.T) {
+		aliases := map[string]float64{
+			"important": 0.9,
+		}
+		assert.Equal(t, 0.9, SeverityToImpactWithAliases("Important", aliases, 0.5))
+		assert.Equal(t, 0.9, SeverityToImpactWithAliases("IMPORTANT", aliases, 0.5))
+		assert.Equal(t, 0.9, SeverityToImpactWithAliases("important", aliases, 0.5))
+	})
+
+	t.Run("empty string returns defaultVal", func(t *testing.T) {
+		aliases := map[string]float64{"blocker": 1.0}
+		assert.Equal(t, 0.5, SeverityToImpactWithAliases("", aliases, 0.5))
+	})
+}
+
 func TestValidateXMLSize_Normal(t *testing.T) {
 	err := ValidateXMLSize([]byte("<root/>"), 0)
 	assert.NoError(t, err)

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
@@ -101,21 +100,13 @@ type DeptrackAttribution struct {
 // getImpact maps Dependency-Track severity strings to HDF impact values.
 // Uses the same mapping as the heimdall2 dependency-track-mapper:
 // critical=0.9, high=0.7, medium=0.5, low=0.3, info=0, unassigned=0.5
+
+var deptrackAliases = map[string]float64{
+	"critical": 0.9,
+}
+
 func getImpact(severity string) float64 {
-	switch strings.ToLower(severity) {
-	case "critical":
-		return 0.9
-	case "high":
-		return 0.7
-	case "medium":
-		return 0.5
-	case "low":
-		return 0.3
-	case "info":
-		return 0.0
-	default:
-		return 0.5
-	}
+	return shared.SeverityToImpactWithAliases(severity, deptrackAliases, 0.5)
 }
 
 // getTitle builds the requirement title from component purl and vulnerability title,

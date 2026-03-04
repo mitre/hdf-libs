@@ -87,26 +87,10 @@ type CDXAnalysis struct {
 }
 
 // severityToImpact maps CycloneDX severity strings to HDF impact values.
-// Handles CycloneDX-specific values (none, unknown) in addition to standard ones.
+// Standard mappings cover critical, high, medium, low, info, none.
+// "unknown" and unrecognized values default to 0.5.
 func severityToImpact(severity string) float64 {
-	switch strings.ToLower(severity) {
-	case "critical":
-		return 1.0
-	case "high":
-		return 0.7
-	case "medium":
-		return 0.5
-	case "low":
-		return 0.3
-	case "info":
-		return 0.0
-	case "none":
-		return 0.0
-	case "unknown":
-		return 0.5
-	default:
-		return 0.5
-	}
+	return shared.SeverityToImpact(severity, 0.5)
 }
 
 var cvssMethods = map[string]bool{

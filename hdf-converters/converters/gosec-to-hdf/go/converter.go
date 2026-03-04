@@ -59,16 +59,7 @@ type GosecIssue struct {
 
 // getImpact maps gosec severity strings to HDF impact values.
 func getImpact(severity string) float64 {
-	switch strings.ToUpper(severity) {
-	case "HIGH":
-		return 0.7
-	case "MEDIUM":
-		return 0.5
-	case "LOW":
-		return 0.3
-	default:
-		return 0.5
-	}
+	return shared.SeverityToImpact(severity, 0.5)
 }
 
 // isSuppressed reports whether an issue should be treated as notReviewed.

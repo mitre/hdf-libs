@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
@@ -108,20 +107,7 @@ type GitLabFix struct {
 // --- Severity to impact ---
 
 func severityToImpact(severity string) float64 {
-	switch strings.ToLower(severity) {
-	case "critical":
-		return 1.0
-	case "high":
-		return 0.7
-	case "medium":
-		return 0.5
-	case "low":
-		return 0.3
-	case "info":
-		return 0.0
-	default:
-		return 0.5
-	}
+	return shared.SeverityToImpact(severity, 0.5)
 }
 
 // --- Scan type to target type ---
@@ -427,25 +413,3 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	return hdfResult, nil
 }
 
-// SeverityToImpact is exported for testing.
-func SeverityToImpact(severity string) float64 {
-	return severityToImpact(severity)
-}
-
-// ScanTypeLabel is exported for testing.
-func ScanTypeLabel(scanType string) string {
-	return scanTypeLabel(scanType)
-}
-
-// ParseCweValue attempts to parse a CWE value string to an integer.
-// Returns 0 if the string is empty or invalid.
-func ParseCweValue(value string) int {
-	if value == "" {
-		return 0
-	}
-	n, err := strconv.Atoi(value)
-	if err != nil {
-		return 0
-	}
-	return n
-}
