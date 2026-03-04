@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -186,12 +187,12 @@ func TestConvertZapToHDF_ImpactRiskCode2(t *testing.T) {
 	assert.Equal(t, 0.5, req.Impact)
 }
 
-func TestRiskCodeToImpact(t *testing.T) {
-	assert.Equal(t, 0.3, RiskCodeToImpact("0"))
-	assert.Equal(t, 0.3, RiskCodeToImpact("1"))
-	assert.Equal(t, 0.5, RiskCodeToImpact("2"))
-	assert.Equal(t, 0.7, RiskCodeToImpact("3"))
-	assert.Equal(t, 0.5, RiskCodeToImpact("99"))
+func Test_riskCodeToImpact(t *testing.T) {
+	assert.Equal(t, 0.3, riskCodeToImpact("0"))
+	assert.Equal(t, 0.3, riskCodeToImpact("1"))
+	assert.Equal(t, 0.5, riskCodeToImpact("2"))
+	assert.Equal(t, 0.7, riskCodeToImpact("3"))
+	assert.Equal(t, 0.5, riskCodeToImpact("99"))
 }
 
 // --- Results from instances ---
@@ -382,39 +383,39 @@ func TestSelectSite(t *testing.T) {
 		{Host: "large", Alerts: []ZapAlert{{PluginID: "1"}, {PluginID: "2"}, {PluginID: "3"}}},
 		{Host: "medium", Alerts: []ZapAlert{{PluginID: "1"}, {PluginID: "2"}}},
 	}
-	best := SelectSiteForTest(sites)
+	best := selectSite(sites)
 	require.NotNil(t, best)
 	assert.Equal(t, "large", best.Host)
 }
 
-func TestSelectSite_Empty(t *testing.T) {
-	best := SelectSiteForTest([]ZapSite{})
+func Test_selectSite_Empty(t *testing.T) {
+	best := selectSite([]ZapSite{})
 	assert.Nil(t, best)
 }
 
 // --- Deduplication ---
 
-func TestDeduplicateID(t *testing.T) {
-	assert.Equal(t, "10021", DeduplicateID("10021", 0))
-	assert.Equal(t, "10021.1", DeduplicateID("10021", 1))
-	assert.Equal(t, "10021.2", DeduplicateID("10021", 2))
+func Test_deduplicateID(t *testing.T) {
+	assert.Equal(t, "10021", deduplicateID("10021", 0))
+	assert.Equal(t, "10021.1", deduplicateID("10021", 1))
+	assert.Equal(t, "10021.2", deduplicateID("10021", 2))
 }
 
 // --- CWE parsing ---
 
-func TestParseCweID(t *testing.T) {
-	assert.Equal(t, 16, ParseCweID("16"))
-	assert.Equal(t, 0, ParseCweID(""))
-	assert.Equal(t, 0, ParseCweID("0"))
-	assert.Equal(t, 0, ParseCweID("abc"))
+func Test_parseCweID(t *testing.T) {
+	assert.Equal(t, 16, parseCweID("16"))
+	assert.Equal(t, 0, parseCweID(""))
+	assert.Equal(t, 0, parseCweID("0"))
+	assert.Equal(t, 0, parseCweID("abc"))
 }
 
 // --- StripHTML ---
 
-func TestStripHTML(t *testing.T) {
-	assert.Equal(t, "Hello world", StripHTMLForTest("<p>Hello</p><p>world</p>"))
-	assert.Equal(t, "plain text", StripHTMLForTest("plain text"))
-	assert.Equal(t, "", StripHTMLForTest(""))
+func Test_stripHTML(t *testing.T) {
+	assert.Equal(t, "Hello world", shared.StripHTML("<p>Hello</p><p>world</p>"))
+	assert.Equal(t, "plain text", shared.StripHTML("plain text"))
+	assert.Equal(t, "", shared.StripHTML(""))
 }
 
 // --- Webgoat fixture ---

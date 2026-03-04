@@ -75,16 +75,7 @@ func getEntryID(entry XrayEntry) string {
 
 // getImpact maps JFrog Xray severity strings to HDF impact values.
 func getImpact(severity string) float64 {
-	switch strings.ToLower(severity) {
-	case "high":
-		return 0.7
-	case "medium":
-		return 0.5
-	case "low":
-		return 0.3
-	default:
-		return 0.5
-	}
+	return shared.SeverityToImpact(severity, 0.5)
 }
 
 // extractCWEs extracts CWE identifiers from the first CVE entry's cwe array.

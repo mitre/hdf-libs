@@ -53,18 +53,7 @@ type SnykIdentifiers struct {
 
 // getImpact maps Snyk severity strings to HDF impact values.
 func getImpact(severity string) float64 {
-	switch strings.ToLower(severity) {
-	case "critical":
-		return 1.0
-	case "high":
-		return 0.7
-	case "medium":
-		return 0.5
-	case "low":
-		return 0.3
-	default:
-		return 0.5
-	}
+	return shared.SeverityToImpact(severity, 0.5)
 }
 
 // formatDependencyPath formats the "from" array as a human-readable dependency path.

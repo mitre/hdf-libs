@@ -110,22 +110,16 @@ type GrypeLocation struct {
 }
 
 
-// Severity to impact mapping
+// Severity to impact mapping.
+// Grype maps "critical" to 0.9 (not the standard 1.0) and adds "negligible"=0.0.
+
+var grypeAliases = map[string]float64{
+	"critical":   0.9,
+	"negligible": 0.0,
+}
+
 func getImpact(severity string) float64 {
-	switch strings.ToLower(severity) {
-	case "critical":
-		return 0.9
-	case "high":
-		return 0.7
-	case "medium":
-		return 0.5
-	case "low":
-		return 0.3
-	case "negligible":
-		return 0.0
-	default: // unknown or empty
-		return 0.5
-	}
+	return shared.SeverityToImpactWithAliases(severity, grypeAliases, 0.5)
 }
 
 func isNegligibleOrUnknown(severity string) bool {

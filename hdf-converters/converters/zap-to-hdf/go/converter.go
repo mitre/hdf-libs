@@ -77,18 +77,17 @@ func parseZapTimestamp(s string) time.Time {
 }
 
 // --- Risk code to impact ---
+// ZAP uses numeric risk codes (0-3), not standard severity labels.
+
+var zapAliases = map[string]float64{
+	"0": 0.3,
+	"1": 0.3,
+	"2": 0.5,
+	"3": 0.7,
+}
 
 func riskCodeToImpact(riskCode string) float64 {
-	switch riskCode {
-	case "0", "1":
-		return 0.3
-	case "2":
-		return 0.5
-	case "3":
-		return 0.7
-	default:
-		return 0.5
-	}
+	return shared.SeverityToImpactWithAliases(riskCode, zapAliases, 0.5)
 }
 
 // --- NIST tag building ---
@@ -351,33 +350,18 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 	return hdfResult, nil
 }
 
-// RiskCodeToImpact is exported for testing
-func RiskCodeToImpact(riskCode string) float64 {
-	return riskCodeToImpact(riskCode)
-}
-
-// StripHTMLForTest is exported for testing
-func StripHTMLForTest(html string) string {
-	return shared.StripHTML(html)
-}
-
-// SelectSiteForTest is exported for testing — returns copy
-func SelectSiteForTest(sites []ZapSite) *ZapSite {
-	return selectSite(sites)
-}
-
-// DeduplicateID returns the deduplicated requirement ID given a
+// deduplicateID returns the deduplicated requirement ID given a
 // pluginid and the number of times it has been seen before.
-func DeduplicateID(pluginID string, count int) string {
+func deduplicateID(pluginID string, count int) string {
 	if count == 0 {
 		return pluginID
 	}
 	return fmt.Sprintf("%s.%d", pluginID, count)
 }
 
-// ParseCweID attempts to parse a CWE ID string to an integer.
+// parseCweID attempts to parse a CWE ID string to an integer.
 // Returns 0 if the string is empty or invalid.
-func ParseCweID(cweid string) int {
+func parseCweID(cweid string) int {
 	if cweid == "" || cweid == "0" {
 		return 0
 	}

@@ -92,14 +92,15 @@ type Rule struct {
 	Scope    string   `json:"scope,omitempty"`
 }
 
-// severityImpactMapping maps SonarQube severity levels to HDF impact scores.
+// sonarqubeAliases maps SonarQube-specific severity labels to HDF impact scores.
 // Canonical reference: heimdall2 sonarqube-mapper.ts IMPACT_MAPPING.
-var severityImpactMapping = map[string]float64{
-	"BLOCKER":  1.0,
-	"CRITICAL": 0.7,
-	"MAJOR":    0.5,
-	"MINOR":    0.3,
-	"INFO":     0.0,
+// Keys must be lowercase for use with SeverityToImpactWithAliases.
+// Note: SonarQube "CRITICAL" maps to 0.7, not the standard 1.0.
+var sonarqubeAliases = map[string]float64{
+	"blocker":  1.0,
+	"critical": 0.7,
+	"major":    0.5,
+	"minor":    0.3,
 }
 
 // defaultNistTag is the fallback NIST control for SonarQube findings without
@@ -219,10 +220,7 @@ func convertRuleToRequirement(
 
 	// Get impact from first issue
 	firstIssue := issues[0]
-	impact, ok := severityImpactMapping[firstIssue.Severity]
-	if !ok {
-		impact = 0.5
-	}
+	impact := shared.SeverityToImpactWithAliases(firstIssue.Severity, sonarqubeAliases, 0.5)
 
 	// Extract tags and mappings
 	cweIds, owaspTags, allTags := extractTags(&rule, hasRule, issues)

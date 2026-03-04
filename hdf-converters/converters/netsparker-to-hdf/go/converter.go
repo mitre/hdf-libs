@@ -85,21 +85,15 @@ type NetsparkerHTTPResponse struct {
 
 // --- Severity to impact mapping ---
 // Matches heimdall2 netsparker-mapper.ts IMPACT_MAPPING.
+// "best_practice" is Netsparker-specific; standard levels + "information" are
+// handled by the shared standard map.
 
-var impactMapping = map[string]float64{
-	"critical":      1.0,
-	"high":          0.7,
-	"medium":        0.5,
-	"low":           0.3,
+var netsparkerAliases = map[string]float64{
 	"best_practice": 0.0,
-	"information":   0.0,
 }
 
 func getImpact(severity string) float64 {
-	if impact, ok := impactMapping[strings.ToLower(severity)]; ok {
-		return impact
-	}
-	return 0.5
+	return shared.SeverityToImpactWithAliases(severity, netsparkerAliases, 0.5)
 }
 
 // --- Format helpers ---

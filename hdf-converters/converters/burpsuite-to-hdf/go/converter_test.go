@@ -169,16 +169,16 @@ func TestConvertBurpsuiteToHDF_ImpactLow(t *testing.T) {
 	assert.Equal(t, 0.3, req.Impact)
 }
 
-func TestGetImpact(t *testing.T) {
-	assert.Equal(t, 0.7, GetImpact("High"))
-	assert.Equal(t, 0.7, GetImpact("high"))
-	assert.Equal(t, 0.5, GetImpact("Medium"))
-	assert.Equal(t, 0.5, GetImpact("medium"))
-	assert.Equal(t, 0.3, GetImpact("Low"))
-	assert.Equal(t, 0.3, GetImpact("low"))
-	assert.Equal(t, 0.3, GetImpact("Information"))
-	assert.Equal(t, 0.3, GetImpact("information"))
-	assert.Equal(t, 0.3, GetImpact("unknown"))
+func Test_getImpact(t *testing.T) {
+	assert.Equal(t, 0.7, getImpact("High"))
+	assert.Equal(t, 0.7, getImpact("high"))
+	assert.Equal(t, 0.5, getImpact("Medium"))
+	assert.Equal(t, 0.5, getImpact("medium"))
+	assert.Equal(t, 0.3, getImpact("Low"))
+	assert.Equal(t, 0.3, getImpact("low"))
+	assert.Equal(t, 0.3, getImpact("Information"))
+	assert.Equal(t, 0.3, getImpact("information"))
+	assert.Equal(t, 0.3, getImpact("unknown"))
 }
 
 // --- Grouping by type ---
@@ -391,46 +391,46 @@ func TestConvertBurpsuiteToHDF_RequirementTitle(t *testing.T) {
 
 // --- CWE parsing from vulnerabilityClassifications HTML ---
 
-func TestParseCWEIDs(t *testing.T) {
+func Test_parseCWEIDs(t *testing.T) {
 	html := `<ul>
 <li><a href="https://cwe.mitre.org/data/definitions/942.html">CWE-942: Overly Permissive Cross-domain Whitelist</a></li>
 </ul>`
-	cweIDs := ParseCWEIDs(html)
+	cweIDs := parseCWEIDs(html)
 	assert.Equal(t, []string{"CWE-942"}, cweIDs)
 }
 
-func TestParseCWEIDs_Multiple(t *testing.T) {
+func Test_parseCWEIDs_Multiple(t *testing.T) {
 	html := `<ul>
 <li><a href="https://cwe.mitre.org/data/definitions/20.html">CWE-20: Improper Input Validation</a></li>
 <li><a href="https://cwe.mitre.org/data/definitions/116.html">CWE-116: Improper Encoding or Escaping of Output</a></li>
 </ul>`
-	cweIDs := ParseCWEIDs(html)
+	cweIDs := parseCWEIDs(html)
 	assert.Equal(t, []string{"CWE-116", "CWE-20"}, cweIDs)
 }
 
-func TestParseCWEIDs_Empty(t *testing.T) {
-	cweIDs := ParseCWEIDs("")
+func Test_parseCWEIDs_Empty(t *testing.T) {
+	cweIDs := parseCWEIDs("")
 	assert.Empty(t, cweIDs)
 }
 
-func TestParseCWEIDs_NoCWE(t *testing.T) {
+func Test_parseCWEIDs_NoCWE(t *testing.T) {
 	html := `<ul><li>No CWE here</li></ul>`
-	cweIDs := ParseCWEIDs(html)
+	cweIDs := parseCWEIDs(html)
 	assert.Empty(t, cweIDs)
 }
 
 // --- Format code desc ---
 
-func TestFormatCodeDesc(t *testing.T) {
-	desc := FormatCodeDesc("54.82.22.214", "http://test.com", "/test/path", "<b>detail</b>", "Certain")
+func Test_formatCodeDesc(t *testing.T) {
+	desc := formatCodeDesc("54.82.22.214", "http://test.com", "/test/path", "<b>detail</b>", "Certain")
 	assert.Contains(t, desc, "Host: ip: 54.82.22.214, url: http://test.com")
 	assert.Contains(t, desc, "Location: /test/path")
 	assert.Contains(t, desc, "issueDetail: detail")
 	assert.Contains(t, desc, "confidence: Certain")
 }
 
-func TestFormatCodeDesc_Empty(t *testing.T) {
-	desc := FormatCodeDesc("", "", "", "", "")
+func Test_formatCodeDesc_Empty(t *testing.T) {
+	desc := formatCodeDesc("", "", "", "", "")
 	assert.Contains(t, desc, "Host: ip: , url:")
 }
 
