@@ -1,8 +1,7 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { getCweNistControl, DEFAULT_REMEDIATION_NIST_TAGS } from '@mitre/hdf-mappings';
 import { detectFormat } from '../../../shared/typescript/formatdetect.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize, mapCWEToNIST, DEFAULT_REMEDIATION_NIST_TAGS } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -95,21 +94,6 @@ function formatSkipMessage(suppressions: GosecSuppression[] | null): string | un
 }
 
 /**
- * Returns NIST controls for the given CWE ID, falling back to DEFAULT_REMEDIATION_NIST_TAGS.
- */
-function nistTagsForCwe(cweId: string): string[] {
-  if (!cweId) {
-    return DEFAULT_REMEDIATION_NIST_TAGS;
-  }
-  const numericId = parseInt(cweId, 10);
-  if (isNaN(numericId)) {
-    return DEFAULT_REMEDIATION_NIST_TAGS;
-  }
-  const nistControl = getCweNistControl(numericId);
-  return nistControl ? [nistControl] : DEFAULT_REMEDIATION_NIST_TAGS;
-}
-
-/**
  * Converts a single GosecIssue to an HDF RequirementResult.
  */
 function issueToResult(issue: GosecIssue): RequirementResult {
@@ -135,7 +119,7 @@ function issueToResult(issue: GosecIssue): RequirementResult {
 function buildRequirement(ruleId: string, issues: GosecIssue[]): EvaluatedRequirement {
   const rep = issues[0]!;
   const impact = IMPACT_MAPPING[rep.severity.toUpperCase()] ?? 0.5;
-  const nist = nistTagsForCwe(rep.cwe.id);
+  const nist = mapCWEToNIST([rep.cwe.id], DEFAULT_REMEDIATION_NIST_TAGS);
 
   const tags: Record<string, unknown> = {
     nist,

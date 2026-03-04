@@ -188,6 +188,21 @@ export function validateInputSize(
   }
 }
 
+/**
+ * Normalise a value that may be a single item, an array, undefined, or null
+ * into a guaranteed array.
+ *
+ * XML-to-JSON parsers often produce a single object when there is one child
+ * element and an array when there are multiple. This helper smooths that out.
+ *
+ * @param value - A single item, an array of items, undefined, or null
+ * @returns An array (empty if the input was nullish)
+ */
+export function ensureArray<T>(value: T | T[] | undefined | null): T[] {
+  if (value === undefined || value === null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
 // Re-export shared constants for converter convenience
 export { DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
 

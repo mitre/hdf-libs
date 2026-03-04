@@ -5,6 +5,7 @@ import {
   buildNistCciTags,
   limitArray,
   stripHTML,
+  ensureArray,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   validateInputSize,
 } from '../../../shared/typescript/converterutil.js';
@@ -123,11 +124,6 @@ interface FVDLSnippet {
 }
 
 // --- Helpers ---
-
-function ensureArray<T>(value: T | T[] | undefined): T[] {
-  if (!value) return [];
-  return Array.isArray(value) ? value : [value];
-}
 
 function buildSnippetMap(snippets: FVDLSnippet[]): Map<string, FVDLSnippet> {
   const map = new Map<string, FVDLSnippet>();
