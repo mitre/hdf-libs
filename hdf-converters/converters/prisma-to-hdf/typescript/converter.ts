@@ -11,7 +11,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, buildNistCciTags, limitArrayWithWarning } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, buildNistCciTags, limitArrayWithWarning, DEFAULT_REMEDIATION_NIST_TAGS } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -28,8 +28,6 @@ import {
   createResult,
 } from '@mitre/hdf-schema';
 
-/** Default NIST tags for findings with a CVE (remediation: SI-2, RA-5) */
-const DEFAULT_REMEDIATION_NIST_TAGS = ['SI-2', 'RA-5'];
 
 /** Required CSV columns that must be present */
 const REQUIRED_COLUMNS = ['Hostname', 'Compliance ID', 'Severity', 'Type', 'Description'];

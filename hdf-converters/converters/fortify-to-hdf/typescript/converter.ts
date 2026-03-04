@@ -5,6 +5,7 @@ import {
   buildNistCciTags,
   limitArray,
   stripHTML,
+  DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
@@ -25,8 +26,6 @@ import {
 const NIST_REFERENCE_NAME =
   'Standards Mapping - NIST Special Publication 800-53 Revision 4';
 
-// Default NIST tags for static analysis tools
-const DEFAULT_NIST_TAGS: string[] = ['SA-11', 'RA-5'];
 
 // Regex to match NIST control identifiers like SI-10, AC-2
 const NIST_PATTERN = /[a-zA-Z]{2}-\d+/g;
@@ -213,7 +212,7 @@ function buildRequirement(
   const refs = ensureArray(desc.References?.Reference);
   let nistTags = extractNISTFromReferences(refs);
   if (nistTags.length === 0) {
-    nistTags = [...DEFAULT_NIST_TAGS];
+    nistTags = [...DEFAULT_STATIC_ANALYSIS_NIST_TAGS];
   }
   const cciTags = nistToCci(nistTags);
   const tags = buildNistCciTags(nistTags, cciTags);
