@@ -10,6 +10,7 @@ import (
 
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
+	nessusmappings "github.com/mitre/hdf-mappings/go/nessus"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -277,8 +278,11 @@ func buildTags(item *ReportItem, isCompliance bool) map[string]interface{} {
 		tags["cci"] = cciTags
 		tags["nist"] = cci.CCIToNIST(cciTags)
 	} else {
-		// TODO: Use getNessusNistControl when Go mappings available
-		tags["nist"] = []string{}
+		nist := nessusmappings.NISTControls(item.PluginFamily, item.PluginID)
+		if nist == nil {
+			nist = []string{}
+		}
+		tags["nist"] = nist
 	}
 
 	// STIG ID for compliance
