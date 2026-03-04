@@ -51,12 +51,16 @@ type GitLabFetcher struct {
 
 // NewGitLabFetcher creates a fetcher after validating the server URL.
 // The token is resolved at Fetch time from environment variables or glab CLI config.
-func NewGitLabFetcher(params GitLabParams) (*GitLabFetcher, error) {
+func NewGitLabFetcher(params GitLabParams, tlsOpts TLSOptions) (*GitLabFetcher, error) {
 	if err := validateGitLabURL(params.URL); err != nil {
 		return nil, err
 	}
+	client, err := NewHTTPClient(tlsOpts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to configure TLS: %w", err)
+	}
 	return &GitLabFetcher{
-		client: &http.Client{},
+		client: client,
 		params: params,
 	}, nil
 }

@@ -96,7 +96,7 @@ Output defaults to stdout when no output path is given.`,
 				ArtifactPath:    artifactPath,
 				JobName:         jobName,
 				MaxResponseSize: maxResponseSize,
-			})
+			}, fetchTLSOptions(cmd))
 			if err != nil {
 				return fmt.Errorf("failed to initialize GitLab fetcher: %w", err)
 			}

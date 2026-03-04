@@ -66,6 +66,8 @@ type AWSConfigParams struct {
 	// When empty, the standard AWS credential chain is used (env vars →
 	// default profile → IAM instance role).
 	Profile string
+	// TLS configures custom CA certificates or insecure mode.
+	TLS TLSOptions
 }
 
 // AWSConfigFetcher fetches AWS Config compliance data from the AWS API and
@@ -86,6 +88,15 @@ func NewAWSConfigFetcher(ctx context.Context, params AWSConfigParams) (*AWSConfi
 
 	if params.Profile != "" {
 		opts = append(opts, config.WithSharedConfigProfile(params.Profile))
+	}
+
+	// Inject custom HTTP client for TLS configuration (--ca-cert, --insecure).
+	if params.TLS.CACertPath != "" || params.TLS.Insecure {
+		httpClient, tlsErr := NewHTTPClient(params.TLS)
+		if tlsErr != nil {
+			return nil, fmt.Errorf("failed to configure TLS: %w", tlsErr)
+		}
+		opts = append(opts, config.WithHTTPClient(httpClient))
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)

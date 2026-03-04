@@ -50,7 +50,7 @@ func TestNewSonarqubeFetcher_URLValidation(t *testing.T) {
 	}
 	for _, u := range valid {
 		t.Run("valid/"+u, func(t *testing.T) {
-			_, err := NewSonarqubeFetcher(SonarqubeParams{URL: u, ProjectKey: "key"})
+			_, err := NewSonarqubeFetcher(SonarqubeParams{URL: u, ProjectKey: "key"}, TLSOptions{})
 			assert.NoError(t, err, "URL %q should be valid", u)
 		})
 	}
@@ -64,7 +64,7 @@ func TestNewSonarqubeFetcher_URLValidation(t *testing.T) {
 	}
 	for _, u := range invalid {
 		t.Run("invalid/"+u, func(t *testing.T) {
-			_, err := NewSonarqubeFetcher(SonarqubeParams{URL: u, ProjectKey: "key"})
+			_, err := NewSonarqubeFetcher(SonarqubeParams{URL: u, ProjectKey: "key"}, TLSOptions{})
 			require.Error(t, err)
 		})
 	}
