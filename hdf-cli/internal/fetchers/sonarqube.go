@@ -48,12 +48,16 @@ type SonarqubeFetcher struct {
 
 // NewSonarqubeFetcher creates a fetcher after validating the server URL.
 // The token is read from the SONARQUBE_TOKEN environment variable at Fetch time.
-func NewSonarqubeFetcher(params SonarqubeParams) (*SonarqubeFetcher, error) {
+func NewSonarqubeFetcher(params SonarqubeParams, tlsOpts TLSOptions) (*SonarqubeFetcher, error) {
 	if err := validateSonarqubeURL(params.URL); err != nil {
 		return nil, err
 	}
+	client, err := NewHTTPClient(tlsOpts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to configure TLS: %w", err)
+	}
 	return &SonarqubeFetcher{
-		client: &http.Client{},
+		client: client,
 		params: params,
 	}, nil
 }

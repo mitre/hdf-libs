@@ -53,6 +53,7 @@ Output defaults to stdout when no output path is given.`,
 			f, err := fetchers.NewAWSConfigFetcher(cmd.Context(), fetchers.AWSConfigParams{
 				Region:  region,
 				Profile: profile,
+				TLS:     fetchTLSOptions(cmd),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to initialize AWS Config fetcher: %w", err)

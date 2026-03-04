@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -24,12 +23,6 @@ const (
 	// splunkMaxResults caps the number of results returned by a single search.
 	// Prevents unbounded memory consumption from very large result sets.
 	splunkMaxResults = 100000
-
-	// splunkConnectTimeout limits the TLS handshake and response header wait time
-	// to fail fast on unreachable or hung endpoints rather than waiting the full
-	// 5-minute context deadline.
-	splunkTLSTimeout    = 10 * time.Second
-	splunkHeaderTimeout = 30 * time.Second
 )
 
 // splunkSafeIdentifier validates that identifiers (SID, index name, GUID)
@@ -56,17 +49,16 @@ type SplunkFetcher struct {
 
 // NewSplunkFetcher creates a fetcher after validating the server URL and parameters.
 // The token is read from the SPLUNK_TOKEN environment variable at Fetch time.
-func NewSplunkFetcher(params SplunkParams) (*SplunkFetcher, error) {
+func NewSplunkFetcher(params SplunkParams, tlsOpts TLSOptions) (*SplunkFetcher, error) {
 	if err := validateSplunkParams(params); err != nil {
 		return nil, err
 	}
+	client, err := NewHTTPClient(tlsOpts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to configure TLS: %w", err)
+	}
 	return &SplunkFetcher{
-		client: &http.Client{
-			Transport: &http.Transport{
-				TLSHandshakeTimeout:   splunkTLSTimeout,
-				ResponseHeaderTimeout: splunkHeaderTimeout,
-			},
-		},
+		client: client,
 		params: params,
 	}, nil
 }
@@ -305,19 +297,4 @@ func (f *SplunkFetcher) fetchResults(ctx context.Context, token, sid string) ([]
 	}
 
 	return events, nil
-}
-
-// readLimitedBody reads up to maxSize bytes from r. If the response body exceeds
-// maxSize, it returns an error instead of silently truncating, which would cause
-// confusing JSON parse errors downstream.
-func readLimitedBody(r io.Reader, maxSize int64) ([]byte, error) {
-	// Read one extra byte to detect truncation
-	body, err := io.ReadAll(io.LimitReader(r, maxSize+1))
-	if err != nil {
-		return nil, err
-	}
-	if int64(len(body)) > maxSize {
-		return nil, fmt.Errorf("response body exceeded %d byte limit", maxSize)
-	}
-	return body, nil
 }

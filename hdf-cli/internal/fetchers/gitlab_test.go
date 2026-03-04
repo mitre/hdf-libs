@@ -106,7 +106,7 @@ func TestNewGitLabFetcher_URLValidation(t *testing.T) { //nolint:dupl // URL val
 	}
 	for _, u := range valid {
 		t.Run("valid/"+u, func(t *testing.T) {
-			_, err := NewGitLabFetcher(GitLabParams{URL: u, ProjectID: "proj", JobName: "job"})
+			_, err := NewGitLabFetcher(GitLabParams{URL: u, ProjectID: "proj", JobName: "job"}, TLSOptions{})
 			assert.NoError(t, err, "URL %q should be valid", u)
 		})
 	}
@@ -120,7 +120,7 @@ func TestNewGitLabFetcher_URLValidation(t *testing.T) { //nolint:dupl // URL val
 	}
 	for _, u := range invalid {
 		t.Run("invalid/"+u, func(t *testing.T) {
-			_, err := NewGitLabFetcher(GitLabParams{URL: u, ProjectID: "proj", JobName: "job"})
+			_, err := NewGitLabFetcher(GitLabParams{URL: u, ProjectID: "proj", JobName: "job"}, TLSOptions{})
 			require.Error(t, err)
 		})
 	}

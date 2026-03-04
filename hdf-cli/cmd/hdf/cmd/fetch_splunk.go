@@ -62,7 +62,7 @@ Output defaults to stdout when no output path is given.`,
 				URL:   serverURL,
 				Index: index,
 				GUID:  guid,
-			})
+			}, fetchTLSOptions(cmd))
 			if err != nil {
 				return fmt.Errorf("failed to initialize Splunk fetcher: %w", err)
 			}

@@ -77,7 +77,7 @@ Output defaults to stdout when no output path is given.`,
 				Branch:        branch,
 				PullRequestID: pullRequest,
 				Organization:  organization,
-			})
+			}, fetchTLSOptions(cmd))
 			if err != nil {
 				return fmt.Errorf("failed to initialize SonarQube fetcher: %w", err)
 			}

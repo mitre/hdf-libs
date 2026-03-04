@@ -69,7 +69,7 @@ func TestNewSplunkFetcher_URLValidation(t *testing.T) { //nolint:dupl // URL val
 	}
 	for _, u := range valid {
 		t.Run("valid/"+u, func(t *testing.T) {
-			_, err := NewSplunkFetcher(SplunkParams{URL: u, Index: "idx", GUID: "guid"})
+			_, err := NewSplunkFetcher(SplunkParams{URL: u, Index: "idx", GUID: "guid"}, TLSOptions{})
 			assert.NoError(t, err, "URL %q should be valid", u)
 		})
 	}
@@ -83,7 +83,7 @@ func TestNewSplunkFetcher_URLValidation(t *testing.T) { //nolint:dupl // URL val
 	}
 	for _, u := range invalid {
 		t.Run("invalid/"+u, func(t *testing.T) {
-			_, err := NewSplunkFetcher(SplunkParams{URL: u, Index: "idx", GUID: "guid"})
+			_, err := NewSplunkFetcher(SplunkParams{URL: u, Index: "idx", GUID: "guid"}, TLSOptions{})
 			require.Error(t, err)
 		})
 	}
@@ -104,11 +104,11 @@ func TestNewSplunkFetcher_IdentifierValidation(t *testing.T) {
 	}
 	for _, id := range validIDs {
 		t.Run("valid-index/"+id, func(t *testing.T) {
-			_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: id, GUID: "guid123"})
+			_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: id, GUID: "guid123"}, TLSOptions{})
 			assert.NoError(t, err)
 		})
 		t.Run("valid-guid/"+id, func(t *testing.T) {
-			_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: "idx", GUID: id})
+			_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: "idx", GUID: id}, TLSOptions{})
 			assert.NoError(t, err)
 		})
 	}
@@ -125,12 +125,12 @@ func TestNewSplunkFetcher_IdentifierValidation(t *testing.T) {
 	}
 	for _, id := range invalidIDs {
 		t.Run("invalid-index/"+id, func(t *testing.T) {
-			_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: id, GUID: "guid"})
+			_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: id, GUID: "guid"}, TLSOptions{})
 			require.Error(t, err, "index %q should be rejected", id)
 		})
 		if id != "" { // GUID="" is tested by the index case
 			t.Run("invalid-guid/"+id, func(t *testing.T) {
-				_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: "idx", GUID: id})
+				_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: "idx", GUID: id}, TLSOptions{})
 				require.Error(t, err, "GUID %q should be rejected", id)
 			})
 		}
