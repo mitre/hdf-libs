@@ -4,6 +4,7 @@ package scoutsuite
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -99,16 +100,29 @@ func getMessage(checkedItems, flaggedItems int, items []string) string {
 	return msg
 }
 
+// scoutsuiteJSPrefix matches known ScoutSuite JS variable assignment prefixes.
+// Only these recognized prefixes are stripped; unrecognized content before '{'
+// is preserved so the JSON parser produces a clear error.
+var scoutsuiteJSPrefix = regexp.MustCompile(`(?i)^\s*(scoutsuite_results)\s*=\s*$`)
+
 // stripJSPrefix removes the "scoutsuite_results = " JS variable prefix from input.
 // ScoutSuite outputs results as a JS file with this prefix on the first line.
-// If the prefix is not present, the input is returned unchanged.
+// Only strips prefixes matching known ScoutSuite patterns; unrecognized prefixes
+// are left intact so JSON parsing produces a descriptive error.
 func stripJSPrefix(input string) string {
-	// Find the first '{' which starts the JSON object
 	idx := strings.Index(input, "{")
 	if idx < 0 {
 		return input
 	}
-	return input[idx:]
+	if idx == 0 {
+		return input // Already valid JSON
+	}
+	prefix := strings.TrimSpace(input[:idx])
+	if scoutsuiteJSPrefix.MatchString(prefix) {
+		return input[idx:]
+	}
+	// Unknown prefix — don't strip, let JSON parser report the error
+	return input
 }
 
 // collapseFindings extracts all findings from all services into a flat list of (ruleID, finding) pairs.

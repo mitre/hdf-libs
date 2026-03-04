@@ -1,5 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
-import { createHash } from 'crypto';
+import { parseJSON, sha256 } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
@@ -64,21 +63,12 @@ interface CVEEntry {
 }
 
 /**
- * Generate an MD5 hash of a string for use as an ID.
- * Matches heimdall2 generateHash(summary, 'md5') behavior.
+ * Generate a truncated SHA-256 hash of a string for use as an ID.
+ * Truncated to 32 hex chars for compatibility with original hash length.
  */
-function hashID(summary: string): string {
-  return createHash('md5').update(summary).digest('hex');
-}
-
-/**
- * Returns the entry ID, falling back to MD5 hash of summary when id is empty.
- */
-function getEntryID(entry: XrayEntry): string {
-  if (entry.id && entry.id.length > 0) {
-    return entry.id;
-  }
-  return hashID(entry.summary);
+async function hashID(summary: string): Promise<string> {
+  const full = await sha256(summary);
+  return full.substring(0, 32);
 }
 
 /**
@@ -207,10 +197,19 @@ export async function convertJfrogXrayToHdf(input: string): Promise<string> {
     console.warn(`WARNING: Input truncated at ${limitedEntries.length} entries (original: ${parsed.data.length})`);
   }
 
+  // Pre-compute entry IDs (hashID is async due to Web Crypto sha256)
+  const entryIDs = await Promise.all(
+    limitedEntries.map(async (entry) => {
+      if (entry.id && entry.id.length > 0) return entry.id;
+      return hashID(entry.summary);
+    })
+  );
+
   // Group entries by effective ID, preserving insertion order
   const groups = new Map<string, XrayEntry[]>();
-  for (const entry of limitedEntries) {
-    const id = getEntryID(entry);
+  for (let i = 0; i < limitedEntries.length; i++) {
+    const id = entryIDs[i]!;
+    const entry = limitedEntries[i]!;
     const existing = groups.get(id);
     if (existing) {
       existing.push(entry);
