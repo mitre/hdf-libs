@@ -1,7 +1,7 @@
 package jfrogxray
 
 import (
-	"crypto/md5" //nolint:gosec // MD5 used for ID generation (non-cryptographic), matches heimdall2 behavior
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -56,15 +56,16 @@ type CVEEntry struct {
 	CvssV3 string   `json:"cvss_v3"`
 }
 
-// hashID generates an MD5 hash of the summary string for use as an ID when
-// the entry's "id" field is empty. This matches the heimdall2 behavior.
+// hashID generates a truncated SHA-256 hash of the summary string for use as
+// an ID when the entry's "id" field is empty. Truncated to 32 hex chars for
+// compatibility with the original heimdall2 hash length.
 func hashID(summary string) string {
-	hash := md5.Sum([]byte(summary)) //nolint:gosec // Non-cryptographic use for ID generation
-	return hex.EncodeToString(hash[:])
+	hash := sha256.Sum256([]byte(summary))
+	return hex.EncodeToString(hash[:16]) // 16 bytes = 32 hex chars
 }
 
-// getEntryID returns the entry ID, falling back to an MD5 hash of the summary
-// when the id field is empty.
+// getEntryID returns the entry ID, falling back to a SHA-256 hash of the
+// summary when the id field is empty.
 func getEntryID(entry XrayEntry) string {
 	if entry.ID != "" {
 		return entry.ID

@@ -110,16 +110,29 @@ function getMessage(checkedItems: number, flaggedItems: number, items: string[])
   return msg;
 }
 
+/** Known ScoutSuite JS variable assignment prefixes. */
+const SCOUTSUITE_JS_PREFIX = /^\s*(scoutsuite_results)\s*=\s*$/i;
+
 /**
  * Strips the "scoutsuite_results = " JS variable prefix from input.
  * ScoutSuite outputs results as a JS file with this prefix on the first line.
+ * Only strips prefixes matching known ScoutSuite patterns; unrecognized prefixes
+ * are left intact so JSON parsing produces a descriptive error.
  */
 function stripJSPrefix(input: string): string {
   const idx = input.indexOf('{');
   if (idx < 0) {
     return input;
   }
-  return input.substring(idx);
+  if (idx === 0) {
+    return input; // Already valid JSON
+  }
+  const prefix = input.substring(0, idx).trim();
+  if (SCOUTSUITE_JS_PREFIX.test(prefix)) {
+    return input.substring(idx);
+  }
+  // Unknown prefix — don't strip, let JSON parser report the error
+  return input;
 }
 
 /**
