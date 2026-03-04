@@ -145,3 +145,12 @@ export function mapCWEToNIST(
 
 // Re-export shared constants for converter convenience
 export { DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
+
+/**
+ * Default NIST 800-53 fallback for tools that identify outdated packages or
+ * flaws requiring patching (SI-2: Flaw Remediation, RA-5: Vulnerability
+ * Monitoring and Scanning).
+ *
+ * Mirrors Go shared.DefaultRemediationNIST.
+ */
+export const DEFAULT_REMEDIATION_NIST_TAGS = ['SI-2', 'RA-5'];

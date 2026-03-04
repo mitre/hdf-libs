@@ -44,8 +44,6 @@ func veracodeSeverityToImpact(severity string) float64 {
 	}
 }
 
-// defaultNISTTag is the fallback NIST control family used when no CWE mapping exists.
-var defaultNISTTag = []string{"SI-2", "RA-5"}
 
 // XML structures for Veracode DetailedReport
 
@@ -398,7 +396,7 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 		}
 	}
 
-	nist := shared.MapCWEToNIST(cweIDs, defaultNISTTag)
+	nist := shared.MapCWEToNIST(cweIDs, shared.DefaultRemediationNIST)
 	cciTags := cci.NISTToCCI(nist)
 
 	// Build CWE data string for tags
@@ -543,9 +541,9 @@ func buildCVERequirement(vuln Vulnerability, components []Component, firstBuildD
 	var nist []string
 	if vuln.CWEID != "" {
 		cweIDs := []string{strings.TrimPrefix(vuln.CWEID, "CWE-")}
-		nist = shared.MapCWEToNIST(cweIDs, defaultNISTTag)
+		nist = shared.MapCWEToNIST(cweIDs, shared.DefaultRemediationNIST)
 	} else {
-		nist = defaultNISTTag
+		nist = shared.DefaultRemediationNIST
 	}
 	cciTags := cci.NISTToCCI(nist)
 

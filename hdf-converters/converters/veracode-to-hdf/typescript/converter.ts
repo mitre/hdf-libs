@@ -13,7 +13,7 @@
 
 import { parseXml } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
-import { inputChecksum, mapCWEToNIST, buildNistCciTags } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, mapCWEToNIST, buildNistCciTags, DEFAULT_REMEDIATION_NIST_TAGS } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -33,8 +33,6 @@ import {
 /** Attribute prefix used by fast-xml-parser — all XML attributes are accessed via `@_name`. */
 const A = '@_';
 
-/** Default NIST 800-53 fallback tags for Veracode findings. */
-const DEFAULT_NIST_TAG = ['SI-2', 'RA-5'];
 
 /** Veracode severity level (0-5) to HDF impact mapping. */
 const IMPACT_MAPPING: Map<string, number> = new Map([
@@ -224,7 +222,7 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
 
   // Collect CWE IDs for NIST mapping
   const cweIDs = cwes.map(c => attr(c, 'cweid')).filter(Boolean);
-  const nist = mapCWEToNIST(cweIDs, DEFAULT_NIST_TAG);
+  const nist = mapCWEToNIST(cweIDs, DEFAULT_REMEDIATION_NIST_TAGS);
   const cciTags = nistToCci(nist);
 
   // Build tags
@@ -328,9 +326,9 @@ function buildCVERequirement(
   const cweID = attr(vuln, 'cwe_id');
   let nist: string[];
   if (cweID) {
-    nist = mapCWEToNIST([cweID.replace(/^CWE-/, '')], DEFAULT_NIST_TAG);
+    nist = mapCWEToNIST([cweID.replace(/^CWE-/, '')], DEFAULT_REMEDIATION_NIST_TAGS);
   } else {
-    nist = DEFAULT_NIST_TAG;
+    nist = DEFAULT_REMEDIATION_NIST_TAGS;
   }
   const cciTags = nistToCci(nist);
   const extras: Record<string, unknown> = {};
