@@ -1,3 +1,4 @@
+import { parseJSON } from '@mitre/hdf-utilities';
 import { inputChecksum, buildNistCciTags, limitArrayWithWarning } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
@@ -77,7 +78,7 @@ function parseFindings(input: string): TrufflehogFinding[] {
 
   // Try JSON array first
   try {
-    const parsed = JSON.parse(trimmed) as unknown;
+    const parsed = parseJSON<unknown>(trimmed);
     if (Array.isArray(parsed)) {
       return parsed as TrufflehogFinding[];
     }
@@ -94,7 +95,7 @@ function parseFindings(input: string): TrufflehogFinding[] {
   const findings: TrufflehogFinding[] = [];
   for (const line of lines) {
     try {
-      findings.push(JSON.parse(line.trim()) as TrufflehogFinding);
+      findings.push(parseJSON<TrufflehogFinding>(line.trim()));
     } catch {
       throw new Error(`trufflehog: failed to parse NDJSON line: ${line.substring(0, 80)}`);
     }

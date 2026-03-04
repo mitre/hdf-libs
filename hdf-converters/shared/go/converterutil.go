@@ -29,13 +29,17 @@ func InputChecksum(input []byte) *hdf.Checksum {
 // floatPtr, and ptr[T] helpers.
 func Ptr[T any](v T) *T { return &v }
 
+// Pre-compiled regexes for StripHTML — avoids per-call compilation overhead.
+var (
+	htmlTagRe    = regexp.MustCompile(`<[^>]*>`)
+	whitespaceRe = regexp.MustCompile(`\s+`)
+)
+
 // StripHTML removes HTML tags from a string and normalizes whitespace.
 // Returns the trimmed plain-text result.
 func StripHTML(html string) string {
-	re := regexp.MustCompile(`<[^>]*>`)
-	stripped := re.ReplaceAllString(html, " ")
-	ws := regexp.MustCompile(`\s+`)
-	return strings.TrimSpace(ws.ReplaceAllString(stripped, " "))
+	stripped := htmlTagRe.ReplaceAllString(html, " ")
+	return strings.TrimSpace(whitespaceRe.ReplaceAllString(stripped, " "))
 }
 
 // Severity-to-impact mapping audit (2026-02):

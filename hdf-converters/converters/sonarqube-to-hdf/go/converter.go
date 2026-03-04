@@ -113,6 +113,10 @@ const defaultNistTag = "SA-11"
 // SonarQube omits the colon in the timezone offset, so time.RFC3339 does not parse it.
 const sonarTimestampFormat = "2006-01-02T15:04:05-0700"
 
+// cwePattern extracts CWE identifiers from tags and descriptions.
+// Pre-compiled at package level to avoid per-call overhead.
+var cwePattern = regexp.MustCompile(`(?i)cwe[- ]?(\d+)`)
+
 // ConvertSonarqubeToHDF converts SonarQube issues JSON to HDF format
 func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	// Calculate checksum of source scan data
@@ -227,7 +231,7 @@ func convertRuleToRequirement(
 	// Extract tags and mappings
 	cweIds, owaspTags, allTags := extractTags(&rule, hasRule, issues)
 	nistControls := shared.MapCWEToNIST(cweIds, []string{defaultNistTag})
-	cciControls := mapNistToCCI(nistControls)
+	cciControls := cci.NISTToCCI(nistControls)
 
 	// Create results for each issue
 	results := make([]hdf.RequirementResult, 0, len(issues))
@@ -313,8 +317,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 
 			// Check for CWE tags
 			if strings.HasPrefix(lowerTag, "cwe-") || strings.Contains(lowerTag, "cwe") {
-				cwePattern := regexp.MustCompile(`(?i)cwe[- ]?(\d+)`)
-				if match := cwePattern.FindStringSubmatch(tag); match != nil {
+					if match := cwePattern.FindStringSubmatch(tag); match != nil {
 					cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 				}
 			}
@@ -343,8 +346,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 			lowerTag := strings.ToLower(tag)
 
 			if strings.HasPrefix(lowerTag, "cwe-") {
-				cwePattern := regexp.MustCompile(`(?i)cwe[- ]?(\d+)`)
-				if match := cwePattern.FindStringSubmatch(tag); match != nil {
+					if match := cwePattern.FindStringSubmatch(tag); match != nil {
 					cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 				}
 			}
@@ -358,7 +360,6 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 	// Parse CWE from rule description
 	if hasRule && rule != nil {
 		desc := rule.HTMLDesc + rule.MDDesc
-		cwePattern := regexp.MustCompile(`(?i)CWE[- ]?(\d+)`)
 		matches := cwePattern.FindAllStringSubmatch(desc, -1)
 		for _, match := range matches {
 			cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
@@ -391,9 +392,6 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 	return cweIds, owaspTags, allTags
 }
 
-func mapNistToCCI(nistControls []string) []string {
-	return cci.NISTToCCI(nistControls)
-}
 
 func createResultFromIssue(issue Issue, componentMap map[string]Component) hdf.RequirementResult {
 	status := hdf.Failed
