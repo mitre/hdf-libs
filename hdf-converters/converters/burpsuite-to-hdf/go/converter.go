@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"log"
-	"regexp"
 	"strings"
 	"time"
 
@@ -70,17 +69,16 @@ func GetImpact(severity string) float64 {
 
 // --- CWE parsing ---
 
-var cwePattern = regexp.MustCompile(`CWE-(\d+)`)
-
 // parseCWEIDs extracts CWE identifiers from the vulnerabilityClassifications HTML.
+// Returns CWE-prefixed IDs (e.g., ["CWE-79"]) for use in tags and MapCWEToNIST.
 func parseCWEIDs(html string) []string {
-	matches := cwePattern.FindAllStringSubmatch(html, -1)
-	if len(matches) == 0 {
+	ids := shared.ExtractCWEIDs(html)
+	if len(ids) == 0 {
 		return nil
 	}
-	result := make([]string, len(matches))
-	for i, match := range matches {
-		result[i] = "CWE-" + match[1]
+	result := make([]string, len(ids))
+	for i, id := range ids {
+		result[i] = "CWE-" + id
 	}
 	return result
 }
@@ -139,6 +137,9 @@ func parseBurpTimestamp(s string) time.Time {
 func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("burpsuite: empty input")
+	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return nil, fmt.Errorf("burpsuite: %w", err)
 	}
 
 	resultsChecksum := shared.InputChecksum(input)

@@ -405,7 +405,7 @@ func TestParseCWEIDs_Multiple(t *testing.T) {
 <li><a href="https://cwe.mitre.org/data/definitions/116.html">CWE-116: Improper Encoding or Escaping of Output</a></li>
 </ul>`
 	cweIDs := ParseCWEIDs(html)
-	assert.Equal(t, []string{"CWE-20", "CWE-116"}, cweIDs)
+	assert.Equal(t, []string{"CWE-116", "CWE-20"}, cweIDs)
 }
 
 func TestParseCWEIDs_Empty(t *testing.T) {
@@ -444,4 +444,11 @@ func TestConvertBurpsuiteToHDF_ConfidenceTag(t *testing.T) {
 	req := findRequirement(result.Baselines[0].Requirements, "2098688")
 	require.NotNil(t, req)
 	assert.Equal(t, "Certain", req.Tags["confidence"])
+}
+
+func TestConvertBurpsuiteToHDF_EntityExpansion(t *testing.T) {
+	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
+	_, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -113,9 +112,6 @@ const defaultNistTag = "SA-11"
 // SonarQube omits the colon in the timezone offset, so time.RFC3339 does not parse it.
 const sonarTimestampFormat = "2006-01-02T15:04:05-0700"
 
-// cwePattern extracts CWE identifiers from tags and descriptions.
-// Pre-compiled at package level to avoid per-call overhead.
-var cwePattern = regexp.MustCompile(`(?i)cwe[- ]?(\d+)`)
 
 // ConvertSonarqubeToHDF converts SonarQube issues JSON to HDF format
 func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
@@ -317,7 +313,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 
 			// Check for CWE tags
 			if strings.HasPrefix(lowerTag, "cwe-") || strings.Contains(lowerTag, "cwe") {
-					if match := cwePattern.FindStringSubmatch(tag); match != nil {
+					if match := shared.CWEPattern.FindStringSubmatch(tag); match != nil {
 					cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 				}
 			}
@@ -346,7 +342,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 			lowerTag := strings.ToLower(tag)
 
 			if strings.HasPrefix(lowerTag, "cwe-") {
-					if match := cwePattern.FindStringSubmatch(tag); match != nil {
+					if match := shared.CWEPattern.FindStringSubmatch(tag); match != nil {
 					cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 				}
 			}
@@ -360,7 +356,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 	// Parse CWE from rule description
 	if hasRule && rule != nil {
 		desc := rule.HTMLDesc + rule.MDDesc
-		matches := cwePattern.FindAllStringSubmatch(desc, -1)
+		matches := shared.CWEPattern.FindAllStringSubmatch(desc, -1)
 		for _, match := range matches {
 			cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 		}

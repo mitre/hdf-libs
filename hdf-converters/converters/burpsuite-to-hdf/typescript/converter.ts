@@ -9,6 +9,8 @@ import {
   limitArray,
   stripHTML,
   mapCWEToNIST,
+  extractCWEIDs,
+  validateInputSize,
 } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
@@ -71,12 +73,13 @@ function getImpact(severity: string): number {
 
 // --- CWE parsing ---
 
-const CWE_PATTERN = /CWE-(\d+)/g;
-
+/**
+ * Extract CWE identifiers from HTML text.
+ * Returns CWE-prefixed IDs (e.g., ["CWE-79"]) for use in tags and mapCWEToNIST.
+ */
 function parseCWEIDs(html: string): string[] {
   if (!html) return [];
-  const matches = [...html.matchAll(CWE_PATTERN)];
-  return matches.map(m => `CWE-${m[1]}`);
+  return extractCWEIDs(html).map(id => `CWE-${id}`);
 }
 
 // --- Format code desc ---
@@ -113,6 +116,7 @@ export async function convertBurpsuiteToHdf(input: string): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('burpsuite: empty input');
   }
+  validateInputSize(input, 'burpsuite');
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 

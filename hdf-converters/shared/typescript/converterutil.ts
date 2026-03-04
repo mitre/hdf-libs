@@ -143,6 +143,51 @@ export function mapCWEToNIST(
   return controls.size > 0 ? [...controls].sort() : fallback;
 }
 
+/** Matches CWE identifiers like "CWE-79", "CWE 89", "cwe22". */
+const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
+
+/**
+ * Extract all numeric CWE IDs from text.
+ * Returns deduplicated sorted array of numeric ID strings (e.g., ["79", "89"]).
+ *
+ * @param text - Text potentially containing CWE identifiers
+ * @returns Sorted, deduplicated numeric CWE ID strings
+ */
+export function extractCWEIDs(text: string): string[] {
+  const matches = [...text.matchAll(CWE_PATTERN)];
+  if (matches.length === 0) return [];
+  const ids = [...new Set(matches.map(m => m[1]!))];
+  ids.sort();
+  return ids;
+}
+
+/** Default maximum input size for converters (50MB) */
+export const DEFAULT_MAX_INPUT_SIZE = 50 * 1024 * 1024;
+
+/**
+ * Validates that input string doesn't exceed maximum allowed size.
+ *
+ * Note: string.length gives char count, not bytes. For multi-byte chars this
+ * underestimates. This is acceptable as a coarse safety check — exact byte
+ * counting would require TextEncoder.
+ *
+ * @param input - Raw input string to validate
+ * @param converterName - Name of the converter (used in error message)
+ * @param maxSize - Maximum allowed character count (defaults to DEFAULT_MAX_INPUT_SIZE)
+ * @throws Error if input exceeds maxSize
+ */
+export function validateInputSize(
+  input: string,
+  converterName: string,
+  maxSize = DEFAULT_MAX_INPUT_SIZE,
+): void {
+  if (input.length > maxSize) {
+    throw new Error(
+      `${converterName}: input exceeds maximum allowed size of ${maxSize} characters`,
+    );
+  }
+}
+
 // Re-export shared constants for converter convenience
 export { DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
 
