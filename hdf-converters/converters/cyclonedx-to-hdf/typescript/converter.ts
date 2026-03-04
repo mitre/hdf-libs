@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -200,6 +200,7 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('cyclonedx: empty input');
   }
+  validateInputSize(input, 'cyclonedx');
 
   const bom = parseJSON<CycloneDXBom>(input);
 

@@ -10,6 +10,7 @@ import {
   buildNistCciTags,
   limitArray,
   stripHTML,
+  validateInputSize,
 } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
@@ -281,6 +282,7 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
   if (!input || input.trim().length === 0) {
     throw new Error('netsparker: empty input');
   }
+  validateInputSize(input, 'netsparker');
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 

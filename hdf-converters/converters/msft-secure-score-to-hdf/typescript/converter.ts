@@ -2,7 +2,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, stripHTML, buildNistCciTags } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, stripHTML, buildNistCciTags, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -227,6 +227,7 @@ export async function convertMsftSecureScoreToHdf(input: string): Promise<string
   if (!input || input.trim().length === 0) {
     throw new Error('msft-secure-score: empty input');
   }
+  validateInputSize(input, 'msft-secure-score');
 
   const combined = parseJSON<CombinedResponse>(input);
 

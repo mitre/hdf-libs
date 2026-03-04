@@ -2,7 +2,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import { getCweNistControl, DEFAULT_REMEDIATION_NIST_TAGS } from '@mitre/hdf-mappings';
 import { detectFormat } from '../../../shared/typescript/formatdetect.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -161,6 +161,7 @@ function buildRequirement(ruleId: string, issues: GosecIssue[]): EvaluatedRequir
  * @returns HDF JSON string
  */
 export async function convertGosecToHdf(input: string): Promise<string> {
+  validateInputSize(input, 'gosec');
   // Detect format: if SARIF, delegate to the shared SARIF converter
   if (detectFormat(input) === 'sarif') {
     return convertSarifToHdf(input);

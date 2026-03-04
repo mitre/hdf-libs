@@ -17,7 +17,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, limitArray} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, limitArray, validateInputSize} from '../../../shared/typescript/converterutil.js';
 
 // --- GitLab Security Report input types ---
 
@@ -224,6 +224,7 @@ function buildCodeDesc(scanType: string, location?: GitLabLocation): string {
 // --- Main converter ---
 
 export async function convertGitlabToHdf(input: string): Promise<string> {
+  validateInputSize(input, 'gitlab');
   const resultsChecksum: Checksum = await inputChecksum(input);
 
   const report = parseJSON<GitLabReport>(input);

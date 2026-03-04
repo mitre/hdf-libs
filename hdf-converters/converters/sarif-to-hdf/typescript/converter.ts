@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, DataSource, Description } from '@mitre/hdf-schema';
 import { ResultStatus, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
@@ -151,6 +151,7 @@ const IMPACT_MAPPING: Record<string, number> = {
 // --- Conversion entry point ---
 
 export async function convertSarifToHdf(input: string): Promise<string> {
+  validateInputSize(input, 'sarif');
   const resultsChecksum: Checksum = await inputChecksum(input);
 
   const sarif = parseJSON<SarifFile>(input);

@@ -14,7 +14,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, limitArray} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, limitArray, validateInputSize} from '../../../shared/typescript/converterutil.js';
 
 // Nikto JSON input types
 
@@ -82,6 +82,7 @@ function convertVulnToRequirement(vuln: NiktoVulnerability): EvaluatedRequiremen
 }
 
 export async function convertNiktoToHdf(input: string): Promise<string> {
+  validateInputSize(input, 'nikto');
   const resultsChecksum: Checksum = await inputChecksum(input);
 
   const niktoData = parseJSON<NiktoReport>(input);

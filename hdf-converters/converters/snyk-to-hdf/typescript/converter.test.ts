@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertSnykToHdf } from './converter.js';
+import { DEFAULT_MAX_INPUT_SIZE } from '../../../shared/typescript/converterutil.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -20,6 +21,11 @@ describe('snyk to HDF converter', async () => {
 
     it('should throw on empty input', async () => {
       await expect(convertSnykToHdf('')).rejects.toThrow();
+    });
+
+    it('should throw on oversized input', async () => {
+      const big = '{' + 'x'.repeat(DEFAULT_MAX_INPUT_SIZE + 1) + '}';
+      await expect(convertSnykToHdf(big)).rejects.toThrow('exceeds maximum');
     });
   });
 

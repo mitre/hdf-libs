@@ -3,7 +3,7 @@ import {
   getAwsConfigNistControlByIdentifier,
   getAwsConfigNistControlByName,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -158,6 +158,7 @@ function buildRequirement(rule: ConfigRule): EvaluatedRequirement {
  * @returns HDF JSON string
  */
 export async function convertAwsConfigToHdf(input: string): Promise<string> {
+  validateInputSize(input, 'aws-config');
   const resultsChecksum: Checksum = await inputChecksum(input);
 
   const data = parseJSON<ConfigRulesFile>(input);

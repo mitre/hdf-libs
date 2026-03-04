@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -18,6 +19,8 @@ func NewConvertCmd() *cobra.Command {
 		Args:  validateConvertArgs,
 		RunE:  runConvert,
 	}
+
+	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
 
 	return cmd
 }
@@ -113,7 +116,7 @@ func buildConverterNotFoundError(source, dest string) error {
 }
 
 // runConvert executes the convert command.
-func runConvert(_ *cobra.Command, args []string) error {
+func runConvert(cmd *cobra.Command, args []string) error {
 	srcFormat := args[0]
 	destFormat := args[2]
 	inputPath := args[3]
@@ -121,6 +124,16 @@ func runConvert(_ *cobra.Command, args []string) error {
 	var outputPath string
 	if len(args) == 5 {
 		outputPath = args[4]
+	}
+
+	// Check if output would overwrite input
+	if outputPath != "" && outputPath != "-" && inputPath != "-" {
+		force, _ := cmd.Flags().GetBool("force")
+		if !force {
+			if err := checkOutputOverwritesInput(inputPath, outputPath); err != nil {
+				return err
+			}
+		}
 	}
 
 	// Read input
@@ -147,6 +160,23 @@ func runConvert(_ *cobra.Command, args []string) error {
 
 	// Write output
 	return writeConvertOutput(output, outputPath)
+}
+
+// checkOutputOverwritesInput returns an error if the resolved output path
+// is the same file as the input path. This prevents accidental data loss.
+func checkOutputOverwritesInput(inputPath, outputPath string) error {
+	inputAbs, err := filepath.Abs(inputPath)
+	if err != nil {
+		return nil //nolint:nilerr // If we can't resolve, allow the operation
+	}
+	outputAbs, err := filepath.Abs(outputPath)
+	if err != nil {
+		return nil //nolint:nilerr // If we can't resolve, allow the operation
+	}
+	if inputAbs == outputAbs {
+		return fmt.Errorf("output path %q would overwrite input file; use a different output path or --force to override", outputPath)
+	}
+	return nil
 }
 
 // writeConvertOutput writes conversion output to a file or stdout.

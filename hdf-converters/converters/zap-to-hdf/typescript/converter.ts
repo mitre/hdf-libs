@@ -17,7 +17,7 @@ import {
 import {parseJSON} from '@mitre/hdf-utilities';
 import {detectFormat} from '../../../shared/typescript/formatdetect.js';
 import {convertSarifToHdf} from '../../sarif-to-hdf/typescript/converter.js';
-import {inputChecksum, buildNistCciTags, limitArray, stripHTML} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, limitArray, stripHTML, validateInputSize} from '../../../shared/typescript/converterutil.js';
 
 // --- ZAP JSON input types ---
 
@@ -147,6 +147,7 @@ function selectSite(sites: ZapSite[]): ZapSite | undefined {
 // --- Main converter ---
 
 export async function convertZapToHdf(input: string): Promise<string> {
+  validateInputSize(input, 'zap');
   // SARIF routing — delegate to the shared SARIF converter
   if (detectFormat(input) === 'sarif') {
     return convertSarifToHdf(input);

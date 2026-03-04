@@ -1,6 +1,6 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -100,6 +100,7 @@ function parseHtml(html: string): string {
  * Convert Nessus XML scan results to HDF format
  */
 export async function convertNessusToHdf(nessusXml: string): Promise<HdfResults> {
+  validateInputSize(nessusXml, 'nessus');
   // Calculate checksum of source scan data for integrity verification
   const resultsChecksum: Checksum = await inputChecksum(nessusXml);
 

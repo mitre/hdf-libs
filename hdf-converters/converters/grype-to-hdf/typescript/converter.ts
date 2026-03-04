@@ -10,7 +10,7 @@ import {
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, limitArray} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, limitArray, validateInputSize} from '../../../shared/typescript/converterutil.js';
 
 // Input types for Grype JSON
 
@@ -310,6 +310,7 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
 }
 
 export async function convertGrypeToHdf(input: string): Promise<string> {
+  validateInputSize(input, 'grype');
   // Calculate checksum of input data
   const resultsChecksum: Checksum = await inputChecksum(input);
 
