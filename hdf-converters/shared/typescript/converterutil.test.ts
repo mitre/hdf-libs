@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { inputChecksum, buildNistCciTags, DEFAULT_STATIC_ANALYSIS_NIST_TAGS, limitArray, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE } from './converterutil.js';
+import { inputChecksum, buildNistCciTags, DEFAULT_STATIC_ANALYSIS_NIST_TAGS, limitArray, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -148,6 +148,49 @@ describe('validateInputSize', () => {
 
   it('should export DEFAULT_MAX_INPUT_SIZE as 50MB', () => {
     expect(DEFAULT_MAX_INPUT_SIZE).toBe(50 * 1024 * 1024);
+  });
+});
+
+describe('ensureArray', () => {
+  it('should return empty array for undefined', () => {
+    expect(ensureArray(undefined)).toEqual([]);
+  });
+
+  it('should return empty array for null', () => {
+    expect(ensureArray(null)).toEqual([]);
+  });
+
+  it('should wrap a single value in an array', () => {
+    expect(ensureArray('hello')).toEqual(['hello']);
+  });
+
+  it('should wrap a single object in an array', () => {
+    const obj = { key: 'value' };
+    expect(ensureArray(obj)).toEqual([obj]);
+  });
+
+  it('should return an array unchanged', () => {
+    expect(ensureArray([1, 2, 3])).toEqual([1, 2, 3]);
+  });
+
+  it('should return an empty array unchanged', () => {
+    expect(ensureArray([])).toEqual([]);
+  });
+
+  it('should wrap a number in an array', () => {
+    expect(ensureArray(42)).toEqual([42]);
+  });
+
+  it('should wrap false in an array (not treat as nullish)', () => {
+    expect(ensureArray(false)).toEqual([false]);
+  });
+
+  it('should wrap zero in an array (not treat as nullish)', () => {
+    expect(ensureArray(0)).toEqual([0]);
+  });
+
+  it('should wrap empty string in an array (not treat as nullish)', () => {
+    expect(ensureArray('')).toEqual(['']);
   });
 });
 

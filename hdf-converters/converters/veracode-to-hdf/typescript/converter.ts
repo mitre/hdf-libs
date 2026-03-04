@@ -13,7 +13,7 @@
 
 import { parseXml } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
-import { inputChecksum, mapCWEToNIST, buildNistCciTags, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -49,12 +49,6 @@ function veracodeSeverityToImpact(severity: string): number {
 }
 
 // ---- Utility functions ----
-
-/** Ensure a value is an array, wrapping singletons. */
-function ensureArray<T>(val: T | T[] | undefined | null): T[] {
-  if (val === undefined || val === null) return [];
-  return Array.isArray(val) ? val : [val];
-}
 
 /** Get an attribute from a parsed XML node. */
 function attr(node: Record<string, unknown>, name: string): string {
