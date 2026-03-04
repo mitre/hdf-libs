@@ -642,3 +642,10 @@ func findDescription(descriptions []hdf.Description, label string) *hdf.Descript
 	}
 	return nil
 }
+
+func TestConvertXccdfResultsToHDF_EntityExpansion(t *testing.T) {
+	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
+	_, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
+}

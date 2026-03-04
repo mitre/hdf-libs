@@ -264,6 +264,9 @@ func ConvertXccdfResultsToHDF(input []byte, converterVersion string) (*hdf.HDFRe
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return nil, fmt.Errorf("xccdf: %w", err)
+	}
 
 	resultsChecksum := shared.InputChecksum(input)
 

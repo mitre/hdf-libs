@@ -28,6 +28,13 @@ var impactMapping = map[string]float64{
 
 // ConvertNessusToHDF converts Nessus XML scan results to HDF format
 func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(nessusXML) == 0 {
+		return nil, fmt.Errorf("nessus: empty input")
+	}
+	if err := shared.ValidateXMLInput(nessusXML, 0); err != nil {
+		return nil, fmt.Errorf("nessus: %w", err)
+	}
+
 	// Calculate checksum of source scan data for integrity verification
 	resultsChecksum := shared.InputChecksum(nessusXML)
 

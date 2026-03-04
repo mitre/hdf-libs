@@ -449,3 +449,10 @@ func TestBuildCodeDesc_WithoutClassname(t *testing.T) {
 	tc := junitTestCase{Name: "testFoo"}
 	assert.Equal(t, "testFoo", buildCodeDesc(tc))
 }
+
+func TestConvertJUnitToHDF_EntityExpansion(t *testing.T) {
+	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
+	_, err := ConvertJUnitToHDF(input, converterVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
+}

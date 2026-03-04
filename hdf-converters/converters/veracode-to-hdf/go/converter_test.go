@@ -234,3 +234,10 @@ func TestConvertVeracodeToHDF_AllFlawsAccountedFor(t *testing.T) {
 	}
 	assert.Equal(t, 194, cweResultCount, "CWE controls should have 194 total flaw results")
 }
+
+func TestConvertVeracodeToHDF_EntityExpansion(t *testing.T) {
+	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
+	_, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
+}

@@ -291,6 +291,9 @@ func ConvertVeracodeToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	if len(input) == 0 {
 		return nil, fmt.Errorf("veracode: empty input")
 	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return nil, fmt.Errorf("veracode: %w", err)
+	}
 
 	// Check for summary report — not supported
 	var summary SummaryReport
