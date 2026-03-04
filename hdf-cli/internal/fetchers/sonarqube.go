@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -205,9 +204,11 @@ func (f *SonarqubeFetcher) fetchPage(ctx context.Context, token string, page int
 		return nil, fmt.Errorf("SonarQube API returned HTTP %d", resp.StatusCode)
 	}
 
-	// Limit response body to 10MB to prevent memory exhaustion from malicious servers
+	// Limit response body to 10MB to prevent memory exhaustion from malicious servers.
+	// Uses readLimitedBody (shared with Splunk fetcher) which reads maxSize+1 bytes
+	// and returns an explicit error on overflow, rather than silently truncating.
 	const maxResponseSize = 10 * 1024 * 1024
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
+	body, err := readLimitedBody(resp.Body, maxResponseSize)
 	if err != nil {
 		return nil, fmt.Errorf("reading response body: %w", err)
 	}
