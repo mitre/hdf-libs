@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConvertCommand_ArgValidation(t *testing.T) {
@@ -204,4 +207,78 @@ func TestConvertCommand_ErrorMessages(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConvertCommand_OverwriteProtection(t *testing.T) {
+	fixture := legacyhdfFixturePath(t, "input/minimal.json")
+
+	t.Run("same input and output path returns error", func(t *testing.T) {
+		_, stderr, err := executeCommand("convert", "legacyhdf", "to", "hdf", fixture, fixture)
+		require.Error(t, err, "expected error when output path matches input path")
+		assert.Contains(t, stderr, "would overwrite input file")
+		assert.Contains(t, stderr, "--force")
+	})
+
+	t.Run("relative vs absolute same path returns error", func(t *testing.T) {
+		// Create a temp file that we can reference both ways
+		tmpDir := t.TempDir()
+		tmpFile := filepath.Join(tmpDir, "input.json")
+		data, err := os.ReadFile(fixture)
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(tmpFile, data, 0o600))
+
+		// Use the absolute path as input and construct a relative-looking equivalent
+		// by using the same absolute path (filepath.Abs normalizes both)
+		_, _, err = executeCommand("convert", "legacyhdf", "to", "hdf", tmpFile, tmpFile)
+		require.Error(t, err, "expected error when output path resolves to same file as input")
+	})
+
+	t.Run("force flag allows same path", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		tmpFile := filepath.Join(tmpDir, "input.json")
+		data, err := os.ReadFile(fixture)
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(tmpFile, data, 0o600))
+
+		_, _, err = executeCommand("convert", "legacyhdf", "to", "hdf", "--force", tmpFile, tmpFile)
+		require.NoError(t, err, "expected --force to allow overwriting input file")
+	})
+
+	t.Run("different paths work normally", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		outputPath := filepath.Join(tmpDir, "output.json")
+
+		_, _, err := executeCommand("convert", "legacyhdf", "to", "hdf", fixture, outputPath)
+		require.NoError(t, err, "expected different paths to work normally")
+
+		// Verify output was written
+		_, err = os.Stat(outputPath)
+		require.NoError(t, err, "output file should exist")
+	})
+
+	t.Run("stdout output skips overwrite check", func(t *testing.T) {
+		// No output path (stdout) should not trigger overwrite check
+		_, _, err := executeCommand("convert", "legacyhdf", "to", "hdf", fixture)
+		require.NoError(t, err, "stdout output should not trigger overwrite check")
+	})
+}
+
+func TestCheckOutputOverwritesInput(t *testing.T) {
+	t.Run("same absolute paths", func(t *testing.T) {
+		err := checkOutputOverwritesInput("/tmp/test.json", "/tmp/test.json")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "would overwrite input file")
+	})
+
+	t.Run("different paths", func(t *testing.T) {
+		err := checkOutputOverwritesInput("/tmp/input.json", "/tmp/output.json")
+		require.NoError(t, err)
+	})
+
+	t.Run("paths that normalize to same file", func(t *testing.T) {
+		// /tmp/foo/../test.json normalizes to /tmp/test.json
+		err := checkOutputOverwritesInput("/tmp/test.json", "/tmp/foo/../test.json")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "would overwrite input file")
+	})
 }

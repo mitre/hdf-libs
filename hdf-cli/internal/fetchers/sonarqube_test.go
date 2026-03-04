@@ -415,6 +415,32 @@ func TestSonarqubeFetcher_EmptyResults(t *testing.T) {
 	assert.Equal(t, 0, result.Total)
 }
 
+func TestSonarqubeFetcher_ResponseExceedsMaxSize(t *testing.T) {
+	// Return a response body larger than the 10MB limit.
+	// The fetcher should return an explicit size-limit error rather than
+	// silently truncating the body and producing a confusing JSON parse error.
+	const maxResponseSize = 10 * 1024 * 1024
+
+	srv := sonarqubeServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		// Write maxResponseSize + 1 bytes to exceed the limit
+		oversized := make([]byte, maxResponseSize+1)
+		for i := range oversized {
+			oversized[i] = 'x'
+		}
+		_, _ = w.Write(oversized)
+	})
+
+	f := newTestFetcher(t, srv.URL)
+	t.Setenv("SONARQUBE_TOKEN", "tok")
+
+	_, err := f.Fetch(context.Background())
+	require.Error(t, err)
+	// Must mention the byte limit, not a JSON parse error
+	assert.Contains(t, err.Error(), "byte limit", "error should mention size limit, not be a JSON parse error")
+	assert.NotContains(t, err.Error(), "parsing API response", "should fail on size, not JSON parsing")
+}
+
 func TestSonarqubeFetcher_InvalidJSONResponse(t *testing.T) {
 	srv := sonarqubeServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
