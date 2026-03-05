@@ -181,11 +181,6 @@ func (f *GitLabFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("GitLab API returned HTTP %d", resp.StatusCode)
 	}
 
-	maxSize := int64(gitlabMaxResponseSize)
-	if f.params.MaxResponseSize > 0 {
-		maxSize = f.params.MaxResponseSize
-	}
-
 	if f.params.MaxResponseSize < 0 {
 		// No limit — read the entire body.
 		body, err := io.ReadAll(resp.Body)
@@ -195,15 +190,14 @@ func (f *GitLabFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		return body, nil
 	}
 
-	// Read up to the limit + 1 byte. If we get more than the limit,
-	// the response is too large — fail explicitly rather than silently
-	// truncating and producing a confusing JSON parse error downstream.
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxSize+1))
+	maxSize := int64(gitlabMaxResponseSize)
+	if f.params.MaxResponseSize > 0 {
+		maxSize = f.params.MaxResponseSize
+	}
+
+	body, err := readLimitedBody(resp.Body, maxSize)
 	if err != nil {
 		return nil, fmt.Errorf("reading response body: %w", err)
-	}
-	if int64(len(body)) > maxSize {
-		return nil, fmt.Errorf("GitLab response exceeds %d MB size limit; use --max-response-size to increase", maxSize/(1024*1024))
 	}
 
 	return body, nil

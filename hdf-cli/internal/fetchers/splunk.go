@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -177,7 +178,7 @@ func (f *SplunkFetcher) createSearchJob(ctx context.Context, token string) (stri
 	// Build the search query body. Index and GUID are pre-validated by
 	// validateSplunkIdentifier to contain only safe characters, so %q quoting
 	// is sufficient here without risk of SPL injection.
-	searchQuery := fmt.Sprintf("search index=%q meta.guid=%q", f.params.Index, f.params.GUID)
+	searchQuery := fmt.Sprintf("search index=%q meta.guid=%q | fields _raw", f.params.Index, f.params.GUID)
 	formData := url.Values{}
 	formData.Set("exec_mode", "blocking")
 	formData.Set("search", searchQuery)
@@ -268,6 +269,12 @@ func (f *SplunkFetcher) fetchResults(ctx context.Context, token, sid string) ([]
 	var resultsResp splunkResultsResponse
 	if err := json.Unmarshal(body, &resultsResp); err != nil {
 		return nil, fmt.Errorf("parsing results response: %w", err)
+	}
+
+	// Warn if the result count hits the cap — data may have been silently truncated.
+	if len(resultsResp.Rows) >= splunkMaxResults {
+		log.Printf("WARNING: Splunk returned %d results (the configured maximum); "+
+			"some events may have been truncated. Consider narrowing the search.", splunkMaxResults)
 	}
 
 	// Find the _raw field index

@@ -310,7 +310,7 @@ func TestGitLabFetcher_ResponseSizeLimit(t *testing.T) {
 
 		_, err = f.Fetch(context.Background())
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "size limit")
+		assert.Contains(t, err.Error(), "exceeded")
 	})
 
 	t.Run("no limit allows large response", func(t *testing.T) {
