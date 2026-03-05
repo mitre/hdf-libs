@@ -454,3 +454,213 @@ func TestSonarqubeFetcher_InvalidJSONResponse(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "parsing API response")
 }
+
+// ---- Rule enrichment tests (SonarQube 26+ /api/rules/show) ----
+
+const (
+	sonarqubeIssuesSearchPath = "/api/issues/search"
+	sonarqubeRulesShowPath    = "/api/rules/show"
+)
+
+// writeRuleShowResponse writes a /api/rules/show JSON response.
+func writeRuleShowResponse(w http.ResponseWriter, rule sonarqubeconv.Rule) {
+	type ruleShow struct {
+		Rule sonarqubeconv.Rule `json:"rule"`
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(ruleShow{Rule: rule})
+}
+
+func TestSonarqubeFetcher_EnrichesRules(t *testing.T) {
+	issue := sonarqubeconv.Issue{
+		Key:          "issue-1",
+		Rule:         "secrets:S6706",
+		Severity:     "BLOCKER",
+		Component:    "proj:File.ts",
+		Project:      "proj",
+		Status:       "OPEN",
+		Message:      "Hard-coded credential",
+		CreationDate: "2026-01-01T00:00:00+0000",
+		UpdateDate:   "2026-01-01T00:00:00+0000",
+		Type:         "VULNERABILITY",
+		Tags:         []string{"cwe"},
+	}
+
+	// Rule as returned by /api/issues/search (minimal, SQ 26 format)
+	issueRule := sonarqubeconv.Rule{
+		Key:      "secrets:S6706",
+		Name:     "Cryptographic private keys should not be disclosed",
+		Status:   "READY",
+		Lang:     "secrets",
+		LangName: "Secrets",
+	}
+
+	// Rule as returned by /api/rules/show (enriched with details)
+	enrichedRule := sonarqubeconv.Rule{
+		Key:      "secrets:S6706",
+		Name:     "Cryptographic private keys should not be disclosed",
+		SysTags:  []string{"cwe"},
+		HTMLDesc: "<p>Secret leaks description</p>",
+		DescriptionSections: []sonarqubeconv.DescriptionSection{
+			{Key: "resources", Content: `<ul><li>CWE - <a href="https://cwe.mitre.org/data/definitions/798">CWE-798</a></li></ul>`},
+			{Key: "root_cause", Content: "<p>Trust boundaries are violated.</p>"},
+		},
+	}
+
+	srv := sonarqubeServer(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case sonarqubeIssuesSearchPath:
+			writeIssuesPage(w,
+				[]sonarqubeconv.Issue{issue},
+				nil,
+				[]sonarqubeconv.Rule{issueRule},
+				1, 1)
+		case sonarqubeRulesShowPath:
+			assert.Equal(t, "secrets:S6706", r.URL.Query().Get("key"))
+			writeRuleShowResponse(w, enrichedRule)
+		default:
+			http.Error(w, "unexpected path", http.StatusNotFound)
+		}
+	})
+
+	f := newTestFetcher(t, srv.URL)
+	t.Setenv("SONARQUBE_TOKEN", "tok")
+
+	data, err := f.Fetch(context.Background())
+	require.NoError(t, err)
+
+	result := mustUnmarshalSonarqube(t, data)
+	require.Len(t, result.Rules, 1)
+
+	rule := result.Rules[0]
+	assert.Equal(t, "secrets:S6706", rule.Key)
+	assert.Equal(t, []string{"cwe"}, rule.SysTags, "sysTags should be enriched")
+	assert.Equal(t, "<p>Secret leaks description</p>", rule.HTMLDesc, "htmlDesc should be enriched")
+	require.Len(t, rule.DescriptionSections, 2, "descriptionSections should be enriched")
+	assert.Equal(t, "resources", rule.DescriptionSections[0].Key)
+	assert.Contains(t, rule.DescriptionSections[0].Content, "CWE-798")
+}
+
+func TestSonarqubeFetcher_EnrichmentFailsGracefully(t *testing.T) {
+	issue := sonarqubeconv.Issue{
+		Key: "i1", Rule: "java:S001", Severity: "MAJOR", Component: "p:f",
+		Project: "p", Status: "OPEN", Message: "m",
+		CreationDate: "2026-01-01T00:00:00+0000",
+		UpdateDate:   "2026-01-01T00:00:00+0000", Type: "BUG",
+	}
+
+	issueRule := sonarqubeconv.Rule{Key: "java:S001", Name: "Test Rule"}
+
+	srv := sonarqubeServer(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case sonarqubeIssuesSearchPath:
+			writeIssuesPage(w, []sonarqubeconv.Issue{issue}, nil, []sonarqubeconv.Rule{issueRule}, 1, 1)
+		case sonarqubeRulesShowPath:
+			// Return 404 to simulate rule not found
+			http.Error(w, "not found", http.StatusNotFound)
+		default:
+			http.Error(w, "unexpected", http.StatusNotFound)
+		}
+	})
+
+	f := newTestFetcher(t, srv.URL)
+	t.Setenv("SONARQUBE_TOKEN", "tok")
+
+	data, err := f.Fetch(context.Background())
+	require.NoError(t, err, "enrichment failure should not fail the overall fetch")
+
+	result := mustUnmarshalSonarqube(t, data)
+	require.Len(t, result.Issues, 1)
+	require.Len(t, result.Rules, 1)
+	assert.Equal(t, "java:S001", result.Rules[0].Key)
+}
+
+func TestSonarqubeFetcher_FetchAndConvert_WithEnrichment(t *testing.T) {
+	// Full pipeline test: fetch → enrich → convert, verify CWE IDs in HDF output
+	line := 15
+	issue := sonarqubeconv.Issue{
+		Key:          "issue-1",
+		Rule:         "secrets:S6706",
+		Severity:     "BLOCKER",
+		Component:    "proj:server.ts",
+		Project:      "proj",
+		Line:         &line,
+		Status:       "OPEN",
+		Message:      "Hard-coded credential",
+		CreationDate: "2026-03-01T10:00:00+0000",
+		UpdateDate:   "2026-03-05T02:59:39+0000",
+		Type:         "VULNERABILITY",
+		Tags:         []string{"cwe"},
+	}
+
+	// Minimal rule from issues/search
+	issueRule := sonarqubeconv.Rule{
+		Key:      "secrets:S6706",
+		Name:     "Cryptographic private keys should not be disclosed",
+		Status:   "READY",
+		Lang:     "secrets",
+		LangName: "Secrets",
+	}
+
+	// Enriched rule from rules/show
+	enrichedRule := sonarqubeconv.Rule{
+		Key:     "secrets:S6706",
+		Name:    "Cryptographic private keys should not be disclosed",
+		SysTags: []string{"cwe"},
+		DescriptionSections: []sonarqubeconv.DescriptionSection{
+			{
+				Key:     "resources",
+				Content: `<ul><li>CWE - <a href="https://cwe.mitre.org/data/definitions/798">CWE-798 - Use of Hard-coded Credentials</a></li><li>CWE - <a href="https://cwe.mitre.org/data/definitions/259">CWE-259 - Use of Hard-coded Password</a></li></ul>`,
+			},
+			{
+				Key:     "root_cause",
+				Content: "<p>Trust boundaries are violated when a secret is exposed.</p>",
+			},
+		},
+	}
+
+	srv := sonarqubeServer(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case sonarqubeIssuesSearchPath:
+			writeIssuesPage(w,
+				[]sonarqubeconv.Issue{issue},
+				nil,
+				[]sonarqubeconv.Rule{issueRule},
+				1, 1)
+		case sonarqubeRulesShowPath:
+			writeRuleShowResponse(w, enrichedRule)
+		default:
+			http.Error(w, "unexpected", http.StatusNotFound)
+		}
+	})
+
+	f := newTestFetcher(t, srv.URL)
+	t.Setenv("SONARQUBE_TOKEN", "tok")
+
+	raw, err := f.Fetch(context.Background())
+	require.NoError(t, err)
+
+	// Convert fetched data to HDF
+	hdfResult, err := sonarqubeconv.ConvertSonarqubeToHDF(raw, "test-version")
+	require.NoError(t, err)
+	require.Len(t, hdfResult.Baselines, 1)
+	require.Len(t, hdfResult.Baselines[0].Requirements, 1)
+
+	req := hdfResult.Baselines[0].Requirements[0]
+	assert.Equal(t, "secrets:S6706", req.ID)
+
+	// Verify CWE IDs were extracted from enriched descriptionSections
+	cweVal, ok := req.Tags["cwe"]
+	require.True(t, ok, "expected 'cwe' tag")
+	cweSlice, ok := cweVal.([]string)
+	require.True(t, ok, "cwe should be []string")
+	assert.Contains(t, cweSlice, "CWE-798", "should extract CWE-798 from enriched descriptionSections")
+	assert.Contains(t, cweSlice, "CWE-259", "should extract CWE-259 from enriched descriptionSections")
+
+	// Verify NIST mappings were derived from CWE
+	nistVal, ok := req.Tags["nist"]
+	require.True(t, ok, "expected 'nist' tag")
+	nistSlice, ok := nistVal.([]string)
+	require.True(t, ok, "nist should be []string")
+	assert.NotEmpty(t, nistSlice, "NIST controls should be derived from CWE mappings")
+}

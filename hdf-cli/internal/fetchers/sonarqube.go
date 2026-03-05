@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -144,6 +145,11 @@ func (f *SonarqubeFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		}
 	}
 
+	// Enrich rules with details from /api/rules/show (SQ 26+ compatibility).
+	// This fetches descriptionSections, sysTags, htmlDesc, and mdDesc that
+	// are no longer included in the /api/issues/search response.
+	f.enrichRulesWithDetails(ctx, token, ruleMap)
+
 	// Build components and rules slices
 	components := make([]sonarqubeconv.Component, 0, len(componentMap))
 	for _, c := range componentMap {
@@ -174,6 +180,7 @@ func (f *SonarqubeFetcher) fetchPage(ctx context.Context, token string, page int
 
 	q := url.Values{}
 	q.Set("componentKeys", f.params.ProjectKey)
+	q.Set("additionalFields", "rules")
 	q.Set("ps", fmt.Sprintf("%d", sonarqubePageSize))
 	q.Set("p", fmt.Sprintf("%d", page))
 
@@ -223,4 +230,89 @@ func (f *SonarqubeFetcher) fetchPage(ctx context.Context, token string, page int
 	}
 
 	return &issuesResp, nil
+}
+
+// ruleShowResponse wraps the /api/rules/show response.
+type ruleShowResponse struct {
+	Rule sonarqubeconv.Rule `json:"rule"`
+}
+
+// enrichRulesWithDetails fetches detailed rule information from /api/rules/show
+// for each rule in the map. This adds descriptionSections, sysTags, htmlDesc,
+// and mdDesc that SonarQube 26+ no longer returns in /api/issues/search.
+// Failures on individual rules are logged and skipped (graceful degradation).
+func (f *SonarqubeFetcher) enrichRulesWithDetails(ctx context.Context, token string, ruleMap map[string]sonarqubeconv.Rule) {
+	for ruleKey, existing := range ruleMap {
+		if err := ctx.Err(); err != nil {
+			return
+		}
+
+		detail, err := f.fetchRuleDetail(ctx, token, ruleKey)
+		if err != nil {
+			log.Printf("WARNING: failed to enrich rule %s: %v", ruleKey, err)
+			continue
+		}
+
+		// Merge fields from the detailed response into the existing rule
+		if len(detail.DescriptionSections) > 0 && len(existing.DescriptionSections) == 0 {
+			existing.DescriptionSections = detail.DescriptionSections
+		}
+		if detail.HTMLDesc != "" && existing.HTMLDesc == "" {
+			existing.HTMLDesc = detail.HTMLDesc
+		}
+		if detail.MDDesc != "" && existing.MDDesc == "" {
+			existing.MDDesc = detail.MDDesc
+		}
+		if len(detail.SysTags) > 0 && len(existing.SysTags) == 0 {
+			existing.SysTags = detail.SysTags
+		}
+		if len(detail.Tags) > 0 && len(existing.Tags) == 0 {
+			existing.Tags = detail.Tags
+		}
+
+		ruleMap[ruleKey] = existing
+	}
+}
+
+// fetchRuleDetail fetches a single rule's details from /api/rules/show.
+func (f *SonarqubeFetcher) fetchRuleDetail(ctx context.Context, token, ruleKey string) (*sonarqubeconv.Rule, error) {
+	apiURL, err := ValidateAndBuildAPIURL(f.params.URL, "/api/rules/show", "SonarQube")
+	if err != nil {
+		return nil, err
+	}
+
+	q := url.Values{}
+	q.Set("key", ruleKey)
+	apiURL.RawQuery = q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL.String(), http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("building request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := f.client.Do(req) //#nosec G704 -- host is user-configured SonarQube server
+	if err != nil {
+		return nil, fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close() //nolint:errcheck
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("rules/show API returned HTTP %d for %s", resp.StatusCode, ruleKey)
+	}
+
+	const maxRuleResponseSize = 1 * 1024 * 1024
+	body, err := readLimitedBody(resp.Body, maxRuleResponseSize)
+	if err != nil {
+		return nil, fmt.Errorf("reading rule response: %w", err)
+	}
+
+	var ruleResp ruleShowResponse
+	if err := json.Unmarshal(body, &ruleResp); err != nil {
+		return nil, fmt.Errorf("parsing rule response: %w", err)
+	}
+
+	return &ruleResp.Rule, nil
 }
