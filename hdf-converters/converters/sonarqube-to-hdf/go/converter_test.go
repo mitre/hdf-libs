@@ -492,3 +492,164 @@ func TestSeverityImpactMappingParity(t *testing.T) {
 		assert.Equal(t, impact, actual, "Severity %s impact mismatch", sev)
 	}
 }
+
+// ---- SonarQube 26+ tests (descriptionSections format) ----
+
+func loadSQ26Fixture(t *testing.T) []byte {
+	t.Helper()
+	fixturePath := filepath.Join(shared.GetConvertersDir(), "sonarqube-to-hdf", "fixtures", "input", "sq26-with-sections.json")
+	data, err := os.ReadFile(fixturePath)
+	require.NoError(t, err, "Failed to read sq26-with-sections.json fixture")
+	return data
+}
+
+func TestExtractTags_CWEFromDescriptionSections(t *testing.T) {
+	// SQ 26 format: no tags/sysTags with CWE numbers, but descriptionSections
+	// contain CWE references in HTML content
+	rule := &Rule{
+		Name:    "Credentials rule",
+		Tags:    []string{},
+		SysTags: []string{"cwe"},
+		DescriptionSections: []DescriptionSection{
+			{
+				Key:     "resources",
+				Content: `<ul><li>CWE - <a href="https://cwe.mitre.org/data/definitions/798">CWE-798 - Use of Hard-coded Credentials</a></li></ul>`,
+			},
+			{
+				Key:     "root_cause",
+				Content: "<p>Trust boundaries are violated when a secret is exposed.</p>",
+			},
+		},
+	}
+
+	cweIds, _, _ := extractTags(rule, true, []Issue{})
+	assert.Contains(t, cweIds, "CWE-798", "should extract CWE-798 from descriptionSections")
+}
+
+func TestExtractTags_CWEFromDescriptionSections_MultipleCWEs(t *testing.T) {
+	rule := &Rule{
+		Name:    "Multi-CWE rule",
+		Tags:    []string{},
+		SysTags: []string{"cwe"},
+		DescriptionSections: []DescriptionSection{
+			{
+				Key:     "resources",
+				Content: `<ul><li>CWE - <a href="https://cwe.mitre.org/data/definitions/798">CWE-798</a></li><li>CWE - <a href="https://cwe.mitre.org/data/definitions/259">CWE-259</a></li></ul>`,
+			},
+		},
+	}
+
+	cweIds, _, _ := extractTags(rule, true, []Issue{})
+	assert.Contains(t, cweIds, "CWE-798")
+	assert.Contains(t, cweIds, "CWE-259")
+	assert.Len(t, cweIds, 2, "should extract exactly 2 CWE IDs")
+}
+
+func TestExtractDescription_FallsBackToDescriptionSections(t *testing.T) {
+	t.Run("prefers root_cause section", func(t *testing.T) {
+		rule := &Rule{
+			Name: "Test rule",
+			DescriptionSections: []DescriptionSection{
+				{Key: "resources", Content: "<p>Some resources</p>"},
+				{Key: "root_cause", Content: "<p>Trust boundaries are violated.</p>"},
+			},
+		}
+		result := extractDescription(rule, true)
+		assert.Contains(t, result, "Trust boundaries are violated")
+		assert.NotContains(t, result, "<p>")
+	})
+
+	t.Run("concatenates sections when no root_cause", func(t *testing.T) {
+		rule := &Rule{
+			Name: "Test rule",
+			DescriptionSections: []DescriptionSection{
+				{Key: "resources", Content: "<p>Resource info</p>"},
+				{Key: "how_to_fix", Content: "<p>Fix it</p>"},
+			},
+		}
+		result := extractDescription(rule, true)
+		assert.Contains(t, result, "Resource info")
+		assert.Contains(t, result, "Fix it")
+	})
+
+	t.Run("does not use descriptionSections when htmlDesc present", func(t *testing.T) {
+		rule := &Rule{
+			Name:     "Test rule",
+			HTMLDesc: "<p>HTML description</p>",
+			DescriptionSections: []DescriptionSection{
+				{Key: "root_cause", Content: "<p>Section description</p>"},
+			},
+		}
+		result := extractDescription(rule, true)
+		assert.Contains(t, result, "HTML description")
+		assert.NotContains(t, result, "Section description")
+	})
+}
+
+func TestConvert_SQ26Format(t *testing.T) {
+	result, err := ConvertSonarqubeToHDF(loadSQ26Fixture(t), testConverterVersion)
+	require.NoError(t, err, "SQ 26 fixture conversion should succeed")
+	require.NotNil(t, result)
+
+	require.Len(t, result.Baselines, 1, "should have 1 project baseline")
+	baseline := result.Baselines[0]
+	assert.Equal(t, "juice-shop", baseline.Name)
+	require.Len(t, baseline.Requirements, 3, "should have 3 requirements (one per rule)")
+
+	// Build a map for easier lookup
+	reqMap := make(map[string]*hdf.EvaluatedRequirement)
+	for i := range baseline.Requirements {
+		reqMap[baseline.Requirements[i].ID] = &baseline.Requirements[i]
+	}
+
+	// secrets:S6706 should have CWE-798 and CWE-259 extracted from descriptionSections
+	secretsReq := reqMap["secrets:S6706"]
+	require.NotNil(t, secretsReq, "expected secrets:S6706 requirement")
+
+	cweVal, ok := secretsReq.Tags["cwe"]
+	require.True(t, ok, "expected 'cwe' tag on secrets:S6706")
+	cweSlice, ok := cweVal.([]string)
+	require.True(t, ok, "cwe tag should be []string")
+	assert.Contains(t, cweSlice, "CWE-798", "should extract CWE-798 from descriptionSections")
+	assert.Contains(t, cweSlice, "CWE-259", "should extract CWE-259 from descriptionSections")
+
+	// NIST should be derived from CWE mappings, not the SA-11 default
+	nistVal, ok := secretsReq.Tags["nist"]
+	require.True(t, ok, "expected 'nist' tag on secrets:S6706")
+	nistSlice, ok := nistVal.([]string)
+	require.True(t, ok, "nist tag should be []string")
+	assert.NotEmpty(t, nistSlice, "NIST controls should be populated from CWE mappings")
+
+	// typescript:S7790 should have CWE-20
+	tsReq := reqMap["typescript:S7790"]
+	require.NotNil(t, tsReq, "expected typescript:S7790 requirement")
+
+	cweTsVal, ok := tsReq.Tags["cwe"]
+	require.True(t, ok, "expected 'cwe' tag on typescript:S7790")
+	cweTsSlice, ok := cweTsVal.([]string)
+	require.True(t, ok, "cwe tag should be []string")
+	assert.Contains(t, cweTsSlice, "CWE-20", "should extract CWE-20 from descriptionSections")
+
+	// Web:MouseEventWithoutKeyboardEquivalentCheck should have no CWE
+	webReq := reqMap["Web:MouseEventWithoutKeyboardEquivalentCheck"]
+	require.NotNil(t, webReq, "expected Web rule requirement")
+
+	cweWebVal, ok := webReq.Tags["cwe"]
+	require.True(t, ok, "expected 'cwe' tag on Web rule")
+	cweWebSlice, ok := cweWebVal.([]string)
+	require.True(t, ok, "cwe tag should be []string")
+	assert.Empty(t, cweWebSlice, "Web rule should have no CWE IDs")
+
+	// Web rule should get default SA-11 NIST tag
+	nistWebVal, ok := webReq.Tags["nist"]
+	require.True(t, ok)
+	nistWebSlice, ok := nistWebVal.([]string)
+	require.True(t, ok)
+	assert.Contains(t, nistWebSlice, "SA-11", "Web rule without CWE should get SA-11 default")
+
+	// Verify descriptions come from descriptionSections
+	assert.NotEmpty(t, secretsReq.Descriptions, "should have descriptions")
+	desc := secretsReq.Descriptions[0].Data
+	assert.Contains(t, desc, "trust boundaries", "description should come from root_cause section")
+	assert.NotContains(t, desc, "<p>", "description should be stripped of HTML")
+}

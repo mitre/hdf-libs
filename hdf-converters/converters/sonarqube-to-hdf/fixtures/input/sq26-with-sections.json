@@ -1,0 +1,174 @@
+{
+  "total": 3,
+  "p": 1,
+  "ps": 500,
+  "paging": {
+    "pageIndex": 1,
+    "pageSize": 500,
+    "total": 3
+  },
+  "issues": [
+    {
+      "key": "sq26-issue-001",
+      "rule": "secrets:S6706",
+      "severity": "BLOCKER",
+      "component": "juice-shop:server.ts",
+      "project": "juice-shop",
+      "line": 15,
+      "hash": "a1b2c3d4e5f6",
+      "textRange": {
+        "startLine": 15,
+        "endLine": 15,
+        "startOffset": 0,
+        "endOffset": 42
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Make sure this private key gets revoked, changed, and removed from the code.",
+      "effort": "30min",
+      "debt": "30min",
+      "tags": [
+        "cwe"
+      ],
+      "creationDate": "2026-03-01T10:00:00+0000",
+      "updateDate": "2026-03-05T02:59:39+0000",
+      "type": "VULNERABILITY"
+    },
+    {
+      "key": "sq26-issue-002",
+      "rule": "typescript:S7790",
+      "severity": "CRITICAL",
+      "component": "juice-shop:routes/vulnCodeSnippet.ts",
+      "project": "juice-shop",
+      "line": 42,
+      "hash": "f6e5d4c3b2a1",
+      "textRange": {
+        "startLine": 42,
+        "endLine": 42,
+        "startOffset": 4,
+        "endOffset": 60
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Refactor this code to not construct the template dynamically.",
+      "effort": "20min",
+      "debt": "20min",
+      "tags": [
+        "cwe"
+      ],
+      "creationDate": "2026-02-15T14:30:00+0000",
+      "updateDate": "2026-03-05T02:59:39+0000",
+      "type": "VULNERABILITY"
+    },
+    {
+      "key": "sq26-issue-003",
+      "rule": "Web:MouseEventWithoutKeyboardEquivalentCheck",
+      "severity": "MINOR",
+      "component": "juice-shop:frontend/src/app/sidenav/sidenav.component.html",
+      "project": "juice-shop",
+      "line": 5,
+      "hash": "550051ee6b00",
+      "textRange": {
+        "startLine": 5,
+        "endLine": 5,
+        "startOffset": 0,
+        "endOffset": 80
+      },
+      "flows": [],
+      "status": "OPEN",
+      "message": "Add a 'onFocus' attribute to this element.",
+      "effort": "5min",
+      "debt": "5min",
+      "tags": [
+        "accessibility"
+      ],
+      "creationDate": "2026-01-20T08:15:00+0000",
+      "updateDate": "2026-03-05T02:59:39+0000",
+      "type": "BUG"
+    }
+  ],
+  "components": [
+    {
+      "key": "juice-shop:server.ts",
+      "name": "server.ts",
+      "longName": "server.ts",
+      "path": "server.ts",
+      "qualifier": "FIL"
+    },
+    {
+      "key": "juice-shop:routes/vulnCodeSnippet.ts",
+      "name": "vulnCodeSnippet.ts",
+      "longName": "routes/vulnCodeSnippet.ts",
+      "path": "routes/vulnCodeSnippet.ts",
+      "qualifier": "FIL"
+    },
+    {
+      "key": "juice-shop:frontend/src/app/sidenav/sidenav.component.html",
+      "name": "sidenav.component.html",
+      "longName": "frontend/src/app/sidenav/sidenav.component.html",
+      "path": "frontend/src/app/sidenav/sidenav.component.html",
+      "qualifier": "FIL"
+    }
+  ],
+  "rules": [
+    {
+      "key": "secrets:S6706",
+      "name": "Cryptographic private keys should not be disclosed",
+      "status": "READY",
+      "lang": "secrets",
+      "langName": "Secrets",
+      "tags": [],
+      "sysTags": [
+        "cwe"
+      ],
+      "descriptionSections": [
+        {
+          "key": "resources",
+          "content": "<h3>Standards</h3>\n<ul>\n  <li> CWE - <a href=\"https://cwe.mitre.org/data/definitions/798\">CWE-798 - Use of Hard-coded Credentials</a> </li>\n  <li> CWE - <a href=\"https://cwe.mitre.org/data/definitions/259\">CWE-259 - Use of Hard-coded Password</a> </li>\n</ul>"
+        },
+        {
+          "key": "root_cause",
+          "content": "<p>In most cases, trust boundaries are violated when a secret is exposed in a source code repository or an uncontrolled deployment environment.</p>"
+        }
+      ]
+    },
+    {
+      "key": "typescript:S7790",
+      "name": "Templates should not be constructed dynamically",
+      "status": "READY",
+      "lang": "ts",
+      "langName": "TypeScript",
+      "tags": [],
+      "sysTags": [
+        "cwe"
+      ],
+      "descriptionSections": [
+        {
+          "key": "resources",
+          "content": "<h3>Standards</h3>\n<ul>\n  <li> CWE - <a href=\"https://cwe.mitre.org/data/definitions/20\">CWE-20 - Improper Input Validation</a> </li>\n</ul>"
+        },
+        {
+          "key": "root_cause",
+          "content": "<p>Constructing templates by dynamically inserting strings from third-party sources creates brittle code and increases the risk of Server-Side Template Injections (SSTI).</p>"
+        }
+      ]
+    },
+    {
+      "key": "Web:MouseEventWithoutKeyboardEquivalentCheck",
+      "name": "Mouse events should have corresponding keyboard events",
+      "status": "READY",
+      "lang": "web",
+      "langName": "HTML",
+      "tags": [],
+      "sysTags": [
+        "accessibility"
+      ],
+      "descriptionSections": [
+        {
+          "key": "root_cause",
+          "content": "<p>Offering the same experience with the mouse and the keyboard allow users to pick their preferred devices.</p>"
+        }
+      ]
+    }
+  ]
+}

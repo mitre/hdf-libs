@@ -232,6 +232,72 @@ describe('SonarQube to HDF Converter', async () => {
       expect(requirement.tags.nist).toEqual(['SA-11']);
     });
 
+    // ---- SonarQube 26+ tests (descriptionSections format) ----
+
+    it('should extract CWE IDs from descriptionSections (SQ 26 format)', async () => {
+      const inputPath = join(__dirname, '../fixtures/input/sq26-with-sections.json');
+      const input = readFileSync(inputPath, 'utf-8');
+
+      const result = await convertSonarqubeToHdf(input);
+      const hdf: HdfResults = JSON.parse(result);
+
+      const baseline = hdf.baselines[0]!;
+
+      // secrets:S6706 should have CWE-798 and CWE-259 from descriptionSections
+      const secretsRule = baseline.requirements.find(r => r.id === 'secrets:S6706');
+      expect(secretsRule).toBeDefined();
+      expect(secretsRule!.tags.cwe).toContain('CWE-798');
+      expect(secretsRule!.tags.cwe).toContain('CWE-259');
+
+      // typescript:S7790 should have CWE-20 from descriptionSections
+      const tsRule = baseline.requirements.find(r => r.id === 'typescript:S7790');
+      expect(tsRule).toBeDefined();
+      expect(tsRule!.tags.cwe).toContain('CWE-20');
+
+      // Web rule should have no CWE IDs
+      const webRule = baseline.requirements.find(r => r.id === 'Web:MouseEventWithoutKeyboardEquivalentCheck');
+      expect(webRule).toBeDefined();
+      expect((webRule!.tags.cwe as string[]).length).toBe(0);
+    });
+
+    it('should derive NIST controls from CWE in descriptionSections', async () => {
+      const inputPath = join(__dirname, '../fixtures/input/sq26-with-sections.json');
+      const input = readFileSync(inputPath, 'utf-8');
+
+      const result = await convertSonarqubeToHdf(input);
+      const hdf: HdfResults = JSON.parse(result);
+
+      const baseline = hdf.baselines[0]!;
+
+      // secrets:S6706 has CWE-798/259 → should have NIST from CWE mapping, not SA-11
+      const secretsRule = baseline.requirements.find(r => r.id === 'secrets:S6706');
+      expect(secretsRule).toBeDefined();
+      expect(Array.isArray(secretsRule!.tags.nist)).toBe(true);
+      expect((secretsRule!.tags.nist as string[]).length).toBeGreaterThan(0);
+
+      // Web rule without CWE should get default SA-11
+      const webRule = baseline.requirements.find(r => r.id === 'Web:MouseEventWithoutKeyboardEquivalentCheck');
+      expect(webRule).toBeDefined();
+      expect(webRule!.tags.nist).toContain('SA-11');
+    });
+
+    it('should fall back to descriptionSections for descriptions (SQ 26)', async () => {
+      const inputPath = join(__dirname, '../fixtures/input/sq26-with-sections.json');
+      const input = readFileSync(inputPath, 'utf-8');
+
+      const result = await convertSonarqubeToHdf(input);
+      const hdf: HdfResults = JSON.parse(result);
+
+      const baseline = hdf.baselines[0]!;
+
+      // secrets:S6706 should get description from root_cause section
+      const secretsRule = baseline.requirements.find(r => r.id === 'secrets:S6706');
+      expect(secretsRule).toBeDefined();
+      const desc = secretsRule!.descriptions[0]!.data;
+      expect(desc).toContain('trust boundaries');
+      expect(desc).not.toContain('<p>');
+    });
+
     it('should set security NIST tags for vulnerability issues', async () => {
       const input = JSON.stringify({
         total: 1,

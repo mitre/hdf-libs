@@ -78,18 +78,27 @@ type Component struct {
 }
 
 type Rule struct {
-	Key      string   `json:"key"`
-	Name     string   `json:"name"`
-	Status   string   `json:"status,omitempty"`
-	Lang     string   `json:"lang,omitempty"`
-	LangName string   `json:"langName,omitempty"`
-	HTMLDesc string   `json:"htmlDesc,omitempty"`
-	MDDesc   string   `json:"mdDesc,omitempty"`
-	Severity string   `json:"severity,omitempty"`
-	Type     string   `json:"type,omitempty"`
-	Tags     []string `json:"tags,omitempty"`
-	SysTags  []string `json:"sysTags,omitempty"`
-	Scope    string   `json:"scope,omitempty"`
+	Key                 string               `json:"key"`
+	Name                string               `json:"name"`
+	Status              string               `json:"status,omitempty"`
+	Lang                string               `json:"lang,omitempty"`
+	LangName            string               `json:"langName,omitempty"`
+	HTMLDesc            string               `json:"htmlDesc,omitempty"`
+	MDDesc              string               `json:"mdDesc,omitempty"`
+	Severity            string               `json:"severity,omitempty"`
+	Type                string               `json:"type,omitempty"`
+	Tags                []string             `json:"tags,omitempty"`
+	SysTags             []string             `json:"sysTags,omitempty"`
+	Scope               string               `json:"scope,omitempty"`
+	DescriptionSections []DescriptionSection `json:"descriptionSections,omitempty"`
+}
+
+// DescriptionSection represents a section of a SonarQube rule description.
+// SonarQube 26+ returns rule descriptions as structured sections instead of
+// monolithic htmlDesc/mdDesc fields.
+type DescriptionSection struct {
+	Key     string `json:"key"`
+	Content string `json:"content"`
 }
 
 // sonarqubeAliases maps SonarQube-specific severity labels to HDF impact scores.
@@ -294,6 +303,27 @@ func extractDescription(rule *Rule, hasRule bool) string {
 		return shared.StripHTML(rule.HTMLDesc)
 	}
 
+	// Fall back to descriptionSections (SonarQube 26+ format)
+	if len(rule.DescriptionSections) > 0 {
+		// Prefer root_cause section (closest to the old monolithic description)
+		for _, section := range rule.DescriptionSections {
+			if section.Key == "root_cause" {
+				return shared.StripHTML(section.Content)
+			}
+		}
+		// If no root_cause, concatenate all sections
+		var parts []string
+		for _, section := range rule.DescriptionSections {
+			stripped := shared.StripHTML(section.Content)
+			if stripped != "" {
+				parts = append(parts, stripped)
+			}
+		}
+		if len(parts) > 0 {
+			return strings.Join(parts, "\n\n")
+		}
+	}
+
 	return rule.Name
 }
 
@@ -351,12 +381,22 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 		}
 	}
 
-	// Parse CWE from rule description
+	// Parse CWE from rule description (htmlDesc / mdDesc)
 	if hasRule && rule != nil {
 		desc := rule.HTMLDesc + rule.MDDesc
 		matches := shared.CWEPattern.FindAllStringSubmatch(desc, -1)
 		for _, match := range matches {
 			cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
+		}
+	}
+
+	// Parse CWE from descriptionSections (SonarQube 26+ format)
+	if hasRule && rule != nil {
+		for _, section := range rule.DescriptionSections {
+			matches := shared.CWEPattern.FindAllStringSubmatch(section.Content, -1)
+			for _, match := range matches {
+				cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
+			}
 		}
 	}
 
