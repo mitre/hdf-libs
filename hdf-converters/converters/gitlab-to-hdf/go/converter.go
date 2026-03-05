@@ -143,13 +143,20 @@ func scanTypeLabel(scanType string) string {
 // --- NIST tag building ---
 
 func buildNistTags(identifiers []GitLabIdentifier) []string {
+	seen := make(map[string]bool)
+	var controls []string
 	for _, id := range identifiers {
 		if strings.EqualFold(id.Type, "cwe") && id.Value != "" {
-			controls := cwe.NISTControls(id.Value)
-			if len(controls) > 0 {
-				return controls
+			for _, ctrl := range cwe.NISTControls(id.Value) {
+				if !seen[ctrl] {
+					seen[ctrl] = true
+					controls = append(controls, ctrl)
+				}
 			}
 		}
+	}
+	if len(controls) > 0 {
+		return controls
 	}
 	return shared.DefaultStaticAnalysisNIST
 }

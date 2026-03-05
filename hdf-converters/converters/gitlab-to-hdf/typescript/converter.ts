@@ -120,16 +120,22 @@ function scanTypeLabel(scanType: string): string {
 // --- NIST tag building ---
 
 function buildNistTags(identifiers: GitLabIdentifier[]): string[] {
+  const seen = new Set<string>();
+  const controls: string[] = [];
   for (const id of identifiers) {
     if (id.type === 'cwe' && id.value) {
       const cweNum = parseInt(id.value, 10);
       if (!isNaN(cweNum)) {
         const control = getCweNistControl(cweNum);
-        if (control) {
-          return [control];
+        if (control && !seen.has(control)) {
+          seen.add(control);
+          controls.push(control);
         }
       }
     }
+  }
+  if (controls.length > 0) {
+    return controls;
   }
   return [...DEFAULT_STATIC_ANALYSIS_NIST_TAGS];
 }
