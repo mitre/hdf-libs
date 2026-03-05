@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -288,6 +290,22 @@ func TestSplunkFetcher_Fetch_Success(t *testing.T) {
 		requestCount++
 		if r.Method == http.MethodPost && r.URL.Path == "/services/search/jobs" {
 			assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
+
+			// Validate POST body parameters — ensures the fetcher sends
+			// the correct SPL query, exec_mode, and output_mode.
+			require.NoError(t, r.ParseForm())
+			assert.Equal(t, "blocking", r.PostFormValue("exec_mode"),
+				"search job must use blocking exec_mode")
+			assert.Equal(t, "json", r.PostFormValue("output_mode"),
+				"search job must request JSON output")
+			searchQuery := r.PostFormValue("search")
+			assert.Contains(t, searchQuery, "test-index",
+				"SPL query must reference the configured index")
+			assert.Contains(t, searchQuery, "test-guid",
+				"SPL query must reference the configured GUID")
+			assert.Contains(t, searchQuery, "| fields _raw",
+				"SPL query must limit fields to _raw to reduce data transfer")
+
 			writeSplunkSearchResponse(w, "test-sid-123")
 			return
 		}
@@ -312,6 +330,47 @@ func TestSplunkFetcher_Fetch_Success(t *testing.T) {
 	require.NoError(t, json.Unmarshal(data, &events))
 	assert.Len(t, events, 3, "Should have 3 events (header + profile + control)")
 	assert.Equal(t, 2, requestCount, "Should make 2 API calls (create job + fetch results)")
+}
+
+// ---- truncation warning test ----
+
+func TestSplunkFetcher_TruncationWarning(t *testing.T) {
+	// Build a response with exactly splunkMaxResults rows to trigger the warning.
+	// We just need the row count to match — content doesn't matter for this test.
+	rows := make([][]string, splunkMaxResults)
+	for i := range rows {
+		rows[i] = []string{"2026-01-01T00:00:00Z", "s", "st", `{"i":` + fmt.Sprintf("%d", i) + `}`}
+	}
+	resp := splunkResultsResponse{
+		Fields: []splunkField{{Name: "_time"}, {Name: "source"}, {Name: "sourcetype"}, {Name: "_raw"}},
+		Rows:   rows,
+	}
+
+	srv := splunkServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			writeSplunkSearchResponse(w, "test-sid")
+			return
+		}
+		// Return all rows as a single large response; disable the 10MB limit
+		// by writing the JSON directly (the test only checks that the fetcher
+		// logs a warning, not that it reads the full body).
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+
+	f := newTestSplunkFetcher(t, srv.URL)
+	t.Setenv("SPLUNK_TOKEN", "tok")
+
+	// The warning is emitted via log.Printf. We capture it to verify.
+	var logBuf strings.Builder
+	log.SetOutput(&logBuf)
+	defer log.SetOutput(os.Stderr)
+
+	data, err := f.Fetch(context.Background())
+	require.NoError(t, err)
+	assert.NotEmpty(t, data)
+	assert.Contains(t, logBuf.String(), "truncated",
+		"fetcher should log a warning when results hit the maximum count")
 }
 
 // ---- context cancellation test ----

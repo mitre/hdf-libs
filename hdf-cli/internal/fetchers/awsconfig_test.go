@@ -19,6 +19,7 @@ import (
 // ---- mock client ----
 
 type mockConfigClient struct {
+	t                  *testing.T // for NextToken assertions
 	describeRulesPages []configservice.DescribeConfigRulesOutput
 	describeRulesErr   error
 	// Per-rule compliance pages; keyed by rule name.
@@ -31,12 +32,26 @@ type mockConfigClient struct {
 
 func (m *mockConfigClient) DescribeConfigRules(
 	_ context.Context,
-	_ *configservice.DescribeConfigRulesInput,
+	params *configservice.DescribeConfigRulesInput,
 	_ ...func(*configservice.Options),
 ) (*configservice.DescribeConfigRulesOutput, error) {
 	if m.describeRulesErr != nil {
 		return nil, m.describeRulesErr
 	}
+
+	// Validate that the fetcher sends the correct NextToken for each page.
+	// Call 0 should have nil; call N should carry the token from page N-1.
+	if m.t != nil {
+		if m.describeCalls == 0 {
+			assert.Nil(m.t, params.NextToken,
+				"first DescribeConfigRules call should have nil NextToken")
+		} else if m.describeCalls <= len(m.describeRulesPages) {
+			expected := m.describeRulesPages[m.describeCalls-1].NextToken
+			assert.Equal(m.t, aws.ToString(expected), aws.ToString(params.NextToken),
+				"DescribeConfigRules call %d: NextToken mismatch", m.describeCalls)
+		}
+	}
+
 	if m.describeCalls >= len(m.describeRulesPages) {
 		return &configservice.DescribeConfigRulesOutput{}, nil
 	}
@@ -59,6 +74,19 @@ func (m *mockConfigClient) GetComplianceDetailsByConfigRule(
 	}
 	pages := m.compliancePages[name]
 	call := m.complianceCalls[name]
+
+	// Validate that the fetcher sends the correct NextToken for each page.
+	if m.t != nil {
+		if call == 0 {
+			assert.Nil(m.t, in.NextToken,
+				"first GetComplianceDetailsByConfigRule call for %s should have nil NextToken", name)
+		} else if call <= len(pages) {
+			expected := pages[call-1].NextToken
+			assert.Equal(m.t, aws.ToString(expected), aws.ToString(in.NextToken),
+				"GetComplianceDetailsByConfigRule call %d for %s: NextToken mismatch", call, name)
+		}
+	}
+
 	m.complianceCalls[name]++
 	if call >= len(pages) {
 		return &configservice.GetComplianceDetailsByConfigRuleOutput{}, nil
@@ -240,6 +268,7 @@ func TestAWSConfigFetcher_DefaultTimeoutApplied(t *testing.T) {
 	// Verify that Fetch wraps a deadline-free context with a timeout by
 	// capturing the context that reaches the first API call.
 	inner := &mockConfigClient{
+		t: t,
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
 			{ConfigRules: []types.ConfigRule{}},
 		},
@@ -262,6 +291,7 @@ func TestAWSConfigFetcher_DefaultTimeoutApplied(t *testing.T) {
 
 func TestAWSConfigFetcher_Fetch_NoRules(t *testing.T) {
 	mock := &mockConfigClient{
+		t: t,
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
 			{ConfigRules: []types.ConfigRule{}},
 		},
@@ -279,6 +309,7 @@ func TestAWSConfigFetcher_Fetch_SingleRule(t *testing.T) {
 	recordedAt := ts("2021-04-09T14:39:51Z")
 
 	mock := &mockConfigClient{
+		t: t,
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
 			{
 				ConfigRules: []types.ConfigRule{
@@ -349,6 +380,7 @@ func TestAWSConfigFetcher_Fetch_MultipleRules(t *testing.T) {
 	recorded := ts("2024-02-19T00:00:15Z")
 
 	mock := &mockConfigClient{
+		t: t,
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
 			{
 				ConfigRules: []types.ConfigRule{
@@ -425,6 +457,7 @@ func TestAWSConfigFetcher_Fetch_Pagination_Rules(t *testing.T) {
 
 	// Two pages of rules — second page has no NextToken so loop stops.
 	mock := &mockConfigClient{
+		t: t,
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
 			{
 				ConfigRules: []types.ConfigRule{
@@ -499,6 +532,7 @@ func TestAWSConfigFetcher_Fetch_Pagination_EvaluationResults(t *testing.T) {
 
 	// Two pages of evaluation results for the same rule.
 	mock := &mockConfigClient{
+		t: t,
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
 			{ConfigRules: []types.ConfigRule{
 				{
@@ -561,6 +595,7 @@ func TestAWSConfigFetcher_Fetch_Pagination_EvaluationResults(t *testing.T) {
 
 func TestAWSConfigFetcher_Fetch_DescribeConfigRulesError(t *testing.T) {
 	mock := &mockConfigClient{
+		t:                t,
 		describeRulesErr: fmt.Errorf("access denied"),
 	}
 	f := NewAWSConfigFetcherWithClient(mock)
@@ -571,6 +606,7 @@ func TestAWSConfigFetcher_Fetch_DescribeConfigRulesError(t *testing.T) {
 
 func TestAWSConfigFetcher_Fetch_ComplianceError(t *testing.T) {
 	mock := &mockConfigClient{
+		t: t,
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
 			{ConfigRules: []types.ConfigRule{
 				{
@@ -595,6 +631,7 @@ func TestAWSConfigFetcher_Fetch_NilAnnotation(t *testing.T) {
 	recorded := ts("2024-02-19T00:00:15Z")
 
 	mock := &mockConfigClient{
+		t: t,
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
 			{ConfigRules: []types.ConfigRule{
 				{
@@ -635,6 +672,7 @@ func TestAWSConfigFetcher_Fetch_NilAnnotation(t *testing.T) {
 
 func TestAWSConfigFetcher_Fetch_NilTimestamps(t *testing.T) {
 	mock := &mockConfigClient{
+		t: t,
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
 			{ConfigRules: []types.ConfigRule{
 				{
@@ -680,6 +718,7 @@ func TestAWSConfigFetcher_FetchAndConvert(t *testing.T) {
 	recordedAt := ts("2021-04-09T14:39:51Z")
 
 	mock := &mockConfigClient{
+		t: t,
 		describeRulesPages: []configservice.DescribeConfigRulesOutput{
 			{ConfigRules: []types.ConfigRule{
 				{
