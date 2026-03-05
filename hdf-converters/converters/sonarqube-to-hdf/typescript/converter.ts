@@ -84,6 +84,16 @@ interface SonarQubeComponent {
   path?: string;
 }
 
+/**
+ * A section of a SonarQube rule description.
+ * SonarQube 26+ returns rule descriptions as structured sections
+ * instead of monolithic htmlDesc/mdDesc fields.
+ */
+interface SonarQubeDescriptionSection {
+  key: string;
+  content: string;
+}
+
 interface SonarQubeRule {
   key: string;
   name: string;
@@ -97,6 +107,7 @@ interface SonarQubeRule {
   tags?: string[];
   sysTags?: string[];
   scope?: string;
+  descriptionSections?: SonarQubeDescriptionSection[];
 }
 
 /**
@@ -311,6 +322,22 @@ function extractDescription(rule: SonarQubeRule | undefined): string {
     return rule.htmlDesc.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
+  // Fall back to descriptionSections (SonarQube 26+ format)
+  if (rule.descriptionSections && rule.descriptionSections.length > 0) {
+    // Prefer root_cause section (closest to the old monolithic description)
+    const rootCause = rule.descriptionSections.find(s => s.key === 'root_cause');
+    if (rootCause) {
+      return rootCause.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+    // If no root_cause, concatenate all sections
+    const parts = rule.descriptionSections
+      .map(s => s.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim())
+      .filter(s => s.length > 0);
+    if (parts.length > 0) {
+      return parts.join('\n\n');
+    }
+  }
+
   return rule.name || '';
 }
 
@@ -381,6 +408,15 @@ function extractTags(
     const desc = (rule.htmlDesc || '') + (rule.mdDesc || '');
     for (const id of extractCWEIDs(desc)) {
       cweSet.add(`CWE-${id}`);
+    }
+  }
+
+  // Parse CWE from descriptionSections (SonarQube 26+ format)
+  if (rule?.descriptionSections) {
+    for (const section of rule.descriptionSections) {
+      for (const id of extractCWEIDs(section.content)) {
+        cweSet.add(`CWE-${id}`);
+      }
     }
   }
 
