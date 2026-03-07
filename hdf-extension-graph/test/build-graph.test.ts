@@ -1,32 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
 import {
   buildExtensionGraph,
   ContextualizedBaseline,
 } from '../src/index.js';
-
-function makeRequirement(overrides: Partial<EvaluatedRequirement> & { id: string }): EvaluatedRequirement {
-  return {
-    impact: 0.5,
-    tags: {},
-    descriptions: [{ label: 'default', data: 'Test requirement' }],
-    results: [{ codeDesc: 'test', startTime: new Date(), status: 'passed' as any }],
-    ...overrides,
-  };
-}
-
-function makeBaseline(overrides: Partial<EvaluatedBaseline> & { name: string; requirements: EvaluatedRequirement[] }): EvaluatedBaseline {
-  return {
-    groups: [],
-    supports: [],
-    sha256: 'abc123',
-    ...overrides,
-  };
-}
-
-function makeResults(baselines: EvaluatedBaseline[]): HdfResults {
-  return { baselines } as HdfResults;
-}
+import { makeRequirement, makeBaseline, makeResults } from './helpers.js';
 
 describe('buildExtensionGraph', () => {
   describe('Phase 1: baseline wrapping', () => {
