@@ -53,6 +53,12 @@ importers:
         specifier: workspace:*
         version: link:../hdf-utilities
 
+  hdf-extension-graph:
+    dependencies:
+      '@mitre/hdf-schema':
+        specifier: workspace:*
+        version: link:../hdf-schema
+
   hdf-mappings:
     devDependencies:
       '@stryker-mutator/core':
