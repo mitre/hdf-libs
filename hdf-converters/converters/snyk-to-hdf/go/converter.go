@@ -194,25 +194,19 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 		targetName = report.Path
 	}
 
-	toolName := "Snyk"
-	formatName := "JSON"
 	now := time.Now().UTC()
 
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "snyk-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   &toolName,
-			Format: &formatName,
-		},
-		Baselines: []hdf.EvaluatedBaseline{baseline},
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "snyk-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "Snyk",
+		DataSourceFormat: "JSON",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
 			{Name: targetName, Type: hdf.Application},
 		},
 		Timestamp: &now,
-	}, nil
+	}), nil
 }
 
 func convertMultiProject(reports []SnykReport, checksum *hdf.Checksum, converterVersion string) (*hdf.HDFResults, error) {
@@ -225,20 +219,14 @@ func convertMultiProject(reports []SnykReport, checksum *hdf.Checksum, converter
 		baselines[i] = convertSingleProject(report, checksum)
 	}
 
-	toolName := "Snyk"
-	formatName := "JSON"
 	now := time.Now().UTC()
 
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "snyk-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   &toolName,
-			Format: &formatName,
-		},
-		Baselines: baselines,
-		Timestamp: &now,
-	}, nil
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "snyk-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "Snyk",
+		DataSourceFormat: "JSON",
+		Baselines:        baselines,
+		Timestamp:        &now,
+	}), nil
 }

@@ -353,8 +353,6 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ResultsChecksum: checksum,
 	}
 
-	toolName := "CycloneDX"
-	formatName := "JSON"
 	now := time.Now().UTC()
 
 	targetName := ""
@@ -362,19 +360,15 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		targetName = bom.Metadata.Component.Name
 	}
 
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "cyclonedx-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   &toolName,
-			Format: &formatName,
-		},
-		Baselines: []hdf.EvaluatedBaseline{baseline},
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "cyclonedx-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "CycloneDX",
+		DataSourceFormat: "JSON",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
 			{Name: targetName, Type: hdf.Application},
 		},
 		Timestamp: &now,
-	}, nil
+	}), nil
 }

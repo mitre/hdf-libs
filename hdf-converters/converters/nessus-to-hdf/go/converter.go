@@ -68,20 +68,17 @@ func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResu
 		targets = append(targets, target)
 	}
 
-	toolName := "Nessus"
-	result := &hdf.HDFResults{
-		Baselines: baselines,
-		Targets:   targets,
+	result := shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "nessus-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "Nessus",
+		Baselines:        baselines,
+		Targets:          targets,
 		Statistics: &hdf.Statistics{
 			Duration: &duration,
 		},
-		Generator: &hdf.Generator{
-			Name:    "nessus-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{Name: &toolName},
-		Timestamp:  &startTime,
-	}
+		Timestamp: &startTime,
+	})
 
 	return result, nil
 }

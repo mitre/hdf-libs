@@ -381,23 +381,15 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		}
 	}
 
-	toolName := "Grype"
-	dataSource := &hdf.DataSource{Name: &toolName}
-	if grypeData.Descriptor.Version != "" {
-		v := grypeData.Descriptor.Version
-		dataSource.Version = &v
-	}
-
 	// Build HDF results
-	hdfResult := &hdf.HDFResults{
-		Baselines: []hdf.EvaluatedBaseline{baseline},
-		Generator: &hdf.Generator{
-			Name:    "grype-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: dataSource,
-		Timestamp:  timestamp,
-	}
+	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:     "grype-to-hdf",
+		ConverterVersion:  converterVersion,
+		DataSourceName:    "Grype",
+		DataSourceVersion: grypeData.Descriptor.Version,
+		Baselines:         []hdf.EvaluatedBaseline{baseline},
+		Timestamp:         timestamp,
+	})
 
 	return hdfResult, nil
 }

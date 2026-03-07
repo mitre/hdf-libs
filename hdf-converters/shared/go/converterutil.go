@@ -264,6 +264,53 @@ func ParseTimestamp(s string) time.Time {
 	return time.Time{}
 }
 
+// HDFResultsOptions configures the fields for building an HDFResults struct.
+// GeneratorName and ConverterVersion are required. DataSource fields are only
+// included when at least one is non-empty.
+type HDFResultsOptions struct {
+	GeneratorName     string
+	ConverterVersion  string
+	DataSourceName    string
+	DataSourceVersion string
+	DataSourceFormat  string
+	Baselines         []hdf.EvaluatedBaseline
+	Targets           []hdf.Target
+	Timestamp         *time.Time
+	Statistics        *hdf.Statistics
+}
+
+// BuildHDFResults assembles an HDFResults struct from the given options.
+// Eliminates the repeated boilerplate of constructing Generator, DataSource
+// (with pointer fields), and assembling the top-level struct in every converter.
+func BuildHDFResults(opts HDFResultsOptions) *hdf.HDFResults {
+	result := &hdf.HDFResults{
+		Baselines: opts.Baselines,
+		Generator: &hdf.Generator{
+			Name:    opts.GeneratorName,
+			Version: opts.ConverterVersion,
+		},
+		Targets:    opts.Targets,
+		Timestamp:  opts.Timestamp,
+		Statistics: opts.Statistics,
+	}
+
+	if opts.DataSourceName != "" || opts.DataSourceVersion != "" || opts.DataSourceFormat != "" {
+		ds := &hdf.DataSource{}
+		if opts.DataSourceName != "" {
+			ds.Name = &opts.DataSourceName
+		}
+		if opts.DataSourceVersion != "" {
+			ds.Version = &opts.DataSourceVersion
+		}
+		if opts.DataSourceFormat != "" {
+			ds.Format = &opts.DataSourceFormat
+		}
+		result.DataSource = ds
+	}
+
+	return result
+}
+
 // DefaultMaxXMLSize is the maximum allowed XML input size (50 MB).
 // This provides defense against entity expansion DoS when converters are used
 // as libraries outside the CLI (which has its own 50 MB input limit).

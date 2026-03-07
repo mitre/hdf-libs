@@ -83,17 +83,14 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	baseline := buildBaseline(data.ConfigRules, checksum)
 	now := time.Now().UTC()
 
-	toolName := "AWS Config"
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "aws-config-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{Name: &toolName},
-		Baselines:  []hdf.EvaluatedBaseline{baseline},
-		Targets:    []hdf.Target{},
-		Timestamp:  &now,
-	}, nil
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "aws-config-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "AWS Config",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Targets:          []hdf.Target{},
+		Timestamp:        &now,
+	}), nil
 }
 
 // buildBaseline creates one EvaluatedBaseline from all ConfigRules.

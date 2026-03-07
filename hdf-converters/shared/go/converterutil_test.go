@@ -568,3 +568,98 @@ func TestValidateXMLInput_CustomSizeLimit(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "exceeds maximum")
 }
+
+func TestBuildHDFResults_MinimalFields(t *testing.T) {
+	baseline := hdf.EvaluatedBaseline{Name: "test-baseline"}
+	now := time.Now().UTC()
+
+	result := BuildHDFResults(HDFResultsOptions{
+		GeneratorName:    "test-to-hdf",
+		ConverterVersion: "1.0.0",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Timestamp:        &now,
+	})
+
+	require.NotNil(t, result)
+	assert.Equal(t, []hdf.EvaluatedBaseline{baseline}, result.Baselines)
+	require.NotNil(t, result.Generator)
+	assert.Equal(t, "test-to-hdf", result.Generator.Name)
+	assert.Equal(t, "1.0.0", result.Generator.Version)
+	assert.Equal(t, &now, result.Timestamp)
+	assert.Nil(t, result.DataSource)
+	assert.Nil(t, result.Targets)
+	assert.Nil(t, result.Statistics)
+}
+
+func TestBuildHDFResults_WithDataSourceName(t *testing.T) {
+	result := BuildHDFResults(HDFResultsOptions{
+		GeneratorName:    "grype-to-hdf",
+		ConverterVersion: "1.0.0",
+		DataSourceName:   "Grype",
+		Baselines:        []hdf.EvaluatedBaseline{},
+	})
+
+	require.NotNil(t, result.DataSource)
+	require.NotNil(t, result.DataSource.Name)
+	assert.Equal(t, "Grype", *result.DataSource.Name)
+	assert.Nil(t, result.DataSource.Version)
+	assert.Nil(t, result.DataSource.Format)
+}
+
+func TestBuildHDFResults_WithAllDataSourceFields(t *testing.T) {
+	result := BuildHDFResults(HDFResultsOptions{
+		GeneratorName:     "sarif-to-hdf",
+		ConverterVersion:  "1.0.0",
+		DataSourceName:    "Semgrep",
+		DataSourceVersion: "1.5.0",
+		DataSourceFormat:  "SARIF",
+		Baselines:         []hdf.EvaluatedBaseline{},
+	})
+
+	require.NotNil(t, result.DataSource)
+	assert.Equal(t, "Semgrep", *result.DataSource.Name)
+	assert.Equal(t, "1.5.0", *result.DataSource.Version)
+	assert.Equal(t, "SARIF", *result.DataSource.Format)
+}
+
+func TestBuildHDFResults_EmptyDataSourceStringsOmitted(t *testing.T) {
+	result := BuildHDFResults(HDFResultsOptions{
+		GeneratorName:    "test-to-hdf",
+		ConverterVersion: "1.0.0",
+		Baselines:        []hdf.EvaluatedBaseline{},
+	})
+
+	assert.Nil(t, result.DataSource)
+}
+
+func TestBuildHDFResults_WithTargetsAndStatistics(t *testing.T) {
+	targets := []hdf.Target{{Name: "web-server"}}
+	dur := 42.5
+	stats := &hdf.Statistics{Duration: &dur}
+
+	result := BuildHDFResults(HDFResultsOptions{
+		GeneratorName:    "nessus-to-hdf",
+		ConverterVersion: "1.0.0",
+		Baselines:        []hdf.EvaluatedBaseline{},
+		Targets:          targets,
+		Statistics:       stats,
+	})
+
+	assert.Equal(t, targets, result.Targets)
+	assert.Equal(t, stats, result.Statistics)
+}
+
+func TestBuildHDFResults_DataSourcePartialFields(t *testing.T) {
+	// Only format set, no name/version
+	result := BuildHDFResults(HDFResultsOptions{
+		GeneratorName:    "test-to-hdf",
+		ConverterVersion: "1.0.0",
+		DataSourceFormat: "XML",
+		Baselines:        []hdf.EvaluatedBaseline{},
+	})
+
+	require.NotNil(t, result.DataSource)
+	assert.Nil(t, result.DataSource.Name)
+	assert.Nil(t, result.DataSource.Version)
+	assert.Equal(t, "XML", *result.DataSource.Format)
+}

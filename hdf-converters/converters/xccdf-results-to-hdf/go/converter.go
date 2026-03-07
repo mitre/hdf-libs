@@ -338,25 +338,18 @@ func convertBenchmarkToHDF(input []byte, converterVersion string, resultsChecksu
 
 	target := buildTarget(&benchmark.TestResult)
 
-	dataSourceName := "XCCDF"
-	dataSourceFormat := "XCCDF"
-
-	return &hdf.HDFResults{
-		Baselines: []hdf.EvaluatedBaseline{baseline},
-		Targets:   []hdf.Target{target},
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "hdf-converters",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "XCCDF",
+		DataSourceFormat: "XCCDF",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Targets:          []hdf.Target{target},
+		Timestamp:        &startTime,
 		Statistics: &hdf.Statistics{
 			Duration: &duration,
 		},
-		Generator: &hdf.Generator{
-			Name:    "hdf-converters",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   &dataSourceName,
-			Format: &dataSourceFormat,
-		},
-		Timestamp: &startTime,
-	}, nil
+	}), nil
 }
 
 // ---------------------------------------------------------------------------
@@ -474,25 +467,18 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		firstTimestamp = time.Now()
 	}
 
-	dataSourceName := "ARF"
-	dataSourceFormat := "ARF"
-
-	return &hdf.HDFResults{
-		Baselines: baselines,
-		Targets:   targets,
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "hdf-converters",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "ARF",
+		DataSourceFormat: "ARF",
+		Baselines:        baselines,
+		Targets:          targets,
+		Timestamp:        &firstTimestamp,
 		Statistics: &hdf.Statistics{
 			Duration: &totalDuration,
 		},
-		Generator: &hdf.Generator{
-			Name:    "hdf-converters",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   &dataSourceName,
-			Format: &dataSourceFormat,
-		},
-		Timestamp: &firstTimestamp,
-	}, nil
+	}), nil
 }
 
 // findBenchmarkInARF locates the XCCDF Benchmark embedded in the ARF

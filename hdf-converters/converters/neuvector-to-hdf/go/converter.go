@@ -205,23 +205,17 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		Title:           &title,
 	}
 
-	toolName := "NeuVector"
-	formatName := "JSON"
 	now := time.Now().UTC()
 
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "neuvector-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   &toolName,
-			Format: &formatName,
-		},
-		Baselines: []hdf.EvaluatedBaseline{baseline},
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "neuvector-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "NeuVector",
+		DataSourceFormat: "JSON",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
 			{Name: targetName(scan.Report), Type: hdf.ContainerImage},
 		},
 		Timestamp: &now,
-	}, nil
+	}), nil
 }

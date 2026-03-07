@@ -305,16 +305,6 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 		ResultsChecksum: resultsChecksum,
 	}
 
-	toolName := "OWASP ZAP"
-	formatName := "JSON"
-	dataSource := &hdf.DataSource{
-		Name:   &toolName,
-		Format: &formatName,
-	}
-	if zapData.Version != "" {
-		dataSource.Version = &zapData.Version
-	}
-
 	// Build targets — ZAP is a DAST tool scanning web applications
 	var targets []hdf.Target
 	if siteName != "" {
@@ -330,22 +320,25 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 		})
 	}
 
-	hdfResult := &hdf.HDFResults{
-		Baselines: []hdf.EvaluatedBaseline{baseline},
-		Targets:   targets,
-		Generator: &hdf.Generator{
-			Name:    "zap-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: dataSource,
-	}
-
+	// Compute timestamp before building results
+	var timestamp *time.Time
 	if zapData.Generated != "" {
 		ts := parseZapTimestamp(zapData.Generated)
 		if !ts.IsZero() {
-			hdfResult.Timestamp = &ts
+			timestamp = &ts
 		}
 	}
+
+	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:     "zap-to-hdf",
+		ConverterVersion:  converterVersion,
+		DataSourceName:    "OWASP ZAP",
+		DataSourceVersion: zapData.Version,
+		DataSourceFormat:  "JSON",
+		Baselines:         []hdf.EvaluatedBaseline{baseline},
+		Targets:           targets,
+		Timestamp:         timestamp,
+	})
 
 	return hdfResult, nil
 }

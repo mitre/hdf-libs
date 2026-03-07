@@ -230,21 +230,13 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ResultsChecksum: checksum,
 	}
 
-	toolName := "gosec"
-	dataSource := &hdf.DataSource{Name: &toolName}
-	if report.GosecVersion != "" {
-		v := report.GosecVersion
-		dataSource.Version = &v
-	}
-
 	now := time.Now().UTC()
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "gosec-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: dataSource,
-		Baselines:  []hdf.EvaluatedBaseline{baseline},
-		Timestamp:  &now,
-	}, nil
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:     "gosec-to-hdf",
+		ConverterVersion:  converterVersion,
+		DataSourceName:    "gosec",
+		DataSourceVersion: report.GosecVersion,
+		Baselines:         []hdf.EvaluatedBaseline{baseline},
+		Timestamp:         &now,
+	}), nil
 }

@@ -84,24 +84,17 @@ func ConvertFortifyToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		targetName = fvdl.Build.BuildID
 	}
 
-	toolName := "Fortify"
-	formatName := "FVDL"
-
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "fortify-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   &toolName,
-			Format: &formatName,
-		},
-		Baselines: []hdf.EvaluatedBaseline{baseline},
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "fortify-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "Fortify",
+		DataSourceFormat: "FVDL",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
 			{Name: targetName, Type: hdf.Repository},
 		},
 		Timestamp: &timestamp,
-	}, nil
+	}), nil
 }
 
 // buildSnippetMap creates a map from snippet ID to Snippet for quick lookup.

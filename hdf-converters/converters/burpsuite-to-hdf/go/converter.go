@@ -165,39 +165,30 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ResultsChecksum: resultsChecksum,
 	}
 
-	// Data source
-	toolName := "BurpSuite"
-	formatName := "XML"
-	dataSource := &hdf.DataSource{
-		Name:   &toolName,
-		Format: &formatName,
-	}
-	if burpData.BurpVersion != "" {
-		dataSource.Version = &burpData.BurpVersion
+	// Compute timestamp before building results
+	var timestamp *time.Time
+	if burpData.ExportTime != "" {
+		ts := parseBurpTimestamp(burpData.ExportTime)
+		if !ts.IsZero() {
+			timestamp = &ts
+		}
 	}
 
-	hdfResult := &hdf.HDFResults{
-		Baselines: []hdf.EvaluatedBaseline{baseline},
+	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:     "burpsuite-to-hdf",
+		ConverterVersion:  converterVersion,
+		DataSourceName:    "BurpSuite",
+		DataSourceVersion: burpData.BurpVersion,
+		DataSourceFormat:  "XML",
+		Baselines:         []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
 			{
 				Name: targetName,
 				Type: hdf.Application,
 			},
 		},
-		Generator: &hdf.Generator{
-			Name:    "burpsuite-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: dataSource,
-	}
-
-	// Parse and set timestamp
-	if burpData.ExportTime != "" {
-		ts := parseBurpTimestamp(burpData.ExportTime)
-		if !ts.IsZero() {
-			hdfResult.Timestamp = &ts
-		}
-	}
+		Timestamp: timestamp,
+	})
 
 	return hdfResult, nil
 }

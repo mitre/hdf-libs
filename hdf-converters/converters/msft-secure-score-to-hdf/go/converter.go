@@ -280,24 +280,18 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 		baselines = append(baselines, baseline)
 	}
 
-	toolName := "Microsoft Secure Score"
-	formatName := "JSON"
 	now := time.Now().UTC()
 
 	// Target: cloud account
 	provider := hdf.Azure
 	targetName := fmt.Sprintf("Azure Tenant: %s", tenantID)
 
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "msft-secure-score-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   &toolName,
-			Format: &formatName,
-		},
-		Baselines: baselines,
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "msft-secure-score-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "Microsoft Secure Score",
+		DataSourceFormat: "JSON",
+		Baselines:        baselines,
 		Targets: []hdf.Target{
 			{
 				Name:     targetName,
@@ -306,5 +300,5 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 			},
 		},
 		Timestamp: &now,
-	}, nil
+	}), nil
 }
