@@ -39,6 +39,32 @@ linters:
     - unparam       # Report unused function parameters
     - whitespace    # Detect leading/trailing whitespace
 
+  exclusions:
+    rules:
+      # Exclude some linters from running on test files
+      - path: '_test\.go'
+        linters:
+          - gosec
+          - gocyclo
+          - gocognit
+
+      # Exclude generated files
+      - path: 'pkg/hdf/hdf_results\.go'
+        linters:
+          - dupl
+          - gocyclo
+          - gocognit
+          - gocritic
+          - revive
+
+      - path: 'pkg/hdf/hdf_baseline\.go'
+        linters:
+          - dupl
+          - gocyclo
+          - gocognit
+          - gocritic
+          - revive
+
   settings:
     gocyclo:
       min-complexity: 20
@@ -97,31 +123,5 @@ formatters:
     - goimports     # Check imports
 
 issues:
-  exclude-rules:
-    # Exclude some linters from running on tests files
-    - path: _test\.go
-      linters:
-        - gosec
-        - gocyclo
-        - gocognit
-
-
-    # Exclude generated files
-    - path: pkg/hdf/hdf_results\.go
-      linters:
-        - dupl
-        - gocyclo
-        - gocognit
-        - gocritic
-        - revive
-
-    - path: pkg/hdf/hdf_baseline\.go
-      linters:
-        - dupl
-        - gocyclo
-        - gocognit
-        - gocritic
-        - revive
-
   max-issues-per-linter: 50
   max-same-issues: 10
