@@ -85,18 +85,14 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 	now := time.Now().UTC()
 
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "hdf-converters",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   shared.Ptr("JUnit XML"),
-			Format: shared.Ptr("XML"),
-		},
-		Baselines: []hdf.EvaluatedBaseline{baseline},
-		Timestamp: &now,
-	}, nil
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "hdf-converters",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "JUnit XML",
+		DataSourceFormat: "XML",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Timestamp:        &now,
+	}), nil
 }
 
 // parseJUnitXML parses JUnit XML that may have <testsuites> or <testsuite> as root.

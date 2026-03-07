@@ -347,24 +347,17 @@ func ConvertVeracodeToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		targetName = "Veracode Application"
 	}
 
-	toolName := "Veracode"
-	formatName := "XML"
-
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "veracode-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   &toolName,
-			Format: &formatName,
-		},
-		Baselines: []hdf.EvaluatedBaseline{baseline},
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "veracode-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "Veracode",
+		DataSourceFormat: "XML",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
 			{Name: targetName, Type: hdf.Application},
 		},
 		Timestamp: timestamp,
-	}, nil
+	}), nil
 }
 
 // buildCWERequirements creates HDF requirements from CWE-based severity categories.

@@ -224,18 +224,15 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		stats = convertStatistics(lastHeader.Statistics)
 	}
 
-	toolName := "Splunk"
-	hdfResult := &hdf.HDFResults{
-		Timestamp:  &timestamp,
-		Baselines:  allBaselines,
-		Targets:    allTargets,
-		Statistics: stats,
-		DataSource: &hdf.DataSource{Name: &toolName},
-		Generator: &hdf.Generator{
-			Name:    "splunk-to-hdf",
-			Version: converterVersion,
-		},
-	}
+	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "splunk-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "Splunk",
+		Baselines:        allBaselines,
+		Targets:          allTargets,
+		Statistics:       stats,
+		Timestamp:        &timestamp,
+	})
 
 	return hdfResult, nil
 }

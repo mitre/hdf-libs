@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
@@ -385,37 +386,31 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		ResultsChecksum: resultsChecksum,
 	}
 
-	formatName := "JSON"
-	dataSource := &hdf.DataSource{
-		Name:   &scannerName,
-		Format: &formatName,
-	}
-	if scannerVersion != "" {
-		dataSource.Version = &scannerVersion
-	}
-
 	// Build targets
 	targetType := scanTypeToTargetType(scanType)
 	targets := []hdf.Target{
 		{Name: scannerName, Type: targetType},
 	}
 
-	hdfResult := &hdf.HDFResults{
-		Baselines: []hdf.EvaluatedBaseline{baseline},
-		Targets:   targets,
-		Generator: &hdf.Generator{
-			Name:    "gitlab-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: dataSource,
-	}
-
+	// Compute timestamp before building results
+	var timestamp *time.Time
 	if report.Scan != nil && report.Scan.EndTime != "" {
 		ts := shared.ParseTimestamp(report.Scan.EndTime)
 		if !ts.IsZero() {
-			hdfResult.Timestamp = &ts
+			timestamp = &ts
 		}
 	}
+
+	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:     "gitlab-to-hdf",
+		ConverterVersion:  converterVersion,
+		DataSourceName:    scannerName,
+		DataSourceVersion: scannerVersion,
+		DataSourceFormat:  "JSON",
+		Baselines:         []hdf.EvaluatedBaseline{baseline},
+		Targets:           targets,
+		Timestamp:         timestamp,
+	})
 
 	return hdfResult, nil
 }

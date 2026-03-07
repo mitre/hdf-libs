@@ -362,33 +362,23 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		ResultsChecksum: resultsChecksum,
 	}
 
-	// Data source
-	formatName := "XML"
-	dataSource := &hdf.DataSource{
-		Name:   &toolName,
-		Format: &formatName,
-	}
-
 	// Target
 	targetName := netsparkerData.Target.URL
 	if targetName == "" {
 		targetName = "Unknown"
 	}
 
-	hdfResult := &hdf.HDFResults{
-		Baselines: []hdf.EvaluatedBaseline{baseline},
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "netsparker-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   toolName,
+		DataSourceFormat: "XML",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
 			{
 				Name: targetName,
 				Type: hdf.Application,
 			},
 		},
-		Generator: &hdf.Generator{
-			Name:    "netsparker-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: dataSource,
-	}
-
-	return hdfResult, nil
+	}), nil
 }

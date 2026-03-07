@@ -284,23 +284,16 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		timestamp = &parsedTime
 	}
 
-	toolName := "ScoutSuite"
-	formatName := "JSON"
-
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "scoutsuite-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:    &toolName,
-			Format:  &formatName,
-			Version: &report.LastRun.Version,
-		},
-		Baselines: []hdf.EvaluatedBaseline{baseline},
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:     "scoutsuite-to-hdf",
+		ConverterVersion:  converterVersion,
+		DataSourceName:    "ScoutSuite",
+		DataSourceFormat:  "JSON",
+		DataSourceVersion: report.LastRun.Version,
+		Baselines:         []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
 			{Name: targetName, Type: hdf.CloudAccount},
 		},
 		Timestamp: timestamp,
-	}, nil
+	}), nil
 }

@@ -302,30 +302,24 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		ResultsChecksum: checksum,
 	}
 
-	toolName := "TruffleHog"
-	formatName := "JSON"
 	now := time.Now().UTC()
 
-	result := &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "hdf-converters",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   &toolName,
-			Format: &formatName,
-		},
-		Baselines: []hdf.EvaluatedBaseline{baseline},
-		Timestamp: &now,
-	}
-
 	// Add target only if a Git repository URL is available
+	var targets []hdf.Target
 	repoURL := findGitRepoURL(limitedFindings)
 	if repoURL != "" {
-		result.Targets = []hdf.Target{
+		targets = []hdf.Target{
 			{Name: repoURL, Type: hdf.Repository},
 		}
 	}
 
-	return result, nil
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "hdf-converters",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "TruffleHog",
+		DataSourceFormat: "JSON",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Targets:          targets,
+		Timestamp:        &now,
+	}), nil
 }

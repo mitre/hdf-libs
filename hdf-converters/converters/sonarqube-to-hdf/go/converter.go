@@ -168,19 +168,15 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 	// Build HDF
 	timestamp := time.Now()
-	toolName := "SonarQube"
-	hdfResult := &hdf.HDFResults{
-		Timestamp: &timestamp,
-		Baselines: baselines,
-		Targets:   []hdf.Target{},
-		Generator: &hdf.Generator{
-			Name:    "sonarqube-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{Name: &toolName},
-	}
 
-	return hdfResult, nil
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "sonarqube-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "SonarQube",
+		Baselines:        baselines,
+		Targets:          []hdf.Target{},
+		Timestamp:        &timestamp,
+	}), nil
 }
 
 func convertProjectToBaseline(

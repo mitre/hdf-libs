@@ -278,21 +278,15 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		}
 	}
 
-	toolName := "Prisma Cloud"
-	formatName := "CSV"
 	now := time.Now().UTC()
 
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "prisma-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   &toolName,
-			Format: &formatName,
-		},
-		Baselines: baselines,
-		Targets:   targets,
-		Timestamp: &now,
-	}, nil
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "prisma-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "Prisma Cloud",
+		DataSourceFormat: "CSV",
+		Baselines:        baselines,
+		Targets:          targets,
+		Timestamp:        &now,
+	}), nil
 }

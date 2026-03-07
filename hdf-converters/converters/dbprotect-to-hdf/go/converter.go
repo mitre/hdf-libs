@@ -250,23 +250,17 @@ func ConvertDbprotectToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}
 
 	targetName := firstFinding["Asset"]
-	toolName := "DBProtect"
-	formatName := "XML"
 	now := time.Now().UTC()
 
-	return &hdf.HDFResults{
-		Generator: &hdf.Generator{
-			Name:    "dbprotect-to-hdf",
-			Version: converterVersion,
-		},
-		DataSource: &hdf.DataSource{
-			Name:   &toolName,
-			Format: &formatName,
-		},
-		Baselines: []hdf.EvaluatedBaseline{baseline},
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "dbprotect-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "DBProtect",
+		DataSourceFormat: "XML",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
 			{Name: targetName, Type: hdf.Host},
 		},
 		Timestamp: &now,
-	}, nil
+	}), nil
 }
