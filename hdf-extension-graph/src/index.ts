@@ -1,7 +1,19 @@
 import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
 
+/** Fields compared for modification detection between overlay and parent. */
+const TRACKED_FIELDS: readonly string[] = ['impact', 'title', 'severity'] as const;
+
+/** A detected change between an overlay requirement and its parent. */
+export interface Modification {
+  field: string;
+  originalValue: unknown;
+  newValue: unknown;
+  inBaseline: string;
+}
+
 /**
- * Wraps an EvaluatedRequirement with bidirectional extension links.
+ * Wraps an EvaluatedRequirement with bidirectional extension links
+ * and derived properties for navigating extension chains.
  */
 export class ContextualizedRequirement {
   /** The original requirement data. */
@@ -19,6 +31,77 @@ export class ContextualizedRequirement {
   constructor(data: EvaluatedRequirement, sourcedFrom: ContextualizedBaseline) {
     this.data = data;
     this.sourcedFrom = sourcedFrom;
+  }
+
+  /** The root (base) requirement at the bottom of the extension chain. */
+  get root(): ContextualizedRequirement {
+    if (this.extendsFrom.length === 0) {
+      return this;
+    }
+    // Walk to the first parent's root (first match, like Heimdall2)
+    return this.extendsFrom[0]!.root;
+  }
+
+  /** True if this overlay adds no new code (empty/undefined or matches root). */
+  get isRedundant(): boolean {
+    if (this.extendsFrom.length === 0) {
+      return false;
+    }
+    const code = this.data.code;
+    if (!code) {
+      return true;
+    }
+    return code === this.root.data.code;
+  }
+
+  /**
+   * Full code concatenated from all layers, with baseline name headers.
+   * Skips redundant overlay layers. Returns empty string if no code exists.
+   */
+  get fullCode(): string {
+    if (this.isRedundant && this.extendsFrom.length > 0) {
+      return this.extendsFrom[0]!.fullCode;
+    }
+    const code = this.data.code;
+    if (!code) {
+      return '';
+    }
+    const header = `# ${this.sourcedFrom.data.name}\n${code}`;
+    if (this.extendsFrom.length === 0) {
+      return header;
+    }
+    const parentCode = this.extendsFrom[0]!.fullCode;
+    return parentCode ? `${header}\n\n${parentCode}` : header;
+  }
+
+  /** Ordered chain of baselines from root to this requirement's baseline. */
+  get extensionChain(): ContextualizedBaseline[] {
+    if (this.extendsFrom.length === 0) {
+      return [this.sourcedFrom];
+    }
+    return [...this.extendsFrom[0]!.extensionChain, this.sourcedFrom];
+  }
+
+  /** Fields that differ between this requirement and its immediate parent. */
+  get modifications(): Modification[] {
+    if (this.extendsFrom.length === 0) {
+      return [];
+    }
+    const parent = this.extendsFrom[0]!;
+    const mods: Modification[] = [];
+    for (const field of TRACKED_FIELDS) {
+      const parentVal = (parent.data as Record<string, unknown>)[field];
+      const thisVal = (this.data as Record<string, unknown>)[field];
+      if (parentVal !== thisVal) {
+        mods.push({
+          field,
+          originalValue: parentVal,
+          newValue: thisVal,
+          inBaseline: this.sourcedFrom.data.name,
+        });
+      }
+    }
+    return mods;
   }
 }
 
