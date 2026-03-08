@@ -316,16 +316,20 @@ func applyFilters(control hdf.EvaluatedRequirement, status, severity string, fil
 	return true
 }
 
-// Severity constants.
+// Severity constants aligned with CVSS 3.x bands normalized to 0-1.
+// Bands: 0.9-1.0=critical, 0.7-0.8=high, 0.4-0.6=medium, 0.1-0.3=low, 0.0=informational
 const (
-	SeverityHigh   = "high"
-	SeverityMedium = "medium"
-	SeverityLow    = "low"
-	SeverityNone   = "none"
+	SeverityCritical      = "critical"
+	SeverityHigh          = "high"
+	SeverityMedium        = "medium"
+	SeverityLow           = "low"
+	SeverityInformational = "informational"
 )
 
 func impactToSeverity(impact float64) string {
 	switch {
+	case impact >= 0.9:
+		return SeverityCritical
 	case impact >= 0.7:
 		return SeverityHigh
 	case impact >= 0.4:
@@ -333,18 +337,22 @@ func impactToSeverity(impact float64) string {
 	case impact > 0:
 		return SeverityLow
 	default:
-		return SeverityNone
+		return SeverityInformational
 	}
 }
 
 func severityToLabel(severity string) string {
 	switch severity {
+	case SeverityCritical:
+		return "CRIT"
 	case SeverityHigh:
 		return "HIGH"
 	case SeverityMedium:
 		return "MED "
 	case SeverityLow:
 		return "LOW "
+	case SeverityInformational:
+		return "INFO"
 	default:
 		return "NONE"
 	}
@@ -391,7 +399,7 @@ func compareImpact(impact float64, op string, val float64) bool {
 	}
 }
 
-func tagContains(tags map[string]interface{}, key, value string) bool {
+func tagContains(tags map[string]any, key, value string) bool {
 	if tags == nil {
 		return false
 	}
@@ -405,7 +413,7 @@ func tagContains(tags map[string]interface{}, key, value string) bool {
 	switch v := tagVal.(type) {
 	case string:
 		return strings.EqualFold(v, value)
-	case []interface{}:
+	case []any:
 		for _, item := range v {
 			if str, ok := item.(string); ok {
 				if strings.EqualFold(str, value) {
@@ -424,7 +432,7 @@ func tagContains(tags map[string]interface{}, key, value string) bool {
 	return false
 }
 
-func tagMatchesGlob(tags map[string]interface{}, key, pattern string) bool {
+func tagMatchesGlob(tags map[string]any, key, pattern string) bool {
 	if tags == nil {
 		return false
 	}
@@ -438,7 +446,7 @@ func tagMatchesGlob(tags map[string]interface{}, key, pattern string) bool {
 	switch v := tagVal.(type) {
 	case string:
 		return safeGlobMatch(v, pattern)
-	case []interface{}:
+	case []any:
 		for _, item := range v {
 			if str, ok := item.(string); ok {
 				if safeGlobMatch(str, pattern) {

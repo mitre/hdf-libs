@@ -15,14 +15,21 @@ func TestImpactToSeverity(t *testing.T) {
 		impact   float64
 		expected string
 	}{
-		{"high severity at 1.0", 1.0, "high"},
+		// CVSS bands normalized to 0-1: 0.9-1.0=critical, 0.7-0.8=high, 0.4-0.6=medium, 0.1-0.3=low, 0.0=informational
+		{"critical severity at 1.0", 1.0, "critical"},
+		{"critical severity at 0.9", 0.9, "critical"},
+		{"critical severity at 0.95", 0.95, "critical"},
+		{"high severity at 0.89", 0.89, "high"},
+		{"high severity at 0.8", 0.8, "high"},
 		{"high severity at 0.7", 0.7, "high"},
 		{"medium severity at 0.69", 0.69, "medium"},
+		{"medium severity at 0.5", 0.5, "medium"},
 		{"medium severity at 0.4", 0.4, "medium"},
 		{"low severity at 0.39", 0.39, "low"},
+		{"low severity at 0.3", 0.3, "low"},
 		{"low severity at 0.1", 0.1, "low"},
 		{"low severity at 0.01", 0.01, "low"},
-		{"none severity at 0", 0.0, "none"},
+		{"informational severity at 0", 0.0, "informational"},
 	}
 
 	for _, tt := range tests {
@@ -103,7 +110,7 @@ func TestCompareImpact(t *testing.T) {
 func TestTagContains(t *testing.T) {
 	tests := []struct {
 		name     string
-		tags     map[string]interface{}
+		tags     map[string]any
 		key      string
 		value    string
 		expected bool
@@ -117,49 +124,49 @@ func TestTagContains(t *testing.T) {
 		},
 		{
 			name:     "missing key",
-			tags:     map[string]interface{}{"nist": "AC-2"},
+			tags:     map[string]any{"nist": "AC-2"},
 			key:      "cci",
 			value:    "CCI-000366",
 			expected: false,
 		},
 		{
 			name:     "string match",
-			tags:     map[string]interface{}{"cci": "CCI-000366"},
+			tags:     map[string]any{"cci": "CCI-000366"},
 			key:      "cci",
 			value:    "CCI-000366",
 			expected: true,
 		},
 		{
 			name:     "string case insensitive",
-			tags:     map[string]interface{}{"cci": "cci-000366"},
+			tags:     map[string]any{"cci": "cci-000366"},
 			key:      "cci",
 			value:    "CCI-000366",
 			expected: true,
 		},
 		{
 			name:     "string no match",
-			tags:     map[string]interface{}{"cci": "CCI-000367"},
+			tags:     map[string]any{"cci": "CCI-000367"},
 			key:      "cci",
 			value:    "CCI-000366",
 			expected: false,
 		},
 		{
 			name:     "array match",
-			tags:     map[string]interface{}{"cci": []interface{}{"CCI-000365", "CCI-000366", "CCI-000367"}},
+			tags:     map[string]any{"cci": []any{"CCI-000365", "CCI-000366", "CCI-000367"}},
 			key:      "cci",
 			value:    "CCI-000366",
 			expected: true,
 		},
 		{
 			name:     "array no match",
-			tags:     map[string]interface{}{"cci": []interface{}{"CCI-000365", "CCI-000367"}},
+			tags:     map[string]any{"cci": []any{"CCI-000365", "CCI-000367"}},
 			key:      "cci",
 			value:    "CCI-000366",
 			expected: false,
 		},
 		{
 			name:     "string array match",
-			tags:     map[string]interface{}{"nist": []string{"AC-2", "CM-6"}},
+			tags:     map[string]any{"nist": []string{"AC-2", "CM-6"}},
 			key:      "nist",
 			value:    "AC-2",
 			expected: true,
@@ -229,42 +236,42 @@ func TestMatchesGlob(t *testing.T) {
 func TestTagMatchesGlob(t *testing.T) {
 	tests := []struct {
 		name     string
-		tags     map[string]interface{}
+		tags     map[string]any
 		key      string
 		pattern  string
 		expected bool
 	}{
 		{
 			name:     "exact match in array",
-			tags:     map[string]interface{}{"nist": []interface{}{"AC-2", "CM-6"}},
+			tags:     map[string]any{"nist": []any{"AC-2", "CM-6"}},
 			key:      "nist",
 			pattern:  "AC-2",
 			expected: true,
 		},
 		{
 			name:     "wildcard match in array",
-			tags:     map[string]interface{}{"nist": []interface{}{"AC-2", "CM-6"}},
+			tags:     map[string]any{"nist": []any{"AC-2", "CM-6"}},
 			key:      "nist",
 			pattern:  "AC-*",
 			expected: true,
 		},
 		{
 			name:     "no match in array",
-			tags:     map[string]interface{}{"nist": []interface{}{"AC-2", "CM-6"}},
+			tags:     map[string]any{"nist": []any{"AC-2", "CM-6"}},
 			key:      "nist",
 			pattern:  "AU-*",
 			expected: false,
 		},
 		{
 			name:     "string value match",
-			tags:     map[string]interface{}{"severity": "high"},
+			tags:     map[string]any{"severity": "high"},
 			key:      "severity",
 			pattern:  "high",
 			expected: true,
 		},
 		{
 			name:     "string value wildcard",
-			tags:     map[string]interface{}{"stig_id": "RHEL-07-010010"},
+			tags:     map[string]any{"stig_id": "RHEL-07-010010"},
 			key:      "stig_id",
 			pattern:  "RHEL-07-*",
 			expected: true,
@@ -286,9 +293,11 @@ func TestSeverityToLabel(t *testing.T) {
 		severity string
 		expected string
 	}{
+		{"critical", "CRIT"},
 		{"high", "HIGH"},
 		{"medium", "MED "},
 		{"low", "LOW "},
+		{"informational", "INFO"},
 		{"none", "NONE"},
 		{"unknown", "NONE"},
 	}
@@ -328,18 +337,18 @@ func TestStatusToSymbol(t *testing.T) {
 }
 
 // buildQueryFixture creates a synthetic HDF results JSON file in a temp dir.
-func buildQueryFixture(t *testing.T, requirements []map[string]interface{}) string {
+func buildQueryFixture(t *testing.T, requirements []map[string]any) string {
 	t.Helper()
-	data, err := json.Marshal(map[string]interface{}{
-		"baselines": []interface{}{
-			map[string]interface{}{
+	data, err := json.Marshal(map[string]any{
+		"baselines": []any{
+			map[string]any{
 				"name":         "Query Test Baseline",
-				"checksum":     map[string]interface{}{"algorithm": "sha256", "value": "abc"},
+				"checksum":     map[string]any{"algorithm": "sha256", "value": "abc"},
 				"requirements": requirements,
 			},
 		},
-		"targets":    []interface{}{},
-		"statistics": map[string]interface{}{},
+		"targets":    []any{},
+		"statistics": map[string]any{},
 	})
 	if err != nil {
 		t.Fatalf("failed to marshal query fixture: %v", err)
@@ -353,15 +362,15 @@ func buildQueryFixture(t *testing.T, requirements []map[string]interface{}) stri
 }
 
 // makeRequirement builds a minimal requirement map.
-func makeRequirement(id, title string, impact float64) map[string]interface{} {
-	return map[string]interface{}{
+func makeRequirement(id, title string, impact float64) map[string]any {
+	return map[string]any{
 		"id":           id,
 		"title":        title,
-		"descriptions": []interface{}{map[string]interface{}{"label": "default", "data": "test"}},
+		"descriptions": []any{map[string]any{"label": "default", "data": "test"}},
 		"impact":       impact,
-		"tags":         map[string]interface{}{},
-		"results": []interface{}{
-			map[string]interface{}{
+		"tags":         map[string]any{},
+		"results": []any{
+			map[string]any{
 				"status":    "failed",
 				"codeDesc":  "check",
 				"startTime": "2025-01-01T00:00:00Z",
@@ -374,7 +383,7 @@ func TestQueryCommand_TextOutput_ImpactFilter(t *testing.T) {
 	// Exercises the human-readable outputQueryResults path (fmt.Printf loop) via
 	// a real executeCommand call, covering compareImpact >, >=, < branches in
 	// the full CLI pipeline.
-	reqs := []map[string]interface{}{
+	reqs := []map[string]any{
 		makeRequirement("REQ-001", "Low impact control", 0.2),
 		makeRequirement("REQ-002", "Medium impact control", 0.5),
 		makeRequirement("REQ-003", "High impact control", 0.8),
@@ -425,7 +434,7 @@ func TestQueryCommand_TextOutput_TitleTruncation(t *testing.T) {
 	// A title of 56+ characters exercises the title[:52]+"..." truncation branch
 	// in outputQueryResults (line 205–207 of query.go).
 	longTitle := fmt.Sprintf("%-56s", "This title is intentionally very long to trigger truncation logic")
-	reqs := []map[string]interface{}{
+	reqs := []map[string]any{
 		makeRequirement("REQ-LONG", longTitle, 0.5),
 	}
 	fixturePath := buildQueryFixture(t, reqs)
