@@ -187,8 +187,8 @@ func TestSeverityToImpact(t *testing.T) {
 		severity string
 		expected float64
 	}{
-		{"critical", 1.0},
-		{"Critical", 1.0},
+		{"critical", 0.9},
+		{"Critical", 0.9},
 		{"high", 0.7},
 		{"High", 0.7},
 		{"medium", 0.5},

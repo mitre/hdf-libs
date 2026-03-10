@@ -459,7 +459,7 @@ func TestSeverityToImpactMapping(t *testing.T) {
 		{"high", 0.7},
 		{"medium", 0.5},
 		{"low", 0.3},
-		{"critical", 1.0}, // Standard mapping (XCCDF doesn't use critical, but it's valid)
+		{"critical", 0.9}, // Standard mapping (XCCDF doesn't use critical, but it's valid)
 		{"", 0.5},         // Unknown/empty falls back to default
 	}
 

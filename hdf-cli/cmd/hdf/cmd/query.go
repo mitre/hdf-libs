@@ -317,7 +317,7 @@ func applyFilters(control hdf.EvaluatedRequirement, status, severity string, fil
 }
 
 // Severity constants aligned with CVSS 3.x bands normalized to 0-1.
-// Bands: 0.9-1.0=critical, 0.7-0.8=high, 0.4-0.6=medium, 0.1-0.3=low, 0.0=informational
+// Bands: 0.9-1.0=critical, 0.7-0.8=high, 0.4-0.6=medium, 0.1-0.3=low, 0.0=informational.
 const (
 	SeverityCritical      = "critical"
 	SeverityHigh          = "high"

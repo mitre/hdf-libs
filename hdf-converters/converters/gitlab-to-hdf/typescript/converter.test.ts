@@ -90,12 +90,12 @@ describe('GitLab to HDF converter', () => {
       expect(hdf.baselines[0].requirements[0].title).toBe('SQL Injection');
     });
 
-    it('should map Critical severity to impact 1.0', async () => {
+    it('should map Critical severity to impact 0.9', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.baselines[0].requirements[0].impact).toBe(1.0);
+      expect(hdf.baselines[0].requirements[0].impact).toBe(0.9);
     });
 
     it('should set all results to failed', async () => {
@@ -283,13 +283,13 @@ describe('GitLab to HDF converter', () => {
       expect(hdf.baselines[0].requirements).toHaveLength(3);
     });
 
-    it('should map Critical severity to 1.0', async () => {
+    it('should map Critical severity to 0.9', async () => {
       const input = loadFixture('multi-vuln.json');
       const output = await convertGitlabToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '11111111-1111-1111-1111-111111111111');
-      expect(req?.impact).toBe(1.0);
+      expect(req?.impact).toBe(0.9);
     });
 
     it('should map Medium severity to 0.5', async () => {

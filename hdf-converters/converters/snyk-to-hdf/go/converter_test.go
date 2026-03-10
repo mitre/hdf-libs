@@ -133,10 +133,10 @@ func TestConvertSnyk_Severity(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 
-	// critical → 1.0 (npm:adm-zip:20180415)
+	// critical → 0.9 (npm:adm-zip:20180415)
 	critical := findRequirement(reqs, "npm:adm-zip:20180415")
 	require.NotNil(t, critical, "expected critical vuln npm:adm-zip:20180415")
-	assert.InDelta(t, 1.0, critical.Impact, 0.001)
+	assert.InDelta(t, 0.9, critical.Impact, 0.001)
 
 	// high → 0.7 (SNYK-JS-ADMZIP-1065796)
 	high := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
@@ -379,8 +379,8 @@ func TestSeverityToImpact(t *testing.T) {
 		severity string
 		expected float64
 	}{
-		{"critical", 1.0},
-		{"CRITICAL", 1.0},
+		{"critical", 0.9},
+		{"CRITICAL", 0.9},
 		{"high", 0.7},
 		{"HIGH", 0.7},
 		{"medium", 0.5},

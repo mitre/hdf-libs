@@ -184,7 +184,7 @@ func TestConvertPrisma_SeverityMapping(t *testing.T) {
 		severity string
 		expected float64
 	}{
-		{"critical", 1.0},
+		{"critical", 0.9},
 		{"high", 0.7},
 		{"important", 0.9},
 		{"moderate", 0.5},
@@ -208,10 +208,10 @@ func TestConvertPrisma_ImpactValues(t *testing.T) {
 	host1 := findBaseline(result.Baselines, "host-1.example.com")
 	require.NotNil(t, host1)
 
-	// critical → 1.0
+	// critical → 0.9
 	req := findRequirement(host1.Requirements, "46-CVE-2021-44142")
 	require.NotNil(t, req)
-	assert.InDelta(t, 1.0, req.Impact, 0.001)
+	assert.InDelta(t, 0.9, req.Impact, 0.001)
 
 	// low → 0.3
 	req = findRequirement(host1.Requirements, "46-CVE-2016-2226")
