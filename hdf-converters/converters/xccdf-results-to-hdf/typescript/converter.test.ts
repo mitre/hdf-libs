@@ -2,8 +2,8 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
-import { convertXccdfResultsToHdf } from './converter.js';
-import type { HdfResults, EvaluatedRequirement } from '@mitre/hdf-schema';
+import { convertXccdfResultsToHdf, convertXccdfBenchmarkToHdf, convertXccdfToHdf } from './converter.js';
+import type { HdfResults, HdfBaseline, BaselineRequirement, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -17,11 +17,22 @@ async function parseHdf(fixture: string): Promise<HdfResults> {
   return JSON.parse(await convertXccdfResultsToHdf(loadFixture(fixture))) as HdfResults;
 }
 
+async function parseBaseline(fixture: string): Promise<HdfBaseline> {
+  return JSON.parse(await convertXccdfBenchmarkToHdf(loadFixture(fixture))) as HdfBaseline;
+}
+
 function findReq(
   hdf: HdfResults,
   id: string
 ): EvaluatedRequirement | undefined {
   return hdf.baselines[0]!.requirements.find((r) => r.id === id);
+}
+
+function findBaselineReq(
+  baseline: HdfBaseline,
+  id: string
+): BaselineRequirement | undefined {
+  return baseline.requirements.find((r) => r.id === id);
 }
 
 // ---------------------------------------------------------------------------
@@ -56,7 +67,7 @@ describe('xccdf-results-to-hdf converter', async () => {
           <status>incomplete</status>
           <version>1.0</version>
         </Benchmark>`;
-      await expect(convertXccdfResultsToHdf(xml)).rejects.toThrow(/TestResult/);
+      await expect(convertXccdfResultsToHdf(xml)).rejects.toThrow(/no TestResult/);
     });
   });
 
@@ -540,5 +551,195 @@ describe('xccdf-results-to-hdf converter', async () => {
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0]!.requirements).toHaveLength(5);
     });
+  });
+
+  // --- XCCDF 1.1 benchmark-only input (should error for results API) ---
+
+  describe('XCCDF 1.1 benchmark without TestResult', () => {
+    it('should error when calling convertXccdfResultsToHdf', async () => {
+      await expect(
+        convertXccdfResultsToHdf(loadFixture('benchmark-minimal-1.1.xml'))
+      ).rejects.toThrow(/no TestResult/);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Benchmark-to-Baseline conversion
+// ---------------------------------------------------------------------------
+
+describe('xccdf-benchmark-to-hdf converter', async () => {
+  describe('input validation', () => {
+    it('should throw on empty input', async () => {
+      await expect(convertXccdfBenchmarkToHdf('')).rejects.toThrow('Empty input');
+    });
+
+    it('should throw on non-XCCDF XML', async () => {
+      await expect(
+        convertXccdfBenchmarkToHdf('<?xml version="1.0"?><root/>')
+      ).rejects.toThrow(/not an XCCDF/i);
+    });
+
+    it('should throw on results document', async () => {
+      await expect(
+        convertXccdfBenchmarkToHdf(loadFixture('stig-rhel7.xml'))
+      ).rejects.toThrow(/TestResult/);
+    });
+  });
+
+  describe('XCCDF 1.1 minimal benchmark', () => {
+    it('should produce valid baseline structure', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+
+      expect(baseline.name).toBe('ms-windows-server-2022-stig');
+      expect(baseline.title).toBe('Microsoft Windows Server 2022 Security Technical Implementation Guide');
+      expect(baseline.version).toBe('2');
+      expect(baseline.status).toBe('loaded');
+      expect(baseline.summary).toContain('Security Technical Implementation Guide');
+      expect(baseline.requirements).toHaveLength(3);
+      expect(baseline.groups).toHaveLength(3);
+    });
+
+    it('should use Rule version as requirement ID', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+      const ids = baseline.requirements.map((r) => r.id);
+      expect(ids).toContain('WN22-00-000010');
+      expect(ids).toContain('WN22-00-000020');
+      expect(ids).toContain('WN22-00-000030');
+    });
+
+    it('should map severity to impact', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+      const req10 = findBaselineReq(baseline, 'WN22-00-000010');
+      expect(req10!.impact).toBe(0.5); // medium
+      const req30 = findBaselineReq(baseline, 'WN22-00-000030');
+      expect(req30!.impact).toBe(0.7); // high
+    });
+
+    it('should extract VulnDiscussion as default description', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+      const req = findBaselineReq(baseline, 'WN22-00-000010');
+      const defaultDesc = req!.descriptions.find((d) => d.label === 'default');
+      expect(defaultDesc).toBeDefined();
+      expect(defaultDesc!.data).toContain('privileged account');
+      expect(defaultDesc!.data).not.toContain('<VulnDiscussion>');
+    });
+
+    it('should extract check-content as check description', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+      const req = findBaselineReq(baseline, 'WN22-00-000010');
+      const checkDesc = req!.descriptions.find((d) => d.label === 'check');
+      expect(checkDesc).toBeDefined();
+      expect(checkDesc!.data).toContain('administrative privileges');
+    });
+
+    it('should extract fixtext as fix description', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+      const req = findBaselineReq(baseline, 'WN22-00-000010');
+      const fixDesc = req!.descriptions.find((d) => d.label === 'fix');
+      expect(fixDesc).toBeDefined();
+      expect(fixDesc!.data).toContain('separate account');
+    });
+
+    it('should extract CCI tags', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+      const req = findBaselineReq(baseline, 'WN22-00-000010');
+      expect(req!.tags['cci']).toContain('CCI-000366');
+      expect(req!.tags['nist']).toBeDefined();
+    });
+
+    it('should extract multiple CCI idents', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+      const req = findBaselineReq(baseline, 'WN22-00-000020');
+      const ccis = req!.tags['cci'] as string[];
+      expect(ccis).toHaveLength(2);
+      expect(ccis).toContain('CCI-004066');
+      expect(ccis).toContain('CCI-000199');
+    });
+
+    it('should include STIG-specific tags', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+      const req = findBaselineReq(baseline, 'WN22-00-000010');
+      expect(req!.tags['rid']).toBe('SV-254238r991589_rule');
+      expect(req!.tags['stig_id']).toBe('WN22-00-000010');
+      expect(req!.tags['severity']).toBe('medium');
+      expect(req!.tags['check_id']).toBe('C-57723r848528_chk');
+      expect(req!.tags['fix_id']).toBe('F-57674r848529_fix');
+      expect(req!.tags['gid']).toBe('V-254238');
+      expect(req!.tags['gtitle']).toBe('SRG-OS-000480-GPOS-00227');
+    });
+
+    it('should set groups', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+      expect(baseline.groups).toHaveLength(3);
+      expect(baseline.groups![0]!.id).toBe('V-254238');
+      expect(baseline.groups![0]!.title).toBe('SRG-OS-000480-GPOS-00227');
+      expect(baseline.groups![0]!.requirements).toEqual(['WN22-00-000010']);
+    });
+
+    it('should include generator', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+      expect(baseline.generator?.name).toBe('hdf-converters');
+      expect(baseline.generator?.version).toBe('1.0.0');
+    });
+
+    it('should include checksum', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+      expect(baseline.checksum?.algorithm).toBe('sha256');
+      expect(baseline.checksum?.value).toMatch(/^[a-f0-9]{64}$/);
+    });
+
+    it('should set severity field', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
+      const req = findBaselineReq(baseline, 'WN22-00-000010');
+      expect(req!.severity).toBe('medium');
+      const highReq = findBaselineReq(baseline, 'WN22-00-000030');
+      expect(highReq!.severity).toBe('high');
+    });
+  });
+
+  describe('XCCDF 1.2 minimal benchmark', () => {
+    it('should produce identical structure to 1.1', async () => {
+      const baseline = await parseBaseline('benchmark-minimal-1.2.xml');
+      expect(baseline.name).toBe('ms-windows-server-2022-stig');
+      expect(baseline.requirements).toHaveLength(3);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Auto-detect (convertXccdfToHdf)
+// ---------------------------------------------------------------------------
+
+describe('convertXccdfToHdf auto-detect', async () => {
+  it('should detect benchmark and return baseline', async () => {
+    const { json, outputType } = await convertXccdfToHdf(loadFixture('benchmark-minimal-1.1.xml'));
+    expect(outputType).toBe('baseline');
+    const baseline = JSON.parse(json) as HdfBaseline;
+    expect(baseline.name).toBe('ms-windows-server-2022-stig');
+    expect(baseline.requirements).toHaveLength(3);
+  });
+
+  it('should detect results and return results', async () => {
+    const { json, outputType } = await convertXccdfToHdf(loadFixture('stig-rhel7.xml'));
+    expect(outputType).toBe('results');
+    const results = JSON.parse(json) as HdfResults;
+    expect(results.baselines[0]!.requirements).toHaveLength(5);
+  });
+
+  it('should detect ARF and return results', async () => {
+    const { json, outputType } = await convertXccdfToHdf(loadFixture('arf-minimal.xml'));
+    expect(outputType).toBe('results');
+    expect(json).toBeTruthy();
+  });
+
+  it('should throw on empty input', async () => {
+    await expect(convertXccdfToHdf('')).rejects.toThrow('Empty input');
+  });
+
+  it('should throw on non-XCCDF input', async () => {
+    await expect(
+      convertXccdfToHdf('<?xml version="1.0"?><root/>')
+    ).rejects.toThrow(/not an XCCDF/i);
   });
 });
