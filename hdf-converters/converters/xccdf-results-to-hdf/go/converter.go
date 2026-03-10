@@ -2,6 +2,7 @@ package xccdf
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"log"
@@ -15,29 +16,39 @@ import (
 
 // XML namespace constants
 const (
-	xccdfNS = "http://checklists.nist.gov/xccdf/1.2"
-	arfNS   = "http://scap.nist.gov/schema/asset-reporting-format/1.1"
-	coreNS  = "http://scap.nist.gov/schema/reporting-core/1.1"
-	aiNS    = "http://scap.nist.gov/schema/asset-identification/1.1"
-	dsNS    = "http://scap.nist.gov/schema/scap/source/1.2"
+	xccdf12NS = "http://checklists.nist.gov/xccdf/1.2"
+	xccdf11NS = "http://checklists.nist.gov/xccdf/1.1"
+	arfNS     = "http://scap.nist.gov/schema/asset-reporting-format/1.1"
+	coreNS    = "http://scap.nist.gov/schema/reporting-core/1.1"
+	aiNS      = "http://scap.nist.gov/schema/asset-identification/1.1"
+	dsNS      = "http://scap.nist.gov/schema/scap/source/1.2"
 )
 
-// ---------------------------------------------------------------------------
-// XCCDF 1.2 XML structs
-// ---------------------------------------------------------------------------
+// isXccdfNS returns true if the namespace is either XCCDF 1.1 or 1.2.
+func isXccdfNS(ns string) bool {
+	return ns == xccdf12NS || ns == xccdf11NS
+}
 
-// Benchmark is the root element of an XCCDF 1.2 results document.
+// ---------------------------------------------------------------------------
+// XCCDF XML structs (namespace-agnostic for 1.1/1.2 compatibility)
+// ---------------------------------------------------------------------------
+// Namespace prefixes are intentionally omitted from XCCDF element tags so that
+// Go's encoding/xml matches both 1.1 and 1.2 namespaces. XCCDF element names
+// (Benchmark, Group, Rule, TestResult, etc.) are unique within the schema,
+// so there is no collision risk.
+
+// Benchmark is the root element of an XCCDF document.
 type Benchmark struct {
-	XMLName     xml.Name   `xml:"http://checklists.nist.gov/xccdf/1.2 Benchmark"`
-	ID          string     `xml:"id,attr"`
-	Status      string     `xml:"http://checklists.nist.gov/xccdf/1.2 status"`
-	Title       string     `xml:"http://checklists.nist.gov/xccdf/1.2 title"`
-	Description string     `xml:"http://checklists.nist.gov/xccdf/1.2 description"`
-	Version     string     `xml:"http://checklists.nist.gov/xccdf/1.2 version"`
-	Platform    Platform   `xml:"http://checklists.nist.gov/xccdf/1.2 platform"`
-	Groups      []Group    `xml:"http://checklists.nist.gov/xccdf/1.2 Group"`
-	Rules       []Rule     `xml:"http://checklists.nist.gov/xccdf/1.2 Rule"`
-	TestResult  TestResult `xml:"http://checklists.nist.gov/xccdf/1.2 TestResult"`
+	XMLName     xml.Name     `xml:"Benchmark"`
+	ID          string       `xml:"id,attr"`
+	Status      string       `xml:"status"`
+	Title       string       `xml:"title"`
+	Description string       `xml:"description"`
+	Version     string       `xml:"version"`
+	Platforms   []Platform   `xml:"platform"`
+	Groups      []Group      `xml:"Group"`
+	Rules       []Rule       `xml:"Rule"`
+	TestResult  TestResult   `xml:"TestResult"`
 }
 
 // Platform represents an XCCDF platform element.
@@ -48,8 +59,8 @@ type Platform struct {
 // Group represents an XCCDF Group containing a single Rule.
 type Group struct {
 	ID    string `xml:"id,attr"`
-	Title string `xml:"http://checklists.nist.gov/xccdf/1.2 title"`
-	Rule  Rule   `xml:"http://checklists.nist.gov/xccdf/1.2 Rule"`
+	Title string `xml:"title"`
+	Rule  Rule   `xml:"Rule"`
 }
 
 // Rule represents an XCCDF Rule within a Group or top-level Benchmark.
@@ -58,12 +69,18 @@ type Rule struct {
 	Selected    string  `xml:"selected,attr"`
 	Severity    string  `xml:"severity,attr"`
 	Weight      string  `xml:"weight,attr"`
-	Version     string  `xml:"http://checklists.nist.gov/xccdf/1.2 version"`
-	Title       string  `xml:"http://checklists.nist.gov/xccdf/1.2 title"`
-	Description string  `xml:"http://checklists.nist.gov/xccdf/1.2 description"`
-	Fixtext     string  `xml:"http://checklists.nist.gov/xccdf/1.2 fixtext"`
-	Idents      []Ident `xml:"http://checklists.nist.gov/xccdf/1.2 ident"`
-	Check       Check   `xml:"http://checklists.nist.gov/xccdf/1.2 check"`
+	Version     string  `xml:"version"`
+	Title       string  `xml:"title"`
+	Description string  `xml:"description"`
+	Fixtext     Fixtext `xml:"fixtext"`
+	Idents      []Ident `xml:"ident"`
+	Check       Check   `xml:"check"`
+}
+
+// Fixtext represents an XCCDF fixtext element with optional fixref attribute.
+type Fixtext struct {
+	Text   string `xml:",chardata"`
+	Fixref string `xml:"fixref,attr"`
 }
 
 // Ident represents an XCCDF ident element (CCI, CCE, etc.).
@@ -74,7 +91,8 @@ type Ident struct {
 
 // Check represents an XCCDF check element.
 type Check struct {
-	System string `xml:"system,attr"`
+	System       string `xml:"system,attr"`
+	CheckContent string `xml:"check-content"`
 }
 
 // TestResult represents the XCCDF TestResult element containing scan results.
@@ -83,17 +101,17 @@ type TestResult struct {
 	StartTime       string       `xml:"start-time,attr"`
 	EndTime         string       `xml:"end-time,attr"`
 	TestSystem      string       `xml:"test-system,attr"`
-	Title           string       `xml:"http://checklists.nist.gov/xccdf/1.2 title"`
-	Target          string       `xml:"http://checklists.nist.gov/xccdf/1.2 target"`
-	TargetAddresses []string     `xml:"http://checklists.nist.gov/xccdf/1.2 target-address"`
-	TargetFacts     TargetFacts  `xml:"http://checklists.nist.gov/xccdf/1.2 target-facts"`
-	RuleResults     []RuleResult `xml:"http://checklists.nist.gov/xccdf/1.2 rule-result"`
-	Score           Score        `xml:"http://checklists.nist.gov/xccdf/1.2 score"`
+	Title           string       `xml:"title"`
+	Target          string       `xml:"target"`
+	TargetAddresses []string     `xml:"target-address"`
+	TargetFacts     TargetFacts  `xml:"target-facts"`
+	RuleResults     []RuleResult `xml:"rule-result"`
+	Score           Score        `xml:"score"`
 }
 
 // TargetFacts holds key-value facts about the scan target.
 type TargetFacts struct {
-	Facts []Fact `xml:"http://checklists.nist.gov/xccdf/1.2 fact"`
+	Facts []Fact `xml:"fact"`
 }
 
 // Fact represents a single target fact.
@@ -109,9 +127,9 @@ type RuleResult struct {
 	Severity string  `xml:"severity,attr"`
 	Version  string  `xml:"version,attr"`
 	Weight   string  `xml:"weight,attr"`
-	Result   string  `xml:"http://checklists.nist.gov/xccdf/1.2 result"`
-	Idents   []Ident `xml:"http://checklists.nist.gov/xccdf/1.2 ident"`
-	Check    Check   `xml:"http://checklists.nist.gov/xccdf/1.2 check"`
+	Result   string  `xml:"result"`
+	Idents   []Ident `xml:"ident"`
+	Check    Check   `xml:"check"`
 }
 
 // Score represents the XCCDF score element.
@@ -124,6 +142,8 @@ type Score struct {
 // ---------------------------------------------------------------------------
 // ARF 1.1 XML structs
 // ---------------------------------------------------------------------------
+// ARF struct tags keep their namespaces because ARF documents contain multiple
+// schemas (ARF, SCAP, XCCDF, AI) where element name collisions are possible.
 
 // AssetReportCollection is the root element of an ARF document.
 type AssetReportCollection struct {
@@ -168,9 +188,11 @@ type DataStreamCollection struct {
 }
 
 // DSComponent holds a single component that may contain a Benchmark.
+// The Benchmark uses namespace-agnostic tag to match both 1.1 and 1.2,
+// but within ARF the Benchmark is always XCCDF 1.2.
 type DSComponent struct {
 	ID        string    `xml:"id,attr"`
-	Benchmark Benchmark `xml:"http://checklists.nist.gov/xccdf/1.2 Benchmark"`
+	Benchmark Benchmark `xml:"Benchmark"`
 }
 
 // ArfAssets contains the asset elements.
@@ -221,8 +243,9 @@ type ArfReport struct {
 
 // ArfReportContent holds the report payload. Only TestResult is populated
 // for XCCDF reports; OVAL reports leave TestResult empty.
+// Uses namespace-agnostic tag to match TestResult from both XCCDF 1.1 and 1.2.
 type ArfReportContent struct {
-	TestResult TestResult `xml:"http://checklists.nist.gov/xccdf/1.2 TestResult"`
+	TestResult TestResult `xml:"TestResult"`
 }
 
 // ---------------------------------------------------------------------------
@@ -230,7 +253,7 @@ type ArfReportContent struct {
 // ---------------------------------------------------------------------------
 
 // severityToImpact was formerly a local map; now uses shared.SeverityToImpact.
-// XCCDF 1.2 defines three severity levels (high, medium, low) which are all
+// XCCDF defines three severity levels (high, medium, low) which are all
 // covered by the standard mapping. Default for unknown severity is 0.5.
 
 // resultStatusMapping maps XCCDF result strings to HDF ResultStatus values.
@@ -250,8 +273,9 @@ var resultStatusMapping = map[string]hdf.ResultStatus{
 // Public API
 // ---------------------------------------------------------------------------
 
-// ConvertXccdfResultsToHDF converts XCCDF 1.2 or ARF 1.1 XML to HDF format.
-// It detects the input format from the root element and delegates accordingly.
+// ConvertXccdfResultsToHDF converts XCCDF (1.1 or 1.2) results or ARF 1.1
+// XML to HDF Results format. The input must contain TestResult elements.
+// For benchmark-only documents (no TestResult), use ConvertXccdfBenchmarkToHDF.
 func ConvertXccdfResultsToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
@@ -264,12 +288,99 @@ func ConvertXccdfResultsToHDF(input []byte, converterVersion string) (*hdf.HDFRe
 
 	rootLocal, rootSpace := peekRootElement(input)
 	switch {
-	case rootLocal == "Benchmark" && rootSpace == xccdfNS:
-		return convertBenchmarkToHDF(input, converterVersion, resultsChecksum)
+	case rootLocal == "Benchmark" && isXccdfNS(rootSpace):
+		return convertBenchmarkResultsToHDF(input, converterVersion, resultsChecksum)
 	case rootLocal == "asset-report-collection" && rootSpace == arfNS:
 		return convertArfToHDF(input, converterVersion, resultsChecksum)
 	default:
 		return nil, fmt.Errorf("input is not an XCCDF or ARF document")
+	}
+}
+
+// ConvertXccdfBenchmarkToHDF converts an XCCDF benchmark document (no TestResult)
+// to HDF Baseline format. Supports both XCCDF 1.1 and 1.2 namespaces.
+func ConvertXccdfBenchmarkToHDF(input []byte, converterVersion string) (*hdf.HDFBaseline, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("empty input")
+	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return nil, fmt.Errorf("xccdf: %w", err)
+	}
+
+	rootLocal, rootSpace := peekRootElement(input)
+	if rootLocal != "Benchmark" || !isXccdfNS(rootSpace) {
+		return nil, fmt.Errorf("input is not an XCCDF Benchmark document")
+	}
+
+	var benchmark Benchmark
+	if err := xml.Unmarshal(input, &benchmark); err != nil {
+		return nil, fmt.Errorf("failed to parse XCCDF XML: %w", err)
+	}
+
+	if benchmark.TestResult.ID != "" {
+		return nil, fmt.Errorf("input contains TestResult elements — this is a results document, not a benchmark. Use 'xccdf-results' or 'xccdf' instead")
+	}
+
+	return convertBenchmarkToBaseline(&benchmark, input, converterVersion)
+}
+
+// ConvertXccdfToHDF auto-detects whether the input is an XCCDF benchmark or
+// results document (or ARF), and returns the appropriate JSON output.
+// Returns (json, "baseline"|"results", error).
+func ConvertXccdfToHDF(input []byte, converterVersion string) ([]byte, string, error) {
+	if len(input) == 0 {
+		return nil, "", fmt.Errorf("empty input")
+	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return nil, "", fmt.Errorf("xccdf: %w", err)
+	}
+
+	rootLocal, rootSpace := peekRootElement(input)
+
+	switch {
+	case rootLocal == "asset-report-collection" && rootSpace == arfNS:
+		result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+		if err != nil {
+			return nil, "", err
+		}
+		out, err := json.MarshalIndent(result, "", "  ")
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to serialize HDF output: %w", err)
+		}
+		return out, "results", nil
+
+	case rootLocal == "Benchmark" && isXccdfNS(rootSpace):
+		var benchmark Benchmark
+		if err := xml.Unmarshal(input, &benchmark); err != nil {
+			return nil, "", fmt.Errorf("failed to parse XCCDF XML: %w", err)
+		}
+
+		if benchmark.TestResult.ID != "" {
+			// Has TestResult -> results
+			result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+			if err != nil {
+				return nil, "", err
+			}
+			out, err := json.MarshalIndent(result, "", "  ")
+			if err != nil {
+				return nil, "", fmt.Errorf("failed to serialize HDF output: %w", err)
+			}
+			return out, "results", nil
+		}
+
+		// No TestResult -> baseline
+		baseline, err := convertBenchmarkToBaseline(&benchmark, input, converterVersion)
+		if err != nil {
+			return nil, "", err
+		}
+		out, err := json.MarshalIndent(baseline, "", "  ")
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to serialize HDF output: %w", err)
+		}
+		return out, "baseline", nil
+
+	default:
+		return nil, "", fmt.Errorf("input is not an XCCDF or ARF document")
 	}
 }
 
@@ -293,17 +404,17 @@ func peekRootElement(input []byte) (local, space string) {
 }
 
 // ---------------------------------------------------------------------------
-// XCCDF Benchmark conversion (existing path)
+// XCCDF Benchmark results conversion (existing path)
 // ---------------------------------------------------------------------------
 
-func convertBenchmarkToHDF(input []byte, converterVersion string, resultsChecksum *hdf.Checksum) (*hdf.HDFResults, error) {
+func convertBenchmarkResultsToHDF(input []byte, converterVersion string, resultsChecksum *hdf.Checksum) (*hdf.HDFResults, error) {
 	var benchmark Benchmark
 	if err := xml.Unmarshal(input, &benchmark); err != nil {
 		return nil, fmt.Errorf("failed to parse XCCDF XML: %w", err)
 	}
 
-	if benchmark.XMLName.Local != "Benchmark" || benchmark.XMLName.Space != xccdfNS {
-		return nil, fmt.Errorf("input is not an XCCDF 1.2 Benchmark document")
+	if benchmark.TestResult.ID == "" {
+		return nil, fmt.Errorf("input has no TestResult elements — this is a benchmark. Use 'xccdf-benchmark' or 'xccdf' instead")
 	}
 
 	ruleMap := buildRuleMap(&benchmark)
@@ -350,6 +461,170 @@ func convertBenchmarkToHDF(input []byte, converterVersion string, resultsChecksu
 			Duration: &duration,
 		},
 	}), nil
+}
+
+// ---------------------------------------------------------------------------
+// Benchmark-to-Baseline conversion
+// ---------------------------------------------------------------------------
+
+func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVersion string) (*hdf.HDFBaseline, error) {
+	checksum := shared.InputChecksum(input)
+
+	var requirements []hdf.BaselineRequirement
+	var groups []hdf.RequirementGroup
+
+	for i := range benchmark.Groups {
+		group := &benchmark.Groups[i]
+		rule := &group.Rule
+		if rule.ID == "" {
+			continue
+		}
+		req := convertRuleToBaselineRequirement(rule, group)
+		requirements = append(requirements, req)
+		groups = append(groups, hdf.RequirementGroup{
+			ID:           group.ID,
+			Title:        shared.Ptr(group.Title),
+			Requirements: []string{req.ID},
+		})
+	}
+
+	for i := range benchmark.Rules {
+		rule := &benchmark.Rules[i]
+		if rule.ID == "" {
+			continue
+		}
+		req := convertRuleToBaselineRequirement(rule, nil)
+		requirements = append(requirements, req)
+	}
+
+	baselineName := kebabCase(benchmark.ID)
+	status := "loaded"
+
+	baseline := &hdf.HDFBaseline{
+		Name:         baselineName,
+		Title:        shared.Ptr(benchmark.Title),
+		Version:      shared.Ptr(benchmark.Version),
+		Status:       &status,
+		Summary:      shared.Ptr(shared.StripHTML(benchmark.Description)),
+		Checksum:     checksum,
+		Requirements: requirements,
+		Groups:       groups,
+		Generator: &hdf.Generator{
+			Name:    "hdf-converters",
+			Version: converterVersion,
+		},
+	}
+
+	return baseline, nil
+}
+
+// convertRuleToBaselineRequirement converts a single XCCDF Rule into an HDF
+// BaselineRequirement for benchmark-to-baseline conversion.
+func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequirement {
+	id := rule.Version
+	if id == "" {
+		id = rule.ID
+	}
+
+	severity := strings.ToLower(rule.Severity)
+	impact := shared.SeverityToImpact(severity, 0.5)
+
+	descriptions := buildBaselineDescriptions(rule)
+	tags := buildBaselineTags(rule, group)
+
+	var severityPtr *hdf.Severity
+	if rule.Severity != "" {
+		s := hdf.Severity(strings.ToLower(rule.Severity))
+		severityPtr = &s
+	}
+
+	return hdf.BaselineRequirement{
+		ID:           id,
+		Title:        shared.Ptr(rule.Title),
+		Impact:       impact,
+		Severity:     severityPtr,
+		Descriptions: descriptions,
+		Tags:         tags,
+	}
+}
+
+// buildBaselineDescriptions creates HDF Description entries for a baseline requirement.
+func buildBaselineDescriptions(rule *Rule) []hdf.Description {
+	var descriptions []hdf.Description
+
+	if rule.Description != "" {
+		descText := extractVulnDiscussion(rule.Description)
+		descriptions = append(descriptions, hdf.Description{
+			Label: "default",
+			Data:  shared.StripHTML(descText),
+		})
+	} else {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "default",
+			Data:  "",
+		})
+	}
+
+	if rule.Check.CheckContent != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "check",
+			Data:  shared.StripHTML(rule.Check.CheckContent),
+		})
+	}
+
+	if rule.Fixtext.Text != "" {
+		descriptions = append(descriptions, hdf.Description{
+			Label: "fix",
+			Data:  shared.StripHTML(rule.Fixtext.Text),
+		})
+	}
+
+	return descriptions
+}
+
+// buildBaselineTags constructs the tags map for a baseline requirement.
+func buildBaselineTags(rule *Rule, group *Group) map[string]interface{} {
+	tags := make(map[string]interface{})
+
+	var cciIDs []string
+	for _, ident := range rule.Idents {
+		if isCCIIdent(ident) {
+			cciIDs = append(cciIDs, ident.Value)
+		}
+	}
+	cciIDs = dedup(cciIDs)
+
+	if len(cciIDs) > 0 {
+		tags["cci"] = cciIDs
+		tags["nist"] = cci.CCIToNIST(cciIDs)
+	} else {
+		tags["nist"] = []string{}
+	}
+
+	// STIG-specific tags
+	tags["rid"] = rule.ID
+	tags["stig_id"] = rule.Version
+	if rule.Severity != "" {
+		tags["severity"] = strings.ToLower(rule.Severity)
+	}
+	if rule.Check.System != "" {
+		tags["check_id"] = rule.Check.System
+	}
+	if rule.Fixtext.Fixref != "" {
+		tags["fix_id"] = rule.Fixtext.Fixref
+	}
+	if group != nil {
+		tags["gid"] = group.ID
+		tags["gtitle"] = group.Title
+	}
+
+	return tags
+}
+
+// kebabCase converts a string like "MS_Windows_Server_2022_STIG" to
+// "ms-windows-server-2022-stig".
+func kebabCase(s string) string {
+	return strings.ToLower(strings.ReplaceAll(s, "_", "-"))
 }
 
 // ---------------------------------------------------------------------------
@@ -650,10 +925,10 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 		})
 	}
 
-	if rule != nil && rule.Fixtext != "" {
+	if rule != nil && rule.Fixtext.Text != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
-			Data:  shared.StripHTML(rule.Fixtext),
+			Data:  shared.StripHTML(rule.Fixtext.Text),
 		})
 	}
 

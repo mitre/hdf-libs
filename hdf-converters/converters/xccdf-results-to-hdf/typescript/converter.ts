@@ -2,16 +2,20 @@ import { parseXmlWithArrays } from '@mitre/hdf-utilities';
 import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
+  HdfBaseline,
+  BaselineRequirement,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
   Description,
+  RequirementGroup,
   Target,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
   Copyright,
+  Severity,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -72,6 +76,12 @@ interface RuleElement {
   version?: string | VersionElement;
   fixtext?: string | FixtextElement;
   ident?: IdentElement[];
+  check?: CheckElement;
+}
+
+interface CheckElement {
+  system?: string;
+  'check-content'?: string | TextElement;
 }
 
 interface FixtextElement {
@@ -192,6 +202,7 @@ const ARRAY_TAGS = [
   'set-value',
   'target-address',
   'platform',
+  'check-content',
   // ARF-specific array tags
   'report',
   'report-request',
@@ -221,10 +232,12 @@ const STATUS_MAP: Record<string, ResultStatus> = {
 // ---------------------------------------------------------------------------
 
 /**
- * Converts an XCCDF 1.2 or ARF 1.1 XML document to HDF JSON.
+ * Converts an XCCDF results document (1.1 or 1.2) or ARF 1.1 XML to HDF Results JSON.
+ * The input must contain TestResult elements.
+ * For benchmark-only documents (no TestResult), use convertXccdfBenchmarkToHdf.
  *
- * @param input - Raw XML string (XCCDF Benchmark or ARF asset-report-collection)
- * @returns Stringified HDF JSON
+ * @param input - Raw XML string (XCCDF Benchmark with TestResult, or ARF asset-report-collection)
+ * @returns Stringified HDF Results JSON
  */
 export async function convertXccdfResultsToHdf(input: string): Promise<string> {
   if (!input || !input.trim()) {
@@ -248,23 +261,96 @@ export async function convertXccdfResultsToHdf(input: string): Promise<string> {
     );
   }
 
-  return convertBenchmarkToHdf(benchmark, input);
+  if (!benchmark.TestResult) {
+    throw new Error(
+      "Input has no TestResult elements — this is a benchmark. Use 'xccdf-benchmark' or 'xccdf' instead"
+    );
+  }
+
+  return convertBenchmarkResultsToHdf(benchmark, input);
+}
+
+/**
+ * Converts an XCCDF benchmark document (no TestResult) to HDF Baseline JSON.
+ * Supports both XCCDF 1.1 and 1.2 (namespace-agnostic via fast-xml-parser).
+ *
+ * @param input - Raw XML string (XCCDF Benchmark without TestResult)
+ * @returns Stringified HDF Baseline JSON
+ */
+export async function convertXccdfBenchmarkToHdf(input: string): Promise<string> {
+  if (!input || !input.trim()) {
+    throw new Error('Empty input');
+  }
+  validateInputSize(input, 'xccdf-benchmark');
+
+  const parsed = parseXmlWithArrays(input, ARRAY_TAGS);
+  const xccdfParsed = parsed as XccdfBenchmark;
+  const benchmark = xccdfParsed.Benchmark;
+
+  if (!benchmark) {
+    throw new Error(
+      'Input is not an XCCDF Benchmark document'
+    );
+  }
+
+  if (benchmark.TestResult) {
+    throw new Error(
+      "Input contains TestResult elements — this is a results document, not a benchmark. Use 'xccdf-results' or 'xccdf' instead"
+    );
+  }
+
+  return convertBenchmarkToBaselineJson(benchmark, input);
+}
+
+/**
+ * Auto-detects whether the input is an XCCDF benchmark, results, or ARF
+ * document and returns the appropriate JSON output.
+ *
+ * @param input - Raw XML string
+ * @returns Object with json output and outputType ('baseline' or 'results')
+ */
+export async function convertXccdfToHdf(input: string): Promise<{ json: string; outputType: 'baseline' | 'results' }> {
+  if (!input || !input.trim()) {
+    throw new Error('Empty input');
+  }
+  validateInputSize(input, 'xccdf');
+
+  const parsed = parseXmlWithArrays(input, ARRAY_TAGS);
+
+  // Check ARF first
+  const arfParsed = parsed as ArfParsed;
+  if (arfParsed['asset-report-collection']) {
+    const json = await convertArfCollection(arfParsed['asset-report-collection'], input);
+    return { json, outputType: 'results' };
+  }
+
+  // Check XCCDF Benchmark
+  const xccdfParsed = parsed as XccdfBenchmark;
+  const benchmark = xccdfParsed.Benchmark;
+  if (!benchmark) {
+    throw new Error(
+      'Input is not an XCCDF or ARF document'
+    );
+  }
+
+  if (benchmark.TestResult) {
+    const json = await convertBenchmarkResultsToHdf(benchmark, input);
+    return { json, outputType: 'results' };
+  }
+
+  const json = await convertBenchmarkToBaselineJson(benchmark, input);
+  return { json, outputType: 'baseline' };
 }
 
 // ---------------------------------------------------------------------------
-// XCCDF Benchmark conversion (existing path)
+// XCCDF Benchmark results conversion (existing path)
 // ---------------------------------------------------------------------------
 
-async function convertBenchmarkToHdf(
+async function convertBenchmarkResultsToHdf(
   benchmark: BenchmarkElement,
   rawInput: string
 ): Promise<string> {
-  const testResult = benchmark.TestResult;
-  if (!testResult) {
-    throw new Error(
-      'XCCDF document does not contain a <TestResult> element'
-    );
-  }
+  const testResult = benchmark.TestResult!;
 
   const ruleIndex = buildRuleIndex(benchmark);
 
@@ -316,6 +402,140 @@ async function convertBenchmarkToHdf(
   }
 
   return JSON.stringify(hdf, null, 2);
+}
+
+// ---------------------------------------------------------------------------
+// Benchmark-to-Baseline conversion
+// ---------------------------------------------------------------------------
+
+async function convertBenchmarkToBaselineJson(
+  benchmark: BenchmarkElement,
+  rawInput: string
+): Promise<string> {
+  const checksum: Checksum = await inputChecksum(rawInput);
+
+  const requirements: BaselineRequirement[] = [];
+  const groups: RequirementGroup[] = [];
+
+  const benchmarkGroups = benchmark.Group ?? [];
+  for (const group of benchmarkGroups) {
+    const groupRules = group.Rule ?? [];
+    for (const rule of groupRules) {
+      if (!rule.id) {
+        continue;
+      }
+      const req = ruleToBaselineRequirement(rule, group);
+      requirements.push(req);
+      groups.push({
+        id: group.id ?? '',
+        title: extractText(group.title),
+        requirements: [req.id],
+      });
+    }
+  }
+
+  const topRules = benchmark.Rule ?? [];
+  for (const rule of topRules) {
+    if (!rule.id) {
+      continue;
+    }
+    const req = ruleToBaselineRequirement(rule, undefined);
+    requirements.push(req);
+  }
+
+  const baselineName = kebabCase(benchmark.id ?? 'xccdf-benchmark');
+
+  const baseline: HdfBaseline = {
+    name: baselineName,
+    title: extractText(benchmark.title),
+    version: extractVersion(benchmark.version),
+    status: 'loaded',
+    summary: extractText(benchmark.description),
+    checksum,
+    requirements,
+    groups,
+    generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
+  };
+
+  return JSON.stringify(baseline, null, 2);
+}
+
+/**
+ * Convert a single XCCDF Rule to an HDF BaselineRequirement.
+ */
+function ruleToBaselineRequirement(
+  rule: RuleElement,
+  group: GroupElement | undefined
+): BaselineRequirement {
+  const id = extractVersion(rule.version) || rule.id || '';
+  const title = extractText(rule.title) || id;
+  const severity = rule.severity ?? '';
+  const impact = severity ? severityToImpact(severity) : 0.5;
+
+  const descriptions: Description[] = [];
+  const rawDesc = extractText(rule.description);
+  if (rawDesc) {
+    descriptions.push({
+      label: 'default',
+      data: extractVulnDiscussion(rawDesc),
+    });
+  } else {
+    descriptions.push({ label: 'default', data: '' });
+  }
+
+  const checkContent = extractCheckContent(rule.check);
+  if (checkContent) {
+    descriptions.push({ label: 'check', data: checkContent });
+  }
+
+  const fixtext = extractFixtext(rule.fixtext);
+  if (fixtext) {
+    descriptions.push({ label: 'fix', data: fixtext });
+  }
+
+  const tags: Record<string, unknown> = {};
+  const cciIds = extractCCIs(rule.ident ?? []);
+  if (cciIds.length > 0) {
+    tags['cci'] = cciIds;
+    const nistTags = cciIds.flatMap(
+      (cci) => getCCINistMappings(cci) ?? []
+    );
+    if (nistTags.length > 0) {
+      tags['nist'] = [...new Set(nistTags)];
+    }
+  }
+
+  // STIG-specific tags
+  tags['rid'] = rule.id;
+  tags['stig_id'] = extractVersion(rule.version);
+  if (severity) {
+    tags['severity'] = severity.toLowerCase();
+  }
+  if (rule.check?.system) {
+    tags['check_id'] = rule.check.system;
+  }
+  const fixtextObj = rule.fixtext;
+  if (fixtextObj && typeof fixtextObj !== 'string' && fixtextObj.fixref) {
+    tags['fix_id'] = fixtextObj.fixref;
+  }
+  if (group) {
+    tags['gid'] = group.id;
+    tags['gtitle'] = extractText(group.title);
+  }
+
+  const req: BaselineRequirement = {
+    id,
+    title,
+    impact,
+    descriptions,
+    tags,
+  };
+
+  if (severity) {
+    req.severity = severity.toLowerCase() as Severity;
+  }
+
+  return req;
 }
 
 // ---------------------------------------------------------------------------
@@ -655,6 +875,36 @@ function extractFixtext(
 }
 
 /**
+ * Extract check-content text from a check element.
+ */
+function extractCheckContent(
+  check: CheckElement | undefined
+): string {
+  if (!check) {
+    return '';
+  }
+  const cc = check['check-content'];
+  if (!cc) {
+    return '';
+  }
+  if (typeof cc === 'string') {
+    return cc;
+  }
+  // check-content is forced into an array by ARRAY_TAGS — handle both cases
+  if (Array.isArray(cc)) {
+    const first = (cc as unknown[])[0];
+    if (typeof first === 'string') {
+      return first;
+    }
+    if (first && typeof first === 'object' && '#text' in first) {
+      return (first as TextElement)['#text'] ?? '';
+    }
+    return '';
+  }
+  return (cc as TextElement)['#text'] ?? '';
+}
+
+/**
  * Extract the VulnDiscussion text from an XCCDF description that contains
  * embedded XML like `<VulnDiscussion>...</VulnDiscussion>`. If no
  * VulnDiscussion tag is found, returns the original text.
@@ -684,4 +934,11 @@ function extractCCIs(idents: IdentElement[]): string[] {
     .filter((i) => i.system === CCI_SYSTEM)
     .map((i) => i['#text'] ?? '')
     .filter((v) => v.length > 0);
+}
+
+/**
+ * Convert a string to kebab-case (e.g., "MS_Windows_Server_2022_STIG" -> "ms-windows-server-2022-stig").
+ */
+function kebabCase(s: string): string {
+  return s.toLowerCase().replace(/_/g, '-');
 }

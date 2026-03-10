@@ -1,6 +1,7 @@
 package xccdf
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -51,8 +52,7 @@ func TestConvertXccdfResultsToHDF_NonXccdfXML(t *testing.T) {
 }
 
 func TestConvertXccdfResultsToHDF_WrongNamespaceXML(t *testing.T) {
-	// XCCDF-like structure but wrong namespace - Go xml.Unmarshal rejects
-	// the mismatched namespace, so we get a parse-level error.
+	// XCCDF-like structure but wrong namespace
 	input := []byte(`<?xml version="1.0"?><Benchmark xmlns="http://wrong.namespace"><title>test</title></Benchmark>`)
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
 	assert.Error(t, err)
@@ -490,6 +490,24 @@ func TestDedup(t *testing.T) {
 	}
 }
 
+func TestKebabCase(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"MS_Windows_Server_2022_STIG", "ms-windows-server-2022-stig"},
+		{"simple", "simple"},
+		{"UPPER_CASE", "upper-case"},
+		{"", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			assert.Equal(t, tt.expected, kebabCase(tt.input))
+		})
+	}
+}
+
 // --- ARF fixture tests ---
 
 func TestConvertARF_Minimal(t *testing.T) {
@@ -608,6 +626,330 @@ func TestConvertARF_ExistingXccdfStillWorks(t *testing.T) {
 	assert.Len(t, result.Baselines[0].Requirements, 5)
 }
 
+func TestConvertXccdfResultsToHDF_EntityExpansion(t *testing.T) {
+	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
+	_, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+// --- XCCDF 1.1 namespace tests ---
+
+func TestConvertXccdfResultsToHDF_XCCDF11Rejected(t *testing.T) {
+	// XCCDF 1.1 benchmark without TestResult should error when calling
+	// ConvertXccdfResultsToHDF (requires TestResult)
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "no TestResult")
+}
+
+func TestConvertXccdfResultsToHDF_XCCDF12Rejected(t *testing.T) {
+	// XCCDF 1.2 benchmark without TestResult should error when calling
+	// ConvertXccdfResultsToHDF (requires TestResult)
+	input := loadFixture(t, "benchmark-minimal-1.2.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "no TestResult")
+}
+
+// --- Benchmark-to-Baseline tests ---
+
+func TestConvertXccdfBenchmarkToHDF_Minimal11(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	assert.Equal(t, "ms-windows-server-2022-stig", result.Name)
+	require.NotNil(t, result.Title)
+	assert.Equal(t, "Microsoft Windows Server 2022 Security Technical Implementation Guide", *result.Title)
+	require.NotNil(t, result.Version)
+	assert.Equal(t, "2", *result.Version)
+	require.NotNil(t, result.Summary)
+	assert.Contains(t, *result.Summary, "Security Technical Implementation Guide")
+
+	assert.Len(t, result.Requirements, 3)
+	assert.Len(t, result.Groups, 3)
+}
+
+func TestConvertXccdfBenchmarkToHDF_Minimal12(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.2.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Should produce identical structure regardless of namespace
+	assert.Equal(t, "ms-windows-server-2022-stig", result.Name)
+	assert.Len(t, result.Requirements, 3)
+}
+
+func TestConvertXccdfBenchmarkToHDF_RequirementIDs(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	ids := make([]string, len(result.Requirements))
+	for i, req := range result.Requirements {
+		ids[i] = req.ID
+	}
+
+	// IDs should use Rule <version> text (STIG IDs)
+	assert.Contains(t, ids, "WN22-00-000010")
+	assert.Contains(t, ids, "WN22-00-000020")
+	assert.Contains(t, ids, "WN22-00-000030")
+}
+
+func TestConvertXccdfBenchmarkToHDF_SeverityMapping(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	reqMap := make(map[string]hdf.BaselineRequirement)
+	for _, req := range result.Requirements {
+		reqMap[req.ID] = req
+	}
+
+	// WN22-00-000010: medium -> 0.5
+	assert.Equal(t, 0.5, reqMap["WN22-00-000010"].Impact)
+	// WN22-00-000030: high -> 0.7
+	assert.Equal(t, 0.7, reqMap["WN22-00-000030"].Impact)
+}
+
+func TestConvertXccdfBenchmarkToHDF_Descriptions(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := findBaselineRequirement(result.Requirements, "WN22-00-000010")
+	require.NotNil(t, req)
+
+	// Should have default, check, and fix descriptions
+	defaultDesc := findDescription(req.Descriptions, "default")
+	require.NotNil(t, defaultDesc)
+	assert.Contains(t, defaultDesc.Data, "privileged account")
+	assert.NotContains(t, defaultDesc.Data, "<VulnDiscussion>")
+
+	checkDesc := findDescription(req.Descriptions, "check")
+	require.NotNil(t, checkDesc)
+	assert.Contains(t, checkDesc.Data, "administrative privileges")
+
+	fixDesc := findDescription(req.Descriptions, "fix")
+	require.NotNil(t, fixDesc)
+	assert.Contains(t, fixDesc.Data, "separate account")
+}
+
+func TestConvertXccdfBenchmarkToHDF_CCITags(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := findBaselineRequirement(result.Requirements, "WN22-00-000010")
+	require.NotNil(t, req)
+
+	cciTag, ok := req.Tags["cci"]
+	require.True(t, ok)
+	cciSlice, ok := cciTag.([]string)
+	require.True(t, ok)
+	assert.Contains(t, cciSlice, "CCI-000366")
+
+	nistTag, ok := req.Tags["nist"]
+	require.True(t, ok)
+	nistSlice, ok := nistTag.([]string)
+	require.True(t, ok)
+	assert.NotEmpty(t, nistSlice)
+}
+
+func TestConvertXccdfBenchmarkToHDF_MultipleCCIs(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := findBaselineRequirement(result.Requirements, "WN22-00-000020")
+	require.NotNil(t, req)
+
+	cciTag, ok := req.Tags["cci"]
+	require.True(t, ok)
+	cciSlice, ok := cciTag.([]string)
+	require.True(t, ok)
+	// WN22-00-000020 has 2 CCI idents
+	assert.Len(t, cciSlice, 2)
+	assert.Contains(t, cciSlice, "CCI-004066")
+	assert.Contains(t, cciSlice, "CCI-000199")
+}
+
+func TestConvertXccdfBenchmarkToHDF_STIGTags(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := findBaselineRequirement(result.Requirements, "WN22-00-000010")
+	require.NotNil(t, req)
+
+	assert.Equal(t, "SV-254238r991589_rule", req.Tags["rid"])
+	assert.Equal(t, "WN22-00-000010", req.Tags["stig_id"])
+	assert.Equal(t, "medium", req.Tags["severity"])
+	assert.Equal(t, "C-57723r848528_chk", req.Tags["check_id"])
+	assert.Equal(t, "F-57674r848529_fix", req.Tags["fix_id"])
+	assert.Equal(t, "V-254238", req.Tags["gid"])
+	assert.Equal(t, "SRG-OS-000480-GPOS-00227", req.Tags["gtitle"])
+}
+
+func TestConvertXccdfBenchmarkToHDF_Groups(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Groups, 3)
+	assert.Equal(t, "V-254238", result.Groups[0].ID)
+	require.NotNil(t, result.Groups[0].Title)
+	assert.Equal(t, "SRG-OS-000480-GPOS-00227", *result.Groups[0].Title)
+	assert.Equal(t, []string{"WN22-00-000010"}, result.Groups[0].Requirements)
+}
+
+func TestConvertXccdfBenchmarkToHDF_Generator(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Generator)
+	assert.Equal(t, "hdf-converters", result.Generator.Name)
+	assert.Equal(t, converterVersion, result.Generator.Version)
+}
+
+func TestConvertXccdfBenchmarkToHDF_Checksum(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Checksum)
+	assert.Equal(t, hdf.Sha256, result.Checksum.Algorithm)
+	assert.Len(t, result.Checksum.Value, 64)
+}
+
+func TestConvertXccdfBenchmarkToHDF_ErrorOnResults(t *testing.T) {
+	// Results documents should produce a helpful error message
+	input := loadFixture(t, "stig-rhel7.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "TestResult")
+	assert.Contains(t, err.Error(), "xccdf-results")
+}
+
+func TestConvertXccdfBenchmarkToHDF_EmptyInput(t *testing.T) {
+	result, err := ConvertXccdfBenchmarkToHDF([]byte{}, converterVersion)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "empty input")
+}
+
+func TestConvertXccdfBenchmarkToHDF_NonXccdfInput(t *testing.T) {
+	input := []byte(`<?xml version="1.0"?><root><child>text</child></root>`)
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "not an XCCDF")
+}
+
+func TestConvertXccdfBenchmarkToHDF_Severity(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := findBaselineRequirement(result.Requirements, "WN22-00-000010")
+	require.NotNil(t, req)
+	require.NotNil(t, req.Severity)
+	assert.Equal(t, hdf.Medium, *req.Severity)
+
+	highReq := findBaselineRequirement(result.Requirements, "WN22-00-000030")
+	require.NotNil(t, highReq)
+	require.NotNil(t, highReq.Severity)
+	assert.Equal(t, hdf.High, *highReq.Severity)
+}
+
+// --- ConvertXccdfToHDF auto-detect tests ---
+
+func TestConvertXccdfToHDF_AutoDetectBenchmark(t *testing.T) {
+	input := loadFixture(t, "benchmark-minimal-1.1.xml")
+	output, outputType, err := ConvertXccdfToHDF(input, converterVersion)
+	require.NoError(t, err)
+	assert.Equal(t, "baseline", outputType)
+	assert.NotEmpty(t, output)
+
+	// Verify it's valid baseline JSON
+	var baseline hdf.HDFBaseline
+	err = json.Unmarshal(output, &baseline)
+	require.NoError(t, err)
+	assert.Equal(t, "ms-windows-server-2022-stig", baseline.Name)
+	assert.Len(t, baseline.Requirements, 3)
+}
+
+func TestConvertXccdfToHDF_AutoDetectResults(t *testing.T) {
+	input := loadFixture(t, "stig-rhel7.xml")
+	output, outputType, err := ConvertXccdfToHDF(input, converterVersion)
+	require.NoError(t, err)
+	assert.Equal(t, "results", outputType)
+	assert.NotEmpty(t, output)
+
+	// Verify it's valid results JSON
+	var results hdf.HDFResults
+	err = json.Unmarshal(output, &results)
+	require.NoError(t, err)
+	assert.Len(t, results.Baselines[0].Requirements, 5)
+}
+
+func TestConvertXccdfToHDF_AutoDetectARF(t *testing.T) {
+	input := loadFixture(t, "arf-minimal.xml")
+	output, outputType, err := ConvertXccdfToHDF(input, converterVersion)
+	require.NoError(t, err)
+	assert.Equal(t, "results", outputType)
+	assert.NotEmpty(t, output)
+}
+
+func TestConvertXccdfToHDF_EmptyInput(t *testing.T) {
+	_, _, err := ConvertXccdfToHDF([]byte{}, converterVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "empty input")
+}
+
+func TestConvertXccdfToHDF_InvalidInput(t *testing.T) {
+	_, _, err := ConvertXccdfToHDF([]byte("not xml"), converterVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not an XCCDF")
+}
+
+// --- Full Win2022 STIG test (if file exists) ---
+
+func TestConvertXccdfBenchmarkToHDF_FullWin2022STIG(t *testing.T) {
+	// Test with full Win2022 STIG if available (283 requirements)
+	stigPath := filepath.Join(shared.GetConvertersDir(), "..", "..", "U_MS_Windows_Server_2022_STIG_V2R7_Manual-xccdf.xml")
+	data, err := os.ReadFile(stigPath)
+	if err != nil {
+		t.Skip("Full Win2022 STIG not available at expected path")
+	}
+
+	result, err := ConvertXccdfBenchmarkToHDF(data, converterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Win2022 STIG V2R7 has 283 groups/rules
+	assert.Equal(t, 283, len(result.Requirements), "Win2022 STIG should have 283 requirements")
+	assert.Equal(t, 283, len(result.Groups))
+	assert.Equal(t, "ms-windows-server-2022-stig", result.Name)
+	require.NotNil(t, result.Title)
+	assert.Contains(t, *result.Title, "Windows Server 2022")
+
+	// Spot-check first requirement
+	req := findBaselineRequirement(result.Requirements, "WN22-00-000010")
+	require.NotNil(t, req)
+	assert.Equal(t, 0.5, req.Impact)
+
+	shared.WriteOutput(t, "xccdf-results-to-hdf", "win2022-stig-baseline.json", result)
+}
+
 // --- Helper functions ---
 
 func findRequirementByID(requirements []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
@@ -630,6 +972,15 @@ func findRequirementByIDRef(requirements []hdf.EvaluatedRequirement, idref strin
 	return nil
 }
 
+func findBaselineRequirement(requirements []hdf.BaselineRequirement, id string) *hdf.BaselineRequirement {
+	for i := range requirements {
+		if requirements[i].ID == id {
+			return &requirements[i]
+		}
+	}
+	return nil
+}
+
 func findDescription(descriptions []hdf.Description, label string) *hdf.Description {
 	for i := range descriptions {
 		if descriptions[i].Label == label {
@@ -637,11 +988,4 @@ func findDescription(descriptions []hdf.Description, label string) *hdf.Descript
 		}
 	}
 	return nil
-}
-
-func TestConvertXccdfResultsToHDF_EntityExpansion(t *testing.T) {
-	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
-	_, err := ConvertXccdfResultsToHDF(input, converterVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "entity declarations")
 }
