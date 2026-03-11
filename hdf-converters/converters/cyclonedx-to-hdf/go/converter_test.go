@@ -151,10 +151,10 @@ func TestConvertCycloneDX_Severity(t *testing.T) {
 	require.NotNil(t, medium, "expected medium vuln GHSA-7g45-4rm6-3mm3")
 	assert.InDelta(t, 0.5, medium.Impact, 0.001)
 
-	// critical → 1.0
+	// critical → 0.9
 	critical := findRequirement(reqs, "GHSA-5p34-5m6p-p58g")
 	require.NotNil(t, critical, "expected critical vuln GHSA-5p34-5m6p-p58g")
-	assert.InDelta(t, 1.0, critical.Impact, 0.001)
+	assert.InDelta(t, 0.9, critical.Impact, 0.001)
 }
 
 // ---- CWE → NIST mapping ----
@@ -398,8 +398,8 @@ func TestSeverityToImpact(t *testing.T) {
 		severity string
 		expected float64
 	}{
-		{"critical", 1.0},
-		{"CRITICAL", 1.0},
+		{"critical", 0.9},
+		{"CRITICAL", 0.9},
 		{"high", 0.7},
 		{"HIGH", 0.7},
 		{"medium", 0.5},

@@ -370,7 +370,7 @@ func TestCWEPattern(t *testing.T) {
 
 func TestSeverityToImpact(t *testing.T) {
 	t.Run("standard severity levels", func(t *testing.T) {
-		assert.Equal(t, 1.0, SeverityToImpact("critical", 0.5))
+		assert.Equal(t, 0.9, SeverityToImpact("critical", 0.5))
 		assert.Equal(t, 0.7, SeverityToImpact("high", 0.5))
 		assert.Equal(t, 0.5, SeverityToImpact("medium", 0.5))
 		assert.Equal(t, 0.3, SeverityToImpact("low", 0.5))
@@ -381,8 +381,8 @@ func TestSeverityToImpact(t *testing.T) {
 	})
 
 	t.Run("case insensitive", func(t *testing.T) {
-		assert.Equal(t, 1.0, SeverityToImpact("Critical", 0.5))
-		assert.Equal(t, 1.0, SeverityToImpact("CRITICAL", 0.5))
+		assert.Equal(t, 0.9, SeverityToImpact("Critical", 0.5))
+		assert.Equal(t, 0.9, SeverityToImpact("CRITICAL", 0.5))
 		assert.Equal(t, 0.7, SeverityToImpact("HIGH", 0.5))
 		assert.Equal(t, 0.7, SeverityToImpact("High", 0.5))
 		assert.Equal(t, 0.5, SeverityToImpact("MEDIUM", 0.5))
@@ -421,7 +421,7 @@ func TestSeverityToImpact(t *testing.T) {
 func TestSeverityToImpactWithAliases(t *testing.T) {
 	t.Run("aliases override standard mappings", func(t *testing.T) {
 		aliases := map[string]float64{
-			"critical": 0.9, // override standard 1.0
+			"critical": 0.9, // matches standard (was override when standard was 1.0)
 		}
 		assert.Equal(t, 0.9, SeverityToImpactWithAliases("critical", aliases, 0.5))
 		assert.Equal(t, 0.9, SeverityToImpactWithAliases("Critical", aliases, 0.5))
@@ -433,7 +433,7 @@ func TestSeverityToImpactWithAliases(t *testing.T) {
 			"negligible": 0.0,
 		}
 		// These should fall through aliases to standard map
-		assert.Equal(t, 1.0, SeverityToImpactWithAliases("critical", aliases, 0.5))
+		assert.Equal(t, 0.9, SeverityToImpactWithAliases("critical", aliases, 0.5))
 		assert.Equal(t, 0.7, SeverityToImpactWithAliases("high", aliases, 0.5))
 		assert.Equal(t, 0.5, SeverityToImpactWithAliases("medium", aliases, 0.5))
 		assert.Equal(t, 0.3, SeverityToImpactWithAliases("low", aliases, 0.5))
@@ -452,12 +452,12 @@ func TestSeverityToImpactWithAliases(t *testing.T) {
 
 	t.Run("empty aliases map falls back to standard", func(t *testing.T) {
 		aliases := map[string]float64{}
-		assert.Equal(t, 1.0, SeverityToImpactWithAliases("critical", aliases, 0.5))
+		assert.Equal(t, 0.9, SeverityToImpactWithAliases("critical", aliases, 0.5))
 		assert.Equal(t, 0.7, SeverityToImpactWithAliases("high", aliases, 0.5))
 	})
 
 	t.Run("nil aliases map falls back to standard", func(t *testing.T) {
-		assert.Equal(t, 1.0, SeverityToImpactWithAliases("critical", nil, 0.5))
+		assert.Equal(t, 0.9, SeverityToImpactWithAliases("critical", nil, 0.5))
 		assert.Equal(t, 0.7, SeverityToImpactWithAliases("high", nil, 0.5))
 		assert.Equal(t, 0.5, SeverityToImpactWithAliases("unknown", nil, 0.5))
 	})

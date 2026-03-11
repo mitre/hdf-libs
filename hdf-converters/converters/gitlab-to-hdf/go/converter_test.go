@@ -67,7 +67,7 @@ func TestConvertGitlabToHDF_MinimalSAST_Requirement(t *testing.T) {
 	req := result.Baselines[0].Requirements[0]
 	assert.Equal(t, "a1b2c3d4-e5f6-7890-abcd-ef1234567890", req.ID)
 	assert.Equal(t, "SQL Injection", *req.Title)
-	assert.InDelta(t, 1.0, req.Impact, 0.001)
+	assert.InDelta(t, 0.9, req.Impact, 0.001)
 }
 
 func TestConvertGitlabToHDF_MinimalSAST_Result(t *testing.T) {
@@ -201,7 +201,7 @@ func TestConvertGitlabToHDF_MultiVuln_SeverityMapping(t *testing.T) {
 	for _, req := range reqs {
 		switch req.ID {
 		case "11111111-1111-1111-1111-111111111111":
-			assert.InDelta(t, 1.0, req.Impact, 0.001, "Critical should map to 1.0")
+			assert.InDelta(t, 0.9, req.Impact, 0.001, "Critical should map to 0.9")
 		case "22222222-2222-2222-2222-222222222222":
 			assert.InDelta(t, 0.5, req.Impact, 0.001, "Medium should map to 0.5")
 		case "33333333-3333-3333-3333-333333333333":
@@ -287,14 +287,14 @@ func Test_severityToImpact(t *testing.T) {
 		severity string
 		expected float64
 	}{
-		{"Critical", 1.0},
+		{"Critical", 0.9},
 		{"High", 0.7},
 		{"Medium", 0.5},
 		{"Low", 0.3},
 		{"Info", 0.0},
 		{"Unknown", 0.5},
 		{"", 0.5},
-		{"critical", 1.0},
+		{"critical", 0.9},
 		{"HIGH", 0.7},
 	}
 	for _, tc := range tests {

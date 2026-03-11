@@ -12,7 +12,7 @@ on:
 
 env:
   NODE_VERSION: '20.x'
-  GO_VERSION: '1.25.7'
+  GO_VERSION: '1.26.1'
   TS_PACKAGES: 'hdf-schema hdf-utilities hdf-mappings hdf-validators hdf-parsers hdf-converters'
 
 jobs:
@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -126,6 +128,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

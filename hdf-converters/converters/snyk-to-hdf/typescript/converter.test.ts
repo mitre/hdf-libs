@@ -80,10 +80,10 @@ describe('snyk to HDF converter', async () => {
   });
 
   describe('severity to impact mapping', async () => {
-    it('should map critical severity to 1.0', async () => {
+    it('should map critical severity to 0.9', async () => {
       const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HdfResults;
       const critical = hdf.baselines[0]!.requirements.find(r => r.id === 'npm:adm-zip:20180415');
-      expect(critical?.impact).toBe(1.0);
+      expect(critical?.impact).toBe(0.9);
     });
 
     it('should map high severity to 0.7', async () => {

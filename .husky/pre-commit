@@ -1,2 +1,2 @@
 export PATH="$PATH:$HOME/go/bin:/opt/homebrew/bin"
-pnpm lint
+pnpm check

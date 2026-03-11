@@ -118,14 +118,14 @@ describe('cyclonedx to HDF converter', async () => {
       expect(medium?.impact).toBe(0.5);
     });
 
-    it('should map critical severity to 1.0', async () => {
+    it('should map critical severity to 0.9', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
       ) as HdfResults;
       const critical = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'GHSA-5p34-5m6p-p58g'
       );
-      expect(critical?.impact).toBe(1.0);
+      expect(critical?.impact).toBe(0.9);
     });
   });
 

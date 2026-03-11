@@ -143,7 +143,15 @@ export function createSourceLocation(ref, line) {
 }
 
 /**
- * Map a severity string to an impact score
+ * Map a severity string to an impact score.
+ *
+ * Impact bands align with CVSS 3.x severity ratings normalized to 0-1:
+ *   critical=0.9 (CVSS 9.0), high=0.7 (CVSS 7.0), medium=0.5 (CVSS 5.0),
+ *   low=0.3 (CVSS 3.0), informational=0.0 (CVSS 0.0)
+ *
+ * Each value is the floor of its band, preserving sub-band precision:
+ *   0.9-1.0=critical, 0.7-0.8=high, 0.4-0.6=medium, 0.1-0.3=low, 0.0=informational
+ *
  * @param {string} severity - Severity level
  * @returns {number} Impact score between 0.0 and 1.0
  */
@@ -151,7 +159,7 @@ export function severityToImpact(severity) {
   const normalized = severity.toLowerCase();
   switch (normalized) {
     case 'critical':
-      return 1.0;
+      return 0.9;
     case 'high':
       return 0.7;
     case 'medium':

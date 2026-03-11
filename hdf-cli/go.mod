@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-cli
 
-go 1.25
+go 1.26
 
 require (
 	github.com/adrg/xdg v0.5.3

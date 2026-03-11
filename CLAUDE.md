@@ -130,7 +130,6 @@ Libraries must be built in this specific order due to dependencies:
 
 **External Dependencies** (not part of hdf-libs):
 - `@mitre/inspec-objects` - XCCDF/OVAL → InSpec (separate npm package)
-- **Rule**: HDF libraries must NOT depend on MITRE projects
 - All HDF ecosystem apps use CCI mappings from hdf-mappings, not mitre/inspec-objects
 
 ### TypeScript Configuration
@@ -246,6 +245,7 @@ describe('Feature', () => {
 - **All tests must pass** before committing
 - **No compilation errors** - Code must compile cleanly
 - **No linting errors** - Run `pnpm lint:fix` before committing
+- **No known security vulnerabilities** - Run `pnpm security` before committing. This checks both TS deps (`pnpm audit`) and Go deps (`govulncheck`). If vulnerabilities are discovered, fix them immediately — bump the dependency version or add a pnpm override — even if the vulnerable code is unrelated to the current session's work. The pre-commit hook runs `pnpm check` (lint + test + security) to enforce this automatically.
 
 ### Development Principles
 - **Single responsibility** - Each library does ONE thing well

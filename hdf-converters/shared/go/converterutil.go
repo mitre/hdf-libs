@@ -45,10 +45,12 @@ func StripHTML(html string) string {
 }
 
 // standardSeverityMap defines the canonical severity-to-impact mappings used
-// across most HDF converters. Case-insensitive lookup is handled by the caller.
-// "informational" and "information" are common aliases for "info" across tools.
+// across most HDF converters, aligned with CVSS 3.x bands normalized to 0-1.
+// Each value is the floor of its band: 0.9-1.0=critical, 0.7-0.8=high,
+// 0.4-0.6=medium, 0.1-0.3=low, 0.0=informational.
+// Case-insensitive lookup is handled by the caller.
 var standardSeverityMap = map[string]float64{
-	"critical":      1.0,
+	"critical":      0.9,
 	"high":          0.7,
 	"medium":        0.5,
 	"low":           0.3,
@@ -60,7 +62,7 @@ var standardSeverityMap = map[string]float64{
 
 // SeverityToImpact maps a standard severity string to an HDF impact value.
 // Case-insensitive. Returns defaultVal if severity is not recognized.
-// Standard mappings: critical=1.0, high=0.7, medium=0.5, low=0.3,
+// Standard mappings: critical=0.9, high=0.7, medium=0.5, low=0.3,
 // info/none/informational/information=0.0.
 func SeverityToImpact(severity string, defaultVal float64) float64 {
 	if impact, ok := standardSeverityMap[strings.ToLower(severity)]; ok {
