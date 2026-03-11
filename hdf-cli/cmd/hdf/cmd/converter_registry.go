@@ -128,3 +128,75 @@ func registerHDFConverterMulti(sources []string, displayName, errPrefix string, 
 		RegisterConverter(src, "hdf", c)
 	}
 }
+
+// HDFBaselineConvertFn is the signature for converters that produce HDF Baseline.
+type HDFBaselineConvertFn func(input []byte, converterVersion string) (*hdf.HDFBaseline, error)
+
+// hdfBaselineConverter wraps a HDFBaselineConvertFn, handling JSON
+// serialization and error wrapping.
+type hdfBaselineConverter struct {
+	displayName string
+	errPrefix   string
+	convertFn   HDFBaselineConvertFn
+}
+
+func (c *hdfBaselineConverter) Name() string {
+	return c.displayName
+}
+
+func (c *hdfBaselineConverter) Convert(input []byte) ([]byte, error) {
+	result, err := c.convertFn(input, version)
+	if err != nil {
+		return nil, fmt.Errorf("%s conversion failed: %w", c.errPrefix, err)
+	}
+
+	output, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize HDF output: %w", err)
+	}
+
+	return output, nil
+}
+
+// registerHDFBaselineConverter registers an HDF Baseline converter under one
+// source format name. The dest is always "hdf".
+func registerHDFBaselineConverter(source, displayName, errPrefix string, fn HDFBaselineConvertFn) {
+	RegisterConverter(source, "hdf", &hdfBaselineConverter{
+		displayName: displayName,
+		errPrefix:   errPrefix,
+		convertFn:   fn,
+	})
+}
+
+// RawConvertFn is the signature for converters that handle their own JSON
+// serialization (e.g., auto-detect converters where the output type varies).
+type RawConvertFn func(input []byte, converterVersion string) ([]byte, error)
+
+// rawConverter wraps a RawConvertFn, handling error wrapping.
+type rawConverter struct {
+	displayName string
+	errPrefix   string
+	convertFn   RawConvertFn
+}
+
+func (c *rawConverter) Name() string {
+	return c.displayName
+}
+
+func (c *rawConverter) Convert(input []byte) ([]byte, error) {
+	result, err := c.convertFn(input, version)
+	if err != nil {
+		return nil, fmt.Errorf("%s conversion failed: %w", c.errPrefix, err)
+	}
+	return result, nil
+}
+
+// registerRawConverter registers a raw converter (handles its own JSON
+// serialization) under one source format name. The dest is always "hdf".
+func registerRawConverter(source, displayName, errPrefix string, fn RawConvertFn) {
+	RegisterConverter(source, "hdf", &rawConverter{
+		displayName: displayName,
+		errPrefix:   errPrefix,
+		convertFn:   fn,
+	})
+}
