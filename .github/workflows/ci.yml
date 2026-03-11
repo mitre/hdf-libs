@@ -12,7 +12,7 @@ on:
 
 env:
   NODE_VERSION: '20.x'
-  GO_VERSION: '1.25.7'
+  GO_VERSION: '1.26.1'
   TS_PACKAGES: 'hdf-schema hdf-utilities hdf-mappings hdf-validators hdf-parsers hdf-converters'
 
 jobs:
