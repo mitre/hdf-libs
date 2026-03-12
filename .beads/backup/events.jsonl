@@ -300,3 +300,10 @@
 {"actor":"Will Dower","comment":null,"created_at":"2026-03-11T15:14:35Z","event_type":"closed","id":303,"issue_id":"hdf-libs-txl","new_value":"Pre-commit hook upgraded from pnpm lint to pnpm check (lint+test+security). Committed in 8b29995.","old_value":""}
 {"actor":"Will Dower","comment":null,"created_at":"2026-03-11T15:14:35Z","event_type":"closed","id":304,"issue_id":"hdf-libs-jls","new_value":"Unified XCCDF converter fully implemented and committed in 26c1e46 on hdf-libs-development. 4 CLI formats, 151 tests, XCCDF 1.1+1.2 support, benchmark-to-baseline, auto-detect.","old_value":""}
 {"actor":"Will Dower","comment":null,"created_at":"2026-03-11T20:53:52Z","event_type":"created","id":305,"issue_id":"hdf-libs-vwv","new_value":"","old_value":""}
+{"actor":"Will Dower","comment":null,"created_at":"2026-03-11T20:54:16Z","event_type":"created","id":306,"issue_id":"hdf-libs-y03","new_value":"","old_value":""}
+{"actor":"Will Dower","comment":null,"created_at":"2026-03-11T20:54:16Z","event_type":"created","id":307,"issue_id":"hdf-libs-g3i","new_value":"","old_value":""}
+{"actor":"Will Dower","comment":null,"created_at":"2026-03-11T20:54:16Z","event_type":"created","id":308,"issue_id":"hdf-libs-eey","new_value":"","old_value":""}
+{"actor":"Will Dower","comment":null,"created_at":"2026-03-11T20:54:17Z","event_type":"created","id":309,"issue_id":"hdf-libs-uej","new_value":"","old_value":""}
+{"actor":"Will Dower","comment":null,"created_at":"2026-03-11T20:54:17Z","event_type":"created","id":310,"issue_id":"hdf-libs-1vb","new_value":"","old_value":""}
+{"actor":"Will Dower","comment":null,"created_at":"2026-03-11T20:54:17Z","event_type":"created","id":311,"issue_id":"hdf-libs-1v2","new_value":"","old_value":""}
+{"actor":"Will Dower","comment":null,"created_at":"2026-03-11T20:54:17Z","event_type":"created","id":312,"issue_id":"hdf-libs-81v","new_value":"","old_value":""}
