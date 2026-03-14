@@ -4,7 +4,7 @@
 package status
 
 import (
-	"encoding/json"
+	"reflect"
 	"sort"
 	"time"
 
@@ -153,10 +153,8 @@ func ClassifyChangeReasons(
 	}
 
 	// Check baseline metadata changes (tags, descriptions, title)
-	oldTagsJSON := jsonMarshalOrEmpty(oldReq.Tags)
-	newTagsJSON := jsonMarshalOrEmpty(newReq.Tags)
-	oldDescsJSON := jsonMarshalOrEmpty(oldReq.Descriptions)
-	newDescsJSON := jsonMarshalOrEmpty(newReq.Descriptions)
+	tagsChanged := !reflect.DeepEqual(oldReq.Tags, newReq.Tags)
+	descsChanged := !reflect.DeepEqual(oldReq.Descriptions, newReq.Descriptions)
 
 	oldTitle := ""
 	if oldReq.Title != nil {
@@ -167,7 +165,7 @@ func ClassifyChangeReasons(
 		newTitle = *newReq.Title
 	}
 
-	if oldTagsJSON != newTagsJSON || oldDescsJSON != newDescsJSON || oldTitle != newTitle {
+	if tagsChanged || descsChanged || oldTitle != newTitle {
 		reasons = append(reasons, types.ReasonMetadataChanged)
 	}
 
@@ -223,17 +221,4 @@ func stringSlicesEqual(a, b []string) bool {
 		}
 	}
 	return true
-}
-
-// jsonMarshalOrEmpty marshals v to a JSON string, returning "{}" for nil maps
-// and "[]" for nil slices.
-func jsonMarshalOrEmpty(v interface{}) string {
-	if v == nil {
-		return "null"
-	}
-	b, err := json.Marshal(v)
-	if err != nil {
-		return "null"
-	}
-	return string(b)
 }

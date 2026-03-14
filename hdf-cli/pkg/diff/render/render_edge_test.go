@@ -87,14 +87,14 @@ func TestJSON_FullDetail_IncludesBeforeAfterOnMatched(t *testing.T) {
 	out, err := JSON(comp, Options{Detail: DetailFull})
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal([]byte(out), &parsed)
 	require.NoError(t, err)
 
-	diffs := parsed["requirementDiffs"].([]interface{})
+	diffs := parsed["requirementDiffs"].([]any)
 	// V-1001 (fixed) should have both before and after
 	for _, d := range diffs {
-		diffMap := d.(map[string]interface{})
+		diffMap := d.(map[string]any)
 		state := diffMap["state"].(string)
 		if state == "fixed" || state == "regressed" || state == "updated" || state == "unchanged" {
 			assert.Contains(t, diffMap, "before", "matched requirement %s should have 'before'", diffMap["id"])
@@ -108,11 +108,11 @@ func TestJSON_SummaryDetail_HasCorrectCounts(t *testing.T) {
 	out, err := JSON(comp, Options{Detail: DetailSummary})
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal([]byte(out), &parsed)
 	require.NoError(t, err)
 
-	summary := parsed["summary"].(map[string]interface{})
+	summary := parsed["summary"].(map[string]any)
 	assert.Equal(t, float64(comp.Summary.Fixed), summary["fixed"])
 	assert.Equal(t, float64(comp.Summary.Regressed), summary["regressed"])
 	assert.Equal(t, float64(comp.Summary.New), summary["new"])
@@ -127,13 +127,13 @@ func TestJSON_ControlDetail_RetainsIDStateTitle(t *testing.T) {
 	out, err := JSON(comp, Options{Detail: DetailControl})
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal([]byte(out), &parsed)
 	require.NoError(t, err)
 
-	diffs := parsed["requirementDiffs"].([]interface{})
+	diffs := parsed["requirementDiffs"].([]any)
 	for _, d := range diffs {
-		diffMap := d.(map[string]interface{})
+		diffMap := d.(map[string]any)
 		assert.Contains(t, diffMap, "id")
 		assert.Contains(t, diffMap, "state")
 		// Title may be omitted if empty but should be string when present
@@ -152,14 +152,14 @@ func TestJSON_FilterStates_AllMatchRequestedState(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal([]byte(out), &parsed)
 	require.NoError(t, err)
 
-	diffs := parsed["requirementDiffs"].([]interface{})
+	diffs := parsed["requirementDiffs"].([]any)
 	require.NotEmpty(t, diffs, "should have at least one fixed requirement")
 	for _, d := range diffs {
-		diffMap := d.(map[string]interface{})
+		diffMap := d.(map[string]any)
 		assert.Equal(t, "fixed", diffMap["state"])
 	}
 }
@@ -172,11 +172,11 @@ func TestJSON_FilterStates_NonExistentState(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal([]byte(out), &parsed)
 	require.NoError(t, err)
 
-	diffs := parsed["requirementDiffs"].([]interface{})
+	diffs := parsed["requirementDiffs"].([]any)
 	assert.Empty(t, diffs)
 }
 
@@ -188,14 +188,14 @@ func TestJSON_FullDetail_FilterStatesPreservesBeforeAfter(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal([]byte(out), &parsed)
 	require.NoError(t, err)
 
-	diffs := parsed["requirementDiffs"].([]interface{})
+	diffs := parsed["requirementDiffs"].([]any)
 	require.NotEmpty(t, diffs)
 	for _, d := range diffs {
-		diffMap := d.(map[string]interface{})
+		diffMap := d.(map[string]any)
 		assert.Equal(t, "regressed", diffMap["state"])
 		assert.Contains(t, diffMap, "before")
 		assert.Contains(t, diffMap, "after")
@@ -1023,14 +1023,14 @@ func TestJSON_ControlDetail_WithFilter(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal([]byte(out), &parsed)
 	require.NoError(t, err)
 
-	diffs := parsed["requirementDiffs"].([]interface{})
+	diffs := parsed["requirementDiffs"].([]any)
 	assert.Equal(t, 2, len(diffs))
 	for _, d := range diffs {
-		diffMap := d.(map[string]interface{})
+		diffMap := d.(map[string]any)
 		state := diffMap["state"].(string)
 		assert.True(t, state == "absent" || state == "new",
 			"expected absent or new, got %s", state)
@@ -1050,7 +1050,7 @@ func TestJsonValue_Unmarshalable(t *testing.T) {
 }
 
 func TestJsonValue_Map(t *testing.T) {
-	result := jsonValue(map[string]interface{}{"key": "val"})
+	result := jsonValue(map[string]any{"key": "val"})
 	assert.Contains(t, result, `"key"`)
 	assert.Contains(t, result, `"val"`)
 }
@@ -1085,12 +1085,12 @@ func TestSymbolAndColor_MergedDim(t *testing.T) {
 // ─── CSV: formatChangeReasonsCSV edge cases ──────────────────────────────────
 
 func TestFormatChangeReasonsCSV_Empty(t *testing.T) {
-	result := formatChangeReasonsCSV([]types.ChangeReason{})
+	result := formatChangeReasons([]types.ChangeReason{})
 	assert.Equal(t, "", result)
 }
 
 func TestFormatChangeReasonsCSV_Multiple(t *testing.T) {
-	result := formatChangeReasonsCSV([]types.ChangeReason{
+	result := formatChangeReasons([]types.ChangeReason{
 		types.ReasonResultChanged,
 		types.ReasonImpactChanged,
 	})

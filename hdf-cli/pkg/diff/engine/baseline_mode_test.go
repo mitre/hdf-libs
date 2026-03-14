@@ -64,7 +64,7 @@ func baselineOpts() Options {
 func TestBaseline_ComparisonModeIsBaseline(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
-	diff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	diff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	if diff.ComparisonMode != types.ModeBaseline {
 		t.Errorf("expected comparisonMode 'baseline', got %q", diff.ComparisonMode)
@@ -74,7 +74,7 @@ func TestBaseline_ComparisonModeIsBaseline(t *testing.T) {
 func TestBaseline_FormatVersion(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
-	diff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	diff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	if diff.FormatVersion != version100 {
 		t.Errorf("expected formatVersion %q, got %q", version100, diff.FormatVersion)
@@ -84,7 +84,7 @@ func TestBaseline_FormatVersion(t *testing.T) {
 func TestBaseline_IncludesTimestamp(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
-	diff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	diff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	if diff.Timestamp == "" {
 		t.Error("expected non-empty timestamp")
@@ -98,7 +98,7 @@ func TestBaseline_IncludesTimestamp(t *testing.T) {
 func TestBaseline_HasTwoSources(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
-	diff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	diff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	if len(diff.Sources) != 2 {
 		t.Errorf("expected 2 sources, got %d", len(diff.Sources))
@@ -108,7 +108,7 @@ func TestBaseline_HasTwoSources(t *testing.T) {
 func TestBaseline_FirstSourceRoleIsGolden(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
-	diff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	diff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	if diff.Sources[0].Role != types.RoleGolden {
 		t.Errorf("expected first source role 'golden', got %q", diff.Sources[0].Role)
@@ -118,7 +118,7 @@ func TestBaseline_FirstSourceRoleIsGolden(t *testing.T) {
 func TestBaseline_SecondSourceRoleIsNew(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
-	diff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	diff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	if diff.Sources[1].Role != types.RoleNew {
 		t.Errorf("expected second source role 'new', got %q", diff.Sources[1].Role)
@@ -128,7 +128,7 @@ func TestBaseline_SecondSourceRoleIsNew(t *testing.T) {
 func TestBaseline_FirstSourceLabelIsGoldenBaseline(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
-	diff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	diff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	if diff.Sources[0].Label != "Golden baseline" {
 		t.Errorf("expected first source label 'Golden baseline', got %q", diff.Sources[0].Label)
@@ -138,7 +138,7 @@ func TestBaseline_FirstSourceLabelIsGoldenBaseline(t *testing.T) {
 func TestBaseline_SecondSourceLabelIsCurrentScan(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
-	diff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	diff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	if diff.Sources[1].Label != "Current scan" {
 		t.Errorf("expected second source label 'Current scan', got %q", diff.Sources[1].Label)
@@ -153,11 +153,11 @@ func TestBaseline_SameRequirementDiffsAsTemporal(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
 
-	baselineDiff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	baselineDiff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	temporalOpts := baselineOpts()
 	temporalOpts.ComparisonMode = types.ModeTemporal
-	temporalDiff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, temporalOpts)
+	temporalDiff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, temporalOpts)
 
 	if len(baselineDiff.RequirementDiffs) != len(temporalDiff.RequirementDiffs) {
 		t.Fatalf("expected same number of requirementDiffs: baseline=%d, temporal=%d",
@@ -189,11 +189,11 @@ func TestBaseline_SameSummaryCountsAsTemporal(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
 
-	baselineDiff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	baselineDiff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	temporalOpts := baselineOpts()
 	temporalOpts.ComparisonMode = types.ModeTemporal
-	temporalDiff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, temporalOpts)
+	temporalDiff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, temporalOpts)
 
 	if baselineDiff.Summary != temporalDiff.Summary {
 		t.Errorf("summary mismatch:\nbaseline: %+v\ntemporal: %+v",
@@ -205,11 +205,11 @@ func TestBaseline_SameBaselineDiffsAsTemporal(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
 
-	baselineDiff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	baselineDiff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	temporalOpts := baselineOpts()
 	temporalOpts.ComparisonMode = types.ModeTemporal
-	temporalDiff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, temporalOpts)
+	temporalDiff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, temporalOpts)
 
 	if len(baselineDiff.BaselineDiffs) != len(temporalDiff.BaselineDiffs) {
 		t.Fatalf("baseline diffs count mismatch: baseline=%d, temporal=%d",
@@ -227,7 +227,7 @@ func TestBaseline_SameBaselineDiffsAsTemporal(t *testing.T) {
 func TestBaseline_SV001MarkedAsFixed(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
-	diff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	diff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	req := findReq(diff.RequirementDiffs, "SV-001")
 	if req == nil {
@@ -241,7 +241,7 @@ func TestBaseline_SV001MarkedAsFixed(t *testing.T) {
 func TestBaseline_SV003MarkedAsRegressed(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
-	diff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	diff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	req := findReq(diff.RequirementDiffs, "SV-003")
 	if req == nil {
@@ -259,7 +259,7 @@ func TestBaseline_SV003MarkedAsRegressed(t *testing.T) {
 func TestBaseline_BaselineVersionDiffDetected(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
 	currentDoc := buildBaselineScanAfter()
-	diff := DiffHdf(goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
+	diff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{currentDoc}, baselineOpts())
 
 	// The baseline version changed from 1.0.0 to 1.1.0, should be "updated"
 	bd := findBaselineDiff(diff.BaselineDiffs, "rhel9-stig-baseline")
@@ -283,7 +283,7 @@ func TestBaseline_BaselineVersionDiffDetected(t *testing.T) {
 
 func TestBaseline_IdenticalDocuments_AllUnchanged(t *testing.T) {
 	goldenDoc := buildBaselineScanBefore()
-	diff := DiffHdf(goldenDoc, []hdf.HdfResults{goldenDoc}, baselineOpts())
+	diff := mustDiffHdf(t, goldenDoc, []hdf.HdfResults{goldenDoc}, baselineOpts())
 
 	for _, req := range diff.RequirementDiffs {
 		if req.State != types.StateUnchanged {

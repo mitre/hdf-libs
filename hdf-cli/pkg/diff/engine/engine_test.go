@@ -2,6 +2,7 @@ package engine
 
 import (
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -36,7 +37,7 @@ func makeRequirement(id string, status hdf.ResultStatus, impact float64) hdf.Eva
 	return hdf.EvaluatedRequirement{
 		ID:           id,
 		Impact:       impact,
-		Tags:         map[string]interface{}{},
+		Tags:         map[string]any{},
 		Descriptions: []hdf.Description{{Label: "default", Data: "test"}},
 		Results: []hdf.RequirementResult{{
 			Status:    &s,
@@ -61,7 +62,7 @@ func makeBaseline(name, version string, reqs ...hdf.EvaluatedRequirement) hdf.Ev
 		Supports:     []hdf.SupportedPlatform{},
 		Checksum:     hdf.Checksum{Algorithm: "sha256", Value: "abc123"},
 		Depends:      []hdf.Dependency{},
-		Attributes:   []map[string]interface{}{},
+		Attributes:   []map[string]any{},
 	}
 }
 
@@ -93,6 +94,16 @@ func defaultOpts() Options {
 		ComparisonMode: types.ModeTemporal,
 		MatchStrategy:  stratExactID,
 	}
+}
+
+// mustDiffHdf calls DiffHdf and fails the test if it returns an error.
+func mustDiffHdf(t *testing.T, oldResults hdf.HdfResults, newResults []hdf.HdfResults, opts Options) types.HdfComparison {
+	t.Helper()
+	comp, err := DiffHdf(oldResults, newResults, opts)
+	if err != nil {
+		t.Fatalf("DiffHdf returned unexpected error: %v", err)
+	}
+	return comp
 }
 
 // assertAbsentAndNewSlicesEmpty validates that both changeReasons and fieldChanges
@@ -128,14 +139,15 @@ func assertAbsentAndNewSlicesEmpty(
 	}
 }
 
-func buildAbsentAndNewComparison() types.HdfComparison {
+func buildAbsentAndNewComparison(t *testing.T) types.HdfComparison {
+	t.Helper()
 	oldBaseline := makeBaseline("test-baseline", version100,
 		makeRequirement("SV-001", hdf.Passed, 0.7),
 	)
 	newBaseline := makeBaseline("test-baseline", version100,
 		makeRequirement("SV-002", hdf.Passed, 0.7),
 	)
-	return DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	return mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +162,7 @@ func TestIdenticalDocuments_AllUnchanged(t *testing.T) {
 	)
 	results := makeResults(baseline)
 
-	comp := DiffHdf(results, []hdf.HdfResults{results}, defaultOpts())
+	comp := mustDiffHdf(t, results, []hdf.HdfResults{results}, defaultOpts())
 
 	for _, req := range comp.RequirementDiffs {
 		if req.State != types.StateUnchanged {
@@ -169,7 +181,7 @@ func TestIdenticalDocuments_SummaryCounts(t *testing.T) {
 	)
 	results := makeResults(baseline)
 
-	comp := DiffHdf(results, []hdf.HdfResults{results}, defaultOpts())
+	comp := mustDiffHdf(t, results, []hdf.HdfResults{results}, defaultOpts())
 
 	if comp.Summary.Fixed != 0 {
 		t.Errorf("expected fixed=0, got %d", comp.Summary.Fixed)
@@ -215,7 +227,7 @@ func TestFixedRequirement(t *testing.T) {
 		makeRequirement("SV-001", hdf.Passed, 0.7),
 	)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	req := findReq(comp.RequirementDiffs, "SV-001")
 	if req == nil {
@@ -250,7 +262,7 @@ func TestRegressedRequirement(t *testing.T) {
 		makeRequirement("SV-001", hdf.Failed, 0.7),
 	)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	req := findReq(comp.RequirementDiffs, "SV-001")
 	if req == nil {
@@ -280,7 +292,7 @@ func TestNewRequirement(t *testing.T) {
 		makeRequirementWithTitle("SV-002", "New control", hdf.Passed, 0.5),
 	)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	req := findReq(comp.RequirementDiffs, "SV-002")
 	if req == nil {
@@ -316,7 +328,7 @@ func TestAbsentRequirement(t *testing.T) {
 		makeRequirement("SV-001", hdf.Passed, 0.7),
 	)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	req := findReq(comp.RequirementDiffs, "SV-002")
 	if req == nil {
@@ -350,7 +362,7 @@ func TestUpdatedRequirement_ImpactChanged(t *testing.T) {
 	newReq := makeRequirement("SV-001", hdf.Passed, 0.0)
 	newBaseline := makeBaseline("test-baseline", version100, newReq)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	req := findReq(comp.RequirementDiffs, "SV-001")
 	if req == nil {
@@ -400,7 +412,7 @@ func TestSummaryCountsMixed(t *testing.T) {
 		makeRequirement("SV-006", hdf.Passed, 0.7),
 	)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	if comp.Summary.Fixed != 1 {
 		t.Errorf("expected fixed=1, got %d", comp.Summary.Fixed)
@@ -446,7 +458,7 @@ func TestBaselineDiff_VersionChange(t *testing.T) {
 		makeRequirement("SV-001", hdf.Passed, 0.7),
 	)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	if len(comp.BaselineDiffs) != 1 {
 		t.Fatalf("expected 1 baseline diff, got %d", len(comp.BaselineDiffs))
@@ -471,7 +483,7 @@ func TestBaselineDiff_NewAndAbsent(t *testing.T) {
 	oldBaseline := makeBaseline("baseline-alpha", version100)
 	newBaseline := makeBaseline("baseline-beta", version200)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	if len(comp.BaselineDiffs) != 2 {
 		t.Fatalf("expected 2 baseline diffs, got %d", len(comp.BaselineDiffs))
@@ -522,7 +534,7 @@ func TestRequirementsSortedByID(t *testing.T) {
 		makeRequirement("SV-002", hdf.Passed, 0.5),
 	)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	ids := make([]string, len(comp.RequirementDiffs))
 	for i, rd := range comp.RequirementDiffs {
@@ -548,15 +560,15 @@ func TestRequirementsSortedByID(t *testing.T) {
 func TestDriftExtraction(t *testing.T) {
 	// Old and new both "passed" but tags differ -> unchanged state + metadataChanged reason = drift
 	oldReq := makeRequirement("SV-001", hdf.Passed, 0.7)
-	oldReq.Tags = map[string]interface{}{"cci": []interface{}{"CCI-000001"}}
+	oldReq.Tags = map[string]any{"cci": []any{"CCI-000001"}}
 
 	newReq := makeRequirement("SV-001", hdf.Passed, 0.7)
-	newReq.Tags = map[string]interface{}{"cci": []interface{}{"CCI-000002"}}
+	newReq.Tags = map[string]any{"cci": []any{"CCI-000002"}}
 
 	oldBaseline := makeBaseline("test-baseline", version100, oldReq)
 	newBaseline := makeBaseline("test-baseline", version100, newReq)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	// The requirement should be "unchanged" in status but have changeReasons
 	req := findReq(comp.RequirementDiffs, "SV-001")
@@ -608,7 +620,7 @@ func TestFleetMode(t *testing.T) {
 		MatchStrategy:  stratExactID,
 	}
 
-	comp := DiffHdf(reference, []hdf.HdfResults{system1, system2}, opts)
+	comp := mustDiffHdf(t, reference, []hdf.HdfResults{system1, system2}, opts)
 
 	if comp.ComparisonMode != types.ModeFleet {
 		t.Errorf("expected comparisonMode 'fleet', got %q", comp.ComparisonMode)
@@ -675,7 +687,7 @@ func TestFleetMode_SortedByIDThenSourceIndex(t *testing.T) {
 		MatchStrategy:  stratExactID,
 	}
 
-	comp := DiffHdf(reference, []hdf.HdfResults{system1, system2}, opts)
+	comp := mustDiffHdf(t, reference, []hdf.HdfResults{system1, system2}, opts)
 
 	// Should be sorted by ID first, then sourceIndex
 	for i := 1; i < len(comp.RequirementDiffs); i++ {
@@ -719,7 +731,7 @@ func TestBaselineMode_SourceRoles(t *testing.T) {
 		MatchStrategy:  stratExactID,
 	}
 
-	comp := DiffHdf(oldResults, []hdf.HdfResults{newResults}, opts)
+	comp := mustDiffHdf(t, oldResults, []hdf.HdfResults{newResults}, opts)
 
 	if comp.ComparisonMode != types.ModeBaseline {
 		t.Errorf("expected comparisonMode 'baseline', got %q", comp.ComparisonMode)
@@ -747,7 +759,7 @@ func TestMatchStrategyAndConfidence(t *testing.T) {
 		makeRequirement("SV-001", hdf.Passed, 0.7),
 	)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	req := findReq(comp.RequirementDiffs, "SV-001")
 	if req == nil {
@@ -773,7 +785,7 @@ func TestTopLevelStructure(t *testing.T) {
 		makeRequirement("SV-001", hdf.Passed, 0.7),
 	)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	if comp.FormatVersion != version100 {
 		t.Errorf("expected formatVersion %q, got %q", version100, comp.FormatVersion)
@@ -812,7 +824,7 @@ func TestFieldChanges_ImpactReplace(t *testing.T) {
 		makeRequirement("SV-001", hdf.Passed, 0.0),
 	)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	req := findReq(comp.RequirementDiffs, "SV-001")
 	if req == nil {
@@ -836,7 +848,7 @@ func TestFieldChanges_NoChangesForIdenticalReqs(t *testing.T) {
 	oldBaseline := makeBaseline("test-baseline", version100, req)
 	newBaseline := makeBaseline("test-baseline", version100, req)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	r := findReq(comp.RequirementDiffs, "SV-001")
 	if r == nil {
@@ -862,7 +874,7 @@ func TestFieldChanges_SeverityAdd(t *testing.T) {
 		ComparisonMode: types.ModeTemporal,
 		MatchStrategy:  stratExactID,
 	}
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, opts)
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, opts)
 
 	r := findReq(comp.RequirementDiffs, "SV-001")
 	if r == nil {
@@ -894,7 +906,7 @@ func TestFieldChanges_SeverityRemove(t *testing.T) {
 		ComparisonMode: types.ModeTemporal,
 		MatchStrategy:  stratExactID,
 	}
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, opts)
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, opts)
 
 	r := findReq(comp.RequirementDiffs, "SV-001")
 	if r == nil {
@@ -919,7 +931,7 @@ func TestEmptyBaselines(t *testing.T) {
 	oldResults := makeResults()
 	newResults := makeResults()
 
-	comp := DiffHdf(oldResults, []hdf.HdfResults{newResults}, defaultOpts())
+	comp := mustDiffHdf(t, oldResults, []hdf.HdfResults{newResults}, defaultOpts())
 
 	if len(comp.RequirementDiffs) != 0 {
 		t.Errorf("expected 0 requirement diffs, got %d", len(comp.RequirementDiffs))
@@ -943,7 +955,7 @@ func TestTitleFromNewReq(t *testing.T) {
 	oldBaseline := makeBaseline("test-baseline", version100, oldReq)
 	newBaseline := makeBaseline("test-baseline", version100, newReq)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	r := findReq(comp.RequirementDiffs, "SV-001")
 	if r == nil {
@@ -961,7 +973,7 @@ func TestTitleFallbackToOldReq(t *testing.T) {
 	oldBaseline := makeBaseline("test-baseline", version100, oldReq)
 	newBaseline := makeBaseline("test-baseline", version100, newReq)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	r := findReq(comp.RequirementDiffs, "SV-001")
 	if r == nil {
@@ -986,7 +998,7 @@ func TestChangeReasonsIncludeResultChanged(t *testing.T) {
 		makeRequirement("SV-002", hdf.Failed, 0.7),
 	)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	fixed := findReq(comp.RequirementDiffs, "SV-001")
 	if fixed == nil {
@@ -1027,7 +1039,7 @@ func TestEmptyChangeReasonsForUnchanged(t *testing.T) {
 	req := makeRequirement("SV-001", hdf.Passed, 0.7)
 	baseline := makeBaseline("test-baseline", version100, req)
 
-	comp := DiffHdf(makeResults(baseline), []hdf.HdfResults{makeResults(baseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(baseline), []hdf.HdfResults{makeResults(baseline)}, defaultOpts())
 
 	r := findReq(comp.RequirementDiffs, "SV-001")
 	if r == nil {
@@ -1055,7 +1067,7 @@ func TestCustomTrackedFields(t *testing.T) {
 		ComparisonMode: types.ModeTemporal,
 		MatchStrategy:  stratExactID,
 	}
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, opts)
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, opts)
 
 	r := findReq(comp.RequirementDiffs, "SV-001")
 	if r == nil {
@@ -1077,7 +1089,7 @@ func TestCustomTrackedFields(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAbsentAndNewChangeReasonsEmpty(t *testing.T) {
-	comp := buildAbsentAndNewComparison()
+	comp := buildAbsentAndNewComparison(t)
 	assertAbsentAndNewSlicesEmpty(t, comp, true, false)
 }
 
@@ -1086,7 +1098,7 @@ func TestAbsentAndNewChangeReasonsEmpty(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAbsentAndNewFieldChangesEmpty(t *testing.T) {
-	comp := buildAbsentAndNewComparison()
+	comp := buildAbsentAndNewComparison(t)
 	assertAbsentAndNewSlicesEmpty(t, comp, false, true)
 }
 
@@ -1102,7 +1114,7 @@ func TestBaselineUnchanged_SameVersion(t *testing.T) {
 		makeRequirement("SV-001", hdf.Passed, 0.7),
 	)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	if len(comp.BaselineDiffs) != 1 {
 		t.Fatalf("expected 1 baseline diff, got %d", len(comp.BaselineDiffs))
@@ -1122,7 +1134,7 @@ func TestDefaultOptionsApplied(t *testing.T) {
 	results := makeResults(baseline)
 
 	// Empty options -- should default to temporal mode, exactId strategy, default tracked fields
-	comp := DiffHdf(results, []hdf.HdfResults{results}, Options{})
+	comp := mustDiffHdf(t, results, []hdf.HdfResults{results}, Options{})
 
 	if comp.ComparisonMode != types.ModeTemporal {
 		t.Errorf("expected default comparisonMode 'temporal', got %q", comp.ComparisonMode)
@@ -1138,15 +1150,15 @@ func TestDefaultOptionsApplied(t *testing.T) {
 
 func TestFieldChanges_TagsReplace(t *testing.T) {
 	oldReq := makeRequirement("SV-001", hdf.Passed, 0.7)
-	oldReq.Tags = map[string]interface{}{"cci": []interface{}{"CCI-000001"}}
+	oldReq.Tags = map[string]any{"cci": []any{"CCI-000001"}}
 
 	newReq := makeRequirement("SV-001", hdf.Passed, 0.7)
-	newReq.Tags = map[string]interface{}{"cci": []interface{}{"CCI-000002"}}
+	newReq.Tags = map[string]any{"cci": []any{"CCI-000002"}}
 
 	oldBaseline := makeBaseline("test-baseline", version100, oldReq)
 	newBaseline := makeBaseline("test-baseline", version100, newReq)
 
-	comp := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
 
 	r := findReq(comp.RequirementDiffs, "SV-001")
 	if r == nil {
@@ -1209,7 +1221,7 @@ func TestGetFieldValue_AllBranches(t *testing.T) {
 	req := hdf.EvaluatedRequirement{
 		Impact:       0.7,
 		Severity:     &sev,
-		Tags:         map[string]interface{}{"cci": "CCI-001"},
+		Tags:         map[string]any{"cci": "CCI-001"},
 		Title:        &title,
 		Descriptions: []hdf.Description{{Label: "default", Data: "desc"}},
 	}
@@ -1263,21 +1275,21 @@ func TestGetFieldValue_NilTitle(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestIsZeroValue_TableDriven(t *testing.T) {
-	var nilMap map[string]interface{}
+	var nilMap map[string]any
 	var nilSlice []string
 	var nilPtr *string
 	testStr := "test-value"
 
 	tests := []struct {
 		name     string
-		value    interface{}
+		value    any
 		expected bool
 	}{
 		{"nil interface", nil, true},
 		{"nil pointer", nilPtr, true},
 		{"non-nil pointer", &testStr, false},
 		{"nil map", nilMap, true},
-		{"non-nil empty map", map[string]interface{}{}, false},
+		{"non-nil empty map", map[string]any{}, false},
 		{"nil slice", nilSlice, true},
 		{"non-nil empty slice", []string{}, false},
 		{"zero int", 0, false},
@@ -1297,39 +1309,8 @@ func TestIsZeroValue_TableDriven(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Coverage: jsonMarshal — error branch
-// ---------------------------------------------------------------------------
-
-func TestJsonMarshal_NilReturnsNull(t *testing.T) {
-	result := jsonMarshal(nil)
-	if result != "null" {
-		t.Errorf("expected \"null\" for nil, got %q", result)
-	}
-}
-
-func TestJsonMarshal_ErrorBranch(t *testing.T) {
-	// json.Marshal errors on channels
-	ch := make(chan int)
-	result := jsonMarshal(ch)
-	if result != "null" {
-		t.Errorf("expected \"null\" for unmarshalable value, got %q", result)
-	}
-}
-
-func TestJsonMarshal_ValidValue(t *testing.T) {
-	result := jsonMarshal(42)
-	if result != "42" {
-		t.Errorf("expected \"42\", got %q", result)
-	}
-}
-
-func TestJsonMarshal_Map(t *testing.T) {
-	result := jsonMarshal(map[string]interface{}{"a": 1})
-	if result != `{"a":1}` {
-		t.Errorf("expected {\"a\":1}, got %q", result)
-	}
-}
+// jsonMarshal was removed in favor of reflect.DeepEqual for comparison.
+// See TestFieldChanges_KeyOrderIndependentMaps for verification.
 
 // ---------------------------------------------------------------------------
 // Coverage: derefStr — both branches
@@ -1395,7 +1376,7 @@ func TestDiffHdf_EmptyNewResults(t *testing.T) {
 		makeRequirement("SV-001", hdf.Passed, 0.7),
 	)
 	// Empty newResults slice — should not panic
-	comp := DiffHdf(makeResults(baseline), []hdf.HdfResults{}, defaultOpts())
+	comp := mustDiffHdf(t, makeResults(baseline), []hdf.HdfResults{}, defaultOpts())
 
 	// All old requirements should be absent
 	if len(comp.RequirementDiffs) != 1 {
@@ -1447,7 +1428,7 @@ func TestMultiSourceMode_SourceRoles(t *testing.T) {
 		MatchStrategy:  stratExactID,
 	}
 
-	comp := DiffHdf(oldResults, []hdf.HdfResults{newResults}, opts)
+	comp := mustDiffHdf(t, oldResults, []hdf.HdfResults{newResults}, opts)
 
 	if comp.ComparisonMode != types.ModeMultiSource {
 		t.Errorf("expected comparisonMode 'multiSource', got %q", comp.ComparisonMode)
@@ -1457,5 +1438,107 @@ func TestMultiSourceMode_SourceRoles(t *testing.T) {
 	}
 	if comp.Sources[0].Role != types.RoleOld {
 		t.Errorf("expected first source role 'old', got %q", comp.Sources[0].Role)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// C1: DiffHdf returns error for invalid strategy (not panic)
+// ---------------------------------------------------------------------------
+
+func TestDiffHdf_InvalidStrategy(t *testing.T) {
+	oldResults := makeResults(makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	))
+	newResults := makeResults(makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	))
+
+	opts := Options{
+		TrackedFields:  []string{fieldImpact},
+		ComparisonMode: types.ModeTemporal,
+		MatchStrategy:  "nonexistentStrategy",
+	}
+
+	_, err := DiffHdf(oldResults, []hdf.HdfResults{newResults}, opts)
+	if err == nil {
+		t.Fatal("expected error for invalid strategy, got nil")
+	}
+	if !strings.Contains(err.Error(), "nonexistentStrategy") {
+		t.Errorf("expected error message to contain strategy name, got: %s", err.Error())
+	}
+}
+
+func TestDiffHdf_InvalidFallbackStrategy(t *testing.T) {
+	oldResults := makeResults(makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	))
+	newResults := makeResults(makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	))
+
+	opts := Options{
+		TrackedFields:      []string{fieldImpact},
+		ComparisonMode:     types.ModeTemporal,
+		MatchStrategy:      stratExactID,
+		FallbackStrategies: []string{"badFallback"},
+	}
+
+	_, err := DiffHdf(oldResults, []hdf.HdfResults{newResults}, opts)
+	if err == nil {
+		t.Fatal("expected error for invalid fallback strategy, got nil")
+	}
+}
+
+func TestDiffHdf_ValidStrategy_NoError(t *testing.T) {
+	oldResults := makeResults(makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	))
+	newResults := makeResults(makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	))
+
+	comp, err := DiffHdf(oldResults, []hdf.HdfResults{newResults}, defaultOpts())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if comp.FormatVersion != version100 {
+		t.Errorf("expected formatVersion %q, got %q", version100, comp.FormatVersion)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// C2: Key-order-independent object comparison
+// ---------------------------------------------------------------------------
+
+func TestFieldChanges_KeyOrderIndependentMaps(t *testing.T) {
+	// Two maps with the same keys but created in different order.
+	// JSON marshalling could produce different strings but reflect.DeepEqual
+	// should consider them equal.
+	oldReq := makeRequirement("SV-001", hdf.Passed, 0.7)
+	oldReq.Tags = map[string]any{"b": "two", "a": "one"}
+
+	newReq := makeRequirement("SV-001", hdf.Passed, 0.7)
+	newReq.Tags = map[string]any{"a": "one", "b": "two"}
+
+	oldBaseline := makeBaseline("test-baseline", version100, oldReq)
+	newBaseline := makeBaseline("test-baseline", version100, newReq)
+
+	opts := Options{
+		TrackedFields:  []string{"tags"},
+		ComparisonMode: types.ModeTemporal,
+		MatchStrategy:  stratExactID,
+	}
+	comp, err := DiffHdf(makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	r := findReq(comp.RequirementDiffs, "SV-001")
+	if r == nil {
+		t.Fatal("SV-001 not found")
+	}
+	if len(r.FieldChanges) != 0 {
+		t.Errorf("expected 0 field changes (maps are equal regardless of key order), got %d: %v",
+			len(r.FieldChanges), r.FieldChanges)
 	}
 }

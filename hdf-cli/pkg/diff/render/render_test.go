@@ -167,7 +167,7 @@ func TestJSON_SummaryDetail_OnlySummaryFields(t *testing.T) {
 	out, err := JSON(comp, Options{Detail: DetailSummary})
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal([]byte(out), &parsed)
 	require.NoError(t, err)
 
@@ -187,18 +187,18 @@ func TestJSON_ControlDetail_NoBeforeAfter(t *testing.T) {
 	out, err := JSON(comp, Options{Detail: DetailControl})
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal([]byte(out), &parsed)
 	require.NoError(t, err)
 
 	// requirementDiffs should exist
-	diffs, ok := parsed["requirementDiffs"].([]interface{})
+	diffs, ok := parsed["requirementDiffs"].([]any)
 	require.True(t, ok)
 	require.NotEmpty(t, diffs)
 
 	// Each diff should NOT have before/after
 	for _, d := range diffs {
-		diffMap, ok := d.(map[string]interface{})
+		diffMap, ok := d.(map[string]any)
 		require.True(t, ok)
 		assert.NotContains(t, diffMap, "before")
 		assert.NotContains(t, diffMap, "after")
@@ -210,14 +210,14 @@ func TestJSON_DefaultDetailIsControl(t *testing.T) {
 	out, err := JSON(comp, Options{})
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal([]byte(out), &parsed)
 	require.NoError(t, err)
 
-	diffs, ok := parsed["requirementDiffs"].([]interface{})
+	diffs, ok := parsed["requirementDiffs"].([]any)
 	require.True(t, ok)
 	for _, d := range diffs {
-		diffMap := d.(map[string]interface{})
+		diffMap := d.(map[string]any)
 		assert.NotContains(t, diffMap, "before")
 		assert.NotContains(t, diffMap, "after")
 	}
@@ -231,11 +231,11 @@ func TestJSON_FilterStates(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal([]byte(out), &parsed)
 	require.NoError(t, err)
 
-	diffs := parsed["requirementDiffs"].([]interface{})
+	diffs := parsed["requirementDiffs"].([]any)
 	assert.Equal(t, 2, len(diffs))
 }
 

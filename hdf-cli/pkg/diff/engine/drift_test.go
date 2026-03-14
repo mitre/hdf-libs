@@ -32,7 +32,7 @@ func findDrift(drift []types.RequirementDiff, id string) *types.RequirementDiff 
 }
 
 // passingReq builds a passing requirement with the given ID, title, impact, tags and descriptions.
-func passingReq(id, title string, impact float64, tags map[string]interface{}, descs []hdf.Description) hdf.EvaluatedRequirement {
+func passingReq(id, title string, impact float64, tags map[string]any, descs []hdf.Description) hdf.EvaluatedRequirement {
 	req := makeRequirement(id, hdf.Passed, impact)
 	req.Title = strPtr(title)
 	req.Tags = tags
@@ -43,7 +43,7 @@ func passingReq(id, title string, impact float64, tags map[string]interface{}, d
 }
 
 // failingReq builds a failing requirement with the given ID, title, impact, tags and descriptions.
-func failingReq(id, title string, impact float64, tags map[string]interface{}, descs []hdf.Description) hdf.EvaluatedRequirement {
+func failingReq(id, title string, impact float64, tags map[string]any, descs []hdf.Description) hdf.EvaluatedRequirement {
 	req := makeRequirement(id, hdf.Failed, impact)
 	req.Title = strPtr(title)
 	req.Tags = tags
@@ -54,10 +54,10 @@ func failingReq(id, title string, impact float64, tags map[string]interface{}, d
 }
 
 // defaultTags returns the standard test tags {cci: [CCI-000366], nist: [AC-6]}.
-func defaultTags() map[string]interface{} {
-	return map[string]interface{}{
-		"cci":  []interface{}{"CCI-000366"},
-		"nist": []interface{}{"AC-6"},
+func defaultTags() map[string]any {
+	return map[string]any{
+		"cci":  []any{"CCI-000366"},
+		"nist": []any{"AC-6"},
 	}
 }
 
@@ -130,7 +130,7 @@ func TestDrift_ArrayAlwaysPresent(t *testing.T) {
 	baseline := makeBaseline("test-baseline", version100, req)
 	results := makeResults(baseline)
 
-	comp := DiffHdf(results, []hdf.HdfResults{results}, driftOpts())
+	comp := mustDiffHdf(t, results, []hdf.HdfResults{results}, driftOpts())
 
 	// drift should be defined (non-nil) -- Go represents it as a nil slice when empty,
 	// but extractDrift returns nil for "no drift". The JSON tag uses omitempty so nil is ok.
@@ -150,7 +150,7 @@ func TestDrift_NoDriftWhenIdentical(t *testing.T) {
 	baseline := makeBaseline("test-baseline", version100, req)
 	results := makeResults(baseline)
 
-	comp := DiffHdf(results, []hdf.HdfResults{results}, driftOpts())
+	comp := mustDiffHdf(t, results, []hdf.HdfResults{results}, driftOpts())
 
 	if len(comp.Drift) != 0 {
 		t.Errorf("expected empty drift, got %d entries", len(comp.Drift))
@@ -175,7 +175,7 @@ func TestDrift_NoDriftWhenStatusChanged(t *testing.T) {
 		passingReq(reqIDSV001, "SSH Check", 0.7, defaultTags(), defaultDescs()),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	req := findReq(comp.RequirementDiffs, reqIDSV001)
 	if req == nil {
@@ -191,8 +191,8 @@ func TestDrift_NoDriftWhenStatusChanged(t *testing.T) {
 
 // 4. Drift when tags change but status stays the same.
 func TestDrift_TagsChangedStatusSame(t *testing.T) {
-	oldTags := map[string]interface{}{"cci": []interface{}{"CCI-000366"}, "nist": []interface{}{"AC-6"}}
-	newTags := map[string]interface{}{"cci": []interface{}{"CCI-000366", "CCI-000370"}, "nist": []interface{}{"AC-6"}}
+	oldTags := map[string]any{"cci": []any{"CCI-000366"}, "nist": []any{"AC-6"}}
+	newTags := map[string]any{"cci": []any{"CCI-000366", "CCI-000370"}, "nist": []any{"AC-6"}}
 
 	oldDoc := makeResults(makeBaseline("test-baseline", version100,
 		passingReq(reqIDSV001, "SSH Check", 0.7, oldTags, defaultDescs()),
@@ -201,7 +201,7 @@ func TestDrift_TagsChangedStatusSame(t *testing.T) {
 		passingReq(reqIDSV001, "SSH Check", 0.7, newTags, defaultDescs()),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	// In requirementDiffs as unchanged with metadataChanged reason
 	req := findReq(comp.RequirementDiffs, reqIDSV001)
@@ -259,7 +259,7 @@ func TestDrift_SingleMetadataChange(t *testing.T) {
 			oldDoc := makeResults(makeBaseline("test-baseline", version100, tc.oldReq))
 			newDoc := makeResults(makeBaseline("test-baseline", version100, tc.newReq))
 
-			comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+			comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 			assertSingleDriftWithReason(t, comp, reqIDSV001, tc.expectedReason)
 		})
@@ -278,7 +278,7 @@ func TestDrift_DescriptionChanged(t *testing.T) {
 		passingReq(reqIDSV001, "SSH Check", 0.7, defaultTags(), newDescs),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	assertSingleDriftWithReason(t, comp, reqIDSV001, types.ReasonMetadataChanged)
 }
@@ -286,20 +286,20 @@ func TestDrift_DescriptionChanged(t *testing.T) {
 // 7. Multiple drift items -- only requirements with metadata changes appear in drift.
 func TestDrift_MultipleDriftItems(t *testing.T) {
 	oldDoc := makeResults(makeBaseline("test-baseline", version100,
-		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]interface{}{"cci": []interface{}{"CCI-000366"}}, defaultDescs()),
+		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]any{"cci": []any{"CCI-000366"}}, defaultDescs()),
 		passingReq(reqIDSV002, "Firewall Check", 0.7, defaultTags(), defaultDescs()),
 		passingReq(reqIDSV003, "Audit Logging", 0.5, defaultTags(), defaultDescs()),
 	))
 	newDoc := makeResults(makeBaseline("test-baseline", version100,
 		// SV-001: tags changed
-		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]interface{}{"cci": []interface{}{"CCI-000366", "CCI-000370"}}, defaultDescs()),
+		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]any{"cci": []any{"CCI-000366", "CCI-000370"}}, defaultDescs()),
 		// SV-002: truly unchanged
 		passingReq(reqIDSV002, "Firewall Check", 0.7, defaultTags(), defaultDescs()),
 		// SV-003: impact changed
 		passingReq(reqIDSV003, "Audit Logging", 0.3, defaultTags(), defaultDescs()),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	// All three in requirementDiffs
 	if len(comp.RequirementDiffs) != 3 {
@@ -332,7 +332,7 @@ func TestDrift_FieldChangesPopulated_Impact(t *testing.T) {
 		passingReq(reqIDSV001, "SSH Check", 0.5, defaultTags(), defaultDescs()),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	if len(comp.Drift) != 1 {
 		t.Fatalf("expected 1 drift entry, got %d", len(comp.Drift))
@@ -359,8 +359,8 @@ func TestDrift_FieldChangesPopulated_Impact(t *testing.T) {
 
 // 9. Drift entries have fieldChanges populated for tags when tracked.
 func TestDrift_FieldChangesPopulated_Tags(t *testing.T) {
-	oldTags := map[string]interface{}{"cci": []interface{}{"CCI-000366"}}
-	newTags := map[string]interface{}{"cci": []interface{}{"CCI-000366", "CCI-000370"}}
+	oldTags := map[string]any{"cci": []any{"CCI-000366"}}
+	newTags := map[string]any{"cci": []any{"CCI-000366", "CCI-000370"}}
 
 	oldDoc := makeResults(makeBaseline("test-baseline", version100,
 		passingReq(reqIDSV001, "SSH Check", 0.7, oldTags, defaultDescs()),
@@ -369,7 +369,7 @@ func TestDrift_FieldChangesPopulated_Tags(t *testing.T) {
 		passingReq(reqIDSV001, "SSH Check", 0.7, newTags, defaultDescs()),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	if len(comp.Drift) != 1 {
 		t.Fatalf("expected 1 drift entry, got %d", len(comp.Drift))
@@ -392,8 +392,8 @@ func TestDrift_FieldChangesPopulated_Tags(t *testing.T) {
 
 // 10. Drift entries have before/after snapshots.
 func TestDrift_BeforeAfterSnapshots(t *testing.T) {
-	oldTags := map[string]interface{}{"cci": []interface{}{"CCI-000366"}}
-	newTags := map[string]interface{}{"cci": []interface{}{"CCI-000366", "CCI-000370"}}
+	oldTags := map[string]any{"cci": []any{"CCI-000366"}}
+	newTags := map[string]any{"cci": []any{"CCI-000366", "CCI-000370"}}
 
 	oldDoc := makeResults(makeBaseline("test-baseline", version100,
 		passingReq(reqIDSV001, "SSH Check", 0.7, oldTags, defaultDescs()),
@@ -402,7 +402,7 @@ func TestDrift_BeforeAfterSnapshots(t *testing.T) {
 		passingReq(reqIDSV001, "SSH Check", 0.7, newTags, defaultDescs()),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	if len(comp.Drift) != 1 {
 		t.Fatalf("expected 1 drift entry, got %d", len(comp.Drift))
@@ -429,17 +429,17 @@ func TestDrift_BeforeAfterSnapshots(t *testing.T) {
 // 11. Summary is not affected by drift (drift items are counted as unchanged in summary).
 func TestDrift_SummaryNotAffected(t *testing.T) {
 	oldDoc := makeResults(makeBaseline("test-baseline", version100,
-		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]interface{}{"cci": []interface{}{"CCI-000366"}}, defaultDescs()),
+		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]any{"cci": []any{"CCI-000366"}}, defaultDescs()),
 		passingReq(reqIDSV002, "Firewall Check", 0.7, defaultTags(), defaultDescs()),
 	))
 	newDoc := makeResults(makeBaseline("test-baseline", version100,
 		// SV-001: tags changed (drift)
-		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]interface{}{"cci": []interface{}{"CCI-000366", "CCI-000370"}}, defaultDescs()),
+		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]any{"cci": []any{"CCI-000366", "CCI-000370"}}, defaultDescs()),
 		// SV-002: truly unchanged
 		passingReq(reqIDSV002, "Firewall Check", 0.7, defaultTags(), defaultDescs()),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	// Summary counts should reflect requirementDiffs, not drift
 	if comp.Summary.Unchanged != 2 {
@@ -476,7 +476,7 @@ func TestDrift_EmptyWhenTrulyIdentical(t *testing.T) {
 	baseline := makeBaseline("test-baseline", version100, req)
 	results := makeResults(baseline)
 
-	comp := DiffHdf(results, []hdf.HdfResults{results}, driftOpts())
+	comp := mustDiffHdf(t, results, []hdf.HdfResults{results}, driftOpts())
 
 	if len(comp.Drift) != 0 {
 		t.Errorf("expected empty drift for truly identical requirements, got %d entries", len(comp.Drift))
@@ -485,8 +485,8 @@ func TestDrift_EmptyWhenTrulyIdentical(t *testing.T) {
 
 // 14. Drift for unchanged requirement with CCI tag added.
 func TestDrift_CCITagAdded(t *testing.T) {
-	oldTags := map[string]interface{}{"cci": []interface{}{"CCI-000366"}, "nist": []interface{}{"AC-6"}}
-	newTags := map[string]interface{}{"cci": []interface{}{"CCI-000366", "CCI-000370"}, "nist": []interface{}{"AC-6"}}
+	oldTags := map[string]any{"cci": []any{"CCI-000366"}, "nist": []any{"AC-6"}}
+	newTags := map[string]any{"cci": []any{"CCI-000366", "CCI-000370"}, "nist": []any{"AC-6"}}
 
 	oldDoc := makeResults(makeBaseline("test-baseline", version100,
 		passingReq(reqIDSV001, "SSH Check", 0.7, oldTags, defaultDescs()),
@@ -495,7 +495,7 @@ func TestDrift_CCITagAdded(t *testing.T) {
 		passingReq(reqIDSV001, "SSH Check", 0.7, newTags, defaultDescs()),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	if len(comp.Drift) != 1 {
 		t.Fatalf("expected 1 drift entry, got %d", len(comp.Drift))
@@ -512,13 +512,13 @@ func TestDrift_CCITagAdded(t *testing.T) {
 // 15. Drift entries have state "unchanged".
 func TestDrift_EntriesHaveStateUnchanged(t *testing.T) {
 	oldDoc := makeResults(makeBaseline("test-baseline", version100,
-		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]interface{}{"cci": []interface{}{"CCI-000366"}}, defaultDescs()),
+		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]any{"cci": []any{"CCI-000366"}}, defaultDescs()),
 	))
 	newDoc := makeResults(makeBaseline("test-baseline", version100,
-		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]interface{}{"cci": []interface{}{"CCI-000366", "CCI-000370"}}, defaultDescs()),
+		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]any{"cci": []any{"CCI-000366", "CCI-000370"}}, defaultDescs()),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	if len(comp.Drift) != 1 {
 		t.Fatalf("expected 1 drift entry, got %d", len(comp.Drift))
@@ -533,13 +533,13 @@ func TestDrift_EntriesHaveStateUnchanged(t *testing.T) {
 // 16. Drift entries have changeReasons populated (impactChanged + metadataChanged).
 func TestDrift_ChangeReasonsPopulated(t *testing.T) {
 	oldDoc := makeResults(makeBaseline("test-baseline", version100,
-		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]interface{}{"cci": []interface{}{"CCI-000366"}}, defaultDescs()),
+		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]any{"cci": []any{"CCI-000366"}}, defaultDescs()),
 	))
 	newDoc := makeResults(makeBaseline("test-baseline", version100,
-		passingReq(reqIDSV001, "SSH Check", 0.5, map[string]interface{}{"cci": []interface{}{"CCI-000366", "CCI-000370"}}, defaultDescs()),
+		passingReq(reqIDSV001, "SSH Check", 0.5, map[string]any{"cci": []any{"CCI-000366", "CCI-000370"}}, defaultDescs()),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	if len(comp.Drift) != 1 {
 		t.Fatalf("expected 1 drift entry, got %d", len(comp.Drift))
@@ -566,7 +566,7 @@ func TestDrift_NoDriftForNewRequirements(t *testing.T) {
 		passingReq(reqIDSV001, "SSH Check", 0.7, defaultTags(), defaultDescs()),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	if len(comp.Drift) != 0 {
 		t.Errorf("expected empty drift for new requirements, got %d entries", len(comp.Drift))
@@ -580,7 +580,7 @@ func TestDrift_NoDriftForAbsentRequirements(t *testing.T) {
 	))
 	newDoc := makeResults(makeBaseline("test-baseline", version100))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	if len(comp.Drift) != 0 {
 		t.Errorf("expected empty drift for absent requirements, got %d entries", len(comp.Drift))
@@ -591,13 +591,13 @@ func TestDrift_NoDriftForAbsentRequirements(t *testing.T) {
 func TestDrift_MultipleChangeReasons(t *testing.T) {
 	// Change both impact (0.7 -> 0.5) and tags -- produces both impactChanged and metadataChanged
 	oldDoc := makeResults(makeBaseline("test-baseline", version100,
-		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]interface{}{"cci": []interface{}{"CCI-000366"}}, defaultDescs()),
+		passingReq(reqIDSV001, "SSH Check", 0.7, map[string]any{"cci": []any{"CCI-000366"}}, defaultDescs()),
 	))
 	newDoc := makeResults(makeBaseline("test-baseline", version100,
-		passingReq(reqIDSV001, "SSH Check", 0.5, map[string]interface{}{"cci": []interface{}{"CCI-000366", "CCI-000370"}}, defaultDescs()),
+		passingReq(reqIDSV001, "SSH Check", 0.5, map[string]any{"cci": []any{"CCI-000366", "CCI-000370"}}, defaultDescs()),
 	))
 
-	comp := DiffHdf(oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
+	comp := mustDiffHdf(t, oldDoc, []hdf.HdfResults{newDoc}, driftOpts())
 
 	if len(comp.Drift) != 1 {
 		t.Fatalf("expected 1 drift entry, got %d", len(comp.Drift))

@@ -28,37 +28,8 @@ func (s *MappedIDStrategy) Name() string {
 func (s *MappedIDStrategy) Match(oldReqs, newReqs []hdf.EvaluatedRequirement) MatchResult {
 	result := MatchResult{}
 
-	// Build a map of new requirements by ID, detecting duplicates.
-	newByID := make(map[string]int)
-	duplicateNewIDs := make(map[string]bool)
-	for i, req := range newReqs {
-		id := req.ID
-		if duplicateNewIDs[id] {
-			continue
-		}
-		if _, exists := newByID[id]; exists {
-			duplicateNewIDs[id] = true
-			delete(newByID, id)
-		} else {
-			newByID[id] = i
-		}
-	}
-
-	// Build a map of old requirements by ID, detecting duplicates.
-	oldByID := make(map[string]int)
-	duplicateOldIDs := make(map[string]bool)
-	for i, req := range oldReqs {
-		id := req.ID
-		if duplicateOldIDs[id] {
-			continue
-		}
-		if _, exists := oldByID[id]; exists {
-			duplicateOldIDs[id] = true
-			delete(oldByID, id)
-		} else {
-			oldByID[id] = i
-		}
-	}
+	newByID, duplicateNewIDs := buildUniqueIDIndex(newReqs)
+	_, duplicateOldIDs := buildUniqueIDIndex(oldReqs)
 
 	// Track which new reqs have been matched
 	matchedNewIDs := make(map[string]bool)

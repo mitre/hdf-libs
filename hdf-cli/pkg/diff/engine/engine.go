@@ -3,7 +3,6 @@
 package engine
 
 import (
-	"encoding/json"
 	"reflect"
 	"sort"
 	"strconv"
@@ -64,7 +63,8 @@ func buildMatchOptions(opts Options) matching.Options {
 
 // DiffHdf compares two HDF results documents and produces a structured comparison.
 // For fleet mode, newResults can contain multiple HdfResults (one per system).
-func DiffHdf(oldResults hdf.HdfResults, newResults []hdf.HdfResults, opts Options) types.HdfComparison {
+// Returns an error if the match strategy is invalid.
+func DiffHdf(oldResults hdf.HdfResults, newResults []hdf.HdfResults, opts Options) (types.HdfComparison, error) {
 	opts = resolveOptions(opts)
 	matchOpts := buildMatchOptions(opts)
 
@@ -82,7 +82,10 @@ func DiffHdf(oldResults hdf.HdfResults, newResults []hdf.HdfResults, opts Option
 	sources := buildSources(opts.ComparisonMode)
 
 	// Compute baseline and requirement diffs
-	baselineDiffs, requirementDiffs := comparePair(oldResults, newDoc, opts.TrackedFields, matchOpts)
+	baselineDiffs, requirementDiffs, err := comparePair(oldResults, newDoc, opts.TrackedFields, matchOpts)
+	if err != nil {
+		return types.HdfComparison{}, err
+	}
 
 	// Sort by ID
 	sort.Slice(requirementDiffs, func(i, j int) bool {
@@ -102,32 +105,20 @@ func DiffHdf(oldResults hdf.HdfResults, newResults []hdf.HdfResults, opts Option
 		BaselineDiffs:    baselineDiffs,
 		RequirementDiffs: requirementDiffs,
 		Drift:            drift,
-	}
+	}, nil
 }
 
 // buildSources creates source metadata entries based on comparison mode.
 func buildSources(mode types.ComparisonMode) []types.Source {
-	switch mode {
-	case types.ModeBaseline:
+	if mode == types.ModeBaseline {
 		return []types.Source{
 			{Role: types.RoleGolden, Label: "Golden baseline"},
 			{Role: types.RoleNew, Label: "Current scan"},
 		}
-	case types.ModeMultiSource:
-		return []types.Source{
-			{Role: types.RoleOld, Label: "Old evaluation"},
-			{Role: types.RoleNew, Label: "New evaluation"},
-		}
-	case types.ModeTemporal, types.ModeFleet:
-		return []types.Source{
-			{Role: types.RoleOld, Label: "Old evaluation"},
-			{Role: types.RoleNew, Label: "New evaluation"},
-		}
-	default:
-		return []types.Source{
-			{Role: types.RoleOld, Label: "Old evaluation"},
-			{Role: types.RoleNew, Label: "New evaluation"},
-		}
+	}
+	return []types.Source{
+		{Role: types.RoleOld, Label: "Old evaluation"},
+		{Role: types.RoleNew, Label: "New evaluation"},
 	}
 }
 
@@ -137,7 +128,7 @@ func diffFleet(
 	systems []hdf.HdfResults,
 	opts Options,
 	matchOpts matching.Options,
-) types.HdfComparison {
+) (types.HdfComparison, error) {
 	sources := []types.Source{
 		{Role: types.RoleReference, Label: "Reference"},
 	}
@@ -154,7 +145,10 @@ func diffFleet(
 			Label: "System " + strconv.Itoa(sourceIndex),
 		})
 
-		baselineDiffs, requirementDiffs := comparePair(reference, sys, opts.TrackedFields, matchOpts)
+		baselineDiffs, requirementDiffs, err := comparePair(reference, sys, opts.TrackedFields, matchOpts)
+		if err != nil {
+			return types.HdfComparison{}, err
+		}
 
 		// Tag each requirement diff with its source index
 		for j := range requirementDiffs {
@@ -200,7 +194,7 @@ func diffFleet(
 		BaselineDiffs:    allBaselineDiffs,
 		RequirementDiffs: allRequirementDiffs,
 		Drift:            drift,
-	}
+	}, nil
 }
 
 // comparePair performs the core pairwise comparison between two HDF result documents.
@@ -208,7 +202,7 @@ func comparePair(
 	oldDoc, newDoc hdf.HdfResults,
 	trackedFields []string,
 	matchOpts matching.Options,
-) ([]types.BaselineDiff, []types.RequirementDiff) {
+) ([]types.BaselineDiff, []types.RequirementDiff, error) {
 	// Build baseline maps by name
 	oldBaselineMap := make(map[string]hdf.EvaluatedBaseline)
 	for _, b := range oldDoc.Baselines {
@@ -273,7 +267,10 @@ func comparePair(
 	}
 
 	// Use the matching system to pair requirements
-	matchResult := matching.MatchRequirements(oldReqs, newReqs, matchOpts)
+	matchResult, err := matching.MatchRequirementsWithError(oldReqs, newReqs, matchOpts)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// Build requirement diffs from match results
 	var requirementDiffs []types.RequirementDiff
@@ -360,7 +357,7 @@ func comparePair(
 		})
 	}
 
-	return baselineDiffs, requirementDiffs
+	return baselineDiffs, requirementDiffs, nil
 }
 
 // extractDrift returns requirements whose effective status is unchanged but whose
@@ -377,7 +374,8 @@ func extractDrift(requirementDiffs []types.RequirementDiff) []types.RequirementD
 }
 
 // computeFieldChanges computes field-level changes between two requirements
-// for the specified tracked fields. Uses JSON serialization for deep comparison.
+// for the specified tracked fields. Uses reflect.DeepEqual for key-order-independent
+// comparison (replacing the previous JSON serialization approach).
 func computeFieldChanges(
 	oldReq, newReq hdf.EvaluatedRequirement,
 	trackedFields []string,
@@ -388,10 +386,7 @@ func computeFieldChanges(
 		oldVal := getFieldValue(oldReq, field)
 		newVal := getFieldValue(newReq, field)
 
-		oldJSON := jsonMarshal(oldVal)
-		newJSON := jsonMarshal(newVal)
-
-		if oldJSON != newJSON {
+		if !reflect.DeepEqual(oldVal, newVal) {
 			oldIsZero := isZeroValue(oldVal)
 			newIsZero := isZeroValue(newVal)
 
@@ -423,7 +418,7 @@ func computeFieldChanges(
 }
 
 // getFieldValue extracts a field value from an EvaluatedRequirement by field name.
-func getFieldValue(req hdf.EvaluatedRequirement, field string) interface{} {
+func getFieldValue(req hdf.EvaluatedRequirement, field string) any {
 	switch field {
 	case fieldNameImpact:
 		return req.Impact
@@ -449,7 +444,7 @@ func getFieldValue(req hdf.EvaluatedRequirement, field string) interface{} {
 // isZeroValue checks if a value is nil (representing an absent field).
 // Numeric zero values (0, 0.0) are NOT considered absent -- they are valid values.
 // Only nil interface values and nil pointers/maps/slices count as absent.
-func isZeroValue(v interface{}) bool {
+func isZeroValue(v any) bool {
 	if v == nil {
 		return true
 	}
@@ -466,20 +461,6 @@ func isZeroValue(v interface{}) bool {
 	default:
 		return false
 	}
-}
-
-const jsonNull = "null"
-
-// jsonMarshal marshals a value to JSON string for comparison.
-func jsonMarshal(v interface{}) string {
-	if v == nil {
-		return jsonNull
-	}
-	b, err := json.Marshal(v)
-	if err != nil {
-		return jsonNull
-	}
-	return string(b)
 }
 
 // resolveTitle returns the title from newReq if set, otherwise from oldReq.

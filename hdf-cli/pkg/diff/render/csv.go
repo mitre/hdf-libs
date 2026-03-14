@@ -43,7 +43,7 @@ func CSV(comparison types.HdfComparison, opts Options) (string, error) {
 			req.NewEffectiveStatus,
 			formatImpact(req.OldImpact),
 			formatImpact(req.NewImpact),
-			formatChangeReasonsCSV(req.ChangeReasons),
+			formatChangeReasons(req.ChangeReasons),
 		}
 		if detail == DetailFull {
 			row = append(row, formatFieldChangesWithArrow(req.FieldChanges, "->"))
@@ -68,13 +68,4 @@ func formatImpact(impact *float64) string {
 		return ""
 	}
 	return fmt.Sprintf("%g", *impact)
-}
-
-// formatChangeReasonsCSV joins change reasons with commas for CSV output.
-func formatChangeReasonsCSV(reasons []types.ChangeReason) string {
-	parts := make([]string, len(reasons))
-	for i, r := range reasons {
-		parts[i] = string(r)
-	}
-	return strings.Join(parts, ", ")
 }
