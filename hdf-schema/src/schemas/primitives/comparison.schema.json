@@ -1,0 +1,725 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v1.0.0",
+  "title": "HDF Comparison Primitives",
+  "description": "Types for representing structured comparisons between HDF security assessment documents.",
+  "$defs": {
+    "Requirement_State": {
+      "type": "string",
+      "enum": [
+        "new",
+        "absent",
+        "unchanged",
+        "updated",
+        "fixed",
+        "regressed",
+        "moved",
+        "split",
+        "merged"
+      ],
+      "description": "SARIF-compatible vocabulary extended for security. 'new' = present only in new source, 'absent' = present only in old, 'unchanged' = same effective status, 'updated' = status changed (generic), 'fixed' = was failing now passing, 'regressed' = was passing now failing, 'moved' = reorganized same content, 'split'/'merged' = reserved for v1.1.",
+      "title": "Requirement State"
+    },
+    "Change_Reason": {
+      "type": "string",
+      "enum": [
+        "resultChanged",
+        "overrideAdded",
+        "overrideExpired",
+        "overrideRemoved",
+        "overrideModified",
+        "impactChanged",
+        "baselineUpgraded",
+        "controlMapped",
+        "scannerChanged",
+        "targetChanged",
+        "configChanged",
+        "metadataChanged"
+      ],
+      "description": "The reason a requirement's state changed between sources.",
+      "title": "Change Reason"
+    },
+    "Comparison_Mode": {
+      "type": "string",
+      "enum": [
+        "temporal",
+        "baseline",
+        "fleet",
+        "multiSource"
+      ],
+      "description": "The mode of comparison. 'temporal' compares the same target over time. 'baseline' compares against a golden reference. 'fleet' compares across multiple systems. 'multiSource' compares outputs from different scanners.",
+      "title": "Comparison Mode"
+    },
+    "Source_Role": {
+      "type": "string",
+      "enum": [
+        "old",
+        "new",
+        "golden",
+        "reference",
+        "system"
+      ],
+      "description": "The role of a source document in the comparison.",
+      "title": "Source Role"
+    },
+    "Original_Format": {
+      "type": "string",
+      "enum": [
+        "hdf-v2",
+        "inspec-v1",
+        "sarif",
+        "oscal-ar",
+        "xccdf"
+      ],
+      "description": "The original format of the source document before conversion to HDF.",
+      "title": "Original Format"
+    },
+    "Match_Strategy": {
+      "type": "string",
+      "enum": [
+        "exactId",
+        "mappedId",
+        "cciMatch",
+        "nistMatch",
+        "fuzzyTitle",
+        "fuzzyContent"
+      ],
+      "description": "The strategy used to match requirements across sources. 'exactId' matches by identical IDs. 'mappedId' uses an ID mapping table. 'cciMatch'/'nistMatch' match by framework identifiers. 'fuzzyTitle'/'fuzzyContent' use text similarity.",
+      "title": "Match Strategy"
+    },
+    "Conflict_Resolution": {
+      "type": "string",
+      "enum": [
+        "mostSevere",
+        "mostRecent",
+        "manual",
+        "unresolved"
+      ],
+      "description": "How a conflict between multiple scanner results was resolved.",
+      "title": "Conflict Resolution"
+    },
+    "Annotation_Category": {
+      "type": "string",
+      "enum": [
+        "remediation",
+        "drift",
+        "waiver",
+        "baselineChange",
+        "scannerNote"
+      ],
+      "description": "The category of an annotation attached to a comparison.",
+      "title": "Annotation Category"
+    },
+    "Field_Change": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "op",
+        "path"
+      ],
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": [
+            "add",
+            "remove",
+            "replace"
+          ],
+          "description": "The type of change operation."
+        },
+        "path": {
+          "type": "string",
+          "description": "JSON Pointer path to the changed field."
+        },
+        "oldValue": {
+          "description": "The previous value of the field (for 'remove' and 'replace' operations)."
+        },
+        "newValue": {
+          "description": "The new value of the field (for 'add' and 'replace' operations)."
+        }
+      },
+      "description": "A single field-level change between two versions of a requirement.",
+      "title": "Field Change"
+    },
+    "Source": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "role",
+        "label"
+      ],
+      "properties": {
+        "role": {
+          "$ref": "#/$defs/Source_Role",
+          "description": "The role of this source in the comparison."
+        },
+        "label": {
+          "type": "string",
+          "description": "Human-readable label for this source. Example: 'Before remediation scan'."
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "URI pointing to the source document."
+        },
+        "originalFormat": {
+          "$ref": "#/$defs/Original_Format",
+          "description": "The original format of the source document before conversion to HDF."
+        },
+        "checksum": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
+          "description": "Cryptographic checksum of the source document for integrity verification."
+        },
+        "assessmentTimestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the source assessment was performed. ISO 8601 format."
+        },
+        "dataSource": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/DataSource",
+          "description": "The tool or service that produced the source data."
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Target"
+          },
+          "description": "The target systems assessed in this source."
+        },
+        "baselineRef": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the baseline used in this source."
+            },
+            "version": {
+              "type": "string",
+              "description": "Version of the baseline used in this source."
+            }
+          },
+          "description": "Reference to the baseline used in this source assessment."
+        }
+      },
+      "description": "A source document participating in the comparison.",
+      "title": "Source"
+    },
+    "Matching_Config": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "primaryStrategy"
+      ],
+      "properties": {
+        "primaryStrategy": {
+          "$ref": "#/$defs/Match_Strategy",
+          "description": "The primary strategy used to match requirements across sources."
+        },
+        "fallbackStrategies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Match_Strategy"
+          },
+          "description": "Ordered list of fallback strategies tried when the primary strategy fails to find a match."
+        },
+        "minimumConfidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Minimum confidence score (0-1) required to accept a match."
+        },
+        "mappingTableUri": {
+          "type": "string",
+          "format": "uri",
+          "description": "URI pointing to an external mapping table used for ID translation."
+        },
+        "fingerprintFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fields used to compute a fingerprint for fuzzy matching."
+        }
+      },
+      "description": "Configuration for how requirements are matched across sources.",
+      "title": "Matching Config"
+    },
+    "State_Counts": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "properties": {
+        "fixed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements that changed from failing to passing."
+        },
+        "regressed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements that changed from passing to failing."
+        },
+        "new": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements present only in the new source."
+        },
+        "absent": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements present only in the old source."
+        },
+        "unchanged": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements with the same effective status."
+        },
+        "updated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements with a generic status change."
+        },
+        "moved": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements that were reorganized without content change."
+        }
+      },
+      "description": "Counts of requirements in each state.",
+      "title": "State Counts"
+    },
+    "Severity_Breakdown": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "properties": {
+        "critical": {
+          "$ref": "#/$defs/State_Counts",
+          "description": "State counts for critical severity requirements."
+        },
+        "high": {
+          "$ref": "#/$defs/State_Counts",
+          "description": "State counts for high severity requirements."
+        },
+        "medium": {
+          "$ref": "#/$defs/State_Counts",
+          "description": "State counts for medium severity requirements."
+        },
+        "low": {
+          "$ref": "#/$defs/State_Counts",
+          "description": "State counts for low severity requirements."
+        }
+      },
+      "description": "Breakdown of state counts by severity level.",
+      "title": "Severity Breakdown"
+    },
+    "Per_Source_Summary": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "sourceIndex",
+        "label"
+      ],
+      "properties": {
+        "sourceIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Zero-based index into the sources array identifying which source this summary is for."
+        },
+        "label": {
+          "type": "string",
+          "description": "Human-readable label for this source."
+        },
+        "fixed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements that changed from failing to passing."
+        },
+        "regressed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements that changed from passing to failing."
+        },
+        "new": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements present only in the new source."
+        },
+        "absent": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements present only in the old source."
+        },
+        "unchanged": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements with the same effective status."
+        },
+        "updated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements with a generic status change."
+        },
+        "moved": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements that were reorganized without content change."
+        }
+      },
+      "description": "Summary statistics for a single source in a multi-source comparison.",
+      "title": "Per Source Summary"
+    },
+    "Comparison_Summary": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "total",
+        "matchedCount",
+        "unmatchedOldCount",
+        "unmatchedNewCount"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of unique requirements across all sources."
+        },
+        "matchedCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements successfully matched between sources."
+        },
+        "unmatchedOldCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements in the old source with no match in the new source."
+        },
+        "unmatchedNewCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements in the new source with no match in the old source."
+        },
+        "new": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements present only in the new source."
+        },
+        "absent": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements present only in the old source."
+        },
+        "unchanged": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements with the same effective status."
+        },
+        "updated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements with a generic status change."
+        },
+        "fixed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements that changed from failing to passing."
+        },
+        "regressed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements that changed from passing to failing."
+        },
+        "moved": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of requirements that were reorganized without content change."
+        },
+        "oldCompliancePercent": {
+          "type": "number",
+          "description": "Compliance percentage of the old source (0-100)."
+        },
+        "newCompliancePercent": {
+          "type": "number",
+          "description": "Compliance percentage of the new source (0-100)."
+        },
+        "complianceDelta": {
+          "type": "number",
+          "description": "Change in compliance percentage (new - old)."
+        },
+        "averageMatchConfidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Average confidence score across all requirement matches (0-1)."
+        },
+        "bySeverity": {
+          "$ref": "#/$defs/Severity_Breakdown",
+          "description": "State counts broken down by severity level."
+        },
+        "perSource": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Per_Source_Summary"
+          },
+          "description": "Summary statistics for each individual source in a multi-source comparison."
+        }
+      },
+      "description": "Summary statistics for the overall comparison.",
+      "title": "Comparison Summary"
+    },
+    "Baseline_Diff": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "name",
+        "state"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the baseline being compared."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "new",
+            "absent",
+            "unchanged",
+            "updated"
+          ],
+          "description": "The state of this baseline in the comparison."
+        },
+        "oldVersion": {
+          "type": "string",
+          "description": "Version of the baseline in the old source."
+        },
+        "newVersion": {
+          "type": "string",
+          "description": "Version of the baseline in the new source."
+        },
+        "mappingSource": {
+          "type": "string",
+          "description": "The source of any ID mapping used to correlate requirements across baseline versions."
+        }
+      },
+      "description": "Comparison of a baseline between sources.",
+      "title": "Baseline Diff"
+    },
+    "Scanner_Conflict": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "field",
+        "values"
+      ],
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "The field where the conflict occurs."
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "unevaluatedProperties": false,
+            "required": [
+              "sourceIndex",
+              "sourceLabel",
+              "value"
+            ],
+            "properties": {
+              "sourceIndex": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Zero-based index into the sources array."
+              },
+              "sourceLabel": {
+                "type": "string",
+                "description": "Human-readable label for the source."
+              },
+              "value": {
+                "description": "The value reported by this source for the conflicting field."
+              }
+            }
+          },
+          "description": "The conflicting values from each source."
+        },
+        "resolvedIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Index of the source whose value was chosen as the resolution."
+        },
+        "resolution": {
+          "$ref": "#/$defs/Conflict_Resolution",
+          "description": "How the conflict was resolved."
+        }
+      },
+      "description": "A conflict between scanner results for the same requirement.",
+      "title": "Scanner Conflict"
+    },
+    "Annotation": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "label"
+      ],
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Human-readable label for this annotation."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the annotation."
+        },
+        "category": {
+          "$ref": "#/$defs/Annotation_Category",
+          "description": "The category of this annotation."
+        },
+        "needsConfirmation": {
+          "type": "boolean",
+          "description": "Whether this annotation requires human confirmation before acting on it."
+        }
+      },
+      "description": "An annotation attached to a comparison, providing context or action items.",
+      "title": "Annotation"
+    },
+    "Requirement_Diff": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "id",
+        "state",
+        "changeReasons",
+        "before",
+        "after",
+        "fieldChanges"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The canonical requirement identifier used for this diff."
+        },
+        "state": {
+          "$ref": "#/$defs/Requirement_State",
+          "description": "The state of this requirement in the comparison."
+        },
+        "changeReasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Change_Reason"
+          },
+          "description": "The reasons for the state change."
+        },
+        "before": {
+          "oneOf": [
+            {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v2.0.0#/$defs/Evaluated_Requirement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The requirement as it appeared in the old/reference source. Null when state is 'new'."
+        },
+        "after": {
+          "oneOf": [
+            {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v2.0.0#/$defs/Evaluated_Requirement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The requirement as it appeared in the new source. Null when state is 'absent'."
+        },
+        "fieldChanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Field_Change"
+          },
+          "description": "Detailed field-level changes between the before and after versions."
+        },
+        "oldId": {
+          "type": "string",
+          "description": "The requirement ID in the old source, if different from the canonical id."
+        },
+        "newId": {
+          "type": "string",
+          "description": "The requirement ID in the new source, if different from the canonical id."
+        },
+        "title": {
+          "type": "string",
+          "description": "The requirement title for human readability."
+        },
+        "oldEffectiveStatus": {
+          "type": "string",
+          "description": "The effective status of the requirement in the old source."
+        },
+        "newEffectiveStatus": {
+          "type": "string",
+          "description": "The effective status of the requirement in the new source."
+        },
+        "oldImpact": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "The impact score of the requirement in the old source (0-1)."
+        },
+        "newImpact": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "The impact score of the requirement in the new source (0-1)."
+        },
+        "matchStrategy": {
+          "$ref": "#/$defs/Match_Strategy",
+          "description": "The strategy that was used to match this requirement across sources."
+        },
+        "matchConfidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Confidence score for the match (0-1)."
+        },
+        "matchManual": {
+          "type": "boolean",
+          "description": "Whether the match was manually confirmed by a human."
+        },
+        "annotationIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "IDs of annotations attached to this requirement diff."
+        },
+        "sourceIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Index into the sources array for multi-source comparisons."
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Scanner_Conflict"
+          },
+          "description": "Conflicts between multiple scanner results for this requirement."
+        },
+        "beforeSensitive": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Sensitive data from the old source that should not be included in the main before snapshot."
+        },
+        "afterSensitive": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Sensitive data from the new source that should not be included in the main after snapshot."
+        }
+      },
+      "description": "A comparison of a single requirement between sources, including state, changes, and full before/after snapshots.",
+      "title": "Requirement Diff"
+    }
+  }
+}
