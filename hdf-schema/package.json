@@ -16,6 +16,10 @@
       "import": "./dist/ts/hdf-baseline.js",
       "types": "./dist/ts/hdf-baseline.d.ts"
     },
+    "./hdf-comparison": {
+      "import": "./dist/ts/hdf-comparison.js",
+      "types": "./dist/ts/hdf-comparison.d.ts"
+    },
     "./schemas/*": "./src/schemas/*"
   },
   "files": [

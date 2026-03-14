@@ -46,6 +46,42 @@ describe('generate-types', () => {
       const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-results.ts'), 'utf-8');
       expect(content).toMatch(/export interface.*HdfResults|HDF.*Results/i);
     });
+
+    it('should create hdf-comparison.ts', () => {
+      expect(existsSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'))).toBe(true);
+    });
+
+    it('should create hdf-comparison.d.ts after index creation', () => {
+      // The .d.ts is created by createIndex() in afterAll, so we verify
+      // the .ts source exists here (the .d.ts test is in the index tests)
+      const tsFile = join(DIST_DIR, 'ts', 'hdf-comparison.ts');
+      expect(existsSync(tsFile)).toBe(true);
+    });
+
+    it('should export interfaces in hdf-comparison.ts', () => {
+      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'), 'utf-8');
+      expect(content).toContain('export interface');
+    });
+
+    it('should contain HdfComparison type', () => {
+      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'), 'utf-8');
+      expect(content).toMatch(/export interface.*HdfComparison/);
+    });
+
+    it('should contain RequirementDiff type', () => {
+      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'), 'utf-8');
+      expect(content).toMatch(/RequirementDiff|Requirement_Diff/);
+    });
+
+    it('should contain ComparisonSummary type', () => {
+      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'), 'utf-8');
+      expect(content).toMatch(/ComparisonSummary|Comparison_Summary|Summary/);
+    });
+
+    it('should contain Source type', () => {
+      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'), 'utf-8');
+      expect(content).toMatch(/Source/);
+    });
   });
 
   describe('Go output', () => {
@@ -67,13 +103,14 @@ describe('generate-types', () => {
       expect(content).toContain('package hdf');
     });
 
-    it('should contain struct definitions for both schemas', () => {
+    it('should contain struct definitions for all schemas', () => {
       const content = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
       expect(content).toContain('type');
       expect(content).toContain('struct');
-      // Should contain types from both schemas
+      // Should contain types from all three schemas
       expect(content).toMatch(/HDFResults|HdfResults/);
       expect(content).toMatch(/HDFBaseline|HdfBaseline/);
+      expect(content).toMatch(/HDFComparison|HdfComparison/);
     });
 
     it('should add omitempty tags to optional pointer fields', () => {
@@ -129,6 +166,10 @@ describe('generate-types', () => {
 
     it('should create hdf_baseline.py', () => {
       expect(existsSync(join(DIST_DIR, 'python', 'hdf_baseline.py'))).toBe(true);
+    });
+
+    it('should create hdf_comparison.py', () => {
+      expect(existsSync(join(DIST_DIR, 'python', 'hdf_comparison.py'))).toBe(true);
     });
 
     it('should contain class definitions', () => {
