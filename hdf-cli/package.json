@@ -6,7 +6,7 @@
   "scripts": {
     "build": "go build -o hdf ./cmd/hdf",
     "build:release": "go build -ldflags \"-s -w -X github.com/mitre/hdf-cli/cmd/hdf/cmd.version=$(git describe --tags --always) -X github.com/mitre/hdf-cli/cmd/hdf/cmd.commit=$(git rev-parse --short HEAD) -X github.com/mitre/hdf-cli/cmd/hdf/cmd.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)\" -o hdf ./cmd/hdf",
-    "clean": "rm -f hdf coverage.out",
+    "clean": "rimraf hdf coverage.out",
 
     "test": "pnpm run test:go",
     "test:ts": "echo 'No TypeScript tests in hdf-cli'",

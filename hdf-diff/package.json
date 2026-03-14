@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "build": "pnpm clean && tsc",
-    "clean": "rm -rf dist",
+    "clean": "rimraf dist",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
     "test:go": "echo 'No Go tests yet in hdf-diff'",
