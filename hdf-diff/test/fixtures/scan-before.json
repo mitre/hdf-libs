@@ -1,0 +1,85 @@
+{
+  "baselines": [
+    {
+      "name": "rhel9-stig-baseline",
+      "title": "RHEL 9 STIG Baseline",
+      "version": "1.0.0",
+      "attributes": [],
+      "checksum": { "algorithm": "sha256", "value": "abc123" },
+      "depends": [],
+      "groups": [
+        {
+          "id": "controls/stig.rb",
+          "title": "STIG Controls",
+          "requirements": ["SV-001", "SV-002", "SV-003", "SV-004", "SV-005"]
+        }
+      ],
+      "supports": [],
+      "requirements": [
+        {
+          "id": "SV-001",
+          "title": "Ensure SSH root login is disabled",
+          "descriptions": [{ "label": "default", "data": "The system must disable root SSH login" }],
+          "impact": 0.7,
+          "refs": [],
+          "tags": { "cci": ["CCI-000366"], "nist": ["AC-6"], "severity": "high" },
+          "sourceLocation": { "ref": "controls/stig.rb", "line": 1 },
+          "results": [
+            { "status": "failed", "codeDesc": "SSH config PermitRootLogin should eq 'no'", "startTime": "2024-01-01T00:00:00Z", "runTime": 0.1, "message": "expected 'yes' to eq 'no'" }
+          ]
+        },
+        {
+          "id": "SV-002",
+          "title": "Ensure password complexity is configured",
+          "descriptions": [{ "label": "default", "data": "Password complexity requirements" }],
+          "impact": 0.5,
+          "refs": [],
+          "tags": { "cci": ["CCI-000205"], "nist": ["IA-5 (1)"], "severity": "medium" },
+          "sourceLocation": { "ref": "controls/stig.rb", "line": 20 },
+          "results": [
+            { "status": "passed", "codeDesc": "pwquality.conf minlen should >= 15", "startTime": "2024-01-01T00:00:01Z", "runTime": 0.05 }
+          ]
+        },
+        {
+          "id": "SV-003",
+          "title": "Ensure audit logging is enabled",
+          "descriptions": [{ "label": "default", "data": "The audit subsystem must be active" }],
+          "impact": 0.7,
+          "refs": [],
+          "tags": { "cci": ["CCI-000130"], "nist": ["AU-3"], "severity": "high" },
+          "sourceLocation": { "ref": "controls/stig.rb", "line": 40 },
+          "results": [
+            { "status": "passed", "codeDesc": "auditd service should be enabled", "startTime": "2024-01-01T00:00:02Z", "runTime": 0.08 }
+          ]
+        },
+        {
+          "id": "SV-004",
+          "title": "Ensure FIPS mode is enabled",
+          "descriptions": [{ "label": "default", "data": "FIPS 140-2 mode must be active" }],
+          "impact": 0.7,
+          "refs": [],
+          "tags": { "cci": ["CCI-002450"], "nist": ["SC-13"], "severity": "high" },
+          "sourceLocation": { "ref": "controls/stig.rb", "line": 60 },
+          "results": [
+            { "status": "failed", "codeDesc": "fips_enabled should eq 1", "startTime": "2024-01-01T00:00:03Z", "runTime": 0.02, "message": "expected 0 to eq 1" }
+          ]
+        },
+        {
+          "id": "SV-005",
+          "title": "Ensure NTP is configured",
+          "descriptions": [{ "label": "default", "data": "Time synchronization must be configured" }],
+          "impact": 0.3,
+          "refs": [],
+          "tags": { "cci": ["CCI-001891"], "nist": ["AU-8 (1)"], "severity": "low" },
+          "sourceLocation": { "ref": "controls/stig.rb", "line": 80 },
+          "results": [
+            { "status": "passed", "codeDesc": "chronyd service should be running", "startTime": "2024-01-01T00:00:04Z", "runTime": 0.03 }
+          ]
+        }
+      ]
+    }
+  ],
+  "statistics": { "duration": 0.28 },
+  "timestamp": "2024-01-01T00:00:00Z",
+  "targets": [{ "type": "host", "name": "rhel9-server-01" }]
+}

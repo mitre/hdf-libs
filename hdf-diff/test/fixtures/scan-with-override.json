@@ -1,0 +1,48 @@
+{
+  "baselines": [
+    {
+      "name": "rhel9-stig-baseline",
+      "title": "RHEL 9 STIG Baseline",
+      "version": "1.0.0",
+      "attributes": [],
+      "checksum": { "algorithm": "sha256", "value": "abc123" },
+      "depends": [],
+      "groups": [
+        {
+          "id": "controls/stig.rb",
+          "title": "STIG Controls",
+          "requirements": ["SV-001"]
+        }
+      ],
+      "supports": [],
+      "requirements": [
+        {
+          "id": "SV-001",
+          "title": "Ensure SSH root login is disabled",
+          "descriptions": [{ "label": "default", "data": "The system must disable root SSH login" }],
+          "impact": 0.7,
+          "refs": [],
+          "tags": { "cci": ["CCI-000366"], "nist": ["AC-6"], "severity": "high" },
+          "sourceLocation": { "ref": "controls/stig.rb", "line": 1 },
+          "results": [
+            { "status": "failed", "codeDesc": "SSH config PermitRootLogin should eq 'no'", "startTime": "2024-01-01T00:00:00Z", "runTime": 0.1, "message": "expected 'yes' to eq 'no'" }
+          ],
+          "statusOverrides": [
+            {
+              "type": "waiver",
+              "status": "passed",
+              "reason": "Risk accepted per ISSM approval — compensating control in place",
+              "appliedBy": { "type": "email", "identifier": "issm@example.com" },
+              "appliedAt": "2024-01-15T00:00:00Z",
+              "expiresAt": "2024-07-15T00:00:00Z"
+            }
+          ],
+          "effectiveStatus": "passed"
+        }
+      ]
+    }
+  ],
+  "statistics": { "duration": 0.1 },
+  "timestamp": "2024-01-15T00:00:00Z",
+  "targets": [{ "type": "host", "name": "rhel9-server-01" }]
+}
