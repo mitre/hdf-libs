@@ -33,7 +33,7 @@
     "watch:schemas": "nodemon --watch src/schemas --ext json --exec 'tsx src/bundle-schemas.ts'",
     "serve:schemas": "npx http-server dist/schemas -p 8081 --cors",
     "dev:viewer": "pnpm run build:schemas && concurrently \"pnpm run watch:schemas\" \"pnpm run serve:schemas\"",
-    "clean": "rm -rf dist",
+    "clean": "rimraf dist",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
     "test:go": "echo 'No Go tests in hdf-schema'",

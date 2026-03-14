@@ -1,0 +1,57 @@
+{
+  "name": "@mitre/hdf-converters",
+  "version": "0.1.0",
+  "description": "Converters for transforming security tool outputs and HDF formats",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm clean && tsc",
+    "clean": "rimraf dist",
+    "test": "pnpm run test:ts && pnpm run test:go",
+    "test:ts": "vitest run",
+    "test:go": "go test ./...",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:differential": "vitest run converters/**/differential.test.ts",
+    "test:parity": "pnpm test:differential && pnpm test:go && node shared/typescript/compare-all.js",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src converters shared",
+    "lint:fix": "eslint src converters shared --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mitre/hdf-libs.git",
+    "directory": "hdf-converters"
+  },
+  "author": "MITRE Corporation",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@mitre/hdf-parsers": "workspace:*",
+    "@mitre/hdf-schema": "workspace:*",
+    "@mitre/hdf-utilities": "workspace:*",
+    "@mitre/hdf-mappings": "workspace:*"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "hdf",
+    "heimdall",
+    "converters",
+    "security",
+    "compliance",
+    "inspec"
+  ]
+}

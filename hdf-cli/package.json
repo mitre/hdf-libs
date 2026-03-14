@@ -1,0 +1,51 @@
+{
+  "name": "@mitre/hdf-cli",
+  "version": "0.1.0",
+  "description": "CLI tool for working with Heimdall Data Format (HDF) files",
+  "private": true,
+  "scripts": {
+    "build": "go build -o hdf ./cmd/hdf",
+    "build:release": "go build -ldflags \"-s -w -X github.com/mitre/hdf-cli/cmd/hdf/cmd.version=$(git describe --tags --always) -X github.com/mitre/hdf-cli/cmd/hdf/cmd.commit=$(git rev-parse --short HEAD) -X github.com/mitre/hdf-cli/cmd/hdf/cmd.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)\" -o hdf ./cmd/hdf",
+    "clean": "rimraf hdf coverage.out",
+
+    "test": "pnpm run test:go",
+    "test:ts": "echo 'No TypeScript tests in hdf-cli'",
+    "test:go": "go test ./...",
+    "test:verbose": "go test -v ./...",
+    "test:coverage": "go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out",
+    "test:coverage:html": "go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out",
+    "test:race": "go test -race ./...",
+    "test:bench": "go test -bench=. -benchmem ./...",
+    "test:fuzz": "go test -fuzz=. -fuzztime=30s ./pkg/hdf/",
+
+    "lint": "PATH=\"$PATH:$HOME/go/bin\" golangci-lint run",
+    "lint:fix": "PATH=\"$PATH:$HOME/go/bin\" golangci-lint run --fix",
+    "fmt": "gofmt -s -w .",
+    "fmt:check": "gofmt -l . | grep -q . && exit 1 || exit 0",
+    "vet": "go vet ./...",
+
+    "security": "pnpm run security:sast && pnpm run security:vuln && pnpm run security:secrets",
+    "security:sast": "gosec -fmt=json -out=gosec-report.json ./... || gosec ./...",
+    "security:vuln": "govulncheck ./...",
+    "security:secrets": "gitleaks detect --source=. --config=.gitleaks.toml --verbose",
+
+    "check": "pnpm run fmt:check && pnpm run lint && pnpm run test && pnpm run security",
+    "ci": "pnpm run check"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mitre/hdf-libs.git",
+    "directory": "hdf-cli"
+  },
+  "author": "MITRE Corporation",
+  "license": "Apache-2.0",
+  "keywords": [
+    "hdf",
+    "heimdall",
+    "security",
+    "cli",
+    "inspec",
+    "stig",
+    "compliance"
+  ]
+}
