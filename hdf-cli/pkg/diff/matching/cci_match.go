@@ -16,7 +16,7 @@ func (s *CCIMatchStrategy) Name() string {
 }
 
 // extractCCIs extracts CCI identifiers from a requirement's Tags["cci"] field.
-// The cci field is expected to be []interface{} with string elements.
+// The cci field is expected to be []any with string elements.
 func extractCCIs(req hdf.EvaluatedRequirement) []string {
 	if req.Tags == nil {
 		return nil
@@ -27,7 +27,7 @@ func extractCCIs(req hdf.EvaluatedRequirement) []string {
 		return nil
 	}
 
-	cciSlice, ok := cciVal.([]interface{})
+	cciSlice, ok := cciVal.([]any)
 	if !ok {
 		return nil
 	}

@@ -15,7 +15,6 @@ const (
 	statusFailed      = "failed"
 	statusError       = "error"
 	statusNotAppl     = "notApplicable"
-	marshalNull       = "null"
 )
 
 // ---------------------------------------------------------------------------
@@ -74,7 +73,7 @@ func makeRequirement(overrides ...func(*hdf.EvaluatedRequirement)) hdf.Evaluated
 		ID:           "SV-100001",
 		Impact:       impact,
 		Results:      []hdf.RequirementResult{},
-		Tags:         map[string]interface{}{},
+		Tags:         map[string]any{},
 		Descriptions: []hdf.Description{},
 	}
 	for _, o := range overrides {
@@ -425,11 +424,11 @@ func TestClassifyChangeReasons(t *testing.T) {
 			name: "returns metadataChanged when tags differ",
 			oldReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Results = []hdf.RequirementResult{makeResult(hdf.Passed)}
-				r.Tags = map[string]interface{}{"cci": []string{"CCI-000001"}}
+				r.Tags = map[string]any{"cci": []string{"CCI-000001"}}
 			}),
 			newReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Results = []hdf.RequirementResult{makeResult(hdf.Passed)}
-				r.Tags = map[string]interface{}{"cci": []string{"CCI-000002"}}
+				r.Tags = map[string]any{"cci": []string{"CCI-000002"}}
 			}),
 			mustContain: []types.ChangeReason{types.ReasonMetadataChanged},
 		},
@@ -741,39 +740,8 @@ func TestComputeEffectiveStatus_UnknownResultStatus(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Coverage: jsonMarshalOrEmpty — all branches
-// ---------------------------------------------------------------------------
-
-func TestJsonMarshalOrEmpty_Nil(t *testing.T) {
-	got := jsonMarshalOrEmpty(nil)
-	if got != marshalNull {
-		t.Errorf("expected %q for nil, got %q", marshalNull, got)
-	}
-}
-
-func TestJsonMarshalOrEmpty_ValidMap(t *testing.T) {
-	got := jsonMarshalOrEmpty(map[string]interface{}{"a": 1})
-	if got != `{"a":1}` {
-		t.Errorf("expected {\"a\":1}, got %q", got)
-	}
-}
-
-func TestJsonMarshalOrEmpty_ErrorBranch(t *testing.T) {
-	// Channels cannot be marshaled
-	ch := make(chan int)
-	got := jsonMarshalOrEmpty(ch)
-	if got != marshalNull {
-		t.Errorf("expected %q for unmarshalable, got %q", marshalNull, got)
-	}
-}
-
-func TestJsonMarshalOrEmpty_EmptySlice(t *testing.T) {
-	got := jsonMarshalOrEmpty([]string{})
-	if got != "[]" {
-		t.Errorf("expected \"[]\", got %q", got)
-	}
-}
+// jsonMarshalOrEmpty was removed in favor of reflect.DeepEqual.
+// See ClassifyChangeReasons implementation for the replacement.
 
 // ---------------------------------------------------------------------------
 // Coverage: stringSlicesEqual — different lengths and same lengths different content

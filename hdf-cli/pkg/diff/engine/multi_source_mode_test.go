@@ -38,7 +38,7 @@ func multiSourceOpts() Options {
 // ---------------------------------------------------------------------------
 
 func TestMultiSource_ComparisonModeIsMultiSource(t *testing.T) {
-	diff := DiffHdf(buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
+	diff := mustDiffHdf(t, buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
 
 	if diff.ComparisonMode != types.ModeMultiSource {
 		t.Errorf("expected comparisonMode 'multiSource', got %q", diff.ComparisonMode)
@@ -46,7 +46,7 @@ func TestMultiSource_ComparisonModeIsMultiSource(t *testing.T) {
 }
 
 func TestMultiSource_FormatVersion(t *testing.T) {
-	diff := DiffHdf(buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
+	diff := mustDiffHdf(t, buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
 
 	if diff.FormatVersion != version100 {
 		t.Errorf("expected formatVersion %q, got %q", version100, diff.FormatVersion)
@@ -58,7 +58,7 @@ func TestMultiSource_FormatVersion(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestMultiSource_HasTwoSources(t *testing.T) {
-	diff := DiffHdf(buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
+	diff := mustDiffHdf(t, buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
 
 	if len(diff.Sources) != 2 {
 		t.Errorf("expected 2 sources, got %d", len(diff.Sources))
@@ -66,7 +66,7 @@ func TestMultiSource_HasTwoSources(t *testing.T) {
 }
 
 func TestMultiSource_FirstSourceRoleIsOld(t *testing.T) {
-	diff := DiffHdf(buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
+	diff := mustDiffHdf(t, buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
 
 	if diff.Sources[0].Role != types.RoleOld {
 		t.Errorf("expected first source role 'old', got %q", diff.Sources[0].Role)
@@ -74,7 +74,7 @@ func TestMultiSource_FirstSourceRoleIsOld(t *testing.T) {
 }
 
 func TestMultiSource_SecondSourceRoleIsNew(t *testing.T) {
-	diff := DiffHdf(buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
+	diff := mustDiffHdf(t, buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
 
 	if diff.Sources[1].Role != types.RoleNew {
 		t.Errorf("expected second source role 'new', got %q", diff.Sources[1].Role)
@@ -85,7 +85,7 @@ func TestMultiSource_SecondSourceRoleIsNew(t *testing.T) {
 // The Go engine currently uses static default labels. This test verifies the
 // current Go behavior with default labels when no dataSource is available.
 func TestMultiSource_DefaultLabelsWhenNoDataSource(t *testing.T) {
-	diff := DiffHdf(buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
+	diff := mustDiffHdf(t, buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
 
 	if diff.Sources[0].Label != "Old evaluation" {
 		t.Errorf("expected first source label 'Old evaluation', got %q", diff.Sources[0].Label)
@@ -103,11 +103,11 @@ func TestMultiSource_SameRequirementStatesAsTemporal(t *testing.T) {
 	scanA := buildMultiSourceScanA()
 	scanB := buildMultiSourceScanB()
 
-	multiDiff := DiffHdf(scanA, []hdf.HdfResults{scanB}, multiSourceOpts())
+	multiDiff := mustDiffHdf(t, scanA, []hdf.HdfResults{scanB}, multiSourceOpts())
 
 	temporalOpts := multiSourceOpts()
 	temporalOpts.ComparisonMode = types.ModeTemporal
-	temporalDiff := DiffHdf(scanA, []hdf.HdfResults{scanB}, temporalOpts)
+	temporalDiff := mustDiffHdf(t, scanA, []hdf.HdfResults{scanB}, temporalOpts)
 
 	if len(multiDiff.RequirementDiffs) != len(temporalDiff.RequirementDiffs) {
 		t.Fatalf("expected same number of requirementDiffs: multi=%d, temporal=%d",
@@ -131,11 +131,11 @@ func TestMultiSource_SameSummaryCountsAsTemporal(t *testing.T) {
 	scanA := buildMultiSourceScanA()
 	scanB := buildMultiSourceScanB()
 
-	multiDiff := DiffHdf(scanA, []hdf.HdfResults{scanB}, multiSourceOpts())
+	multiDiff := mustDiffHdf(t, scanA, []hdf.HdfResults{scanB}, multiSourceOpts())
 
 	temporalOpts := multiSourceOpts()
 	temporalOpts.ComparisonMode = types.ModeTemporal
-	temporalDiff := DiffHdf(scanA, []hdf.HdfResults{scanB}, temporalOpts)
+	temporalDiff := mustDiffHdf(t, scanA, []hdf.HdfResults{scanB}, temporalOpts)
 
 	if multiDiff.Summary != temporalDiff.Summary {
 		t.Errorf("summary mismatch:\nmulti:    %+v\ntemporal: %+v",
@@ -144,7 +144,7 @@ func TestMultiSource_SameSummaryCountsAsTemporal(t *testing.T) {
 }
 
 func TestMultiSource_SV002DetectedAsFixed(t *testing.T) {
-	diff := DiffHdf(buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
+	diff := mustDiffHdf(t, buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
 
 	req := findReq(diff.RequirementDiffs, "SV-002")
 	if req == nil {
@@ -167,7 +167,7 @@ func TestMultiSource_SV002DetectedAsFixed(t *testing.T) {
 
 func TestMultiSource_IdenticalDocuments_AllUnchanged(t *testing.T) {
 	scanA := buildMultiSourceScanA()
-	diff := DiffHdf(scanA, []hdf.HdfResults{scanA}, multiSourceOpts())
+	diff := mustDiffHdf(t, scanA, []hdf.HdfResults{scanA}, multiSourceOpts())
 
 	for _, req := range diff.RequirementDiffs {
 		if req.State != types.StateUnchanged {
@@ -181,7 +181,7 @@ func TestMultiSource_IdenticalDocuments_AllUnchanged(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestMultiSource_IncludesTimestamp(t *testing.T) {
-	diff := DiffHdf(buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
+	diff := mustDiffHdf(t, buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
 
 	if diff.Timestamp == "" {
 		t.Error("expected non-empty timestamp")
@@ -193,7 +193,7 @@ func TestMultiSource_IncludesTimestamp(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestMultiSource_MatchingConfigPopulated(t *testing.T) {
-	diff := DiffHdf(buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
+	diff := mustDiffHdf(t, buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
 
 	if diff.Matching == nil {
 		t.Fatal("expected matching config to be set")

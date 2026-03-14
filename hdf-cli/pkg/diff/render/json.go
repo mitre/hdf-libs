@@ -41,7 +41,7 @@ type strippedComparison struct {
 	RequirementDiffs []strippedRequirementDiff   `json:"requirementDiffs"`
 	Drift            []types.RequirementDiff     `json:"drift,omitempty"`
 	Annotations      map[string]types.Annotation `json:"annotations,omitempty"`
-	Extensions       map[string]interface{}      `json:"extensions,omitempty"`
+	Extensions       map[string]any              `json:"extensions,omitempty"`
 }
 
 // stripDiff converts a RequirementDiff to a strippedRequirementDiff (no Before/After).
