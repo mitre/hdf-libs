@@ -16,8 +16,17 @@ import (
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
 )
 
+// Field name constants for tracked field configuration and lookups.
+const (
+	fieldNameImpact       = "impact"
+	fieldNameSeverity     = "severity"
+	fieldNameTags         = "tags"
+	fieldNameTitle        = "title"
+	fieldNameDescriptions = "descriptions"
+)
+
 // defaultTrackedFields is the default set of fields to track for field-level diffs.
-var defaultTrackedFields = []string{"impact", "severity", "tags"}
+var defaultTrackedFields = []string{fieldNameImpact, fieldNameSeverity, fieldNameTags}
 
 // Options configures the comparison behavior.
 type Options struct {
@@ -416,21 +425,21 @@ func computeFieldChanges(
 // getFieldValue extracts a field value from an EvaluatedRequirement by field name.
 func getFieldValue(req hdf.EvaluatedRequirement, field string) interface{} {
 	switch field {
-	case "impact":
+	case fieldNameImpact:
 		return req.Impact
-	case "severity":
+	case fieldNameSeverity:
 		if req.Severity == nil {
 			return nil
 		}
 		return string(*req.Severity)
-	case "tags":
+	case fieldNameTags:
 		return req.Tags
-	case "title":
+	case fieldNameTitle:
 		if req.Title == nil {
 			return nil
 		}
 		return *req.Title
-	case "descriptions":
+	case fieldNameDescriptions:
 		return req.Descriptions
 	default:
 		return nil
