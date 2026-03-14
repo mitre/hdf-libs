@@ -474,3 +474,521 @@ func TestToV2_OmitsOptionalFieldsWhenUndefined(t *testing.T) {
 	assert.Nil(t, r.RunTime)
 	assert.Nil(t, r.Message)
 }
+
+// ---------------------------------------------------------------------------
+// Coverage: parseTimestamp — all format branches
+// ---------------------------------------------------------------------------
+
+func TestParseTimestamp_TableDriven(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantZero  bool
+		wantYear  int
+		wantMonth int
+		wantDay   int
+	}{
+		{"empty string", "", true, 0, 0, 0},
+		{"RFC3339", "2024-06-15T10:30:00Z", false, 2024, 6, 15},
+		{"RFC3339Nano", "2024-06-15T10:30:00.123456789Z", false, 2024, 6, 15},
+		{"InSpec format with timezone", "2017-09-22 14:12:15 -0400", false, 2017, 9, 22},
+		{"date-time without timezone", "2023-03-01 09:00:00", false, 2023, 3, 1},
+		{"unparseable", "not-a-date-at-all", true, 0, 0, 0},
+		{"T-containing but invalid RFC3339", "2024-13-99T00:00:00Z", true, 0, 0, 0},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := parseTimestamp(tc.input)
+			if tc.wantZero {
+				assert.True(t, result.IsZero(), "expected zero time for %q", tc.input)
+			} else {
+				assert.False(t, result.IsZero(), "expected non-zero time for %q", tc.input)
+				assert.Equal(t, tc.wantYear, result.Year())
+				assert.Equal(t, tc.wantMonth, int(result.Month()))
+				assert.Equal(t, tc.wantDay, result.Day())
+			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: normalizeGroups — with valid groups and non-map entries
+// ---------------------------------------------------------------------------
+
+func TestNormalizeGroups_WithValidGroups(t *testing.T) {
+	title := "Group Title"
+	profile := map[string]interface{}{
+		"groups": []interface{}{
+			map[string]interface{}{"id": "G-001", "title": title},
+			map[string]interface{}{"id": "G-002"},
+		},
+	}
+	groups := normalizeGroups(profile)
+	require.Len(t, groups, 2)
+	assert.Equal(t, "G-001", groups[0].ID)
+	assert.NotNil(t, groups[0].Title)
+	assert.Equal(t, "Group Title", *groups[0].Title)
+	assert.Equal(t, "G-002", groups[1].ID)
+	assert.Nil(t, groups[1].Title)
+}
+
+func TestNormalizeGroups_NoGroupsKey(t *testing.T) {
+	profile := map[string]interface{}{}
+	groups := normalizeGroups(profile)
+	assert.Len(t, groups, 0)
+}
+
+func TestNormalizeGroups_GroupsNotArray(t *testing.T) {
+	profile := map[string]interface{}{"groups": "not-an-array"}
+	groups := normalizeGroups(profile)
+	assert.Len(t, groups, 0)
+}
+
+func TestNormalizeGroups_NonMapEntry(t *testing.T) {
+	profile := map[string]interface{}{
+		"groups": []interface{}{
+			"not-a-map",
+			map[string]interface{}{"id": "G-001"},
+		},
+	}
+	groups := normalizeGroups(profile)
+	assert.Len(t, groups, 1)
+	assert.Equal(t, "G-001", groups[0].ID)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: normalizeSupports — with valid entries, non-map items, empty
+// ---------------------------------------------------------------------------
+
+func TestNormalizeSupports_WithValidSupports(t *testing.T) {
+	profile := map[string]interface{}{
+		"supports": []interface{}{
+			map[string]interface{}{"platform": "linux", "platformName": "ubuntu"},
+			map[string]interface{}{"platform": "windows"},
+		},
+	}
+	supports := normalizeSupports(profile)
+	require.Len(t, supports, 2)
+	assert.NotNil(t, supports[0].Platform)
+	assert.Equal(t, "linux", *supports[0].Platform)
+	assert.NotNil(t, supports[0].PlatformName)
+	assert.Equal(t, "ubuntu", *supports[0].PlatformName)
+	assert.NotNil(t, supports[1].Platform)
+	assert.Equal(t, "windows", *supports[1].Platform)
+	assert.Nil(t, supports[1].PlatformName)
+}
+
+func TestNormalizeSupports_NoSupportsKey(t *testing.T) {
+	profile := map[string]interface{}{}
+	supports := normalizeSupports(profile)
+	assert.Len(t, supports, 0)
+}
+
+func TestNormalizeSupports_SupportsNotArray(t *testing.T) {
+	profile := map[string]interface{}{"supports": 42}
+	supports := normalizeSupports(profile)
+	assert.Len(t, supports, 0)
+}
+
+func TestNormalizeSupports_NonMapEntry(t *testing.T) {
+	profile := map[string]interface{}{
+		"supports": []interface{}{
+			123,
+			map[string]interface{}{"platform": "centos"},
+		},
+	}
+	supports := normalizeSupports(profile)
+	assert.Len(t, supports, 1)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: normalizeAttributes — with valid attrs, non-map items
+// ---------------------------------------------------------------------------
+
+func TestNormalizeAttributes_WithValidAttrs(t *testing.T) {
+	profile := map[string]interface{}{
+		"attributes": []interface{}{
+			map[string]interface{}{"name": "attr1", "options": map[string]interface{}{"type": "string"}},
+			map[string]interface{}{"name": "attr2"},
+		},
+	}
+	attrs := normalizeAttributes(profile)
+	require.Len(t, attrs, 2)
+	assert.Equal(t, "attr1", attrs[0]["name"])
+	assert.Equal(t, "attr2", attrs[1]["name"])
+}
+
+func TestNormalizeAttributes_NoAttrsKey(t *testing.T) {
+	profile := map[string]interface{}{}
+	attrs := normalizeAttributes(profile)
+	assert.Len(t, attrs, 0)
+}
+
+func TestNormalizeAttributes_AttrsNotArray(t *testing.T) {
+	profile := map[string]interface{}{"attributes": "nope"}
+	attrs := normalizeAttributes(profile)
+	assert.Len(t, attrs, 0)
+}
+
+func TestNormalizeAttributes_NonMapEntry(t *testing.T) {
+	profile := map[string]interface{}{
+		"attributes": []interface{}{
+			"not-a-map",
+			map[string]interface{}{"name": "real-attr"},
+		},
+	}
+	attrs := normalizeAttributes(profile)
+	assert.Len(t, attrs, 1)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: getString / getFloat — missing key and wrong type
+// ---------------------------------------------------------------------------
+
+func TestGetString_MissingKey(t *testing.T) {
+	m := map[string]interface{}{}
+	assert.Equal(t, "", getString(m, "missing"))
+}
+
+func TestGetString_WrongType(t *testing.T) {
+	m := map[string]interface{}{"key": 42}
+	assert.Equal(t, "", getString(m, "key"))
+}
+
+func TestGetString_ValidString(t *testing.T) {
+	m := map[string]interface{}{"key": "value"}
+	assert.Equal(t, "value", getString(m, "key"))
+}
+
+func TestGetFloat_MissingKey(t *testing.T) {
+	m := map[string]interface{}{}
+	assert.Equal(t, 0.0, getFloat(m, "missing"))
+}
+
+func TestGetFloat_WrongType(t *testing.T) {
+	m := map[string]interface{}{"key": "not-a-float"}
+	assert.Equal(t, 0.0, getFloat(m, "key"))
+}
+
+func TestGetFloat_ValidFloat(t *testing.T) {
+	m := map[string]interface{}{"key": 3.14}
+	assert.InDelta(t, 3.14, getFloat(m, "key"), 0.001)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: getFloatOptional
+// ---------------------------------------------------------------------------
+
+func TestGetFloatOptional_Present(t *testing.T) {
+	m := map[string]interface{}{"rt": 0.05}
+	v, ok := getFloatOptional(m, "rt")
+	assert.True(t, ok)
+	assert.InDelta(t, 0.05, v, 0.001)
+}
+
+func TestGetFloatOptional_Missing(t *testing.T) {
+	m := map[string]interface{}{}
+	_, ok := getFloatOptional(m, "rt")
+	assert.False(t, ok)
+}
+
+func TestGetFloatOptional_WrongType(t *testing.T) {
+	m := map[string]interface{}{"rt": "string"}
+	_, ok := getFloatOptional(m, "rt")
+	assert.False(t, ok)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: getStringFallback
+// ---------------------------------------------------------------------------
+
+func TestGetStringFallback_SnakeCasePresent(t *testing.T) {
+	m := map[string]interface{}{"code_desc": "snake"}
+	assert.Equal(t, "snake", getStringFallback(m, "code_desc", "codeDesc"))
+}
+
+func TestGetStringFallback_CamelCasePresent(t *testing.T) {
+	m := map[string]interface{}{"codeDesc": "camel"}
+	assert.Equal(t, "camel", getStringFallback(m, "code_desc", "codeDesc"))
+}
+
+func TestGetStringFallback_NeitherPresent(t *testing.T) {
+	m := map[string]interface{}{}
+	assert.Equal(t, "", getStringFallback(m, "code_desc", "codeDesc"))
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: normalizeControl — code field, no tags, no desc
+// ---------------------------------------------------------------------------
+
+func TestNormalizeControl_WithCodeField(t *testing.T) {
+	data := v1SingleControlDoc(map[string]interface{}{
+		"code":    "describe file('/etc/ssh') do\n  it { should exist }\nend",
+		"results": []interface{}{},
+	})
+
+	result, err := ToV2(data)
+	require.NoError(t, err)
+
+	req := firstReq(t, result)
+	require.NotNil(t, req.Code)
+	assert.Contains(t, *req.Code, "describe file")
+}
+
+func TestNormalizeControl_WithTags(t *testing.T) {
+	data := v1SingleControlDoc(map[string]interface{}{
+		"tags":    map[string]interface{}{"cci": []interface{}{"CCI-000366"}, "nist": []interface{}{"AC-1"}},
+		"results": []interface{}{},
+	})
+
+	result, err := ToV2(data)
+	require.NoError(t, err)
+
+	req := firstReq(t, result)
+	assert.NotNil(t, req.Tags)
+	assert.Contains(t, req.Tags, "cci")
+	assert.Contains(t, req.Tags, "nist")
+}
+
+func TestNormalizeControl_WithTitle(t *testing.T) {
+	data := v1SingleControlDoc(map[string]interface{}{
+		"title":   "My Control Title",
+		"results": []interface{}{},
+	})
+
+	result, err := ToV2(data)
+	require.NoError(t, err)
+
+	req := firstReq(t, result)
+	require.NotNil(t, req.Title)
+	assert.Equal(t, "My Control Title", *req.Title)
+}
+
+func TestNormalizeControl_WithMessage(t *testing.T) {
+	data := v1SingleResultDoc(map[string]interface{}{
+		"status":     "failed",
+		"code_desc":  "test",
+		"start_time": "2024-01-01T00:00:00Z",
+		"message":    "expected file to exist but it was missing",
+	})
+
+	result, err := ToV2(data)
+	require.NoError(t, err)
+
+	r := firstResult(t, result)
+	require.NotNil(t, r.Message)
+	assert.Equal(t, "expected file to exist but it was missing", *r.Message)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: IsV1Format — profiles is not an array
+// ---------------------------------------------------------------------------
+
+func TestIsV1Format_ProfilesNotArray(t *testing.T) {
+	data := map[string]interface{}{
+		"profiles": "not-an-array",
+	}
+	assert.False(t, IsV1Format(data))
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: ToV2 — invalid JSON
+// ---------------------------------------------------------------------------
+
+func TestToV2_InvalidJSON(t *testing.T) {
+	_, err := ToV2([]byte("{invalid"))
+	require.Error(t, err)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: ToV2 — v1 with non-map profile entry (skipped)
+// ---------------------------------------------------------------------------
+
+func TestToV2_NonMapProfileEntrySkipped(t *testing.T) {
+	v1 := map[string]interface{}{
+		"profiles": []interface{}{
+			"not-a-map",
+			map[string]interface{}{
+				"name":     "valid",
+				"controls": []interface{}{},
+			},
+		},
+	}
+	data, err := json.Marshal(v1)
+	require.NoError(t, err)
+
+	result, err := ToV2(data)
+	require.NoError(t, err)
+
+	// Only the valid profile should be present
+	assert.Len(t, result.Baselines, 1)
+	assert.Equal(t, "valid", result.Baselines[0].Name)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: normalizeControl — non-map control entry skipped, non-map result skipped
+// ---------------------------------------------------------------------------
+
+func TestToV2_NonMapControlEntrySkipped(t *testing.T) {
+	v1 := map[string]interface{}{
+		"profiles": []interface{}{
+			map[string]interface{}{
+				"name": "test",
+				"controls": []interface{}{
+					"not-a-map",
+					map[string]interface{}{
+						"id":     "V-001",
+						"impact": 0.7,
+						"tags":   map[string]interface{}{},
+					},
+				},
+			},
+		},
+	}
+	data, err := json.Marshal(v1)
+	require.NoError(t, err)
+
+	result, err := ToV2(data)
+	require.NoError(t, err)
+
+	assert.Len(t, result.Baselines[0].Requirements, 1)
+	assert.Equal(t, "V-001", result.Baselines[0].Requirements[0].ID)
+}
+
+func TestToV2_NonMapResultEntrySkipped(t *testing.T) {
+	v1 := map[string]interface{}{
+		"profiles": []interface{}{
+			map[string]interface{}{
+				"name": "test",
+				"controls": []interface{}{
+					map[string]interface{}{
+						"id":     "V-001",
+						"impact": 0.7,
+						"tags":   map[string]interface{}{},
+						"results": []interface{}{
+							"not-a-map",
+							map[string]interface{}{
+								"status":     "passed",
+								"code_desc":  "test",
+								"start_time": "2024-01-01T00:00:00Z",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	data, err := json.Marshal(v1)
+	require.NoError(t, err)
+
+	result, err := ToV2(data)
+	require.NoError(t, err)
+
+	assert.Len(t, result.Baselines[0].Requirements[0].Results, 1)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: normalizeResultStatus — non-skipped status pass-through
+// ---------------------------------------------------------------------------
+
+func TestNormalizeResultStatus_Passed(t *testing.T) {
+	assert.Equal(t, "passed", normalizeResultStatus("passed"))
+}
+
+func TestNormalizeResultStatus_Failed(t *testing.T) {
+	assert.Equal(t, "failed", normalizeResultStatus("failed"))
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: normalizeRefs — with actual refs
+// ---------------------------------------------------------------------------
+
+func TestToV2_WithRefs(t *testing.T) {
+	data := v1SingleControlDoc(map[string]interface{}{
+		"refs":    []interface{}{map[string]interface{}{"ref": "some-ref"}},
+		"results": []interface{}{},
+	})
+
+	result, err := ToV2(data)
+	require.NoError(t, err)
+
+	req := firstReq(t, result)
+	assert.Len(t, req.Refs, 1)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: normalizeSourceLocation — no source_location at all
+// ---------------------------------------------------------------------------
+
+func TestNormalizeSourceLocation_NoKey(t *testing.T) {
+	control := map[string]interface{}{}
+	sl := normalizeSourceLocation(control)
+	assert.Nil(t, sl.Ref)
+	assert.Nil(t, sl.Line)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: ToV2 — timestamp that is unparseable (empty after parse)
+// ---------------------------------------------------------------------------
+
+func TestToV2_EmptyTimestamp(t *testing.T) {
+	v1 := map[string]interface{}{
+		"profiles": []interface{}{
+			map[string]interface{}{
+				"name":     "test",
+				"controls": []interface{}{},
+			},
+		},
+		"timestamp": "",
+	}
+	data, err := json.Marshal(v1)
+	require.NoError(t, err)
+
+	result, err := ToV2(data)
+	require.NoError(t, err)
+
+	// Empty timestamp should leave Timestamp as nil
+	assert.Nil(t, result.Timestamp)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: ToV2 — v1 with statistics but no duration
+// ---------------------------------------------------------------------------
+
+func TestToV2_StatisticsNoDuration(t *testing.T) {
+	v1 := map[string]interface{}{
+		"profiles": []interface{}{
+			map[string]interface{}{
+				"name":     "test",
+				"controls": []interface{}{},
+			},
+		},
+		"statistics": map[string]interface{}{},
+	}
+	data, err := json.Marshal(v1)
+	require.NoError(t, err)
+
+	result, err := ToV2(data)
+	require.NoError(t, err)
+	assert.Nil(t, result.Statistics.Duration)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: ToV2 — runTime via camelCase fallback
+// ---------------------------------------------------------------------------
+
+func TestToV2_RunTimeCamelCaseFallback(t *testing.T) {
+	data := v1SingleResultDoc(map[string]interface{}{
+		"status":     "passed",
+		"code_desc":  "test",
+		"start_time": "2024-01-01T00:00:00Z",
+		"runTime":    0.25,
+	})
+
+	result, err := ToV2(data)
+	require.NoError(t, err)
+
+	r := firstResult(t, result)
+	require.NotNil(t, r.RunTime)
+	assert.InDelta(t, 0.25, *r.RunTime, 0.001)
+}

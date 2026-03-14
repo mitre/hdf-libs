@@ -183,3 +183,61 @@ func TestMatchRequirements_AccumulateFromAllLayers(t *testing.T) {
 	assert.Len(t, result.UnmatchedOld, 0)
 	assert.Len(t, result.UnmatchedNew, 0)
 }
+
+// ---------------------------------------------------------------------------
+// Coverage: MatchRequirements — early break when one side exhausted
+// ---------------------------------------------------------------------------
+
+func TestMatchRequirements_EarlyBreakAllOldMatched(t *testing.T) {
+	// All old reqs match on primary strategy; fallback should be skipped
+	oldReqs := []hdf.EvaluatedRequirement{
+		{ID: "SV-001", Impact: 0.7},
+	}
+	newReqs := []hdf.EvaluatedRequirement{
+		{ID: "SV-001", Impact: 0.7},
+		{ID: "SV-002", Impact: 0.5},
+	}
+
+	result := MatchRequirements(oldReqs, newReqs, Options{
+		Strategy:           "exactId",
+		FallbackStrategies: []string{"fuzzyTitle"},
+	})
+
+	assert.Len(t, result.Matched, 1)
+	assert.Len(t, result.UnmatchedOld, 0)
+	assert.Len(t, result.UnmatchedNew, 1)
+}
+
+func TestMatchRequirements_EarlyBreakAllNewMatched(t *testing.T) {
+	// All new reqs match on primary strategy; fallback skipped for remaining old
+	oldReqs := []hdf.EvaluatedRequirement{
+		{ID: "SV-001", Impact: 0.7},
+		{ID: "SV-002", Impact: 0.5},
+	}
+	newReqs := []hdf.EvaluatedRequirement{
+		{ID: "SV-001", Impact: 0.7},
+	}
+
+	result := MatchRequirements(oldReqs, newReqs, Options{
+		Strategy:           "exactId",
+		FallbackStrategies: []string{"fuzzyTitle"},
+	})
+
+	assert.Len(t, result.Matched, 1)
+	assert.Len(t, result.UnmatchedOld, 1)
+	assert.Len(t, result.UnmatchedNew, 0)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: MatchRequirements — panic on unknown strategy
+// ---------------------------------------------------------------------------
+
+func TestMatchRequirements_PanicsOnUnknownStrategy(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Error("expected panic on unknown strategy, but did not panic")
+		}
+	}()
+	MatchRequirements(nil, nil, Options{Strategy: "nonexistent"})
+}
