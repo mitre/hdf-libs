@@ -184,3 +184,86 @@ func TestComputeSummary(t *testing.T) {
 		})
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Coverage: moved, split, merged states (reserved v1.1 branch)
+// ---------------------------------------------------------------------------
+
+func TestComputeSummary_MovedSplitMerged(t *testing.T) {
+	tests := []struct {
+		name  string
+		state types.RequirementState
+	}{
+		{"moved", types.StateMoved},
+		{"split", types.StateSplit},
+		{"merged", types.StateMerged},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			reqs := []types.RequirementDiff{
+				makeReq("SV-001", tc.state),
+			}
+			got := ComputeSummary(reqs)
+
+			if got.Total != 1 {
+				t.Errorf("Total: got %d, want 1", got.Total)
+			}
+			if got.MatchedCount != 1 {
+				t.Errorf("MatchedCount: got %d, want 1 (moved/split/merged are matched)", got.MatchedCount)
+			}
+			// None of the named counters should be incremented
+			if got.Fixed != 0 {
+				t.Errorf("Fixed: got %d, want 0", got.Fixed)
+			}
+			if got.Regressed != 0 {
+				t.Errorf("Regressed: got %d, want 0", got.Regressed)
+			}
+			if got.New != 0 {
+				t.Errorf("New: got %d, want 0", got.New)
+			}
+			if got.Absent != 0 {
+				t.Errorf("Absent: got %d, want 0", got.Absent)
+			}
+			if got.Unchanged != 0 {
+				t.Errorf("Unchanged: got %d, want 0", got.Unchanged)
+			}
+			if got.Updated != 0 {
+				t.Errorf("Updated: got %d, want 0", got.Updated)
+			}
+			if got.UnmatchedOldCount != 0 {
+				t.Errorf("UnmatchedOldCount: got %d, want 0", got.UnmatchedOldCount)
+			}
+			if got.UnmatchedNewCount != 0 {
+				t.Errorf("UnmatchedNewCount: got %d, want 0", got.UnmatchedNewCount)
+			}
+		})
+	}
+}
+
+func TestComputeSummary_MixedWithMovedSplitMerged(t *testing.T) {
+	reqs := []types.RequirementDiff{
+		makeReq("SV-001", types.StateFixed),
+		makeReq("SV-002", types.StateMoved),
+		makeReq("SV-003", types.StateSplit),
+		makeReq("SV-004", types.StateMerged),
+		makeReq("SV-005", types.StateNew),
+	}
+	got := ComputeSummary(reqs)
+
+	if got.Total != 5 {
+		t.Errorf("Total: got %d, want 5", got.Total)
+	}
+	if got.Fixed != 1 {
+		t.Errorf("Fixed: got %d, want 1", got.Fixed)
+	}
+	if got.New != 1 {
+		t.Errorf("New: got %d, want 1", got.New)
+	}
+	// Expect 4 matched: fixed, moved, split, merged.
+	if got.MatchedCount != 4 {
+		t.Errorf("MatchedCount: got %d, want 4", got.MatchedCount)
+	}
+	if got.UnmatchedNewCount != 1 {
+		t.Errorf("UnmatchedNewCount: got %d, want 1", got.UnmatchedNewCount)
+	}
+}

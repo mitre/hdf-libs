@@ -468,14 +468,16 @@ func isZeroValue(v interface{}) bool {
 	}
 }
 
+const jsonNull = "null"
+
 // jsonMarshal marshals a value to JSON string for comparison.
 func jsonMarshal(v interface{}) string {
 	if v == nil {
-		return "null"
+		return jsonNull
 	}
 	b, err := json.Marshal(v)
 	if err != nil {
-		return "null"
+		return jsonNull
 	}
 	return string(b)
 }

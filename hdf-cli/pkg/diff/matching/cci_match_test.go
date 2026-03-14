@@ -221,3 +221,70 @@ func TestCciMatchStrategy_NilTagsMap(t *testing.T) {
 	assert.Len(t, result.UnmatchedOld, 1)
 	assert.Len(t, result.UnmatchedNew, 1)
 }
+
+// ---------------------------------------------------------------------------
+// Coverage: extractCCIs — CCI value is not []interface{} (e.g., a string)
+// ---------------------------------------------------------------------------
+
+func TestExtractCCIs_CCINotSlice(t *testing.T) {
+	req := hdf.EvaluatedRequirement{
+		ID:     "V-001",
+		Impact: 0.7,
+		Tags:   map[string]interface{}{"cci": "CCI-000366"},
+	}
+	result := extractCCIs(req)
+	assert.Nil(t, result, "extractCCIs should return nil when cci is not []interface{}")
+}
+
+func TestExtractCCIs_CCIMixedTypes(t *testing.T) {
+	req := hdf.EvaluatedRequirement{
+		ID:     "V-001",
+		Impact: 0.7,
+		Tags: map[string]interface{}{
+			"cci": []interface{}{"CCI-000366", 42, "CCI-000777"},
+		},
+	}
+	result := extractCCIs(req)
+	// Only string elements should be extracted
+	assert.Len(t, result, 2)
+	assert.Equal(t, "CCI-000366", result[0])
+	assert.Equal(t, "CCI-000777", result[1])
+}
+
+func TestExtractCCIs_NilTags(t *testing.T) {
+	req := hdf.EvaluatedRequirement{ID: "V-001", Impact: 0.7, Tags: nil}
+	result := extractCCIs(req)
+	assert.Nil(t, result)
+}
+
+func TestExtractCCIs_NoCCIKey(t *testing.T) {
+	req := hdf.EvaluatedRequirement{
+		ID:     "V-001",
+		Impact: 0.7,
+		Tags:   map[string]interface{}{"nist": []interface{}{"AC-1"}},
+	}
+	result := extractCCIs(req)
+	assert.Nil(t, result)
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: CCI Match — already-matched old/new indices get skipped
+// ---------------------------------------------------------------------------
+
+func TestCciMatchStrategy_DoubleMatchPrevention(t *testing.T) {
+	s := NewCCIMatchStrategy()
+	// Two requirements share two CCIs — should only match once
+	oldReqs := []hdf.EvaluatedRequirement{
+		reqWithCCI("V-001", []string{"CCI-001", "CCI-002"}),
+	}
+	newReqs := []hdf.EvaluatedRequirement{
+		reqWithCCI("RHEL-001", []string{"CCI-001", "CCI-002"}),
+	}
+
+	result := s.Match(oldReqs, newReqs)
+
+	// Should produce exactly 1 match, not 2
+	assert.Len(t, result.Matched, 1)
+	assert.Len(t, result.UnmatchedOld, 0)
+	assert.Len(t, result.UnmatchedNew, 0)
+}
