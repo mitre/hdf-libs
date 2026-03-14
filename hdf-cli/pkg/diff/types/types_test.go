@@ -118,7 +118,7 @@ func TestHdfComparisonMarshal(t *testing.T) {
 	data, err := json.Marshal(comparison)
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal(data, &parsed)
 	require.NoError(t, err)
 
@@ -127,14 +127,14 @@ func TestHdfComparisonMarshal(t *testing.T) {
 	assert.Equal(t, "2026-03-14T00:00:00Z", parsed["timestamp"])
 	assert.Len(t, parsed["sources"], 2)
 
-	summary := parsed["summary"].(map[string]interface{})
+	summary := parsed["summary"].(map[string]any)
 	assert.Equal(t, float64(1), summary["fixed"])
 	assert.Equal(t, float64(2), summary["regressed"])
 	assert.Equal(t, float64(10), summary["total"])
 
 	// Empty slices must marshal as [] not null
-	assert.Equal(t, []interface{}{}, parsed["baselineDiffs"])
-	assert.Equal(t, []interface{}{}, parsed["requirementDiffs"])
+	assert.Equal(t, []any{}, parsed["baselineDiffs"])
+	assert.Equal(t, []any{}, parsed["requirementDiffs"])
 }
 
 func TestHdfComparisonUnmarshal(t *testing.T) {
@@ -210,7 +210,7 @@ func TestRequirementDiffNilBeforeMarshal(t *testing.T) {
 	data, err := json.Marshal(diff)
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal(data, &parsed)
 	require.NoError(t, err)
 
@@ -224,7 +224,7 @@ func TestRequirementDiffNilBeforeMarshal(t *testing.T) {
 	assert.True(t, hasAfter, "after field must be present in JSON")
 	assert.NotNil(t, parsed["after"], "after field must not be null")
 
-	afterMap := parsed["after"].(map[string]interface{})
+	afterMap := parsed["after"].(map[string]any)
 	assert.Equal(t, "SV-001", afterMap["id"])
 	assert.Equal(t, 0.7, afterMap["impact"])
 }
@@ -253,7 +253,7 @@ func TestRequirementDiffWithBeforeMarshal(t *testing.T) {
 	data, err := json.Marshal(diff)
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal(data, &parsed)
 	require.NoError(t, err)
 
@@ -267,12 +267,12 @@ func TestRequirementDiffWithBeforeMarshal(t *testing.T) {
 	assert.Equal(t, 0.5, parsed["oldImpact"])
 	assert.Equal(t, 0.7, parsed["newImpact"])
 
-	reasons := parsed["changeReasons"].([]interface{})
+	reasons := parsed["changeReasons"].([]any)
 	assert.Equal(t, "impactChanged", reasons[0])
 
-	changes := parsed["fieldChanges"].([]interface{})
+	changes := parsed["fieldChanges"].([]any)
 	require.Len(t, changes, 1)
-	change := changes[0].(map[string]interface{})
+	change := changes[0].(map[string]any)
 	assert.Equal(t, "replace", change["op"])
 	assert.Equal(t, "impact", change["path"])
 	assert.Equal(t, 0.5, change["oldValue"])
@@ -287,8 +287,8 @@ func TestFieldChangeMarshal(t *testing.T) {
 		fc         FieldChange
 		wantOp     string
 		wantPath   string
-		wantOld    interface{}
-		wantNew    interface{}
+		wantOld    any
+		wantNew    any
 		oldOmitted bool
 		newOmitted bool
 	}{
@@ -323,7 +323,7 @@ func TestFieldChangeMarshal(t *testing.T) {
 			data, err := json.Marshal(tt.fc)
 			require.NoError(t, err)
 
-			var parsed map[string]interface{}
+			var parsed map[string]any
 			err = json.Unmarshal(data, &parsed)
 			require.NoError(t, err)
 
@@ -430,7 +430,7 @@ func TestHdfComparisonRoundTrip(t *testing.T) {
 				Timestamp: "2026-03-14T00:00:00Z",
 			},
 		},
-		Extensions: map[string]interface{}{
+		Extensions: map[string]any{
 			"customTool": "myScanner",
 		},
 	}
@@ -516,17 +516,17 @@ func TestEmptySlicesMarshalAsArrayNotNull(t *testing.T) {
 	data, err := json.Marshal(diff)
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal(data, &parsed)
 	require.NoError(t, err)
 
 	// changeReasons must be [] not null
-	reasons, ok := parsed["changeReasons"].([]interface{})
+	reasons, ok := parsed["changeReasons"].([]any)
 	assert.True(t, ok, "changeReasons must be a JSON array")
 	assert.Empty(t, reasons)
 
 	// fieldChanges must be [] not null
-	changes, ok := parsed["fieldChanges"].([]interface{})
+	changes, ok := parsed["fieldChanges"].([]any)
 	assert.True(t, ok, "fieldChanges must be a JSON array")
 	assert.Empty(t, changes)
 }
@@ -544,7 +544,7 @@ func TestRequirementDiffNilAfterMarshal(t *testing.T) {
 	data, err := json.Marshal(diff)
 	require.NoError(t, err)
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	err = json.Unmarshal(data, &parsed)
 	require.NoError(t, err)
 

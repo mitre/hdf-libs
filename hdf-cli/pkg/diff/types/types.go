@@ -83,8 +83,8 @@ const (
 type FieldChange struct {
 	Op       FieldChangeOp `json:"op"`
 	Path     string        `json:"path"`
-	OldValue interface{}   `json:"oldValue,omitempty"`
-	NewValue interface{}   `json:"newValue,omitempty"`
+	OldValue any           `json:"oldValue,omitempty"`
+	NewValue any           `json:"newValue,omitempty"`
 }
 
 // Source holds metadata about a source document used in the comparison.
@@ -151,15 +151,15 @@ type Annotation struct {
 
 // HdfComparison is the top-level comparison document.
 type HdfComparison struct {
-	FormatVersion    string                 `json:"formatVersion"`
-	ComparisonMode   ComparisonMode         `json:"comparisonMode"`
-	Timestamp        string                 `json:"timestamp,omitempty"`
-	Sources          []Source               `json:"sources"`
-	Matching         *MatchingConfig        `json:"matching,omitempty"`
-	Summary          ComparisonSummary      `json:"summary"`
-	BaselineDiffs    []BaselineDiff         `json:"baselineDiffs"`
-	RequirementDiffs []RequirementDiff      `json:"requirementDiffs"`
-	Drift            []RequirementDiff      `json:"drift,omitempty"`
-	Annotations      map[string]Annotation  `json:"annotations,omitempty"`
-	Extensions       map[string]interface{} `json:"extensions,omitempty"`
+	FormatVersion    string                `json:"formatVersion"`
+	ComparisonMode   ComparisonMode        `json:"comparisonMode"`
+	Timestamp        string                `json:"timestamp,omitempty"`
+	Sources          []Source              `json:"sources"`
+	Matching         *MatchingConfig       `json:"matching,omitempty"`
+	Summary          ComparisonSummary     `json:"summary"`
+	BaselineDiffs    []BaselineDiff        `json:"baselineDiffs"`
+	RequirementDiffs []RequirementDiff     `json:"requirementDiffs"`
+	Drift            []RequirementDiff     `json:"drift,omitempty"`
+	Annotations      map[string]Annotation `json:"annotations,omitempty"`
+	Extensions       map[string]any        `json:"extensions,omitempty"`
 }

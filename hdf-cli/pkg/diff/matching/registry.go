@@ -29,6 +29,9 @@ func createStrategy(name string, opts Options) (Strategy, error) {
 // MatchRequirements matches requirements between two evaluations using a primary
 // strategy and optional fallback strategies. Returns the combined MatchResult.
 // If an unknown strategy name is provided, it panics.
+//
+// Deprecated: Use MatchRequirementsWithError instead, which returns an error
+// rather than panicking on invalid strategy names.
 func MatchRequirements(oldReqs, newReqs []hdf.EvaluatedRequirement, opts Options) MatchResult {
 	result, err := MatchRequirementsWithError(oldReqs, newReqs, opts)
 	if err != nil {

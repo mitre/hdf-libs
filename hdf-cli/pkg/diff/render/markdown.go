@@ -127,12 +127,3 @@ func renderStateSection(sb *strings.Builder, state types.RequirementState, diffs
 func escapeMarkdownCell(value string) string {
 	return strings.ReplaceAll(value, "|", "&#124;")
 }
-
-// formatChangeReasons joins change reasons with commas.
-func formatChangeReasons(reasons []types.ChangeReason) string {
-	parts := make([]string, len(reasons))
-	for i, r := range reasons {
-		parts[i] = string(r)
-	}
-	return strings.Join(parts, ", ")
-}

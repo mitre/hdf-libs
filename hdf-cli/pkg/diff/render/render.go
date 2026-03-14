@@ -97,8 +97,17 @@ func formatFieldChangesWithArrow(changes []types.FieldChange, arrow string) stri
 	return strings.Join(parts, "; ")
 }
 
+// formatChangeReasons joins change reasons with commas.
+func formatChangeReasons(reasons []types.ChangeReason) string {
+	parts := make([]string, len(reasons))
+	for i, r := range reasons {
+		parts[i] = string(r)
+	}
+	return strings.Join(parts, ", ")
+}
+
 // jsonValue marshals a value to its JSON representation.
-func jsonValue(v interface{}) string {
+func jsonValue(v any) string {
 	if v == nil {
 		return "null"
 	}

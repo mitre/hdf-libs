@@ -10,8 +10,8 @@ import (
 
 // helper to build a requirement with ID and CCI tags.
 func reqWithCCI(id string, ccis []string) hdf.EvaluatedRequirement {
-	tags := map[string]interface{}{}
-	cciSlice := make([]interface{}, len(ccis))
+	tags := map[string]any{}
+	cciSlice := make([]any, len(ccis))
 	for i, c := range ccis {
 		cciSlice[i] = c
 	}
@@ -138,10 +138,10 @@ func TestCciMatchStrategy_EmptyCCIArray(t *testing.T) {
 func TestCciMatchStrategy_TagsButNoCCI(t *testing.T) {
 	s := NewCCIMatchStrategy()
 	oldReqs := []hdf.EvaluatedRequirement{
-		{ID: "V-001", Impact: 0.7, Tags: map[string]interface{}{"nist": []interface{}{"AC-1"}}},
+		{ID: "V-001", Impact: 0.7, Tags: map[string]any{"nist": []any{"AC-1"}}},
 	}
 	newReqs := []hdf.EvaluatedRequirement{
-		{ID: "RHEL-001", Impact: 0.7, Tags: map[string]interface{}{"nist": []interface{}{"AC-1"}}},
+		{ID: "RHEL-001", Impact: 0.7, Tags: map[string]any{"nist": []any{"AC-1"}}},
 	}
 
 	result := s.Match(oldReqs, newReqs)
@@ -223,25 +223,25 @@ func TestCciMatchStrategy_NilTagsMap(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Coverage: extractCCIs — CCI value is not []interface{} (e.g., a string)
+// Coverage: extractCCIs — CCI value is not []any (e.g., a string)
 // ---------------------------------------------------------------------------
 
 func TestExtractCCIs_CCINotSlice(t *testing.T) {
 	req := hdf.EvaluatedRequirement{
 		ID:     "V-001",
 		Impact: 0.7,
-		Tags:   map[string]interface{}{"cci": "CCI-000366"},
+		Tags:   map[string]any{"cci": "CCI-000366"},
 	}
 	result := extractCCIs(req)
-	assert.Nil(t, result, "extractCCIs should return nil when cci is not []interface{}")
+	assert.Nil(t, result, "extractCCIs should return nil when cci is not []any")
 }
 
 func TestExtractCCIs_CCIMixedTypes(t *testing.T) {
 	req := hdf.EvaluatedRequirement{
 		ID:     "V-001",
 		Impact: 0.7,
-		Tags: map[string]interface{}{
-			"cci": []interface{}{"CCI-000366", 42, "CCI-000777"},
+		Tags: map[string]any{
+			"cci": []any{"CCI-000366", 42, "CCI-000777"},
 		},
 	}
 	result := extractCCIs(req)
@@ -261,7 +261,7 @@ func TestExtractCCIs_NoCCIKey(t *testing.T) {
 	req := hdf.EvaluatedRequirement{
 		ID:     "V-001",
 		Impact: 0.7,
-		Tags:   map[string]interface{}{"nist": []interface{}{"AC-1"}},
+		Tags:   map[string]any{"nist": []any{"AC-1"}},
 	}
 	result := extractCCIs(req)
 	assert.Nil(t, result)

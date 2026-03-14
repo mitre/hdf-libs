@@ -78,13 +78,13 @@ func TestMatchRequirements_ChainMultipleFallbacks(t *testing.T) {
 		{ID: "SV-001", Title: strPtr("SSH check"), Impact: 0.7},
 		{ID: "V-002-old", Title: strPtr("NTP check"), Impact: 0.5},
 		{ID: "V-003", Title: strPtr("Ensure audit logging is enabled"), Impact: 0.3,
-			Tags: map[string]interface{}{"cci": []interface{}{"CCI-000366"}}},
+			Tags: map[string]any{"cci": []any{"CCI-000366"}}},
 	}
 	newReqs := []hdf.EvaluatedRequirement{
 		{ID: "SV-001", Title: strPtr("SSH check"), Impact: 0.7},
 		{ID: "V-002-new", Title: strPtr("NTP check"), Impact: 0.5},
 		{ID: "RHEL-003", Title: strPtr("Audit logging configuration"), Impact: 0.3,
-			Tags: map[string]interface{}{"cci": []interface{}{"CCI-000366"}}},
+			Tags: map[string]any{"cci": []any{"CCI-000366"}}},
 	}
 
 	result := MatchRequirements(oldReqs, newReqs, Options{
@@ -166,12 +166,12 @@ func TestMatchRequirements_AccumulateFromAllLayers(t *testing.T) {
 	oldReqs := []hdf.EvaluatedRequirement{
 		{ID: "SV-001", Impact: 0.7},
 		{ID: "SV-002", Impact: 0.5,
-			Tags: map[string]interface{}{"cci": []interface{}{"CCI-000366"}}},
+			Tags: map[string]any{"cci": []any{"CCI-000366"}}},
 	}
 	newReqs := []hdf.EvaluatedRequirement{
 		{ID: "SV-001", Impact: 0.7},
 		{ID: "RHEL-002", Impact: 0.5,
-			Tags: map[string]interface{}{"cci": []interface{}{"CCI-000366"}}},
+			Tags: map[string]any{"cci": []any{"CCI-000366"}}},
 	}
 
 	result := MatchRequirements(oldReqs, newReqs, Options{

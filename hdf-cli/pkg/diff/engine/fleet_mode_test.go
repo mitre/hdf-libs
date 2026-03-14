@@ -72,7 +72,7 @@ func fleetOpts() Options {
 // ---------------------------------------------------------------------------
 
 func TestFleet_ComparisonModeIsFleet(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	if diff.ComparisonMode != types.ModeFleet {
 		t.Errorf("expected comparisonMode 'fleet', got %q", diff.ComparisonMode)
@@ -80,7 +80,7 @@ func TestFleet_ComparisonModeIsFleet(t *testing.T) {
 }
 
 func TestFleet_FormatVersion(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	if diff.FormatVersion != version100 {
 		t.Errorf("expected formatVersion %q, got %q", version100, diff.FormatVersion)
@@ -92,7 +92,7 @@ func TestFleet_FormatVersion(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFleet_ThreeSourcesForRefPlusTwoSystems(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	if len(diff.Sources) != 3 {
 		t.Errorf("expected 3 sources, got %d", len(diff.Sources))
@@ -100,7 +100,7 @@ func TestFleet_ThreeSourcesForRefPlusTwoSystems(t *testing.T) {
 }
 
 func TestFleet_FirstSourceRoleIsReference(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	if diff.Sources[0].Role != types.RoleReference {
 		t.Errorf("expected first source role 'reference', got %q", diff.Sources[0].Role)
@@ -108,7 +108,7 @@ func TestFleet_FirstSourceRoleIsReference(t *testing.T) {
 }
 
 func TestFleet_FirstSourceLabelIsReference(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	if diff.Sources[0].Label != "Reference" {
 		t.Errorf("expected first source label 'Reference', got %q", diff.Sources[0].Label)
@@ -116,7 +116,7 @@ func TestFleet_FirstSourceLabelIsReference(t *testing.T) {
 }
 
 func TestFleet_SystemSourceRolesAreSystem(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	if diff.Sources[1].Role != types.RoleSystem {
 		t.Errorf("expected second source role 'system', got %q", diff.Sources[1].Role)
@@ -127,7 +127,7 @@ func TestFleet_SystemSourceRolesAreSystem(t *testing.T) {
 }
 
 func TestFleet_SystemSourceLabelsSequentiallyNumbered(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	if diff.Sources[1].Label != "System 1" {
 		t.Errorf("expected second source label 'System 1', got %q", diff.Sources[1].Label)
@@ -142,7 +142,7 @@ func TestFleet_SystemSourceLabelsSequentiallyNumbered(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFleet_IncludesDiffsForAllSystems(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	// 2 requirements x 2 systems = 4 diffs
 	if len(diff.RequirementDiffs) != 4 {
@@ -151,7 +151,7 @@ func TestFleet_IncludesDiffsForAllSystems(t *testing.T) {
 }
 
 func TestFleet_SourceIndex1ForSystemA(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	sysADiffs := findReqsBySource(diff.RequirementDiffs, 1)
 	if len(sysADiffs) != 2 {
@@ -160,7 +160,7 @@ func TestFleet_SourceIndex1ForSystemA(t *testing.T) {
 }
 
 func TestFleet_SourceIndex2ForSystemB(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	sysBDiffs := findReqsBySource(diff.RequirementDiffs, 2)
 	if len(sysBDiffs) != 2 {
@@ -169,7 +169,7 @@ func TestFleet_SourceIndex2ForSystemB(t *testing.T) {
 }
 
 func TestFleet_SV001RegressedInSystemA(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	sv001 := findReqByIDAndSource(diff.RequirementDiffs, "SV-001", 1)
 	if sv001 == nil {
@@ -187,7 +187,7 @@ func TestFleet_SV001RegressedInSystemA(t *testing.T) {
 }
 
 func TestFleet_SV002UnchangedInSystemA(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	sv002 := findReqByIDAndSource(diff.RequirementDiffs, "SV-002", 1)
 	if sv002 == nil {
@@ -199,7 +199,7 @@ func TestFleet_SV002UnchangedInSystemA(t *testing.T) {
 }
 
 func TestFleet_AllUnchangedInSystemB(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	sysBDiffs := findReqsBySource(diff.RequirementDiffs, 2)
 	for _, req := range sysBDiffs {
@@ -214,7 +214,7 @@ func TestFleet_AllUnchangedInSystemB(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFleet_SummaryTotalAcrossAllSystems(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	// 2 requirements x 2 systems = 4 total
 	if diff.Summary.Total != 4 {
@@ -223,7 +223,7 @@ func TestFleet_SummaryTotalAcrossAllSystems(t *testing.T) {
 }
 
 func TestFleet_SummaryStateCounts(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	if diff.Summary.Regressed != 1 {
 		t.Errorf("expected regressed=1, got %d", diff.Summary.Regressed)
@@ -243,7 +243,7 @@ func TestFleet_SummaryStateCounts(t *testing.T) {
 }
 
 func TestFleet_SummaryMatchedCounts(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	if diff.Summary.MatchedCount != 4 {
 		t.Errorf("expected matchedCount=4, got %d", diff.Summary.MatchedCount)
@@ -261,7 +261,7 @@ func TestFleet_SummaryMatchedCounts(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFleet_SingleSystemArray(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA()}, fleetOpts())
 
 	if len(diff.Sources) != 2 {
 		t.Errorf("expected 2 sources, got %d", len(diff.Sources))
@@ -278,7 +278,7 @@ func TestFleet_SingleSystemArray(t *testing.T) {
 }
 
 func TestFleet_SingleSystemSourceIndex(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA()}, fleetOpts())
 
 	if len(diff.RequirementDiffs) != 2 {
 		t.Errorf("expected 2 requirement diffs, got %d", len(diff.RequirementDiffs))
@@ -299,7 +299,7 @@ func TestFleet_SingleSystemSourceIndex(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFleet_RequirementsSortedByIDThenSourceIndex(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	keys := make([]string, len(diff.RequirementDiffs))
 	for i, r := range diff.RequirementDiffs {
@@ -333,7 +333,7 @@ func TestFleet_ExtraRequirementMarkedAsNew(t *testing.T) {
 		makeRequirementWithTitle("SV-003", "Check C", hdf.Failed, 0.9),
 	))
 
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{systemWithExtra}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{systemWithExtra}, fleetOpts())
 
 	sysReqs := findReqsBySource(diff.RequirementDiffs, 1)
 	sv003 := findReq(sysReqs, "SV-003")
@@ -352,7 +352,7 @@ func TestFleet_ExtraRequirementInSummaryCounts(t *testing.T) {
 		makeRequirementWithTitle("SV-003", "Check C", hdf.Failed, 0.9),
 	))
 
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{systemWithExtra}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{systemWithExtra}, fleetOpts())
 
 	if diff.Summary.New != 1 {
 		t.Errorf("expected new=1, got %d", diff.Summary.New)
@@ -375,7 +375,7 @@ func TestFleet_MissingRequirementMarkedAsAbsent(t *testing.T) {
 		// SV-002 intentionally absent
 	))
 
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{systemMissing}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{systemMissing}, fleetOpts())
 
 	sysReqs := findReqsBySource(diff.RequirementDiffs, 1)
 	sv002 := findReq(sysReqs, "SV-002")
@@ -392,7 +392,7 @@ func TestFleet_AbsentRequirementHasSourceIndex(t *testing.T) {
 		makeRequirementWithTitle("SV-001", "Check A", hdf.Passed, 0.7),
 	))
 
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{systemMissing}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{systemMissing}, fleetOpts())
 
 	sysReqs := findReqsBySource(diff.RequirementDiffs, 1)
 	sv002 := findReq(sysReqs, "SV-002")
@@ -413,7 +413,7 @@ func TestFleet_AbsentRequirementInSummaryCounts(t *testing.T) {
 		makeRequirementWithTitle("SV-001", "Check A", hdf.Passed, 0.7),
 	))
 
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{systemMissing}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{systemMissing}, fleetOpts())
 
 	if diff.Summary.Absent != 1 {
 		t.Errorf("expected absent=1, got %d", diff.Summary.Absent)
@@ -431,7 +431,7 @@ func TestFleet_AbsentRequirementInSummaryCounts(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFleet_IncludesTimestamp(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	if diff.Timestamp == "" {
 		t.Error("expected non-empty timestamp")
@@ -439,7 +439,7 @@ func TestFleet_IncludesTimestamp(t *testing.T) {
 }
 
 func TestFleet_MatchingConfigPopulated(t *testing.T) {
-	diff := DiffHdf(buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
+	diff := mustDiffHdf(t, buildFleetReference(), []hdf.HdfResults{buildFleetSystemA(), buildFleetSystemB()}, fleetOpts())
 
 	if diff.Matching == nil {
 		t.Fatal("expected matching config to be set")
