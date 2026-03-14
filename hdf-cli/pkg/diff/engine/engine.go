@@ -24,6 +24,9 @@ const (
 	fieldNameDescriptions = "descriptions"
 )
 
+// defaultMatchStrategy is the default matching strategy when none is specified.
+const defaultMatchStrategy = "exactId"
+
 // defaultTrackedFields is the default set of fields to track for field-level diffs.
 var defaultTrackedFields = []string{fieldNameImpact, fieldNameSeverity, fieldNameTags}
 
@@ -46,7 +49,7 @@ func resolveOptions(opts Options) Options {
 		opts.ComparisonMode = types.ModeTemporal
 	}
 	if opts.MatchStrategy == "" {
-		opts.MatchStrategy = "exactId"
+		opts.MatchStrategy = defaultMatchStrategy
 	}
 	return opts
 }
@@ -81,8 +84,12 @@ func DiffHdf(oldResults hdf.HdfResults, newResults []hdf.HdfResults, opts Option
 	// Build sources metadata
 	sources := buildSources(opts.ComparisonMode)
 
+	// Extract timestamps from documents for override expiration checks
+	oldTimestamp := formatTimestamp(oldResults.Timestamp)
+	newTimestamp := formatTimestamp(newDoc.Timestamp)
+
 	// Compute baseline and requirement diffs
-	baselineDiffs, requirementDiffs, err := comparePair(oldResults, newDoc, opts.TrackedFields, matchOpts)
+	baselineDiffs, requirementDiffs, err := comparePair(oldResults, newDoc, oldTimestamp, newTimestamp, opts.TrackedFields, matchOpts)
 	if err != nil {
 		return types.HdfComparison{}, err
 	}
@@ -137,6 +144,8 @@ func diffFleet(
 	var allBaselineDiffs []types.BaselineDiff
 	seenBaselineNames := make(map[string]bool)
 
+	refTimestamp := formatTimestamp(reference.Timestamp)
+
 	for i, sys := range systems {
 		sourceIndex := i + 1
 
@@ -145,7 +154,8 @@ func diffFleet(
 			Label: "System " + strconv.Itoa(sourceIndex),
 		})
 
-		baselineDiffs, requirementDiffs, err := comparePair(reference, sys, opts.TrackedFields, matchOpts)
+		sysTimestamp := formatTimestamp(sys.Timestamp)
+		baselineDiffs, requirementDiffs, err := comparePair(reference, sys, refTimestamp, sysTimestamp, opts.TrackedFields, matchOpts)
 		if err != nil {
 			return types.HdfComparison{}, err
 		}
@@ -198,8 +208,11 @@ func diffFleet(
 }
 
 // comparePair performs the core pairwise comparison between two HDF result documents.
+// oldTimestamp and newTimestamp are RFC3339 strings from the source documents, used
+// to evaluate override expiration relative to each document's assessment time.
 func comparePair(
 	oldDoc, newDoc hdf.HdfResults,
+	oldTimestamp, newTimestamp string,
 	trackedFields []string,
 	matchOpts matching.Options,
 ) ([]types.BaselineDiff, []types.RequirementDiff, error) {
@@ -282,11 +295,11 @@ func comparePair(
 			id = pair.OldReq.ID
 		}
 
-		oldStatus := status.ComputeEffectiveStatus(pair.OldReq, "")
-		newStatus := status.ComputeEffectiveStatus(pair.NewReq, "")
+		oldStatus := status.ComputeEffectiveStatus(pair.OldReq, oldTimestamp)
+		newStatus := status.ComputeEffectiveStatus(pair.NewReq, newTimestamp)
 
 		diffState := status.ClassifyDiffStatus(oldStatus, newStatus)
-		changeReasons := status.ClassifyChangeReasons(pair.OldReq, pair.NewReq, "", "")
+		changeReasons := status.ClassifyChangeReasons(pair.OldReq, pair.NewReq, oldTimestamp, newTimestamp)
 
 		fieldChanges := computeFieldChanges(pair.OldReq, pair.NewReq, trackedFields)
 
@@ -319,7 +332,7 @@ func comparePair(
 
 	// Unmatched old requirements (absent)
 	for _, oldReq := range matchResult.UnmatchedOld {
-		oldStatus := status.ComputeEffectiveStatus(oldReq, "")
+		oldStatus := status.ComputeEffectiveStatus(oldReq, oldTimestamp)
 		title := resolveTitle(oldReq.Title, nil)
 		oldImpact := oldReq.Impact
 		oldReqCopy := oldReq
@@ -339,7 +352,7 @@ func comparePair(
 
 	// Unmatched new requirements (new)
 	for _, newReq := range matchResult.UnmatchedNew {
-		newStatus := status.ComputeEffectiveStatus(newReq, "")
+		newStatus := status.ComputeEffectiveStatus(newReq, newTimestamp)
 		title := resolveTitle(nil, newReq.Title)
 		newImpact := newReq.Impact
 		newReqCopy := newReq
@@ -472,6 +485,14 @@ func resolveTitle(oldTitle, newTitle *string) string {
 		return *oldTitle
 	}
 	return ""
+}
+
+// formatTimestamp converts a *time.Time to an RFC3339 string, or "" if nil.
+func formatTimestamp(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format(time.RFC3339)
 }
 
 // derefStr returns the string value of a *string, or "" if nil.
