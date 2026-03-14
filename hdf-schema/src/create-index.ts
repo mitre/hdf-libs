@@ -1,7 +1,7 @@
 /**
  * Script to create index.js and index.d.ts files after type generation
  */
-import { writeFileSync, copyFileSync, existsSync, rmSync } from 'fs';
+import { writeFileSync, copyFileSync, existsSync, rmSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
@@ -40,8 +40,17 @@ export function createIndex(options: CreateIndexOptions = {}): void {
 
   // Compile TypeScript files in dist/ts to JavaScript
   // This creates .js and .d.ts files from the generated .ts files
+  // Note: uses explicit file listing instead of glob (dist/ts/*.ts) because
+  // Windows PowerShell does not expand shell globs in execSync commands.
   const compile = options.compile ?? ((cwd: string) => {
-    execSync('tsc dist/ts/*.ts --declaration --module esnext --target es2020 --moduleResolution bundler --skipLibCheck', {
+    const tsFiles = readdirSync(tsDir)
+      .filter(f => f.endsWith('.ts') && !f.endsWith('.d.ts'))
+      .map(f => join('dist/ts', f))
+      .join(' ');
+    if (!tsFiles) {
+      throw new Error('No .ts files found in dist/ts/');
+    }
+    execSync(`tsc ${tsFiles} --declaration --module esnext --target es2020 --moduleResolution bundler --skipLibCheck`, {
       cwd,
       stdio: 'inherit',
     });
