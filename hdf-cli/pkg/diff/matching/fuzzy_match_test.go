@@ -269,6 +269,31 @@ func TestFuzzyTitleStrategy_NilTitle(t *testing.T) {
 	assert.Len(t, result.UnmatchedNew, 1)
 }
 
+// --- JaccardSimilarity: a larger than b (swap branch) ---
+
+func TestJaccardSimilarity_ALargerThanB(t *testing.T) {
+	// a has more elements, b is smaller -- ensures the swap optimization is exercised
+	a := mapSet("ssh", "root", "login", "disabled", "config", "setting")
+	b := mapSet("ssh", "root")
+	// intersection = {ssh, root} = 2
+	// union = {ssh, root, login, disabled, config, setting} = 6
+	expected := 2.0 / 6.0
+	assert.InDelta(t, expected, JaccardSimilarity(a, b), 0.00001)
+}
+
+func TestJaccardSimilarity_BLargerThanA(t *testing.T) {
+	a := mapSet("ssh", "root")
+	b := mapSet("ssh", "root", "login", "disabled", "config", "setting")
+	expected := 2.0 / 6.0
+	assert.InDelta(t, expected, JaccardSimilarity(a, b), 0.00001)
+}
+
+func TestJaccardSimilarity_SingleElement(t *testing.T) {
+	a := mapSet("ssh")
+	b := mapSet("ssh")
+	assert.Equal(t, 1.0, JaccardSimilarity(a, b))
+}
+
 // helper to create a set (as a map[string]bool for Jaccard tests).
 func mapSet(items ...string) map[string]bool {
 	s := make(map[string]bool, len(items))

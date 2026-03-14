@@ -22,6 +22,7 @@ const (
 	stratExactID  = "exactId"
 	fieldImpact   = "impact"
 	fieldSeverity = "severity"
+	titlePrevious = "Previous Title"
 )
 
 // ---------------------------------------------------------------------------
@@ -1161,5 +1162,300 @@ func TestFieldChanges_TagsReplace(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("expected field change for tags with op 'replace', got %v", r.FieldChanges)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: buildSources — multiSource and default branches
+// ---------------------------------------------------------------------------
+
+func TestBuildSources_MultiSource(t *testing.T) {
+	sources := buildSources(types.ModeMultiSource)
+	if len(sources) != 2 {
+		t.Fatalf("expected 2 sources, got %d", len(sources))
+	}
+	if sources[0].Role != types.RoleOld {
+		t.Errorf("expected role 'old', got %q", sources[0].Role)
+	}
+	if sources[1].Role != types.RoleNew {
+		t.Errorf("expected role 'new', got %q", sources[1].Role)
+	}
+}
+
+func TestBuildSources_DefaultMode(t *testing.T) {
+	sources := buildSources("unknownMode")
+	if len(sources) != 2 {
+		t.Fatalf("expected 2 sources for default branch, got %d", len(sources))
+	}
+	if sources[0].Role != types.RoleOld {
+		t.Errorf("expected role 'old', got %q", sources[0].Role)
+	}
+}
+
+func TestBuildSources_FleetMode(t *testing.T) {
+	sources := buildSources(types.ModeFleet)
+	if len(sources) != 2 {
+		t.Fatalf("expected 2 sources for fleet, got %d", len(sources))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: getFieldValue — all branches
+// ---------------------------------------------------------------------------
+
+func TestGetFieldValue_AllBranches(t *testing.T) {
+	sev := hdf.High
+	title := "My Title"
+	req := hdf.EvaluatedRequirement{
+		Impact:       0.7,
+		Severity:     &sev,
+		Tags:         map[string]interface{}{"cci": "CCI-001"},
+		Title:        &title,
+		Descriptions: []hdf.Description{{Label: "default", Data: "desc"}},
+	}
+
+	tests := []struct {
+		field    string
+		wantNil  bool
+		wantType string
+	}{
+		{fieldNameImpact, false, "float64"},
+		{fieldNameSeverity, false, "string"},
+		{fieldNameTags, false, "map"},
+		{fieldNameTitle, false, "string"},
+		{fieldNameDescriptions, false, "slice"},
+		{"unknown_field", true, ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.field, func(t *testing.T) {
+			val := getFieldValue(req, tc.field)
+			if tc.wantNil {
+				if val != nil {
+					t.Errorf("expected nil for field %q, got %v", tc.field, val)
+				}
+			} else {
+				if val == nil {
+					t.Errorf("expected non-nil for field %q", tc.field)
+				}
+			}
+		})
+	}
+}
+
+func TestGetFieldValue_NilSeverity(t *testing.T) {
+	req := hdf.EvaluatedRequirement{Severity: nil}
+	val := getFieldValue(req, fieldNameSeverity)
+	if val != nil {
+		t.Errorf("expected nil for nil severity, got %v", val)
+	}
+}
+
+func TestGetFieldValue_NilTitle(t *testing.T) {
+	req := hdf.EvaluatedRequirement{Title: nil}
+	val := getFieldValue(req, fieldNameTitle)
+	if val != nil {
+		t.Errorf("expected nil for nil title, got %v", val)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: isZeroValue — all branches
+// ---------------------------------------------------------------------------
+
+func TestIsZeroValue_TableDriven(t *testing.T) {
+	var nilMap map[string]interface{}
+	var nilSlice []string
+	var nilPtr *string
+	testStr := "test-value"
+
+	tests := []struct {
+		name     string
+		value    interface{}
+		expected bool
+	}{
+		{"nil interface", nil, true},
+		{"nil pointer", nilPtr, true},
+		{"non-nil pointer", &testStr, false},
+		{"nil map", nilMap, true},
+		{"non-nil empty map", map[string]interface{}{}, false},
+		{"nil slice", nilSlice, true},
+		{"non-nil empty slice", []string{}, false},
+		{"zero int", 0, false},
+		{"zero float", 0.0, false},
+		{"non-zero float", 0.7, false},
+		{"empty string", "", false},
+		{"non-empty string", "hello", false},
+		{"bool false", false, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := isZeroValue(tc.value)
+			if got != tc.expected {
+				t.Errorf("isZeroValue(%v) = %v, want %v", tc.value, got, tc.expected)
+			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: jsonMarshal — error branch
+// ---------------------------------------------------------------------------
+
+func TestJsonMarshal_NilReturnsNull(t *testing.T) {
+	result := jsonMarshal(nil)
+	if result != "null" {
+		t.Errorf("expected \"null\" for nil, got %q", result)
+	}
+}
+
+func TestJsonMarshal_ErrorBranch(t *testing.T) {
+	// json.Marshal errors on channels
+	ch := make(chan int)
+	result := jsonMarshal(ch)
+	if result != "null" {
+		t.Errorf("expected \"null\" for unmarshalable value, got %q", result)
+	}
+}
+
+func TestJsonMarshal_ValidValue(t *testing.T) {
+	result := jsonMarshal(42)
+	if result != "42" {
+		t.Errorf("expected \"42\", got %q", result)
+	}
+}
+
+func TestJsonMarshal_Map(t *testing.T) {
+	result := jsonMarshal(map[string]interface{}{"a": 1})
+	if result != `{"a":1}` {
+		t.Errorf("expected {\"a\":1}, got %q", result)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: derefStr — both branches
+// ---------------------------------------------------------------------------
+
+func TestDerefStr_Nil(t *testing.T) {
+	result := derefStr(nil)
+	if result != "" {
+		t.Errorf("expected empty string for nil, got %q", result)
+	}
+}
+
+func TestDerefStr_NonNil(t *testing.T) {
+	s := "hello"
+	result := derefStr(&s)
+	if result != "hello" {
+		t.Errorf("expected \"hello\", got %q", result)
+	}
+}
+
+func TestDerefStr_EmptyString(t *testing.T) {
+	s := ""
+	result := derefStr(&s)
+	if result != "" {
+		t.Errorf("expected empty string, got %q", result)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: resolveTitle — both nil, only old set
+// ---------------------------------------------------------------------------
+
+func TestResolveTitle_BothNil(t *testing.T) {
+	result := resolveTitle(nil, nil)
+	if result != "" {
+		t.Errorf("expected empty string, got %q", result)
+	}
+}
+
+func TestResolveTitle_OnlyOldSet(t *testing.T) {
+	oldTitle := titlePrevious
+	result := resolveTitle(&oldTitle, nil)
+	if result != titlePrevious {
+		t.Errorf("expected %q, got %q", titlePrevious, result)
+	}
+}
+
+func TestResolveTitle_BothSet(t *testing.T) {
+	oldTitle := titlePrevious
+	newTitle := "Current Title"
+	result := resolveTitle(&oldTitle, &newTitle)
+	if result != "Current Title" {
+		t.Errorf("expected \"Current Title\", got %q", result)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: DiffHdf — empty newResults slice
+// ---------------------------------------------------------------------------
+
+func TestDiffHdf_EmptyNewResults(t *testing.T) {
+	baseline := makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	)
+	// Empty newResults slice — should not panic
+	comp := DiffHdf(makeResults(baseline), []hdf.HdfResults{}, defaultOpts())
+
+	// All old requirements should be absent
+	if len(comp.RequirementDiffs) != 1 {
+		t.Fatalf("expected 1 requirement diff, got %d", len(comp.RequirementDiffs))
+	}
+	if comp.RequirementDiffs[0].State != types.StateAbsent {
+		t.Errorf("expected state 'absent', got %q", comp.RequirementDiffs[0].State)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: computeFieldChanges — descriptions tracked field change
+// ---------------------------------------------------------------------------
+
+func TestFieldChanges_DescriptionsTracked(t *testing.T) {
+	oldReq := makeRequirement("SV-001", hdf.Passed, 0.7)
+	oldReq.Descriptions = []hdf.Description{{Label: "default", Data: "old desc"}}
+
+	newReq := makeRequirement("SV-001", hdf.Passed, 0.7)
+	newReq.Descriptions = []hdf.Description{{Label: "default", Data: "new desc"}}
+
+	changes := computeFieldChanges(oldReq, newReq, []string{fieldNameDescriptions})
+	if len(changes) != 1 {
+		t.Fatalf("expected 1 field change, got %d", len(changes))
+	}
+	if changes[0].Path != fieldNameDescriptions {
+		t.Errorf("expected path %q, got %q", fieldNameDescriptions, changes[0].Path)
+	}
+	if changes[0].Op != types.OpReplace {
+		t.Errorf("expected op 'replace', got %q", changes[0].Op)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: multiSource mode
+// ---------------------------------------------------------------------------
+
+func TestMultiSourceMode_SourceRoles(t *testing.T) {
+	oldResults := makeResults(makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	))
+	newResults := makeResults(makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	))
+
+	opts := Options{
+		TrackedFields:  []string{fieldImpact, fieldSeverity, "tags"},
+		ComparisonMode: types.ModeMultiSource,
+		MatchStrategy:  stratExactID,
+	}
+
+	comp := DiffHdf(oldResults, []hdf.HdfResults{newResults}, opts)
+
+	if comp.ComparisonMode != types.ModeMultiSource {
+		t.Errorf("expected comparisonMode 'multiSource', got %q", comp.ComparisonMode)
+	}
+	if len(comp.Sources) != 2 {
+		t.Fatalf("expected 2 sources, got %d", len(comp.Sources))
+	}
+	if comp.Sources[0].Role != types.RoleOld {
+		t.Errorf("expected first source role 'old', got %q", comp.Sources[0].Role)
 	}
 }

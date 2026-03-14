@@ -966,3 +966,203 @@ func TestFormatImpact_One(t *testing.T) {
 	v := 1.0
 	assert.Equal(t, "1", formatImpact(&v))
 }
+
+// ─── CSV: summary detail mode ────────────────────────────────────────────────
+
+func TestCSV_SummaryDetail_StillHasAllRows(t *testing.T) {
+	comp := testFixture()
+	out, err := CSV(comp, Options{Detail: DetailSummary})
+	require.NoError(t, err)
+
+	reader := csv.NewReader(strings.NewReader(out))
+	records, err := reader.ReadAll()
+	require.NoError(t, err)
+
+	// Summary detail for CSV still outputs all rows (no field changes column)
+	// 1 header + 6 data rows
+	assert.Equal(t, 7, len(records))
+	// No Field Changes column
+	assert.Equal(t, 8, len(records[0])) // 8 columns without Field Changes
+}
+
+// ─── JSON: summary mode sanity checks ────────────────────────────────────────
+
+func TestJSON_SummaryMode_DoesNotContainRequirementDiffs(t *testing.T) {
+	comp := testFixture()
+	out, err := JSON(comp, Options{Detail: DetailSummary})
+	require.NoError(t, err)
+
+	assert.NotContains(t, out, "requirementDiffs")
+	assert.NotContains(t, out, "baselineDiffs")
+	assert.Contains(t, out, "formatVersion")
+	assert.Contains(t, out, "comparisonMode")
+	assert.Contains(t, out, "summary")
+}
+
+// ─── JSON: full detail with no filter ────────────────────────────────────────
+
+func TestJSON_FullDetail_NoFilter_AllPresent(t *testing.T) {
+	comp := testFixture()
+	out, err := JSON(comp, Options{Detail: DetailFull})
+	require.NoError(t, err)
+
+	var parsed types.HdfComparison
+	err = json.Unmarshal([]byte(out), &parsed)
+	require.NoError(t, err)
+
+	assert.Equal(t, 6, len(parsed.RequirementDiffs))
+}
+
+// ─── JSON: control detail with filter ────────────────────────────────────────
+
+func TestJSON_ControlDetail_WithFilter(t *testing.T) {
+	comp := testFixture()
+	out, err := JSON(comp, Options{
+		Detail:       DetailControl,
+		FilterStates: []types.RequirementState{types.StateAbsent, types.StateNew},
+	})
+	require.NoError(t, err)
+
+	var parsed map[string]interface{}
+	err = json.Unmarshal([]byte(out), &parsed)
+	require.NoError(t, err)
+
+	diffs := parsed["requirementDiffs"].([]interface{})
+	assert.Equal(t, 2, len(diffs))
+	for _, d := range diffs {
+		diffMap := d.(map[string]interface{})
+		state := diffMap["state"].(string)
+		assert.True(t, state == "absent" || state == "new",
+			"expected absent or new, got %s", state)
+	}
+}
+
+// ─── render: jsonValue edge case — unmarshalable value ────────────────────────
+
+func TestJsonValue_Unmarshalable(t *testing.T) {
+	ch := make(chan int)
+	result := jsonValue(ch)
+	// json.Marshal fails on channels; fallback uses fmt.Sprintf which
+	// produces a hex address like "0x1234..." — just verify it's not "null"
+	// and not empty (the error branch was exercised).
+	assert.NotEqual(t, "null", result)
+	assert.NotEmpty(t, result)
+}
+
+func TestJsonValue_Map(t *testing.T) {
+	result := jsonValue(map[string]interface{}{"key": "val"})
+	assert.Contains(t, result, `"key"`)
+	assert.Contains(t, result, `"val"`)
+}
+
+func TestJsonValue_Slice(t *testing.T) {
+	result := jsonValue([]string{"a", "b"})
+	assert.Contains(t, result, `"a"`)
+	assert.Contains(t, result, `"b"`)
+}
+
+// ─── symbolAndColor: moved/split/merged states ──────────────────────────────
+
+func TestSymbolAndColor_MovedDim(t *testing.T) {
+	sym, colorFn := symbolAndColor(types.StateMoved, true)
+	assert.Equal(t, " ", sym)
+	colored := colorFn("test")
+	assert.Contains(t, colored, ansiDim)
+}
+
+func TestSymbolAndColor_SplitDim(t *testing.T) {
+	sym, _ := symbolAndColor(types.StateSplit, false)
+	assert.Equal(t, " ", sym)
+}
+
+func TestSymbolAndColor_MergedDim(t *testing.T) {
+	sym, colorFn := symbolAndColor(types.StateMerged, true)
+	assert.Equal(t, " ", sym)
+	colored := colorFn("test")
+	assert.Contains(t, colored, ansiDim)
+}
+
+// ─── CSV: formatChangeReasonsCSV edge cases ──────────────────────────────────
+
+func TestFormatChangeReasonsCSV_Empty(t *testing.T) {
+	result := formatChangeReasonsCSV([]types.ChangeReason{})
+	assert.Equal(t, "", result)
+}
+
+func TestFormatChangeReasonsCSV_Multiple(t *testing.T) {
+	result := formatChangeReasonsCSV([]types.ChangeReason{
+		types.ReasonResultChanged,
+		types.ReasonImpactChanged,
+	})
+	assert.Equal(t, "resultChanged, impactChanged", result)
+}
+
+// ─── Terminal: formatStatusTransition — updated with statuses ────────────────
+
+func TestFormatStatusTransition_UpdatedWithStatuses(t *testing.T) {
+	req := types.RequirementDiff{
+		State:              types.StateUpdated,
+		OldEffectiveStatus: "notReviewed",
+		NewEffectiveStatus: "notApplicable",
+	}
+	result := formatStatusTransition(req)
+	assert.Contains(t, result, "notReviewed")
+	assert.Contains(t, result, "notApplicable")
+	assert.Contains(t, result, "(updated)")
+}
+
+func TestFormatStatusTransition_UnchangedWithStatuses(t *testing.T) {
+	req := types.RequirementDiff{
+		State:              types.StateUnchanged,
+		OldEffectiveStatus: "failed",
+		NewEffectiveStatus: "failed",
+	}
+	result := formatStatusTransition(req)
+	assert.Contains(t, result, "failed")
+	assert.NotContains(t, result, "(unchanged)")
+}
+
+// ─── CSV: row with nil impacts ──────────────────────────────────────────────
+
+func TestCSV_NilImpacts_EmptyString(t *testing.T) {
+	comp := testFixture()
+	comp.RequirementDiffs = []types.RequirementDiff{
+		{
+			ID:            "V-9001",
+			State:         types.StateNew,
+			Title:         "No Impact",
+			OldImpact:     nil,
+			NewImpact:     nil,
+			ChangeReasons: []types.ChangeReason{},
+			FieldChanges:  []types.FieldChange{},
+		},
+	}
+	out, err := CSV(comp, Options{Detail: DetailControl})
+	require.NoError(t, err)
+
+	reader := csv.NewReader(strings.NewReader(out))
+	records, err := reader.ReadAll()
+	require.NoError(t, err)
+
+	require.Equal(t, 2, len(records))
+	assert.Equal(t, "", records[1][5]) // Old Impact
+	assert.Equal(t, "", records[1][6]) // New Impact
+}
+
+// ─── formatFieldChangesWithArrow: all ops in sequence ────────────────────────
+
+func TestFormatFieldChanges_AllOpsInSequence(t *testing.T) {
+	changes := []types.FieldChange{
+		{Op: types.OpAdd, Path: "new_field", NewValue: "added"},
+		{Op: types.OpRemove, Path: "old_field", OldValue: "removed"},
+		{Op: types.OpReplace, Path: "changed_field", OldValue: "old", NewValue: "new"},
+	}
+	result := formatFieldChangesWithArrow(changes, "=>")
+	assert.Contains(t, result, "+new_field")
+	assert.Contains(t, result, "-old_field")
+	assert.Contains(t, result, "changed_field:")
+	assert.Contains(t, result, "=>")
+	// Three parts joined with "; "
+	parts := strings.Split(result, "; ")
+	assert.Equal(t, 3, len(parts))
+}

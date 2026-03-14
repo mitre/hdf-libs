@@ -8,6 +8,16 @@ import (
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
 )
 
+// Test-level status string constants to avoid goconst duplication.
+const (
+	statusPassed      = string(hdf.Passed)
+	statusNotReviewed = string(hdf.NotReviewed)
+	statusFailed      = "failed"
+	statusError       = "error"
+	statusNotAppl     = "notApplicable"
+	marshalNull       = "null"
+)
+
 // ---------------------------------------------------------------------------
 // Helpers to build minimal HDF requirement structures
 // ---------------------------------------------------------------------------
@@ -97,21 +107,21 @@ func TestComputeEffectiveStatus(t *testing.T) {
 			req: makeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Results = []hdf.RequirementResult{makeResult(hdf.Passed)}
 			}),
-			expected: "passed",
+			expected: statusPassed,
 		},
 		{
 			name: "returns failed for a single failing result with no overrides",
 			req: makeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
 			}),
-			expected: "failed",
+			expected: statusFailed,
 		},
 		{
 			name: "returns error for a single error result with no overrides",
 			req: makeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Results = []hdf.RequirementResult{makeResult(hdf.Error)}
 			}),
-			expected: "error",
+			expected: statusError,
 		},
 		{
 			name: "returns failed when results contain one passed and one failed (worst wins)",
@@ -121,7 +131,7 @@ func TestComputeEffectiveStatus(t *testing.T) {
 					makeResult(hdf.Failed),
 				}
 			}),
-			expected: "failed",
+			expected: statusFailed,
 		},
 		{
 			name: "returns error when results contain one error and one failed (worst wins)",
@@ -131,14 +141,14 @@ func TestComputeEffectiveStatus(t *testing.T) {
 					makeResult(hdf.Failed),
 				}
 			}),
-			expected: "error",
+			expected: statusError,
 		},
 		{
 			name: "returns notReviewed for an empty results array",
 			req: makeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Results = []hdf.RequirementResult{}
 			}),
-			expected: "notReviewed",
+			expected: statusNotReviewed,
 		},
 		{
 			name: "returns notApplicable when impact is 0 and there are no results",
@@ -146,7 +156,7 @@ func TestComputeEffectiveStatus(t *testing.T) {
 				r.Impact = 0
 				r.Results = []hdf.RequirementResult{}
 			}),
-			expected: "notApplicable",
+			expected: statusNotAppl,
 		},
 		{
 			name: "uses non-expired waiver override status instead of result status",
@@ -166,7 +176,7 @@ func TestComputeEffectiveStatus(t *testing.T) {
 				}
 			}),
 			referenceTimestamp: "2025-06-01T00:00:00Z",
-			expected:           "passed",
+			expected:           statusPassed,
 		},
 		{
 			name: "falls back to results when waiver override is expired",
@@ -186,7 +196,7 @@ func TestComputeEffectiveStatus(t *testing.T) {
 				}
 			}),
 			referenceTimestamp: "2025-06-01T00:00:00Z",
-			expected:           "failed",
+			expected:           statusFailed,
 		},
 		{
 			name: "uses the first non-expired override when multiple overrides exist",
@@ -221,7 +231,7 @@ func TestComputeEffectiveStatus(t *testing.T) {
 				}
 			}),
 			referenceTimestamp: "2025-06-01T00:00:00Z",
-			expected:           "notReviewed",
+			expected:           statusNotReviewed,
 		},
 		{
 			name: "uses effectiveStatus field directly when present and no overrides exist",
@@ -229,7 +239,7 @@ func TestComputeEffectiveStatus(t *testing.T) {
 				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
 				r.EffectiveStatus = ptrResultStatus(hdf.Passed)
 			}),
-			expected: "passed",
+			expected: statusPassed,
 		},
 		{
 			name: "returns notApplicable when impact is 0 regardless of results",
@@ -240,7 +250,7 @@ func TestComputeEffectiveStatus(t *testing.T) {
 					makeResult(hdf.Failed),
 				}
 			}),
-			expected: "notApplicable",
+			expected: statusNotAppl,
 		},
 		{
 			name: "uses now when overrides exist but no referenceTimestamp provided",
@@ -260,7 +270,7 @@ func TestComputeEffectiveStatus(t *testing.T) {
 				}
 			}),
 			// No referenceTimestamp — should use time.Now() and the override is far in the future
-			expected: "passed",
+			expected: statusPassed,
 		},
 		{
 			name: "uses effectiveStatus when overrides array is empty",
@@ -269,14 +279,14 @@ func TestComputeEffectiveStatus(t *testing.T) {
 				r.EffectiveStatus = ptrResultStatus(hdf.Passed)
 				r.StatusOverrides = []hdf.StatusOverride{}
 			}),
-			expected: "passed",
+			expected: statusPassed,
 		},
 		{
 			name: "returns notReviewed when results slice is nil",
 			req: makeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Results = nil
 			}),
-			expected: "notReviewed",
+			expected: statusNotReviewed,
 		},
 	}
 
@@ -570,62 +580,62 @@ func TestClassifyDiffStatus(t *testing.T) {
 	}{
 		{
 			name:     "fixed when failed -> passed",
-			oldStat:  "failed",
-			newStat:  "passed",
+			oldStat:  statusFailed,
+			newStat:  statusPassed,
 			expected: types.StateFixed,
 		},
 		{
 			name:     "fixed when error -> passed",
-			oldStat:  "error",
-			newStat:  "passed",
+			oldStat:  statusError,
+			newStat:  statusPassed,
 			expected: types.StateFixed,
 		},
 		{
 			name:     "regressed when passed -> failed",
-			oldStat:  "passed",
-			newStat:  "failed",
+			oldStat:  statusPassed,
+			newStat:  statusFailed,
 			expected: types.StateRegressed,
 		},
 		{
 			name:     "regressed when passed -> error",
-			oldStat:  "passed",
-			newStat:  "error",
+			oldStat:  statusPassed,
+			newStat:  statusError,
 			expected: types.StateRegressed,
 		},
 		{
 			name:     "unchanged when passed -> passed",
-			oldStat:  "passed",
-			newStat:  "passed",
+			oldStat:  statusPassed,
+			newStat:  statusPassed,
 			expected: types.StateUnchanged,
 		},
 		{
 			name:     "unchanged when failed -> failed",
-			oldStat:  "failed",
-			newStat:  "failed",
+			oldStat:  statusFailed,
+			newStat:  statusFailed,
 			expected: types.StateUnchanged,
 		},
 		{
 			name:     "updated when notReviewed -> notApplicable",
-			oldStat:  "notReviewed",
-			newStat:  "notApplicable",
+			oldStat:  statusNotReviewed,
+			newStat:  statusNotAppl,
 			expected: types.StateUpdated,
 		},
 		{
 			name:     "updated when failed -> notApplicable",
-			oldStat:  "failed",
-			newStat:  "notApplicable",
+			oldStat:  statusFailed,
+			newStat:  statusNotAppl,
 			expected: types.StateUpdated,
 		},
 		{
 			name:     "fixed when notReviewed -> passed (notReviewed is failing)",
-			oldStat:  "notReviewed",
-			newStat:  "passed",
+			oldStat:  statusNotReviewed,
+			newStat:  statusPassed,
 			expected: types.StateFixed,
 		},
 		{
 			name:     "regressed when passed -> notReviewed",
-			oldStat:  "passed",
-			newStat:  "notReviewed",
+			oldStat:  statusPassed,
+			newStat:  statusNotReviewed,
 			expected: types.StateRegressed,
 		},
 	}
@@ -638,5 +648,202 @@ func TestClassifyDiffStatus(t *testing.T) {
 					tc.oldStat, tc.newStat, got, tc.expected)
 			}
 		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: severityIndex — all statuses and unknown
+// ---------------------------------------------------------------------------
+
+func TestSeverityIndex_AllStatuses(t *testing.T) {
+	tests := []struct {
+		status   string
+		expected int
+	}{
+		{statusNotAppl, 0},
+		{statusNotReviewed, 1},
+		{statusPassed, 2},
+		{statusFailed, 3},
+		{statusError, 4},
+		{"unknownStatus", -1},
+		{"", -1},
+	}
+	for _, tc := range tests {
+		t.Run(tc.status, func(t *testing.T) {
+			got := severityIndex(tc.status)
+			if got != tc.expected {
+				t.Errorf("severityIndex(%q) = %d, want %d", tc.status, got, tc.expected)
+			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: ComputeEffectiveStatus — bad referenceTimestamp falls back to now
+// ---------------------------------------------------------------------------
+
+func TestComputeEffectiveStatus_BadReferenceTimestamp(t *testing.T) {
+	req := makeRequirement(func(r *hdf.EvaluatedRequirement) {
+		r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+		r.StatusOverrides = []hdf.StatusOverride{
+			makeOverride(struct {
+				Type      string
+				Status    hdf.ResultStatus
+				Reason    string
+				AppliedAt time.Time
+				ExpiresAt time.Time
+			}{
+				Status:    hdf.Passed,
+				ExpiresAt: time.Date(2099, 12, 31, 23, 59, 59, 0, time.UTC),
+			}),
+		}
+	})
+	// Bad timestamp string — should fall back to time.Now(); override is far future so passes
+	got := ComputeEffectiveStatus(req, "not-valid-RFC3339")
+	if got != statusPassed {
+		t.Errorf("ComputeEffectiveStatus with bad timestamp = %q, want %q", got, statusPassed)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: ComputeEffectiveStatus — result with nil status is skipped
+// ---------------------------------------------------------------------------
+
+func TestComputeEffectiveStatus_ResultWithNilStatus(t *testing.T) {
+	req := makeRequirement(func(r *hdf.EvaluatedRequirement) {
+		r.Results = []hdf.RequirementResult{
+			{Status: nil, CodeDesc: "nil status"},
+			makeResult(hdf.Passed),
+		}
+	})
+	got := ComputeEffectiveStatus(req, "")
+	if got != statusPassed {
+		t.Errorf("expected %q, got %q", statusPassed, got)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: ComputeEffectiveStatus — result with unknown status
+// ---------------------------------------------------------------------------
+
+func TestComputeEffectiveStatus_UnknownResultStatus(t *testing.T) {
+	unknownStatus := hdf.ResultStatus("customUnknown")
+	req := makeRequirement(func(r *hdf.EvaluatedRequirement) {
+		r.Results = []hdf.RequirementResult{
+			{Status: &unknownStatus, CodeDesc: "unknown", StartTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
+		}
+	})
+	// Unknown status has severityIndex = -1, so worstIndex starts at -1 and this ties.
+	// The function uses > so unknown stays at -1 and worstStatus defaults to statusNotReviewed.
+	got := ComputeEffectiveStatus(req, "")
+	if got != statusNotReviewed {
+		t.Errorf("expected %q for unknown result status, got %q", statusNotReviewed, got)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: jsonMarshalOrEmpty — all branches
+// ---------------------------------------------------------------------------
+
+func TestJsonMarshalOrEmpty_Nil(t *testing.T) {
+	got := jsonMarshalOrEmpty(nil)
+	if got != marshalNull {
+		t.Errorf("expected %q for nil, got %q", marshalNull, got)
+	}
+}
+
+func TestJsonMarshalOrEmpty_ValidMap(t *testing.T) {
+	got := jsonMarshalOrEmpty(map[string]interface{}{"a": 1})
+	if got != `{"a":1}` {
+		t.Errorf("expected {\"a\":1}, got %q", got)
+	}
+}
+
+func TestJsonMarshalOrEmpty_ErrorBranch(t *testing.T) {
+	// Channels cannot be marshaled
+	ch := make(chan int)
+	got := jsonMarshalOrEmpty(ch)
+	if got != marshalNull {
+		t.Errorf("expected %q for unmarshalable, got %q", marshalNull, got)
+	}
+}
+
+func TestJsonMarshalOrEmpty_EmptySlice(t *testing.T) {
+	got := jsonMarshalOrEmpty([]string{})
+	if got != "[]" {
+		t.Errorf("expected \"[]\", got %q", got)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: stringSlicesEqual — different lengths and same lengths different content
+// ---------------------------------------------------------------------------
+
+func TestStringSlicesEqual_DifferentLengths(t *testing.T) {
+	if stringSlicesEqual([]string{"a"}, []string{"a", "b"}) {
+		t.Error("expected false for different lengths")
+	}
+}
+
+func TestStringSlicesEqual_SameLengthDifferentContent(t *testing.T) {
+	if stringSlicesEqual([]string{"a", "b"}, []string{"a", "c"}) {
+		t.Error("expected false for different content")
+	}
+}
+
+func TestStringSlicesEqual_BothEmpty(t *testing.T) {
+	if !stringSlicesEqual([]string{}, []string{}) {
+		t.Error("expected true for both empty")
+	}
+}
+
+func TestStringSlicesEqual_Identical(t *testing.T) {
+	if !stringSlicesEqual([]string{"x", "y"}, []string{"x", "y"}) {
+		t.Error("expected true for identical slices")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Coverage: extractSortedStatuses — nil results, mixed statuses
+// ---------------------------------------------------------------------------
+
+func TestExtractSortedStatuses_NilResults(t *testing.T) {
+	statuses := extractSortedStatuses(nil)
+	if len(statuses) != 0 {
+		t.Errorf("expected empty, got %v", statuses)
+	}
+}
+
+func TestExtractSortedStatuses_MixedStatuses(t *testing.T) {
+	statuses := extractSortedStatuses([]hdf.RequirementResult{
+		makeResult(hdf.Failed),
+		makeResult(hdf.Passed),
+		makeResult(hdf.Error),
+	})
+	if len(statuses) != 3 {
+		t.Fatalf("expected 3, got %d", len(statuses))
+	}
+	// Should be sorted
+	if statuses[0] != statusError {
+		t.Errorf("expected sorted[0]=%q, got %q", statusError, statuses[0])
+	}
+	if statuses[1] != statusFailed {
+		t.Errorf("expected sorted[1]=%q, got %q", statusFailed, statuses[1])
+	}
+	if statuses[2] != statusPassed {
+		t.Errorf("expected sorted[2]=%q, got %q", statusPassed, statuses[2])
+	}
+}
+
+func TestExtractSortedStatuses_NilStatusSkipped(t *testing.T) {
+	statuses := extractSortedStatuses([]hdf.RequirementResult{
+		{Status: nil},
+		makeResult(hdf.Passed),
+	})
+	if len(statuses) != 1 {
+		t.Fatalf("expected 1 (nil skipped), got %d", len(statuses))
+	}
+	if statuses[0] != statusPassed {
+		t.Errorf("expected %q, got %q", statusPassed, statuses[0])
 	}
 }
