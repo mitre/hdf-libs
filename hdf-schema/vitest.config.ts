@@ -5,6 +5,11 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['test/**/*.test.ts', 'test/**/*.spec.ts'],
+    // Run test files sequentially — create-index.test.ts and generate-types.test.ts
+    // both mutate the shared dist/ directory (bundleSchemas, generateTypes, createIndex).
+    // Running them in parallel causes race conditions where one test cleans files
+    // that another test is reading.
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
