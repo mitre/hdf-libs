@@ -2,6 +2,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -10,6 +11,12 @@ import (
 
 func main() {
 	if err := cmd.Execute(); err != nil {
+		// Check if the error carries a specific exit code (e.g., from diff --exit-code
+		// or diff --detailed-exitcode).
+		var ec cmd.ExitCoder
+		if errors.As(err, &ec) {
+			os.Exit(ec.ExitCode())
+		}
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
