@@ -634,6 +634,7 @@ func assertStatuses(t *testing.T, req *types.RequirementDiff, wantOld, wantNew s
 	}
 }
 
+//nolint:unparam // state is intentionally a parameter for reuse across test files.
 func filterByState(diffs []types.RequirementDiff, state types.RequirementState) []types.RequirementDiff {
 	var result []types.RequirementDiff
 	for _, d := range diffs {
