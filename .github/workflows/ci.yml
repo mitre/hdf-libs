@@ -2,27 +2,213 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - hdf-libs-development
   pull_request:
-    branches:
-      - main
-      - hdf-libs-development
+
+# Cancel in-progress runs for the same branch/PR — only latest matters.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20.x'
+  NODE_VERSION: '20'
   GO_VERSION: '1.26.1'
-  TS_PACKAGES: 'hdf-schema hdf-utilities hdf-mappings hdf-validators hdf-parsers hdf-converters'
+  GOLANGCI_LINT_VERSION: 'v2.11.3'
+  TS_PACKAGES: 'hdf-schema hdf-utilities hdf-mappings hdf-validators hdf-parsers hdf-converters hdf-diff'
+
+# ─── Jobs ────────────────────────────────────────────────────────────────────
+# Dependency graph:
+#   setup → lint ─┐
+#          test ──┤→ (all must pass)
+#          security ┘
 
 jobs:
-  # Full pipeline: build, lint, test, security (all languages)
-  ci:
-    name: CI
+  # ── Lint (fail fast — cheapest check) ──────────────────────────────────────
+  lint:
+    name: Lint (${{ matrix.lang }})
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: true
+      matrix:
+        lang: [typescript, go]
 
     steps:
-      - name: Checkout code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: matrix.lang == 'typescript'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        if: matrix.lang == 'typescript'
+        uses: pnpm/action-setup@v4
+
+      - name: Cache pnpm store
+        if: matrix.lang == 'typescript'
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+
+      - name: Install Node dependencies
+        if: matrix.lang == 'typescript'
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint TypeScript
+        if: matrix.lang == 'typescript'
+        run: pnpm -r --filter '!hdf-cli' run lint
+
+      - name: Setup Go
+        if: matrix.lang == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
+
+      - name: Install golangci-lint
+        if: matrix.lang == 'go'
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${{ env.GOLANGCI_LINT_VERSION }}
+
+      - name: Lint Go
+        if: matrix.lang == 'go'
+        run: cd hdf-cli && golangci-lint run
+
+  # ── Build ──────────────────────────────────────────────────────────────────
+  build:
+    name: Build (${{ matrix.lang }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix:
+        lang: [typescript, go]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build TypeScript packages
+        if: matrix.lang == 'typescript'
+        run: pnpm build:ts
+
+      - name: Verify TypeScript build artifacts
+        if: matrix.lang == 'typescript'
+        run: |
+          for pkg in ${{ env.TS_PACKAGES }}; do
+            [ -d "$pkg/dist" ] && echo "✓ $pkg/dist" || { echo "✗ $pkg/dist not found"; exit 1; }
+          done
+
+      - name: Setup Go
+        if: matrix.lang == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
+
+      - name: Build TypeScript (needed for Go schema sync)
+        if: matrix.lang == 'go'
+        run: pnpm build:ts
+
+      - name: Build Go CLI
+        if: matrix.lang == 'go'
+        run: pnpm build:go
+
+      - name: Verify Go build artifact
+        if: matrix.lang == 'go'
+        run: |
+          [ -f "hdf-cli/hdf" ] && echo "✓ hdf-cli/hdf" || { echo "✗ hdf-cli/hdf not found"; exit 1; }
+
+  # ── Test (matrix across platforms) ─────────────────────────────────────────
+  test:
+    name: Test (${{ matrix.lang }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    needs: build
+    strategy:
+      fail-fast: false  # Run all platform combinations even if one fails
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        lang: [typescript, go]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build TypeScript (required for tests)
+        run: pnpm build:ts
+
+      - name: Setup Go
+        if: matrix.lang == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
+
+      - name: Test TypeScript
+        if: matrix.lang == 'typescript'
+        run: pnpm test:ts
+
+      - name: Test Go
+        if: matrix.lang == 'go'
+        run: cd hdf-cli && go test ./...
+
+      - name: Test Go (race detector)
+        if: matrix.lang == 'go' && matrix.os == 'ubuntu-latest'
+        run: cd hdf-cli && go test -race ./...
+
+  # ── Coverage (runs once on ubuntu, enforces thresholds) ────────────────────
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+
+    steps:
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
@@ -38,79 +224,32 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: '**/go.sum'
 
-      - name: Install golangci-lint v2
-        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
+      - name: Cache pnpm store
         uses: actions/cache@v4
         with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: ${{ runner.os }}-pnpm-store-
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # --- Build ---
-      - name: Build TypeScript packages
+      - name: Build TypeScript
         run: pnpm build:ts
 
-      - name: Build Go CLI
-        run: pnpm build:go
-
-      - name: Verify build artifacts
-        run: |
-          for pkg in ${{ env.TS_PACKAGES }}; do
-            [ -d "$pkg/dist" ] && echo "OK: $pkg/dist" || { echo "FAIL: $pkg/dist not found"; exit 1; }
-          done
-          [ -f "hdf-cli/hdf" ] && echo "OK: hdf-cli/hdf" || { echo "FAIL: hdf-cli/hdf not found"; exit 1; }
-
-      # --- Lint ---
-      - name: Lint TypeScript
-        run: pnpm -r --filter '!hdf-cli' run lint
-
-      - name: Lint Go
-        run: pnpm --filter hdf-cli run lint
-
-      # --- Test ---
-      - name: Test TypeScript
-        run: pnpm test:ts
-
-      - name: Test Go
-        run: pnpm test:go
-
-      - name: Test Go (race detector)
-        run: cd hdf-cli && go test -race ./...
-
-      - name: Test TypeScript (coverage)
+      - name: TypeScript coverage (enforces thresholds)
         run: pnpm test:coverage
-        continue-on-error: true
 
-      # --- Security ---
-      - name: npm audit
-        run: pnpm audit --audit-level=high
-        continue-on-error: true
-
-      - name: govulncheck
+      - name: Go coverage
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
-          cd hdf-cli && govulncheck ./...
+          cd hdf-cli
+          go test -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out | tail -1
 
-      - name: gosec
-        run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-          cd hdf-cli && gosec ./...
-        continue-on-error: true
-
-      # --- Artifacts ---
-      - name: Upload coverage
+      - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -120,13 +259,65 @@ jobs:
             **/coverage.out
           retention-days: 30
 
-  # Verify TypeScript-only build works without Go (for submodule consumers)
+  # ── Security (no continue-on-error — failures are failures) ────────────────
+  security:
+    name: Security (${{ matrix.check }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false  # Run all security checks even if one fails
+      matrix:
+        check: [npm-audit, govulncheck, gosec]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: matrix.check == 'npm-audit'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        if: matrix.check == 'npm-audit'
+        uses: pnpm/action-setup@v4
+
+      - name: Install Node dependencies
+        if: matrix.check == 'npm-audit'
+        run: pnpm install --frozen-lockfile
+
+      - name: npm audit
+        if: matrix.check == 'npm-audit'
+        run: pnpm audit --audit-level=high
+
+      - name: Setup Go
+        if: matrix.check != 'npm-audit'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
+
+      - name: govulncheck
+        if: matrix.check == 'govulncheck'
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          cd hdf-cli && govulncheck ./...
+
+      - name: gosec
+        if: matrix.check == 'gosec'
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          cd hdf-cli && gosec ./...
+
+  # ── TypeScript-only build (for submodule consumers without Go) ─────────────
   build-ts-only:
     name: Build (TypeScript only, no Go)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
@@ -145,10 +336,10 @@ jobs:
       - name: Build TypeScript packages
         run: pnpm build:ts
 
-      - name: Verify TypeScript build artifacts
+      - name: Verify build artifacts
         run: |
           for pkg in ${{ env.TS_PACKAGES }}; do
-            [ -d "$pkg/dist" ] && echo "OK: $pkg/dist" || { echo "FAIL: $pkg/dist not found"; exit 1; }
+            [ -d "$pkg/dist" ] && echo "✓ $pkg/dist" || { echo "✗ $pkg/dist not found"; exit 1; }
           done
 
       - name: Test TypeScript
