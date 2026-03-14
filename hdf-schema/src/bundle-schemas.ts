@@ -12,7 +12,7 @@ const PRIMITIVES_DIR = join(SCHEMAS_DIR, 'primitives');
 const DIST_DIR = join(__dirname, '..', 'dist', 'schemas');
 
 // Main schemas to bundle (these have $ref to primitives)
-const MAIN_SCHEMAS = ['hdf-results.schema.json', 'hdf-baseline.schema.json'];
+const MAIN_SCHEMAS = ['hdf-results.schema.json', 'hdf-baseline.schema.json', 'hdf-comparison.schema.json'];
 
 /**
  * Load and register all schemas with @hyperjump/json-schema.

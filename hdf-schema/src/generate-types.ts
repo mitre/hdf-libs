@@ -18,6 +18,7 @@ const DIST_DIR = join(__dirname, '..', 'dist');
 const SCHEMAS = [
   { file: 'hdf-results.schema.json', name: 'HdfResults' },
   { file: 'hdf-baseline.schema.json', name: 'HdfBaseline' },
+  { file: 'hdf-comparison.schema.json', name: 'HdfComparison' },
 ];
 
 // Language configurations
