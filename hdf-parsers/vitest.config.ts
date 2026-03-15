@@ -9,6 +9,11 @@ export default defineConfig({
       '**/dist/**',
       '**/.stryker-tmp/**',
     ],
+    // Inline workspace packages so Vite resolves them directly instead of
+    // relying on Node module resolution (which breaks on Windows with pnpm).
+    deps: {
+      inline: ['@mitre/hdf-validators'],
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

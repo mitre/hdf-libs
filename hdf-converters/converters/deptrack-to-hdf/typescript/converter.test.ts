@@ -189,4 +189,134 @@ describe('Dependency-Track to HDF converter', async () => {
       expect(req!.results[0]?.codeDesc).toContain('Update to version 2.6.0 or later.');
     });
   });
+
+  describe('edge cases: missing optional fields', async () => {
+    it('should handle all severity levels', async () => {
+      for (const [sev, expected] of [['CRITICAL', 0.9], ['HIGH', 0.7], ['MEDIUM', 0.5], ['LOW', 0.3], ['INFO', 0.0], ['UNKNOWN', 0.5]] as const) {
+        const input = JSON.stringify({
+          meta: { timestamp: '2024-01-01T00:00:00Z' },
+          project: { uuid: 'p1', name: 'test' },
+          findings: [{
+            component: { name: 'comp' },
+            vulnerability: { severity: sev },
+            matrix: `m-${sev}`,
+          }],
+        });
+        const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+        expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(expected);
+      }
+    });
+
+    it('should handle missing vulnerability title (purl-only title)', async () => {
+      const input = JSON.stringify({
+        meta: {},
+        project: { uuid: 'p1', name: 'test' },
+        findings: [{
+          component: { name: 'comp', purl: 'pkg:npm/test@1.0' },
+          vulnerability: { severity: 'LOW' },
+          matrix: 'm1',
+        }],
+      });
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      // No title → just purl
+      expect(hdf.baselines[0]!.requirements[0]!.title).toBe('pkg:npm/test@1.0');
+    });
+
+    it('should use component name when purl is missing', async () => {
+      const input = JSON.stringify({
+        meta: {},
+        project: { uuid: 'p1', name: 'test' },
+        findings: [{
+          component: { name: 'my-component' },
+          vulnerability: { severity: 'HIGH', title: 'Some Vuln' },
+          matrix: 'm1',
+        }],
+      });
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.title).toContain('my-component');
+    });
+
+    it('should handle empty cwes array', async () => {
+      const input = JSON.stringify({
+        meta: {},
+        project: { uuid: 'p1', name: 'test' },
+        findings: [{
+          component: { name: 'comp' },
+          vulnerability: { severity: 'LOW', cwes: [] },
+          matrix: 'm1',
+        }],
+      });
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      // No CWE IDs → no cweIds tag
+      expect(req.tags?.['cweIds']).toBeUndefined();
+    });
+
+    it('should handle missing description and recommendation', async () => {
+      const input = JSON.stringify({
+        meta: {},
+        project: { uuid: 'p1', name: 'test' },
+        findings: [{
+          component: { name: 'comp' },
+          vulnerability: { severity: 'LOW' },
+          matrix: 'm1',
+        }],
+      });
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      // Default description with empty data
+      const defaultDesc = req.descriptions?.find(d => d.label === 'default');
+      expect(defaultDesc).toBeDefined();
+      expect(defaultDesc!.data).toBe('');
+      // No check or fix descriptions
+      const check = req.descriptions?.find(d => d.label === 'check');
+      expect(check).toBeUndefined();
+      const fix = req.descriptions?.find(d => d.label === 'fix');
+      expect(fix).toBeUndefined();
+      // codeDesc fallback
+      expect(req.results[0]?.codeDesc).toBe('No recommendation available');
+    });
+
+    it('should handle missing project fields', async () => {
+      const input = JSON.stringify({
+        meta: {},
+        project: { uuid: 'u1', name: '' },
+        findings: [],
+      });
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    });
+
+    it('should use project uuid as target when name is missing', async () => {
+      const input = JSON.stringify({
+        meta: {},
+        project: { uuid: 'uuid-123' },
+        findings: [],
+      });
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      expect(hdf.targets![0]!.name).toBe('uuid-123');
+    });
+
+    it('should handle missing findings/project/meta gracefully', async () => {
+      const input = JSON.stringify({ other: 'field' });
+      await expect(convertDeptrackToHdf(input)).rejects.toThrow(
+        'does not appear to be a Dependency-Track report'
+      );
+    });
+
+    it('should handle missing meta timestamp (no startTime)', async () => {
+      const input = JSON.stringify({
+        meta: {},
+        project: { uuid: 'p1', name: 'test' },
+        findings: [{
+          component: { name: 'comp' },
+          vulnerability: { severity: 'LOW' },
+          matrix: 'm1',
+        }],
+      });
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      // startTime should be undefined when no timestamp
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]).toBeDefined();
+    });
+  });
 });

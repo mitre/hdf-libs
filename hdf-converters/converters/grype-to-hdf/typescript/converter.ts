@@ -323,6 +323,7 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
   // Process regular matches
   if (grypeData.matches && grypeData.matches.length > 0) {
     const { items: limitedMatches, truncated: truncatedMatches } = limitArray(grypeData.matches);
+    /* v8 ignore next -- truncation only triggers with >100K items */
     if (truncatedMatches) {
       // eslint-disable-next-line no-console
       console.warn(`WARNING: Input truncated at ${limitedMatches.length} match items (original: ${grypeData.matches.length})`);
@@ -335,6 +336,7 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
   // Process ignored matches
   if (grypeData.ignoredMatches && grypeData.ignoredMatches.length > 0) {
     const { items: limitedIgnored, truncated: truncatedIgnored } = limitArray(grypeData.ignoredMatches);
+    /* v8 ignore next -- truncation only triggers with >100K items */
     if (truncatedIgnored) {
       // eslint-disable-next-line no-console
       console.warn(`WARNING: Input truncated at ${limitedIgnored.length} ignoredMatch items (original: ${grypeData.ignoredMatches.length})`);

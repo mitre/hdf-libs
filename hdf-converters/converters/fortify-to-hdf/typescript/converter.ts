@@ -243,6 +243,7 @@ function buildRequirement(
 
   // Build results — one per vulnerability instance
   const { items: limitedVulns, truncated } = limitArray(vulns);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncated) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedVulns.length} vulnerability items (original: ${vulns.length})`);
@@ -306,6 +307,7 @@ export async function convertFortifyToHdf(input: string): Promise<string> {
   // Get descriptions
   const descriptions = ensureArray(fvdl.Description);
   const { items: limitedDescs, truncated: truncatedDescs } = limitArray(descriptions);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedDescs) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedDescs.length} Description items (original: ${descriptions.length})`);

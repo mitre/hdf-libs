@@ -125,6 +125,7 @@ function convertSingleProject(
 ): EvaluatedBaseline {
   // Group vulnerabilities by ID, preserving insertion order
   const { items: limitedVulns, truncated: truncatedVulns } = limitArray(report.vulnerabilities);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedVulns) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedVulns.length} vulnerability items (original: ${report.vulnerabilities.length})`);
@@ -191,6 +192,7 @@ export async function convertSnykToHdf(input: string): Promise<string> {
   if (Array.isArray(parsed)) {
     // Multi-project output
     const { items: limitedProjects, truncated: truncatedProjects } = limitArray(parsed);
+    /* v8 ignore next -- truncation only triggers with >100K items */
     if (truncatedProjects) {
       // eslint-disable-next-line no-console
       console.warn(`WARNING: Input truncated at ${limitedProjects.length} project items (original: ${parsed.length})`);

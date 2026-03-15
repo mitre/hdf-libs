@@ -332,4 +332,150 @@ describe('SonarQube to HDF Converter', async () => {
       expect(requirement.tags.nist).toEqual(['SA-11']);
     });
   });
+
+  describe('edge cases: missing optional fields', () => {
+    it('should handle issue with no rule in ruleMap (empty description)', async () => {
+      const input = JSON.stringify({
+        total: 1, p: 1, ps: 100,
+        paging: { pageIndex: 1, pageSize: 100, total: 1 },
+        issues: [{
+          key: 'k1', rule: 'unknown:rule', severity: 'MINOR',
+          component: 'src/file.ts', project: 'proj',
+          status: 'OPEN', message: 'msg', type: 'BUG',
+          creationDate: '2025-01-01T00:00:00Z', updateDate: '2025-01-01T00:00:00Z',
+        }],
+        rules: [],
+      });
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.title).toBe('unknown:rule');
+    });
+
+    it('should handle rule with mdDesc', async () => {
+      const input = JSON.stringify({
+        total: 1, p: 1, ps: 100,
+        paging: { pageIndex: 1, pageSize: 100, total: 1 },
+        issues: [{
+          key: 'k1', rule: 'r1', severity: 'BLOCKER',
+          component: 'src/file.ts', project: 'proj',
+          status: 'RESOLVED', message: 'msg', type: 'VULNERABILITY',
+          creationDate: '2025-01-01T00:00:00Z', updateDate: '2025-01-01T00:00:00Z',
+          tags: ['cwe-79'],
+        }],
+        rules: [{ key: 'r1', name: 'Rule 1', mdDesc: 'markdown description', tags: ['security'], sysTags: ['owasp-a1'] }],
+      });
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
+    });
+
+    it('should handle rule with descriptionSections (SQ 26+ format)', async () => {
+      const input = JSON.stringify({
+        total: 1, p: 1, ps: 100,
+        paging: { pageIndex: 1, pageSize: 100, total: 1 },
+        issues: [{
+          key: 'k1', rule: 'r1', severity: 'MAJOR',
+          component: 'src/file.ts', project: 'proj',
+          status: 'OPEN', message: 'msg', type: 'CODE_SMELL', line: 10,
+          creationDate: '2025-01-01T00:00:00Z', updateDate: '2025-01-01T00:00:00Z',
+        }],
+        rules: [{
+          key: 'r1', name: 'Rule 1',
+          descriptionSections: [
+            { key: 'root_cause', content: '<p>Root cause text</p>' },
+            { key: 'how_to_fix', content: '<p>Fix it</p>' },
+          ],
+          tags: ['cwe:123:extra'],
+        }],
+        components: [{ key: 'src/file.ts', path: 'src/file.ts', longName: 'src/file.ts' }],
+      });
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.sourceLocation).toBeDefined();
+      expect(req.sourceLocation!.line).toBe(10);
+    });
+
+    it('should handle rule with htmlDesc only (no mdDesc)', async () => {
+      const input = JSON.stringify({
+        total: 1, p: 1, ps: 100,
+        paging: { pageIndex: 1, pageSize: 100, total: 1 },
+        issues: [{
+          key: 'k1', rule: 'r1', severity: 'INFO',
+          component: 'src/file.ts', project: 'proj',
+          status: 'OPEN', message: 'msg', type: 'SECURITY_HOTSPOT',
+          creationDate: '2025-01-01T00:00:00Z', updateDate: '2025-01-01T00:00:00Z',
+        }],
+        rules: [{ key: 'r1', name: 'Rule 1', htmlDesc: '<p>HTML description CWE-79</p>' }],
+      });
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      // INFO maps to 0.0 in SEVERITY_IMPACT_MAPPING, but `0.0 || 0.5` = 0.5 (JS falsy)
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+    });
+
+    it('should handle rule with name fallback (no desc at all)', async () => {
+      const input = JSON.stringify({
+        total: 1, p: 1, ps: 100,
+        paging: { pageIndex: 1, pageSize: 100, total: 1 },
+        issues: [{
+          key: 'k1', rule: 'r1', severity: 'CRITICAL',
+          component: 'src/file.ts', project: 'proj',
+          status: 'CONFIRMED', message: 'msg', type: 'BUG',
+          creationDate: '2025-01-01T00:00:00Z', updateDate: '2025-01-01T00:00:00Z',
+        }],
+        rules: [{ key: 'r1', name: 'Rule Name Only' }],
+      });
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.7);
+    });
+
+    it('should handle issue with no line number', async () => {
+      const input = JSON.stringify({
+        total: 1, p: 1, ps: 100,
+        paging: { pageIndex: 1, pageSize: 100, total: 1 },
+        issues: [{
+          key: 'k1', rule: 'r1', severity: 'MAJOR',
+          component: 'src/file.ts', project: 'proj',
+          status: 'OPEN', message: 'msg', type: 'BUG',
+          creationDate: '2025-01-01T00:00:00Z', updateDate: '2025-01-01T00:00:00Z',
+        }],
+        rules: [{ key: 'r1', name: 'Rule' }],
+      });
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.sourceLocation).toBeUndefined();
+    });
+
+    it('should handle no components map', async () => {
+      const input = JSON.stringify({
+        total: 1, p: 1, ps: 100,
+        paging: { pageIndex: 1, pageSize: 100, total: 1 },
+        issues: [{
+          key: 'k1', rule: 'r1', severity: 'MAJOR',
+          component: 'src/file.ts', project: 'proj', line: 5,
+          status: 'OPEN', message: 'msg', type: 'BUG',
+          creationDate: '2025-01-01T00:00:00Z', updateDate: '2025-01-01T00:00:00Z',
+        }],
+        rules: [{ key: 'r1', name: 'Rule' }],
+      });
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.codeDesc).toContain('src/file.ts');
+    });
+
+    it('should handle descriptionSections with no root_cause', async () => {
+      const input = JSON.stringify({
+        total: 1, p: 1, ps: 100,
+        paging: { pageIndex: 1, pageSize: 100, total: 1 },
+        issues: [{
+          key: 'k1', rule: 'r1', severity: 'MAJOR',
+          component: 'src/file.ts', project: 'proj',
+          status: 'OPEN', message: 'msg', type: 'BUG',
+          creationDate: '2025-01-01T00:00:00Z', updateDate: '2025-01-01T00:00:00Z',
+        }],
+        rules: [{
+          key: 'r1', name: 'Rule',
+          descriptionSections: [{ key: 'how_to_fix', content: '<p>Fix</p>' }],
+        }],
+      });
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      expect(hdf.baselines).toHaveLength(1);
+    });
+  });
 });

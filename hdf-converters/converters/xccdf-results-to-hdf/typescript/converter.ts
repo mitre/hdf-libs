@@ -356,6 +356,7 @@ async function convertBenchmarkResultsToHdf(
 
   const ruleResults = testResult['rule-result'] ?? [];
   const { items: limitedRuleResults, truncated: truncatedRR } = limitArray(ruleResults);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedRR) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedRuleResults.length} rule-result items (original: ${ruleResults.length})`);
@@ -600,6 +601,7 @@ async function convertArfCollection(
     // Convert rule-results
     const ruleResults = testResult['rule-result'] ?? [];
     const { items: limitedARFRuleResults, truncated: truncatedARFRR } = limitArray(ruleResults);
+    /* v8 ignore next -- truncation only triggers with >100K items */
     if (truncatedARFRR) {
       // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedARFRuleResults.length} rule-result items (original: ${ruleResults.length})`);

@@ -251,4 +251,175 @@ describe('Fortify to HDF Converter', () => {
     const reqs = baselines[0]!.requirements as unknown[];
     expect(reqs).toHaveLength(1);
   });
+
+  // --- Edge cases: missing optional fields ---
+
+  it('should handle FVDL with no CreatedTS', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Build><BuildID>test-build</BuildID></Build>
+<Vulnerabilities/>
+<EngineData/>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    // No timestamp when no CreatedTS
+    expect(out.timestamp).toBeUndefined();
+    // Target falls back to BuildID when no SourceBasePath
+    const targets = out.targets as Array<Record<string, unknown>>;
+    expect(targets[0]!.name).toBe('test-build');
+  });
+
+  it('should handle FVDL with no Build element', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities/>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const targets = out.targets as Array<Record<string, unknown>>;
+    expect(targets[0]!.name).toBe('Unknown');
+  });
+
+  it('should reject XML without FVDL root element', async () => {
+    const xml = `<?xml version="1.0"?><other><data/></other>`;
+    await expect(convertFortifyToHdf(xml)).rejects.toThrow('invalid FVDL');
+  });
+
+  it('should handle description with no Explanation (falls back to title)', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C1</ClassID><DefaultSeverity>0</DefaultSeverity></ClassInfo>
+    <InstanceInfo><InstanceID>I1</InstanceID></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C1">
+  <Abstract>The title only</Abstract>
+</Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    expect(reqs).toHaveLength(1);
+    const descs = reqs[0]!.descriptions as Array<Record<string, unknown>>;
+    const defaultDesc = descs.find(d => d.label === 'default');
+    // Falls back to title when no Explanation
+    expect(defaultDesc!.data).toBe('The title only');
+    // Impact should be 0 (0/5)
+    expect(reqs[0]!.impact).toBe(0);
+  });
+
+  it('should handle vulnerability with no snippet and no SourceLocation path', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C2</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I2</InstanceID></InstanceInfo>
+    <AnalysisInfo>
+      <Unified>
+        <Trace>
+          <Primary>
+            <Entry>
+              <Node isDefault="true">
+                <SourceLocation line="42"/>
+              </Node>
+            </Entry>
+            <Entry>
+              <Node isDefault="false">
+                <SourceLocation path="test.java" line="10"/>
+              </Node>
+            </Entry>
+          </Primary>
+        </Trace>
+      </Unified>
+    </AnalysisInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C2">
+  <Abstract>Vuln with trace entries</Abstract>
+  <Explanation>Some explanation</Explanation>
+</Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    const results = reqs[0]!.results as Array<Record<string, unknown>>;
+    // Should have codeDesc with Path from the second entry (first has no path)
+    expect(results[0]!.codeDesc).toContain('test.java');
+  });
+
+  it('should handle vulnerability with no AnalysisInfo (empty codeDesc fallback)', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C3</ClassID></ClassInfo>
+    <InstanceInfo><InstanceID>I3</InstanceID></InstanceInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C3">
+  <Abstract>No trace</Abstract>
+  <Explanation>Explanation text</Explanation>
+  <References>
+    <Reference>
+      <Title>SI-10</Title>
+      <Author>Standards Mapping - NIST Special Publication 800-53 Revision 4</Author>
+    </Reference>
+  </References>
+</Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    const results = reqs[0]!.results as Array<Record<string, unknown>>;
+    // Fallback codeDesc when no entries
+    expect(results[0]!.codeDesc).toContain('ClassID: C3');
+    // NIST tag from Reference
+    const tags = reqs[0]!.tags as Record<string, unknown>;
+    expect(tags.nist).toContain('SI-10');
+  });
+
+  it('should fall back to default NIST tags when no NIST reference found', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities>
+  <Vulnerability>
+    <ClassInfo><ClassID>C4</ClassID></ClassInfo>
+  </Vulnerability>
+</Vulnerabilities>
+<Description classID="C4">
+  <Abstract>No refs</Abstract>
+  <Explanation>Explanation</Explanation>
+</Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    const tags = reqs[0]!.tags as Record<string, unknown>;
+    const nist = tags.nist as string[];
+    expect(nist.length).toBeGreaterThan(0);
+  });
+
+  it('should handle description with classID not matching any vulnerability', async () => {
+    const fvdl = `<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" version="1.12">
+<Vulnerabilities/>
+<Description classID="orphan">
+  <Abstract>Orphaned description</Abstract>
+  <Explanation>Explanation</Explanation>
+  <Recommendations>Fix it</Recommendations>
+</Description>
+</FVDL>`;
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const bl = out.baselines as Array<Record<string, unknown>>;
+    const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0]!.id).toBe('orphan');
+    // Fix description from Recommendations
+    const descs = reqs[0]!.descriptions as Array<Record<string, unknown>>;
+    const fix = descs.find(d => d.label === 'fix');
+    expect(fix).toBeDefined();
+    expect(fix!.data).toBe('Fix it');
+  });
 });

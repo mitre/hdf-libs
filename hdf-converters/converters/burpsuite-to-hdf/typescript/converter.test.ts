@@ -300,5 +300,111 @@ describe('BurpSuite to HDF Converter', () => {
       const nist = tags.nist as string[];
       expect(nist).toEqual(['SA-11', 'RA-5']);
     });
+
+    it('should handle issue with no issueBackground (uses name as default desc)', async () => {
+      const xml = `<?xml version="1.0"?><issues burpVersion="2020.1" exportTime="Thu Feb 27 09:28:17 EST 2020">
+  <issue>
+    <serialNumber>1</serialNumber>
+    <type>111</type>
+    <name>No Background</name>
+    <host ip="1.2.3.4">http://test.com</host>
+    <location>/test</location>
+    <severity>Medium</severity>
+  </issue>
+</issues>`;
+      const out = parseOutput(await convertBurpsuiteToHdf(xml));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, '111');
+      expect(req).toBeDefined();
+      const descs = req!.descriptions as Array<Record<string, unknown>>;
+      const def = descs.find(d => d.label === 'default');
+      expect(def!.data).toBe('No Background');
+      // No check or fix descriptions
+      expect(descs.find(d => d.label === 'check')).toBeUndefined();
+      expect(descs.find(d => d.label === 'fix')).toBeUndefined();
+    });
+
+    it('should handle issue with issueDetail in codeDesc', async () => {
+      const xml = `<?xml version="1.0"?><issues burpVersion="2020.1" exportTime="Thu Feb 27 09:28:17 EST 2020">
+  <issue>
+    <serialNumber>1</serialNumber>
+    <type>222</type>
+    <name>With Detail</name>
+    <host ip="1.2.3.4">http://test.com</host>
+    <location>/test</location>
+    <severity>High</severity>
+    <issueDetail><![CDATA[<p>Detail text</p>]]></issueDetail>
+  </issue>
+</issues>`;
+      const out = parseOutput(await convertBurpsuiteToHdf(xml));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, '222');
+      expect(req).toBeDefined();
+      const results = req!.results as Array<Record<string, unknown>>;
+      expect(results[0]!.codeDesc).toContain('issueDetail');
+    });
+
+    it('should handle empty issues list', async () => {
+      const xml = `<?xml version="1.0"?><issues burpVersion="2020.1" exportTime="Thu Feb 27 09:28:17 EST 2020">
+</issues>`;
+      const out = parseOutput(await convertBurpsuiteToHdf(xml));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const reqs = bl[0]!.requirements as unknown[];
+      expect(reqs).toHaveLength(0);
+      // Target should be 'Unknown' with no issues
+      const targets = out.targets as Array<Record<string, unknown>>;
+      expect(targets[0]!.name).toBe('Unknown');
+    });
+
+    it('should handle issue with no burpVersion', async () => {
+      const xml = `<?xml version="1.0"?><issues exportTime="Thu Feb 27 09:28:17 EST 2020">
+  <issue>
+    <serialNumber>1</serialNumber>
+    <type>333</type>
+    <name>No Version</name>
+    <severity>Low</severity>
+    <location>/test</location>
+  </issue>
+</issues>`;
+      const out = parseOutput(await convertBurpsuiteToHdf(xml));
+      const ds = out.dataSource as Record<string, unknown>;
+      // No version field when burpVersion is empty
+      expect(ds.version).toBeUndefined();
+    });
+
+    it('should handle issue with no exportTime', async () => {
+      const xml = `<?xml version="1.0"?><issues burpVersion="2020.1">
+  <issue>
+    <serialNumber>1</serialNumber>
+    <type>444</type>
+    <name>No Export Time</name>
+    <severity>Information</severity>
+    <location>/test</location>
+  </issue>
+</issues>`;
+      const out = parseOutput(await convertBurpsuiteToHdf(xml));
+      // timestamp should not be set when no exportTime
+      expect(out.timestamp).toBeUndefined();
+      // Information severity → 0.3 impact
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, '444');
+      expect(req!.impact).toBe(0.3);
+    });
+
+    it('should handle unknown severity mapping', async () => {
+      const xml = `<?xml version="1.0"?><issues burpVersion="2020.1">
+  <issue>
+    <serialNumber>1</serialNumber>
+    <type>555</type>
+    <name>Unknown Sev</name>
+    <severity>UnknownLevel</severity>
+    <location>/test</location>
+  </issue>
+</issues>`;
+      const out = parseOutput(await convertBurpsuiteToHdf(xml));
+      const bl = out.baselines as Array<Record<string, unknown>>;
+      const req = findRequirement(bl, '555');
+      expect(req!.impact).toBe(0.3); // default fallback
+    });
   });
 });

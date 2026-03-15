@@ -349,4 +349,113 @@ describe('GitLab to HDF converter', () => {
       );
     });
   });
+
+  describe('edge cases: scan types and missing fields', () => {
+    it('should handle dast scan type', async () => {
+      const input = JSON.stringify({
+        scan: { type: 'dast', scanner: { name: 'ZAP' } },
+        vulnerabilities: [{
+          id: 'v1', severity: 'High',
+          location: { hostname: 'https://example.com', path: '/api', method: 'POST', param: 'q' },
+        }],
+      });
+      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      expect(hdf.targets[0].type).toBe('application');
+      expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('URL:');
+      expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('Param:');
+    });
+
+    it('should handle container_scanning scan type', async () => {
+      const input = JSON.stringify({
+        scan: { type: 'container_scanning', scanner: { name: 'Trivy', version: '0.1' }, end_time: '2025-01-01T00:00:00Z' },
+        vulnerabilities: [{
+          id: 'v1', severity: 'Medium',
+          location: { image: 'nginx:latest', dependency: { package: { name: 'libssl' }, version: '1.0' } },
+        }],
+      });
+      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      expect(hdf.targets[0].type).toBe('containerImage');
+      expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('Image: nginx');
+      expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('libssl@1.0');
+      expect(hdf.dataSource.version).toBe('0.1');
+    });
+
+    it('should handle dependency_scanning scan type', async () => {
+      const input = JSON.stringify({
+        scan: { type: 'dependency_scanning', scanner: { name: 'Dep' } },
+        vulnerabilities: [{
+          id: 'v1', severity: 'Low',
+          location: { file: 'package.json', dependency: { package: { name: 'lodash' } } },
+        }],
+      });
+      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('Package: lodash');
+    });
+
+    it('should handle secret_detection scan type with same line start/end', async () => {
+      const input = JSON.stringify({
+        scan: { type: 'secret_detection', scanner: { name: 'GitLeaks' } },
+        vulnerabilities: [{
+          id: 'v1', severity: 'Critical',
+          location: { file: 'config.yaml', start_line: 10, end_line: 10 },
+        }],
+      });
+      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('Line: 10');
+    });
+
+    it('should handle unknown scan type', async () => {
+      const input = JSON.stringify({
+        scan: { type: 'api_fuzzing', scanner: { name: 'Fuzzer' } },
+        vulnerabilities: [{
+          id: 'v1', severity: 'Info',
+          location: { file: 'test.txt' },
+        }],
+      });
+      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      expect(hdf.baselines[0].title).toContain('API Fuzzing');
+    });
+
+    it('should handle vulnerability with no location', async () => {
+      const input = JSON.stringify({
+        scan: { type: 'sast', scanner: { name: 'Scan' } },
+        vulnerabilities: [{
+          id: 'v1', severity: 'Medium', description: 'desc', solution: 'fix',
+        }],
+      });
+      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toBe('');
+    });
+
+    it('should handle vulnerability with no description or solution', async () => {
+      const input = JSON.stringify({
+        scan: { type: 'sast', scanner: { name: 'Scan' } },
+        vulnerabilities: [{ id: 'v1', name: 'Named Vuln' }],
+      });
+      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      const req = hdf.baselines[0].requirements[0];
+      expect(req.title).toBe('Named Vuln');
+      expect(req.descriptions.length).toBe(0);
+    });
+
+    it('should handle no scan field at all', async () => {
+      const input = JSON.stringify({
+        vulnerabilities: [{ id: 'v1' }],
+      });
+      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      expect(hdf.baselines[0].title).toContain('SAST');
+    });
+
+    it('should handle DAST with hostname but no path', async () => {
+      const input = JSON.stringify({
+        scan: { type: 'dast', scanner: { name: 'ZAP' } },
+        vulnerabilities: [{
+          id: 'v1',
+          location: { hostname: 'https://example.com' },
+        }],
+      });
+      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('URL: https://example.com');
+    });
+  });
 });
