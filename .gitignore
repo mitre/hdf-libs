@@ -1,0 +1,66 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build outputs
+dist/
+lib/
+build/
+*.tsbuildinfo
+
+# Testing
+coverage/
+coverage.out
+.nyc_output/
+test-output/
+.stryker-tmp/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Generated files
+*.log
+hdf-cli/hdf
+
+# Claude Code — track commands and project rules, but not local machine settings
+.claude/settings.local.json
+
+# Local research notes (to be converted to GitHub wiki pages)
+hdf-cli/SAF_CLI_COMPARISON.md
+
+# Beads local session state (not for public consumption)
+.beads/recovery-context.md
+.beads/recovery-prompt.md
+.beads/archive/
+.beads/push-state.json
+.beads/dolt-monitor.pid.lock
+
+# bv (beads viewer) local config and caches
+.bv/
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
