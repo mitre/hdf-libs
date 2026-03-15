@@ -11,7 +11,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "pnpm run build:ts && pnpm run build:go",
-    "build:ts": "pnpm -r --filter hdf-schema run build && pnpm -r --filter '!hdf-schema' --filter '!hdf-cli' run build",
+    "build:ts": "pnpm -r --filter=hdf-schema run build && pnpm -r --filter=!hdf-schema --filter=!hdf-cli run build",
     "build:go": "pnpm --filter hdf-cli run build",
     "pretest": "pnpm run build:ts",
     "test": "pnpm run test:ts && pnpm run test:go",
