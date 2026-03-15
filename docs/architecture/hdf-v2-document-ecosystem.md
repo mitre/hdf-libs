@@ -737,3 +737,64 @@ New primitives for v2:
 - **Incident response** — STIX/TAXII, TheHive, MISP
 
 HDF builds converters TO/FROM these standards, not competing schemas.
+
+---
+
+## AI Agent Integration (Future)
+
+### TOON (Token-Oriented Object Notation)
+
+TOON is a text-based format designed to reduce token consumption when passing structured
+data to LLMs. Research found 30-60% token reduction for uniform tabular data.
+
+- **Best fit:** The `requirementDiffs[]` array (uniform, tabular) — TOON's sweet spot
+- **Poor fit:** Nested `before`/`after` snapshots — falls back to verbose encoding
+- **npm package:** `@toon-format/toon` (MIT, v3.0 spec working draft)
+- **Status:** Experimental. Add as optional output renderer when demand materializes.
+
+### JSON-LD
+
+JSON-LD would add `@context` to HDF documents, mapping fields to security ontology URIs
+for semantic web discoverability. Deferred — adds complexity without immediate need.
+HDF JSON Schema already serves as the tool-use spec for LLMs.
+
+### MCP Server
+
+An MCP (Model Context Protocol) server wrapping `hdf-diff` would let AI agents invoke
+`diffHdf()` directly as a tool. The JSON Schema defines the function calling spec.
+Combined with TOON output, this enables low-token-cost security assessment analysis
+by AI agents. Create card when MCP ecosystem matures.
+
+---
+
+## Multi-Language Support (Future)
+
+### Current
+
+- **TypeScript** — npm packages for programmatic use (Heimdall, CI/CD integrations)
+- **Go** — native CLI binary + reusable packages
+- **Python** — type definitions generated from schema (no runtime library yet)
+
+### Planned / Considered
+
+- **Ruby** — would serve the Chef/InSpec ecosystem natively. InSpec itself is Ruby.
+  Could enable direct profile-to-baseline conversion without Node/Go.
+- **Python** — runtime library (not just types) for data science, ML-based security
+  analytics, Jupyter notebook consumption of HDF data.
+- **Rust** — performance-critical CLI, WASM compilation for browser-based tools,
+  memory-safe parsing of untrusted HDF documents.
+
+No timeline set. The quicktype type generator already produces Python types from schema.
+Ruby and Rust would require manual implementation or new generator backends.
+
+---
+
+## Key Design Documents
+
+| Document | Purpose |
+|----------|---------|
+| `docs/architecture/hdf-v2-document-ecosystem.md` | This file — full ecosystem vision |
+| `docs/design/decisions.md` | Design decisions with research rationale |
+| `docs/design/developer-guide.md` | Patterns for contributors (dual impl, testing, cross-platform) |
+| `docs/plans/2026-03-13-hdf-diff-schema-design.md` | hdf-comparison schema research + design |
+| `docs/plans/2026-03-14-hdf-v2-ecosystem-plan.md` | Implementation plan with phase cards |
