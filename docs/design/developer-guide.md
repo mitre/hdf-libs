@@ -85,7 +85,7 @@ memory `go-nil-slice-null`.
 
 Any Go code producing HDF documents for schema validation must call
 `validate.NormalizeForSchema()` before validation. This applies to all future
-HDF document types (hdf-system, hdf-plan, hdf-attestation, hdf-evidence).
+HDF document types (hdf-system, hdf-plan, hdf-amendments, hdf-evidence).
 
 ---
 
@@ -174,3 +174,46 @@ https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v1.0.0#/$defs/<Type>
   or excluded via test-time assertions (Go), but MUST include a comment explaining
   why the branch is unreachable
 - "Pre-existing" coverage gaps are not an excuse — if we find it, we fix it
+
+---
+
+## Progressive Enrichment Principle
+
+When adding optional fields to HDF schemas (labels, sbomRef, systemRef, typed inputs,
+signatures), follow the **progressive enrichment** pattern:
+
+1. The field MUST be optional in the schema
+2. Documents without the field MUST be fully valid and functional
+3. Tests MUST cover both the "field present" and "field absent" cases
+4. Converters SHOULD populate the field when source data is available, but MUST NOT
+   fabricate data when it's not
+5. Consumers (Heimdall, CLI) MAY prompt users to add enrichment, but MUST NOT fail
+   when enrichment is absent
+
+See `docs/design/decisions.md` Decision 9 for the full rationale.
+
+### SBOM References
+
+`sbomRef` fields reference external SBOM documents (CycloneDX/SPDX) by URI. HDF does
+not define its own SBOM format. Both CycloneDX and SPDX are supported from day one.
+
+Rules:
+- `sbomRef` is always optional
+- When a system document's component has `sbomRef`, results for matching targets
+  SHOULD reference the same SBOM (if the pipeline has access to it)
+- When a vulnerability finding references a package not in any known SBOM, the
+  `sbomRef` is absent — never fabricated
+- Package-level data enters HDF through `tags.purl` on findings (populated by SCA
+  converters like Grype/Trivy). Config scanners (InSpec, Nessus) never produce purls.
+
+### SBOM Library Adoption
+
+Full research: `docs/reviews/2026-03-15-sbom-library-research.md`
+
+**Go:** Adopt `protobom` (OpenSSF) for unified CycloneDX + SPDX parsing with built-in
+diff primitives. Also `packageurl-go` for PURL matching.
+
+**TypeScript:** Adopt `@cyclonedx/cyclonedx-library` for CycloneDX validation +
+`packageurl-js` for PURLs. Build custom format-agnostic parser (~100-200 lines)
+normalizing CycloneDX `components[]` and SPDX `packages[]` into a common model.
+The diff algorithm is format-agnostic once components are extracted.

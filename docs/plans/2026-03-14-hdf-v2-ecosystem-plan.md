@@ -8,15 +8,48 @@ security assessment lifecycle, with typed inputs, labels, chain of trust, and OS
 **Architecture:** See `docs/architecture/hdf-v2-document-ecosystem.md` for full vision,
 lifecycle diagrams, example JSON, CLI command tree, Heimdall integration, and design rationale.
 
-**Key Design Decisions:**
-- Labels over hierarchies (see architecture doc "Labels" section)
-- Typed inputs bridging governance to automation (see "Typed Inputs" section)
-- Separate document types following OSCAL SSP/AR pattern
+**Key Design Decisions:** (see `docs/design/decisions.md` for full rationale)
+- Labels over hierarchies (D1)
+- Typed inputs bridging governance to automation (D5)
+- Separate document types following OSCAL SSP/AR pattern (D6)
 - Chain of trust via existing integrity primitives
 - `attributes` → `inputs` rename (InSpec v3→v5 normalization)
-- All document types: dual TS + Go implementation from day one
+- All document types: dual TS + Go implementation from day one (D8)
+- Progressive enrichment — no optional field gates functionality (D9)
+- Renamed hdf-attestation → **hdf-amendments** (D10)
+- Generic comparison — hdf-comparison diffs any HDF doc type (D11)
+- SBOM: both CycloneDX + SPDX from day one, adopt protobom (Go) (D12)
 
 **Cards:** Epic `hdf-libs-15kg` with phase cards linked below.
+
+---
+
+## Implementation Status
+
+> **Update this table as phases complete.**
+
+| Phase | Card | Status | Notes |
+|-------|------|--------|-------|
+| 0.1 Typed inputs | hdf-libs-hlvt | NOT STARTED | Unblocked, start here |
+| 0.2 Labels | hdf-libs-pdf7 | NOT STARTED | Blocked on 0.1 |
+| 0.3 Rename attributes→inputs | hdf-libs-fjfe | NOT STARTED | Blocked on 0.1 |
+| 0.4 Cross-references | hdf-libs-5ef5 | NOT STARTED | Unblocked |
+| 1 hdf-system | hdf-libs-b4lj | NOT STARTED | Blocked on 0.1 + 0.2 |
+| 2 hdf-plan | hdf-libs-5sgt | NOT STARTED | Blocked on Phase 1 |
+| 3 hdf-amendments | hdf-libs-3qm7 | NOT STARTED | Blocked on 0.1 |
+| 4 hdf-evidence-package | hdf-libs-3cjk | NOT STARTED | Blocked on 1 + 2 + 3 |
+| 5 Ecosystem integration | hdf-libs-qcj7 | NOT STARTED | Incremental after each phase |
+| — System-level comparison | hdf-libs-tvcs | NOT STARTED | Blocked on Phase 1 |
+| — Baseline comparison | hdf-libs-gz0p | NOT STARTED | Blocked on Phase 0.1 |
+| — SBOM comparison | hdf-libs-a96 | NOT STARTED | Blocked on Phase 1 |
+| — Converter v2 alignment | hdf-libs-ccp0 | NOT STARTED | Blocked on all Phase 0 |
+
+**Already complete:**
+- hdf-comparison schema (exists)
+- hdf-diff TS library (380 tests, 100% coverage)
+- hdf-diff Go library (500+ tests, 98.4% coverage)
+- hdf diff CLI command (exit codes 0/1/2 + 10-14)
+- v2 architecture doc, decisions doc, developer guide
 
 ---
 
@@ -112,7 +145,7 @@ $defs:
 - `Categorization_Level` enum — low, moderate, high (FIPS 199)
 - `Component_Type` enum — application, database, network, infrastructure, service, policy, operatingSystem, container, cloudService, other
 - `System` — name (required), identifier, identifierScheme, description, authorizationStatus, authorizationDate, categorizationLevel, boundaryDescription, components[], targetRefs[], interconnections[], extensions
-- `Component` — name (required), type (required), description, targetSelector (label-based matching), baselineRefs[], inputOverrides[], extensions
+- `Component` — name (required), type (required), description, targetSelector (label-based matching), baselineRefs[], inputOverrides[], sbomRef (optional URI to CycloneDX/SPDX), sbomFormat (optional: "cyclonedx" | "spdx"), extensions
 - `InputOverride` — baselineRef, inputName, value, justification, approvedBy (Identity), approvedAt
 - `Interconnection` — name, direction (inbound/outbound/bidirectional), description, systemRef
 
@@ -187,18 +220,18 @@ References hdf-baseline (which baselines to run), hdf-system (which targets to s
 
 ---
 
-## Phase 3: hdf-attestation
+## Phase 3: hdf-amendments
 
 **Card:** `hdf-libs-3qm7`
 
 **Architecture reference:** See `docs/architecture/hdf-v2-document-ecosystem.md` sections
-"Phase 6: GOVERN — hdf-attestation", "Chain of Trust", and "Attestation vs Waiver vs Exception"
+"Phase 6: GOVERN — hdf-amendments", "Chain of Trust", and "Attestation vs Waiver vs Exception"
 for full design including signed waivers, amendment chains, and the merge operation.
 
-### 3.1 Design primitives/attestation.schema.json
+### 3.1 Design primitives/amendments.schema.json
 
 $defs:
-- `Override_Type` enum — waiver, attestation, exception (conceptually distinct, same structure)
+- `Override_Type` enum — waiver, attestation, exception, poam (conceptually distinct, same structure)
 - `Standalone_Override` — extends existing StatusOverride primitive with:
   - `requirementId` (which requirement this applies to)
   - `baselineRef` (which baseline)
@@ -209,7 +242,7 @@ Reuses ALL existing primitives: Identity, Signature, Evidence, Checksum.
 The standalone document wraps the same StatusOverride/POAM types that already exist inline
 in hdf-results, but as a first-class signed document.
 
-### 3.2 Design hdf-attestation.schema.json
+### 3.2 Design hdf-amendments.schema.json
 
 Top-level: name (required), systemRef, appliedBy (Identity), approvedBy (Identity),
 overrides[] (required), integrity (Integrity).
@@ -220,21 +253,21 @@ overrides[] (required), integrity (Integrity).
 
 ### 3.4 Type generation (TS + Go)
 
-### 3.5 CLI: hdf attest commands
+### 3.5 CLI: hdf amend commands
 
-- `hdf attest create <results-file>` — interactively create waiver/attestation for failing controls
-- `hdf attest apply <results> <attestation> -o <merged>` — merge attestation into results
-- `hdf attest verify <file>` — verify digital signatures and amendment chain integrity
-- `hdf attest list <file>` — list active/expired overrides with expiration dates
+- `hdf amend create <results-file>` — interactively create waiver/attestation for failing controls
+- `hdf amend apply <results> <amendments> -o <merged>` — merge amendments into results
+- `hdf amend verify <file>` — verify digital signatures and amendment chain integrity
+- `hdf amend list <file>` — list active/expired overrides with expiration dates
 
 ### 3.6 Merge operation
 
-Implemented in hdf-utilities (TS) and pkg/diff or pkg/attest (Go).
+Implemented in hdf-utilities (TS) and pkg/diff or pkg/amend (Go).
 
 The merge operation:
 1. Load results document
-2. Load attestation document
-3. For each override in attestation, apply to matching requirement in results
+2. Load amendments document
+3. For each override in amendments document, apply to matching requirement in results
 4. Set `effectiveStatus` based on the override
 5. Add override to `statusOverrides[]` array
 6. Compute `previousChecksum` linking to the pre-merge results checksum
@@ -273,7 +306,7 @@ CompletenessCheck: `{ allBaselinesAssessed, allComponentsCovered, expiredWaivers
 
 ### 4.4 CLI: hdf evidence commands
 
-- `hdf evidence build --system <file> --results <file> [--attestation <file>] [--comparison <file>] -o <package>` — bundle documents
+- `hdf evidence build --system <file> --results <file> [--amendments <file>] [--comparison <file>] -o <package>` — bundle documents
 - `hdf evidence validate <package>` — check completeness (all baselines assessed? all components covered?)
 - `hdf evidence verify <package>` — verify all checksums + signatures in the chain
 - `hdf evidence export --format oscal <package>` — export to OSCAL SAR + POA&M
@@ -300,18 +333,54 @@ Zero breaking changes — labels are additive and optional.
 
 ### 5.2 OSCAL converters (bidirectional)
 
-- `oscal-ssp` ↔ `hdf-system` — system architecture, components, boundary
-- `oscal-sar` ↔ `hdf-results` — assessment findings, observations, risks
-- `oscal-poam` ↔ `hdf-attestation` — risk responses, milestones, waivers
+OSCAL converters produce multiple HDF document types. Each maps to a specific schema:
 
-### 5.3 hdf-diff enhancements
+| OSCAL Source | HDF Output | Card |
+|-------------|-----------|------|
+| System Security Plan (SSP) | **hdf-system** | hdf-libs-eey (updated 2026-03-15) |
+| Assessment Results (SAR) | hdf-results (with labels + systemRef) | hdf-libs-vwv |
+| POA&M | **hdf-amendments** | hdf-libs-1vb (updated 2026-03-15) |
+| Assessment Plan (SAP) | **hdf-plan** | hdf-libs-uej (updated 2026-03-15) |
+| Catalog | hdf-baseline | hdf-libs-y03 |
+| Profile | hdf-baseline | hdf-libs-g3i |
 
+Reverse converters (HDF → OSCAL) also needed for export from Heimdall.
+
+### 5.3 hdf-diff enhancements — generic comparison
+
+**Card:** (new cards for system-level and baseline comparison)
+
+Extend hdf-comparison to support any HDF document type:
+
+- `systemDrift` mode: compare two hdf-system documents (componentDiffs[], SBOM diffs)
+- `baselineEvolution` mode: compare two hdf-baseline documents (requirementChanges[])
+- Add `systemRef` field to hdf-comparison schema
+- Add `componentDiffs[]`, `packageDiffs[]`, `requirementChanges[]` optional sections
+- Cross-environment comparison: dev vs prod, pre/post migration
+
+SBOM comparison (sub-feature of systemDrift):
+- Adopt `protobom` (Go) for unified CycloneDX + SPDX parsing with built-in diff
+- Build custom TS parser normalizing both formats into common model via `packageurl-js`
+- Both CycloneDX and SPDX supported from day one
+- Full research: `docs/reviews/2026-03-15-sbom-library-research.md`
+
+Existing enhancements (already planned):
 - `--system <file>` — system-aware fleet comparison with component-level summary
 - `--group-by labels.<key>` — group results by any label dimension
 - Parameter drift detection — detect when expected values change between scans
 - Component-level compliance percentage in comparison output
 
-### 5.4 Documentation
+### 5.4 Converter v2 alignment audit
+
+**Card:** `hdf-libs-ccp0`
+
+Systematic review and update of ALL converters for v2 schema changes:
+- `attributes` → `inputs` rename in every converter
+- Populate progressive enrichment fields where source data exists
+- Update OSCAL converter output types (SSP→hdf-system, POA&M→hdf-amendments, SAP→hdf-plan)
+- Blocked on Phase 0 completion (schemas must exist first)
+
+### 5.5 Documentation
 
 - HDF v2 specification document (formal)
 - Well-known label keys reference
@@ -349,18 +418,25 @@ Phase 0 (foundation) — must be first
 
 Phase 0 complete
   ├── Phase 1 (hdf-system) ← depends on 0.1 + 0.2
-  ├── Phase 3 (hdf-attestation) ← depends on 0.1 only (can parallel with Phase 1)
+  ├── Phase 3 (hdf-amendments) ← depends on 0.1 only (can parallel with Phase 1)
+  ├── Baseline comparison ← depends on Phase 0 only
+  └── Converter v2 alignment (hdf-libs-ccp0) ← depends on all Phase 0
 
 Phase 1 complete
-  └── Phase 2 (hdf-plan) ← depends on Phase 1
+  ├── Phase 2 (hdf-plan) ← depends on Phase 1
+  └── System-level comparison + SBOM diff ← depends on Phase 1
 
 Phases 1 + 2 + 3 complete
-  └── Phase 4 (hdf-evidence) ← depends on all three
+  └── Phase 4 (hdf-evidence-package) ← depends on all three
 
 All phases complete
   └── Phase 5 (ecosystem integration) ← can begin incrementally after each phase
+       ├── OSCAL converters (need target schemas to exist)
+       ├── Converter v2 alignment audit
+       └── Documentation
 ```
 
 Phases 1 and 3 can be parallelized (different document types, no shared code).
 Phase 5 subtasks can begin as soon as their dependency is complete (e.g., converter
-labels can start after Phase 0.2).
+labels can start after Phase 0.2). System-level comparison and SBOM diff require
+hdf-system to exist first. OSCAL converters require their target schemas to exist.
