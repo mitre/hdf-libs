@@ -22,6 +22,9 @@ func NewConvertCmd() *cobra.Command {
 
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
 
+	// Converter-specific flags
+	AddOSCALFlags(cmd)
+
 	return cmd
 }
 
