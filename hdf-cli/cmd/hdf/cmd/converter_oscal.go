@@ -45,7 +45,7 @@ func (c *oscalProfileConverter) Convert(input []byte) ([]byte, error) {
 			"The catalog must be a full OSCAL catalog JSON file (e.g., NIST SP 800-53)")
 	}
 
-	catalogData, err := os.ReadFile(oscalCatalogFlag)
+	catalogData, err := os.ReadFile(oscalCatalogFlag) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return nil, fmt.Errorf("failed to read catalog file %q: %w", oscalCatalogFlag, err)
 	}
