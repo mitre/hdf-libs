@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-25
 **Beads Card:** hdf-libs-sqb (Library 5: hdf-extension-graph) — first deliverable
-**Consumer Bug:** consumer-app-bug-001 (P0 — 741 controls shown instead of 247)
+**Consumer Bug:** P0 — 741 controls shown instead of 247 (wrong NA/NR counts in consuming application)
 **Based on:** 6 research agents analyzing inspecjs, hdf-libs, InSpec spec, real fixtures, algorithm options, and downstream consumption
 
 ---
@@ -456,7 +456,7 @@ describe('flattenOverlays')
 5. **Export** from `hdf-parsers/typescript/index.ts`
 6. **Run full hdf-parsers test suite** — no regressions
 7. **Commit** to feature branch
-8. **Wire into consuming application** (separate card in downstream-consumer)
+8. **Wire into consuming application** (separate card)
 9. **Go implementation** (separate card)
 
 ---

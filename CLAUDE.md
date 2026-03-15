@@ -168,13 +168,12 @@ Security requirement definitions without results:
 
 ## Design Documentation
 
-Critical planning docs exist in the `mitre/hdf-libs` fork on branch `hdf-schema`:
-- **hdf-schema-plan.md**: Implementation plan with 9 phases (setup → release)
-- **hdf-integrity-library-design.md**: Cryptographic integrity design (checksums, signatures, amendment chains)
-- **hdf-parsers-plan.md**: Flatten exec-json utility design
-- **hdf-validators-test-cases.md**: Comprehensive validation test scenarios
-
-**Access**: https://github.com/mitre/hdf-libs/tree/hdf-schema/docs/planning
+Planning docs are in the `docs/` directory of this repository:
+- **docs/architecture/hdf-v2-document-ecosystem.md**: Full v2 ecosystem architecture
+- **docs/architecture/hdf-v2-readers-guide.md**: Narrative guide with walkthroughs
+- **docs/design/decisions.md**: Design decisions with research rationale
+- **docs/design/developer-guide.md**: Contributor patterns and practices
+- **docs/plans/2026-03-14-hdf-v2-ecosystem-plan.md**: Implementation plan with phase cards
 
 ## Development Workflow
 
@@ -328,8 +327,7 @@ Before any library can be published:
 - **JSON Schema Spec**: https://json-schema.org/
 - **quicktype Docs**: https://quicktype.io/
 - **Ajv Validator**: https://ajv.js.org/
-- **MITRE HDF Ecosystem**: https://github.com/mitre/hdf-libs (public repo)
-- **Design Docs**: https://github.com/mitre/hdf-libs/tree/hdf-schema/docs/planning
+- **MITRE HDF Ecosystem**: https://github.com/mitre/hdf-libs
 
 ## License
 
