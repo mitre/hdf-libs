@@ -315,4 +315,137 @@ describe('junit to HDF converter', async () => {
       expect(hdf.baselines[0]!.requirements).toHaveLength(2);
     });
   });
+
+  describe('edge cases: missing optional fields', async () => {
+    it('should handle testcase with no classname', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuites name="Tests">
+  <testsuite name="Suite1">
+    <testcase name="mytest"/>
+  </testsuite>
+</testsuites>`;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      // ID should be just name when no classname
+      expect(req.id).toBe('mytest');
+      // codeDesc should be just name
+      expect(req.results[0]!.codeDesc).toBe('mytest');
+    });
+
+    it('should handle testsuites with no name', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuites>
+  <testsuite name="S1">
+    <testcase name="t1" classname="c1"/>
+  </testsuite>
+</testsuites>`;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      expect(hdf.baselines[0]!.name).toBe('JUnit Test Results');
+    });
+
+    it('should handle single testsuite root element with no name', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuite>
+  <testcase name="t1"/>
+</testsuite>`;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      expect(hdf.baselines[0]!.name).toBe('JUnit Test Results');
+    });
+
+    it('should handle failure with no type and body', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuites name="Tests">
+  <testsuite name="Suite1">
+    <testcase name="t1" classname="c1">
+      <failure message="fail msg"/>
+    </testcase>
+  </testsuite>
+</testsuites>`;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.results[0]!.status).toBe('failed');
+      expect(req.results[0]!.message).toContain('fail msg');
+    });
+
+    it('should handle error with type and body text', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuites name="Tests">
+  <testsuite name="Suite1">
+    <testcase name="t1" classname="c1">
+      <error message="error msg" type="NullPointerException">stack trace here</error>
+    </testcase>
+  </testsuite>
+</testsuites>`;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.results[0]!.status).toBe('error');
+      expect(req.results[0]!.message).toContain('NullPointerException');
+      expect(req.results[0]!.message).toContain('stack trace here');
+    });
+
+    it('should handle skipped with message', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuites name="Tests">
+  <testsuite name="Suite1">
+    <testcase name="t1" classname="c1">
+      <skipped message="Not ready"/>
+    </testcase>
+  </testsuite>
+</testsuites>`;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.results[0]!.status).toBe('notReviewed');
+      expect(req.results[0]!.message).toContain('Not ready');
+    });
+
+    it('should handle skipped with empty element', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuites name="Tests">
+  <testsuite name="Suite1">
+    <testcase name="t1" classname="c1">
+      <skipped/>
+    </testcase>
+  </testsuite>
+</testsuites>`;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.message).toBe('Skipped');
+    });
+
+    it('should handle testcase with invalid time', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuites name="Tests">
+  <testsuite name="Suite1">
+    <testcase name="t1" classname="c1" time="abc"/>
+  </testsuite>
+</testsuites>`;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
+    });
+
+    it('should handle testsuite with no testcases', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuites name="EmptySuites">
+  <testsuite name="EmptySuite"/>
+</testsuites>`;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    });
+
+    it('should reject non-JUnit XML', async () => {
+      const xml = `<?xml version="1.0"?><other><data/></other>`;
+      await expect(convertJunitToHdf(xml)).rejects.toThrow('not a JUnit XML');
+    });
+
+    it('should handle testcase with valid run time and suite timestamp', async () => {
+      const xml = `<?xml version="1.0"?>
+<testsuites name="Tests">
+  <testsuite name="Suite1" timestamp="2025-01-01T00:00:00">
+    <testcase name="t1" classname="c1" time="0.123"/>
+  </testsuite>
+</testsuites>`;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
+    });
+  });
 });

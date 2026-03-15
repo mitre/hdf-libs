@@ -200,6 +200,7 @@ export async function convertZapToHdf(input: string): Promise<string> {
   // Deduplicate by pluginid — append .1, .2 for duplicates
   const pluginIdCount = new Map<string, number>();
   const {items: limitedAlerts, truncated} = limitArray(alerts);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncated) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedAlerts.length} alert items (original: ${alerts.length})`);

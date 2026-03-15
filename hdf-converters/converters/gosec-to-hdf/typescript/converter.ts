@@ -165,6 +165,7 @@ export async function convertGosecToHdf(input: string): Promise<string> {
 
   // Group issues by rule_id, preserving insertion order.
   const { items: limitedIssues, truncated: truncatedIssues } = limitArray(report.Issues);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedIssues) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedIssues.length} issue items (original: ${report.Issues.length})`);

@@ -200,6 +200,7 @@ export async function convertDbprotectToHdf(input: string): Promise<string> {
 
   const findings = compileFindings(parsed);
   const { items: limitedFindings, truncated } = limitArray(findings);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncated) {
     // eslint-disable-next-line no-console
     console.warn(

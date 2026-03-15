@@ -179,6 +179,7 @@ export async function convertSarifToHdf(input: string): Promise<string> {
     timestamp: new Date(),
     baselines: (() => {
       const { items: limitedRuns, truncated: truncatedRuns } = limitArray(sarif.runs);
+      /* v8 ignore next -- truncation only triggers with >100K items */
       if (truncatedRuns) {
         // eslint-disable-next-line no-console
         console.warn(`WARNING: Input truncated at ${limitedRuns.length} run items (original: ${sarif.runs.length})`);
@@ -204,6 +205,7 @@ function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum): 
   // Group SARIF results by ruleId — each group becomes one EvaluatedRequirement.
   // When ruleId is absent, fall back to message text as the grouping key.
   const { items: limitedResults, truncated: truncatedResults } = limitArray(run.results);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedResults) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedResults.length} result items (original: ${run.results.length})`);

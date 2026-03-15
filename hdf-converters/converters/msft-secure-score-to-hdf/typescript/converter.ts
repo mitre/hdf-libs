@@ -256,6 +256,7 @@ export async function convertMsftSecureScoreToHdf(input: string): Promise<string
     }
 
     const { items: limitedControlScores, truncated } = limitArray(ss.controlScores);
+    /* v8 ignore next -- truncation only triggers with >100K items */
     if (truncated) {
       // eslint-disable-next-line no-console
       console.warn(`WARNING: Input truncated at ${limitedControlScores.length} controlScore items (original: ${ss.controlScores.length})`);

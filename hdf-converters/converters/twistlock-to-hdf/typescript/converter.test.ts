@@ -244,4 +244,82 @@ describe('twistlock to HDF converter', async () => {
       expect(req!.results[0]?.startTime).toBe('2021-12-10T10:15:00.000Z');
     });
   });
+
+  describe('edge cases: missing optional fields', async () => {
+    it('should handle result with collections but no repository', async () => {
+      const input = JSON.stringify({
+        results: [{
+          collections: ['col1', 'col2'],
+          vulnerabilities: [{
+            id: 'CVE-1', severity: 'critical', description: 'desc',
+          }],
+        }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.title).toContain('col1 / col2');
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.9);
+    });
+
+    it('should handle result with no repository or collections', async () => {
+      const input = JSON.stringify({
+        results: [{
+          vulnerabilities: [{
+            id: 'CVE-2', severity: 'moderate', description: 'desc',
+          }],
+        }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.title).toContain('N/A');
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+    });
+
+    it('should handle result with no distribution data', async () => {
+      const input = JSON.stringify({
+        results: [{
+          vulnerabilities: [{
+            id: 'CVE-3', severity: 'unknown', description: 'desc',
+          }],
+        }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.summary).toContain('N/A');
+    });
+
+    it('should handle vulnerability with no discoveredDate', async () => {
+      const input = JSON.stringify({
+        results: [{
+          vulnerabilities: [{
+            id: 'CVE-4', severity: 'low', description: 'desc',
+            impactedVersions: ['1.0', '2.0'],
+          }],
+        }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.3);
+    });
+
+    it('should handle vulnerability with empty impactedVersions', async () => {
+      const input = JSON.stringify({
+        results: [{
+          vulnerabilities: [{
+            id: 'CVE-5', severity: 'high', description: 'desc',
+            impactedVersions: [],
+          }],
+        }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.codeDesc).toContain('N/A');
+    });
+
+    it('should handle code repo scan (no results wrapper)', async () => {
+      const input = JSON.stringify({
+        name: 'my-repo',
+        vulnerabilities: [{
+          id: 'CVE-6', severity: 'medium', description: 'desc',
+        }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      expect(hdf.targets![0]!.name).toBe('my-repo');
+    });
+  });
 });
