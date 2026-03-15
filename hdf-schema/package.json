@@ -27,9 +27,10 @@
     "src/schemas"
   ],
   "scripts": {
-    "build": "pnpm clean && tsx src/bundle-schemas.ts && tsx src/generate-types.ts && tsx src/create-index.ts",
-    "build:schemas": "tsx src/bundle-schemas.ts",
-    "build:types": "tsx src/generate-types.ts",
+    "build": "pnpm run clean && pnpm run build:schemas && pnpm run build:types && pnpm run build:index",
+    "build:schemas": "node --import tsx src/bundle-schemas.ts",
+    "build:types": "node --import tsx src/generate-types.ts",
+    "build:index": "node --import tsx src/create-index.ts",
     "watch:schemas": "nodemon --watch src/schemas --ext json --exec 'tsx src/bundle-schemas.ts'",
     "serve:schemas": "npx http-server dist/schemas -p 8081 --cors",
     "dev:viewer": "pnpm run build:schemas && concurrently \"pnpm run watch:schemas\" \"pnpm run serve:schemas\"",

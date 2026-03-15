@@ -39,7 +39,7 @@ jobs:
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: ${{ runner.os }}-pnpm-
       - run: pnpm install --frozen-lockfile
-      - run: pnpm -r --filter '!hdf-cli' run lint
+      - run: pnpm -r --filter=!hdf-cli run lint
 
   lint-go:
     name: Lint (Go)
@@ -135,6 +135,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build TypeScript (generates types + Go schemas)
         run: pnpm build:ts
+      - name: Verify build artifacts
+        shell: bash
+        run: |
+          for pkg in hdf-schema hdf-utilities hdf-mappings hdf-validators hdf-parsers hdf-converters hdf-diff; do
+            [ -d "$pkg/dist" ] && echo "✓ $pkg/dist" || { echo "✗ $pkg/dist not found"; exit 1; }
+          done
+          if [ "${{ matrix.lang }}" = "go" ]; then
+            [ -f "hdf-schema/dist/go/hdf.go" ] && echo "✓ hdf-schema/dist/go/hdf.go" || { echo "✗ Go types not generated"; exit 1; }
+          fi
       - uses: actions/setup-go@v5
         if: matrix.lang == 'go'
         with:
@@ -177,7 +186,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:ts
       - name: TypeScript coverage (enforces thresholds)
-        run: pnpm -r --filter '!hdf-cli' run test:coverage
+        run: pnpm -r --filter=!hdf-cli run test:coverage
       - name: Go coverage
         run: |
           cd hdf-cli
