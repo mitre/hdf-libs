@@ -57,6 +57,8 @@ hdf-cli/SAF_CLI_COMPARISON.md
 .beads/archive/
 .beads/push-state.json
 .beads/dolt-monitor.pid.lock
+.beads/.beads-credential-key
+.beads/backup/
 
 # bv (beads viewer) local config and caches
 .bv/
