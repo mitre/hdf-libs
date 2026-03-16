@@ -310,13 +310,13 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 	if siteName != "" {
 		targets = append(targets, hdf.Target{
 			Name: targetName,
-			Type: hdf.Application,
+			Type: hdf.CopyrightApplication,
 			URL:  &siteName,
 		})
 	} else if targetName != "Unknown Host" {
 		targets = append(targets, hdf.Target{
 			Name: targetName,
-			Type: hdf.Application,
+			Type: hdf.CopyrightApplication,
 		})
 	}
 

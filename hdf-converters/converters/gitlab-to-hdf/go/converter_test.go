@@ -181,7 +181,7 @@ func TestConvertGitlabToHDF_MinimalDAST_Target(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, result.Targets, 1)
-	assert.Equal(t, hdf.Application, result.Targets[0].Type)
+	assert.Equal(t, hdf.CopyrightApplication, result.Targets[0].Type)
 }
 
 func TestConvertGitlabToHDF_MultiVuln_Count(t *testing.T) {

@@ -118,9 +118,9 @@ func convertResult(v1 V1Result) hdf.RequirementResult {
 // validSeverities maps lowercase severity strings to hdf.Severity values.
 var validSeverities = map[string]hdf.Severity{
 	"critical":      hdf.Critical,
-	"high":          hdf.High,
+	"high":          hdf.SeverityHigh,
 	"medium":        hdf.Medium,
-	"low":           hdf.Low,
+	"low":           hdf.SeverityLow,
 	"informational": hdf.Informational,
 }
 
@@ -152,11 +152,11 @@ func impactToSeverity(impact float64) hdf.Severity {
 	case impact >= 0.9:
 		return hdf.Critical
 	case impact >= 0.7:
-		return hdf.High
+		return hdf.SeverityHigh
 	case impact >= 0.5:
 		return hdf.Medium
 	case impact > 0:
-		return hdf.Low
+		return hdf.SeverityLow
 	default:
 		return hdf.Informational // impact=0, no tags.severity
 	}

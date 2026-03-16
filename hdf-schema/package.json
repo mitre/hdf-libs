@@ -20,6 +20,10 @@
       "import": "./dist/ts/hdf-comparison.js",
       "types": "./dist/ts/hdf-comparison.d.ts"
     },
+    "./hdf-system": {
+      "import": "./dist/ts/hdf-system.js",
+      "types": "./dist/ts/hdf-system.d.ts"
+    },
     "./schemas/*": "./src/schemas/*"
   },
   "files": [

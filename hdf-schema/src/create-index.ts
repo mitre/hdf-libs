@@ -29,7 +29,7 @@ export function createIndex(options: CreateIndexOptions = {}): void {
   }
 
   // Clean stale .d.ts and .js output so tsc doesn't refuse to overwrite its own input
-  for (const name of ['hdf-results', 'hdf-baseline', 'hdf-comparison']) {
+  for (const name of ['hdf-results', 'hdf-baseline', 'hdf-comparison', 'hdf-system']) {
     for (const ext of ['.d.ts', '.js']) {
       const file = join(tsDir, `${name}${ext}`);
       if (existsSync(file)) {
@@ -113,6 +113,14 @@ export * from './ts/hdf-results.js';
 // hdf-results and cause ambiguous-export collisions.
 export type { HdfBaseline, BaselineRequirement } from './ts/hdf-baseline.js';
 ${comparisonDtsExport}
+// Re-export system types
+export type {
+  HdfSystem, Component, InputOverride, Interconnection, TargetSelector,
+} from './ts/hdf-system.js';
+export {
+  AuthorizationStatus, CategorizationLevel, ComponentType,
+} from './ts/hdf-system.js';
+
 // Re-export helper functions
 export * from './helpers.js';
 `;
@@ -140,6 +148,11 @@ export {
 // Re-export all values from hdf-results (enums like ResultStatus, HashAlgorithm, Severity)
 export * from './ts/hdf-results.js';
 ${comparisonJsExport}
+// Re-export system enums (runtime values)
+export {
+  AuthorizationStatus, CategorizationLevel, ComponentType,
+} from './ts/hdf-system.js';
+
 // Re-export helper functions
 export * from './helpers.js';
 `;

@@ -45,7 +45,7 @@ func TestConvertVeracodeToHDF_Sample(t *testing.T) {
 
 	// Should have target
 	require.Len(t, result.Targets, 1)
-	assert.Equal(t, hdf.Application, result.Targets[0].Type)
+	assert.Equal(t, hdf.CopyrightApplication, result.Targets[0].Type)
 
 	// CWE-based controls: 14 categories (categoryid 12 appears at both severity 3 and 2)
 	// CVE-based controls: 39 unique CVEs = 53 total

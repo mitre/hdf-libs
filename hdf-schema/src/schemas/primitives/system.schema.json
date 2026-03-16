@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0",
+  "title": "HDF System Primitives",
+  "description": "Types for describing system architecture, authorization boundaries, and components.",
+  "$defs": {
+    "Authorization_Status": {
+      "type": "string",
+      "enum": [
+        "authorized",
+        "denied",
+        "pendingAuthorization",
+        "conditionallyAuthorized",
+        "notYetRequested",
+        "revoked"
+      ],
+      "description": "Authorization to Operate (ATO) status for the system.",
+      "title": "Authorization Status"
+    },
+    "Categorization_Level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high"
+      ],
+      "description": "FIPS 199 security categorization level (impact level).",
+      "title": "Categorization Level"
+    },
+    "Component_Type": {
+      "type": "string",
+      "enum": [
+        "application",
+        "database",
+        "network",
+        "storage",
+        "compute",
+        "service",
+        "other"
+      ],
+      "description": "The type of system component.",
+      "title": "Component Type"
+    },
+    "Input_Override": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "inputName",
+        "value"
+      ],
+      "properties": {
+        "baselineRef": {
+          "type": "string",
+          "description": "Name of the baseline this override applies to. If omitted, applies to all baselines that define this input."
+        },
+        "inputName": {
+          "type": "string",
+          "description": "Name of the input being overridden. Must match an Input.name in the referenced baseline."
+        },
+        "value": {
+          "description": "The overridden value. Should match the type of the original input."
+        },
+        "justification": {
+          "type": "string",
+          "description": "Rationale for why this override is needed."
+        },
+        "approvedBy": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+          "description": "Identity of the person or system that approved this override."
+        }
+      },
+      "description": "An override of a baseline input value for a specific component. Enables system-specific tailoring of baseline parameters.",
+      "title": "Input Override"
+    },
+    "Target_Selector": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "A label selector that matches targets by label key-value pairs. All specified labels must match (AND logic). Example: { \"labels.component\": \"WebTier\" } matches targets with labels.component = \"WebTier\".",
+      "title": "Target Selector"
+    },
+    "Component": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "name",
+        "type"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable component name. Example: 'WebTier', 'DatabaseTier'."
+        },
+        "type": {
+          "$ref": "#/$defs/Component_Type",
+          "description": "The type of this component."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of this component's role in the system."
+        },
+        "targetSelector": {
+          "$ref": "#/$defs/Target_Selector",
+          "description": "Label selector to match targets belonging to this component. Targets with matching labels are automatically included."
+        },
+        "baselineRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Names of baselines that apply to this component's targets."
+        },
+        "inputOverrides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Input_Override"
+          },
+          "description": "System-specific overrides for baseline input values."
+        },
+        "sbomRef": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "URI to a CycloneDX or SPDX SBOM document for this component."
+        },
+        "sbomFormat": {
+          "type": "string",
+          "enum": [
+            "cyclonedx",
+            "spdx"
+          ],
+          "description": "Format of the referenced SBOM document."
+        }
+      },
+      "examples": [
+        {
+          "name": "WebTier",
+          "type": "application",
+          "description": "RHEL 9 web servers running the portal",
+          "targetSelector": { "labels.component": "WebTier" },
+          "baselineRefs": ["RHEL9-STIG", "DISA-Container-STIG"],
+          "sbomRef": "https://artifacts.agency.gov/sbom/webtier-2026-03.cdx.json",
+          "sbomFormat": "cyclonedx",
+          "inputOverrides": [
+            {
+              "baselineRef": "RHEL9-STIG",
+              "inputName": "max_concurrent_sessions",
+              "value": 5,
+              "justification": "Admin team needs 5 sessions for shift handoff",
+              "approvedBy": { "type": "email", "identifier": "issm@agency.gov" }
+            }
+          ]
+        },
+        {
+          "name": "DatabaseTier",
+          "type": "database",
+          "targetSelector": { "labels.component": "DatabaseTier" },
+          "baselineRefs": ["PostgreSQL-15-STIG"]
+        }
+      ],
+      "description": "A logical component within a system's authorization boundary. Components match targets via label selectors and reference the baselines that apply to them.",
+      "title": "Component"
+    },
+    "Interconnection": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "name",
+        "externalSystem"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the interconnection."
+        },
+        "externalSystem": {
+          "type": "string",
+          "description": "Name or identifier of the external system."
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "inbound",
+            "outbound",
+            "bidirectional"
+          ],
+          "description": "Data flow direction relative to this system."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the interconnection's purpose and data exchanged."
+        },
+        "protocol": {
+          "type": "string",
+          "description": "Communication protocol. Example: 'HTTPS', 'SSH', 'SFTP'."
+        },
+        "securityMeasures": {
+          "type": "string",
+          "description": "Security controls applied to this interconnection."
+        }
+      },
+      "description": "A connection between this system and an external system that crosses the authorization boundary.",
+      "title": "Interconnection"
+    }
+  }
+}

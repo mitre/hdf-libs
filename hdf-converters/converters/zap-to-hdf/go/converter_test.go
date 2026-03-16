@@ -152,7 +152,7 @@ func TestConvertZapToHDF_Target(t *testing.T) {
 
 	require.Len(t, result.Targets, 1)
 	assert.Equal(t, "example.com", result.Targets[0].Name)
-	assert.Equal(t, hdf.Application, result.Targets[0].Type)
+	assert.Equal(t, hdf.CopyrightApplication, result.Targets[0].Type)
 	require.NotNil(t, result.Targets[0].URL)
 	assert.Equal(t, "https://example.com", *result.Targets[0].URL)
 }

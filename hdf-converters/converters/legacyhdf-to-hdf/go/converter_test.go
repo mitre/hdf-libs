@@ -774,7 +774,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 		}
 		v2 := ConvertV1ToV2(v1)
 		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
-		assert.Equal(t, hdf.High, *v2.Baselines[0].Requirements[0].Severity)
+		assert.Equal(t, hdf.SeverityHigh, *v2.Baselines[0].Requirements[0].Severity)
 	})
 
 	t.Run("falls back to impact-derived severity when tags.severity missing", func(t *testing.T) {
@@ -792,7 +792,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 		}
 		v2 := ConvertV1ToV2(v1)
 		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
-		assert.Equal(t, hdf.High, *v2.Baselines[0].Requirements[0].Severity)
+		assert.Equal(t, hdf.SeverityHigh, *v2.Baselines[0].Requirements[0].Severity)
 	})
 
 	t.Run("maps impact values to correct severity levels", func(t *testing.T) {
@@ -801,9 +801,9 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 			expected hdf.Severity
 		}{
 			{0.9, hdf.Critical},
-			{0.7, hdf.High},
+			{0.7, hdf.SeverityHigh},
 			{0.5, hdf.Medium},
-			{0.3, hdf.Low},
+			{0.3, hdf.SeverityLow},
 		}
 		for _, tc := range cases {
 			v1 := &HDFV1Results{
@@ -836,7 +836,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 		}
 		v2 := ConvertV1ToV2(v1)
 		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
-		assert.Equal(t, hdf.High, *v2.Baselines[0].Requirements[0].Severity)
+		assert.Equal(t, hdf.SeverityHigh, *v2.Baselines[0].Requirements[0].Severity)
 	})
 
 	t.Run("ubi9 fixture: NA controls have severity from tags not none", func(t *testing.T) {

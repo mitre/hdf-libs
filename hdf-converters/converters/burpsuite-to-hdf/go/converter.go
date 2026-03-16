@@ -184,7 +184,7 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		Targets: []hdf.Target{
 			{
 				Name: targetName,
-				Type: hdf.Application,
+				Type: hdf.CopyrightApplication,
 			},
 		},
 		Timestamp: timestamp,

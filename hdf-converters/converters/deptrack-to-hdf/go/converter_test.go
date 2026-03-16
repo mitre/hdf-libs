@@ -124,7 +124,7 @@ func TestConvertDeptrack_Target(t *testing.T) {
 
 	require.NotEmpty(t, result.Targets)
 	assert.Equal(t, "Acme Example", result.Targets[0].Name)
-	assert.Equal(t, hdf.Application, result.Targets[0].Type)
+	assert.Equal(t, hdf.CopyrightApplication, result.Targets[0].Type)
 }
 
 // ---- Severity → Impact mapping ----

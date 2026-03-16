@@ -867,7 +867,7 @@ func TestConvertXccdfBenchmarkToHDF_Severity(t *testing.T) {
 	highReq := findBaselineRequirement(result.Requirements, "WN22-00-000030")
 	require.NotNil(t, highReq)
 	require.NotNil(t, highReq.Severity)
-	assert.Equal(t, hdf.High, *highReq.Severity)
+	assert.Equal(t, hdf.SeverityHigh, *highReq.Severity)
 }
 
 // --- ConvertXccdfToHDF auto-detect tests ---
