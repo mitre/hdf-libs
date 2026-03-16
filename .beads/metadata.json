@@ -1,0 +1,7 @@
+{
+  "database": "beads_hdf-libs",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "beads_hdf-libs",
+  "project_id": "5fe8269f-cdc5-4dd0-906e-038816324e49"
+}

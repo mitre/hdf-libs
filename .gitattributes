@@ -1,0 +1,4 @@
+# Use bd merge for beads JSONL files
+.beads/issues.jsonl merge=beads
+hdf-converters/**/fixtures/input/*.xml filter=lfs diff=lfs merge=lfs -text
+hdf-converters/converters/oscal-to-hdf/fixtures/input/*.json filter=lfs diff=lfs merge=lfs -text

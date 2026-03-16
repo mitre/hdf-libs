@@ -1,0 +1,2024 @@
+import { describe, it, expect } from 'vitest';
+import Ajv2020 from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+import commonSchema from '../src/schemas/primitives/common.schema.json';
+import platformSchema from '../src/schemas/primitives/platform.schema.json';
+import targetSchema from '../src/schemas/primitives/target.schema.json';
+import runnerSchema from '../src/schemas/primitives/runner.schema.json';
+import statisticsSchema from '../src/schemas/primitives/statistics.schema.json';
+import resultSchema from '../src/schemas/primitives/result.schema.json';
+import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
+
+describe('Primitive Schema Validation', () => {
+  const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
+  addFormats(ajv);
+
+  // Register all schemas so $ref works
+  ajv.addSchema(commonSchema);
+  ajv.addSchema(platformSchema);
+  ajv.addSchema(targetSchema);
+  ajv.addSchema(runnerSchema);
+  ajv.addSchema(statisticsSchema);
+  ajv.addSchema(resultSchema);
+  ajv.addSchema(extensionsSchema);
+
+  describe('common.schema.json', () => {
+    describe('Requirement_Group', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Requirement_Group',
+      });
+
+      it('should validate a valid Requirement_Group', () => {
+        const valid = {
+          id: 'controls/ssh.rb',
+          title: 'SSH Configuration Controls',
+          requirements: ['SV-238196', 'SV-238197', 'SV-238198'],
+        };
+        expect(validate(valid)).toBe(true);
+        expect(validate.errors).toBeNull();
+      });
+
+      it('should validate Requirement_Group with null title', () => {
+        const valid = {
+          id: 'controls/ssh.rb',
+          title: null,
+          requirements: ['SV-238196'],
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject Requirement_Group missing required id', () => {
+        const invalid = {
+          title: 'SSH Controls',
+          requirements: ['SV-238196'],
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).not.toBeNull();
+      });
+
+      it('should reject Requirement_Group missing required requirements array', () => {
+        const invalid = {
+          id: 'controls/ssh.rb',
+          title: 'SSH Controls',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Requirement_Group with non-string requirements', () => {
+        const invalid = {
+          id: 'controls/ssh.rb',
+          requirements: [123, 456],
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Dependency', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency',
+      });
+
+      it('should validate a valid Dependency with git URL', () => {
+        const valid = {
+          name: 'ubuntu-22.04-stig-baseline',
+          git: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git',
+          branch: 'main',
+          status: 'loaded',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate an empty Dependency (no required fields)', () => {
+        const valid = {};
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Dependency with null fields', () => {
+        const valid = {
+          name: null,
+          url: null,
+          status: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Reference', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Reference',
+      });
+
+      it('should validate Reference with ref string', () => {
+        const valid = { ref: 'NIST SP 800-53 Rev 5' };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Reference with url', () => {
+        const valid = { url: 'https://nvd.nist.gov/800-53' };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Reference with uri', () => {
+        const valid = { uri: 'urn:isbn:0451450523' };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Reference with ref array', () => {
+        const valid = {
+          ref: [
+            { title: 'NIST 800-53', section: 'AC-2' },
+            { title: 'CIS Benchmark', section: '5.1' },
+          ],
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject Reference with no recognized field', () => {
+        const invalid = { other: 'something' };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Source_Location', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Source_Location',
+      });
+
+      it('should validate a valid Source_Location', () => {
+        const valid = {
+          ref: 'controls/ssh.rb',
+          line: 42,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Source_Location with null values', () => {
+        const valid = {
+          ref: null,
+          line: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate empty Source_Location', () => {
+        const valid = {};
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Supported_Platform', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Supported_Platform',
+      });
+
+      it('should validate a valid Supported_Platform', () => {
+        const valid = {
+          'platformFamily': 'redhat',
+          'platformName': 'centos',
+          release: '8',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Supported_Platform with platform field', () => {
+        const valid = {
+          platform: 'aws',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate empty Supported_Platform', () => {
+        const valid = {};
+        expect(validate(valid)).toBe(true);
+      });
+
+    });
+
+    describe('Identity', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity',
+      });
+
+      it('should validate identity with email', () => {
+        const valid = {
+          identifier: 'user@example.com',
+          type: 'email',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate identity with system identifier', () => {
+        const valid = {
+          identifier: 'automated-scanner-01',
+          type: 'system',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate identity with username type', () => {
+        const valid = {
+          identifier: 'jdoe',
+          type: 'username',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate identity with other type and description', () => {
+        const valid = {
+          identifier: 'custom-id-12345',
+          type: 'other',
+          description: 'Custom identity system identifier',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate identity with null description', () => {
+        const valid = {
+          identifier: 'user@example.com',
+          type: 'email',
+          description: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject identity missing required identifier', () => {
+        const invalid = {
+          type: 'email',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject identity missing required type', () => {
+        const invalid = {
+          identifier: 'user@example.com',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject identity with invalid type', () => {
+        const invalid = {
+          identifier: 'test',
+          type: 'invalid_type',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Verification_Method', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Verification_Method',
+      });
+
+      it('should validate verification method with JWK public key', () => {
+        const valid = {
+          type: 'JsonWebKey2020',
+          controller: 'did:example:123456789abcdefghi',
+          publicKeyJwk: {
+            kty: 'RSA',
+            n: 'xGOr-H7A...',
+            e: 'AQAB',
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate verification method with PEM public key', () => {
+        const valid = {
+          type: 'RsaVerificationKey2018',
+          controller: 'https://example.com/issuer/keys/1',
+          publicKeyPem: '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkq...\n-----END PUBLIC KEY-----',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate verification method with Base58 public key', () => {
+        const valid = {
+          type: 'Ed25519VerificationKey2020',
+          controller: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+          publicKeyBase58: 'H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate verification method with multiple key formats', () => {
+        const valid = {
+          type: 'JsonWebKey2020',
+          controller: 'https://example.com/keys/1',
+          publicKeyJwk: {
+            kty: 'EC',
+            crv: 'P-256',
+            x: 'WKn-ZIGevcwGIyyrzFoZNBdaq9_TsqzGl96oc0CWuis',
+            y: 'y77t-RvAHRKTsSGdIYUfweuOvwrvDD-Q3Hv5J0fSKbE',
+          },
+          publicKeyPem: '-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate verification method with null optional fields', () => {
+        const valid = {
+          type: 'JsonWebKey2020',
+          controller: 'did:example:123',
+          publicKeyJwk: null,
+          publicKeyPem: null,
+          publicKeyBase58: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject verification method missing required type', () => {
+        const invalid = {
+          controller: 'did:example:123',
+          publicKeyJwk: { kty: 'RSA' },
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject verification method missing required controller', () => {
+        const invalid = {
+          type: 'JsonWebKey2020',
+          publicKeyJwk: { kty: 'RSA' },
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject verification method with extra unevaluated properties', () => {
+        const invalid = {
+          type: 'JsonWebKey2020',
+          controller: 'did:example:123',
+          publicKeyJwk: { kty: 'RSA' },
+          extraField: 'not allowed',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Signature', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature',
+      });
+
+      it('should validate complete signature with all required fields', () => {
+        const valid = {
+          type: 'JsonWebSignature2020',
+          created: '2025-12-07T15:30:00Z',
+          creator: {
+            identifier: 'security-team@example.com',
+            type: 'email',
+          },
+          signatureValue: 'eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..mPyJAGC4VPTxSt0cHKw',
+          proofPurpose: 'attestation',
+          verificationMethod: {
+            type: 'JsonWebKey2020',
+            controller: 'https://example.com/keys/1',
+            publicKeyJwk: {
+              kty: 'RSA',
+              n: 'xGOr-H7A...',
+              e: 'AQAB',
+            },
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate signature with RSA verification key', () => {
+        const valid = {
+          type: 'RsaSignature2018',
+          created: '2025-12-07T15:30:00Z',
+          creator: {
+            identifier: 'yubikey-serial-12345678',
+            type: 'system',
+            description: 'YubiKey 5C NFC',
+          },
+          signatureValue: 'base64-encoded-signature-data',
+          proofPurpose: 'authentication',
+          verificationMethod: {
+            type: 'RsaVerificationKey2018',
+            controller: 'did:example:org:security',
+            publicKeyPem: '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxGOr...\n-----END PUBLIC KEY-----',
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate signature with Ed25519 key', () => {
+        const valid = {
+          type: 'Ed25519Signature2020',
+          created: '2025-12-07T15:30:00Z',
+          creator: {
+            identifier: 'gpg-key-fingerprint-ABCD1234',
+            type: 'other',
+            description: 'GPG key on hardware token',
+          },
+          signatureValue: 'base58-encoded-signature',
+          proofPurpose: 'assertionMethod',
+          verificationMethod: {
+            type: 'Ed25519VerificationKey2020',
+            controller: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+            publicKeyBase58: 'H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV',
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate signature with optional nonce', () => {
+        const valid = {
+          type: 'JsonWebSignature2020',
+          created: '2025-12-07T15:30:00Z',
+          creator: {
+            identifier: 'automated-scanner',
+            type: 'system',
+          },
+          signatureValue: 'signature-data',
+          proofPurpose: 'attestation',
+          verificationMethod: {
+            type: 'JsonWebKey2020',
+            controller: 'https://scanner.example.com',
+            publicKeyJwk: { kty: 'EC', crv: 'P-256', x: '...', y: '...' },
+          },
+          nonce: 'random-nonce-12345678',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate signature with optional challenge', () => {
+        const valid = {
+          type: 'JsonWebSignature2020',
+          created: '2025-12-07T15:30:00Z',
+          creator: {
+            identifier: 'auditor@example.com',
+            type: 'email',
+          },
+          signatureValue: 'signature-data',
+          proofPurpose: 'authentication',
+          verificationMethod: {
+            type: 'JsonWebKey2020',
+            controller: 'https://example.com/keys/1',
+            publicKeyJwk: { kty: 'RSA' },
+          },
+          challenge: 'challenge-from-verifier-xyz789',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate signature with domain restriction', () => {
+        const valid = {
+          type: 'JsonWebSignature2020',
+          created: '2025-12-07T15:30:00Z',
+          creator: {
+            identifier: 'admin@corp.example.com',
+            type: 'email',
+          },
+          signatureValue: 'signature-data',
+          proofPurpose: 'attestation',
+          verificationMethod: {
+            type: 'JsonWebKey2020',
+            controller: 'https://corp.example.com/keys/1',
+            publicKeyJwk: { kty: 'RSA' },
+          },
+          domain: 'corp.example.com',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate signature with null optional fields', () => {
+        const valid = {
+          type: 'JsonWebSignature2020',
+          created: '2025-12-07T15:30:00Z',
+          creator: {
+            identifier: 'user@example.com',
+            type: 'email',
+          },
+          signatureValue: 'signature-data',
+          proofPurpose: 'attestation',
+          verificationMethod: {
+            type: 'JsonWebKey2020',
+            controller: 'https://example.com/keys/1',
+            publicKeyJwk: { kty: 'RSA' },
+          },
+          nonce: null,
+          challenge: null,
+          domain: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject signature missing required type', () => {
+        const invalid = {
+          created: '2025-12-07T15:30:00Z',
+          creator: { identifier: 'user@example.com', type: 'email' },
+          signatureValue: 'sig',
+          proofPurpose: 'attestation',
+          verificationMethod: { type: 'JsonWebKey2020', controller: 'https://example.com' },
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject signature missing required created timestamp', () => {
+        const invalid = {
+          type: 'JsonWebSignature2020',
+          creator: { identifier: 'user@example.com', type: 'email' },
+          signatureValue: 'sig',
+          proofPurpose: 'attestation',
+          verificationMethod: { type: 'JsonWebKey2020', controller: 'https://example.com' },
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject signature missing required creator', () => {
+        const invalid = {
+          type: 'JsonWebSignature2020',
+          created: '2025-12-07T15:30:00Z',
+          signatureValue: 'sig',
+          proofPurpose: 'attestation',
+          verificationMethod: { type: 'JsonWebKey2020', controller: 'https://example.com' },
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject signature missing required signatureValue', () => {
+        const invalid = {
+          type: 'JsonWebSignature2020',
+          created: '2025-12-07T15:30:00Z',
+          creator: { identifier: 'user@example.com', type: 'email' },
+          proofPurpose: 'attestation',
+          verificationMethod: { type: 'JsonWebKey2020', controller: 'https://example.com' },
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject signature missing required proofPurpose', () => {
+        const invalid = {
+          type: 'JsonWebSignature2020',
+          created: '2025-12-07T15:30:00Z',
+          creator: { identifier: 'user@example.com', type: 'email' },
+          signatureValue: 'sig',
+          verificationMethod: { type: 'JsonWebKey2020', controller: 'https://example.com' },
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject signature missing required verificationMethod', () => {
+        const invalid = {
+          type: 'JsonWebSignature2020',
+          created: '2025-12-07T15:30:00Z',
+          creator: { identifier: 'user@example.com', type: 'email' },
+          signatureValue: 'sig',
+          proofPurpose: 'attestation',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject signature with invalid created timestamp format', () => {
+        const invalid = {
+          type: 'JsonWebSignature2020',
+          created: 'not-a-valid-timestamp',
+          creator: { identifier: 'user@example.com', type: 'email' },
+          signatureValue: 'sig',
+          proofPurpose: 'attestation',
+          verificationMethod: { type: 'JsonWebKey2020', controller: 'https://example.com' },
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject signature with extra unevaluated properties', () => {
+        const invalid = {
+          type: 'JsonWebSignature2020',
+          created: '2025-12-07T15:30:00Z',
+          creator: { identifier: 'user@example.com', type: 'email' },
+          signatureValue: 'sig',
+          proofPurpose: 'attestation',
+          verificationMethod: { type: 'JsonWebKey2020', controller: 'https://example.com', publicKeyJwk: { kty: 'RSA' } },
+          extraField: 'not allowed',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Evidence', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence',
+      });
+
+      it('should validate screenshot evidence with all fields', () => {
+        const valid = {
+          type: 'screenshot',
+          data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          description: 'Screenshot showing compliant configuration',
+          mimeType: 'image/png',
+          encoding: 'base64',
+          size: 1024,
+          capturedAt: '2025-12-07T15:30:00Z',
+          capturedBy: {
+            identifier: 'auditor@example.com',
+            type: 'email',
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate code evidence', () => {
+        const valid = {
+          type: 'code',
+          data: 'const config = { secure: true };',
+          description: 'Security configuration code',
+          mimeType: 'text/javascript',
+          encoding: 'utf-8',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate log evidence', () => {
+        const valid = {
+          type: 'log',
+          data: '[2025-12-07 15:30:00] INFO: Security scan completed successfully',
+          description: 'Scan completion log',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate url evidence', () => {
+        const valid = {
+          type: 'url',
+          data: 'https://github.com/org/repo/blob/main/security-config.yaml',
+          description: 'Link to security configuration file',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate file evidence', () => {
+        const valid = {
+          type: 'file',
+          data: 'base64-encoded-file-content',
+          description: 'Configuration file',
+          mimeType: 'application/yaml',
+          encoding: 'base64',
+          size: 2048,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate other evidence type', () => {
+        const valid = {
+          type: 'other',
+          data: 'Custom evidence data',
+          description: 'Custom evidence type for specialized use case',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate minimal evidence (required fields only)', () => {
+        const valid = {
+          type: 'screenshot',
+          data: 'base64-image-data',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate evidence with null optional fields', () => {
+        const valid = {
+          type: 'log',
+          data: 'log content',
+          description: null,
+          mimeType: null,
+          encoding: null,
+          size: null,
+          capturedAt: null,
+          capturedBy: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject evidence missing required type', () => {
+        const invalid = {
+          data: 'some data',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject evidence missing required data', () => {
+        const invalid = {
+          type: 'screenshot',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject evidence with invalid type', () => {
+        const invalid = {
+          type: 'invalid_type',
+          data: 'some data',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject evidence with invalid capturedAt format', () => {
+        const invalid = {
+          type: 'screenshot',
+          data: 'base64-data',
+          capturedAt: 'not-a-valid-date',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject evidence with extra unevaluated properties', () => {
+        const invalid = {
+          type: 'screenshot',
+          data: 'base64-data',
+          extraField: 'not allowed',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Milestone', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone',
+      });
+
+      it('should validate minimal pending milestone', () => {
+        const valid = {
+          description: 'Test patch in staging environment',
+          estimatedCompletion: '2025-12-15T00:00:00Z',
+          status: 'pending',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate in-progress milestone', () => {
+        const valid = {
+          description: 'Deploy security patch to production',
+          estimatedCompletion: '2025-01-10T00:00:00Z',
+          status: 'inProgress',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate completed milestone with all fields', () => {
+        const valid = {
+          description: 'Implement network segmentation',
+          estimatedCompletion: '2025-01-01T00:00:00Z',
+          status: 'completed',
+          completedAt: '2025-01-05T14:30:00Z',
+          completedBy: {
+            identifier: 'ops-team@example.com',
+            type: 'email',
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate completed milestone with null completedBy', () => {
+        const valid = {
+          description: 'Review compliance status',
+          estimatedCompletion: '2025-01-01T00:00:00Z',
+          status: 'completed',
+          completedAt: '2025-01-02T10:00:00Z',
+          completedBy: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject milestone missing required description', () => {
+        const invalid = {
+          estimatedCompletion: '2025-01-01T00:00:00Z',
+          status: 'pending',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject milestone missing required estimatedCompletion', () => {
+        const invalid = {
+          description: 'Test milestone',
+          status: 'pending',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject milestone missing required status', () => {
+        const invalid = {
+          description: 'Test milestone',
+          estimatedCompletion: '2025-01-01T00:00:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject milestone with invalid status', () => {
+        const invalid = {
+          description: 'Test milestone',
+          estimatedCompletion: '2025-01-01T00:00:00Z',
+          status: 'cancelled', // invalid - not in enum
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject milestone with extra unevaluated properties', () => {
+        const invalid = {
+          description: 'Test milestone',
+          estimatedCompletion: '2025-01-01T00:00:00Z',
+          status: 'pending',
+          extraField: 'not allowed',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+  });
+
+  describe('platform.schema.json', () => {
+    describe('Platform', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/platform/v2.0.0#/$defs/Platform',
+      });
+
+      it('should validate a valid Platform', () => {
+        const valid = {
+          name: 'ubuntu',
+          release: '20.04',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Platform with targetId', () => {
+        const valid = {
+          name: 'windows',
+          release: '10',
+          targetId: '21H2',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Platform with null targetId', () => {
+        const valid = {
+          name: 'ubuntu',
+          release: '20.04',
+          targetId: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject Platform missing required name', () => {
+        const invalid = {
+          release: '20.04',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Platform missing required release', () => {
+        const invalid = {
+          name: 'ubuntu',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+  });
+
+  describe('target.schema.json', () => {
+    const validate = ajv.compile({
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Target',
+    });
+
+    describe('Host_Target', () => {
+      it('should validate a valid host target', () => {
+        const valid = {
+          type: 'host',
+          name: 'web-server-01',
+          fqdn: 'web-server-01.example.com',
+          ipAddress: '192.168.1.100',
+          osName: 'Ubuntu',
+          osVersion: '22.04',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate minimal host target', () => {
+        const valid = {
+          type: 'host',
+          name: 'server',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Container_Image_Target', () => {
+      it('should validate a valid container image target', () => {
+        const valid = {
+          type: 'containerImage',
+          name: 'nginx:1.25',
+          registry: 'docker.io',
+          repository: 'library/nginx',
+          tag: '1.25',
+          digest: 'sha256:abc123def456',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate minimal container image target', () => {
+        const valid = {
+          type: 'containerImage',
+          name: 'my-image',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Container_Instance_Target', () => {
+      it('should validate a valid container instance target', () => {
+        const valid = {
+          type: 'containerInstance',
+          name: 'nginx-abc123',
+          containerId: 'abc123def456',
+          image: 'nginx:1.25',
+          runtime: 'containerd',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Container_Platform_Target', () => {
+      it('should validate a valid container platform target', () => {
+        const valid = {
+          type: 'containerPlatform',
+          name: 'production-cluster',
+          platformType: 'kubernetes',
+          clusterName: 'prod-k8s',
+          namespace: 'default',
+          version: '1.28',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Cloud_Account_Target', () => {
+      it('should validate a valid AWS account target', () => {
+        const valid = {
+          type: 'cloudAccount',
+          name: 'Production AWS',
+          provider: 'aws',
+          accountId: '123456789012',
+          region: 'us-east-1',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Azure subscription target', () => {
+        const valid = {
+          type: 'cloudAccount',
+          name: 'Azure Production',
+          provider: 'azure',
+          accountId: 'subscription-uuid',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject invalid provider', () => {
+        const invalid = {
+          type: 'cloudAccount',
+          name: 'Unknown Cloud',
+          provider: 'invalid_provider',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Cloud_Resource_Target', () => {
+      it('should validate a valid cloud resource target', () => {
+        const valid = {
+          type: 'cloudResource',
+          name: 'web-server-ec2',
+          provider: 'aws',
+          resourceType: 'ec2:instance',
+          resourceId: 'i-1234567890abcdef0',
+          arn: 'arn:aws:ec2:us-east-1:123456789012:instance/i-1234567890abcdef0',
+          region: 'us-east-1',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Repository_Target', () => {
+      it('should validate a valid repository target', () => {
+        const valid = {
+          type: 'repository',
+          name: 'my-app',
+          url: 'https://github.com/org/my-app',
+          branch: 'main',
+          commit: 'abc123def456789',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Application_Target', () => {
+      it('should validate a valid application target', () => {
+        const valid = {
+          type: 'application',
+          name: 'Customer Portal',
+          url: 'https://portal.example.com',
+          version: '2.5.0',
+          environment: 'production',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Artifact_Target', () => {
+      it('should validate a valid artifact target', () => {
+        const valid = {
+          type: 'artifact',
+          name: 'lodash',
+          packageManager: 'npm',
+          packageName: 'lodash',
+          version: '4.17.21',
+          checksum: 'sha256:abc123',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Network_Target', () => {
+      it('should validate a valid network target', () => {
+        const valid = {
+          type: 'network',
+          name: 'Corporate LAN',
+          cidr: '10.0.0.0/8',
+          gateway: '10.0.0.1',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Database_Target', () => {
+      it('should validate a valid database target', () => {
+        const valid = {
+          type: 'database',
+          name: 'Production PostgreSQL',
+          engine: 'postgresql',
+          version: '15.2',
+          host: 'db.example.com',
+          port: 5432,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Target discriminator validation', () => {
+      it('should reject target with invalid type', () => {
+        const invalid = {
+          type: 'invalid_type',
+          name: 'something',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject target missing type', () => {
+        const invalid = {
+          name: 'something',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject target missing name', () => {
+        const invalid = {
+          type: 'host',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+  });
+
+  describe('runner.schema.json', () => {
+    const validate = ajv.compile({
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/runner/v2.0.0#/$defs/Runner',
+    });
+
+    it('should validate a minimal runner with only name', () => {
+      const valid = {
+        name: 'ubuntu',
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate a full runner with all fields', () => {
+      const valid = {
+        name: 'ubuntu',
+        release: '20.04',
+        architecture: 'x86_64',
+        hostname: 'ci-runner-01',
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate runner with release only', () => {
+      const valid = {
+        name: 'macos',
+        release: '13.2',
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should validate runner with architecture', () => {
+      const valid = {
+        name: 'ubuntu',
+        architecture: 'arm64',
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should reject runner missing required name', () => {
+      const invalid = {
+        release: '20.04',
+        architecture: 'x86_64',
+      };
+      expect(validate(invalid)).toBe(false);
+    });
+  });
+
+  describe('statistics.schema.json', () => {
+    describe('Statistic_Block', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0#/$defs/Statistic_Block',
+      });
+
+      it('should validate a valid Statistic_Block', () => {
+        const valid = { total: 42 };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject Statistic_Block missing required total', () => {
+        const invalid = {};
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Statistic_Block with non-number total', () => {
+        const invalid = { total: 'forty-two' };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Statistic_Hash', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0#/$defs/Statistic_Hash',
+      });
+
+      it('should validate a full Statistic_Hash', () => {
+        const valid = {
+          passed: { total: 10 },
+          failed: { total: 2 },
+          notApplicable: { total: 5 },
+          notReviewed: { total: 3 },
+          error: { total: 0 },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Statistic_Hash with null values', () => {
+        const valid = {
+          passed: { total: 10 },
+          failed: null,
+          notApplicable: null,
+          notReviewed: null,
+          error: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate empty Statistic_Hash', () => {
+        const valid = {};
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate partial Statistic_Hash', () => {
+        const valid = {
+          passed: { total: 15 },
+          failed: { total: 3 },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Statistics', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0#/$defs/Statistics',
+      });
+
+      it('should validate a full Statistics object', () => {
+        const valid = {
+          duration: 45.5,
+          requirements: {
+            passed: { total: 50 },
+            failed: { total: 5 },
+            notApplicable: { total: 10 },
+            notReviewed: { total: 2 },
+            error: { total: 1 },
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Statistics with only duration', () => {
+        const valid = {
+          duration: 30.0,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Statistics with null duration', () => {
+        const valid = {
+          duration: null,
+          requirements: {
+            passed: { total: 10 },
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Statistics with null requirements', () => {
+        const valid = {
+          duration: 15.5,
+          requirements: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate empty Statistics', () => {
+        const valid = {};
+        expect(validate(valid)).toBe(true);
+      });
+    });
+  });
+
+  describe('result.schema.json', () => {
+    describe('Result_Status', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Result_Status',
+      });
+
+      it('should validate "passed" status', () => {
+        expect(validate('passed')).toBe(true);
+      });
+
+      it('should validate "failed" status', () => {
+        expect(validate('failed')).toBe(true);
+      });
+
+      it('should validate "notApplicable" status', () => {
+        expect(validate('notApplicable')).toBe(true);
+      });
+
+      it('should validate "notReviewed" status', () => {
+        expect(validate('notReviewed')).toBe(true);
+      });
+
+      it('should validate "error" status', () => {
+        expect(validate('error')).toBe(true);
+      });
+
+      it('should reject skipped status', () => {
+        expect(validate('skipped')).toBe(false);
+      });
+
+      it('should reject invalid status', () => {
+        expect(validate('unknown')).toBe(false);
+      });
+    });
+
+    describe('Requirement_Result', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Requirement_Result',
+      });
+
+      it('should validate a full Requirement_Result', () => {
+        const valid = {
+          status: 'passed',
+          codeDesc: 'File /etc/passwd should exist',
+          runTime: 0.005,
+          startTime: '2025-01-15T10:30:00Z',
+          resource: 'file',
+          resourceId: '/etc/passwd',
+          message: null,
+          exception: null,
+          backtrace: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate minimal Requirement_Result', () => {
+        const valid = {
+          codeDesc: 'Test description',
+          startTime: '2025-01-15T10:30:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Requirement_Result with failed status and message', () => {
+        const valid = {
+          status: 'failed',
+          codeDesc: 'File /etc/secure should have mode 0600',
+          startTime: '2025-01-15T10:30:00Z',
+          message: 'expected mode to be 0600, got 0644',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Requirement_Result with notReviewed status and message', () => {
+        const valid = {
+          status: 'notReviewed',
+          codeDesc: 'Manual verification required',
+          startTime: '2025-01-15T10:30:00Z',
+          message: 'This check requires manual verification by an auditor',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Requirement_Result with notApplicable status and message', () => {
+        const valid = {
+          status: 'notApplicable',
+          codeDesc: 'Check for GNOME desktop configuration',
+          startTime: '2025-01-15T10:30:00Z',
+          message: 'GNOME desktop is not installed, this requirement does not apply',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Requirement_Result with error and backtrace', () => {
+        const valid = {
+          status: 'error',
+          codeDesc: 'Check failed to execute',
+          startTime: '2025-01-15T10:30:00Z',
+          exception: 'RuntimeError',
+          backtrace: ['line1', 'line2', 'line3'],
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject Requirement_Result missing required codeDesc', () => {
+        const invalid = {
+          startTime: '2025-01-15T10:30:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Requirement_Result missing required startTime', () => {
+        const invalid = {
+          codeDesc: 'Test description',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Requirement_Description', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Requirement_Description',
+      });
+
+      it('should validate a valid Requirement_Description', () => {
+        const valid = {
+          label: 'fix',
+          data: 'Configure the SSH daemon to use only FIPS-approved ciphers.',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate check description', () => {
+        const valid = {
+          label: 'check',
+          data: 'Verify the SSH daemon is configured to use FIPS-approved ciphers.',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject Requirement_Description missing label', () => {
+        const invalid = {
+          data: 'Some description text',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Requirement_Description missing data', () => {
+        const invalid = {
+          label: 'fix',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+  });
+
+  describe('extensions.schema.json', () => {
+    describe('Status_Override', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Status_Override',
+      });
+
+      it('should validate a waiver status override with all required fields', () => {
+        const valid = {
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'Risk accepted by ISSO pending system upgrade',
+          appliedBy: {
+            identifier: 'isso@example.com',
+            type: 'simple',
+          },
+          appliedAt: '2025-12-05T20:30:00Z',
+          expiresAt: '2026-12-05T20:30:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate an attestation status override with all required fields', () => {
+        const valid = {
+          type: 'attestation',
+          status: 'passed',
+          reason: 'Manually verified by security team during audit',
+          appliedBy: 'security-team@example.com',
+          appliedAt: '2025-12-05T15:30:00Z',
+          expiresAt: '2026-12-05T15:30:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate status override with all valid status values (including error)', () => {
+        const statuses = ['passed', 'failed', 'notApplicable', 'notReviewed', 'error'];
+        statuses.forEach(status => {
+          const valid = {
+            type: 'attestation',
+            status,
+            reason: 'Test override',
+            appliedBy: 'test@example.com',
+            appliedAt: '2025-12-05T20:30:00Z',
+            expiresAt: '2026-12-05T20:30:00Z',
+          };
+          expect(validate(valid)).toBe(true);
+        });
+      });
+
+      it('should reject status override missing expiresAt (no permanent overrides)', () => {
+        const invalid = {
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'Test',
+          appliedBy: 'test@example.com',
+          appliedAt: '2025-12-05T20:30:00Z',
+          // missing: expiresAt
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject status override with null expiresAt (no permanent overrides)', () => {
+        const invalid = {
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'Test',
+          appliedBy: 'test@example.com',
+          appliedAt: '2025-12-05T20:30:00Z',
+          expiresAt: null,
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject status override missing required fields', () => {
+        const invalid = {
+          type: 'waiver',
+          // missing: status, reason, appliedBy, appliedAt, expiresAt
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject status override with invalid type', () => {
+        const invalid = {
+          type: 'exception', // invalid - not a status override type
+          status: 'failed',
+          reason: 'Test',
+          appliedBy: 'test@example.com',
+          appliedAt: '2025-12-05T20:30:00Z',
+          expiresAt: '2026-12-05T20:30:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject override with invalid status', () => {
+        const invalid = {
+          type: 'waiver',
+          status: 'skipped', // invalid - skipped was removed
+          reason: 'Test',
+          appliedBy: 'test@example.com',
+          appliedAt: '2025-12-05T20:30:00Z',
+          expiresAt: '2026-12-05T20:30:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should validate override with evidence array', () => {
+        const valid = {
+          type: 'attestation',
+          status: 'passed',
+          reason: 'Manually verified configuration is compliant',
+          appliedBy: 'security-team@example.com',
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2026-12-07T15:30:00Z',
+          evidence: [
+            {
+              type: 'screenshot',
+              data: 'base64-encoded-screenshot',
+              description: 'Screenshot showing compliant configuration',
+            },
+          ],
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate attestation override with multiple evidence items', () => {
+        const valid = {
+          type: 'attestation',
+          status: 'passed',
+          reason: 'Manual verification with documented evidence',
+          appliedBy: 'auditor@example.com',
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2026-12-07T15:30:00Z',
+          evidence: [
+            {
+              type: 'screenshot',
+              data: 'base64-screenshot-data',
+              description: 'Configuration interface screenshot',
+              mimeType: 'image/png',
+              encoding: 'base64',
+              size: 2048,
+              capturedAt: '2025-12-07T15:30:00Z',
+              capturedBy: {
+                identifier: 'auditor@example.com',
+                type: 'email',
+              },
+            },
+            {
+              type: 'code',
+              data: 'config { security_enabled = true }',
+              description: 'Configuration file snippet',
+              mimeType: 'text/plain',
+            },
+            {
+              type: 'url',
+              data: 'https://wiki.example.com/security-audit-2025-12-07',
+              description: 'Link to audit documentation',
+            },
+          ],
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate override with null evidence', () => {
+        const valid = {
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'Control not applicable to this system',
+          appliedBy: 'isso@example.com',
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2026-12-07T15:30:00Z',
+          evidence: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate override with empty evidence array', () => {
+        const valid = {
+          type: 'attestation',
+          status: 'passed',
+          reason: 'Verified but no evidence captured',
+          appliedBy: 'auditor@example.com',
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2026-12-07T15:30:00Z',
+          evidence: [],
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate override with digital signature object', () => {
+        const valid = {
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'Risk accepted by CISO',
+          appliedBy: 'ciso@example.com',
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2027-12-07T15:30:00Z',
+          signature: {
+            type: 'JsonWebSignature2020',
+            created: '2025-12-07T15:30:00Z',
+            creator: {
+              identifier: 'ciso@example.com',
+              type: 'email',
+            },
+            signatureValue: 'eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..sig',
+            proofPurpose: 'attestation',
+            verificationMethod: {
+              type: 'JsonWebKey2020',
+              controller: 'https://example.com/ciso/keys/1',
+              publicKeyJwk: {
+                kty: 'RSA',
+                n: 'xGOr-H7A...',
+                e: 'AQAB',
+              },
+            },
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate override with Yubikey hardware signature', () => {
+        const valid = {
+          type: 'attestation',
+          status: 'passed',
+          reason: 'Manually verified with hardware token',
+          appliedBy: 'security-auditor@example.com',
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2026-12-07T15:30:00Z',
+          signature: {
+            type: 'RsaSignature2018',
+            created: '2025-12-07T15:30:00Z',
+            creator: {
+              identifier: 'yubikey-serial-87654321',
+              type: 'system',
+              description: 'YubiKey 5 NFC - Security Team',
+            },
+            signatureValue: 'base64-encoded-signature-from-yubikey',
+            proofPurpose: 'authentication',
+            verificationMethod: {
+              type: 'RsaVerificationKey2018',
+              controller: 'https://pki.example.com/yubikey/87654321',
+              publicKeyPem: '-----BEGIN PUBLIC KEY-----\nMIIBIjAN...\n-----END PUBLIC KEY-----',
+            },
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate override with GPG signature', () => {
+        const valid = {
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'Exception granted by security team',
+          appliedBy: 'gpg:ABCD1234EFGH5678',
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2026-12-07T15:30:00Z',
+          signature: {
+            type: 'Ed25519Signature2020',
+            created: '2025-12-07T15:30:00Z',
+            creator: {
+              identifier: 'ABCD1234EFGH5678',
+              type: 'other',
+              description: 'GPG key fingerprint',
+            },
+            signatureValue: 'base58-gpg-signature',
+            proofPurpose: 'attestation',
+            verificationMethod: {
+              type: 'Ed25519VerificationKey2020',
+              controller: 'gpg:ABCD1234EFGH5678',
+              publicKeyBase58: 'H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV',
+            },
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate override with signature containing nonce for replay protection', () => {
+        const valid = {
+          type: 'attestation',
+          status: 'passed',
+          reason: 'Verified in secure environment',
+          appliedBy: 'security-team@example.com',
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2026-12-07T15:30:00Z',
+          signature: {
+            type: 'JsonWebSignature2020',
+            created: '2025-12-07T15:30:00Z',
+            creator: {
+              identifier: 'security-team@example.com',
+              type: 'email',
+            },
+            signatureValue: 'signature-data',
+            proofPurpose: 'attestation',
+            verificationMethod: {
+              type: 'JsonWebKey2020',
+              controller: 'https://example.com/keys/1',
+              publicKeyJwk: { kty: 'RSA' },
+            },
+            nonce: 'random-nonce-abc123xyz789',
+            domain: 'example.com',
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate override with null signature (backward compatibility)', () => {
+        const valid = {
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'Not applicable to this system',
+          appliedBy: 'isso@example.com',
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2026-12-07T15:30:00Z',
+          signature: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate override with appliedBy as Identity object', () => {
+        const valid = {
+          type: 'waiver',
+          status: 'notApplicable',
+          reason: 'Risk accepted by ISSO',
+          appliedBy: {
+            identifier: 'isso@example.com',
+            type: 'email',
+            description: 'Information System Security Officer',
+          },
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2026-12-07T15:30:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate override with appliedBy as simple string', () => {
+        const valid = {
+          type: 'attestation',
+          status: 'passed',
+          reason: 'Manually verified',
+          appliedBy: 'auditor@example.com',
+          appliedAt: '2025-12-07T15:30:00Z',
+          expiresAt: '2026-12-07T15:30:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
+    describe('Generator', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator',
+      });
+
+      it('should validate a valid Generator', () => {
+        const valid = {
+          name: 'Chef InSpec',
+          version: '5.22.3',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Generator with different tool', () => {
+        const valid = {
+          name: 'Heimdall',
+          version: '2.10.0',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject Generator missing required name', () => {
+        const invalid = {
+          version: '1.0.0',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Generator missing required version', () => {
+        const invalid = {
+          name: 'SomeTool',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('POAM', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/POAM',
+      });
+
+      it('should validate minimal remediation POAM', () => {
+        const valid = {
+          type: 'remediation',
+          explanation: 'Security patch scheduled for deployment to production environment',
+          appliedBy: 'ops-team@example.com',
+          appliedAt: '2025-12-01T10:00:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate mitigation POAM with milestones', () => {
+        const valid = {
+          type: 'mitigation',
+          explanation: 'Implemented network segmentation as compensating control while awaiting vendor patch',
+          appliedBy: 'network-team@example.com',
+          appliedAt: '2025-12-01T10:00:00Z',
+          milestones: [
+            {
+              description: 'Configure firewall rules to isolate affected system',
+              estimatedCompletion: '2025-12-05T00:00:00Z',
+              status: 'completed',
+              completedAt: '2025-12-04T14:30:00Z',
+              completedBy: {
+                identifier: 'network-admin@example.com',
+                type: 'email',
+              },
+            },
+            {
+              description: 'Deploy vendor patch when available',
+              estimatedCompletion: '2026-01-15T00:00:00Z',
+              status: 'pending',
+            },
+          ],
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate riskAcceptance POAM with signature', () => {
+        const valid = {
+          type: 'riskAcceptance',
+          explanation: 'Risk formally accepted by CISO pending system decommission in Q2',
+          appliedBy: 'ciso@example.com',
+          appliedAt: '2025-12-07T10:00:00Z',
+          expiresAt: '2026-06-30T00:00:00Z',
+          signature: {
+            type: 'JsonWebSignature2020',
+            created: '2025-12-07T10:00:00Z',
+            creator: {
+              identifier: 'ciso@example.com',
+              type: 'email',
+            },
+            signatureValue: 'base64-signature-value',
+            proofPurpose: 'attestation',
+            verificationMethod: {
+              type: 'JsonWebKey2020',
+              controller: 'did:example:ciso',
+              publicKeyJwk: {
+                kty: 'RSA',
+                n: 'exampleKey',
+              },
+            },
+          },
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate POAM with evidence array', () => {
+        const valid = {
+          type: 'mitigation',
+          explanation: 'Compensating controls implemented - network segmentation and enhanced monitoring',
+          appliedBy: 'security-team@example.com',
+          appliedAt: '2025-12-07T10:00:00Z',
+          evidence: [
+            {
+              type: 'file',
+              data: 'base64-firewall-rules',
+              description: 'Firewall configuration showing network segmentation',
+              mimeType: 'text/plain',
+            },
+            {
+              type: 'screenshot',
+              data: 'base64-screenshot',
+              description: 'SIEM dashboard showing enhanced monitoring',
+              mimeType: 'image/png',
+            },
+          ],
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate POAM with expiresAt', () => {
+        const valid = {
+          type: 'remediation',
+          explanation: 'Patch deployment requires change control approval',
+          appliedBy: 'ops@example.com',
+          appliedAt: '2025-12-01T10:00:00Z',
+          expiresAt: '2025-12-31T00:00:00Z',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate POAM with null expiresAt', () => {
+        const valid = {
+          type: 'remediation',
+          explanation: 'Long-term remediation effort with no fixed deadline',
+          appliedBy: 'ops@example.com',
+          appliedAt: '2025-12-01T10:00:00Z',
+          expiresAt: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate POAM with null milestones', () => {
+        const valid = {
+          type: 'remediation',
+          explanation: 'Simple remediation with no milestone tracking',
+          appliedBy: 'ops@example.com',
+          appliedAt: '2025-12-01T10:00:00Z',
+          milestones: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject POAM missing required explanation', () => {
+        const invalid = {
+          type: 'remediation',
+          appliedBy: 'ops@example.com',
+          appliedAt: '2025-12-01T10:00:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject POAM missing required appliedBy', () => {
+        const invalid = {
+          type: 'remediation',
+          explanation: 'Test',
+          appliedAt: '2025-12-01T10:00:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject POAM missing required appliedAt', () => {
+        const invalid = {
+          type: 'remediation',
+          explanation: 'Test',
+          appliedBy: 'ops@example.com',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject POAM with invalid type', () => {
+        const invalid = {
+          type: 'exception', // invalid - not a POAM type
+          explanation: 'Test',
+          appliedBy: 'ops@example.com',
+          appliedAt: '2025-12-01T10:00:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject POAM with extra unevaluated properties', () => {
+        const invalid = {
+          type: 'remediation',
+          explanation: 'Test',
+          appliedBy: 'ops@example.com',
+          appliedAt: '2025-12-01T10:00:00Z',
+          extraField: 'not allowed',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+
+    describe('Integrity', () => {
+      const validate = ajv.compile({
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity',
+      });
+
+      it('should validate Integrity with sha256', () => {
+        const valid = {
+          algorithm: 'sha256',
+          checksum: 'abc123def456789...',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Integrity with sha512 and signature', () => {
+        const valid = {
+          algorithm: 'sha512',
+          checksum: 'abc123def456789...',
+          signature: 'base64-encoded-signature',
+          signedBy: 'security-team@example.com',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Integrity with null optional fields', () => {
+        const valid = {
+          algorithm: 'sha384',
+          checksum: 'abc123...',
+          signature: null,
+          signedBy: null,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate empty Integrity', () => {
+        const valid = {};
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject Integrity with invalid algorithm', () => {
+        const invalid = {
+          algorithm: 'md5',
+          checksum: 'abc123',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Integrity with algorithm but no checksum', () => {
+        const invalid = {
+          algorithm: 'sha256',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Integrity with checksum but no algorithm', () => {
+        const invalid = {
+          checksum: 'abc123def456',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+  });
+});

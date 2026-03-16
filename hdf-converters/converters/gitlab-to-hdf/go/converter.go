@@ -1,0 +1,417 @@
+package gitlab_to_hdf
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	shared "github.com/mitre/hdf-converters/shared/go"
+	"github.com/mitre/hdf-mappings/go/cci"
+	"github.com/mitre/hdf-mappings/go/cwe"
+	hdf "github.com/mitre/hdf-schema"
+)
+
+// --- GitLab Security Report input structures ---
+
+// GitLabReport is the top-level GitLab security report JSON object.
+type GitLabReport struct {
+	Version         string                `json:"version,omitempty"`
+	Scan            *GitLabScan           `json:"scan,omitempty"`
+	Vulnerabilities []GitLabVulnerability `json:"vulnerabilities"`
+	Remediations    []GitLabRemediation   `json:"remediations,omitempty"`
+}
+
+// GitLabScan describes the scan that produced the report.
+type GitLabScan struct {
+	Analyzer  *GitLabTool `json:"analyzer,omitempty"`
+	Scanner   *GitLabTool `json:"scanner,omitempty"`
+	StartTime string      `json:"start_time,omitempty"`
+	EndTime   string      `json:"end_time,omitempty"`
+	Status    string      `json:"status,omitempty"`
+	Type      string      `json:"type,omitempty"`
+}
+
+// GitLabTool describes an analyzer or scanner.
+type GitLabTool struct {
+	ID      string `json:"id,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
+}
+
+// GitLabVulnerability is a single finding in the report.
+type GitLabVulnerability struct {
+	ID          string               `json:"id"`
+	Name        string               `json:"name,omitempty"`
+	Description string               `json:"description,omitempty"`
+	Severity    string               `json:"severity,omitempty"`
+	Solution    string               `json:"solution,omitempty"`
+	Identifiers []GitLabIdentifier   `json:"identifiers,omitempty"`
+	Location    *GitLabLocation      `json:"location,omitempty"`
+	Links       []GitLabLink         `json:"links,omitempty"`
+}
+
+// GitLabIdentifier is a vulnerability identifier (CWE, CVE, etc.).
+type GitLabIdentifier struct {
+	Type  string `json:"type,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
+	URL   string `json:"url,omitempty"`
+}
+
+// GitLabLocation describes where a vulnerability was found.
+// The "method" field is polymorphic: for SAST it's the code method name,
+// for DAST it's the HTTP method. Same JSON key, different semantics per scan type.
+type GitLabLocation struct {
+	File            string            `json:"file,omitempty"`
+	StartLine       *int              `json:"start_line,omitempty"`
+	EndLine         *int              `json:"end_line,omitempty"`
+	Class           string            `json:"class,omitempty"`
+	Method          string            `json:"method,omitempty"`
+	Hostname        string            `json:"hostname,omitempty"`
+	Path            string            `json:"path,omitempty"`
+	Param           string            `json:"param,omitempty"`
+	Image           string            `json:"image,omitempty"`
+	OperatingSystem string            `json:"operating_system,omitempty"`
+	Dependency      *GitLabDependency `json:"dependency,omitempty"`
+}
+
+// GitLabDependency describes a dependency in the location.
+type GitLabDependency struct {
+	Package *GitLabPackage `json:"package,omitempty"`
+	Version string         `json:"version,omitempty"`
+}
+
+// GitLabPackage describes a package name.
+type GitLabPackage struct {
+	Name string `json:"name,omitempty"`
+}
+
+// GitLabLink is a reference URL.
+type GitLabLink struct {
+	URL string `json:"url,omitempty"`
+}
+
+// GitLabRemediation describes an available fix.
+type GitLabRemediation struct {
+	Fixes   []GitLabFix `json:"fixes,omitempty"`
+	Summary string      `json:"summary,omitempty"`
+	Diff    string      `json:"diff,omitempty"`
+}
+
+// GitLabFix identifies which vulnerability a remediation fixes.
+type GitLabFix struct {
+	ID string `json:"id,omitempty"`
+}
+
+// --- Severity to impact ---
+
+func severityToImpact(severity string) float64 {
+	return shared.SeverityToImpact(severity, 0.5)
+}
+
+// --- Scan type to target type ---
+
+func scanTypeToTargetType(scanType string) hdf.Copyright {
+	switch scanType {
+	case "dast":
+		return hdf.Application
+	case "container_scanning":
+		return hdf.ContainerImage
+	default:
+		return hdf.Repository
+	}
+}
+
+// --- Scan type label ---
+
+func scanTypeLabel(scanType string) string {
+	labels := map[string]string{
+		"sast":                 "SAST",
+		"dast":                 "DAST",
+		"dependency_scanning":  "Dependency Scanning",
+		"container_scanning":   "Container Scanning",
+		"secret_detection":     "Secret Detection",
+		"api_fuzzing":          "API Fuzzing",
+	}
+	if label, ok := labels[scanType]; ok {
+		return label
+	}
+	return strings.ToUpper(scanType)
+}
+
+// --- NIST tag building ---
+
+func buildNistTags(identifiers []GitLabIdentifier) []string {
+	seen := make(map[string]bool)
+	var controls []string
+	for _, id := range identifiers {
+		if strings.EqualFold(id.Type, "cwe") && id.Value != "" {
+			for _, ctrl := range cwe.NISTControls(id.Value) {
+				if !seen[ctrl] {
+					seen[ctrl] = true
+					controls = append(controls, ctrl)
+				}
+			}
+		}
+	}
+	if len(controls) > 0 {
+		return controls
+	}
+	return shared.DefaultStaticAnalysisNIST
+}
+
+// --- Collect identifier tags ---
+
+func collectIdentifierExtras(identifiers []GitLabIdentifier) map[string]interface{} {
+	result := make(map[string][]string)
+	for _, id := range identifiers {
+		if id.Type != "" && id.Value != "" {
+			key := strings.ToLower(id.Type)
+			result[key] = append(result[key], id.Value)
+		}
+	}
+	extras := make(map[string]interface{})
+	for k, v := range result {
+		extras[k] = shared.StringsToInterfaces(v)
+	}
+	return extras
+}
+
+// --- Build code description by scan type ---
+
+func buildCodeDesc(scanType string, loc *GitLabLocation) string {
+	if loc == nil {
+		return ""
+	}
+
+	switch scanType {
+	case "sast", "secret_detection":
+		return buildSASTCodeDesc(loc)
+	case "dast":
+		return buildDASTCodeDesc(loc)
+	case "dependency_scanning":
+		return buildDepScanCodeDesc(loc)
+	case "container_scanning":
+		return buildContainerCodeDesc(loc)
+	default:
+		raw, _ := json.Marshal(loc)
+		return fmt.Sprintf("Location: %s", string(raw))
+	}
+}
+
+func buildSASTCodeDesc(loc *GitLabLocation) string {
+	var parts []string
+	if loc.File != "" {
+		parts = append(parts, fmt.Sprintf("File: %s", loc.File))
+	}
+	if loc.StartLine != nil {
+		if loc.EndLine != nil && *loc.EndLine != *loc.StartLine {
+			parts = append(parts, fmt.Sprintf("Line: %d-%d", *loc.StartLine, *loc.EndLine))
+		} else {
+			parts = append(parts, fmt.Sprintf("Line: %d", *loc.StartLine))
+		}
+	}
+	if loc.Class != "" {
+		parts = append(parts, fmt.Sprintf("Class: %s", loc.Class))
+	}
+	if loc.Method != "" {
+		parts = append(parts, fmt.Sprintf("Method: %s", loc.Method))
+	}
+	return strings.Join(parts, " | ")
+}
+
+func buildDASTCodeDesc(loc *GitLabLocation) string {
+	var parts []string
+	if loc.Hostname != "" {
+		url := loc.Hostname
+		if loc.Path != "" {
+			url += loc.Path
+		}
+		parts = append(parts, fmt.Sprintf("URL: %s", url))
+	}
+	if loc.Method != "" {
+		parts = append(parts, fmt.Sprintf("Method: %s", loc.Method))
+	}
+	if loc.Param != "" {
+		parts = append(parts, fmt.Sprintf("Param: %s", loc.Param))
+	}
+	return strings.Join(parts, " | ")
+}
+
+func buildDepScanCodeDesc(loc *GitLabLocation) string {
+	var parts []string
+	if loc.File != "" {
+		parts = append(parts, fmt.Sprintf("File: %s", loc.File))
+	}
+	if loc.Dependency != nil && loc.Dependency.Package != nil && loc.Dependency.Package.Name != "" {
+		pkg := loc.Dependency.Package.Name
+		if loc.Dependency.Version != "" {
+			pkg += "@" + loc.Dependency.Version
+		}
+		parts = append(parts, fmt.Sprintf("Package: %s", pkg))
+	}
+	return strings.Join(parts, " | ")
+}
+
+func buildContainerCodeDesc(loc *GitLabLocation) string {
+	var parts []string
+	if loc.Image != "" {
+		parts = append(parts, fmt.Sprintf("Image: %s", loc.Image))
+	}
+	if loc.Dependency != nil && loc.Dependency.Package != nil && loc.Dependency.Package.Name != "" {
+		pkg := loc.Dependency.Package.Name
+		if loc.Dependency.Version != "" {
+			pkg += "@" + loc.Dependency.Version
+		}
+		parts = append(parts, fmt.Sprintf("Package: %s", pkg))
+	}
+	return strings.Join(parts, " | ")
+}
+
+// ConvertGitlabToHDF converts a GitLab Security Report JSON to HDF Results.
+func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("empty input")
+	}
+
+	resultsChecksum := shared.InputChecksum(input)
+
+	var report GitLabReport
+	if err := json.Unmarshal(input, &report); err != nil {
+		return nil, fmt.Errorf("invalid GitLab JSON: %w", err)
+	}
+
+	scanType := "sast"
+	scannerName := "GitLab Security Scanner"
+	scannerVersion := ""
+	startTime := ""
+
+	if report.Scan != nil {
+		if report.Scan.Type != "" {
+			scanType = report.Scan.Type
+		}
+		if report.Scan.Scanner != nil {
+			if report.Scan.Scanner.Name != "" {
+				scannerName = report.Scan.Scanner.Name
+			}
+			scannerVersion = report.Scan.Scanner.Version
+		}
+		startTime = report.Scan.StartTime
+	}
+
+	limitedVulns, truncated := shared.LimitSlice(report.Vulnerabilities, 0)
+	if truncated {
+		log.Printf("WARNING: Input truncated at %d vulnerabilities (original: %d)", len(limitedVulns), len(report.Vulnerabilities))
+	}
+
+	var requirements []hdf.EvaluatedRequirement
+
+	for _, vuln := range limitedVulns {
+		identifiers := vuln.Identifiers
+
+		// Build NIST tags
+		nistTags := buildNistTags(identifiers)
+		cciTags := cci.NISTToCCI(nistTags)
+
+		// Build extra tags from identifiers
+		extras := collectIdentifierExtras(identifiers)
+		var tags map[string]interface{}
+		if len(extras) > 0 {
+			tags = shared.BuildNISTCCITagsWithExtras(nistTags, cciTags, extras)
+		} else {
+			tags = shared.BuildNISTCCITags(nistTags, cciTags)
+		}
+
+		// Build descriptions
+		var descriptions []hdf.Description
+		if vuln.Description != "" {
+			descriptions = append(descriptions, hdf.Description{
+				Label: "default",
+				Data:  vuln.Description,
+			})
+		}
+		if vuln.Solution != "" {
+			descriptions = append(descriptions, hdf.Description{
+				Label: "check",
+				Data:  vuln.Solution,
+			})
+		}
+
+		// Build result
+		result := hdf.RequirementResult{
+			Status:   hdf.Failed,
+			CodeDesc: buildCodeDesc(scanType, vuln.Location),
+		}
+		if startTime != "" {
+			ts := shared.ParseTimestamp(startTime)
+			if !ts.IsZero() {
+				result.StartTime = ts
+			}
+		}
+
+		impact := severityToImpact(vuln.Severity)
+
+		title := vuln.Name
+		if title == "" {
+			title = vuln.ID
+		}
+
+		req := hdf.EvaluatedRequirement{
+			ID:           vuln.ID,
+			Title:        &title,
+			Impact:       impact,
+			Results:      []hdf.RequirementResult{result},
+			Tags:         tags,
+			Descriptions: descriptions,
+		}
+
+		requirements = append(requirements, req)
+	}
+
+	label := scanTypeLabel(scanType)
+	baselineTitle := fmt.Sprintf("GitLab %s Security Scan", label)
+	summary := fmt.Sprintf("Scanner: %s", scannerName)
+	if scannerVersion != "" {
+		summary += fmt.Sprintf(" v%s", scannerVersion)
+	}
+	scanLabel := "GitLab Security Scan"
+
+	baseline := hdf.EvaluatedBaseline{
+		Name:            scanLabel,
+		Title:           &baselineTitle,
+		Summary:         &summary,
+		Requirements:    requirements,
+		ResultsChecksum: resultsChecksum,
+	}
+
+	// Build targets
+	targetType := scanTypeToTargetType(scanType)
+	targets := []hdf.Target{
+		{Name: scannerName, Type: targetType},
+	}
+
+	// Compute timestamp before building results
+	var timestamp *time.Time
+	if report.Scan != nil && report.Scan.EndTime != "" {
+		ts := shared.ParseTimestamp(report.Scan.EndTime)
+		if !ts.IsZero() {
+			timestamp = &ts
+		}
+	}
+
+	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:     "gitlab-to-hdf",
+		ConverterVersion:  converterVersion,
+		DataSourceName:    scannerName,
+		DataSourceVersion: scannerVersion,
+		DataSourceFormat:  "JSON",
+		Baselines:         []hdf.EvaluatedBaseline{baseline},
+		Targets:           targets,
+		Timestamp:         timestamp,
+	})
+
+	return hdfResult, nil
+}
+

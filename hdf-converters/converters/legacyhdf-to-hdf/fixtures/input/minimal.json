@@ -1,0 +1,43 @@
+{
+  "platform": {
+    "name": "test-system",
+    "release": "1.0"
+  },
+  "profiles": [
+    {
+      "name": "test-profile",
+      "version": "1.0.0",
+      "sha256": "abc123",
+      "supports": [],
+      "attributes": [],
+      "groups": [],
+      "controls": [
+        {
+          "id": "test-1",
+          "title": "Test Control",
+          "desc": "Test description",
+          "descriptions": [{"label": "default", "data": "Test description"}],
+          "impact": 0.5,
+          "refs": [],
+          "tags": {},
+          "code": "control 'test-1' do\nend",
+          "source_location": {"ref": "test.rb", "line": 1},
+          "waiver_data": {},
+          "results": [
+            {
+              "status": "passed",
+              "code_desc": "Test should pass",
+              "run_time": 0.1,
+              "start_time": "2024-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "depends": []
+    }
+  ],
+  "statistics": {
+    "duration": 0.1
+  },
+  "version": "1.0.0"
+}

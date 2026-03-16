@@ -1,0 +1,54 @@
+{
+  "name": "@mitre/hdf-validators",
+  "version": "0.1.0",
+  "description": "JSON Schema validation for HDF documents (Results and Baselines)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm clean && tsc",
+    "clean": "rimraf dist",
+    "test": "pnpm run test:ts && pnpm run test:go",
+    "test:ts": "vitest run",
+    "test:go": "cd go && go test ./...",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint typescript",
+    "lint:fix": "eslint typescript --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mitre/hdf-libs.git",
+    "directory": "hdf-validators"
+  },
+  "author": "MITRE Corporation",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@mitre/hdf-schema": "workspace:*",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "hdf",
+    "heimdall",
+    "validation",
+    "json-schema"
+  ],
+  "devDependencies": {
+    "@stryker-mutator/core": "^9.5.1",
+    "@stryker-mutator/vitest-runner": "^9.5.1"
+  }
+}

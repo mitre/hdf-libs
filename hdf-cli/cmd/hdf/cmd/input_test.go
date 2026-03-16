@@ -1,0 +1,119 @@
+package cmd
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestReadFromFile_NotFound(t *testing.T) {
+	_, err := readFromFile("/nonexistent/path/to/file.json")
+	if err == nil {
+		t.Error("expected error for nonexistent file")
+	}
+}
+
+func TestReadFromFile_IsDirectory(t *testing.T) {
+	// Use temp directory
+	tmpDir := t.TempDir()
+	_, err := readFromFile(tmpDir)
+	if err == nil {
+		t.Error("expected error for directory")
+	}
+	if err.Error() != tmpDir+" is a directory, not a file" {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestReadFromFile_EmptyFile(t *testing.T) {
+	// Create empty temp file
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "empty.json")
+	if err := os.WriteFile(tmpFile, []byte{}, 0o600); err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+
+	_, err := readFromFile(tmpFile)
+	if err == nil {
+		t.Error("expected error for empty file")
+	}
+}
+
+func TestReadFromFile_ValidFile(t *testing.T) {
+	// Create temp file with content
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "test.json")
+	content := []byte(`{"test": "data"}`)
+	if err := os.WriteFile(tmpFile, content, 0o600); err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+
+	data, err := readFromFile(tmpFile)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if string(data) != string(content) {
+		t.Errorf("content mismatch: got %q, want %q", data, content)
+	}
+}
+
+func TestReadFromFile_TooLarge(t *testing.T) {
+	// Create a file that exceeds the size limit
+	// We'll test this by temporarily setting a small limit
+	// Since MaxHDFFileSize is a const, we can't easily test this
+	// without creating a huge file, so we'll skip this test
+	t.Skip("skipping large file test - would require creating 50MB+ file")
+}
+
+func TestReadInputFile_StdinPath(t *testing.T) {
+	// When path is "-", it should try to read from stdin
+	// This is hard to test without mocking stdin
+	// The function returns "no input provided" for empty stdin
+	t.Skip("skipping stdin test - requires stdin mocking")
+}
+
+func TestParseHDFResults_InvalidJSON(t *testing.T) {
+	_, err := parseHDFResults([]byte("not json"))
+	if err == nil {
+		t.Error("expected error for invalid JSON")
+	}
+}
+
+func TestParseHDFResults_TrailingGarbage(t *testing.T) {
+	// Valid JSON followed by extra data
+	_, err := parseHDFResults([]byte(`{"version": "1.0"}extra`))
+	if err == nil {
+		t.Error("expected error for trailing garbage")
+	}
+}
+
+func TestParseHDFResults_ValidMinimal(t *testing.T) {
+	// Minimal valid HDF v2.0 structure
+	json := `{
+		"baselines": [],
+		"statistics": {}
+	}`
+	result, err := parseHDFResults([]byte(json))
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if len(result.Baselines) != 0 {
+		t.Errorf("baselines length mismatch: got %d, want 0", len(result.Baselines))
+	}
+}
+
+func TestParseHDFBaseline_InvalidJSON(t *testing.T) {
+	_, err := parseHDFBaseline([]byte("not json"))
+	if err == nil {
+		t.Error("expected error for invalid JSON")
+	}
+}
+
+func TestGetMaxFileSize(t *testing.T) {
+	// Verify default max size is 50MB
+	expected := int64(50 * 1024 * 1024)
+	actual := getMaxFileSize()
+	if actual != expected {
+		t.Errorf("getMaxFileSize() = %d, want %d", actual, expected)
+	}
+}

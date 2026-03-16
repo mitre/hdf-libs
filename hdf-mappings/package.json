@@ -1,0 +1,53 @@
+{
+  "name": "@mitre/hdf-mappings",
+  "version": "0.1.0",
+  "description": "CCI/NIST/CIS/CMMC security framework mappings for HDF",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm clean && tsc && pnpm copy-data",
+    "clean": "rimraf dist",
+    "copy-data": "cpy 'src/data/**' dist/data",
+    "test": "pnpm run test:ts",
+    "test:ts": "vitest run",
+    "test:go": "cd go && go test ./...",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src test",
+    "lint:fix": "eslint src test --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mitre/hdf-libs.git",
+    "directory": "hdf-mappings"
+  },
+  "author": "MITRE Corporation",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@stryker-mutator/core": "^9.5.1",
+    "@stryker-mutator/vitest-runner": "^9.5.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "hdf",
+    "heimdall",
+    "cci",
+    "nist",
+    "mappings",
+    "security",
+    "compliance"
+  ]
+}

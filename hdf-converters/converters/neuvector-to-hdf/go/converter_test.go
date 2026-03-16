@@ -1,0 +1,425 @@
+package neuvector
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	shared "github.com/mitre/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-schema"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+const testVersion = "test-0.1.0"
+
+func loadFixture(t *testing.T, name string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "fixtures", name))
+	require.NoError(t, err, "failed to read fixture %s", name)
+	return data
+}
+
+func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
+	for i := range reqs {
+		if reqs[i].ID == id {
+			return &reqs[i]
+		}
+	}
+	return nil
+}
+
+func findDescription(descs []hdf.Description, label string) *hdf.Description {
+	for i := range descs {
+		if descs[i].Label == label {
+			return &descs[i]
+		}
+	}
+	return nil
+}
+
+// ---- Input validation ----
+
+func TestConvertNeuVector_InvalidJSON(t *testing.T) {
+	_, err := ConvertNeuVectorToHDF([]byte("not json"), testVersion)
+	assert.Error(t, err)
+}
+
+func TestConvertNeuVector_EmptyInput(t *testing.T) {
+	_, err := ConvertNeuVectorToHDF([]byte(""), testVersion)
+	assert.Error(t, err)
+}
+
+// ---- Minimal fixture: baseline structure ----
+
+func TestConvertNeuVector_Minimal(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Baselines, 1)
+	// minimal.json has 8 unique vulnerability IDs (name/package_name/package_version)
+	assert.Len(t, result.Baselines[0].Requirements, 8)
+}
+
+func TestConvertNeuVector_BaselineName(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	assert.Equal(t, "NeuVector Scan", result.Baselines[0].Name)
+}
+
+func TestConvertNeuVector_BaselineTitle(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Baselines[0].Title)
+	// Title should contain registry/repository:tag - Digest: ... - Image ID: ...
+	assert.Contains(t, *result.Baselines[0].Title, "mitre/heimdall")
+	assert.Contains(t, *result.Baselines[0].Title, "latest")
+}
+
+func TestConvertNeuVector_Checksum(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Baselines[0].ResultsChecksum)
+	assert.Equal(t, hdf.Sha256, result.Baselines[0].ResultsChecksum.Algorithm)
+	assert.NotEmpty(t, result.Baselines[0].ResultsChecksum.Value)
+}
+
+// ---- Generator ----
+
+func TestConvertNeuVector_Generator(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Generator)
+	assert.Equal(t, "neuvector-to-hdf", result.Generator.Name)
+	assert.Equal(t, testVersion, result.Generator.Version)
+}
+
+// ---- DataSource ----
+
+func TestConvertNeuVector_DataSource(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.DataSource)
+	require.NotNil(t, result.DataSource.Name)
+	assert.Equal(t, "NeuVector", *result.DataSource.Name)
+	require.NotNil(t, result.DataSource.Format)
+	assert.Equal(t, "JSON", *result.DataSource.Format)
+}
+
+// ---- Impact: score_v3 / 10 ----
+
+func TestConvertNeuVector_ImpactFromCVSSv3(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// CVE-2021-36159/apk-tools/2.10.5-r1 has score_v3=9.1 -> impact=0.91
+	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	require.NotNil(t, req, "expected vuln CVE-2021-36159/apk-tools/2.10.5-r1")
+	assert.InDelta(t, 0.91, req.Impact, 0.001)
+
+	// CVE-2021-36217/avahi/0.8-r0 has score_v3=6.2 -> impact=0.62
+	reqMedium := findRequirement(reqs, "CVE-2021-36217/avahi/0.8-r0")
+	require.NotNil(t, reqMedium, "expected vuln CVE-2021-36217/avahi/0.8-r0")
+	assert.InDelta(t, 0.62, reqMedium.Impact, 0.001)
+}
+
+func TestConvertNeuVector_ImpactFallbackToCVSSv2(t *testing.T) {
+	// When score_v3 is 0, should fall back to score (v2) / 10
+	input := []byte(`{
+		"error_message": "",
+		"report": {
+			"image_id": "abc123",
+			"registry": "https://registry.example.com",
+			"repository": "test/image",
+			"tag": "latest",
+			"digest": "sha256:abc",
+			"size": 100,
+			"author": "",
+			"base_os": "alpine:3.12",
+			"created_at": "2024-01-01T00:00:00Z",
+			"cvedb_version": "1.0",
+			"cvedb_create_time": "2024-01-01T00:00:00Z",
+			"layers": [],
+			"vulnerabilities": [{
+				"name": "CVE-2020-0001",
+				"score": 7.5,
+				"severity": "High",
+				"vectors": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+				"description": "Test vuln with only v2 score",
+				"file_name": "",
+				"package_name": "test-pkg",
+				"package_version": "1.0.0",
+				"fixed_version": "1.0.1",
+				"link": "https://example.com",
+				"score_v3": 0,
+				"vectors_v3": "",
+				"published_timestamp": 1700000000,
+				"last_modified_timestamp": 1700000000,
+				"feed_rating": "High"
+			}]
+		}
+	}`)
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 1)
+	// score=7.5 / 10 = 0.75
+	assert.InDelta(t, 0.75, reqs[0].Impact, 0.001)
+}
+
+// ---- CWE extraction from description ----
+
+func TestConvertNeuVector_CweExtraction(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// CVE-2020-25613/ruby:webrick/1.4.2 has CWE-444 in description
+	req := findRequirement(reqs, "CVE-2020-25613/ruby:webrick/1.4.2")
+	require.NotNil(t, req, "expected vuln CVE-2020-25613/ruby:webrick/1.4.2")
+
+	nist := shared.SafeStringSlice(req.Tags["nist"])
+	require.NotNil(t, nist, "nist tag should be present")
+	assert.NotEmpty(t, nist)
+}
+
+func TestConvertNeuVector_CweToNist(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// CVE-2018-25032/ruby:nokogiri/1.10.9 has CWE-787 in description
+	req := findRequirement(reqs, "CVE-2018-25032/ruby:nokogiri/1.10.9")
+	require.NotNil(t, req, "expected vuln CVE-2018-25032/ruby:nokogiri/1.10.9")
+
+	nist := shared.SafeStringSlice(req.Tags["nist"])
+	require.NotNil(t, nist, "nist tag should be present")
+	assert.NotEmpty(t, nist)
+
+	// CWE tag should also be set
+	cweTags, ok := req.Tags["cwe"]
+	require.True(t, ok, "cwe tag should be present")
+	cweStrings := shared.SafeStringSlice(cweTags)
+	assert.Contains(t, cweStrings, "CWE-787")
+}
+
+func TestConvertNeuVector_NistFallback(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// CVE-2021-36159/apk-tools/2.10.5-r1 has no CWE in description -> uses default remediation NIST
+	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	require.NotNil(t, req)
+
+	nist := shared.SafeStringSlice(req.Tags["nist"])
+	require.NotNil(t, nist, "nist fallback should be present")
+	assert.Contains(t, nist, "SI-2")
+	assert.Contains(t, nist, "RA-5")
+}
+
+// ---- Requirement ID and Title ----
+
+func TestConvertNeuVector_RequirementID(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	// ID format: name/package_name/package_version
+	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	require.NotNil(t, req)
+	assert.Equal(t, "CVE-2021-36159/apk-tools/2.10.5-r1", req.ID)
+}
+
+func TestConvertNeuVector_RequirementTitle(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	require.NotNil(t, req)
+	require.NotNil(t, req.Title)
+	// Title: "NeuVector found a vulnerability to <name> in <package_name>/<package_version>."
+	assert.Contains(t, *req.Title, "CVE-2021-36159")
+	assert.Contains(t, *req.Title, "apk-tools")
+	assert.Contains(t, *req.Title, "2.10.5-r1")
+}
+
+// ---- Description ----
+
+func TestConvertNeuVector_Description(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	require.NotNil(t, req)
+
+	desc := findDescription(req.Descriptions, "default")
+	require.NotNil(t, desc, "expected a 'default' description")
+	assert.Contains(t, desc.Data, "libfetch")
+}
+
+// ---- Results: all Failed ----
+
+func TestConvertNeuVector_AllResultsFailed(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		for _, r := range req.Results {
+			assert.Equal(t, hdf.Failed, r.Status,
+				"all NeuVector vulnerabilities should be Failed (vuln %s)", req.ID)
+		}
+	}
+}
+
+// ---- Result message format ----
+
+func TestConvertNeuVector_ResultMessage_WithFixedVersion(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	// CVE-2021-36159/apk-tools/2.10.5-r1 has fixed_version "2.10.7-r0"
+	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	require.NotNil(t, req)
+	require.NotEmpty(t, req.Results)
+
+	msg := req.Results[0].Message
+	require.NotNil(t, msg)
+	assert.Contains(t, *msg, "apk-tools")
+	assert.Contains(t, *msg, "2.10.5-r1")
+	assert.Contains(t, *msg, "2.10.7-r0")
+}
+
+func TestConvertNeuVector_ResultMessage_NoFixedVersion(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	// CVE-2023-37920/ca-certificates/... has no fixed_version
+	req := findRequirement(reqs, "CVE-2023-37920/ca-certificates/2023.2.60_v7.0.306-80.0.el8_8")
+	require.NotNil(t, req)
+	require.NotEmpty(t, req.Results)
+
+	msg := req.Results[0].Message
+	require.NotNil(t, msg)
+	assert.Contains(t, *msg, "No fixed version")
+}
+
+// ---- Target ----
+
+func TestConvertNeuVector_Target(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, result.Targets)
+	// Target name should be the image reference
+	assert.Contains(t, result.Targets[0].Name, "mitre/heimdall")
+	assert.Equal(t, hdf.ContainerImage, result.Targets[0].Type)
+}
+
+// ---- Tags with extras ----
+
+func TestConvertNeuVector_Tags(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
+	require.NotNil(t, req)
+
+	// nist should be present
+	nist := shared.SafeStringSlice(req.Tags["nist"])
+	require.NotNil(t, nist, "nist should be present")
+	assert.NotEmpty(t, nist)
+
+	// cci should be present
+	cciSlice := shared.SafeStringSlice(req.Tags["cci"])
+	require.NotNil(t, cciSlice, "cci should be present")
+	assert.NotEmpty(t, cciSlice)
+}
+
+// ---- Empty vulnerabilities ----
+
+func TestConvertNeuVector_EmptyVulnerabilities(t *testing.T) {
+	input := []byte(`{
+		"error_message": "",
+		"report": {
+			"image_id": "abc123",
+			"registry": "https://registry.example.com",
+			"repository": "test/image",
+			"tag": "latest",
+			"digest": "sha256:abc",
+			"size": 100,
+			"author": "",
+			"base_os": "alpine:3.12",
+			"created_at": "2024-01-01T00:00:00Z",
+			"cvedb_version": "1.0",
+			"cvedb_create_time": "2024-01-01T00:00:00Z",
+			"layers": [],
+			"vulnerabilities": []
+		}
+	}`)
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+	assert.Len(t, result.Baselines[0].Requirements, 0)
+}
+
+// ---- Full fixture smoke tests ----
+
+func TestConvertNeuVector_FullFixtureHeimdall(t *testing.T) {
+	input := loadFixture(t, "input/neuvector-mitre-heimdall.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	assert.NotEmpty(t, reqs)
+	for _, req := range reqs {
+		assert.NotEmpty(t, req.ID)
+		assert.NotEmpty(t, req.Results)
+	}
+}
+
+func TestConvertNeuVector_FullFixtureHeimdall2(t *testing.T) {
+	input := loadFixture(t, "input/neuvector-mitre-heimdall2.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	assert.NotEmpty(t, reqs)
+	for _, req := range reqs {
+		assert.NotEmpty(t, req.ID)
+		assert.NotEmpty(t, req.Results)
+	}
+}

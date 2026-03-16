@@ -1,0 +1,7 @@
+package cmd
+
+import junit "github.com/mitre/hdf-converters/converters/junit-to-hdf/go"
+
+func init() {
+	registerHDFConverter("junit", "JUnit to HDF", "junit", junit.ConvertJUnitToHDF)
+}

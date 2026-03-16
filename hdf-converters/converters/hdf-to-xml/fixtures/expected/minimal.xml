@@ -1,0 +1,45 @@
+<HdfResults>
+  <baselines>
+    <baseline>
+      <name>Minimal Baseline</name>
+      <version>1.0.0</version>
+      <checksum>
+        <algorithm>sha256</algorithm>
+        <value>abc123</value>
+      </checksum>
+      <requirements>
+        <requirement>
+          <id>REQ-001</id>
+          <title>Test Requirement</title>
+          <descriptions>
+            <description>
+              <label>default</label>
+              <data>This is a test requirement</data>
+            </description>
+          </descriptions>
+          <impact>0.7</impact>
+          <tags>
+            <nist>AC-1</nist>
+            <nist>AC-2</nist>
+          </tags>
+          <results>
+            <result>
+              <status>passed</status>
+              <codeDesc>Control check passed</codeDesc>
+              <startTime>2025-01-15T10:00:00Z</startTime>
+            </result>
+          </results>
+        </requirement>
+      </requirements>
+    </baseline>
+  </baselines>
+  <targets>
+    <target>
+      <name>web-server-01</name>
+      <type>host</type>
+    </target>
+  </targets>
+  <statistics>
+    <duration>45.5</duration>
+  </statistics>
+</HdfResults>

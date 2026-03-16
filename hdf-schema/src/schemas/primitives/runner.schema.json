@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v2.0.0",
+  "title": "HDF Runner Primitive",
+  "description": "Information about the test execution environment where the security tool/scanner was executed.",
+  "$defs": {
+    "Runner": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the runner environment. Examples: 'ubuntu', 'macos', 'windows', 'docker', 'kubernetes-pod', 'manual'."
+        },
+        "release": {
+          "type": "string",
+          "description": "The version/release of the operating system or runtime. Example: '20.04', '13.2', '11'."
+        },
+        "architecture": {
+          "type": "string",
+          "description": "The CPU architecture of the runner system. Example: 'x86_64', 'arm64', 'aarch64'."
+        },
+        "hostname": {
+          "type": "string",
+          "description": "The hostname of the runner system. Example: 'ci-runner-01', 'jenkins-agent-03', 'k8s-node-worker-03'."
+        },
+        "containerImage": {
+          "type": "string",
+          "description": "The container image used for the test execution. Example: 'inspec/inspec:latest', 'ghcr.io/my-org/scanner:v2.1.0'. Useful for CI/CD pipelines where tests run in containers."
+        },
+        "containerId": {
+          "type": "string",
+          "description": "The container instance identifier. Example: 'a1b2c3d4e5f6', 'security-scan-job-xyz123'. Can be a Docker container ID, Kubernetes pod name, or other container runtime identifier."
+        },
+        "operator": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+          "description": "The identity of the person or system responsible for executing the test. This could be a human auditor manually completing a checklist, an automated CI/CD system, or a security tool. Optional field to support both automated and manual HDF generation."
+        }
+      },
+      "examples": [
+        {
+          "name": "docker",
+          "release": "20.04",
+          "architecture": "x86_64",
+          "hostname": "github-runner-prod-01",
+          "containerImage": "ghcr.io/inspec/inspec:5.22.3",
+          "containerId": "security-scan-job-a1b2c3d4",
+          "operator": {
+            "identifier": "github-actions",
+            "type": "system",
+            "description": "Automated CI/CD pipeline"
+          }
+        },
+        {
+          "name": "kubernetes-pod",
+          "release": "1.28.4",
+          "architecture": "arm64",
+          "hostname": "k8s-worker-node-05",
+          "containerImage": "gcr.io/my-org/security-scanner:v3.2.1",
+          "containerId": "compliance-scan-pod-xyz789",
+          "operator": {
+            "identifier": "security-automation@example.com",
+            "type": "email"
+          }
+        },
+        {
+          "name": "manual",
+          "release": "macOS 14.2",
+          "architecture": "arm64",
+          "hostname": "auditor-mbp-02",
+          "operator": {
+            "identifier": "jane.smith",
+            "type": "username",
+            "description": "Senior Security Auditor - Manual Assessment"
+          }
+        }
+      ],
+      "description": "Information about the test execution environment. This is distinct from the target being scanned - the runner is where the security tool executes, while targets are what is being assessed.",
+      "title": "Runner"
+    }
+  }
+}

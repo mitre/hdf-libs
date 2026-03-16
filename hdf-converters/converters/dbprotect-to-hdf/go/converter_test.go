@@ -1,0 +1,363 @@
+package dbprotect
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	shared "github.com/mitre/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-schema"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+const testVersion = "test-0.1.0"
+
+func loadFixture(t *testing.T, name string) []byte {
+	t.Helper()
+	path := filepath.Join(shared.GetConvertersDir(), "dbprotect-to-hdf", "fixtures", name)
+	data, err := os.ReadFile(path)
+	require.NoError(t, err, "failed to read fixture %s", name)
+	return data
+}
+
+func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
+	for i := range reqs {
+		if reqs[i].ID == id {
+			return &reqs[i]
+		}
+	}
+	return nil
+}
+
+// ---- Input validation ----
+
+func TestConvertDbprotect_EmptyInput(t *testing.T) {
+	_, err := ConvertDbprotectToHDF([]byte(""), testVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "dbprotect")
+}
+
+func TestConvertDbprotect_InvalidXML(t *testing.T) {
+	_, err := ConvertDbprotectToHDF([]byte("not valid xml"), testVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "dbprotect")
+}
+
+// ---- Check Results Details fixture ----
+
+func TestConvertDbprotect_CheckResults_BasicStructure(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Should have generator
+	require.NotNil(t, result.Generator)
+	assert.Equal(t, "dbprotect-to-hdf", result.Generator.Name)
+	assert.Equal(t, testVersion, result.Generator.Version)
+
+	// Should have one baseline
+	require.Len(t, result.Baselines, 1)
+
+	// Should have data source
+	require.NotNil(t, result.DataSource)
+	require.NotNil(t, result.DataSource.Name)
+	assert.Equal(t, "DBProtect", *result.DataSource.Name)
+}
+
+func TestConvertDbprotect_CheckResults_BaselineName(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	assert.Equal(t, "DBProtect Scan", result.Baselines[0].Name)
+}
+
+func TestConvertDbprotect_CheckResults_BaselineTitle(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Title comes from first row's "Job Name"
+	require.NotNil(t, result.Baselines[0].Title)
+	assert.Contains(t, *result.Baselines[0].Title, "Heimdal Test scan report generation")
+}
+
+func TestConvertDbprotect_CheckResults_BaselineSummary(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Baselines[0].Summary)
+	assert.Contains(t, *result.Baselines[0].Summary, "Organization")
+	assert.Contains(t, *result.Baselines[0].Summary, "CONDS181")
+}
+
+func TestConvertDbprotect_CheckResults_Checksum(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Baselines[0].ResultsChecksum)
+	assert.Equal(t, hdf.Sha256, result.Baselines[0].ResultsChecksum.Algorithm)
+	assert.Regexp(t, `^[a-f0-9]{64}$`, result.Baselines[0].ResultsChecksum.Value)
+}
+
+func TestConvertDbprotect_CheckResults_RequirementCount(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// 8 rows with 6 unique Check IDs: 2986 (2 rows), 2903, 2841, 2801 (2 rows), 2942, 2976
+	assert.Len(t, result.Baselines[0].Requirements, 6)
+}
+
+func TestConvertDbprotect_CheckResults_GroupedResults(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Check ID 2986 appears twice, should have 2 results
+	req := findRequirement(result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req, "Should find requirement 2986")
+	assert.Len(t, req.Results, 2)
+
+	// Check ID 2801 appears twice, should have 2 results
+	req2801 := findRequirement(result.Baselines[0].Requirements, "2801")
+	require.NotNil(t, req2801, "Should find requirement 2801")
+	assert.Len(t, req2801.Results, 2)
+}
+
+func TestConvertDbprotect_CheckResults_RequirementTitle(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req)
+	require.NotNil(t, req.Title)
+	assert.Equal(t, "Schema ownership", *req.Title)
+}
+
+func TestConvertDbprotect_CheckResults_RequirementDescription(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req)
+	require.NotEmpty(t, req.Descriptions)
+	assert.Equal(t, "default", req.Descriptions[0].Label)
+	// Description from formatDesc: "Task : <task>; Check Category : <category>"
+	assert.Contains(t, req.Descriptions[0].Data, "Task")
+	assert.Contains(t, req.Descriptions[0].Data, "Check Category")
+}
+
+// ---- Impact mapping ----
+
+func TestConvertDbprotect_CheckResults_HighImpact(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "2903")
+	require.NotNil(t, req, "Should find requirement 2903 (High)")
+	assert.Equal(t, 0.7, req.Impact)
+}
+
+func TestConvertDbprotect_CheckResults_MediumImpact(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req, "Should find requirement 2986 (Medium)")
+	assert.Equal(t, 0.5, req.Impact)
+}
+
+func TestConvertDbprotect_CheckResults_LowImpact(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "2841")
+	require.NotNil(t, req, "Should find requirement 2841 (Low)")
+	assert.Equal(t, 0.3, req.Impact)
+}
+
+func TestConvertDbprotect_CheckResults_InformationalImpact(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "2801")
+	require.NotNil(t, req, "Should find requirement 2801 (Informational)")
+	assert.Equal(t, 0.0, req.Impact)
+}
+
+// ---- Status mapping ----
+
+func TestConvertDbprotect_CheckResults_FactStatus(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Check ID 2986 has "Fact" status -> Skipped/NotReviewed
+	req := findRequirement(result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req)
+	require.NotEmpty(t, req.Results)
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+}
+
+func TestConvertDbprotect_CheckResults_FailedStatus(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Check ID 2841 has "Failed" status -> Failed
+	req := findRequirement(result.Baselines[0].Requirements, "2841")
+	require.NotNil(t, req)
+	require.NotEmpty(t, req.Results)
+	assert.Equal(t, hdf.Failed, req.Results[0].Status)
+}
+
+func TestConvertDbprotect_CheckResults_FindingStatus(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Check ID 2801 has "Finding" status -> Failed
+	req := findRequirement(result.Baselines[0].Requirements, "2801")
+	require.NotNil(t, req)
+	require.NotEmpty(t, req.Results)
+	assert.Equal(t, hdf.Failed, req.Results[0].Status)
+}
+
+func TestConvertDbprotect_CheckResults_NotAFindingStatus(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Check ID 2942 has "Not A Finding" status -> Passed
+	req := findRequirement(result.Baselines[0].Requirements, "2942")
+	require.NotNil(t, req)
+	require.NotEmpty(t, req.Results)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+}
+
+func TestConvertDbprotect_CheckResults_SkippedStatus(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Check ID 2976 has "Skipped" status -> NotReviewed
+	req := findRequirement(result.Baselines[0].Requirements, "2976")
+	require.NotNil(t, req)
+	require.NotEmpty(t, req.Results)
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status)
+}
+
+// ---- CodeDesc and start time ----
+
+func TestConvertDbprotect_CheckResults_CodeDesc(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// CodeDesc comes from the "Details" column
+	req := findRequirement(result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req)
+	require.NotEmpty(t, req.Results)
+	assert.Contains(t, req.Results[0].CodeDesc, "Schema name=DatabaseMailUserRole")
+}
+
+func TestConvertDbprotect_CheckResults_StartTime(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req)
+	require.NotEmpty(t, req.Results)
+	assert.False(t, req.Results[0].StartTime.IsZero(), "StartTime should be set")
+}
+
+// ---- NIST tags ----
+
+func TestConvertDbprotect_CheckResults_NISTTags(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "2986")
+	require.NotNil(t, req)
+	require.NotNil(t, req.Tags)
+	nist, ok := req.Tags["nist"]
+	require.True(t, ok, "Should have nist tag")
+	nistSlice := shared.SafeStringSlice(nist)
+	assert.NotEmpty(t, nistSlice, "NIST tags should not be empty")
+}
+
+// ---- Target ----
+
+func TestConvertDbprotect_CheckResults_Target(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, result.Targets)
+	assert.Equal(t, "CONDS181", result.Targets[0].Name)
+	assert.Equal(t, hdf.Host, result.Targets[0].Type)
+}
+
+// ---- Findings Detail fixture ----
+
+func TestConvertDbprotect_FindingsDetail_BasicStructure(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	require.Len(t, result.Baselines, 1)
+	assert.Equal(t, "DBProtect Scan", result.Baselines[0].Name)
+}
+
+func TestConvertDbprotect_FindingsDetail_RequirementCount(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// 4 rows with 3 unique Check IDs: 2801 (2 rows), 2830, 2903
+	assert.Len(t, result.Baselines[0].Requirements, 3)
+}
+
+func TestConvertDbprotect_FindingsDetail_AllFindingsAreFailed(t *testing.T) {
+	input := loadFixture(t, "input/sample-findings-detail.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Findings Detail has no Result Status column; all findings are implicitly failed
+	for _, req := range result.Baselines[0].Requirements {
+		for _, res := range req.Results {
+			assert.Equal(t, hdf.Failed, res.Status, "All findings should be failed for check %s", req.ID)
+		}
+	}
+}
+
+// ---- Write output for differential testing ----
+
+func TestConvertDbprotect_WriteOutput(t *testing.T) {
+	input := loadFixture(t, "input/sample-check-results.xml")
+	result, err := ConvertDbprotectToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	shared.WriteOutput(t, "dbprotect-to-hdf", "sample-check-results.json", result)
+}
+
+func TestConvertDbprotectToHDF_EntityExpansion(t *testing.T) {
+	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
+	_, err := ConvertDbprotectToHDF(input, testVersion)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
+}

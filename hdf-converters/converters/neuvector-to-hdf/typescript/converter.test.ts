@@ -1,0 +1,310 @@
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { describe, it, expect } from 'vitest';
+import { convertNeuvectorToHdf } from './converter.js';
+import type { HdfResults } from '@mitre/hdf-schema';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
+
+function loadFixture(name: string): string {
+  return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
+}
+
+describe('neuvector to HDF converter', async () => {
+  describe('input validation', async () => {
+    it('should throw on invalid JSON', async () => {
+      await expect(convertNeuvectorToHdf('not json')).rejects.toThrow();
+    });
+
+    it('should throw on empty input', async () => {
+      await expect(convertNeuvectorToHdf('')).rejects.toThrow();
+    });
+  });
+
+  describe('conversion basics', async () => {
+    it('should produce valid HDF from minimal fixture', async () => {
+      const output = await convertNeuvectorToHdf(loadFixture('minimal.json'));
+      const hdf = JSON.parse(output) as HdfResults;
+
+      expect(hdf.timestamp).toBeTruthy();
+      expect(hdf.generator?.name).toBe('neuvector-to-hdf');
+      expect(hdf.generator?.version).toBe('1.0.0');
+      expect(hdf.baselines).toHaveLength(1);
+      // minimal.json has 8 unique vulnerability IDs (name/package_name/package_version)
+      expect(hdf.baselines[0]!.requirements).toHaveLength(8);
+    });
+
+    it('should use "NeuVector Scan" as the baseline name', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      expect(hdf.baselines[0]!.name).toBe('NeuVector Scan');
+    });
+
+    it('should include baseline title with image info', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      expect(hdf.baselines[0]!.title).toContain('mitre/heimdall');
+      expect(hdf.baselines[0]!.title).toContain('latest');
+    });
+
+    it('should include a sha256 checksum', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const checksum = hdf.baselines[0]!.resultsChecksum;
+      expect(checksum?.algorithm).toBe('sha256');
+      expect(checksum?.value).toMatch(/^[a-f0-9]{64}$/);
+    });
+  });
+
+  describe('generator and dataSource', async () => {
+    it('should set generator name and version', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      expect(hdf.generator?.name).toBe('neuvector-to-hdf');
+      expect(hdf.generator?.version).toBe('1.0.0');
+    });
+
+    it('should set dataSource name to "NeuVector" and format to "JSON"', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      expect(hdf.dataSource?.name).toBe('NeuVector');
+      expect(hdf.dataSource?.format).toBe('JSON');
+    });
+  });
+
+  describe('impact from CVSS v3 score', async () => {
+    it('should compute impact as score_v3 / 10', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      // CVE-2021-36159/apk-tools/2.10.5-r1 has score_v3=9.1 -> impact=0.91
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req?.impact).toBeCloseTo(0.91, 2);
+    });
+
+    it('should handle medium-score CVSS v3', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      // CVE-2021-36217/avahi/0.8-r0 has score_v3=6.2 -> impact=0.62
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36217/avahi/0.8-r0'
+      );
+      expect(req?.impact).toBeCloseTo(0.62, 2);
+    });
+
+    it('should fall back to CVSS v2 when v3 is 0', async () => {
+      const input = JSON.stringify({
+        error_message: '',
+        report: {
+          image_id: 'abc123',
+          registry: 'https://registry.example.com',
+          repository: 'test/image',
+          tag: 'latest',
+          digest: 'sha256:abc',
+          size: 100,
+          author: '',
+          base_os: 'alpine:3.12',
+          created_at: '2024-01-01T00:00:00Z',
+          cvedb_version: '1.0',
+          cvedb_create_time: '2024-01-01T00:00:00Z',
+          layers: [],
+          vulnerabilities: [{
+            name: 'CVE-2020-0001',
+            score: 7.5,
+            severity: 'High',
+            vectors: 'AV:N/AC:L/Au:N/C:P/I:P/A:P',
+            description: 'Test vuln with only v2 score',
+            file_name: '',
+            package_name: 'test-pkg',
+            package_version: '1.0.0',
+            fixed_version: '1.0.1',
+            link: 'https://example.com',
+            score_v3: 0,
+            vectors_v3: '',
+            published_timestamp: 1700000000,
+            last_modified_timestamp: 1700000000,
+            feed_rating: 'High',
+          }],
+        },
+      });
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HdfResults;
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs).toHaveLength(1);
+      // score=7.5 / 10 = 0.75
+      expect(reqs[0]!.impact).toBeCloseTo(0.75, 2);
+    });
+  });
+
+  describe('CWE extraction from description', async () => {
+    it('should extract CWE from description and map to NIST', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      // CVE-2020-25613/ruby:webrick/1.4.2 has CWE-444 in description
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2020-25613/ruby:webrick/1.4.2'
+      );
+      expect(req).toBeDefined();
+
+      const nist = req!.tags?.['nist'] as string[];
+      expect(nist).toBeDefined();
+      expect(nist.length).toBeGreaterThan(0);
+    });
+
+    it('should include CWE tags when found', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      // CVE-2018-25032/ruby:nokogiri/1.10.9 has CWE-787 in description
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2018-25032/ruby:nokogiri/1.10.9'
+      );
+      expect(req).toBeDefined();
+      expect(req!.tags?.['cwe']).toContain('CWE-787');
+    });
+
+    it('should use default remediation NIST when no CWE found', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      // CVE-2021-36159/apk-tools/2.10.5-r1 has no CWE in description
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req).toBeDefined();
+
+      const nist = req!.tags?.['nist'] as string[];
+      expect(nist).toBeDefined();
+      expect(nist).toContain('SI-2');
+      expect(nist).toContain('RA-5');
+    });
+  });
+
+  describe('requirement structure', async () => {
+    it('should use name/package_name/package_version as ID', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req).toBeDefined();
+      expect(req!.id).toBe('CVE-2021-36159/apk-tools/2.10.5-r1');
+    });
+
+    it('should set title with vulnerability details', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req).toBeDefined();
+      expect(req!.title).toContain('CVE-2021-36159');
+      expect(req!.title).toContain('apk-tools');
+      expect(req!.title).toContain('2.10.5-r1');
+    });
+
+    it('should include default description', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req).toBeDefined();
+      const defaultDesc = req!.descriptions?.find(d => d.label === 'default');
+      expect(defaultDesc).toBeDefined();
+      expect(defaultDesc!.data).toContain('libfetch');
+    });
+  });
+
+  describe('status', async () => {
+    it('should mark all vulnerabilities as failed', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      for (const req of hdf.baselines[0]!.requirements) {
+        for (const result of req.results) {
+          expect(result.status).toBe('failed');
+        }
+      }
+    });
+  });
+
+  describe('result message', async () => {
+    it('should include upgrade info when fixed_version exists', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req).toBeDefined();
+      const msg = req!.results[0]?.message ?? '';
+      expect(msg).toContain('apk-tools');
+      expect(msg).toContain('2.10.5-r1');
+      expect(msg).toContain('2.10.7-r0');
+    });
+
+    it('should indicate no fixed version when unavailable', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2023-37920/ca-certificates/2023.2.60_v7.0.306-80.0.el8_8'
+      );
+      expect(req).toBeDefined();
+      const msg = req!.results[0]?.message ?? '';
+      expect(msg).toContain('No fixed version');
+    });
+  });
+
+  describe('target', async () => {
+    it('should include image reference as target', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      expect(hdf.targets).toBeDefined();
+      expect(hdf.targets![0]!.name).toContain('mitre/heimdall');
+      expect(hdf.targets![0]!.type).toBe('containerImage');
+    });
+  });
+
+  describe('tags', async () => {
+    it('should populate nist and cci tags', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const req = hdf.baselines[0]!.requirements.find(
+        r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
+      );
+      expect(req).toBeDefined();
+
+      const tags = req!.tags;
+      expect((tags?.['nist'] as string[]).length).toBeGreaterThan(0);
+      expect((tags?.['cci'] as string[]).length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('empty vulnerabilities', async () => {
+    it('should handle empty vulnerabilities array', async () => {
+      const input = JSON.stringify({
+        error_message: '',
+        report: {
+          image_id: 'abc123',
+          registry: 'https://registry.example.com',
+          repository: 'test/image',
+          tag: 'latest',
+          digest: 'sha256:abc',
+          size: 100,
+          author: '',
+          base_os: 'alpine:3.12',
+          created_at: '2024-01-01T00:00:00Z',
+          cvedb_version: '1.0',
+          cvedb_create_time: '2024-01-01T00:00:00Z',
+          layers: [],
+          vulnerabilities: [],
+        },
+      });
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    });
+  });
+
+  describe('full fixture smoke tests', async () => {
+    it('should handle neuvector-mitre-heimdall.json', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall.json'))) as HdfResults;
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs.length).toBeGreaterThan(0);
+      for (const req of reqs) {
+        expect(req.id).toBeTruthy();
+        expect(req.results.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('should handle neuvector-mitre-heimdall2.json', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall2.json'))) as HdfResults;
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs.length).toBeGreaterThan(0);
+      for (const req of reqs) {
+        expect(req.id).toBeTruthy();
+        expect(req.results.length).toBeGreaterThan(0);
+      }
+    });
+  });
+});

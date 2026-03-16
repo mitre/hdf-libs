@@ -5,17 +5,22 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['test/**/*.test.ts', 'test/**/*.spec.ts'],
+    // Run test files sequentially — create-index.test.ts and generate-types.test.ts
+    // both mutate the shared dist/ directory (bundleSchemas, generateTypes, createIndex).
+    // Running them in parallel causes race conditions where one test cleans files
+    // that another test is reading.
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.d.ts', 'src/generated/**'],
-      // TODO: Increase thresholds to 95% once core functionality is stable
+      // Note: CLI entry points excluded with c8 ignore comments
       thresholds: {
-        statements: 70,
-        branches: 70,
-        functions: 70,
-        lines: 70,
+        statements: 95,
+        branches: 95,
+        functions: 95,
+        lines: 95,
       },
     },
   },

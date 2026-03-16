@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v2.0.0",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "name",
+    "requirements"
+  ],
+  "allOf": [
+    {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Baseline_Metadata"
+    }
+  ],
+  "properties": {
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Baseline_Requirement"
+      },
+      "description": "The set of requirements - contains no findings as the assessment has not yet occurred."
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Requirement_Group"
+      },
+      "description": "A set of descriptions for the requirement groups."
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "An input or attribute used in the run."
+      },
+      "description": "The input(s) or attribute(s) to be used in the run."
+    },
+    "checksum": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
+      "description": "Cryptographic checksum for baseline integrity verification."
+    },
+    "remediation": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation",
+      "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for implementing the security controls defined in this baseline."
+    },
+    "depends": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency"
+      },
+      "description": "The set of dependencies this baseline depends on."
+    },
+    "generator": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
+      "description": "The tool that generated this file."
+    }
+  },
+  "description": "Information on the set of requirements that can be assessed, including baseline metadata and requirement definitions.",
+  "title": "HDF Baseline",
+  "$defs": {
+    "Baseline_Requirement": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "id",
+        "impact",
+        "tags",
+        "descriptions"
+      ],
+      "allOf": [
+        {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Requirement_Core"
+        }
+      ],
+      "properties": {
+        "descriptions": {
+          "$ref": "#/$defs/Baseline_Requirement_Descriptions",
+          "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "informational"
+          ],
+          "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
+        }
+      },
+      "description": "A requirement definition without assessment results.",
+      "title": "Baseline Requirement"
+    },
+    "Baseline_Requirement_Descriptions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "unevaluatedProperties": false,
+        "required": [
+          "label",
+          "data"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Description category. The 'default' label is required for the primary description. Common labels: 'default', 'check', 'fix', 'rationale'. Tools may use custom labels."
+          },
+          "data": {
+            "type": "string",
+            "description": "The description text content."
+          }
+        }
+      },
+      "contains": {
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "const": "default"
+          }
+        }
+      },
+      "description": "Array of labeled descriptions. At least one description with label 'default' must be present.",
+      "title": "Baseline Requirement Descriptions"
+    }
+  }
+}

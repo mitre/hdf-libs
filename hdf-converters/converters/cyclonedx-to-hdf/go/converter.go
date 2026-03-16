@@ -1,0 +1,374 @@
+package cyclonedx_to_hdf
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	shared "github.com/mitre/hdf-converters/shared/go"
+	"github.com/mitre/hdf-mappings/go/cci"
+	hdf "github.com/mitre/hdf-schema"
+)
+
+// CycloneDXBom is the top-level CycloneDX BOM structure.
+type CycloneDXBom struct {
+	BomFormat       string              `json:"bomFormat"`
+	SpecVersion     string              `json:"specVersion"`
+	Metadata        *CDXMetadata        `json:"metadata"`
+	Components      []CDXComponent      `json:"components"`
+	Vulnerabilities []CDXVulnerability  `json:"vulnerabilities"`
+}
+
+// CDXMetadata holds BOM metadata.
+type CDXMetadata struct {
+	Timestamp string                `json:"timestamp"`
+	Component *CDXMetadataComponent `json:"component"`
+}
+
+// CDXMetadataComponent describes the top-level project component.
+type CDXMetadataComponent struct {
+	Type    string `json:"type"`
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	BomRef  string `json:"bom-ref"`
+}
+
+// CDXComponent represents a single CycloneDX component.
+type CDXComponent struct {
+	Type       string         `json:"type"`
+	Name       string         `json:"name"`
+	Version    string         `json:"version"`
+	Group      string         `json:"group"`
+	BomRef     string         `json:"bom-ref"`
+	Components []CDXComponent `json:"components"`
+}
+
+// CDXVulnerability represents a single vulnerability entry.
+type CDXVulnerability struct {
+	ID             string       `json:"id"`
+	Source         *CDXSource   `json:"source"`
+	Ratings        []CDXRating  `json:"ratings"`
+	CWEs           []int        `json:"cwes"`
+	Description    string       `json:"description"`
+	Detail         string       `json:"detail"`
+	Recommendation string       `json:"recommendation"`
+	Affects        []CDXAffect  `json:"affects"`
+	Analysis       *CDXAnalysis `json:"analysis"`
+}
+
+// CDXSource identifies the advisory source.
+type CDXSource struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+// CDXRating holds a vulnerability rating (CVSS score and/or severity).
+type CDXRating struct {
+	Source   *CDXSource `json:"source"`
+	Score    *float64   `json:"score"`
+	Severity string     `json:"severity"`
+	Method   string     `json:"method"`
+	Vector   string     `json:"vector"`
+}
+
+// CDXAffect identifies a component affected by a vulnerability.
+type CDXAffect struct {
+	Ref string `json:"ref"`
+}
+
+// CDXAnalysis holds the vulnerability analysis (VEX).
+type CDXAnalysis struct {
+	State         string   `json:"state"`
+	Justification string   `json:"justification"`
+	Response      []string `json:"response"`
+	Detail        string   `json:"detail"`
+}
+
+// severityToImpact maps CycloneDX severity strings to HDF impact values.
+// Standard mappings cover critical, high, medium, low, info, none.
+// "unknown" and unrecognized values default to 0.5.
+func severityToImpact(severity string) float64 {
+	return shared.SeverityToImpact(severity, 0.5)
+}
+
+var cvssMethods = map[string]bool{
+	"CVSSv2":  true,
+	"CVSSv3":  true,
+	"CVSSv31": true,
+	"CVSSv4":  true,
+}
+
+// maxImpact computes the maximum impact across all ratings for a vulnerability.
+// Prefers CVSS score/10 when available, falls back to severityToImpact().
+func maxImpact(ratings []CDXRating) float64 {
+	if len(ratings) == 0 {
+		return 0.5
+	}
+
+	max := 0.0
+	for _, r := range ratings {
+		var impact float64
+		if cvssMethods[r.Method] && r.Score != nil {
+			impact = *r.Score / 10
+		} else {
+			sev := r.Severity
+			if sev == "" {
+				sev = "medium"
+			}
+			impact = severityToImpact(sev)
+		}
+		if impact > max {
+			max = impact
+		}
+	}
+	return max
+}
+
+var infoUnknownSeverities = map[string]bool{
+	"info":    true,
+	"unknown": true,
+}
+
+// isInfoOrUnknownOnly returns true if all ratings have only info or unknown severity.
+//
+// NOTE: This replicates heimdall2 behavior. The semantic correctness of mapping
+// "unknown severity" to "not reviewed" is debatable and should be re-examined.
+func isInfoOrUnknownOnly(ratings []CDXRating) bool {
+	if len(ratings) == 0 {
+		return false
+	}
+	for _, r := range ratings {
+		if !infoUnknownSeverities[strings.ToLower(r.Severity)] {
+			return false
+		}
+	}
+	return true
+}
+
+// formatRatingsTag formats ratings as a human-readable tag string.
+func formatRatingsTag(ratings []CDXRating) string {
+	parts := make([]string, len(ratings))
+	for i, r := range ratings {
+		source := "Unknown"
+		if r.Source != nil && r.Source.Name != "" {
+			source = r.Source.Name
+		}
+		sev := r.Severity
+		if sev == "" {
+			sev = "unrated"
+		}
+		parts[i] = fmt.Sprintf("%s - %s", source, sev)
+	}
+	return strings.Join(parts, ", ")
+}
+
+// formatCodeDesc formats a component reference as a code_desc string.
+func formatCodeDesc(componentLookup map[string]CDXComponent, ref string) string {
+	comp, found := componentLookup[ref]
+	if !found {
+		// VEX case: no matching component, use the ref directly
+		return fmt.Sprintf("Component %s is vulnerable", ref)
+	}
+
+	var name string
+	if comp.Group != "" {
+		name = comp.Group + "/"
+	}
+	name += comp.Name
+	if comp.Version != "" {
+		name += "@" + comp.Version
+	}
+	return fmt.Sprintf("Component %s is vulnerable", name)
+}
+
+// flattenComponents flattens nested CycloneDX components into a single slice.
+func flattenComponents(components []CDXComponent) []CDXComponent {
+	var result []CDXComponent
+	for _, comp := range components {
+		result = append(result, comp)
+		if len(comp.Components) > 0 {
+			result = append(result, flattenComponents(comp.Components)...)
+		}
+	}
+	return result
+}
+
+// ConvertCycloneDXToHDF converts CycloneDX SBOM/VEX JSON to HDF format.
+func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("cyclonedx: empty input")
+	}
+
+	var bom CycloneDXBom
+	if err := json.Unmarshal(input, &bom); err != nil {
+		return nil, fmt.Errorf("cyclonedx: invalid JSON: %w", err)
+	}
+
+	if bom.BomFormat != "CycloneDX" {
+		return nil, fmt.Errorf("cyclonedx: missing or invalid bomFormat (expected \"CycloneDX\", got %q)", bom.BomFormat)
+	}
+
+	if len(bom.Components) == 0 && len(bom.Vulnerabilities) == 0 {
+		return nil, fmt.Errorf("cyclonedx: input has neither components nor vulnerabilities")
+	}
+
+	checksum := shared.InputChecksum(input)
+
+	// Flatten nested components and build lookup by bom-ref
+	allComponents := flattenComponents(bom.Components)
+	componentLookup := make(map[string]CDXComponent, len(allComponents))
+	for _, comp := range allComponents {
+		if comp.BomRef != "" {
+			componentLookup[comp.BomRef] = comp
+		}
+	}
+
+	limitedVulns, truncatedVulns := shared.LimitSlice(bom.Vulnerabilities, 0)
+	if truncatedVulns {
+		log.Printf("WARNING: Input truncated at %d vulnerability items (original: %d)", len(limitedVulns), len(bom.Vulnerabilities))
+	}
+	requirements := make([]hdf.EvaluatedRequirement, 0, len(limitedVulns))
+
+	infoUnknownMsg := "Manual review required because a CycloneDX rating severity is set to `info` or `unknown`."
+
+	for _, vuln := range limitedVulns {
+		ratings := vuln.Ratings
+		impact := maxImpact(ratings)
+		cweStrs := make([]string, len(vuln.CWEs))
+		for i, c := range vuln.CWEs {
+			cweStrs[i] = fmt.Sprintf("%d", c)
+		}
+		nist := shared.MapCWEToNIST(cweStrs, shared.DefaultStaticAnalysisNIST)
+		cciTags := cci.NISTToCCI(nist)
+
+		extras := map[string]interface{}{}
+		if len(vuln.CWEs) > 0 {
+			cweids := make([]string, len(vuln.CWEs))
+			for i, c := range vuln.CWEs {
+				cweids[i] = fmt.Sprintf("CWE-%d", c)
+			}
+			extras["cweid"] = cweids
+		}
+		if len(ratings) > 0 {
+			extras["ratings"] = formatRatingsTag(ratings)
+		}
+		tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
+
+		// Build descriptions (must always include a 'default' label per HDF schema)
+		descriptions := []hdf.Description{}
+
+		// Default description: description + detail
+		var defaultParts []string
+		if vuln.Description != "" {
+			defaultParts = append(defaultParts, fmt.Sprintf("Description: %s", vuln.Description))
+		}
+		if vuln.Detail != "" {
+			defaultParts = append(defaultParts, fmt.Sprintf("Detail: %s", vuln.Detail))
+		}
+		if len(defaultParts) > 0 {
+			descriptions = append(descriptions, hdf.Description{
+				Label: "default",
+				Data:  strings.Join(defaultParts, "\n\n"),
+			})
+		} else {
+			descriptions = append(descriptions, hdf.Description{
+				Label: "default",
+				Data:  vuln.ID,
+			})
+		}
+
+		// Fix description: recommendation + workaround from analysis
+		var fixParts []string
+		if vuln.Recommendation != "" {
+			fixParts = append(fixParts, vuln.Recommendation)
+		}
+		if vuln.Analysis != nil && vuln.Analysis.Detail != "" {
+			fixParts = append(fixParts, fmt.Sprintf("Workaround: %s", vuln.Analysis.Detail))
+		}
+		if len(fixParts) > 0 {
+			descriptions = append(descriptions, hdf.Description{
+				Label: "fix",
+				Data:  strings.Join(fixParts, "\n\n"),
+			})
+		}
+
+		// Determine if this is an info/unknown-only vulnerability
+		infoUnknown := isInfoOrUnknownOnly(ratings)
+
+		// Build results: one per affected component
+		var results []hdf.RequirementResult
+		if len(vuln.Affects) > 0 {
+			for _, affect := range vuln.Affects {
+				codeDesc := formatCodeDesc(componentLookup, affect.Ref)
+				if infoUnknown {
+					results = append(results, hdf.RequirementResult{
+						Status:   hdf.NotReviewed,
+						Message:  &infoUnknownMsg,
+						CodeDesc: codeDesc,
+					})
+				} else {
+					results = append(results, hdf.RequirementResult{
+						Status:   hdf.Failed,
+						CodeDesc: codeDesc,
+					})
+				}
+			}
+		} else {
+			// Vulnerability with no affects — create a single result
+			codeDesc := fmt.Sprintf("Vulnerability %s", vuln.ID)
+			if infoUnknown {
+				results = append(results, hdf.RequirementResult{
+					Status:   hdf.NotReviewed,
+					Message:  &infoUnknownMsg,
+					CodeDesc: codeDesc,
+				})
+			} else {
+				results = append(results, hdf.RequirementResult{
+					Status:   hdf.Failed,
+					CodeDesc: codeDesc,
+				})
+			}
+		}
+
+		title := vuln.ID
+		if vuln.Source != nil && vuln.Source.Name != "" {
+			title = fmt.Sprintf("%s (%s)", vuln.ID, vuln.Source.Name)
+		}
+
+		requirements = append(requirements, hdf.EvaluatedRequirement{
+			ID:           vuln.ID,
+			Title:        &title,
+			Impact:       impact,
+			Tags:         tags,
+			Descriptions: descriptions,
+			Results:      results,
+		})
+	}
+
+	baseline := hdf.EvaluatedBaseline{
+		Name:            "CycloneDX Scan",
+		Requirements:    requirements,
+		ResultsChecksum: checksum,
+	}
+
+	now := time.Now().UTC()
+
+	targetName := ""
+	if bom.Metadata != nil && bom.Metadata.Component != nil {
+		targetName = bom.Metadata.Component.Name
+	}
+
+	return shared.BuildHDFResults(shared.HDFResultsOptions{
+		GeneratorName:    "cyclonedx-to-hdf",
+		ConverterVersion: converterVersion,
+		DataSourceName:   "CycloneDX",
+		DataSourceFormat: "JSON",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Targets: []hdf.Target{
+			{Name: targetName, Type: hdf.Application},
+		},
+		Timestamp: &now,
+	}), nil
+}

@@ -1,0 +1,87 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Unused private methods are dead code and should be removed.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "src/main/java/com/example/Example.java LINE : 42",
+              "message": "Remove this unused private method.",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 42,
+            "ref": "src/main/java/com/example/Example.java"
+          },
+          "id": "java:S1144",
+          "impact": 0.7,
+          "tags": {
+            "cci": [],
+            "cwe": [],
+            "nist": [
+              "SA-11"
+            ],
+            "owasp": [],
+            "severity": "major",
+            "type": "code_smell"
+          },
+          "title": "Unused private method should be removed"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "A reference to null should never be dereferenced. Related to CWE-476.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "src/main/java/com/example/Security.java LINE : 128",
+              "message": "A NullPointerException could be thrown; \"user\" is nullable here.",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 128,
+            "ref": "src/main/java/com/example/Security.java"
+          },
+          "id": "java:S2259",
+          "impact": 1,
+          "tags": {
+            "cci": [],
+            "cwe": [
+              "CWE-476"
+            ],
+            "nist": [
+              "SI-11"
+            ],
+            "owasp": [],
+            "severity": "blocker",
+            "type": "bug"
+          },
+          "title": "Null pointers should not be dereferenced"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "8a08940db1de953248f185a336d0fc6a5b7297e99531e330f0d8d8e6d642567e"
+      },
+      "name": "com.example:myproject",
+      "title": "SonarQube Analysis for com.example:myproject"
+    }
+  ],
+  "generator": {
+    "name": "sonarqube-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-02-09T23:35:35.83480603-05:00"
+}

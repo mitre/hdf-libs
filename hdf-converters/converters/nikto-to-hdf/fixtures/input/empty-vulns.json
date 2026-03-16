@@ -1,0 +1,7 @@
+{
+    "banner": "nginx/1.24.0",
+    "host": "clean.example.com",
+    "ip": "10.0.0.1",
+    "port": "443",
+    "vulnerabilities": []
+}

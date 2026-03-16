@@ -1,0 +1,398 @@
+package snyk
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	shared "github.com/mitre/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-schema"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+const testVersion = "test-0.1.0"
+
+func loadFixture(t *testing.T, name string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "fixtures", name))
+	require.NoError(t, err, "failed to read fixture %s", name)
+	return data
+}
+
+func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
+	for i := range reqs {
+		if reqs[i].ID == id {
+			return &reqs[i]
+		}
+	}
+	return nil
+}
+
+func findDescription(descs []hdf.Description, label string) *hdf.Description {
+	for i := range descs {
+		if descs[i].Label == label {
+			return &descs[i]
+		}
+	}
+	return nil
+}
+
+// ---- Input validation ----
+
+func TestConvertSnyk_InvalidJSON(t *testing.T) {
+	_, err := ConvertSnykToHDF([]byte("not json"), testVersion)
+	assert.Error(t, err)
+}
+
+func TestConvertSnyk_EmptyInput(t *testing.T) {
+	_, err := ConvertSnykToHDF([]byte(""), testVersion)
+	assert.Error(t, err)
+}
+
+// ---- Minimal fixture: baseline structure ----
+
+func TestConvertSnyk_Minimal(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Baselines, 1)
+	// minimal.json has 8 unique vulnerability IDs (9 total entries)
+	assert.Len(t, result.Baselines[0].Requirements, 8)
+}
+
+func TestConvertSnyk_BaselineName(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Snyk Scan", result.Baselines[0].Name)
+}
+
+func TestConvertSnyk_BaselineTitle(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Baselines[0].Title)
+	assert.Contains(t, *result.Baselines[0].Title, "goof")
+}
+
+func TestConvertSnyk_BaselineSummary(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Baselines[0].Summary)
+	assert.Contains(t, *result.Baselines[0].Summary, "vulnerable dependency paths")
+}
+
+func TestConvertSnyk_Checksum(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Baselines[0].ResultsChecksum)
+	assert.Equal(t, hdf.Sha256, result.Baselines[0].ResultsChecksum.Algorithm)
+	assert.NotEmpty(t, result.Baselines[0].ResultsChecksum.Value)
+}
+
+// ---- Generator ----
+
+func TestConvertSnyk_Generator(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.Generator)
+	assert.Equal(t, "snyk-to-hdf", result.Generator.Name)
+	assert.Equal(t, testVersion, result.Generator.Version)
+}
+
+// ---- DataSource ----
+
+func TestConvertSnyk_DataSource(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotNil(t, result.DataSource)
+	require.NotNil(t, result.DataSource.Name)
+	assert.Equal(t, "Snyk", *result.DataSource.Name)
+	require.NotNil(t, result.DataSource.Format)
+	assert.Equal(t, "JSON", *result.DataSource.Format)
+}
+
+// ---- Severity → Impact mapping ----
+
+func TestConvertSnyk_Severity(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// critical → 0.9 (npm:adm-zip:20180415)
+	critical := findRequirement(reqs, "npm:adm-zip:20180415")
+	require.NotNil(t, critical, "expected critical vuln npm:adm-zip:20180415")
+	assert.InDelta(t, 0.9, critical.Impact, 0.001)
+
+	// high → 0.7 (SNYK-JS-ADMZIP-1065796)
+	high := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
+	require.NotNil(t, high, "expected high vuln SNYK-JS-ADMZIP-1065796")
+	assert.InDelta(t, 0.7, high.Impact, 0.001)
+
+	// medium → 0.5 (SNYK-JS-HIGHLIGHTJS-1045326)
+	medium := findRequirement(reqs, "SNYK-JS-HIGHLIGHTJS-1045326")
+	require.NotNil(t, medium, "expected medium vuln SNYK-JS-HIGHLIGHTJS-1045326")
+	assert.InDelta(t, 0.5, medium.Impact, 0.001)
+
+	// low → 0.3 (SNYK-JS-HBS-1566555)
+	low := findRequirement(reqs, "SNYK-JS-HBS-1566555")
+	require.NotNil(t, low, "expected low vuln SNYK-JS-HBS-1566555")
+	assert.InDelta(t, 0.3, low.Impact, 0.001)
+}
+
+// ---- CWE → NIST mapping ----
+
+func TestConvertSnyk_CweToNist(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	// CWE-22 (Directory Traversal) should have a NIST mapping
+	req := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
+	require.NotNil(t, req)
+
+	nist := shared.SafeStringSlice(req.Tags["nist"])
+	require.NotNil(t, nist, "nist tag should be present")
+	assert.NotEmpty(t, nist)
+}
+
+// ---- Deduplication ----
+
+func TestConvertSnyk_Dedup(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	// SNYK-JS-HANDLEBARS-534988 appears twice in the fixture → single requirement, 2 results
+	req := findRequirement(reqs, "SNYK-JS-HANDLEBARS-534988")
+	require.NotNil(t, req, "expected requirement SNYK-JS-HANDLEBARS-534988")
+	assert.Len(t, req.Results, 2, "should have 2 results for deduplicated vuln")
+}
+
+// ---- Dependency path in CodeDesc ----
+
+func TestConvertSnyk_DependencyPath(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
+	require.NotNil(t, req)
+	require.NotEmpty(t, req.Results)
+
+	// "from" for this vuln: ["goof@1.0.1", "adm-zip@0.4.7"]
+	codeDesc := req.Results[0].CodeDesc
+	assert.Contains(t, codeDesc, "goof@1.0.1")
+	assert.Contains(t, codeDesc, "adm-zip@0.4.7")
+}
+
+// ---- Tags ----
+
+func TestConvertSnyk_Tags(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+
+	// npm:adm-zip:20180415 has CVE, CWE, and GHSA identifiers
+	req := findRequirement(reqs, "npm:adm-zip:20180415")
+	require.NotNil(t, req)
+
+	// cweid
+	cweid, ok := req.Tags["cweid"].([]string)
+	require.True(t, ok, "cweid should be []string")
+	assert.Contains(t, cweid, "CWE-29")
+
+	// cveid
+	cveid, ok := req.Tags["cveid"].([]string)
+	require.True(t, ok, "cveid should be []string")
+	assert.Contains(t, cveid, "CVE-2018-1002204")
+
+	// ghsaid
+	ghsaid, ok := req.Tags["ghsaid"].([]string)
+	require.True(t, ok, "ghsaid should be []string")
+	assert.Contains(t, ghsaid, "GHSA-3v6h-hqm4-2rg6")
+
+	// nist
+	nist := shared.SafeStringSlice(req.Tags["nist"])
+	require.NotNil(t, nist, "nist should be present")
+	assert.NotEmpty(t, nist)
+
+	// cci
+	cciSlice := shared.SafeStringSlice(req.Tags["cci"])
+	require.NotNil(t, cciSlice, "cci should be present")
+	assert.NotEmpty(t, cciSlice)
+}
+
+// ---- Status: all results are Failed ----
+
+func TestConvertSnyk_AllResultsFailed(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	for _, req := range result.Baselines[0].Requirements {
+		for _, r := range req.Results {
+			assert.Equal(t, hdf.Failed, r.Status,
+				"all Snyk vulnerabilities should be Failed (vuln %s)", req.ID)
+		}
+	}
+}
+
+// ---- Default description ----
+
+func TestConvertSnyk_Description(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
+	require.NotNil(t, req)
+
+	desc := findDescription(req.Descriptions, "default")
+	require.NotNil(t, desc, "expected a 'default' description")
+	assert.Contains(t, desc.Data, "adm-zip")
+}
+
+// ---- Requirement title and ID ----
+
+func TestConvertSnyk_RequirementTitleAndID(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	req := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
+	require.NotNil(t, req)
+	assert.Equal(t, "SNYK-JS-ADMZIP-1065796", req.ID)
+	require.NotNil(t, req.Title)
+	assert.Equal(t, "Directory Traversal", *req.Title)
+}
+
+// ---- Target ----
+
+func TestConvertSnyk_Target(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, result.Targets)
+	assert.Equal(t, "goof", result.Targets[0].Name)
+}
+
+// ---- SARIF routing ----
+
+func TestConvertSnyk_SarifRouting(t *testing.T) {
+	// Load a SARIF fixture from the SARIF converter's fixtures
+	sarifPath := filepath.Join(shared.GetConvertersDir(), "sarif-to-hdf", "fixtures", "input", "gosec.sarif")
+	input, err := os.ReadFile(sarifPath)
+	require.NoError(t, err, "Failed to read SARIF fixture")
+
+	// Should be detected as SARIF and routed to the SARIF converter
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err, "SARIF input should be accepted")
+	require.NotNil(t, result)
+
+	// SARIF converter uses tool driver name as baseline name (not "Snyk Scan")
+	require.Len(t, result.Baselines, 1)
+	assert.NotEqual(t, "Snyk Scan", result.Baselines[0].Name)
+}
+
+func TestConvertSnyk_NativeNotRouted(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Native Snyk JSON uses "Snyk Scan" baseline name
+	assert.Equal(t, "Snyk Scan", result.Baselines[0].Name)
+}
+
+// ---- Full fixture smoke tests ----
+
+func TestConvertSnyk_FullFixtureLocal(t *testing.T) {
+	input := loadFixture(t, "input/nodejs-goof-local.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	// nodejs-goof-local.json has 94 unique vulnerability IDs (379 total entries)
+	assert.Len(t, reqs, 94)
+
+	// Spot-check deduplication: 379 total entries collapsed to 94 requirements
+	totalResults := 0
+	for _, req := range reqs {
+		totalResults += len(req.Results)
+	}
+	assert.Equal(t, 379, totalResults, "total results should match total vulnerability entries")
+}
+
+func TestConvertSnyk_FullFixtureRemote(t *testing.T) {
+	input := loadFixture(t, "input/nodejs-goof-remote.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	assert.NotEmpty(t, reqs)
+	for _, req := range reqs {
+		assert.NotEmpty(t, req.ID)
+		assert.NotEmpty(t, req.Results)
+	}
+}
+
+// ---- Empty vulnerabilities array ----
+
+func TestConvertSnyk_EmptyVulnerabilities(t *testing.T) {
+	input := []byte(`{
+		"ok": true,
+		"vulnerabilities": [],
+		"projectName": "clean-project",
+		"summary": "No known vulnerabilities"
+	}`)
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+	assert.Len(t, result.Baselines[0].Requirements, 0)
+}
+
+// ---- Helper: severityToImpact ----
+
+func TestSeverityToImpact(t *testing.T) {
+	tests := []struct {
+		severity string
+		expected float64
+	}{
+		{"critical", 0.9},
+		{"CRITICAL", 0.9},
+		{"high", 0.7},
+		{"HIGH", 0.7},
+		{"medium", 0.5},
+		{"MEDIUM", 0.5},
+		{"low", 0.3},
+		{"LOW", 0.3},
+		{"", 0.5},
+		{"unknown", 0.5},
+	}
+	for _, tc := range tests {
+		t.Run(tc.severity, func(t *testing.T) {
+			assert.InDelta(t, tc.expected, getImpact(tc.severity), 0.001)
+		})
+	}
+}

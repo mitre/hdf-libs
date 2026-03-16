@@ -1,0 +1,132 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "A high severity vulnerability in libssl that allows remote code execution.",
+              "label": "default"
+            },
+            {
+              "data": "vulnerability is fixed for versions 3.1.0-r5, 3.1.1",
+              "label": "fix"
+            },
+            {
+              "data": "{\"primary\":[{\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\",\"metrics\":{\"baseScore\":9.8,\"exploitabilityScore\":3.9,\"impactScore\":5.9}}]}",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Package: libssl3@3.1.0-r4 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-direct-match",
+              "message": "Severity: High vulnerability is fixed for versions 3.1.0-r5, 3.1.1",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "Grype/CVE-2023-12345",
+          "impact": 0.7,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-12345"
+            },
+            {
+              "url": "https://security.alpinelinux.org/vuln/CVE-2023-12345"
+            }
+          ]
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Critical vulnerability allowing arbitrary code execution.",
+              "label": "default"
+            },
+            {
+              "data": "vulnerability is not-fixed",
+              "label": "fix"
+            },
+            {
+              "data": "{\"primary\":[{\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H\",\"metrics\":{\"baseScore\":10,\"exploitabilityScore\":3.9,\"impactScore\":6}}]}",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Package: vulnerable-lib@1.2.3 | Type: npm | Location: /app/node_modules/vulnerable-lib | Match Type: cpe-match",
+              "message": "Severity: Critical vulnerability is not-fixed",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "Grype/CVE-2023-67890",
+          "impact": 0.9,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-67890"
+            }
+          ]
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Low severity information disclosure vulnerability.",
+              "label": "default"
+            },
+            {
+              "data": "vulnerability is fixed for versions 1.0.1",
+              "label": "fix"
+            },
+            {
+              "data": "{\"primary\":[{\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:L/AC:H/PR:L/UI:R/S:U/C:L/I:N/A:N\",\"metrics\":{\"baseScore\":2.5,\"exploitabilityScore\":0.8,\"impactScore\":1.4}}]}",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Package: test-package@1.0.0 | Type: apk | Location: /lib/apk/db/installed | Match Type: exact-direct-match",
+              "message": "This vulnerability was ignored by configured rules. Severity: Low vulnerability is fixed for versions 1.0.1",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "Grype-Ignored-Match/CVE-2022-99999",
+          "impact": 0.3,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "refs": [
+            {
+              "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-99999"
+            }
+          ]
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "0b4ebae6a202dd39798cbabc72b69b748491ca980c6664f789bc0f219c68d5a8"
+      },
+      "name": "alpine:3.18"
+    }
+  ],
+  "generator": {
+    "name": "grype",
+    "version": "0.79.3"
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}

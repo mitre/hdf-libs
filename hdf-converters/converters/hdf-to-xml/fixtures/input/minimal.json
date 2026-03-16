@@ -1,0 +1,44 @@
+{
+  "baselines": [
+    {
+      "name": "Minimal Baseline",
+      "version": "1.0.0",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "abc123"
+      },
+      "requirements": [
+        {
+          "id": "REQ-001",
+          "title": "Test Requirement",
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "This is a test requirement"
+            }
+          ],
+          "impact": 0.7,
+          "tags": {
+            "nist": ["AC-1", "AC-2"]
+          },
+          "results": [
+            {
+              "status": "passed",
+              "codeDesc": "Control check passed",
+              "startTime": "2025-01-15T10:00:00Z"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "targets": [
+    {
+      "name": "web-server-01",
+      "type": "host"
+    }
+  ],
+  "statistics": {
+    "duration": 45.5
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "name": "@mitre/hdf-utilities",
+  "version": "0.1.0",
+  "description": "Utility functions for HDF libraries (JSON parsing, validation helpers)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./json": {
+      "import": "./dist/json/index.js",
+      "types": "./dist/json/index.d.ts"
+    },
+    "./hash": {
+      "import": "./dist/hash/index.js",
+      "types": "./dist/hash/index.d.ts"
+    },
+    "./xml": {
+      "import": "./dist/xml/index.js",
+      "types": "./dist/xml/index.d.ts"
+    },
+    "./csv": {
+      "import": "./dist/csv/index.js",
+      "types": "./dist/csv/index.d.ts"
+    },
+    "./object": {
+      "import": "./dist/object/index.js",
+      "types": "./dist/object/index.d.ts"
+    },
+    "./string": {
+      "import": "./dist/string/index.js",
+      "types": "./dist/string/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm clean && tsc",
+    "clean": "rimraf dist",
+    "test": "pnpm run test:ts",
+    "test:ts": "vitest run",
+    "test:go": "echo 'No Go tests in hdf-utilities'",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src test",
+    "lint:fix": "eslint src test --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mitre/hdf-libs.git",
+    "directory": "hdf-utilities"
+  },
+  "author": "MITRE Corporation",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "d3-dsv": "^3.0.1",
+    "fast-xml-parser": "5.5.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "hdf",
+    "heimdall",
+    "utilities",
+    "json",
+    "parsing"
+  ],
+  "devDependencies": {
+    "@stryker-mutator/core": "^9.5.1",
+    "@stryker-mutator/vitest-runner": "^9.5.1",
+    "@types/d3-dsv": "^3.0.7"
+  }
+}

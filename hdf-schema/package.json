@@ -3,12 +3,22 @@
   "version": "0.1.0",
   "description": "JSON schemas and multi-language type definitions for Heimdall Data Format (HDF)",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./hdf-results": {
+      "import": "./dist/ts/hdf-results.js",
+      "types": "./dist/ts/hdf-results.d.ts"
+    },
+    "./hdf-baseline": {
+      "import": "./dist/ts/hdf-baseline.js",
+      "types": "./dist/ts/hdf-baseline.d.ts"
+    },
+    "./hdf-comparison": {
+      "import": "./dist/ts/hdf-comparison.js",
+      "types": "./dist/ts/hdf-comparison.d.ts"
     },
     "./schemas/*": "./src/schemas/*"
   },
@@ -17,14 +27,21 @@
     "src/schemas"
   ],
   "scripts": {
-    "build": "tsc",
-    "clean": "rm -rf dist",
-    "test": "vitest run",
+    "build": "pnpm run clean && pnpm run build:schemas && pnpm run build:types && pnpm run build:index",
+    "build:schemas": "node --import tsx src/bundle-schemas.ts",
+    "build:types": "node --import tsx src/generate-types.ts",
+    "build:index": "node --import tsx src/create-index.ts",
+    "watch:schemas": "nodemon --watch src/schemas --ext json --exec 'tsx src/bundle-schemas.ts'",
+    "serve:schemas": "npx http-server dist/schemas -p 8081 --cors",
+    "dev:viewer": "pnpm run build:schemas && concurrently \"pnpm run watch:schemas\" \"pnpm run serve:schemas\"",
+    "clean": "rimraf dist",
+    "test": "pnpm run test:ts",
+    "test:ts": "vitest run",
+    "test:go": "echo 'No Go tests in hdf-schema'",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src test",
-    "lint:fix": "eslint src test --fix",
-    "generate:types": "./scripts/generate-types.sh"
+    "lint:fix": "eslint src test --fix"
   },
   "repository": {
     "type": "git",
@@ -38,7 +55,12 @@
     "ajv-formats": "^3.0.0"
   },
   "devDependencies": {
-    "quicktype-core": "^23.0.0"
+    "@hyperjump/json-schema": "^1.17.2",
+    "concurrently": "^9.2.1",
+    "http-server": "^14.1.1",
+    "nodemon": "^3.1.11",
+    "quicktype-core": "^23.0.0",
+    "tsx": "^4.20.6"
   },
   "engines": {
     "node": ">=20.0.0"

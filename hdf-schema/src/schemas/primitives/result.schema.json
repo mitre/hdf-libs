@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0",
+  "title": "HDF Result Primitives",
+  "description": "Types for representing assessment results and statuses.",
+  "$defs": {
+    "Result_Status": {
+      "type": "string",
+      "enum": [
+        "passed",
+        "failed",
+        "notApplicable",
+        "notReviewed",
+        "error"
+      ],
+      "description": "The status of an individual test result. 'notApplicable' indicates the requirement does not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g., requires manual verification).",
+      "title": "Result Status"
+    },
+    "Requirement_Result": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "status",
+        "codeDesc",
+        "startTime"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/Result_Status",
+          "description": "The status of this test within the requirement. Example: 'failed'."
+        },
+        "codeDesc": {
+          "type": "string",
+          "description": "A description of this test. Example: 'limits.conf * is expected to include [\"hard\", \"maxlogins\", \"10\"]'."
+        },
+        "runTime": {
+          "type": "number",
+          "minimum": 0,
+          "description": "The execution time in seconds for the test."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time at which the test started."
+        },
+        "resource": {
+          "type": "string",
+          "description": "The resource used in the test. Example: 'file', 'command', 'service'."
+        },
+        "resourceId": {
+          "type": "string",
+          "description": "The unique identifier of the resource. Example: '/etc/passwd'."
+        },
+        "message": {
+          "type": "string",
+          "description": "An explanation of the test result. Typically provided for failed tests, errors, or to explain why a test was not applicable or not reviewed."
+        },
+        "exception": {
+          "type": "string",
+          "description": "The type of exception if an exception was thrown."
+        },
+        "backtrace": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The stacktrace/backtrace of the exception if one occurred."
+        }
+      },
+      "description": "A test within a requirement and its results and findings such as how long it took to run.",
+      "title": "Requirement Result"
+    },
+    "Requirement_Description": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "label",
+        "data"
+      ],
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "The type of description. Examples: 'fix', 'check', 'rationale'."
+        },
+        "data": {
+          "type": "string",
+          "description": "The text of the description."
+        }
+      },
+      "description": "A labeled description for a requirement, such as fix text or check instructions.",
+      "title": "Requirement Description"
+    }
+  }
+}

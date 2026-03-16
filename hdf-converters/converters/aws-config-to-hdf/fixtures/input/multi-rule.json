@@ -1,0 +1,118 @@
+{
+  "ConfigRules": [
+    {
+      "ConfigRuleId": "config-rule-abc123",
+      "ConfigRuleName": "root-account-mfa-enabled",
+      "ConfigRuleArn": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-abc123",
+      "Description": "Checks whether the root user of your AWS account requires multi-factor authentication for console sign-in.",
+      "Source": {
+        "Owner": "AWS",
+        "SourceIdentifier": "ROOT_ACCOUNT_MFA_ENABLED"
+      },
+      "InputParameters": "{}",
+      "EvaluationResults": [
+        {
+          "EvaluationResultIdentifier": {
+            "EvaluationResultQualifier": {
+              "ConfigRuleName": "root-account-mfa-enabled",
+              "ResourceType": "AWS::IAM::User",
+              "ResourceId": "arn:aws:iam::123456789012:root"
+            }
+          },
+          "ComplianceType": "NON_COMPLIANT",
+          "Annotation": "Root account does not have MFA enabled",
+          "ConfigRuleInvokedTime": "2024-02-19T00:00:05Z",
+          "ResultRecordedTime": "2024-02-19T00:00:15Z"
+        }
+      ]
+    },
+    {
+      "ConfigRuleId": "config-rule-def456",
+      "ConfigRuleName": "s3-bucket-server-side-encryption-enabled",
+      "ConfigRuleArn": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-def456",
+      "Description": "Checks that your Amazon S3 bucket either has S3 default encryption enabled or that the S3 bucket policy explicitly denies put-object requests without server side encryption.",
+      "Source": {
+        "Owner": "AWS",
+        "SourceIdentifier": "S3_BUCKET_SERVER_SIDE_ENCRYPTION_ENABLED"
+      },
+      "InputParameters": "{}",
+      "EvaluationResults": [
+        {
+          "EvaluationResultIdentifier": {
+            "EvaluationResultQualifier": {
+              "ConfigRuleName": "s3-bucket-server-side-encryption-enabled",
+              "ResourceType": "AWS::S3::Bucket",
+              "ResourceId": "my-secure-bucket"
+            }
+          },
+          "ComplianceType": "COMPLIANT",
+          "ConfigRuleInvokedTime": "2024-02-19T00:00:06Z",
+          "ResultRecordedTime": "2024-02-19T00:00:16Z"
+        },
+        {
+          "EvaluationResultIdentifier": {
+            "EvaluationResultQualifier": {
+              "ConfigRuleName": "s3-bucket-server-side-encryption-enabled",
+              "ResourceType": "AWS::S3::Bucket",
+              "ResourceId": "my-public-bucket"
+            }
+          },
+          "ComplianceType": "NON_COMPLIANT",
+          "Annotation": "Bucket does not have server-side encryption enabled",
+          "ConfigRuleInvokedTime": "2024-02-19T00:00:07Z",
+          "ResultRecordedTime": "2024-02-19T00:00:17Z"
+        }
+      ]
+    },
+    {
+      "ConfigRuleId": "config-rule-ghi789",
+      "ConfigRuleName": "cloudtrail-enabled",
+      "ConfigRuleArn": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-ghi789",
+      "Description": "Checks whether AWS CloudTrail is enabled in your AWS account.",
+      "Source": {
+        "Owner": "AWS",
+        "SourceIdentifier": "CLOUD_TRAIL_ENABLED"
+      },
+      "InputParameters": "{}",
+      "EvaluationResults": [
+        {
+          "EvaluationResultIdentifier": {
+            "EvaluationResultQualifier": {
+              "ConfigRuleName": "cloudtrail-enabled",
+              "ResourceType": "AWS::CloudTrail::Trail",
+              "ResourceId": "arn:aws:cloudtrail:us-east-1:123456789012:trail/my-trail"
+            }
+          },
+          "ComplianceType": "NOT_APPLICABLE",
+          "ConfigRuleInvokedTime": "2024-02-19T00:00:08Z",
+          "ResultRecordedTime": "2024-02-19T00:00:18Z"
+        }
+      ]
+    },
+    {
+      "ConfigRuleId": "config-rule-jkl012",
+      "ConfigRuleName": "custom-org-rule",
+      "ConfigRuleArn": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-jkl012",
+      "Description": "Custom organization rule for internal compliance.",
+      "Source": {
+        "Owner": "CUSTOM_LAMBDA",
+        "SourceIdentifier": "arn:aws:lambda:us-east-1:123456789012:function:my-compliance-function"
+      },
+      "InputParameters": "{}",
+      "EvaluationResults": [
+        {
+          "EvaluationResultIdentifier": {
+            "EvaluationResultQualifier": {
+              "ConfigRuleName": "custom-org-rule",
+              "ResourceType": "AWS::EC2::Instance",
+              "ResourceId": "some-resource"
+            }
+          },
+          "ComplianceType": "INSUFFICIENT_DATA",
+          "ConfigRuleInvokedTime": "2024-02-19T00:00:09Z",
+          "ResultRecordedTime": "2024-02-19T00:00:19Z"
+        }
+      ]
+    }
+  ]
+}

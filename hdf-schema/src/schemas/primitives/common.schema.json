@@ -1,0 +1,684 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0",
+  "title": "HDF Common Primitives",
+  "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
+  "$defs": {
+    "Hash_Algorithm": {
+      "type": "string",
+      "enum": [
+        "sha256",
+        "sha384",
+        "sha512"
+      ],
+      "description": "Supported cryptographic hash algorithms for checksums and integrity verification.",
+      "title": "Hash Algorithm"
+    },
+    "Requirement_Group": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "id",
+        "requirements"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the group. Example: the relative path to the file specifying the requirements."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the group - should be human readable."
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The set of requirements as specified by their ids in this group. Example: 'SV-238196'."
+        }
+      },
+      "description": "Describes a group of requirements, such as those defined in a single file.",
+      "title": "Requirement Group"
+    },
+    "Dependency": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name or assigned alias."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "The address of the dependency."
+        },
+        "branch": {
+          "type": "string",
+          "description": "The branch name for a git repo."
+        },
+        "path": {
+          "type": "string",
+          "description": "The relative path if the dependency is locally available."
+        },
+        "statusMessage": {
+          "type": "string",
+          "description": "The reason for the status if it is 'failed' or 'skipped'."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status. Should be: 'loaded', 'failed', or 'skipped'."
+        },
+        "git": {
+          "type": "string",
+          "format": "uri",
+          "description": "The location of the git repo. Example: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'."
+        },
+        "supermarket": {
+          "type": "string",
+          "description": "The 'user/profilename' attribute for a Supermarket server."
+        },
+        "compliance": {
+          "type": "string",
+          "description": "The 'user/profilename' attribute for an Automate server."
+        }
+      },
+      "examples": [
+        {
+          "name": "ubuntu-22.04-baseline",
+          "url": "https://github.com/my-org/ubuntu-22.04-stig-baseline",
+          "git": "https://github.com/my-org/ubuntu-22.04-stig-baseline.git",
+          "branch": "main",
+          "status": "loaded"
+        },
+        {
+          "name": "ssl-tls-baseline",
+          "path": "../shared-baselines/ssl-tls",
+          "status": "loaded"
+        },
+        {
+          "name": "windows-2022-baseline",
+          "git": "https://github.com/security-org/windows-2022-stig.git",
+          "branch": "v1.2.0",
+          "status": "failed",
+          "statusMessage": "Unable to clone repository: authentication failed"
+        },
+        {
+          "name": "chef-supermarket-baseline",
+          "supermarket": "dev-sec/linux-baseline",
+          "status": "loaded"
+        }
+      ],
+      "description": "A dependency for a baseline. Can include relative paths or URLs for where to find the dependency.",
+      "title": "Dependency"
+    },
+    "Reference": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "ref"
+          ],
+          "properties": {
+            "ref": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "A human readable/meaningful reference. Example: a book title."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "description": "An array of reference objects."
+                }
+              ]
+            }
+          },
+          "description": "A reference using the 'ref' field."
+        },
+        {
+          "type": "object",
+          "required": [
+            "url"
+          ],
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "description": "A URL pointing at the reference."
+        },
+        {
+          "type": "object",
+          "required": [
+            "uri"
+          ],
+          "properties": {
+            "uri": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "description": "A URI pointing at the reference."
+        }
+      ],
+      "description": "A reference to an external document.",
+      "title": "Reference"
+    },
+    "Source_Location": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Path to the file that this requirement originates from."
+        },
+        "line": {
+          "type": "number",
+          "description": "The line on which this requirement is located."
+        }
+      },
+      "description": "The explicit location of a requirement within source code.",
+      "title": "Source Location"
+    },
+    "Supported_Platform": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [],
+      "properties": {
+        "platformFamily": {
+          "type": "string",
+          "description": "The platform family. Example: 'redhat'."
+        },
+        "platformName": {
+          "type": "string",
+          "description": "The platform name - can include wildcards. Example: 'debian'."
+        },
+        "platform": {
+          "type": "string",
+          "description": "The location of the platform. Can be: 'os', 'aws', 'azure', or 'gcp'."
+        },
+        "release": {
+          "type": "string",
+          "description": "The release of the platform. Example: '20.04' for 'ubuntu'."
+        }
+      },
+      "description": "A supported platform target. Example: the platform name being 'ubuntu'.",
+      "title": "Supported Platform"
+    },
+    "Checksum": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "algorithm": {
+          "$ref": "#/$defs/Hash_Algorithm",
+          "description": "The hash algorithm used for the checksum."
+        },
+        "value": {
+          "type": "string",
+          "description": "The checksum value."
+        }
+      },
+      "description": "Cryptographic checksum for baseline integrity verification.",
+      "title": "Checksum"
+    },
+    "Identity": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "identifier",
+        "type"
+      ],
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "description": "The identifier value. Example: 'user@example.com', 'jdoe', 'automated-scanner-01'."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "email",
+            "username",
+            "system",
+            "simple",
+            "other"
+          ],
+          "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for automated systems, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description of the identity or identity system, particularly useful when type is 'other'."
+        }
+      },
+      "description": "Represents an identity that performed an action, such as capturing evidence or applying an override.",
+      "title": "Identity"
+    },
+    "Evidence": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "type",
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "screenshot",
+            "code",
+            "log",
+            "url",
+            "file",
+            "other"
+          ],
+          "description": "The type of evidence being provided."
+        },
+        "data": {
+          "type": "string",
+          "description": "The evidence content. For screenshots/files: base64-encoded data or URL. For code/logs: the raw text. For URLs: the URL string."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what this evidence shows."
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type of the evidence. Example: 'image/png', 'text/plain', 'application/json'."
+        },
+        "encoding": {
+          "type": "string",
+          "description": "Encoding used for the data. Example: 'base64', 'utf-8'."
+        },
+        "size": {
+          "type": "number",
+          "description": "Size of the evidence data in bytes."
+        },
+        "capturedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when this evidence was captured. ISO 8601 format."
+        },
+        "capturedBy": {
+          "$ref": "#/$defs/Identity",
+          "description": "Identity of who or what captured this evidence."
+        }
+      },
+      "examples": [
+        {
+          "type": "screenshot",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+          "description": "Screenshot showing firewall configuration with required ports blocked",
+          "mimeType": "image/png",
+          "encoding": "base64",
+          "size": 95,
+          "capturedAt": "2025-12-14T10:30:00Z",
+          "capturedBy": {
+            "identifier": "security-auditor@example.com",
+            "type": "email"
+          }
+        },
+        {
+          "type": "code",
+          "data": "# Nginx configuration\nserver {\n  listen 443 ssl;\n  ssl_protocols TLSv1.2 TLSv1.3;\n  ssl_ciphers HIGH:!aNULL:!MD5;\n}",
+          "description": "Server configuration showing TLS 1.2+ enforcement",
+          "mimeType": "text/plain",
+          "capturedAt": "2025-12-14T10:45:00Z"
+        },
+        {
+          "type": "log",
+          "data": "[2025-12-14 10:00:15] INFO: Security scan completed - 0 critical vulnerabilities found\n[2025-12-14 10:00:16] INFO: All required security patches applied\n[2025-12-14 10:00:17] INFO: System compliant with security baseline",
+          "description": "Security scan log output",
+          "mimeType": "text/plain",
+          "size": 256
+        },
+        {
+          "type": "url",
+          "data": "https://jira.example.com/browse/SEC-12345",
+          "description": "Link to security ticket documenting remediation work",
+          "capturedAt": "2025-12-14T11:00:00Z"
+        },
+        {
+          "type": "file",
+          "data": "UEsDBBQAAAAIAI1ZX1YhQp8FHgAAABIAAAAIAAAAdGVzdC50eHRLy8nPS8lQSgIAUmNEBhQAAAA=",
+          "description": "Compliance audit report PDF",
+          "mimeType": "application/pdf",
+          "encoding": "base64",
+          "size": 2048,
+          "capturedAt": "2025-12-14T12:00:00Z",
+          "capturedBy": {
+            "identifier": "compliance-system",
+            "type": "system"
+          }
+        }
+      ],
+      "description": "Supporting evidence for a finding or override, such as screenshots, code samples, log excerpts, or URLs.",
+      "title": "Evidence"
+    },
+    "Remediation": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "uri"
+      ],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "URI pointing to automated remediation resources (Ansible playbooks, Terraform scripts, etc.). Examples: GitHub repository, DISA STIG Supplemental Automation Content, vendor-provided scripts."
+        },
+        "checksum": {
+          "$ref": "#/$defs/Checksum",
+          "description": "Optional cryptographic checksum for verifying the integrity of remediation resources fetched from the URI. Recommended for security when referencing external automation scripts."
+        }
+      },
+      "description": "Reference to automated remediation resources for implementing security controls. Points to external automation content like Ansible playbooks, Terraform scripts, or vendor-provided remediation tools.",
+      "title": "Remediation"
+    },
+    "Verification_Method": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "type",
+        "controller"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The type of verification method. Example: 'JsonWebKey2020', 'RsaVerificationKey2018', 'Ed25519VerificationKey2020'."
+        },
+        "controller": {
+          "type": "string",
+          "description": "The entity that controls this verification method. Can be a DID, URI, or other identifier."
+        },
+        "publicKeyJwk": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Public key in JSON Web Key format."
+        },
+        "publicKeyPem": {
+          "type": "string",
+          "description": "Public key in PEM format. Example: '-----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----'."
+        },
+        "publicKeyBase58": {
+          "type": "string",
+          "description": "Public key in Base58 format, commonly used with Ed25519 keys."
+        }
+      },
+      "description": "Verification method containing the public key needed to verify a digital signature. Supports multiple key formats including JWK (for RSA, EC), PEM, and Base58.",
+      "title": "Verification Method"
+    },
+    "Milestone": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "description",
+        "estimatedCompletion",
+        "status"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Description of this milestone or task."
+        },
+        "estimatedCompletion": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Estimated completion date. ISO 8601 format."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "inProgress",
+            "completed"
+          ],
+          "description": "Current status of this milestone."
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Actual completion timestamp. ISO 8601 format."
+        },
+        "completedBy": {
+          "$ref": "#/$defs/Identity",
+          "description": "Identity of who completed this milestone."
+        }
+      },
+      "description": "A milestone or task within a POA&M remediation plan.",
+      "title": "Milestone"
+    },
+    "Signature": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "type",
+        "created",
+        "creator",
+        "signatureValue",
+        "proofPurpose",
+        "verificationMethod"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The signature suite type. Example: 'JsonWebSignature2020', 'RsaSignature2018', 'Ed25519Signature2020'."
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the signature was created. ISO 8601 format."
+        },
+        "creator": {
+          "$ref": "#/$defs/Identity",
+          "description": "The identity that created this signature."
+        },
+        "signatureValue": {
+          "type": "string",
+          "description": "The base64-encoded or base58-encoded signature value."
+        },
+        "proofPurpose": {
+          "type": "string",
+          "description": "The purpose of this signature. Example: 'attestation', 'authentication', 'assertionMethod'."
+        },
+        "verificationMethod": {
+          "$ref": "#/$defs/Verification_Method",
+          "description": "The verification method containing the public key for signature verification."
+        },
+        "nonce": {
+          "type": "string",
+          "description": "Random value to prevent replay attacks."
+        },
+        "challenge": {
+          "type": "string",
+          "description": "Challenge value from the verifier, used in challenge-response authentication."
+        },
+        "domain": {
+          "type": "string",
+          "description": "Domain restriction for the signature, prevents cross-domain replay attacks."
+        }
+      },
+      "examples": [
+        {
+          "type": "JsonWebSignature2020",
+          "created": "2025-12-14T10:00:00Z",
+          "creator": {
+            "identifier": "security-team@example.com",
+            "type": "email"
+          },
+          "signatureValue": "eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..MEYCIQDvKbtLRhWAa",
+          "proofPurpose": "attestation",
+          "verificationMethod": {
+            "type": "JsonWebKey2020",
+            "controller": "did:example:123456789abcdefghi",
+            "publicKeyJwk": {
+              "kty": "RSA",
+              "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtV",
+              "e": "AQAB"
+            }
+          }
+        },
+        {
+          "type": "RsaSignature2018",
+          "created": "2025-12-14T11:30:00Z",
+          "creator": {
+            "identifier": "ciso@example.com",
+            "type": "email"
+          },
+          "signatureValue": "pY9...Cg==",
+          "proofPurpose": "authentication",
+          "verificationMethod": {
+            "type": "RsaVerificationKey2018",
+            "controller": "https://example.com/issuers/565049",
+            "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAryQICCl6NZ5gDKrnSztO\n-----END PUBLIC KEY-----"
+          },
+          "nonce": "c0ae1c8e-c7e7-469f-b252-86e6a0e7387e"
+        },
+        {
+          "type": "Ed25519Signature2020",
+          "created": "2025-12-14T14:00:00Z",
+          "creator": {
+            "identifier": "automated-signer",
+            "type": "system",
+            "description": "Hardware security module (HSM) for automated attestations"
+          },
+          "signatureValue": "z58DAdFfa9SkqZMVMxABEBC59Ck6WibLZ",
+          "proofPurpose": "assertionMethod",
+          "verificationMethod": {
+            "type": "Ed25519VerificationKey2020",
+            "controller": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+            "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
+          },
+          "challenge": "1f44d2f3-d16c-47a4-9f5f-1d6e8f4e3a2b",
+          "domain": "https://compliance.example.com"
+        }
+      ],
+      "description": "A digital signature following W3C Data Integrity Proofs pattern. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other cryptographic signing methods via JWK, PEM, or Base58 key formats.",
+      "title": "Signature"
+    },
+    "Baseline_Metadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name - must be unique."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title - should be human readable."
+        },
+        "maintainer": {
+          "type": "string",
+          "description": "The maintainer(s)."
+        },
+        "copyright": {
+          "type": "string",
+          "description": "The copyright holder(s)."
+        },
+        "copyrightEmail": {
+          "type": "string",
+          "description": "The email address or other contact information of the copyright holder(s)."
+        },
+        "license": {
+          "type": "string",
+          "description": "The copyright license. Example: 'Apache-2.0'."
+        },
+        "summary": {
+          "type": "string",
+          "description": "The summary. Example: the Security Technical Implementation Guide (STIG) header."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the baseline."
+        },
+        "supports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Supported_Platform"
+          },
+          "description": "The set of supported platform targets."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status. Example: 'loaded'."
+        }
+      },
+      "description": "Shared metadata fields for baselines. Used in both standalone baseline documents and evaluated baseline results.",
+      "title": "Baseline Metadata"
+    },
+    "Requirement_Core": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The requirement identifier. Example: 'SV-238196'."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title - is nullable."
+        },
+        "descriptions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "unevaluatedProperties": false,
+            "required": [
+              "label",
+              "data"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Description category. The 'default' label is required for the primary description. Common labels: 'default', 'check', 'fix', 'rationale'. Tools may use custom labels."
+              },
+              "data": {
+                "type": "string",
+                "description": "The description text content."
+              }
+            }
+          },
+          "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
+        },
+        "impact": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "The impactfulness or severity (0.0 to 1.0)."
+        },
+        "refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Reference"
+          },
+          "description": "The set of references to external documents."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "A set of tags - usually metadata like CCI, STIG ID, severity."
+        },
+        "code": {
+          "type": "string",
+          "description": "The raw source code of the requirement. Set to null for manual-only requirements or requirements not yet implemented. Note that if this is an overlay, it does not include the underlying source code."
+        },
+        "sourceLocation": {
+          "$ref": "#/$defs/Source_Location",
+          "description": "The explicit location of the requirement within the source code."
+        }
+      },
+      "description": "Core requirement fields shared between baseline requirements and evaluated requirements. Contains the fundamental requirement definition without assessment results.",
+      "title": "Requirement Core"
+    }
+  }
+}

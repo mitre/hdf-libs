@@ -1,0 +1,90 @@
+{
+  "timestamp": "2026-01-29T18:00:00.000Z",
+  "baselines": [
+    {
+      "name": "Example STIG Baseline",
+      "version": "1.0.0",
+      "title": "Example Security Technical Implementation Guide",
+      "maintainer": "DISA",
+      "supports": [],
+      "attributes": [],
+      "groups": [],
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "abc123"
+      },
+      "requirements": [
+        {
+          "id": "SV-123456",
+          "title": "System must enforce password complexity",
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "The system must require passwords to contain at least 12 characters with uppercase, lowercase, numbers, and special characters."
+            }
+          ],
+          "impact": 0.7,
+          "tags": {
+            "cci": ["CCI-000192"],
+            "nist": ["IA-5 (1)"],
+            "severity": "high"
+          },
+          "sourceLocation": {
+            "ref": "SV-123456",
+            "line": 1
+          },
+          "results": [
+            {
+              "status": "passed",
+              "codeDesc": "Password policy check",
+              "startTime": "2026-01-29T18:00:01.000Z"
+            }
+          ]
+        },
+        {
+          "id": "SV-123457",
+          "title": "System must log authentication attempts",
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "All successful and failed authentication attempts must be logged."
+            }
+          ],
+          "impact": 0.5,
+          "tags": {
+            "cci": ["CCI-000172"],
+            "nist": ["AU-12"],
+            "severity": "medium"
+          },
+          "sourceLocation": {
+            "ref": "SV-123457",
+            "line": 50
+          },
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "Authentication logging check",
+              "message": "Audit logging is not configured",
+              "startTime": "2026-01-29T18:00:02.000Z"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "targets": [
+    {
+      "name": "test-server-01",
+      "type": "host",
+      "fqdn": "test-server-01.example.com",
+      "ipAddress": "10.1.2.3"
+    }
+  ],
+  "statistics": {
+    "duration": 5.2
+  },
+  "generator": {
+    "name": "test-converter",
+    "version": "1.0.0"
+  }
+}

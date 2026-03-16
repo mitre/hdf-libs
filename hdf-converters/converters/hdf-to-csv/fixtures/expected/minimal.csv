@@ -1,0 +1,3 @@
+Baseline ID,Baseline Version,Baseline Title,Target ID,Target Type,Requirement ID,Requirement Title,Description,Severity,Impact,Status,NIST Controls,CCI Controls,Result Message
+Example STIG Baseline,1.0.0,Example Security Technical Implementation Guide,test-server-01,host,SV-123456,System must enforce password complexity,"The system must require passwords to contain at least 12 characters with uppercase, lowercase, numbers, and special characters.",high,0.7,passed,IA-5 (1),CCI-000192,
+Example STIG Baseline,1.0.0,Example Security Technical Implementation Guide,test-server-01,host,SV-123457,System must log authentication attempts,All successful and failed authentication attempts must be logged.,medium,0.5,failed,AU-12,CCI-000172,Audit logging is not configured

@@ -1,0 +1,127 @@
+# golangci-lint configuration
+# https://golangci-lint.run/usage/configuration/
+
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    # Default linters (enabled by default in v2)
+    - errcheck      # Check for unchecked errors
+    - govet         # Report suspicious constructs
+    - ineffassign   # Detect ineffective assignments
+    - staticcheck   # Static analysis (includes gosimple, stylecheck)
+    - unused        # Check for unused code
+
+    # Additional linters
+    - bodyclose     # Check HTTP body is closed
+    - dogsled       # Check for too many blank identifiers
+    - dupl          # Code duplication
+    - errname       # Check error naming conventions
+    - errorlint     # Find issues with error wrapping
+    - exhaustive    # Check switch exhaustiveness
+    - gocognit      # Cognitive complexity
+    - goconst       # Find repeated strings that could be constants
+    - gocritic      # Opinionated linter
+    - gocyclo       # Cyclomatic complexity
+    - godot         # Check comments end with period
+    - gosec         # Security checks (SAST)
+    - misspell      # Spell checker
+    - nakedret      # Naked returns in long functions
+    - nilerr        # Return nil error after checking error
+    - noctx         # HTTP requests without context
+    - revive        # Fast, configurable linter
+    - tparallel     # Detect inappropriate use of t.Parallel
+    - unconvert     # Remove unnecessary type conversions
+    - unparam       # Report unused function parameters
+    - whitespace    # Detect leading/trailing whitespace
+
+  exclusions:
+    rules:
+      # Exclude some linters from running on test files
+      - path: '_test\.go'
+        linters:
+          - gosec
+          - gocyclo
+          - gocognit
+
+      # Exclude generated files
+      - path: 'pkg/hdf/hdf_results\.go'
+        linters:
+          - dupl
+          - gocyclo
+          - gocognit
+          - gocritic
+          - revive
+
+      - path: 'pkg/hdf/hdf_baseline\.go'
+        linters:
+          - dupl
+          - gocyclo
+          - gocognit
+          - gocritic
+          - revive
+
+  settings:
+    gocyclo:
+      min-complexity: 20
+
+    gocognit:
+      min-complexity: 40
+
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+
+    dupl:
+      threshold: 100
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+      disabled-checks:
+        - whyNoLint      # We don't require nolint comments to have explanations
+        - unnamedResult  # Not required for simple return types
+
+    gosec:
+      excludes:
+        - G104  # Audit errors not checked (we handle this with errcheck)
+        - G304  # File path provided as taint input - expected for CLI tools
+
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: if-return
+        - name: increment-decrement
+        - name: var-naming
+        - name: var-declaration
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unreachable-code
+
+formatters:
+  enable:
+    - gofmt         # Check formatting
+    - goimports     # Check imports
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 10

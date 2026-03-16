@@ -1,0 +1,543 @@
+{
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "SecurityScanner",
+          "version": "3.2.1",
+          "informationUri": "https://example.com/securityscanner",
+          "rules": [
+            {
+              "id": "SEC-001",
+              "name": "SqlInjection",
+              "shortDescription": {
+                "text": "SQL Injection vulnerability detected"
+              },
+              "fullDescription": {
+                "text": "User-controlled input is used directly in a SQL query without proper sanitization, allowing an attacker to manipulate the query."
+              },
+              "helpUri": "https://example.com/rules/SEC-001",
+              "help": {
+                "text": "Use parameterized queries or prepared statements instead of string concatenation to build SQL queries."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "relationships": [
+                {
+                  "target": {
+                    "id": "89",
+                    "toolComponent": {
+                      "name": "CWE"
+                    }
+                  },
+                  "kinds": ["superset"]
+                }
+              ],
+              "properties": {
+                "tags": ["security", "sql", "injection", "CWE-89"]
+              }
+            },
+            {
+              "id": "SEC-002",
+              "name": "WeakCrypto",
+              "shortDescription": {
+                "text": "Use of weak cryptographic algorithm"
+              },
+              "fullDescription": {
+                "text": "The code uses a cryptographic algorithm that is considered weak and may be vulnerable to attacks."
+              },
+              "helpUri": "https://example.com/rules/SEC-002",
+              "help": {
+                "text": "Replace MD5/SHA1 with SHA-256 or stronger algorithms for cryptographic purposes."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "relationships": [
+                {
+                  "target": {
+                    "id": "327",
+                    "toolComponent": {
+                      "name": "CWE"
+                    }
+                  },
+                  "kinds": ["superset"]
+                }
+              ]
+            },
+            {
+              "id": "SEC-003",
+              "name": "HardcodedCredential",
+              "shortDescription": {
+                "text": "Hardcoded credential detected"
+              },
+              "fullDescription": {
+                "text": "A credential (password, API key, or token) appears to be hardcoded in the source code."
+              },
+              "helpUri": "https://example.com/rules/SEC-003",
+              "help": {
+                "text": "Store credentials in environment variables or a secrets manager instead of hardcoding them."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "relationships": [
+                {
+                  "target": {
+                    "id": "798",
+                    "toolComponent": {
+                      "name": "CWE"
+                    }
+                  },
+                  "kinds": ["superset"]
+                }
+              ]
+            },
+            {
+              "id": "SEC-004",
+              "name": "InfoLeak",
+              "shortDescription": {
+                "text": "Information disclosure through error messages"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "relationships": [
+                {
+                  "target": {
+                    "id": "209",
+                    "toolComponent": {
+                      "name": "CWE"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "SEC-005",
+              "name": "DeprecatedAPI",
+              "shortDescription": {
+                "text": "Use of deprecated API"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              }
+            }
+          ]
+        }
+      },
+      "taxonomies": [
+        {
+          "name": "CWE",
+          "version": "4.13",
+          "organization": "MITRE",
+          "taxa": [
+            {
+              "id": "89",
+              "name": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+            },
+            {
+              "id": "327",
+              "name": "Use of a Broken or Risky Cryptographic Algorithm"
+            },
+            {
+              "id": "798",
+              "name": "Use of Hard-coded Credentials"
+            },
+            {
+              "id": "209",
+              "name": "Generation of Error Message Containing Sensitive Information"
+            }
+          ]
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "SEC-001",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "SQL injection: User input concatenated into SQL query without parameterization."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/db/queries.go"
+                },
+                "region": {
+                  "startLine": 45,
+                  "startColumn": 12,
+                  "endLine": 45,
+                  "endColumn": 78,
+                  "snippet": {
+                    "text": "db.Query(\"SELECT * FROM users WHERE name = '\" + userInput + \"'\")"
+                  }
+                }
+              }
+            }
+          ],
+          "relatedLocations": [
+            {
+              "id": 1,
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/handlers/user.go"
+                },
+                "region": {
+                  "startLine": 22,
+                  "startColumn": 5
+                }
+              },
+              "message": {
+                "text": "User input originates here"
+              }
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "src/handlers/user.go"
+                          },
+                          "region": {
+                            "startLine": 22,
+                            "startColumn": 5
+                          }
+                        },
+                        "message": {
+                          "text": "User input received from request parameter"
+                        }
+                      },
+                      "importance": "essential"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "src/handlers/user.go"
+                          },
+                          "region": {
+                            "startLine": 30,
+                            "startColumn": 10
+                          }
+                        },
+                        "message": {
+                          "text": "Input passed to query builder"
+                        }
+                      },
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "src/db/queries.go"
+                          },
+                          "region": {
+                            "startLine": 45,
+                            "startColumn": 12
+                          }
+                        },
+                        "message": {
+                          "text": "Unsanitized input used in SQL query"
+                        }
+                      },
+                      "importance": "essential"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "Use parameterized query: db.Query(\"SELECT * FROM users WHERE name = ?\", userInput)"
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "src/db/queries.go"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "startLine": 45,
+                        "startColumn": 12,
+                        "endLine": 45,
+                        "endColumn": 78
+                      },
+                      "insertedContent": {
+                        "text": "db.Query(\"SELECT * FROM users WHERE name = ?\", userInput)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "fingerprints": {
+            "primaryLocationHash": "abc123def456"
+          },
+          "partialFingerprints": {
+            "primaryLocationLineHash": "line45hash"
+          }
+        },
+        {
+          "ruleId": "SEC-002",
+          "ruleIndex": 1,
+          "message": {
+            "text": "Weak cryptographic algorithm MD5 used for password hashing."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/auth/hash.go"
+                },
+                "region": {
+                  "startLine": 18,
+                  "startColumn": 3,
+                  "snippet": {
+                    "text": "h := md5.New()"
+                  }
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "Replace md5.New() with sha256.New() or use bcrypt for password hashing."
+              },
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "src/auth/hash.go"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "startLine": 18,
+                        "startColumn": 3,
+                        "endLine": 18,
+                        "endColumn": 17
+                      },
+                      "insertedContent": {
+                        "text": "h := sha256.New()"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "SEC-003",
+          "ruleIndex": 2,
+          "level": "error",
+          "message": {
+            "text": "Hardcoded API key found in source code."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/config/settings.go"
+                },
+                "region": {
+                  "startLine": 8,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "suppressions": [
+            {
+              "kind": "inSource",
+              "status": "accepted",
+              "justification": "This is a test API key used only in development environments"
+            }
+          ]
+        },
+        {
+          "ruleId": "SEC-003",
+          "ruleIndex": 2,
+          "level": "error",
+          "message": {
+            "text": "Hardcoded database password found in source code."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/config/db.go"
+                },
+                "region": {
+                  "startLine": 15,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "suppressions": [
+            {
+              "kind": "external",
+              "status": "rejected"
+            }
+          ]
+        },
+        {
+          "ruleId": "SEC-004",
+          "ruleIndex": 3,
+          "kind": "pass",
+          "level": "none",
+          "message": {
+            "text": "Error messages properly sanitized in this handler."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/handlers/error.go"
+                },
+                "region": {
+                  "startLine": 30,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SEC-005",
+          "ruleIndex": 4,
+          "kind": "notApplicable",
+          "message": {
+            "text": "Deprecated API check not applicable to this file type."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/static/index.html"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SEC-004",
+          "ruleIndex": 3,
+          "kind": "review",
+          "message": {
+            "text": "Error handling pattern needs manual review for information disclosure."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/handlers/api.go"
+                },
+                "region": {
+                  "startLine": 55,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SEC-001",
+          "ruleIndex": 0,
+          "kind": "informational",
+          "message": {
+            "text": "SQL query construction reviewed and found to use parameterized queries correctly."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/db/safe_queries.go"
+                },
+                "region": {
+                  "startLine": 10,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SEC-001",
+          "ruleIndex": 0,
+          "kind": "open",
+          "level": "error",
+          "message": {
+            "text": "Potential SQL injection in dynamically generated query - investigation pending."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/db/dynamic.go"
+                },
+                "region": {
+                  "startLine": 88,
+                  "startColumn": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SEC-003",
+          "ruleIndex": 2,
+          "level": "error",
+          "message": {
+            "text": "Hardcoded token found in configuration."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/config/tokens.go"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "suppressions": [
+            {
+              "kind": "inSource",
+              "status": "underReview",
+              "justification": "Reviewing whether this token is still active"
+            },
+            {
+              "kind": "external",
+              "status": "accepted",
+              "justification": "Marked as false positive by security team"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

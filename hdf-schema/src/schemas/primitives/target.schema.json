@@ -1,0 +1,532 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0",
+  "title": "HDF Target Primitives",
+  "description": "Polymorphic target system supporting diverse scan targets from 35+ security tools.",
+  "$defs": {
+    "Base_Target": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "type",
+        "name"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Target type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name for this target."
+        }
+      },
+      "description": "Base properties shared by all target types.",
+      "title": "Base Target"
+    },
+    "Target": {
+      "description": "A scan target. Uses discriminated union pattern with 'type' field as discriminator.",
+      "title": "Target",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Host_Target"
+        },
+        {
+          "$ref": "#/$defs/Container_Image_Target"
+        },
+        {
+          "$ref": "#/$defs/Container_Instance_Target"
+        },
+        {
+          "$ref": "#/$defs/Container_Platform_Target"
+        },
+        {
+          "$ref": "#/$defs/Cloud_Account_Target"
+        },
+        {
+          "$ref": "#/$defs/Cloud_Resource_Target"
+        },
+        {
+          "$ref": "#/$defs/Repository_Target"
+        },
+        {
+          "$ref": "#/$defs/Application_Target"
+        },
+        {
+          "$ref": "#/$defs/Artifact_Target"
+        },
+        {
+          "$ref": "#/$defs/Network_Target"
+        },
+        {
+          "$ref": "#/$defs/Database_Target"
+        }
+      ]
+    },
+    "Host_Target": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "host"
+            },
+            "fqdn": {
+              "type": "string",
+              "format": "hostname",
+              "description": "Fully qualified domain name."
+            },
+            "ipAddress": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "ipv4"
+                },
+                {
+                  "type": "string",
+                  "format": "ipv6"
+                }
+              ],
+              "description": "IP address of the host."
+            },
+            "macAddress": {
+              "type": "string",
+              "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
+              "description": "MAC address of the host in colon-separated hexadecimal format (e.g., '00:1A:2B:3C:4D:5E')."
+            },
+            "osName": {
+              "type": "string",
+              "description": "Operating system name."
+            },
+            "osVersion": {
+              "type": "string",
+              "description": "Operating system version."
+            }
+          }
+        }
+      ],
+      "examples": [
+        {
+          "type": "host",
+          "name": "web-server-01",
+          "fqdn": "web01.prod.example.com",
+          "ipAddress": "192.168.1.100",
+          "macAddress": "00:1A:2B:3C:4D:5E",
+          "osName": "Ubuntu",
+          "osVersion": "22.04 LTS"
+        },
+        {
+          "type": "host",
+          "name": "database-server",
+          "ipAddress": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+          "osName": "Red Hat Enterprise Linux",
+          "osVersion": "9.2"
+        }
+      ],
+      "description": "A physical or virtual server, workstation, or network device.",
+      "title": "Host Target"
+    },
+    "Container_Image_Target": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "containerImage"
+            },
+            "imageId": {
+              "type": "string",
+              "description": "Container image ID."
+            },
+            "registry": {
+              "type": "string",
+              "description": "Container registry. Example: 'docker.io'."
+            },
+            "repository": {
+              "type": "string",
+              "description": "Repository name. Example: 'library/nginx'."
+            },
+            "tag": {
+              "type": "string",
+              "description": "Image tag. Example: '1.25'."
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^(sha256:[a-f0-9]{64}|sha512:[a-f0-9]{128}|blake3:[a-f0-9]{64})$",
+              "description": "Image digest for immutable reference. Example: 'sha256:abc123...'. Must be sha256 (64 hex chars), sha512 (128 hex chars), or blake3 (64 hex chars)."
+            }
+          }
+        }
+      ],
+      "examples": [
+        {
+          "type": "containerImage",
+          "name": "nginx-webserver",
+          "registry": "docker.io",
+          "repository": "library/nginx",
+          "tag": "1.25-alpine",
+          "digest": "sha256:a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d"
+        },
+        {
+          "type": "containerImage",
+          "name": "custom-api-service",
+          "registry": "gcr.io",
+          "repository": "my-project/api-service",
+          "tag": "v2.3.1",
+          "imageId": "sha256:9c27eacc5497"
+        }
+      ],
+      "description": "A static container image (not running).",
+      "title": "Container Image Target"
+    },
+    "Container_Instance_Target": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "containerInstance"
+            },
+            "containerId": {
+              "type": "string",
+              "description": "Running container ID."
+            },
+            "image": {
+              "type": "string",
+              "description": "Image the container was started from."
+            },
+            "runtime": {
+              "type": "string",
+              "description": "Container runtime. Example: 'docker', 'containerd', 'cri-o'."
+            }
+          }
+        }
+      ],
+      "description": "A running container instance.",
+      "title": "Container Instance Target"
+    },
+    "Container_Platform_Target": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "containerPlatform"
+            },
+            "platformType": {
+              "type": "string",
+              "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
+            },
+            "clusterName": {
+              "type": "string",
+              "description": "Cluster name."
+            },
+            "namespace": {
+              "type": "string",
+              "description": "Namespace within the cluster, if applicable."
+            },
+            "version": {
+              "type": "string",
+              "description": "Platform version."
+            }
+          }
+        }
+      ],
+      "description": "A container orchestration platform (Kubernetes, OpenShift, ECS, etc.) or workloads running on it.",
+      "title": "Container Platform Target"
+    },
+    "Cloud_Account_Target": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "cloudAccount"
+            },
+            "provider": {
+              "type": "string",
+              "enum": [
+                "aws",
+                "azure",
+                "gcp",
+                "oci",
+                "other",
+                null
+              ],
+              "description": "Cloud provider."
+            },
+            "accountId": {
+              "type": "string",
+              "description": "Cloud account identifier. Example: AWS account ID, Azure subscription ID."
+            },
+            "region": {
+              "type": "string",
+              "description": "Cloud region, if applicable."
+            }
+          }
+        }
+      ],
+      "description": "A cloud provider account (AWS account, Azure subscription, GCP project).",
+      "title": "Cloud Account Target"
+    },
+    "Cloud_Resource_Target": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "cloudResource"
+            },
+            "provider": {
+              "type": "string",
+              "enum": [
+                "aws",
+                "azure",
+                "gcp",
+                "oci",
+                "other",
+                null
+              ],
+              "description": "Cloud provider."
+            },
+            "resourceType": {
+              "type": "string",
+              "description": "Type of cloud resource. Example: 'ec2:instance', 's3:bucket'."
+            },
+            "resourceId": {
+              "type": "string",
+              "description": "Provider-specific resource identifier."
+            },
+            "arn": {
+              "type": "string",
+              "description": "Amazon Resource Name (AWS only)."
+            },
+            "region": {
+              "type": "string",
+              "description": "Cloud region where the resource resides."
+            }
+          }
+        }
+      ],
+      "examples": [
+        {
+          "type": "cloudResource",
+          "name": "production-web-server",
+          "provider": "aws",
+          "resourceType": "ec2:instance",
+          "resourceId": "i-0123456789abcdef0",
+          "arn": "arn:aws:ec2:us-east-1:123456789012:instance/i-0123456789abcdef0",
+          "region": "us-east-1"
+        },
+        {
+          "type": "cloudResource",
+          "name": "application-data-bucket",
+          "provider": "aws",
+          "resourceType": "s3:bucket",
+          "resourceId": "my-application-data-bucket",
+          "arn": "arn:aws:s3:::my-application-data-bucket",
+          "region": "us-west-2"
+        },
+        {
+          "type": "cloudResource",
+          "name": "analytics-vm",
+          "provider": "azure",
+          "resourceType": "Microsoft.Compute/virtualMachines",
+          "resourceId": "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/analytics-rg/providers/Microsoft.Compute/virtualMachines/analytics-vm-01",
+          "region": "eastus"
+        }
+      ],
+      "description": "A specific cloud resource (EC2 instance, S3 bucket, Azure VM, etc.).",
+      "title": "Cloud Resource Target"
+    },
+    "Repository_Target": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "repository"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Repository URL."
+            },
+            "branch": {
+              "type": "string",
+              "description": "Branch that was scanned."
+            },
+            "commit": {
+              "type": "string",
+              "description": "Commit SHA that was scanned."
+            }
+          }
+        }
+      ],
+      "description": "A code repository (for SAST tools).",
+      "title": "Repository Target"
+    },
+    "Application_Target": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "application"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Application URL (for DAST tools)."
+            },
+            "version": {
+              "type": "string",
+              "description": "Application version."
+            },
+            "environment": {
+              "type": "string",
+              "description": "Environment. Example: 'production', 'staging', 'development'."
+            }
+          }
+        }
+      ],
+      "description": "A running application or API (for DAST tools).",
+      "title": "Application Target"
+    },
+    "Artifact_Target": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "artifact"
+            },
+            "packageManager": {
+              "type": "string",
+              "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
+            },
+            "packageName": {
+              "type": "string",
+              "description": "Package name."
+            },
+            "version": {
+              "type": "string",
+              "description": "Package version."
+            },
+            "checksum": {
+              "type": "string",
+              "description": "Package checksum for verification."
+            }
+          }
+        }
+      ],
+      "description": "A software artifact or dependency (for SCA tools).",
+      "title": "Artifact Target"
+    },
+    "Network_Target": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "network"
+            },
+            "cidr": {
+              "type": "string",
+              "description": "Network CIDR block."
+            },
+            "gateway": {
+              "type": "string",
+              "description": "Network gateway address."
+            }
+          }
+        }
+      ],
+      "description": "A network segment or network device.",
+      "title": "Network Target"
+    },
+    "Database_Target": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base_Target"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "database"
+            },
+            "engine": {
+              "type": "string",
+              "description": "Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'."
+            },
+            "version": {
+              "type": "string",
+              "description": "Database version."
+            },
+            "host": {
+              "type": "string",
+              "description": "Database host."
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "description": "Database port."
+            }
+          }
+        }
+      ],
+      "examples": [
+        {
+          "type": "database",
+          "name": "production-postgres",
+          "engine": "postgresql",
+          "version": "15.3",
+          "host": "db.prod.example.com",
+          "port": 5432
+        },
+        {
+          "type": "database",
+          "name": "analytics-mysql",
+          "engine": "mysql",
+          "version": "8.0.34",
+          "host": "192.168.1.50",
+          "port": 3306
+        }
+      ],
+      "description": "A database instance.",
+      "title": "Database Target"
+    }
+  }
+}

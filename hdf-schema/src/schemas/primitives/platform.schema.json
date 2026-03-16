@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/platform/v2.0.0",
+  "title": "HDF Platform Primitive",
+  "description": "Legacy platform information for backward compatibility with existing HDF documents.",
+  "$defs": {
+    "Platform": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "name",
+        "release"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the platform this was run on."
+        },
+        "release": {
+          "type": "string",
+          "description": "The version of the platform this was run on."
+        },
+        "targetId": {
+          "type": "string",
+          "description": "The id of the target. Example: the name and version of the operating system were not sufficient to identify the platform so a release identifier can additionally be provided like '21H2' for the release version of MS Windows 10."
+        }
+      },
+      "description": "Platform information such as its name. This is the legacy target representation; see Target for the new polymorphic target system.",
+      "title": "Platform"
+    }
+  }
+}

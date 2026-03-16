@@ -1,0 +1,725 @@
+{
+  "api_error_message": "",
+  "api_response": {
+    "archive_ts": null,
+    "archived": false,
+    "classification": "TLP:C",
+    "error_count": 0,
+    "errors": {},
+    "expiry_ts": "2023-08-31T12:23:51.158629Z",
+    "file_count": 2,
+    "file_infos": {
+      "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602": {
+        "archive_ts": null,
+        "ascii": "CART..........................6..........Q..../l&.#......P.\".89.",
+        "classification": "TLP:C",
+        "entropy": 6.953992199511245,
+        "expiry_ts": "2023-08-31T12:23:52.094512Z",
+        "from_archive": false,
+        "hex": "4341525401000000000000000000030104010509020603010401050902063600000000000000c2a4aa511c8a1aef2f6c26c12309c2c1d085dc50f7220838390e",
+        "is_section_image": false,
+        "magic": "custom: archive/cart",
+        "md5": "d514623f6e21c38e727a59e93a3ef8ae",
+        "mime": "application/octet-stream",
+        "seen": {
+          "count": 5,
+          "first": "2023-06-13T15:38:19.370391Z",
+          "last": "2023-08-28T12:23:52.145084Z"
+        },
+        "sha1": "5ffd1906ab5a548ea5f51330fb9861c7ad8268aa",
+        "sha256": "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602",
+        "size": 351,
+        "ssdeep": "6:1s323J6Wb0lfG0wO86/DyxtjITWlB2aALDBC4rU39bk1eeKPdm:1sG5Hb0Mz6/DMpITs2Rc4rs9bAZao",
+        "type": "document/stigma"
+      },
+      "03d3a4e7fd27f8cc617b226911a452ab725c42417da5880b928d35d1b1e0fbc6": {
+        "archive_ts": null,
+        "ascii": "CART..........................:..........Q..../l&.#......P.\".8\".",
+        "classification": "TLP:C",
+        "entropy": 6.996816997526528,
+        "expiry_ts": "2023-08-31T12:23:52.094512Z",
+        "from_archive": false,
+        "hex": "4341525401000000000000000000030104010509020603010401050902063a00000000000000c2a4aa511c8a1aef2f6c26c12309c2c1d085dc50f72208382213",
+        "is_section_image": false,
+        "magic": "custom: archive/cart",
+        "md5": "92996352475fdd839c43a2c869fd39e9",
+        "mime": "application/octet-stream",
+        "seen": {
+          "count": 5,
+          "first": "2023-06-13T15:38:19.460515Z",
+          "last": "2023-08-28T12:23:52.151308Z"
+        },
+        "sha1": "a0e8945f72a90c330178cec75bd8457240c2ccd3",
+        "sha256": "03d3a4e7fd27f8cc617b226911a452ab725c42417da5880b928d35d1b1e0fbc6",
+        "size": 362,
+        "ssdeep": "6:1s32TJ6Wb5OPrBwZPXkwf+P0IK/UkeKtGv8XkyRSWXUf3SrTXVIDg+qmGDvi3s:1sGFHbqrBwZ/kwfwcUke3v8XZRlXU1qO",
+        "type": "document/hipcheck"
+      },
+      "595f54e8ea1b2f44c698365520242300f6d2ab1afa69be52d25a9d02443c34cd": {
+        "archive_ts": null,
+        "ascii": "CART..........................I..........Q..../l&.#......P.\".89.",
+        "classification": "TLP:C",
+        "entropy": 7.120931749203795,
+        "expiry_ts": "2023-08-31T12:23:52.094512Z",
+        "from_archive": false,
+        "hex": "4341525401000000000000000000030104010509020603010401050902064900000000000000c2a4aa511c8a1aef2f6c26c12309c2c1d085dc50f7220838390e",
+        "is_section_image": false,
+        "magic": "custom: archive/cart",
+        "md5": "e91af67ccbd0b01ebe5f1cecd8a92180",
+        "mime": "application/octet-stream",
+        "seen": {
+          "count": 5,
+          "first": "2023-06-13T15:38:19.757991Z",
+          "last": "2023-08-28T12:23:52.221424Z"
+        },
+        "sha1": "b265bf2357fa5a304e42beaed10d465edb3ae3fd",
+        "sha256": "595f54e8ea1b2f44c698365520242300f6d2ab1afa69be52d25a9d02443c34cd",
+        "size": 395,
+        "ssdeep": "6:1s32V/lQJ6Wb0lwl6l2hoYO9VyA6VQ4wC0HNTxbplYtwAkWPVm5dbWEYrzo8y:1sGVaHb0JIuVYwj7bLWwkPVmTW",
+        "type": "document/stigma"
+      },
+      "60586f9814358e1850b7e0cbe7f891a29f24233f853d00788f6ef8108e19692c": {
+        "archive_ts": null,
+        "ascii": "CART..........................4..........Q..../l&.#......P.\".8'.",
+        "classification": "TLP:C",
+        "entropy": 7.007954161095705,
+        "expiry_ts": "2023-08-31T12:23:52.094512Z",
+        "from_archive": false,
+        "hex": "4341525401000000000000000000030104010509020603010401050902063400000000000000c2a4aa511c8a1aef2f6c26c12309c2c1d085dc50f72208382715",
+        "is_section_image": false,
+        "magic": "custom: archive/cart",
+        "md5": "241cc7599f2ef7a1dfa1ea9c8106fe84",
+        "mime": "application/octet-stream",
+        "seen": {
+          "count": 5,
+          "first": "2023-06-13T15:38:19.419985Z",
+          "last": "2023-08-28T12:23:52.161859Z"
+        },
+        "sha1": "1f52c6e019a8967759742779c348e5c0c65e94b7",
+        "sha256": "60586f9814358e1850b7e0cbe7f891a29f24233f853d00788f6ef8108e19692c",
+        "size": 369,
+        "ssdeep": "6:1s321J6WNMh4Da2aGB8gmvbvYw9ygjYgyNohrUHEfVBqwenQ:1sGDHNJkbicY2hrzBc",
+        "type": "document/moldy"
+      },
+      "60e5941e7c34e77decf4d079ae18b531d35326ae8bd26d1dbca7ce23de548634": {
+        "archive_ts": null,
+        "ascii": "CART..........................9..........Q..../l&.#......P.\".8'.",
+        "classification": "TLP:C",
+        "entropy": 7.037685313806377,
+        "expiry_ts": "2023-08-31T12:23:52.094512Z",
+        "from_archive": false,
+        "hex": "4341525401000000000000000000030104010509020603010401050902063900000000000000c2a4aa511c8a1aef2f6c26c12309c2c1d085dc50f72208382715",
+        "is_section_image": false,
+        "magic": "custom: archive/cart",
+        "md5": "4bc1497f4501fa3d9288d41fff56b282",
+        "mime": "application/octet-stream",
+        "seen": {
+          "count": 5,
+          "first": "2023-06-13T15:38:19.551415Z",
+          "last": "2023-08-28T12:23:52.156469Z"
+        },
+        "sha1": "2885581e044357ae9b29cbd400105e04529eebff",
+        "sha256": "60e5941e7c34e77decf4d079ae18b531d35326ae8bd26d1dbca7ce23de548634",
+        "size": 375,
+        "ssdeep": "6:1s32X/oJ6WNMhCp8bqaGB81zhxHIHyQjTadQK4bC2ZanRcraoATzNj0piyxqt3e:1sGvUHNUi6DdQvadUC26Raao2JMieqE",
+        "type": "document/moldy"
+      }
+    },
+    "file_tree": {
+      "d32c446821e7fcd3640a9a378c2487085194a6353e3bf8baf27e5ef78b3e86bd": {
+        "children": {
+          "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f": {
+            "children": {},
+            "name": [
+              "rbb_test_dir/eicar-test-file"
+            ],
+            "score": 1000,
+            "sha256": "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f",
+            "size": 68,
+            "truncated": false,
+            "type": "text/plain"
+          },
+          "3e6ea99456f8c133453fc6b4c002d6a0415ef07e0f4f075fb5f8fe98fb28129b": {
+            "children": {},
+            "name": [
+              "rbb_test_dir/PerformTransfer.java"
+            ],
+            "score": 300,
+            "sha256": "3e6ea99456f8c133453fc6b4c002d6a0415ef07e0f4f075fb5f8fe98fb28129b",
+            "size": 2433,
+            "truncated": false,
+            "type": "code/java"
+          },
+          "ba07e9734ed231b9161333e434126e0feb8fd2b99f73b4ee079e1c79a2417742": {
+            "children": {
+              "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602": {
+                "children": {},
+                "name": [
+                  "Capa.stigma"
+                ],
+                "score": 0,
+                "sha256": "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602",
+                "size": 351,
+                "truncated": false,
+                "type": "document/stigma"
+              },
+              "03d3a4e7fd27f8cc617b226911a452ab725c42417da5880b928d35d1b1e0fbc6": {
+                "children": {},
+                "name": [
+                  "Capa.hipcheck"
+                ],
+                "score": 0,
+                "sha256": "03d3a4e7fd27f8cc617b226911a452ab725c42417da5880b928d35d1b1e0fbc6",
+                "size": 362,
+                "truncated": false,
+                "type": "document/hipcheck"
+              },
+              "1cf4c4e746fb314ade933773ed1eac339635f556593524ed53761d0a99486ba6": {
+                "children": {},
+                "name": [
+                  "Geographical-Adventures.hipcheck"
+                ],
+                "score": 100,
+                "sha256": "1cf4c4e746fb314ade933773ed1eac339635f556593524ed53761d0a99486ba6",
+                "size": 401,
+                "truncated": false,
+                "type": "document/hipcheck"
+              },
+              "595f54e8ea1b2f44c698365520242300f6d2ab1afa69be52d25a9d02443c34cd": {
+                "children": {},
+                "name": [
+                  "Geographical-Adventures.stigma"
+                ],
+                "score": 0,
+                "sha256": "595f54e8ea1b2f44c698365520242300f6d2ab1afa69be52d25a9d02443c34cd",
+                "size": 395,
+                "truncated": false,
+                "type": "document/stigma"
+              },
+              "60586f9814358e1850b7e0cbe7f891a29f24233f853d00788f6ef8108e19692c": {
+                "children": {},
+                "name": [
+                  "Capa.moldy"
+                ],
+                "score": 1000,
+                "sha256": "60586f9814358e1850b7e0cbe7f891a29f24233f853d00788f6ef8108e19692c",
+                "size": 369,
+                "truncated": false,
+                "type": "document/moldy"
+              },
+              "60e5941e7c34e77decf4d079ae18b531d35326ae8bd26d1dbca7ce23de548634": {
+                "children": {},
+                "name": [
+                  "Notepad++.moldy"
+                ],
+                "score": 0,
+                "sha256": "60e5941e7c34e77decf4d079ae18b531d35326ae8bd26d1dbca7ce23de548634",
+                "size": 375,
+                "truncated": false,
+                "type": "document/moldy"
+              },
+              "7b1bc90fafe2fb7405f69e22b9d748dbaf0162fc73e4d728d8d236387d13ce02": {
+                "children": {},
+                "name": [
+                  "Geographical-Adventures.moldy"
+                ],
+                "score": 0,
+                "sha256": "7b1bc90fafe2fb7405f69e22b9d748dbaf0162fc73e4d728d8d236387d13ce02",
+                "size": 414,
+                "truncated": false,
+                "type": "document/moldy"
+              },
+              "94361e37680f6297b0d7dea8d0dca7b05828f475484ff9219fec0eaf90c8763d": {
+                "children": {},
+                "name": [
+                  "Notepad++.hipcheck"
+                ],
+                "score": 100,
+                "sha256": "94361e37680f6297b0d7dea8d0dca7b05828f475484ff9219fec0eaf90c8763d",
+                "size": 370,
+                "truncated": false,
+                "type": "document/hipcheck"
+              },
+              "ac1dc5d77d017852c1bc258dd75eb37e803945f617774dc09805c6ef2069cec2": {
+                "children": {},
+                "name": [
+                  "Notepad++.stigma"
+                ],
+                "score": 0,
+                "sha256": "ac1dc5d77d017852c1bc258dd75eb37e803945f617774dc09805c6ef2069cec2",
+                "size": 359,
+                "truncated": false,
+                "type": "document/stigma"
+              },
+              "cb574b9a90ec19d2bbc5d4f575c435d1d5dd7579ed61b9715b8ad99031056755": {
+                "children": {},
+                "name": [
+                  "Putty.hipcheck"
+                ],
+                "score": 500,
+                "sha256": "cb574b9a90ec19d2bbc5d4f575c435d1d5dd7579ed61b9715b8ad99031056755",
+                "size": 357,
+                "truncated": false,
+                "type": "document/hipcheck"
+              },
+              "d97b7bcf488772501bc406a836f396a6d040831a625b962cc8f3d01d715cfc97": {
+                "children": {},
+                "name": [
+                  "Putty.moldy"
+                ],
+                "score": 0,
+                "sha256": "d97b7bcf488772501bc406a836f396a6d040831a625b962cc8f3d01d715cfc97",
+                "size": 363,
+                "truncated": false,
+                "type": "document/moldy"
+              },
+              "e3be5b8ed0d6f2df9b4656d2d3cde60cc456c955a7d5e3d49bb43f801da3b5ac": {
+                "children": {},
+                "name": [
+                  "Putty.stigma"
+                ],
+                "score": 0,
+                "sha256": "e3be5b8ed0d6f2df9b4656d2d3cde60cc456c955a7d5e3d49bb43f801da3b5ac",
+                "size": 352,
+                "truncated": false,
+                "type": "document/stigma"
+              }
+            },
+            "name": [
+              "rbb_test_dir/testbom.sbom"
+            ],
+            "score": 0,
+            "sha256": "ba07e9734ed231b9161333e434126e0feb8fd2b99f73b4ee079e1c79a2417742",
+            "size": 2255,
+            "truncated": false,
+            "type": "text/plain"
+          }
+        },
+        "name": [
+          "rbb_test_dir.zip"
+        ],
+        "score": 0,
+        "sha256": "d32c446821e7fcd3640a9a378c2487085194a6353e3bf8baf27e5ef78b3e86bd",
+        "size": 2181,
+        "truncated": false,
+        "type": "archive/zip"
+      }
+    },
+    "files": [
+      {
+        "name": "rbb_test_dir.zip",
+        "sha256": "d32c446821e7fcd3640a9a378c2487085194a6353e3bf8baf27e5ef78b3e86bd",
+        "size": 2181
+      }
+    ],
+    "from_archive": false,
+    "max_score": 1000,
+    "metadata": {},
+    "missing_error_keys": [],
+    "missing_file_keys": [],
+    "missing_result_keys": [],
+    "params": {
+      "auto_archive": false,
+      "classification": "TLP:C",
+      "deep_scan": false,
+      "delete_after_archive": false,
+      "description": "Inspection of file: submissions/rbb_test_dir.zip",
+      "generate_alert": false,
+      "groups": [
+        "USERS"
+      ],
+      "ignore_cache": false,
+      "ignore_dynamic_recursion_prevention": false,
+      "ignore_filtering": false,
+      "ignore_size": false,
+      "initial_data": null,
+      "malicious": false,
+      "max_extracted": 10000000,
+      "max_supplementary": 10000000,
+      "never_drop": false,
+      "priority": 1000,
+      "profile": false,
+      "psid": null,
+      "quota_item": true,
+      "service_spec": {},
+      "services": {
+        "excluded": [],
+        "rescan": [],
+        "resubmit": [],
+        "runtime_excluded": [],
+        "selected": [
+          "Antivirus",
+          "Static Analysis",
+          "Extraction"
+        ]
+      },
+      "submitter": "admin",
+      "ttl": 3,
+      "type": "USER"
+    },
+    "results": {
+      "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602.Clamav.v4_3_0_0.cEG2B4xfFU7z": {
+        "archive_ts": null,
+        "classification": "TLP:C",
+        "created": "2023-08-28T12:23:54.184896Z",
+        "drop_file": false,
+        "expiry_ts": "2023-08-31T12:23:54.184474Z",
+        "from_archive": false,
+        "response": {
+          "extracted": [],
+          "milestones": {
+            "service_completed": "2023-08-28T12:23:54.179435Z",
+            "service_started": "2023-08-28T12:23:54.164548Z"
+          },
+          "service_context": null,
+          "service_debug_info": null,
+          "service_name": "Clamav",
+          "service_tool_version": null,
+          "service_version": "4.3.0.0",
+          "supplementary": []
+        },
+        "result": {
+          "score": 0,
+          "sections": [
+            {
+              "auto_collapse": false,
+              "body": null,
+              "body_format": "TEXT",
+              "classification": "TLP:C",
+              "depth": 0,
+              "heuristic": {
+                "attack": [],
+                "heur_id": "CLAMAV.0",
+                "name": "Analysis",
+                "score": 0,
+                "signature": []
+              },
+              "tags": [],
+              "title_text": "Results"
+            }
+          ]
+        },
+        "sha256": "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602",
+        "size": 351,
+        "type": "document/stigma"
+      },
+      "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602.CodeQuality.v4_3_0_0.cEG2B4xfFU7z": {
+        "archive_ts": null,
+        "classification": "TLP:C",
+        "created": "2023-08-28T12:23:56.680186Z",
+        "drop_file": false,
+        "expiry_ts": "2023-08-31T12:23:56.679917Z",
+        "from_archive": false,
+        "response": {
+          "extracted": [],
+          "milestones": {
+            "service_completed": "2023-08-28T12:23:56.673104Z",
+            "service_started": "2023-08-28T12:23:56.655590Z"
+          },
+          "service_context": null,
+          "service_debug_info": null,
+          "service_name": "CodeQuality",
+          "service_tool_version": null,
+          "service_version": "4.3.0.0",
+          "supplementary": []
+        },
+        "result": {
+          "score": 0,
+          "sections": [
+            {
+              "auto_collapse": false,
+              "body": "File Type Not Supported.",
+              "body_format": "TEXT",
+              "classification": "TLP:C",
+              "depth": 0,
+              "heuristic": null,
+              "tags": [],
+              "title_text": "Findings"
+            }
+          ]
+        },
+        "sha256": "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602",
+        "size": 351,
+        "type": "document/stigma"
+      },
+      "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602.Stigma.v4_3_0_12.c48i1BYnALWl": {
+        "archive_ts": null,
+        "classification": "TLP:C",
+        "created": "2023-08-28T12:24:10.397872Z",
+        "drop_file": false,
+        "expiry_ts": "2023-08-31T12:24:10.397363Z",
+        "from_archive": false,
+        "response": {
+          "extracted": [],
+          "milestones": {
+            "service_completed": "2023-08-28T12:24:10.392027Z",
+            "service_started": "2023-08-28T12:24:04.715274Z"
+          },
+          "service_context": null,
+          "service_debug_info": null,
+          "service_name": "Stigma",
+          "service_tool_version": null,
+          "service_version": "4.3.0.12",
+          "supplementary": []
+        },
+        "result": {
+          "score": 0,
+          "sections": [
+            {
+              "auto_collapse": false,
+              "body": "Package Name: Capa\nVersion: 1.2.0",
+              "body_format": "TEXT",
+              "classification": "TLP:C",
+              "depth": 0,
+              "heuristic": null,
+              "tags": [],
+              "title_text": "Package Info"
+            },
+            {
+              "auto_collapse": false,
+              "body": "No vulnerabilities were found",
+              "body_format": "TEXT",
+              "classification": "TLP:C",
+              "depth": 0,
+              "heuristic": {
+                "attack": [],
+                "heur_id": "STIGMA.0",
+                "name": "Pass",
+                "score": 0,
+                "signature": []
+              },
+              "tags": [],
+              "title_text": "No Vulnerability"
+            }
+          ]
+        },
+        "sha256": "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602",
+        "size": 351,
+        "type": "document/stigma"
+      },
+      "03d3a4e7fd27f8cc617b226911a452ab725c42417da5880b928d35d1b1e0fbc6.Clamav.v4_3_0_0.cEG2B4xfFU7z": {
+        "archive_ts": null,
+        "classification": "TLP:C",
+        "created": "2023-08-28T12:23:53.190596Z",
+        "drop_file": false,
+        "expiry_ts": "2023-08-31T12:23:53.190284Z",
+        "from_archive": false,
+        "response": {
+          "extracted": [],
+          "milestones": {
+            "service_completed": "2023-08-28T12:23:53.185139Z",
+            "service_started": "2023-08-28T12:23:53.163875Z"
+          },
+          "service_context": null,
+          "service_debug_info": null,
+          "service_name": "Clamav",
+          "service_tool_version": null,
+          "service_version": "4.3.0.0",
+          "supplementary": []
+        },
+        "result": {
+          "score": 0,
+          "sections": [
+            {
+              "auto_collapse": false,
+              "body": null,
+              "body_format": "TEXT",
+              "classification": "TLP:C",
+              "depth": 0,
+              "heuristic": {
+                "attack": [],
+                "heur_id": "CLAMAV.0",
+                "name": "Analysis",
+                "score": 0,
+                "signature": []
+              },
+              "tags": [],
+              "title_text": "Results"
+            }
+          ]
+        },
+        "sha256": "03d3a4e7fd27f8cc617b226911a452ab725c42417da5880b928d35d1b1e0fbc6",
+        "size": 362,
+        "type": "document/hipcheck"
+      },
+      "03d3a4e7fd27f8cc617b226911a452ab725c42417da5880b928d35d1b1e0fbc6.CodeQuality.v4_3_0_0.cEG2B4xfFU7z": {
+        "archive_ts": null,
+        "classification": "TLP:C",
+        "created": "2023-08-28T12:23:55.779286Z",
+        "drop_file": false,
+        "expiry_ts": "2023-08-31T12:23:55.778970Z",
+        "from_archive": false,
+        "response": {
+          "extracted": [],
+          "milestones": {
+            "service_completed": "2023-08-28T12:23:55.773444Z",
+            "service_started": "2023-08-28T12:23:55.747943Z"
+          },
+          "service_context": null,
+          "service_debug_info": null,
+          "service_name": "CodeQuality",
+          "service_tool_version": null,
+          "service_version": "4.3.0.0",
+          "supplementary": []
+        },
+        "result": {
+          "score": 0,
+          "sections": [
+            {
+              "auto_collapse": false,
+              "body": "File Type Not Supported.",
+              "body_format": "TEXT",
+              "classification": "TLP:C",
+              "depth": 0,
+              "heuristic": null,
+              "tags": [],
+              "title_text": "Findings"
+            }
+          ]
+        },
+        "sha256": "03d3a4e7fd27f8cc617b226911a452ab725c42417da5880b928d35d1b1e0fbc6",
+        "size": 362,
+        "type": "document/hipcheck"
+      },
+      "595f54e8ea1b2f44c698365520242300f6d2ab1afa69be52d25a9d02443c34cd.Stigma.v4_3_0_12.c48i1BYnALWl": {
+        "archive_ts": null,
+        "classification": "TLP:C",
+        "created": "2023-08-28T12:23:57.555412Z",
+        "drop_file": false,
+        "expiry_ts": "2023-08-31T12:23:57.554181Z",
+        "from_archive": false,
+        "response": {
+          "extracted": [],
+          "milestones": {
+            "service_completed": "2023-08-28T12:23:56.134745Z",
+            "service_started": "2023-08-28T12:23:53.215873Z"
+          },
+          "service_context": null,
+          "service_debug_info": null,
+          "service_name": "Stigma",
+          "service_tool_version": null,
+          "service_version": "4.3.0.12",
+          "supplementary": []
+        },
+        "result": {
+          "score": 0,
+          "sections": [
+            {
+              "auto_collapse": false,
+              "body": "Package Name: Geographical-Adventures\nVersion: NOASSERTION",
+              "body_format": "TEXT",
+              "classification": "TLP:C",
+              "depth": 0,
+              "heuristic": null,
+              "tags": [],
+              "title_text": "Package Info"
+            },
+            {
+              "auto_collapse": false,
+              "body": "No vulnerabilities were found",
+              "body_format": "TEXT",
+              "classification": "TLP:C",
+              "depth": 0,
+              "heuristic": {
+                "attack": [],
+                "heur_id": "STIGMA.0",
+                "name": "Pass",
+                "score": 0,
+                "signature": []
+              },
+              "tags": [],
+              "title_text": "No Vulnerability"
+            }
+          ]
+        },
+        "sha256": "595f54e8ea1b2f44c698365520242300f6d2ab1afa69be52d25a9d02443c34cd",
+        "size": 395,
+        "type": "document/stigma"
+      },
+      "60586f9814358e1850b7e0cbe7f891a29f24233f853d00788f6ef8108e19692c.Moldy.v4_3_0_0.cEG2B4xfFU7z": {
+        "archive_ts": null,
+        "classification": "TLP:C",
+        "created": "2023-08-28T12:23:53.680303Z",
+        "drop_file": false,
+        "expiry_ts": "2023-08-31T12:23:53.679605Z",
+        "from_archive": false,
+        "response": {
+          "extracted": [],
+          "milestones": {
+            "service_completed": "2023-08-28T12:23:53.675329Z",
+            "service_started": "2023-08-28T12:23:53.457023Z"
+          },
+          "service_context": null,
+          "service_debug_info": null,
+          "service_name": "Moldy",
+          "service_tool_version": null,
+          "service_version": "4.3.0.0",
+          "supplementary": []
+        },
+        "result": {
+          "score": 1000,
+          "sections": [
+            {
+              "auto_collapse": false,
+              "body": "\tGitHub Repository: https://github.com/fireeye/capa.git, version: 1.2.0\nThe package fireeye capa, version 1.2.0 is 5 Major versions behind the latest version v6.1.0 on GitHub.",
+              "body_format": "TEXT",
+              "classification": "TLP:C",
+              "depth": 0,
+              "heuristic": {
+                "attack": [],
+                "heur_id": "MOLDY.3",
+                "name": "Fail",
+                "score": 1000,
+                "signature": []
+              },
+              "tags": [],
+              "title_text": "Major Version"
+            }
+          ]
+        },
+        "sha256": "60586f9814358e1850b7e0cbe7f891a29f24233f853d00788f6ef8108e19692c",
+        "size": 369,
+        "type": "document/moldy"
+      },
+      "60e5941e7c34e77decf4d079ae18b531d35326ae8bd26d1dbca7ce23de548634.Moldy.v4_3_0_0.cEG2B4xfFU7z.e": {
+        "archive_ts": null,
+        "classification": "TLP:C",
+        "created": "2023-08-28T12:38:41.769802Z",
+        "drop_file": false,
+        "expiry_ts": "2023-09-02T12:38:41.769765Z",
+        "from_archive": false,
+        "response": {
+          "extracted": [],
+          "milestones": {
+            "service_completed": "2023-08-28T12:38:41.769960Z",
+            "service_started": "2023-08-28T12:38:41.769914Z"
+          },
+          "service_context": null,
+          "service_debug_info": null,
+          "service_name": "Moldy",
+          "service_tool_version": null,
+          "service_version": "4_3_0_0",
+          "supplementary": []
+        },
+        "result": {
+          "score": 0,
+          "sections": []
+        },
+        "sha256": "60e5941e7c34e77decf4d079ae18b531d35326ae8bd26d1dbca7ce23de548634",
+        "size": null,
+        "type": null
+      }
+    },
+    "state": "completed",
+    "times": {
+      "completed": "2023-08-28T12:25:24.834217Z",
+      "submitted": "2023-08-28T12:23:51.215522Z"
+    },
+    "verdict": {
+      "malicious": [],
+      "non_malicious": []
+    }
+  },
+  "api_server_version": "4.4.0.20",
+  "api_status_code": 200
+}
