@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v2.0.0",
+  "title": "HDF Parameter Primitives",
+  "description": "Input/parameter type definitions for typed, traceable configuration values that bridge governance prose and scanner automation.",
+  "$defs": {
+    "Input_Type": {
+      "type": "string",
+      "enum": [
+        "String",
+        "Numeric",
+        "Boolean",
+        "Array",
+        "Hash",
+        "Regexp"
+      ],
+      "description": "The data type of the input value. Aligns with InSpec input types.",
+      "title": "Input Type"
+    },
+    "Comparison_Operator": {
+      "type": "string",
+      "enum": [
+        "eq",
+        "ne",
+        "lt",
+        "le",
+        "gt",
+        "ge",
+        "contains",
+        "matches",
+        "in",
+        "notIn"
+      ],
+      "description": "Comparison operator for evaluating the input value against observed values. Numeric: eq/ne/lt/le/gt/ge. String: eq/ne/contains/matches. Collection: in/notIn.",
+      "title": "Comparison Operator"
+    },
+    "Input_Constraints": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "properties": {
+        "min": {
+          "type": "number",
+          "description": "Minimum allowed value (for Numeric inputs)."
+        },
+        "max": {
+          "type": "number",
+          "description": "Maximum allowed value (for Numeric inputs)."
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regular expression pattern the value must match (for String inputs)."
+        },
+        "allowedValues": {
+          "type": "array",
+          "description": "Enumeration of permitted values."
+        }
+      },
+      "description": "Validation constraints for an input value.",
+      "title": "Input Constraints"
+    },
+    "Input": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The input name. Must be unique within a baseline or results document. Example: 'max_concurrent_sessions'."
+        },
+        "type": {
+          "$ref": "#/$defs/Input_Type",
+          "description": "The data type of this input."
+        },
+        "value": {
+          "description": "The input value. Type should match the declared type field. Accepts any JSON value."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what this input controls."
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether this input must be provided. Defaults to false if omitted."
+        },
+        "sensitive": {
+          "type": "boolean",
+          "description": "Whether this input contains sensitive data (passwords, keys). Sensitive values should be redacted in output. Defaults to false if omitted."
+        },
+        "operator": {
+          "$ref": "#/$defs/Comparison_Operator",
+          "description": "The comparison operator used when evaluating this input against observed values."
+        },
+        "constraints": {
+          "$ref": "#/$defs/Input_Constraints",
+          "description": "Validation constraints for the input value."
+        }
+      },
+      "examples": [
+        {
+          "name": "max_concurrent_sessions",
+          "type": "Numeric",
+          "value": 3,
+          "description": "Maximum concurrent sessions per user",
+          "required": true,
+          "sensitive": false,
+          "operator": "le",
+          "constraints": { "min": 1, "max": 100 }
+        },
+        {
+          "name": "allowed_ciphers",
+          "type": "String",
+          "value": "AES256-GCM",
+          "description": "Permitted TLS cipher suite",
+          "constraints": { "pattern": "^AES" }
+        },
+        {
+          "name": "db_password",
+          "type": "String",
+          "sensitive": true
+        }
+      ],
+      "description": "A typed input parameter that bridges governance requirements and scanner automation. Inputs carry expected configuration values with type information, comparison operators, and validation constraints, enabling traceability from policy through to scan results.",
+      "title": "Input"
+    }
+  }
+}
