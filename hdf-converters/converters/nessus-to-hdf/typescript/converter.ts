@@ -112,6 +112,7 @@ export async function convertNessusToHdf(nessusXml: string): Promise<HdfResults>
   const reportHosts = parsed.NessusClientData_v2.Report.ReportHost as ReportHost[];
 
   const { items: limitedHosts, truncated: truncatedHosts } = limitArray(reportHosts);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedHosts) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedHosts.length} ReportHost items (original: ${reportHosts.length})`);
@@ -200,6 +201,7 @@ function convertReportHostToBaseline(
   let requirements: EvaluatedRequirement[];
   if (items) {
     const { items: limitedItems, truncated: truncatedItems } = limitArray(items as ReportItem[]);
+    /* v8 ignore next -- truncation only triggers with >100K items */
     if (truncatedItems) {
       // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedItems.length} ReportItem items (original: ${(items as ReportItem[]).length})`);

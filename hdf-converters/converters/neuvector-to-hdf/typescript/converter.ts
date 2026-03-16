@@ -206,6 +206,7 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
   const { items: limitedVulns, truncated } = limitArray(
     scan.report.vulnerabilities ?? []
   );
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncated) {
     // eslint-disable-next-line no-console
     console.warn(

@@ -24,6 +24,7 @@ export function createAjvWithPrimitives(): Ajv2020 {
     'statistics.schema.json',
     'result.schema.json',
     'extensions.schema.json',
+    'comparison.schema.json',
   ];
 
   for (const file of primitiveFiles) {
@@ -161,6 +162,29 @@ export function createMinimalResult(overrides: object = {}): object {
     status: 'passed',
     codeDesc: 'Test description',
     startTime: '2025-11-25T12:00:00Z',
+    ...overrides,
+  };
+}
+
+/**
+ * Creates a minimal valid hdf-comparison document.
+ * Use spread to override specific fields for test variations.
+ */
+export function createMinimalComparisonDoc(overrides: object = {}): object {
+  return {
+    formatVersion: '1.0.0',
+    comparisonMode: 'temporal',
+    sources: [
+      { role: 'old', label: 'Before scan' },
+      { role: 'new', label: 'After scan' },
+    ],
+    summary: {
+      total: 0,
+      matchedCount: 0,
+      unmatchedOldCount: 0,
+      unmatchedNewCount: 0,
+    },
+    requirementDiffs: [],
     ...overrides,
   };
 }

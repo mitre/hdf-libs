@@ -242,6 +242,7 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
 
   const vulns = report.vulnerabilities ?? [];
   const {items: limitedVulns, truncated} = limitArray(vulns);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncated) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedVulns.length} vulnerabilities (original: ${vulns.length})`);

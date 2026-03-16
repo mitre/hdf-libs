@@ -132,6 +132,7 @@ export async function convertBurpsuiteToHdf(input: string): Promise<string> {
   const exportTime = parsed.issues.exportTime ?? '';
 
   const { items: limitedIssues, truncated } = limitArray(issues);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncated) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedIssues.length} issue items (original: ${issues.length})`);

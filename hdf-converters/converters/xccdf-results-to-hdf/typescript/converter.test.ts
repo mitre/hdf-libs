@@ -501,7 +501,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should set target name from TestResult target element', async () => {
       const hdf = await parseHdf('arf-minimal.xml');
-      expect(hdf.targets![0]!.name).toBe('test-host');
+      expect(hdf.targets![0]!.name).toBe('rh-hony');
     });
 
     it('should set target IP from TestResult target-address', async () => {
@@ -511,7 +511,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should enrich target with ARF asset FQDN', async () => {
       const hdf = await parseHdf('arf-minimal.xml');
-      expect(hdf.targets![0]!.fqdn).toBe('test-host');
+      expect(hdf.targets![0]!.fqdn).toBe('rh-hony');
     });
 
     it('should enrich target with ARF asset MAC address', async () => {
@@ -741,5 +741,209 @@ describe('convertXccdfToHdf auto-detect', async () => {
     await expect(
       convertXccdfToHdf('<?xml version="1.0"?><root/>')
     ).rejects.toThrow(/not an XCCDF/i);
+  });
+
+  it('should handle benchmark-only XCCDF (no TestResult) as baseline', async () => {
+    const { outputType } = await convertXccdfToHdf(loadFixture('benchmark-minimal-1.2.xml'));
+    expect(outputType).toBe('baseline');
+  });
+
+  it('should handle minimal XCCDF results with no severity and sparse fields', async () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark id="test_bench" xmlns="http://checklists.nist.gov/xccdf/1.2">
+  <title>Test Benchmark</title>
+  <version>1.0</version>
+  <TestResult id="TR1">
+    <rule-result idref="nonexistent_rule">
+      <result>pass</result>
+    </rule-result>
+    <rule-result idref="another_rule">
+      <result>fail</result>
+    </rule-result>
+    <rule-result idref="unknown_result">
+      <result>unknownstatus</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`;
+    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+    expect(hdf.baselines[0]!.requirements).toHaveLength(3);
+    // Pass status
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
+    // Fail status
+    expect(hdf.baselines[0]!.requirements[1]!.results[0]!.status).toBe('failed');
+    // Unknown status → notReviewed
+    expect(hdf.baselines[0]!.requirements[2]!.results[0]!.status).toBe('notReviewed');
+    // No target when no target element
+    expect(hdf.targets).toHaveLength(0);
+  });
+
+  it('should handle XCCDF results with target and timing', async () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark id="timing_bench" xmlns="http://checklists.nist.gov/xccdf/1.2">
+  <title>Timing Test</title>
+  <version>1.0</version>
+  <TestResult id="TR1" start-time="2025-01-01T00:00:00" end-time="2025-01-01T00:01:00">
+    <target>myhost</target>
+    <target-address>10.0.0.1</target-address>
+    <rule-result idref="R1">
+      <result>notapplicable</result>
+    </rule-result>
+  </TestResult>
+</Benchmark>`;
+    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+    expect(hdf.targets).toHaveLength(1);
+    expect(hdf.targets![0]!.name).toBe('myhost');
+    expect(hdf.targets![0]!.ipAddress).toBe('10.0.0.1');
+    expect(hdf.statistics?.duration).toBe(60);
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notApplicable');
+  });
+
+  it('should handle XCCDF with Rule definitions and CCI identifiers', async () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark id="cci_bench" xmlns="http://checklists.nist.gov/xccdf/1.2">
+  <title>CCI Test</title>
+  <version>1.0</version>
+  <Group id="G1">
+    <title>Group One</title>
+    <Rule id="R1" severity="high">
+      <version>SV-001</version>
+      <title>Rule One</title>
+      <description>&lt;VulnDiscussion&gt;This is the discussion&lt;/VulnDiscussion&gt;</description>
+      <fixtext fixref="F1">Fix this issue</fixtext>
+      <check system="C5386-0">
+        <check-content>Check for the config</check-content>
+      </check>
+      <ident system="http://cyber.mil/cci">CCI-000001</ident>
+    </Rule>
+  </Group>
+  <TestResult id="TR1">
+    <rule-result idref="R1" severity="medium">
+      <result>fail</result>
+      <ident system="http://cyber.mil/cci">CCI-000001</ident>
+    </rule-result>
+  </TestResult>
+</Benchmark>`;
+    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+    const req = hdf.baselines[0]!.requirements[0]!;
+    expect(req.id).toBe('SV-001');
+    expect(req.title).toBe('Rule One');
+    expect(req.tags?.['cci']).toContain('CCI-000001');
+    expect(req.tags?.['nist']).toBeDefined();
+    const descs = req.descriptions!;
+    const def = descs.find(d => d.label === 'default');
+    expect(def!.data).toContain('discussion');
+    const fix = descs.find(d => d.label === 'fix');
+    expect(fix!.data).toContain('Fix this issue');
+  });
+
+  it('should handle benchmark-to-baseline with no severity on Rule', async () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark id="nosev_bench" xmlns="http://checklists.nist.gov/xccdf/1.2">
+  <title>No Sev Test</title>
+  <version>1.0</version>
+  <Group id="G1">
+    <title>Group 1</title>
+    <Rule id="R1">
+      <version>SV-001</version>
+      <title>Rule One</title>
+      <description>Some text without VulnDiscussion</description>
+      <fixtext>Fix it</fixtext>
+    </Rule>
+  </Group>
+  <Rule id="R2">
+    <version>SV-002</version>
+    <title>Top Rule</title>
+  </Rule>
+</Benchmark>`;
+    const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HdfBaseline;
+    expect(baseline.requirements).toHaveLength(2);
+    const r1 = (baseline.requirements as BaselineRequirement[]).find(r => r.id === 'SV-001');
+    expect(r1).toBeDefined();
+    expect(r1!.impact).toBe(0.5); // no severity → default 0.5
+    const r2 = (baseline.requirements as BaselineRequirement[]).find(r => r.id === 'SV-002');
+    expect(r2).toBeDefined();
+    // Top-level rule without Group
+    expect(r2!.tags?.['gid']).toBeUndefined();
+  });
+
+  it('should handle benchmark-to-baseline with Rule having no id (skip it)', async () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark id="noid_bench" xmlns="http://checklists.nist.gov/xccdf/1.2">
+  <title>No ID Test</title>
+  <version>1.0</version>
+  <Group id="G1">
+    <title>Group</title>
+    <Rule>
+      <version>SV-001</version>
+      <title>No ID Rule</title>
+    </Rule>
+    <Rule id="R2">
+      <version>SV-002</version>
+      <title>Has ID</title>
+    </Rule>
+  </Group>
+</Benchmark>`;
+    const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HdfBaseline;
+    // Rule without id should be skipped
+    expect(baseline.requirements).toHaveLength(1);
+  });
+
+  it('should handle benchmark-to-baseline with no description (empty default)', async () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark id="nodesc_bench" xmlns="http://checklists.nist.gov/xccdf/1.2">
+  <title>No Desc</title>
+  <version>1.0</version>
+  <Group id="G1">
+    <title>Group</title>
+    <Rule id="R1" severity="low">
+      <version>SV-001</version>
+      <title>No Desc Rule</title>
+      <check system="C1">
+        <check-content>Check this</check-content>
+      </check>
+      <fixtext fixref="F1">Fix text here</fixtext>
+    </Rule>
+  </Group>
+</Benchmark>`;
+    const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HdfBaseline;
+    const req = (baseline.requirements as BaselineRequirement[])[0]!;
+    const def = req.descriptions!.find(d => d.label === 'default');
+    expect(def!.data).toBe('');
+    const checkD = req.descriptions!.find(d => d.label === 'check');
+    expect(checkD!.data).toContain('Check this');
+    const fixD = req.descriptions!.find(d => d.label === 'fix');
+    expect(fixD!.data).toContain('Fix text here');
+    expect(req.tags?.['severity']).toBe('low');
+    expect(req.tags?.['check_id']).toBeDefined();
+    expect(req.tags?.['fix_id']).toBe('F1');
+    expect(req.tags?.['gid']).toBe('G1');
+  });
+
+  it('should handle XCCDF results with notchecked and error statuses', async () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark id="status_bench" xmlns="http://checklists.nist.gov/xccdf/1.2">
+  <title>Status Test</title>
+  <version>1.0</version>
+  <TestResult id="TR1">
+    <rule-result idref="R1"><result>notchecked</result></rule-result>
+    <rule-result idref="R2"><result>error</result></rule-result>
+    <rule-result idref="R3"><result>informational</result></rule-result>
+    <rule-result idref="R4"><result>fixed</result></rule-result>
+  </TestResult>
+</Benchmark>`;
+    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+    expect(hdf.baselines[0]!.requirements).toHaveLength(4);
+  });
+
+  it('should handle benchmark with no title (fallback name)', async () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark id="no_title" xmlns="http://checklists.nist.gov/xccdf/1.2">
+  <version>1.0</version>
+  <TestResult id="TR1">
+    <rule-result idref="R1"><result>pass</result></rule-result>
+  </TestResult>
+</Benchmark>`;
+    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+    expect(hdf.baselines[0]!.name).toBe('XCCDF Benchmark');
   });
 });

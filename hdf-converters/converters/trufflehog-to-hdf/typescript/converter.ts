@@ -19,10 +19,10 @@ import {
  * TruffleHog finding structure.
  */
 interface TrufflehogFinding {
-  SourceMetadata: SourceMetadata;
-  SourceID: number;
-  SourceType: number;
-  SourceName: string;
+  SourceMetadata?: SourceMetadata;
+  SourceID?: number;
+  SourceType?: number;
+  SourceName?: string;
   DetectorType: number;
   DetectorName: string;
   DetectorDescription?: string;
@@ -145,14 +145,14 @@ function buildMessage(f: TrufflehogFinding): string {
  * Build the Result.CodeDesc as JSON of SourceMetadata.
  */
 function buildCodeDesc(f: TrufflehogFinding): string {
-  return JSON.stringify(f.SourceMetadata);
+  return JSON.stringify(f.SourceMetadata ?? {});
 }
 
 /**
  * Extract a timestamp from a finding's Git source metadata.
  */
 function getTimestamp(f: TrufflehogFinding): Date {
-  if (f.SourceMetadata.Data.Git?.timestamp) {
+  if (f.SourceMetadata?.Data?.Git?.timestamp) {
     const ts = new Date(f.SourceMetadata.Data.Git.timestamp);
     if (!isNaN(ts.getTime())) {
       return ts;
@@ -165,18 +165,18 @@ function getTimestamp(f: TrufflehogFinding): Date {
  * Get the source file path from any source type.
  */
 function getSourceFile(f: TrufflehogFinding): string | undefined {
-  return f.SourceMetadata.Data.Git?.file
-    ?? f.SourceMetadata.Data.Filesystem?.file
-    ?? f.SourceMetadata.Data.Docker?.file;
+  return f.SourceMetadata?.Data?.Git?.file
+    ?? f.SourceMetadata?.Data?.Filesystem?.file
+    ?? f.SourceMetadata?.Data?.Docker?.file;
 }
 
 /**
  * Get the source line number from any source type.
  */
 function getSourceLine(f: TrufflehogFinding): number | undefined {
-  return f.SourceMetadata.Data.Git?.line
-    ?? f.SourceMetadata.Data.Filesystem?.line
-    ?? f.SourceMetadata.Data.Docker?.line;
+  return f.SourceMetadata?.Data?.Git?.line
+    ?? f.SourceMetadata?.Data?.Filesystem?.line
+    ?? f.SourceMetadata?.Data?.Docker?.line;
 }
 
 /**
@@ -184,7 +184,7 @@ function getSourceLine(f: TrufflehogFinding): number | undefined {
  */
 function findGitRepoURL(findings: TrufflehogFinding[]): string | undefined {
   for (const f of findings) {
-    if (f.SourceMetadata.Data.Git?.repository) {
+    if (f.SourceMetadata?.Data?.Git?.repository) {
       return f.SourceMetadata.Data.Git.repository;
     }
   }

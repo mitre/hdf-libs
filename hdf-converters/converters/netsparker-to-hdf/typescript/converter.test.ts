@@ -265,4 +265,189 @@ describe('Netsparker to HDF converter', () => {
     const hdf = parseResult(await convertNetsparkerToHdf(xml));
     expect(hdf.dataSource?.name).toBe('Netsparker');
   });
+
+  // ---- Edge cases: missing optional fields ----
+
+  it('should handle vulnerability with no classification (no CWE, no OWASP)', async () => {
+    const xml = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+  <target>
+    <scan-id>t1</scan-id>
+    <url>https://example.com/</url>
+    <initiated>01/01/2024 12:00 PM</initiated>
+  </target>
+  <vulnerabilities>
+    <vulnerability>
+      <LookupId>no-class-1</LookupId>
+      <name>No Classification Vuln</name>
+      <severity>Critical</severity>
+      <description>Desc text</description>
+      <impact>High impact</impact>
+      <exploitation-skills>Expert level</exploitation-skills>
+      <proof-of-concept>PoC here</proof-of-concept>
+      <FirstSeenDate>01/01/2024</FirstSeenDate>
+      <LastSeenDate>01/02/2024</LastSeenDate>
+      <certainty>100</certainty>
+      <type>TestType</type>
+      <confirmed>True</confirmed>
+    </vulnerability>
+  </vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(xml));
+    const req = findRequirement(hdf, 'no-class-1');
+    expect(req).toBeDefined();
+    // With no CWE/OWASP, should fall back to default NIST tags
+    expect(req!.impact).toBe(1.0);
+    // Should have check description from exploitation-skills + proof-of-concept
+    const check = findDescription(req!.descriptions!, 'check');
+    expect(check).toBeDefined();
+    expect(check!.data).toContain('Expert level');
+  });
+
+  it('should handle vulnerability with empty/missing optional fields', async () => {
+    const xml = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+  <target>
+    <scan-id>t2</scan-id>
+  </target>
+  <vulnerabilities>
+    <vulnerability>
+      <severity>Unknown</severity>
+    </vulnerability>
+  </vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(xml));
+    const req = hdf.baselines[0]!.requirements[0]!;
+    // Missing LookupId → empty string
+    expect(req.id).toBe('');
+    // Missing severity mapping → default 0.5
+    expect(req.impact).toBe(0.5);
+    // No http-request/response → fallback empty strings in codeDesc
+    expect(req.results[0]!.codeDesc).toContain('http-request');
+    // Missing target url → 'Unknown'
+    expect(hdf.targets![0]!.name).toBe('Unknown');
+  });
+
+  it('should handle vulnerability with no description but has name', async () => {
+    const xml = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+  <target>
+    <url>https://example.com/</url>
+  </target>
+  <vulnerabilities>
+    <vulnerability>
+      <LookupId>name-only-1</LookupId>
+      <name>FallbackName</name>
+      <severity>Information</severity>
+      <classification>
+        <cwe>abc</cwe>
+        <owasp>invalid</owasp>
+      </classification>
+    </vulnerability>
+  </vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(xml));
+    const req = findRequirement(hdf, 'name-only-1');
+    expect(req).toBeDefined();
+    // information maps to 0.0
+    expect(req!.impact).toBe(0.0);
+    // default desc should use name as fallback
+    const desc = findDescription(req!.descriptions!, 'default');
+    expect(desc).toBeDefined();
+    // formatControlDesc uses classification fields; when those are present, it uses them
+    expect(desc!.data.length).toBeGreaterThan(0);
+    // Invalid CWE (non-numeric) and invalid OWASP should not crash
+    // No fix description since no remedial info
+    const fix = findDescription(req!.descriptions!, 'fix');
+    expect(fix).toBeUndefined();
+  });
+
+  it('should handle best_practice severity mapping', async () => {
+    const xml = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+  <target><url>https://example.com/</url></target>
+  <vulnerabilities>
+    <vulnerability>
+      <LookupId>bp-1</LookupId>
+      <name>Best Practice</name>
+      <severity>Best_Practice</severity>
+    </vulnerability>
+  </vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(xml));
+    expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.0);
+  });
+
+  it('should handle vulnerability with no initiated time', async () => {
+    const xml = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+  <target><url>https://example.com/</url></target>
+  <vulnerabilities>
+    <vulnerability>
+      <LookupId>no-time-1</LookupId>
+      <name>No Time</name>
+      <severity>High</severity>
+      <remedial-procedure>Fix it</remedial-procedure>
+      <remedy-references>Some ref</remedy-references>
+    </vulnerability>
+  </vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(xml));
+    const req = findRequirement(hdf, 'no-time-1');
+    expect(req).toBeDefined();
+    expect(req!.impact).toBe(0.7);
+    // Fix description from remedial-procedure and remedy-references
+    const fix = findDescription(req!.descriptions!, 'fix');
+    expect(fix).toBeDefined();
+    expect(fix!.data).toContain('Fix it');
+    expect(fix!.data).toContain('Some ref');
+  });
+
+  it('should reject XML with no vulnerabilities or target', async () => {
+    const xml = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+</netsparker-enterprise>`;
+    await expect(convertNetsparkerToHdf(xml)).rejects.toThrow('invalid XML');
+  });
+
+  it('should fall back to name for default desc when no description/classification/impact fields', async () => {
+    const xml = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+  <target><url>https://example.com/</url></target>
+  <vulnerabilities>
+    <vulnerability>
+      <LookupId>name-fallback-1</LookupId>
+      <name>FallbackName</name>
+      <severity>Medium</severity>
+    </vulnerability>
+  </vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(xml));
+    const req = findRequirement(hdf, 'name-fallback-1');
+    const desc = findDescription(req!.descriptions!, 'default');
+    // With no description/classification/impact, formatControlDesc returns empty, so name is used
+    expect(desc!.data).toBe('FallbackName');
+  });
+
+  it('should handle vulnerability with only OWASP mapping (no CWE)', async () => {
+    const xml = `<?xml version="1.0" encoding="utf-8" ?>
+<netsparker-enterprise>
+  <target><url>https://example.com/</url></target>
+  <vulnerabilities>
+    <vulnerability>
+      <LookupId>owasp-only-1</LookupId>
+      <name>OWASP Only</name>
+      <severity>Medium</severity>
+      <classification>
+        <owasp>A1</owasp>
+      </classification>
+    </vulnerability>
+  </vulnerabilities>
+</netsparker-enterprise>`;
+    const hdf = parseResult(await convertNetsparkerToHdf(xml));
+    const req = findRequirement(hdf, 'owasp-only-1');
+    expect(req).toBeDefined();
+    // Should have owasp tag but no cweid
+    expect(req!.tags?.owasp).toBeDefined();
+  });
 });

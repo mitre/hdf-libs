@@ -235,4 +235,86 @@ describe('Splunk to HDF Converter', () => {
       expect(multiResult).toBeDefined();
     });
   });
+
+  describe('edge cases: status mapping and optional fields', () => {
+    function makeEvents(opts: { status?: string; noResults?: boolean; noDescs?: boolean; noGroups?: boolean; noProfile?: boolean; noRelease?: boolean }): string {
+      return JSON.stringify([
+        {
+          meta: { guid: 'g1', subtype: 'header' },
+          platform: { name: 'host1', release: opts.noRelease ? '' : 'Ubuntu 22' },
+          statistics: { duration: 10 },
+          version: '1.0',
+        },
+        {
+          meta: { guid: 'g1', subtype: 'profile' },
+          name: 'TestProfile',
+          sha256: 'sha1',
+          title: opts.noProfile ? '' : 'Profile Title',
+          version: opts.noProfile ? '' : '1.0',
+          summary: opts.noProfile ? '' : 'Summary',
+          groups: opts.noGroups ? undefined : [{ id: 'g1', controls: ['ctrl-1'] }],
+        },
+        {
+          meta: { guid: 'g1', subtype: 'control', profile_sha256: 'sha1' },
+          id: 'ctrl-1',
+          title: 'Control 1',
+          desc: '',
+          descriptions: opts.noDescs ? undefined : { default: 'Default desc', check: 'Check desc' },
+          impact: 0.5,
+          code: '',
+          tags: { nist: ['AC-1'] },
+          results: opts.noResults ? [] : [{
+            status: opts.status ?? 'passed',
+            code_desc: 'Test code',
+            start_time: '2025-01-01T00:00:00Z',
+            run_time: 0.5,
+            message: 'msg',
+          }],
+          source_location: { ref: 'test.rb', line: 1 },
+        },
+      ]);
+    }
+
+    it('should map skipped status to notReviewed', async () => {
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ status: 'skipped' }))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    });
+
+    it('should map error status to error', async () => {
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ status: 'error' }))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('error');
+    });
+
+    it('should map unknown status to notReviewed', async () => {
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ status: 'unknown' }))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    });
+
+    it('should handle control with no results', async () => {
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noResults: true }))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(0);
+    });
+
+    it('should handle control with no descriptions', async () => {
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noDescs: true }))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.descriptions).toHaveLength(0);
+    });
+
+    it('should handle profile with no groups/title/version/summary', async () => {
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noGroups: true, noProfile: true }))) as HdfResults;
+      expect(hdf.baselines).toHaveLength(1);
+    });
+
+    it('should handle empty release', async () => {
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noRelease: true }))) as HdfResults;
+      expect(hdf.targets![0]!.osName).toBeUndefined();
+    });
+
+    it('should handle control with no source_location', async () => {
+      const events = JSON.parse(makeEvents({}));
+      delete events[2].source_location;
+      const hdf = JSON.parse(await convertSplunkToHdf(JSON.stringify(events))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.sourceLocation).toBeUndefined();
+    });
+  });
 });

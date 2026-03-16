@@ -1,0 +1,51 @@
+{
+  "name": "@mitre/hdf-diff",
+  "version": "0.1.0",
+  "description": "Structured comparison of HDF evaluation results — tracks what changed, why, and by how much",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm clean && tsc",
+    "clean": "rimraf dist",
+    "test": "pnpm run test:ts",
+    "test:ts": "vitest run",
+    "test:go": "echo 'No Go tests yet in hdf-diff'",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src test",
+    "lint:fix": "eslint src test --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mitre/hdf-libs.git",
+    "directory": "hdf-diff"
+  },
+  "author": "MITRE Corporation",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "ajv": "^8.17.0",
+    "ajv-formats": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "hdf",
+    "heimdall",
+    "diff",
+    "comparison",
+    "security",
+    "compliance"
+  ]
+}

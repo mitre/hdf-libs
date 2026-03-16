@@ -91,6 +91,7 @@ export async function convertNiktoToHdf(input: string): Promise<string> {
   const vulnGroups = new Map<string, NiktoVulnerability[]>();
   if (niktoData.vulnerabilities) {
     const { items: limitedVulns, truncated: truncatedVulns } = limitArray(niktoData.vulnerabilities);
+    /* v8 ignore next -- truncation only triggers with >100K items */
     if (truncatedVulns) {
       // eslint-disable-next-line no-console
       console.warn(`WARNING: Input truncated at ${limitedVulns.length} vulnerability items (original: ${niktoData.vulnerabilities.length})`);

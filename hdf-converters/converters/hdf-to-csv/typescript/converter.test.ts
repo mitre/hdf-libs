@@ -388,4 +388,132 @@ describe('hdfcsv Converter', () => {
       expect(() => convertHdfToCsv('{ "baselines": "not an array" }')).toThrow();
     });
   });
+
+  describe('edge cases: missing optional fields', () => {
+    it('should handle requirement with no tags', () => {
+      const input = JSON.stringify({
+        baselines: [{
+          name: 'B1',
+          requirements: [{
+            id: 'R1',
+            title: 'Test',
+            descriptions: [{ label: 'default', data: 'desc' }],
+            impact: 0.5,
+            tags: {},
+            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
+          }]
+        }],
+        targets: [],
+      });
+      const result = convertHdfToCsv(input);
+      expect(result).toContain('R1');
+    });
+
+    it('should handle requirement with no default description', () => {
+      const input = JSON.stringify({
+        baselines: [{
+          name: 'B1',
+          requirements: [{
+            id: 'R1',
+            descriptions: [{ label: 'check', data: 'check data' }],
+            impact: 0.5,
+            tags: {},
+            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
+          }]
+        }],
+        targets: [],
+      });
+      const result = convertHdfToCsv(input);
+      expect(result).toContain('R1');
+    });
+
+    it('should handle severity as array in tags', () => {
+      const input = JSON.stringify({
+        baselines: [{
+          name: 'B1',
+          requirements: [{
+            id: 'R1',
+            descriptions: [{ label: 'default', data: 'desc' }],
+            impact: 0.5,
+            tags: { severity: ['high', 'medium'] },
+            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
+          }]
+        }],
+        targets: [],
+      });
+      const result = convertHdfToCsv(input);
+      expect(result).toContain('high');
+    });
+
+    it('should handle no targets (default empty target)', () => {
+      const input = JSON.stringify({
+        baselines: [{
+          name: 'B1',
+          requirements: [{
+            id: 'R1',
+            descriptions: [{ label: 'default', data: 'desc' }],
+            impact: 0.2,
+            tags: {},
+            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
+          }]
+        }],
+      });
+      const result = convertHdfToCsv(input);
+      expect(result).toContain('R1');
+      expect(result).toContain('low'); // impact 0.2 → low severity
+    });
+
+    it('should handle impact >= 0.7 as high severity', () => {
+      const input = JSON.stringify({
+        baselines: [{
+          name: 'B1',
+          requirements: [{
+            id: 'R1',
+            descriptions: [{ label: 'default', data: 'desc' }],
+            impact: 0.8,
+            tags: {},
+            results: [{ status: 'failed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z', message: 'fail msg' }]
+          }]
+        }],
+        targets: [{ name: 't1', type: 'host' }],
+      });
+      const result = convertHdfToCsv(input);
+      expect(result).toContain('high');
+    });
+
+    it('should handle null/undefined tags gracefully in extractArrayFromTags', () => {
+      const input = JSON.stringify({
+        baselines: [{
+          name: 'B1',
+          requirements: [{
+            id: 'R1',
+            descriptions: [{ label: 'default', data: 'desc' }],
+            impact: 0.5,
+            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
+          }]
+        }],
+        targets: [],
+      });
+      const result = convertHdfToCsv(input);
+      expect(result).toContain('R1');
+    });
+
+    it('should handle requirement with no title and no version', () => {
+      const input = JSON.stringify({
+        baselines: [{
+          name: 'B1',
+          requirements: [{
+            id: 'R1',
+            descriptions: [{ label: 'default', data: 'desc' }],
+            impact: 0.5,
+            tags: { nist: ['AC-1'] },
+            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
+          }]
+        }],
+        targets: [],
+      });
+      const result = convertHdfToCsv(input);
+      expect(result).toContain('AC-1');
+    });
+  });
 });

@@ -217,4 +217,63 @@ describe('dbprotect to HDF converter', () => {
       }
     });
   });
+
+  describe('edge cases: status mapping and missing fields', () => {
+    function makeXml(statusCol: boolean, statusVal: string, riskDV: string = 'High'): string {
+      const items = statusCol
+        ? '<item><name>Check ID</name><type>xs:string</type></item><item><name>Check</name><type>xs:string</type></item><item><name>Risk DV</name><type>xs:string</type></item><item><name>Result Status</name><type>xs:string</type></item><item><name>Details</name><type>xs:string</type></item><item><name>Date</name><type>xs:string</type></item><item><name>Task</name><type>xs:string</type></item><item><name>Check Category</name><type>xs:string</type></item><item><name>Organization</name><type>xs:string</type></item><item><name>Asset</name><type>xs:string</type></item><item><name>Asset Type</name><type>xs:string</type></item><item><name>IP Address, Port, Instance</name><type>xs:string</type></item><item><name>Job Name</name><type>xs:string</type></item>'
+        : '<item><name>Check ID</name><type>xs:string</type></item><item><name>Check</name><type>xs:string</type></item><item><name>Risk DV</name><type>xs:string</type></item><item><name>Details</name><type>xs:string</type></item><item><name>Date</name><type>xs:string</type></item><item><name>Task</name><type>xs:string</type></item><item><name>Check Category</name><type>xs:string</type></item><item><name>Organization</name><type>xs:string</type></item><item><name>Asset</name><type>xs:string</type></item><item><name>Asset Type</name><type>xs:string</type></item><item><name>IP Address, Port, Instance</name><type>xs:string</type></item><item><name>Job Name</name><type>xs:string</type></item>';
+      const values = statusCol
+        ? `<value>CK1</value><value>Check name</value><value>${riskDV}</value><value>${statusVal}</value><value>Details text</value><value>Feb 18 2021 15:57</value><value>Task1</value><value>Cat1</value><value>Org1</value><value>Asset1</value><value>Database</value><value>10.0.0.1:3306</value><value>TestJob</value>`
+        : `<value>CK1</value><value>Check name</value><value>${riskDV}</value><value>Details text</value><value>Feb 18 2021 15:57</value><value>Task1</value><value>Cat1</value><value>Org1</value><value>Asset1</value><value>Database</value><value>10.0.0.1:3306</value><value>TestJob</value>`;
+      return `<?xml version="1.0"?><dataset><metadata>${items}</metadata><data><row>${values}</row></data></dataset>`;
+    }
+
+    it('should map Fact status to notReviewed', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(makeXml(true, 'Fact'))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    });
+
+    it('should map Finding status to failed', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(makeXml(true, 'Finding'))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('failed');
+    });
+
+    it('should map Not A Finding status to passed', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(makeXml(true, 'Not A Finding'))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
+    });
+
+    it('should map Skipped/unknown status to notReviewed', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(makeXml(true, 'Skipped'))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    });
+
+    it('should map medium risk to 0.5 impact', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(makeXml(true, 'Failed', 'Medium'))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+    });
+
+    it('should map informational risk to 0.0 impact', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(makeXml(true, 'Failed', 'Informational'))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.0);
+    });
+
+    it('should use 0.5 for unknown risk level', async () => {
+      const hdf = JSON.parse(await convertDbprotectToHdf(makeXml(true, 'Failed', 'UnknownLevel'))) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+    });
+
+    it('should handle empty date gracefully', async () => {
+      const xml = `<?xml version="1.0"?><dataset><metadata><item><name>Check ID</name><type>xs:string</type></item><item><name>Check</name><type>xs:string</type></item><item><name>Risk DV</name><type>xs:string</type></item><item><name>Details</name><type>xs:string</type></item><item><name>Date</name><type>xs:string</type></item><item><name>Task</name><type>xs:string</type></item><item><name>Check Category</name><type>xs:string</type></item><item><name>Organization</name><type>xs:string</type></item><item><name>Asset</name><type>xs:string</type></item><item><name>Asset Type</name><type>xs:string</type></item><item><name>IP Address, Port, Instance</name><type>xs:string</type></item><item><name>Job Name</name><type>xs:string</type></item></metadata><data><row><value>CK1</value><value>Check</value><value>Low</value><value>Details</value><value></value><value>Task</value><value>Cat</value><value>Org</value><value>Asset</value><value>DB</value><value>10.0.0.1</value><value>Job</value></row></data></dataset>`;
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    });
+
+    it('should handle null values in row data', async () => {
+      const xml = `<?xml version="1.0"?><dataset><metadata><item><name>Check ID</name><type>xs:string</type></item><item><name>Check</name><type>xs:string</type></item><item><name>Risk DV</name><type>xs:string</type></item><item><name>Details</name><type>xs:string</type></item><item><name>Date</name><type>xs:string</type></item><item><name>Task</name><type>xs:string</type></item><item><name>Check Category</name><type>xs:string</type></item><item><name>Organization</name><type>xs:string</type></item><item><name>Asset</name><type>xs:string</type></item><item><name>Asset Type</name><type>xs:string</type></item><item><name>IP Address, Port, Instance</name><type>xs:string</type></item><item><name>Job Name</name><type>xs:string</type></item></metadata><data><row><value>CK1</value><value>Check</value><value>Low</value><value nil="true"/><value>invalid date xyz</value><value nil="true"/><value nil="true"/><value nil="true"/><value nil="true"/><value nil="true"/><value nil="true"/><value nil="true"/></row></data></dataset>`;
+      const hdf = JSON.parse(await convertDbprotectToHdf(xml)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    });
+  });
 });

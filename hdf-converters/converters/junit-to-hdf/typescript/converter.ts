@@ -121,6 +121,7 @@ function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string 
 
 function buildRequirements(suites: JUnitTestSuite[]): EvaluatedRequirement[] {
   const { items: limitedSuites, truncated: truncatedSuites } = limitArray(suites);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedSuites) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedSuites.length} test suite items (original: ${suites.length})`);
@@ -130,6 +131,7 @@ function buildRequirements(suites: JUnitTestSuite[]): EvaluatedRequirement[] {
   for (const suite of limitedSuites) {
     const testcases = suite.testcase ?? [];
     const { items: limitedTestCases, truncated: truncatedTC } = limitArray(testcases);
+    /* v8 ignore next -- truncation only triggers with >100K items */
     if (truncatedTC) {
       // eslint-disable-next-line no-console
       console.warn(`WARNING: Input truncated at ${limitedTestCases.length} test case items (original: ${testcases.length})`);

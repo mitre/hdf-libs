@@ -193,6 +193,7 @@ export async function convertJfrogXrayToHdf(input: string): Promise<string> {
   }
 
   const { items: limitedEntries, truncated } = limitArray(parsed.data);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncated) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedEntries.length} entries (original: ${parsed.data.length})`);

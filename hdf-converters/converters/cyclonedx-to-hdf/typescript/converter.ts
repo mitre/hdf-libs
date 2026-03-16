@@ -237,6 +237,7 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
   const requirements: EvaluatedRequirement[] = [];
 
   const { items: limitedVulns, truncated: truncatedVulns } = limitArray(bom.vulnerabilities ?? []);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedVulns) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedVulns.length} vulnerability items (original: ${(bom.vulnerabilities ?? []).length})`);

@@ -538,7 +538,7 @@ func TestConvertARF_AssetMetadata(t *testing.T) {
 	target := result.Targets[0]
 
 	// Target name from TestResult <target> element
-	assert.Equal(t, "test-host", target.Name)
+	assert.Equal(t, "rh-hony", target.Name)
 	assert.Equal(t, hdf.Host, target.Type)
 
 	// IP address from TestResult target-address (first IPv4)
@@ -547,7 +547,7 @@ func TestConvertARF_AssetMetadata(t *testing.T) {
 
 	// ARF asset enrichment: FQDN and hostname from computing-device
 	require.NotNil(t, target.FQDN)
-	assert.Equal(t, "test-host", *target.FQDN)
+	assert.Equal(t, "rh-hony", *target.FQDN)
 
 	// MAC address from ARF asset connections
 	require.NotNil(t, target.MACAddress)

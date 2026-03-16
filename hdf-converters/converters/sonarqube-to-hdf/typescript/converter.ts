@@ -168,6 +168,7 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
 
   // Group issues by project (each project becomes a baseline)
   const { items: limitedIssues, truncated: truncatedIssues } = limitArray(sonarData.issues);
+  /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedIssues) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedIssues.length} issue items (original: ${sonarData.issues.length})`);

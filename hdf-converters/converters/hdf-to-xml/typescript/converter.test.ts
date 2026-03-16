@@ -129,5 +129,83 @@ describe('hdf-to-xml Converter', () => {
       expect(result).toContain('&lt;');
       expect(result).toContain('&gt;');
     });
+
+    it('should handle baselines with no version or title', () => {
+      const input = JSON.stringify({
+        baselines: [{
+          name: 'MinBaseline',
+          checksum: { algorithm: 'sha256', value: 'abc' },
+          requirements: [{
+            id: 'REQ-001',
+            descriptions: [{ label: 'default', data: 'Data' }],
+            impact: 0.5,
+            tags: { nist: ['AC-1'], empty: [] },
+            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z', message: 'ok', runTime: 1.5 }]
+          }]
+        }],
+        targets: [{ name: 't1', type: 'host', fqdn: 'test.local', ipAddress: '1.2.3.4', hostname: 'myhost' }],
+        timestamp: '2025-01-01T00:00:00Z',
+        generator: { name: 'test', version: '1.0' },
+        statistics: { duration: 10, requirements: { total: 1 } },
+      });
+      const result = convertHdfToXml(input);
+      expect(result).toContain('MinBaseline');
+      expect(result).toContain('fqdn');
+      expect(result).toContain('ipAddress');
+      expect(result).toContain('hostname');
+      expect(result).toContain('message');
+      expect(result).toContain('runTime');
+      expect(result).toContain('timestamp');
+      expect(result).toContain('generator');
+    });
+
+    it('should handle requirement with empty tags', () => {
+      const input = JSON.stringify({
+        baselines: [{
+          name: 'B1',
+          checksum: { algorithm: 'sha256', value: 'abc' },
+          requirements: [{
+            id: 'REQ-001',
+            descriptions: [],
+            impact: 0.0,
+            tags: {},
+            results: []
+          }]
+        }],
+      });
+      const result = convertHdfToXml(input);
+      expect(result).toContain('REQ-001');
+    });
+
+    it('should handle baselines with no checksum', () => {
+      const input = JSON.stringify({
+        baselines: [{
+          name: 'NoChecksum',
+          requirements: [{
+            id: 'REQ-001',
+            title: 'Test',
+            descriptions: [{ label: 'default', data: 'desc' }],
+            impact: 0.5,
+            tags: { custom: 'value' },
+            results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
+          }]
+        }],
+      });
+      const result = convertHdfToXml(input);
+      expect(result).toContain('NoChecksum');
+      expect(result).not.toContain('checksum');
+    });
+
+    it('should handle no targets', () => {
+      const input = JSON.stringify({
+        baselines: [{
+          name: 'B1',
+          requirements: []
+        }],
+        statistics: {},
+      });
+      const result = convertHdfToXml(input);
+      expect(result).not.toContain('<targets>');
+    });
   });
 });

@@ -194,4 +194,141 @@ describe('conveyor to HDF converter', async () => {
       expect(hdf.timestamp).toBeTruthy();
     });
   });
+
+  describe('edge cases: missing optional fields', async () => {
+    it('should handle result with no file_tree', async () => {
+      const input = JSON.stringify({
+        api_response: {
+          results: {
+            r1: {
+              sha256: 'abc123',
+              response: { service_name: 'Moldy' },
+              result: { score: 0, sections: [] },
+            },
+          },
+        },
+      });
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      expect(hdf.baselines).toHaveLength(1);
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.title).toBe('');
+      expect(req.results[0]!.status).toBe('passed');
+    });
+
+    it('should handle score at max (1000) → impact 1.0', async () => {
+      const input = JSON.stringify({
+        api_response: {
+          results: {
+            r1: {
+              sha256: 'abc',
+              response: { service_name: 'Moldy', milestones: {} },
+              result: { score: 1000, sections: [{ title_text: 'test', heuristic: { heur_id: 'h1', score: 5, name: 'Test' } }] },
+            },
+          },
+        },
+      });
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(1.0);
+    });
+
+    it('should handle sections with no title_text (desc fallback)', async () => {
+      const input = JSON.stringify({
+        api_response: {
+          results: {
+            r1: {
+              sha256: 'abc',
+              response: { service_name: 'Stigma' },
+              result: { score: 100, sections: [{ body: 'body text', body_format: 'text', classification: 'mal', depth: 1 }] },
+            },
+          },
+        },
+      });
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      const desc = req.descriptions?.find(d => d.label === 'default');
+      expect(desc!.data).toContain('abc');
+    });
+
+    it('should handle CodeQuality scanner type', async () => {
+      const input = JSON.stringify({
+        api_response: {
+          results: {
+            r1: {
+              sha256: 'abc',
+              response: { service_name: 'CodeQuality' },
+              result: { score: 50, sections: [{ title_text: 'CQ test', body: null, body_format: 'json', classification: 'clean', depth: 0 }] },
+            },
+          },
+        },
+      });
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.codeDesc).toContain('CQ test');
+    });
+
+    it('should handle unknown scanner type (JSON fallback)', async () => {
+      const input = JSON.stringify({
+        api_response: {
+          results: {
+            r1: {
+              sha256: 'abc',
+              response: { service_name: 'UnknownScanner' },
+              result: { score: 100, sections: [{ title_text: 'test' }] },
+            },
+          },
+        },
+      });
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.codeDesc).toContain('title_text');
+    });
+
+    it('should handle params.description for target name', async () => {
+      const input = JSON.stringify({
+        api_response: {
+          results: {
+            r1: {
+              sha256: 'abc',
+              response: { service_name: 'Moldy' },
+              result: { score: 0, sections: [] },
+            },
+          },
+          params: { description: 'Custom Target' },
+        },
+      });
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      expect(hdf.targets![0]!.name).toBe('Custom Target');
+    });
+
+    it('should use default target name when params has no description', async () => {
+      const input = JSON.stringify({
+        api_response: {
+          results: {
+            r1: {
+              sha256: 'abc',
+              response: { service_name: 'Moldy' },
+              result: { score: 0, sections: [] },
+            },
+          },
+          params: {},
+        },
+      });
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      expect(hdf.targets![0]!.name).toBe('Conveyor Scan');
+    });
+
+    it('should handle negative score → impact 0.0', async () => {
+      const input = JSON.stringify({
+        api_response: {
+          results: {
+            r1: {
+              sha256: 'abc',
+              response: { service_name: 'Moldy' },
+              result: { score: -5, sections: [] },
+            },
+          },
+        },
+      });
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.0);
+    });
+  });
 });

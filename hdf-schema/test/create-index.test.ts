@@ -95,11 +95,77 @@ describe('create-index', () => {
     });
 
     it('should handle tsc compilation failure gracefully', () => {
-      // Inject a compile function that throws to test the error path
-      // without corrupting shared dist files
-      expect(() => createIndex({
-        compile: () => { throw new Error('tsc compilation failed'); },
-      })).not.toThrow();
+      // Inject a compile function that throws to test the error path.
+      // IMPORTANT: createIndex() cleans dist/ts/*.{js,d.ts} BEFORE calling
+      // compile. To avoid corrupting shared dist, we must restore files after.
+      // The afterAll hook runs createIndex() to rebuild, but we also guard here.
+      const backup = new Map<string, string>();
+      for (const name of ['hdf-results', 'hdf-baseline', 'hdf-comparison']) {
+        for (const ext of ['.js', '.d.ts']) {
+          const file = join(TS_DIR, `${name}${ext}`);
+          if (existsSync(file)) {
+            backup.set(file, readFileSync(file, 'utf-8'));
+          }
+        }
+      }
+
+      try {
+        expect(() => createIndex({
+          compile: () => { throw new Error('tsc compilation failed'); },
+        })).not.toThrow();
+      } finally {
+        // Restore cleaned files so parallel tests aren't affected
+        for (const [file, content] of backup) {
+          writeFileSync(file, content);
+        }
+      }
+    });
+
+    it('should produce index without comparison exports when hdf-comparison.ts is absent', () => {
+      // Temporarily rename hdf-comparison.ts to simulate its absence
+      const compTs = join(TS_DIR, 'hdf-comparison.ts');
+      const compBackup = join(TS_DIR, 'hdf-comparison.ts.bak');
+      const backup = new Map<string, string>();
+
+      // Backup all dist/ts files that createIndex will clean
+      for (const name of ['hdf-results', 'hdf-baseline', 'hdf-comparison']) {
+        for (const ext of ['.ts', '.js', '.d.ts']) {
+          const file = join(TS_DIR, `${name}${ext}`);
+          if (existsSync(file)) {
+            backup.set(file, readFileSync(file, 'utf-8'));
+          }
+        }
+      }
+
+      try {
+        // Hide comparison file
+        if (existsSync(compTs)) {
+          writeFileSync(compBackup, readFileSync(compTs));
+          rmSync(compTs);
+        }
+
+        createIndex();
+
+        const indexJs = readFileSync(join(DIST_DIR, 'index.js'), 'utf-8');
+        const indexDts = readFileSync(join(DIST_DIR, 'index.d.ts'), 'utf-8');
+
+        // Should NOT contain comparison exports
+        expect(indexJs).not.toContain('hdf-comparison');
+        expect(indexDts).not.toContain('hdf-comparison');
+
+        // Should still contain results exports
+        expect(indexJs).toContain('hdf-results');
+        expect(indexDts).toContain('hdf-results');
+      } finally {
+        // Restore all backed up files
+        for (const [file, content] of backup) {
+          writeFileSync(file, content);
+        }
+        if (existsSync(compBackup)) {
+          writeFileSync(compTs, readFileSync(compBackup, 'utf-8'));
+          rmSync(compBackup);
+        }
+      }
     });
   });
 });

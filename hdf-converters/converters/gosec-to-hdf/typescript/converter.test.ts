@@ -215,4 +215,73 @@ describe('gosec to HDF converter', async () => {
       expect(hdf.baselines[0]!.name).toBe('gosec Scan');
     });
   });
+
+  describe('edge cases: missing fields and suppressed issues', async () => {
+    it('should handle suppressed issue via nosec flag', async () => {
+      const input = JSON.stringify({
+        Issues: [{
+          severity: 'HIGH', confidence: 'HIGH',
+          cwe: { id: '123', url: 'https://cwe.mitre.org/data/definitions/123.html' },
+          rule_id: 'G101', details: 'Suppressed issue',
+          file: 'main.go', code: 'code', line: '10', column: '5',
+          nosec: true, suppressions: null,
+        }],
+        Stats: { files: 1, lines: 100, nosec: 1, found: 1 },
+        GosecVersion: '2.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+    });
+
+    it('should handle issue with suppressions list', async () => {
+      const input = JSON.stringify({
+        Issues: [{
+          severity: 'MEDIUM', confidence: 'LOW',
+          cwe: { id: '456', url: 'https://example.com' },
+          rule_id: 'G102', details: 'With suppressions',
+          file: 'util.go', code: 'code', line: '20', column: '1',
+          nosec: false, suppressions: [{ kind: 'inSource', justification: 'false positive' }],
+        }],
+        Stats: { files: 1, lines: 100, nosec: 0, found: 1 },
+        GosecVersion: '',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.message).toContain('false positive');
+      // No GosecVersion → no version on dataSource
+      expect(hdf.dataSource?.version).toBeUndefined();
+    });
+
+    it('should handle empty suppressions list', async () => {
+      const input = JSON.stringify({
+        Issues: [{
+          severity: 'LOW', confidence: 'HIGH',
+          cwe: { id: '789', url: 'https://example.com' },
+          rule_id: 'G103', details: 'Empty suppressions',
+          file: 'main.go', code: 'code', line: '30', column: '1',
+          nosec: false, suppressions: [],
+        }],
+        Stats: { files: 1, lines: 100, nosec: 0, found: 1 },
+        GosecVersion: '2.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.message).toContain('No justification');
+    });
+
+    it('should handle unknown severity', async () => {
+      const input = JSON.stringify({
+        Issues: [{
+          severity: 'UNKNOWN', confidence: 'HIGH',
+          cwe: { id: '100', url: 'https://example.com' },
+          rule_id: 'G104', details: 'Unknown sev',
+          file: 'main.go', code: 'code', line: '1', column: '1',
+          nosec: false, suppressions: null,
+        }],
+        Stats: { files: 1, lines: 100, nosec: 0, found: 1 },
+        GosecVersion: '2.0',
+      });
+      const hdf = JSON.parse(await convertGosecToHdf(input)) as HdfResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
+    });
+  });
 });
