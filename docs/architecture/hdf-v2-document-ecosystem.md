@@ -1,7 +1,7 @@
 # HDF v2 Document Type Ecosystem
 
 > **Status:** This is the HDF v2 **design specification**. Implementation is tracked
-> in beads epic `hdf-libs-15kg`. As of 2026-03-15, three schemas exist (hdf-baseline,
+> in beads epic `hdf-libs-dlt`. As of 2026-03-15, three schemas exist (hdf-baseline,
 > hdf-results, hdf-comparison). The remaining four (hdf-system, hdf-plan, hdf-amendments,
 > hdf-evidence-package) and the Phase 0 foundation work (typed inputs, labels, rename,
 > cross-references) are planned but not yet implemented. Examples in this document show
@@ -749,8 +749,8 @@ hdf-results. Each OSCAL document type maps to a specific HDF document type:
 | Profile | hdf-baseline | Tailored requirements |
 
 These converters cannot be implemented until the target schemas exist. They are
-tracked under Phase 5 (hdf-libs-qcj7) with a converter alignment audit card
-(hdf-libs-ccp0) to ensure all converters reflect v2 schema changes.
+tracked under Phase 5 (hdf-libs-0u4) with a converter alignment audit card
+(hdf-libs-dc1) to ensure all converters reflect v2 schema changes.
 
 Reverse converters (HDF → OSCAL) are also needed for OSCAL export from Heimdall.
 
@@ -1056,12 +1056,12 @@ Ruby and Rust would require manual implementation or new generator backends.
 
 | Decision | Beads Card | Phase |
 |----------|-----------|-------|
-| D1: Labels over hierarchies | hdf-libs-pdf7 | Phase 0.2 |
-| D5: Typed inputs | hdf-libs-hlvt | Phase 0.1 |
-| D6: Seven document types | hdf-libs-15kg (epic) | All phases |
+| D1: Labels over hierarchies | hdf-libs-0r7 | Phase 0.2 |
+| D5: Typed inputs | hdf-libs-4bm | Phase 0.1 |
+| D6: Seven document types | hdf-libs-dlt (epic) | All phases |
 | D8: Dual TS+Go from day one | (all cards) | All phases |
 | D9: Progressive enrichment | (all cards) | All phases |
-| D10: Rename to hdf-amendments | hdf-libs-3qm7 | Phase 3 |
-| D11: Generic comparison | hdf-libs-tvcs (system), hdf-libs-gz0p (baseline), hdf-libs-a96 (SBOM) | Phase 1+ |
-| D12: SBOM library adoption | hdf-libs-a96, hdf-libs-b4lj | Phase 1 |
-| Converter v2 alignment | hdf-libs-ccp0 | Phase 5 |
+| D10: Rename to hdf-amendments | hdf-libs-ad6 | Phase 3 |
+| D11: Generic comparison | hdf-libs-zgm (system), hdf-libs-356 (baseline), hdf-libs-l0v (SBOM) | Phase 1+ |
+| D12: SBOM library adoption | hdf-libs-l0v, hdf-libs-jtl | Phase 1 |
+| Converter v2 alignment | hdf-libs-dc1 | Phase 5 |

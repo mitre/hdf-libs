@@ -77,7 +77,7 @@
   - hdf-results.schema.json still has untyped `attributes: object[]` (line 127-129)
   - hdf-baseline.schema.json `inputs` field is undefined/untyped
 
-- **Task Status** (beads: hdf-libs-hlvt, Phase 0.1):
+- **Task Status** (beads: hdf-libs-4bm, Phase 0.1):
   - Listed as "Ready" but schema doesn't exist
   - Blocks Phase 0.2, 0.3, Phase 1 (hdf-system depends on typed inputs)
 
@@ -106,7 +106,7 @@
 - **hdf-results.schema.json**:
   - No `systemRef` or `planRef` fields (should be added per lines 699-700 of spec)
 
-- **Task Status** (beads: hdf-libs-pdf7, Phase 0.2):
+- **Task Status** (beads: hdf-libs-0r7, Phase 0.2):
   - Listed as "Ready" but not implemented in schemas
 
 **Severity:** CRITICAL - Labels are fundamental to the v2 design (fleet comparison, grouping).
@@ -212,9 +212,9 @@ decisions.md says "Decided and implemented" which is correct — implemented in 
 ### 12. No Decision-to-Card Mapping
 
 Readers can't tell which decision maps to which beads card. Suggested mapping:
-- Decision 1 (Labels) → Phase 0.2 (hdf-libs-pdf7)
-- Decision 5 (Typed Inputs) → Phase 0.1 (hdf-libs-hlvt)
-- Decision 6 (7 Doc Types) → Epic hdf-libs-15kg
+- Decision 1 (Labels) → Phase 0.2 (hdf-libs-0r7)
+- Decision 5 (Typed Inputs) → Phase 0.1 (hdf-libs-4bm)
+- Decision 6 (7 Doc Types) → Epic hdf-libs-dlt
 
 ---
 
@@ -238,7 +238,7 @@ Readers can't tell which decision maps to which beads card. Suggested mapping:
 ## RECOMMENDED ACTIONS
 
 ### Immediate
-1. Add status header to architecture doc: "This is the HDF v2 design specification. Implementation is tracked in beads epic hdf-libs-15kg."
+1. Add status header to architecture doc: "This is the HDF v2 design specification. Implementation is tracked in beads epic hdf-libs-dlt."
 2. Flag examples that show future state (inputs, labels, systemRef)
 3. Fix broken cross-reference on line 916
 

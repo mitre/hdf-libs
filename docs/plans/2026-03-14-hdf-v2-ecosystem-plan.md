@@ -20,7 +20,7 @@ lifecycle diagrams, example JSON, CLI command tree, Heimdall integration, and de
 - Generic comparison — hdf-comparison diffs any HDF doc type (D11)
 - SBOM: both CycloneDX + SPDX from day one, adopt protobom (Go) (D12)
 
-**Cards:** Epic `hdf-libs-15kg` with phase cards linked below.
+**Cards:** Epic `hdf-libs-dlt` with phase cards linked below.
 
 ---
 
@@ -30,19 +30,19 @@ lifecycle diagrams, example JSON, CLI command tree, Heimdall integration, and de
 
 | Phase | Card | Status | Notes |
 |-------|------|--------|-------|
-| 0.1 Typed inputs | hdf-libs-hlvt | NOT STARTED | Unblocked, start here |
-| 0.2 Labels | hdf-libs-pdf7 | NOT STARTED | Blocked on 0.1 |
-| 0.3 Rename attributes→inputs | hdf-libs-fjfe | NOT STARTED | Blocked on 0.1 |
-| 0.4 Cross-references | hdf-libs-5ef5 | NOT STARTED | Unblocked |
-| 1 hdf-system | hdf-libs-b4lj | NOT STARTED | Blocked on 0.1 + 0.2 |
-| 2 hdf-plan | hdf-libs-5sgt | NOT STARTED | Blocked on Phase 1 |
-| 3 hdf-amendments | hdf-libs-3qm7 | NOT STARTED | Blocked on 0.1 |
-| 4 hdf-evidence-package | hdf-libs-3cjk | NOT STARTED | Blocked on 1 + 2 + 3 |
-| 5 Ecosystem integration | hdf-libs-qcj7 | NOT STARTED | Incremental after each phase |
-| — System-level comparison | hdf-libs-tvcs | NOT STARTED | Blocked on Phase 1 |
-| — Baseline comparison | hdf-libs-gz0p | NOT STARTED | Blocked on Phase 0.1 |
-| — SBOM comparison | hdf-libs-a96 | NOT STARTED | Blocked on Phase 1 |
-| — Converter v2 alignment | hdf-libs-ccp0 | NOT STARTED | Blocked on all Phase 0 |
+| 0.1 Typed inputs | hdf-libs-4bm | NOT STARTED | Unblocked, start here |
+| 0.2 Labels | hdf-libs-0r7 | NOT STARTED | Unblocked (parallel with 0.1) |
+| 0.3 Rename attributes→inputs | hdf-libs-yco | NOT STARTED | Blocked on 0.1 |
+| 0.4 Cross-references | hdf-libs-an1 | NOT STARTED | Unblocked |
+| 1 hdf-system | hdf-libs-jtl | NOT STARTED | Blocked on 0.1 + 0.2 |
+| 2 hdf-plan | hdf-libs-kgy | NOT STARTED | Blocked on Phase 1 |
+| 3 hdf-amendments | hdf-libs-ad6 | NOT STARTED | Blocked on 0.1 |
+| 4 hdf-evidence-package | hdf-libs-6ov | NOT STARTED | Blocked on 1 + 2 + 3 |
+| 5 Ecosystem integration | hdf-libs-0u4 | NOT STARTED | Incremental after each phase |
+| — System-level comparison | hdf-libs-zgm | NOT STARTED | Blocked on Phase 1 |
+| — Baseline comparison | hdf-libs-356 | NOT STARTED | Blocked on Phase 0.1 |
+| — SBOM comparison | hdf-libs-l0v | NOT STARTED | Blocked on Phase 1 |
+| — Converter v2 alignment | hdf-libs-dc1 | NOT STARTED | Blocked on all Phase 0 |
 
 **Already complete:**
 - hdf-comparison schema (exists)
@@ -55,11 +55,11 @@ lifecycle diagrams, example JSON, CLI command tree, Heimdall integration, and de
 
 ## Phase 0: Foundation (v2 schema refinements)
 
-**Card:** `hdf-libs-hlvt` (typed inputs), `hdf-libs-pdf7` (labels), `hdf-libs-fjfe` (rename), `hdf-libs-5ef5` (refs)
+**Card:** `hdf-libs-4bm` (typed inputs), `hdf-libs-0r7` (labels), `hdf-libs-yco` (rename), `hdf-libs-an1` (refs)
 
 ### 0.1 Add typed Input primitive
 
-**Card:** `hdf-libs-hlvt`
+**Card:** `hdf-libs-4bm`
 
 Create `primitives/parameter.schema.json` with `Input` type definition.
 
@@ -85,7 +85,7 @@ Implementation:
 
 ### 0.2 Add labels to targets and baselines
 
-**Card:** `hdf-libs-pdf7`
+**Card:** `hdf-libs-0r7`
 
 **Architecture reference:** See `docs/architecture/hdf-v2-document-ecosystem.md` section
 "Labels — Flexible Grouping Without Hierarchy" for design rationale, well-known keys table,
@@ -103,7 +103,7 @@ Implementation:
 
 ### 0.3 Rename attributes to inputs in hdf-results
 
-**Card:** `hdf-libs-fjfe`
+**Card:** `hdf-libs-yco`
 
 **Rationale:** InSpec renamed "attributes" to "inputs" in v4/v5. The old name was ambiguous.
 Both hdf-baseline and hdf-results should use `inputs` consistently. Since v2 is not released,
@@ -120,7 +120,7 @@ Implementation:
 
 ### 0.4 Add document cross-references to hdf-results
 
-**Card:** `hdf-libs-5ef5`
+**Card:** `hdf-libs-an1`
 
 Add optional fields to HdfResults:
 - `systemRef: string` (URI to hdf-system document)
@@ -132,7 +132,7 @@ These create the provenance chain: "this scan was planned by X for system Y."
 
 ## Phase 1: hdf-system
 
-**Card:** `hdf-libs-b4lj`
+**Card:** `hdf-libs-jtl`
 
 **Architecture reference:** See `docs/architecture/hdf-v2-document-ecosystem.md` section
 "Phase 2: DESCRIBE — hdf-system" for full example JSON showing components with label
@@ -183,7 +183,7 @@ Both TS and Go types must be generated — dual implementation from day one.
 
 ## Phase 2: hdf-plan
 
-**Card:** `hdf-libs-5sgt`
+**Card:** `hdf-libs-kgy`
 
 **Architecture reference:** See `docs/architecture/hdf-v2-document-ecosystem.md` section
 "Phase 3: PLAN — hdf-plan" for example JSON showing how inputs are resolved from
@@ -222,7 +222,7 @@ References hdf-baseline (which baselines to run), hdf-system (which targets to s
 
 ## Phase 3: hdf-amendments
 
-**Card:** `hdf-libs-3qm7`
+**Card:** `hdf-libs-ad6`
 
 **Architecture reference:** See `docs/architecture/hdf-v2-document-ecosystem.md` sections
 "Phase 6: GOVERN — hdf-amendments", "Chain of Trust", and "Attestation vs Waiver vs Exception"
@@ -284,7 +284,7 @@ Original results (checksum A) → Attestation (previousChecksum: A) → Merged r
 
 ## Phase 4: hdf-evidence-package
 
-**Card:** `hdf-libs-3cjk`
+**Card:** `hdf-libs-6ov`
 
 **Architecture reference:** See `docs/architecture/hdf-v2-document-ecosystem.md` section
 "Phase 7: PROVE — hdf-evidence-package" for full example JSON and CLI usage.
@@ -315,7 +315,7 @@ CompletenessCheck: `{ allBaselinesAssessed, allComponentsCovered, expiredWaivers
 
 ## Phase 5: Ecosystem integration
 
-**Card:** `hdf-libs-qcj7`
+**Card:** `hdf-libs-0u4`
 
 ### 5.1 Converter label support
 
@@ -372,7 +372,7 @@ Existing enhancements (already planned):
 
 ### 5.4 Converter v2 alignment audit
 
-**Card:** `hdf-libs-ccp0`
+**Card:** `hdf-libs-dc1`
 
 Systematic review and update of ALL converters for v2 schema changes:
 - `attributes` → `inputs` rename in every converter
@@ -420,7 +420,7 @@ Phase 0 complete
   ├── Phase 1 (hdf-system) ← depends on 0.1 + 0.2
   ├── Phase 3 (hdf-amendments) ← depends on 0.1 only (can parallel with Phase 1)
   ├── Baseline comparison ← depends on Phase 0 only
-  └── Converter v2 alignment (hdf-libs-ccp0) ← depends on all Phase 0
+  └── Converter v2 alignment (hdf-libs-dc1) ← depends on all Phase 0
 
 Phase 1 complete
   ├── Phase 2 (hdf-plan) ← depends on Phase 1

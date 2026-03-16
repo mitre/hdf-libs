@@ -80,9 +80,9 @@
 
 | Card | Should Depend On | Currently | Fix |
 |------|-----------------|-----------|-----|
-| hdf-libs-eey (oscal-ssp) | hdf-libs-b4lj (Phase 1) | NONE — shows as ready | Add dep |
-| hdf-libs-1vb (oscal-poam) | hdf-libs-3qm7 (Phase 3) | NONE — shows as ready | Add dep |
-| hdf-libs-uej (oscal-sap) | hdf-libs-5sgt (Phase 2) | NONE — shows as ready | Add dep |
+| hdf-libs-eey (oscal-ssp) | hdf-libs-jtl (Phase 1) | NONE — shows as ready | Add dep |
+| hdf-libs-1vb (oscal-poam) | hdf-libs-ad6 (Phase 3) | NONE — shows as ready | Add dep |
+| hdf-libs-uej (oscal-sap) | hdf-libs-kgy (Phase 2) | NONE — shows as ready | Add dep |
 
 These cards appear as "ready" when they cannot be implemented.
 
@@ -100,4 +100,4 @@ The plan says subtasks can begin earlier. Consider splitting or relaxing.
 ### Minor
 
 1. Epic (15kg) tracks children via text notes, not formal beads links
-2. hdf-libs-3qm7 notes still reference old section name "Phase 6: GOVERN — hdf-attestation"
+2. hdf-libs-ad6 notes still reference old section name "Phase 6: GOVERN — hdf-attestation"

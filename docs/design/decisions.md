@@ -410,7 +410,7 @@ where one vehicle type is "vehicle."
 ### Downstream Impact
 
 - All docs, plans, design docs, and beads cards updated
-- Phase 5 (hdf-libs-qcj7): OSCAL converters reference `hdf-amendments`, not `hdf-attestation`
+- Phase 5 (hdf-libs-0u4): OSCAL converters reference `hdf-amendments`, not `hdf-attestation`
 - hdf-cli: `hdf attest` → `hdf amend` command group
 - Heimdall integration: "Waiver Management" section references amendments
 
