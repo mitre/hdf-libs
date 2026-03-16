@@ -501,7 +501,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should set target name from TestResult target element', async () => {
       const hdf = await parseHdf('arf-minimal.xml');
-      expect(hdf.targets![0]!.name).toBe('test-host');
+      expect(hdf.targets![0]!.name).toBe('rh-hony');
     });
 
     it('should set target IP from TestResult target-address', async () => {
@@ -511,7 +511,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should enrich target with ARF asset FQDN', async () => {
       const hdf = await parseHdf('arf-minimal.xml');
-      expect(hdf.targets![0]!.fqdn).toBe('test-host');
+      expect(hdf.targets![0]!.fqdn).toBe('rh-hony');
     });
 
     it('should enrich target with ARF asset MAC address', async () => {

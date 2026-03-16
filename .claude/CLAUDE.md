@@ -40,6 +40,19 @@ If bd errors with "LEGACY DATABASE DETECTED", run `bd migrate --update-repo-id` 
   2. CLI integration in `hdf-cli/cmd/hdf/cmd/converter_{name}.go` with corresponding tests
 - Spot check converter output via CLI before committing: `hdf convert {from} to {to} input.json output.{ext}`
 
+## Destructive Git Operations — HARD RULES
+
+These rules exist because filter-repo nearly destroyed this repo on 2026-03-15.
+
+- **NEVER use `commit.skip()` in git filter-repo.** It drops tree state — files added by skipped commits are permanently lost. Only use `--replace-text` (content) and `--message-callback` with `return message` (messages).
+- **NEVER run filter-repo more than once.** Plan ALL replacements in a single pass. Multiple passes compound damage and create stale objects that break pushes.
+- **ALWAYS backup before filter-repo.** Use `cp -r` (not `mv`). Verify the backup is intact before proceeding.
+- **ALWAYS verify after filter-repo.** Compare file lists against the backup: `diff <(git ls-tree -r branch --name-only | sort) <(git -C backup ls-tree -r branch --name-only | sort)`. If file counts don't match, STOP and restore.
+- **NEVER say "looks good" without verification.** Every destructive operation requires a file-count comparison against a known-good baseline.
+- **After filter-repo, pushes may fail with "Everything up-to-date."** Fix: delete the remote branch, run `git gc --prune=now`, push fresh. If still failing, use `--verbose` flag or push via a different branch name.
+- **When the user says SLOW DOWN, stop everything.** Verify the current state before taking any further action.
+- **Research before guessing.** Especially with filter-repo, LFS, and force-push interactions. Do not chain fix-on-top-of-fix.
+
 ## Fixture Integrity
 - **Never fabricate fixture data.** Every converter fixture must be either:
   1. Real tool output from an actual run or public CI pipeline
