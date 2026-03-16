@@ -19,6 +19,13 @@
         "name": {
           "type": "string",
           "description": "Human-readable name for this target."
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
         }
       },
       "description": "Base properties shared by all target types.",
