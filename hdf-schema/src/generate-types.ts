@@ -22,6 +22,7 @@ const SCHEMAS = [
   { file: 'hdf-system.schema.json', name: 'HdfSystem' },
   { file: 'hdf-plan.schema.json', name: 'HdfPlan' },
   { file: 'hdf-amendments.schema.json', name: 'HdfAmendments' },
+  { file: 'hdf-evidence-package.schema.json', name: 'HdfEvidencePackage' },
 ];
 
 // Language configurations

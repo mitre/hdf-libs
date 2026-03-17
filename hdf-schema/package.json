@@ -32,6 +32,10 @@
       "import": "./dist/ts/hdf-amendments.js",
       "types": "./dist/ts/hdf-amendments.d.ts"
     },
+    "./hdf-evidence-package": {
+      "import": "./dist/ts/hdf-evidence-package.js",
+      "types": "./dist/ts/hdf-evidence-package.d.ts"
+    },
     "./schemas/*": "./src/schemas/*"
   },
   "files": [

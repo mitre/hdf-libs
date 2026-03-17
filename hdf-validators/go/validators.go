@@ -30,6 +30,7 @@ func SetSchemaDir(dir string) {
 	systemSchema = nil
 	planSchema = nil
 	amendmentsSchema = nil
+	evidencePackageSchema = nil
 }
 
 // GetSchemaDir returns the current schema directory, or empty if using embedded.
@@ -53,6 +54,8 @@ const (
 	TypePlan SchemaType = "plan"
 	// TypeAmendments is the HDF amendments schema.
 	TypeAmendments SchemaType = "amendments"
+	// TypeEvidencePackage is the HDF evidence-package schema.
+	TypeEvidencePackage SchemaType = "evidence-package"
 )
 
 // ValidationError represents a single validation error.
@@ -90,7 +93,8 @@ var (
 	comparisonSchema *gojsonschema.Schema
 	systemSchema     *gojsonschema.Schema
 	planSchema       *gojsonschema.Schema
-	amendmentsSchema *gojsonschema.Schema
+	amendmentsSchema      *gojsonschema.Schema
+	evidencePackageSchema *gojsonschema.Schema
 )
 
 // loadSchema loads and compiles a schema from either the filesystem (if schemaDir
@@ -189,6 +193,16 @@ func getSchema(schemaType SchemaType) (*gojsonschema.Schema, error) {
 		}
 		return amendmentsSchema, nil
 
+	case TypeEvidencePackage:
+		if evidencePackageSchema == nil {
+			var err error
+			evidencePackageSchema, err = loadSchema("hdf-evidence-package.schema.json")
+			if err != nil {
+				return nil, err
+			}
+		}
+		return evidencePackageSchema, nil
+
 	default:
 		return nil, fmt.Errorf("unknown schema type: %s", schemaType)
 	}
@@ -265,4 +279,9 @@ func ValidatePlan(data []byte) ValidationResult {
 // ValidateAmendments validates JSON data against the HDF amendments schema.
 func ValidateAmendments(data []byte) ValidationResult {
 	return Validate(data, TypeAmendments)
+}
+
+// ValidateEvidencePackage validates JSON data against the HDF evidence-package schema.
+func ValidateEvidencePackage(data []byte) ValidationResult {
+	return Validate(data, TypeEvidencePackage)
 }

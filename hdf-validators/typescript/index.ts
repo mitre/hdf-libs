@@ -8,6 +8,7 @@ import hdfComparisonSchema from '@mitre/hdf-schema/schemas/hdf-comparison.schema
 import hdfSystemSchema from '@mitre/hdf-schema/schemas/hdf-system.schema.json';
 import hdfPlanSchema from '@mitre/hdf-schema/schemas/hdf-plan.schema.json';
 import hdfAmendmentsSchema from '@mitre/hdf-schema/schemas/hdf-amendments.schema.json';
+import hdfEvidencePackageSchema from '@mitre/hdf-schema/schemas/hdf-evidence-package.schema.json';
 import commonSchema from '@mitre/hdf-schema/schemas/primitives/common.schema.json';
 import extensionsSchema from '@mitre/hdf-schema/schemas/primitives/extensions.schema.json';
 import platformSchema from '@mitre/hdf-schema/schemas/primitives/platform.schema.json';
@@ -81,6 +82,7 @@ let comparisonValidator: ValidateFunction | null = null;
 let systemValidator: ValidateFunction | null = null;
 let planValidator: ValidateFunction | null = null;
 let amendmentsValidator: ValidateFunction | null = null;
+let evidencePackageValidator: ValidateFunction | null = null;
 
 function getResultsValidator(): ValidateFunction {
   if (!resultsValidator) {
@@ -122,6 +124,13 @@ function getAmendmentsValidator(): ValidateFunction {
     amendmentsValidator = ajv.compile(hdfAmendmentsSchema);
   }
   return amendmentsValidator;
+}
+
+function getEvidencePackageValidator(): ValidateFunction {
+  if (!evidencePackageValidator) {
+    evidencePackageValidator = ajv.compile(hdfEvidencePackageSchema);
+  }
+  return evidencePackageValidator;
 }
 
 /**
@@ -243,6 +252,14 @@ export function validateAmendments(data: unknown): ValidationResult {
 }
 
 /**
+ * Validate HDF Evidence Package document against schema
+ */
+export function validateEvidencePackage(data: unknown): ValidationResult {
+  const validator = getEvidencePackageValidator();
+  return createResult(validator, data);
+}
+
+/**
  * Validate HDF document (auto-detect type based on structure)
  */
 export function validate(data: unknown): ValidationResult {
@@ -277,6 +294,11 @@ export function validate(data: unknown): ValidationResult {
     // HDF Comparison has 'mode' and 'sources' at root
     if ('mode' in obj && 'sources' in obj) {
       return validateComparison(data);
+    }
+
+    // HDF Evidence Package has 'name' and 'contents' at root
+    if ('name' in obj && 'contents' in obj) {
+      return validateEvidencePackage(data);
     }
   }
 

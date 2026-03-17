@@ -37,6 +37,7 @@ Examples:
   hdf validate my-system.json --type system
   hdf validate scan-plan.json --type plan
   hdf validate waivers.json --type amendments
+  hdf validate evidence.json --type evidence-package
   cat results.json | hdf validate -`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -47,7 +48,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "results", "Schema type: results, baseline, comparison, system, plan, amendments")
+	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "results", "Schema type: results, baseline, comparison, system, plan, amendments, evidence-package")
 	cmd.Flags().BoolVarP(&localQuiet, "quiet", "q", false, "Suppress output on success (exit code only)")
 
 	return cmd
@@ -83,14 +84,14 @@ func runValidate(_ *cobra.Command, args []string) error {
 		_, validationErr = parseHDFResults(data)
 	case "baseline":
 		_, validationErr = parseHDFBaseline(data)
-	case "comparison", "system", "plan", "amendments":
+	case "comparison", "system", "plan", "amendments", "evidence-package":
 		result := validators.Validate(data, validators.SchemaType(schemaType))
 		if !result.Valid {
 			validationErr = fmt.Errorf("schema validation failed: %s", result.Error())
 		}
 	default:
 		printError(fmt.Sprintf("Unknown schema type: %s", schemaType),
-			"Use --type=results|baseline|comparison|system|plan|amendments")
+			"Use --type=results|baseline|comparison|system|plan|amendments|evidence-package")
 		return fmt.Errorf("unknown schema type: %s", schemaType)
 	}
 
