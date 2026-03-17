@@ -1,4 +1,5 @@
 {
+  "_provenance": "Constructed from Microsoft Graph Security API v2 documentation (security/alerts_v2). Alert structure and evidence types match official docs at learn.microsoft.com/en-us/graph/api/resources/security-alert. Not real tool output — replace with actual MDE export when available.",
   "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#security/alerts_v2",
   "value": [
     {
