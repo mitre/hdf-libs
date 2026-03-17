@@ -29,7 +29,7 @@ export function createIndex(options: CreateIndexOptions = {}): void {
   }
 
   // Clean stale .d.ts and .js output so tsc doesn't refuse to overwrite its own input
-  for (const name of ['hdf-results', 'hdf-baseline', 'hdf-comparison', 'hdf-system', 'hdf-plan']) {
+  for (const name of ['hdf-results', 'hdf-baseline', 'hdf-comparison', 'hdf-system', 'hdf-plan', 'hdf-amendments']) {
     for (const ext of ['.d.ts', '.js']) {
       const file = join(tsDir, `${name}${ext}`);
       if (existsSync(file)) {
@@ -129,6 +129,14 @@ export {
   PlanType,
 } from './ts/hdf-plan.js';
 
+// Re-export amendments types
+export type {
+  HdfAmendments, StandaloneOverride,
+} from './ts/hdf-amendments.js';
+export {
+  OverrideType,
+} from './ts/hdf-amendments.js';
+
 // Re-export helper functions
 export * from './helpers.js';
 `;
@@ -165,6 +173,11 @@ export {
 export {
   PlanType,
 } from './ts/hdf-plan.js';
+
+// Re-export amendments enums (runtime values)
+export {
+  OverrideType,
+} from './ts/hdf-amendments.js';
 
 // Re-export helper functions
 export * from './helpers.js';

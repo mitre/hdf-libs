@@ -28,6 +28,10 @@
       "import": "./dist/ts/hdf-plan.js",
       "types": "./dist/ts/hdf-plan.d.ts"
     },
+    "./hdf-amendments": {
+      "import": "./dist/ts/hdf-amendments.js",
+      "types": "./dist/ts/hdf-amendments.d.ts"
+    },
     "./schemas/*": "./src/schemas/*"
   },
   "files": [
