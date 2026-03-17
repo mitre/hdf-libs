@@ -32,6 +32,8 @@ import {
   convertVeracodeToHdf,
   convertMsftSecureScoreToHdf,
   convertMsftDefenderDevopsToHdf,
+  convertMsftDefenderCloudToHdf,
+  convertMsftDefenderEndpointToHdf,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -171,6 +173,16 @@ describe('Main exports', () => {
   it('should export convertMsftDefenderDevopsToHdf from main index', () => {
     expect(convertMsftDefenderDevopsToHdf).toBeDefined();
     expect(typeof convertMsftDefenderDevopsToHdf).toBe('function');
+  });
+
+  it('should export convertMsftDefenderCloudToHdf from main index', () => {
+    expect(convertMsftDefenderCloudToHdf).toBeDefined();
+    expect(typeof convertMsftDefenderCloudToHdf).toBe('function');
+  });
+
+  it('should export convertMsftDefenderEndpointToHdf from main index', () => {
+    expect(convertMsftDefenderEndpointToHdf).toBeDefined();
+    expect(typeof convertMsftDefenderEndpointToHdf).toBe('function');
   });
 
   it('should export convertVeracodeToHdf from main index', () => {

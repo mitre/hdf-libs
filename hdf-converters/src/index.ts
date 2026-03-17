@@ -104,3 +104,9 @@ export { convertMsftSecureScoreToHdf } from '../converters/msft-secure-score-to-
 
 // Microsoft Defender for DevOps to HDF converter
 export { convertMsftDefenderDevopsToHdf } from '../converters/msft-defender-devops-to-hdf/typescript/index.js';
+
+// Microsoft Defender for Cloud to HDF converter
+export { convertMsftDefenderCloudToHdf } from '../converters/msft-defender-cloud-to-hdf/typescript/index.js';
+
+// Microsoft Defender for Endpoint to HDF converter
+export { convertMsftDefenderEndpointToHdf } from '../converters/msft-defender-endpoint-to-hdf/typescript/index.js';
