@@ -20,6 +20,7 @@ const SCHEMAS = [
   { file: 'hdf-baseline.schema.json', name: 'HdfBaseline' },
   { file: 'hdf-comparison.schema.json', name: 'HdfComparison' },
   { file: 'hdf-system.schema.json', name: 'HdfSystem' },
+  { file: 'hdf-plan.schema.json', name: 'HdfPlan' },
 ];
 
 // Language configurations

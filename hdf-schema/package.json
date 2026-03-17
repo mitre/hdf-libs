@@ -24,6 +24,10 @@
       "import": "./dist/ts/hdf-system.js",
       "types": "./dist/ts/hdf-system.d.ts"
     },
+    "./hdf-plan": {
+      "import": "./dist/ts/hdf-plan.js",
+      "types": "./dist/ts/hdf-plan.d.ts"
+    },
     "./schemas/*": "./src/schemas/*"
   },
   "files": [
