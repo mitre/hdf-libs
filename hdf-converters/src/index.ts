@@ -101,3 +101,6 @@ export { convertVeracodeToHdf } from '../converters/veracode-to-hdf/typescript/i
 
 // Microsoft Secure Score to HDF converter
 export { convertMsftSecureScoreToHdf } from '../converters/msft-secure-score-to-hdf/typescript/index.js';
+
+// Microsoft Defender for DevOps to HDF converter
+export { convertMsftDefenderDevopsToHdf } from '../converters/msft-defender-devops-to-hdf/typescript/index.js';

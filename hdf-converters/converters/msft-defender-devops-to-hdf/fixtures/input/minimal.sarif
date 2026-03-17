@@ -1,0 +1,226 @@
+{
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "credscan",
+          "organization": "Microsoft Corporation",
+          "product": "Microsoft Security Credential Scanner Client",
+          "fullName": "CredentialScanner 2.5.1.13",
+          "version": "2.5.1.13",
+          "semanticVersion": "2.5.1",
+          "rules": [
+            {
+              "id": "CSCAN-GENERAL0020",
+              "name": "X.509 Certificate Private Key",
+              "fullDescription": {
+                "text": "used as a private component in SSL certificates."
+              },
+              "shortDescription": {
+                "text": "X.509 Certificate Private Key."
+              },
+              "messageStrings": {
+                "Default": {
+                  "text": "A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs "
+                }
+              },
+              "helpUri": "https://aka.ms/CredScanDocs"
+            }
+          ],
+          "properties": {
+            "Comments": "CredentialScanner is an Azure security tool to scan for credentials & other sensitive data in source code and/or system files.",
+            "RawName": "credscan"
+          }
+        },
+        "properties": {
+          "IsPreview": true
+        }
+      },
+      "versionControlProvenance": [
+        {
+          "repositoryUri": "https://github.com/reynoldsa/security-devops-action",
+          "revisionId": "c5bc432f9640469fd713f651b4d18af73867f27a",
+          "branch": "main",
+          "properties": {
+            "RepositoryRoot": "D:\\source\\security-devops-action"
+          }
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "CSCAN-GENERAL0020",
+          "ruleIndex": 0,
+          "rule": {
+            "id": "CSCAN-GENERAL0020"
+          },
+          "level": "error",
+          "message": {
+            "text": "A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs "
+          },
+          "analysisTarget": {
+            "uri": ".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem",
+            "uriBaseId": "file:///D:/source/security-devops-action/"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": ".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem",
+                  "uriBaseId": "file:///D:/source/security-devops-action/"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1,
+                  "endLine": 1,
+                  "endColumn": 27
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "HashCode": "K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=",
+            "gdnPrimarySignature": "ad80df55e021c410c64bbdc3c768739c9b7fd32cfe9d37e5049efe305a7cabbe",
+            "gdnAlternativeSignature0": "471e593e20b5c75c62e499b8249c85f1835dc7f99dc9553a8a66b1be2550515d"
+          },
+          "suppressions": [],
+          "rank": 94.0,
+          "properties": {
+            "DefectCode": "SecretInFile",
+            "MatchingScore": 94.41,
+            "EnrichmentScore": 112.5,
+            "Severity": 94.0,
+            "Validation": "NoValidationRequested",
+            "Risk": "100"
+          }
+        }
+      ],
+      "columnKind": "utf16CodeUnits",
+      "policies": [
+        {
+          "name": "Microsoft",
+          "version": "2.0.3"
+        }
+      ]
+    },
+    {
+      "tool": {
+        "driver": {
+          "name": "checkov",
+          "version": "3.2.199",
+          "rules": [
+            {
+              "id": "CKV_AZURE_59",
+              "name": "Ensure that Storage accounts disallow public access",
+              "fullDescription": {
+                "text": "Ensure that Storage accounts disallow public access"
+              },
+              "help": {
+                "text": "Ensure that Storage accounts disallow public access\nResource: azurerm_storage_account.terraformaccount1"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/azure-policies/azure-networking-policies/ensure-that-storage-accounts-disallow-public-access"
+            },
+            {
+              "id": "CKV_AZURE_33",
+              "name": "Ensure Storage logging is enabled for Queue service for read, write and delete requests",
+              "fullDescription": {
+                "text": "Ensure Storage logging is enabled for Queue service for read, write and delete requests"
+              },
+              "help": {
+                "text": "Ensure Storage logging is enabled for Queue service for read, write and delete requests\nResource: azurerm_storage_account.terraformaccount1"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/azure-policies/azure-logging-policies/enable-requests-on-storage-logging-for-queue-service"
+            }
+          ],
+          "properties": {
+            "RawName": "checkov"
+          }
+        }
+      },
+      "versionControlProvenance": [
+        {
+          "repositoryUri": "https://github.com/reynoldsa/security-devops-action",
+          "revisionId": "c5bc432f9640469fd713f651b4d18af73867f27a",
+          "branch": "main",
+          "properties": {
+            "RepositoryRoot": "D:\\source\\security-devops-action"
+          }
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "CKV_DOCKER_2",
+          "ruleIndex": 42,
+          "level": "note",
+          "message": {
+            "text": "Ensure that HEALTHCHECK instructions have been added to container images"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "samples/Dockerfile"
+                },
+                "region": {
+                  "startLine": 1,
+                  "endLine": 2,
+                  "snippet": {
+                    "text": "FROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" >> /etc/passwd && echo \"testuser::18761:0:99999:7:::\" >> /etc/shadow\n"
+                  }
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "gdnPrimarySignature": "d575ad4cda6d50d0a5b22693f2455c3705f7c36bb4b15adc9192690133bf9374",
+            "gdnAlternativeSignature0": "b638b75acb82e58442ebe3ecff85569f7009ac136ba3db701680ba599b613c84"
+          },
+          "attachments": []
+        },
+        {
+          "ruleId": "CKV_DOCKER_3",
+          "ruleIndex": 43,
+          "level": "note",
+          "message": {
+            "text": "Ensure that a user for the container has been created"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "samples/Dockerfile"
+                },
+                "region": {
+                  "startLine": 1,
+                  "endLine": 2,
+                  "snippet": {
+                    "text": "FROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" >> /etc/passwd && echo \"testuser::18761:0:99999:7:::\" >> /etc/shadow\n"
+                  }
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "gdnPrimarySignature": "1242a262a0e0dc6e681ad67a81a121ae66f0b2562d1d669a066233daaa7a615a",
+            "gdnAlternativeSignature0": "81662655dc607bf53d1554c1d9b11df48d1d564eac1529173b8d0a2e61969e63"
+          },
+          "attachments": []
+        }
+      ],
+      "columnKind": "utf16CodeUnits",
+      "policies": [
+        {
+          "name": "Microsoft",
+          "version": "2.0.3"
+        }
+      ]
+    }
+  ]
+}
