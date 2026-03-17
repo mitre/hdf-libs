@@ -26,6 +26,10 @@ func SetSchemaDir(dir string) {
 	// Clear cached schemas so they reload from new source
 	resultsSchema = nil
 	baselineSchema = nil
+	comparisonSchema = nil
+	systemSchema = nil
+	planSchema = nil
+	amendmentsSchema = nil
 }
 
 // GetSchemaDir returns the current schema directory, or empty if using embedded.
@@ -41,6 +45,14 @@ const (
 	TypeResults SchemaType = "results"
 	// TypeBaseline is the HDF baseline schema.
 	TypeBaseline SchemaType = "baseline"
+	// TypeComparison is the HDF comparison schema.
+	TypeComparison SchemaType = "comparison"
+	// TypeSystem is the HDF system schema.
+	TypeSystem SchemaType = "system"
+	// TypePlan is the HDF plan schema.
+	TypePlan SchemaType = "plan"
+	// TypeAmendments is the HDF amendments schema.
+	TypeAmendments SchemaType = "amendments"
 )
 
 // ValidationError represents a single validation error.
@@ -73,8 +85,12 @@ func (r ValidationResult) Error() string {
 }
 
 var (
-	resultsSchema  *gojsonschema.Schema
-	baselineSchema *gojsonschema.Schema
+	resultsSchema    *gojsonschema.Schema
+	baselineSchema   *gojsonschema.Schema
+	comparisonSchema *gojsonschema.Schema
+	systemSchema     *gojsonschema.Schema
+	planSchema       *gojsonschema.Schema
+	amendmentsSchema *gojsonschema.Schema
 )
 
 // loadSchema loads and compiles a schema from either the filesystem (if schemaDir
@@ -133,6 +149,46 @@ func getSchema(schemaType SchemaType) (*gojsonschema.Schema, error) {
 		}
 		return baselineSchema, nil
 
+	case TypeComparison:
+		if comparisonSchema == nil {
+			var err error
+			comparisonSchema, err = loadSchema("hdf-comparison.schema.json")
+			if err != nil {
+				return nil, err
+			}
+		}
+		return comparisonSchema, nil
+
+	case TypeSystem:
+		if systemSchema == nil {
+			var err error
+			systemSchema, err = loadSchema("hdf-system.schema.json")
+			if err != nil {
+				return nil, err
+			}
+		}
+		return systemSchema, nil
+
+	case TypePlan:
+		if planSchema == nil {
+			var err error
+			planSchema, err = loadSchema("hdf-plan.schema.json")
+			if err != nil {
+				return nil, err
+			}
+		}
+		return planSchema, nil
+
+	case TypeAmendments:
+		if amendmentsSchema == nil {
+			var err error
+			amendmentsSchema, err = loadSchema("hdf-amendments.schema.json")
+			if err != nil {
+				return nil, err
+			}
+		}
+		return amendmentsSchema, nil
+
 	default:
 		return nil, fmt.Errorf("unknown schema type: %s", schemaType)
 	}
@@ -189,4 +245,24 @@ func ValidateResults(data []byte) ValidationResult {
 // ValidateBaseline validates JSON data against the HDF baseline schema.
 func ValidateBaseline(data []byte) ValidationResult {
 	return Validate(data, TypeBaseline)
+}
+
+// ValidateComparison validates JSON data against the HDF comparison schema.
+func ValidateComparison(data []byte) ValidationResult {
+	return Validate(data, TypeComparison)
+}
+
+// ValidateSystem validates JSON data against the HDF system schema.
+func ValidateSystem(data []byte) ValidationResult {
+	return Validate(data, TypeSystem)
+}
+
+// ValidatePlan validates JSON data against the HDF plan schema.
+func ValidatePlan(data []byte) ValidationResult {
+	return Validate(data, TypePlan)
+}
+
+// ValidateAmendments validates JSON data against the HDF amendments schema.
+func ValidateAmendments(data []byte) ValidationResult {
+	return Validate(data, TypeAmendments)
 }

@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
 
 // Global flag variables for validate command (used by runValidate).
 var (
-	schemaType string // "results" or "baseline"
+	schemaType string // "results", "baseline", "comparison", "system", "plan", or "amendments"
 	quiet      bool
 )
 
@@ -24,15 +25,19 @@ func NewValidateCmd() *cobra.Command { //nolint:dupl // Cobra command setup; fla
 	cmd := &cobra.Command{
 		Use:   "validate <file>",
 		Short: "Validate an HDF file against the schema",
-		Long: `Validate an HDF results or baseline file against the JSON schema.
+		Long: `Validate an HDF document against its JSON schema.
+
+Supported types: results, baseline, comparison, system, plan, amendments.
 
 Reads from stdin if file is '-' or omitted.
 
 Examples:
   hdf validate results.json
   hdf validate baseline.json --type baseline
-  cat results.json | hdf validate -
-  curl -s https://example.com/scan.json | hdf validate`,
+  hdf validate my-system.json --type system
+  hdf validate scan-plan.json --type plan
+  hdf validate waivers.json --type amendments
+  cat results.json | hdf validate -`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Sync local flags to global variables for runValidate
@@ -42,7 +47,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "results", "Schema type: 'results' or 'baseline'")
+	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "results", "Schema type: results, baseline, comparison, system, plan, amendments")
 	cmd.Flags().BoolVarP(&localQuiet, "quiet", "q", false, "Suppress output on success (exit code only)")
 
 	return cmd
@@ -78,9 +83,14 @@ func runValidate(_ *cobra.Command, args []string) error {
 		_, validationErr = parseHDFResults(data)
 	case "baseline":
 		_, validationErr = parseHDFBaseline(data)
+	case "comparison", "system", "plan", "amendments":
+		result := validators.Validate(data, validators.SchemaType(schemaType))
+		if !result.Valid {
+			validationErr = fmt.Errorf("schema validation failed: %s", result.Error())
+		}
 	default:
 		printError(fmt.Sprintf("Unknown schema type: %s", schemaType),
-			"Use --type=results or --type=baseline")
+			"Use --type=results|baseline|comparison|system|plan|amendments")
 		return fmt.Errorf("unknown schema type: %s", schemaType)
 	}
 
