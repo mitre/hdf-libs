@@ -440,6 +440,7 @@ func convertReportHostToTarget(host *ReportHost) hdf.Target {
 		IPAddress: ipAddress,
 		OSName:    osName,
 		OSVersion: osVersion,
+		Labels:    map[string]string{"service": "nessus"},
 	}
 }
 

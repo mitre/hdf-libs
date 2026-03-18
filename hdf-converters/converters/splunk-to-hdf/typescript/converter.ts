@@ -291,6 +291,7 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
         name: targetName,
         type: Copyright.Host,
         osName: targetRelease || undefined,
+        labels: { service: 'splunk' },
       },
     ],
     generator: {

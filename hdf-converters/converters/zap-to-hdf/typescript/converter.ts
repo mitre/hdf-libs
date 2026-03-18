@@ -298,11 +298,11 @@ export async function convertZapToHdf(input: string): Promise<string> {
   }
 
   // Build targets — ZAP is a DAST tool scanning web applications
-  const targets: Array<{name: string; type: Copyright; url?: string}> = [];
+  const targets: Array<{name: string; type: Copyright; url?: string; labels?: Record<string, string>}> = [];
   if (site['@name']) {
-    targets.push({name: targetName, type: Copyright.Application, url: site['@name']});
+    targets.push({name: targetName, type: Copyright.Application, url: site['@name'], labels: { service: 'zap' }});
   } else if (targetName !== 'Unknown Host') {
-    targets.push({name: targetName, type: Copyright.Application});
+    targets.push({name: targetName, type: Copyright.Application, labels: { service: 'zap' }});
   }
 
   const hdf: HdfResults = {

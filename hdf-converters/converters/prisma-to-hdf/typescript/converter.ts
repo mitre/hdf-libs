@@ -255,7 +255,7 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
 
   for (const [hostname, hostRecords] of hostGroups) {
     baselines.push(buildBaseline(hostname, hostRecords, resultsChecksum));
-    targets.push({ name: hostname, type: Copyright.Host });
+    targets.push({ name: hostname, type: Copyright.Host, labels: { service: 'prisma' } });
   }
 
   const dataSource: DataSource = { name: 'Prisma Cloud', format: 'CSV' };

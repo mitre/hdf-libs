@@ -309,7 +309,7 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	repoURL := findGitRepoURL(limitedFindings)
 	if repoURL != "" {
 		targets = []hdf.Target{
-			{Name: repoURL, Type: hdf.Repository},
+			{Name: repoURL, Type: hdf.Repository, Labels: map[string]string{"service": "trufflehog"}},
 		}
 	}
 

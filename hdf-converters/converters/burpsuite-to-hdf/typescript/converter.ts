@@ -186,6 +186,7 @@ export async function convertBurpsuiteToHdf(input: string): Promise<string> {
       {
         name: targetName,
         type: Copyright.Application,
+        labels: { service: 'burpsuite' },
       },
     ],
     generator: {

@@ -367,7 +367,7 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		DataSourceFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
-			{Name: targetName, Type: hdf.CopyrightApplication},
+			{Name: targetName, Type: hdf.CopyrightApplication, Labels: map[string]string{"service": "cyclonedx"}},
 		},
 		Timestamp: &now,
 	}), nil

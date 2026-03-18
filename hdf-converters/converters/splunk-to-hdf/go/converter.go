@@ -211,6 +211,7 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		target := hdf.Target{
 			Name: header.Platform.Name,
 			Type: hdf.Host,
+				Labels: map[string]string{"service": "splunk"},
 		}
 		if header.Platform.Release != "" {
 			target.OSVersion = shared.Ptr(header.Platform.Release)

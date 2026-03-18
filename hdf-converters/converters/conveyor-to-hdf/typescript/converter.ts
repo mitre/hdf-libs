@@ -336,7 +336,7 @@ export async function convertConveyorToHdf(input: string): Promise<string> {
       version: '1.0.0',
     },
     dataSource,
-    targets: [{ name: targetName, type: Copyright.Application }],
+    targets: [{ name: targetName, type: Copyright.Application, labels: { service: 'conveyor' } }],
     timestamp: new Date(),
   };
 

@@ -355,6 +355,7 @@ export async function convertFortifyToHdf(input: string): Promise<string> {
       {
         name: targetName,
         type: Copyright.Repository,
+        labels: { service: 'fortify' },
       },
     ],
     generator: {

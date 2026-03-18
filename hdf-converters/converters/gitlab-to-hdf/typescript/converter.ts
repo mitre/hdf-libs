@@ -315,7 +315,7 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
   // Build targets based on scan type
   const targets: Target[] = [];
   const targetType = scanTypeToTargetType(scanType);
-  targets.push({name: scannerName, type: targetType});
+  targets.push({name: scannerName, type: targetType, labels: { service: 'gitlab' }});
 
   const hdf: HdfResults = {
     baselines: [baseline],

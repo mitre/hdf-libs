@@ -441,6 +441,8 @@ function convertReportHostToTarget(host: ReportHost): Target {
     target.fqdn = hostProps['host-fqdn'];
   }
 
+  target.labels = { service: 'nessus' };
+
   return target;
 }
 

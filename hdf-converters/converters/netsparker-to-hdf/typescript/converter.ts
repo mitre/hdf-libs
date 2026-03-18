@@ -338,6 +338,7 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
       {
         name: targetName,
         type: Copyright.Application,
+        labels: { service: 'netsparker' },
       },
     ],
     generator: {

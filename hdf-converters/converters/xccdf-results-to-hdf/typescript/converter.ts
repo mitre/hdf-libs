@@ -822,6 +822,7 @@ function buildTargets(testResult: TestResultElement): Target[] {
   const target: Target = {
     name: targetName,
     type: Copyright.Host,
+        labels: { service: 'xccdf' },
   };
 
   if (addresses.length > 0) {

@@ -1044,6 +1044,7 @@ func buildTarget(tr *TestResult) hdf.Target {
 	target := hdf.Target{
 		Name: tr.Target,
 		Type: hdf.Host,
+			Labels: map[string]string{"service": "xccdf"},
 	}
 
 	// Use the first target-address as the IP address

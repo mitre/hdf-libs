@@ -283,7 +283,7 @@ export async function convertTrufflehogToHdf(input: string): Promise<string> {
   // Add target only if a Git repository URL is available
   const repoURL = findGitRepoURL(limitedFindings);
   if (repoURL) {
-    hdf.targets = [{ name: repoURL, type: Copyright.Repository }];
+    hdf.targets = [{ name: repoURL, type: Copyright.Repository, labels: { service: 'trufflehog' } }];
   }
 
   return JSON.stringify(hdf, null, 2);

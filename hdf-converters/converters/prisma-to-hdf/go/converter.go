@@ -275,6 +275,7 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		targets[i] = hdf.Target{
 			Name: hostname,
 			Type: hdf.Host,
+				Labels: map[string]string{"service": "prisma"},
 		}
 	}
 

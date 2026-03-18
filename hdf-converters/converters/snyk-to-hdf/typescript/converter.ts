@@ -214,7 +214,7 @@ export async function convertSnykToHdf(input: string): Promise<string> {
       version: '1.0.0',
     },
     dataSource,
-    targets: [{ name: targetName, type: Copyright.Application }],
+    targets: [{ name: targetName, type: Copyright.Application, labels: { service: 'snyk' } }],
     timestamp: new Date(),
   };
 

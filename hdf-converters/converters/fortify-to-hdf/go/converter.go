@@ -91,7 +91,7 @@ func ConvertFortifyToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		DataSourceFormat: "FVDL",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
-			{Name: targetName, Type: hdf.Repository},
+			{Name: targetName, Type: hdf.Repository, Labels: map[string]string{"service": "fortify"}},
 		},
 		Timestamp: &timestamp,
 	}), nil
