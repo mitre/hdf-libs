@@ -6,8 +6,14 @@ title = "hdf-cli gitleaks config"
 [allowlist]
   description = "Allowlisted files and patterns"
   paths = [
-    # Test fixtures may contain example data
-    '''test/fixtures/.*\.json$''',
+    # Test fixtures contain real security tool output with sample credentials
+    '''test/fixtures/''',
+    '''hdf-converters/converters/.*/fixtures/''',
+    '''hdf-converters/test/differential/fixtures/''',
+    # Test files with mock API tokens/credentials
+    '''internal/fetchers/.*_test\.go$''',
+    # Claude Code command templates
+    '''\.claude/commands/''',
     # Generated files
     '''pkg/hdf/hdf_results\.go$''',
     '''pkg/hdf/hdf_baseline\.go$''',
