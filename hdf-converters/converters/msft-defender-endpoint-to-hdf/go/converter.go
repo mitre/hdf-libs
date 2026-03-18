@@ -123,8 +123,9 @@ func extractDeviceTarget(alert mdeAlert) hdf.Target {
 			deviceName, _ := ev["deviceDnsName"].(string)
 			osPlatform, _ := ev["osPlatform"].(string)
 			target := hdf.Target{
-				Name: deviceName,
-				Type: hdf.Host,
+				Name:   deviceName,
+				Type:   hdf.Host,
+				Labels: map[string]string{"provider": "azure", "service": "defender-endpoint"},
 			}
 			if deviceName != "" {
 				target.FQDN = shared.Ptr(deviceName)
@@ -140,6 +141,7 @@ func extractDeviceTarget(alert mdeAlert) hdf.Target {
 		Name:      alert.TenantID,
 		Type:      hdf.CloudAccount,
 		AccountID: shared.Ptr(alert.TenantID),
+		Labels:    map[string]string{"account": alert.TenantID, "provider": "azure", "service": "defender-endpoint"},
 	}
 }
 

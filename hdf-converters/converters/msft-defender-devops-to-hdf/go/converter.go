@@ -112,9 +112,10 @@ func extractEnrichments(raw msdoSarif) ([]hdf.Target, []runEnrichment) {
 			if vcp.RepositoryURI != "" && !seenRepos[vcp.RepositoryURI] {
 				seenRepos[vcp.RepositoryURI] = true
 				target := hdf.Target{
-					Name: repoNameFromURI(vcp.RepositoryURI),
-					Type: hdf.Repository,
-					URL:  shared.Ptr(vcp.RepositoryURI),
+					Name:   repoNameFromURI(vcp.RepositoryURI),
+					Type:   hdf.Repository,
+					URL:    shared.Ptr(vcp.RepositoryURI),
+					Labels: map[string]string{"service": "defender-devops"},
 				}
 				if vcp.Branch != "" {
 					target.Branch = shared.Ptr(vcp.Branch)

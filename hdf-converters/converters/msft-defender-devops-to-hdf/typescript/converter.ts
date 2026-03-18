@@ -100,6 +100,7 @@ function extractEnrichments(raw: MsdoSarif): {
           name: repoNameFromURI(vcp.repositoryUri),
           type: Copyright.Repository,
           url: vcp.repositoryUri,
+          labels: { service: 'defender-devops' },
         };
         if (vcp.branch) {
           target.branch = vcp.branch;

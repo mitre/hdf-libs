@@ -145,6 +145,11 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 				Type:      hdf.CloudAccount,
 				AccountID: shared.Ptr(subscriptionID),
 				Provider:  &azureProvider,
+				Labels: map[string]string{
+					"account":  subscriptionID,
+					"provider": "azure",
+					"service":  "defender-cloud",
+				},
 			},
 		}
 	}

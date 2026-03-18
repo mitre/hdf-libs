@@ -173,6 +173,7 @@ function extractDeviceTarget(alert: MdeAlert): Target {
         const target: Target = {
           name: ev.deviceDnsName,
           type: Copyright.Host,
+          labels: { provider: 'azure', service: 'defender-endpoint' },
         };
         if (ev.deviceDnsName) {
           target.fqdn = ev.deviceDnsName;
@@ -189,6 +190,7 @@ function extractDeviceTarget(alert: MdeAlert): Target {
     name: alert.tenantId ?? 'unknown',
     type: Copyright.CloudAccount,
     accountId: alert.tenantId,
+    labels: { account: alert.tenantId ?? '', provider: 'azure', service: 'defender-endpoint' },
   };
 }
 

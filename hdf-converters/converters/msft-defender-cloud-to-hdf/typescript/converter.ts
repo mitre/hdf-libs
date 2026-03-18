@@ -232,6 +232,7 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
         type: Copyright.CloudAccount,
         accountId: subscriptionID,
         provider: 'azure' as Target['provider'],
+        labels: { account: subscriptionID, provider: 'azure', service: 'defender-cloud' },
       });
     }
   }

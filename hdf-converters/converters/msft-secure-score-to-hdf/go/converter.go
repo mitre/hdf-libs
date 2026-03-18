@@ -297,6 +297,11 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 				Name:     targetName,
 				Type:     hdf.CloudAccount,
 				Provider: &provider,
+				Labels: map[string]string{
+					"account":  tenantID,
+					"provider": "azure",
+					"service":  "secure-score",
+				},
 			},
 		},
 		Timestamp: &now,
