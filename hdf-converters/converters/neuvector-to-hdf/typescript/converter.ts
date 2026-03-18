@@ -250,6 +250,10 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
       {
         name: targetNameFromReport(scan.report),
         type: Copyright.ContainerImage,
+        labels: {
+          image: `${scan.report.registry}/${scan.report.repository}:${scan.report.tag}`,
+          registry: scan.report.registry,
+        },
       },
     ],
     timestamp: new Date(),

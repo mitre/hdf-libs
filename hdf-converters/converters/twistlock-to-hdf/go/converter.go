@@ -234,7 +234,11 @@ func ConvertTwistlockToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		DataSourceFormat: "JSON",
 		Baselines:        baselines,
 		Targets: []hdf.Target{
-			{Name: targetName, Type: hdf.ContainerImage},
+			{
+				Name:   targetName,
+				Type:   hdf.ContainerImage,
+				Labels: map[string]string{"image": report.Results[0].ID},
+			},
 		},
 		Timestamp: &now,
 	}), nil

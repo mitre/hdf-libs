@@ -249,7 +249,11 @@ export async function convertTwistlockToHdf(input: string): Promise<string> {
       version: '1.0.0',
     },
     dataSource,
-    targets: [{ name: targetName, type: Copyright.ContainerImage }],
+    targets: [{
+      name: targetName,
+      type: Copyright.ContainerImage,
+      labels: { image: results[0]?.id ?? targetName },
+    }],
     timestamp: new Date(),
   };
 

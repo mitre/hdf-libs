@@ -292,7 +292,15 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		DataSourceVersion: report.LastRun.Version,
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
-			{Name: targetName, Type: hdf.CloudAccount},
+			{
+				Name: targetName,
+				Type: hdf.CloudAccount,
+				Labels: map[string]string{
+					"account":  report.AccountID,
+					"provider": report.ProviderCode,
+					"service":  "scoutsuite",
+				},
+			},
 		},
 		Timestamp: timestamp,
 	}), nil

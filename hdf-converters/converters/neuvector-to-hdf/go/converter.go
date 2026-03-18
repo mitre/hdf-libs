@@ -214,7 +214,14 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		DataSourceFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
-			{Name: targetName(scan.Report), Type: hdf.ContainerImage},
+			{
+				Name: targetName(scan.Report),
+				Type: hdf.ContainerImage,
+				Labels: map[string]string{
+					"image":    fmt.Sprintf("%s/%s:%s", scan.Report.Registry, scan.Report.Repository, scan.Report.Tag),
+					"registry": scan.Report.Registry,
+				},
+			},
 		},
 		Timestamp: &now,
 	}), nil
