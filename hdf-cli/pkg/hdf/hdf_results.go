@@ -43,9 +43,13 @@ type HdfResults struct {
 	Runner                                                                                  *Runner                `json:"runner"`
 	// Statistics for the assessment run, including duration and result counts.                                    
 	Statistics                                                                              Statistics             `json:"statistics"`
-	// The target systems that were assessed. Supports multiple targets of different types.                        
+	// Reference to an hdf-system document describing the system under assessment.
+	SystemRef                                                                               *string                `json:"systemRef,omitempty"`
+	// Reference to an hdf-plan document describing the assessment plan that produced these results.
+	PlanRef                                                                                 *string                `json:"planRef,omitempty"`
+	// The target systems that were assessed. Supports multiple targets of different types.
 	Targets                                                                                 []Target               `json:"targets,omitempty"`
-	// When this assessment was executed.                                                                          
+	// When this assessment was executed.
 	Timestamp                                                                               *time.Time             `json:"timestamp,omitempty"`
 }
 
@@ -54,8 +58,8 @@ type HdfResults struct {
 // Shared metadata fields for baselines. Used in both standalone baseline documents and
 // evaluated baseline results.
 type EvaluatedBaseline struct {
-	// The input(s) or attribute(s) used in the run.                                                                    
-	Attributes                                                                                 []map[string]interface{} `json:"attributes"`
+	// Typed inputs used to parameterize this baseline at execution time.
+	Inputs                                                                                     []map[string]interface{} `json:"inputs"`
 	// Cryptographic checksum for baseline integrity verification.                                                      
 	Checksum                                                                                   Checksum                 `json:"checksum"`
 	// The set of dependencies this baseline depends on.                                                                

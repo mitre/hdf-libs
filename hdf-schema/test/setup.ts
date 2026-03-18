@@ -24,6 +24,7 @@ export function createAjvWithPrimitives(): Ajv2020 {
     'statistics.schema.json',
     'result.schema.json',
     'extensions.schema.json',
+    'parameter.schema.json',
     'comparison.schema.json',
   ];
 

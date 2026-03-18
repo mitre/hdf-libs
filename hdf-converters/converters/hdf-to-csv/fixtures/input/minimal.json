@@ -7,7 +7,7 @@
       "title": "Example Security Technical Implementation Guide",
       "maintainer": "DISA",
       "supports": [],
-      "attributes": [],
+      "inputs": [],
       "groups": [],
       "checksum": {
         "algorithm": "sha256",

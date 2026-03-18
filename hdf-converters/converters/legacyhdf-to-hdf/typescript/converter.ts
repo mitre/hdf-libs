@@ -179,7 +179,7 @@ export interface V2Baseline {
   copyright?: string;
   copyright_email?: string;
   supports?: unknown[];
-  attributes?: unknown[];
+  inputs?: unknown[];
   groups?: V2Group[];
   requirements?: V2Requirement[];
   checksum?: {
@@ -463,7 +463,7 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
   if (v1Profile.copyright !== undefined) v2Baseline.copyright = v1Profile.copyright;
   if (v1Profile.copyright_email !== undefined) v2Baseline.copyright_email = v1Profile.copyright_email;
   if (v1Profile.supports !== undefined) v2Baseline.supports = v1Profile.supports;
-  if (v1Profile.attributes !== undefined) v2Baseline.attributes = v1Profile.attributes;
+  if (v1Profile.attributes !== undefined) v2Baseline.inputs = v1Profile.attributes;
   if (v1Profile.status !== undefined) v2Baseline.status = v1Profile.status;
 
   // Transform sha256 to checksum object

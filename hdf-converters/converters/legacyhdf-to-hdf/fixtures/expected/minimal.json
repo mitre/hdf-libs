@@ -4,7 +4,7 @@
       "name": "test-profile",
       "version": "1.0.0",
       "supports": [],
-      "attributes": [],
+      "inputs": [],
       "checksum": {
         "algorithm": "sha256",
         "value": "abc123"

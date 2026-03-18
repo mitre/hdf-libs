@@ -55,6 +55,16 @@
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation",
       "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for fixing failing requirements found in this assessment."
     },
+    "systemRef": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "Reference to an hdf-system document describing the system under assessment. May be a relative path, absolute URI, or fragment identifier."
+    },
+    "planRef": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "Reference to an hdf-plan document describing the assessment plan that produced these results. May be a relative path, absolute URI, or fragment identifier."
+    },
     "extensions": {
       "type": "object",
       "additionalProperties": true,
@@ -122,14 +132,12 @@
           },
           "description": "A set of descriptions for the requirement groups."
         },
-        "attributes": {
+        "inputs": {
           "type": "array",
           "items": {
-            "type": "object",
-            "additionalProperties": true,
-            "description": "An input or attribute used in the run."
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v2.0.0#/$defs/Input"
           },
-          "description": "The input(s) or attribute(s) used in the run."
+          "description": "Typed inputs used to parameterize this baseline at execution time. See the Input primitive for the full schema."
         },
         "extensions": {
           "type": "object",

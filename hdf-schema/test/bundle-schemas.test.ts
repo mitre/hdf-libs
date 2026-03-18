@@ -77,7 +77,7 @@ describe('bundle-schemas', () => {
     it('should validate a minimal results document', () => {
       const validate = ajv.compile(schema);
       const doc = {
-        baselines: [{ name: 'test-baseline', checksum: { algorithm: 'sha256', value: 'abc123' }, supports: [], attributes: [], groups: [], requirements: [] }],
+        baselines: [{ name: 'test-baseline', checksum: { algorithm: 'sha256', value: 'abc123' }, supports: [], inputs: [], groups: [], requirements: [] }],
         statistics: { duration: 1.0 },
       };
       expect(validate(doc)).toBe(true);

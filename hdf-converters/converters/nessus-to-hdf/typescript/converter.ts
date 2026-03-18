@@ -393,8 +393,9 @@ function parseComplianceRef(ref: string, key: string): string[] {
 
 function convertReportHostToTarget(host: ReportHost): Target {
   const hostName = host['name'];
-  const attributes: Record<string, unknown> = {};
 
+  // Extract host properties into a lookup map
+  const hostProps: Record<string, string> = {};
   const tags = host.HostProperties?.tag;
   if (tags) {
     // parseXmlWithArrays ensures tag is always an array
@@ -402,15 +403,51 @@ function convertReportHostToTarget(host: ReportHost): Target {
       const name = tag['name'];
       const value = tag['#text'];
       if (name && value) {
-        attributes[name] = value;
+        hostProps[name] = value;
       }
     });
   }
 
-  return {
+  const target: Target = {
     name: hostName,
     type: TargetType.Host,
-    id: hostName,
-    attributes,
   };
+
+  // Map host properties to typed Target fields
+  if (isFQDN(hostName)) {
+    target.fqdn = hostName;
+  }
+
+  const hostIp = hostProps['host-ip'];
+  if (hostIp) {
+    target.ipAddress = hostIp;
+  } else if (isIPAddress(hostName)) {
+    target.ipAddress = hostName;
+  }
+
+  if (hostProps['operating-system']) {
+    target.osName = hostProps['operating-system'];
+  }
+
+  if (hostProps['os']) {
+    target.osVersion = hostProps['os'];
+  }
+
+  if (hostProps['mac-address']) {
+    target.macAddress = hostProps['mac-address'].split('\n')[0];
+  }
+
+  if (hostProps['host-fqdn']) {
+    target.fqdn = hostProps['host-fqdn'];
+  }
+
+  return target;
+}
+
+function isFQDN(s: string): boolean {
+  return s.includes('.') && !/^\d+\.\d+\.\d+\.\d+$/.test(s);
+}
+
+function isIPAddress(s: string): boolean {
+  return /^\d+\.\d+\.\d+\.\d+$/.test(s) || s.includes(':');
 }

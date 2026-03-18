@@ -220,10 +220,10 @@ describe('Nessus to HDF Converter', async () => {
       expect(result.targets?.length).toBe(3);
 
       // Find the first host (10.0.0.3)
-      const target = result.targets!.find(t => t.id === '10.0.0.3');
+      const target = result.targets!.find(t => t.name === '10.0.0.3');
       expect(target).toBeDefined();
-      expect(target?.attributes?.['operating-system']).toContain('Ubuntu');
-      expect(target?.attributes?.['host-ip']).toBe('10.0.0.3');
+      expect(target?.osName).toContain('Ubuntu');
+      expect(target?.ipAddress).toBe('10.0.0.3');
     });
 
     it('should set generator metadata', async () => {

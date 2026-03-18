@@ -3,6 +3,7 @@ package hdfvalidators
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -97,32 +98,59 @@ var (
 	evidencePackageSchema *gojsonschema.Schema
 )
 
-// loadSchema loads and compiles a schema from either the filesystem (if schemaDir
+// readSchemaData reads schema bytes from either the filesystem (if schemaDir
 // is set) or from embedded schemas.
-func loadSchema(filename string) (*gojsonschema.Schema, error) {
-	var data []byte
-	var err error
-	var source string
-
+func readSchemaData(filename string) ([]byte, string, error) {
 	if schemaDir != "" {
-		// Load from filesystem
 		path := filepath.Join(schemaDir, filename)
-		data, err = os.ReadFile(path) // #nosec G304 -- intentional for dev workflow
+		data, err := os.ReadFile(path) // #nosec G304 -- intentional for dev workflow
 		if err != nil {
-			return nil, fmt.Errorf("failed to read schema from %s: %w", path, err)
+			return nil, "", fmt.Errorf("failed to read schema from %s: %w", path, err)
 		}
-		source = path
-	} else {
-		// Load from embedded filesystem
-		data, err = schemaFS.ReadFile("schemas/" + filename)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read embedded schema %s: %w", filename, err)
-		}
-		source = "embedded:" + filename
+		return data, path, nil
+	}
+	data, err := schemaFS.ReadFile("schemas/" + filename)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read embedded schema %s: %w", filename, err)
+	}
+	return data, "embedded:" + filename, nil
+}
+
+// loadSchema loads and compiles a schema. Bundled schemas use JSON Schema
+// 2020-12 bundling (external schemas embedded under their $id), but
+// gojsonschema doesn't support this. We extract the embedded schemas and
+// pre-register them so $ref URIs resolve locally.
+func loadSchema(filename string) (*gojsonschema.Schema, error) {
+	data, source, err := readSchemaData(filename)
+	if err != nil {
+		return nil, err
 	}
 
-	loader := gojsonschema.NewBytesLoader(data)
-	schema, err := gojsonschema.NewSchema(loader)
+	sl := gojsonschema.NewSchemaLoader()
+	sl.Validate = false
+
+	// Extract and register embedded schemas from the bundled document.
+	// Bundled schemas appear as top-level keys matching their $id URI
+	// (e.g., "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v2.0.0").
+	var doc map[string]interface{}
+	if jsonErr := json.Unmarshal(data, &doc); jsonErr == nil {
+		for key, val := range doc {
+			if !strings.HasPrefix(key, "https://") {
+				continue
+			}
+			subSchema, ok := val.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			subBytes, marshalErr := json.Marshal(subSchema)
+			if marshalErr != nil {
+				continue
+			}
+			_ = sl.AddSchemas(gojsonschema.NewBytesLoader(subBytes))
+		}
+	}
+
+	schema, err := sl.Compile(gojsonschema.NewBytesLoader(data))
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile schema %s: %w", source, err)
 	}

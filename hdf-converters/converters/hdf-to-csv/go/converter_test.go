@@ -73,7 +73,7 @@ func TestConvertHDFToCSV_NoRequirements(t *testing.T) {
 			"title": "Test",
 			"maintainer": "Test",
 			"supports": [],
-			"attributes": [],
+			"inputs": [],
 			"groups": [],
 			"checksum": { "algorithm": "sha256", "value": "abc" },
 			"requirements": []
@@ -96,7 +96,7 @@ func TestConvertHDFToCSV_MultipleBaselines(t *testing.T) {
 				"title": "First Baseline",
 				"maintainer": "Test",
 				"supports": [],
-				"attributes": [],
+				"inputs": [],
 				"groups": [],
 				"checksum": { "algorithm": "sha256", "value": "abc" },
 				"requirements": [{
@@ -115,7 +115,7 @@ func TestConvertHDFToCSV_MultipleBaselines(t *testing.T) {
 				"title": "Second Baseline",
 				"maintainer": "Test",
 				"supports": [],
-				"attributes": [],
+				"inputs": [],
 				"groups": [],
 				"checksum": { "algorithm": "sha256", "value": "def" },
 				"requirements": [{
@@ -157,7 +157,7 @@ func TestConvertHDFToCSV_MultipleTargets(t *testing.T) {
 			"title": "Test",
 			"maintainer": "Test",
 			"supports": [],
-			"attributes": [],
+			"inputs": [],
 			"groups": [],
 			"checksum": { "algorithm": "sha256", "value": "abc" },
 			"requirements": [{
@@ -193,7 +193,7 @@ func TestConvertHDFToCSV_FieldExtraction(t *testing.T) {
 			"title": "Test",
 			"maintainer": "Test",
 			"supports": [],
-			"attributes": [],
+			"inputs": [],
 			"groups": [],
 			"checksum": { "algorithm": "sha256", "value": "abc" },
 			"requirements": [{
@@ -236,7 +236,7 @@ func TestConvertHDFToCSV_CSVInjection(t *testing.T) {
 			"title": "Test",
 			"maintainer": "Test",
 			"supports": [],
-			"attributes": [],
+			"inputs": [],
 			"groups": [],
 			"checksum": { "algorithm": "sha256", "value": "abc" },
 			"requirements": [

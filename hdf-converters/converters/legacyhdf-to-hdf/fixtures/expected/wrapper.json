@@ -14,7 +14,7 @@
           "platform": "os"
         }
       ],
-      "attributes": [],
+      "inputs": [],
       "status": "loaded",
       "checksum": {
         "algorithm": "sha256",

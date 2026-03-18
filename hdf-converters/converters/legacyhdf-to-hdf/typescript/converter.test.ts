@@ -460,7 +460,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(baseline.copyright).toBe('Copyright 2024');
       expect(baseline.copyright_email).toBe('test@example.com');
       expect(baseline.supports).toEqual([{ platform: 'ubuntu' }]);
-      expect(baseline.attributes).toEqual([{ name: 'attr1', options: {} }]);
+      expect(baseline.inputs).toEqual([{ name: 'attr1', options: {} }]);
       expect(baseline.status).toBe('loaded');
       expect(baseline.checksum).toEqual({ algorithm: 'sha256', value: 'abc123' });
       expect(baseline.parentBaseline).toBe('parent-profile');

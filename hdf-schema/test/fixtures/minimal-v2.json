@@ -4,7 +4,7 @@
       "name": "test-baseline",
       "title": "Test Baseline",
       "version": "1.0.0",
-      "attributes": [],
+      "inputs": [],
       "checksum": {
         "algorithm": "sha256",
         "value": "abc123"

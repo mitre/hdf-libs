@@ -9,7 +9,7 @@
       "license": "Apache-2.0",
       "copyright_email": ".",
       "supports": [],
-      "attributes": [],
+      "inputs": [],
       "status": "loaded",
       "checksum": {
         "algorithm": "sha256",

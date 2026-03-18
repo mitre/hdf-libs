@@ -152,8 +152,8 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
       fast-xml-parser:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.6
+        version: 5.5.6
     devDependencies:
       '@stryker-mutator/core':
         specifier: ^9.5.1
@@ -729,6 +729,9 @@ packages:
   '@hyperjump/json-pointer@1.1.1':
     resolution: {integrity: sha512-M0T3s7TC2JepoWPMZQn1W6eYhFh06OXwpMqL+8c5wMVpvnCKNsPgpu9u7WyCI03xVQti8JAeAy4RzUa6SYlJLA==}
 
+  '@hyperjump/json-pointer@1.1.2':
+    resolution: {integrity: sha512-zPNgu1zdhtjQHFNLGzvEsLDsLOEvhRj6u6ktIQmlz7YPESv5uF8SnAe3Dq0oL6gZ6OGWSLq2n7pphRNF6Hpg6w==}
+
   '@hyperjump/json-schema-formats@1.0.1':
     resolution: {integrity: sha512-qvcIxysnMfcPxyPSFFzzo28o2BN1CNT5b0tQXNUP0kaFpvptQNDg8SCLvlnMg2sYxuiuqna8+azGBaBthiskAw==}
 
@@ -742,6 +745,9 @@ packages:
 
   '@hyperjump/uri@1.3.2':
     resolution: {integrity: sha512-OFo5oxuSEz1ktF/LDdBTptlnPyZ66jywLO4fJRuAhnr7NGnsiL2CPoj1JRVaDqVy0nXvWNsC8O8Muw9DR++eEg==}
+
+  '@hyperjump/uri@1.3.3':
+    resolution: {integrity: sha512-rUqeUdL2aW7lzvSnCL6yUetXYzqxhsBEw9Z7Y1bEhgiRzcfO3kjY0UdD6c4H/bzxe0fXIjYuocjWQzinio8JTQ==}
 
   '@inquirer/ansi@2.0.3':
     resolution: {integrity: sha512-g44zhR3NIKVs0zUesa4iMzExmZpLUdTLRMCStqX3GE5NT6VkPcxQGJ+uC8tDgBUC/vB1rUhUd55cOf++4NZcmw==}
@@ -1584,11 +1590,11 @@ packages:
   fast-wrap-ansi@0.2.0:
     resolution: {integrity: sha512-rLV8JHxTyhVmFYhBJuMujcrHqOT2cnO5Zxj37qROj23CP39GXubJRBUFF0z8KFK77Uc0SukZUf7JZhsVEQ6n8w==}
 
-  fast-xml-builder@1.1.2:
-    resolution: {integrity: sha512-NJAmiuVaJEjVa7TjLZKlYd7RqmzOC91EtPFXHvlTcqBVo50Qh7XV5IwvXi1c7NRz2Q/majGX9YLcwJtWgHjtkA==}
+  fast-xml-builder@1.1.4:
+    resolution: {integrity: sha512-f2jhpN4Eccy0/Uz9csxh3Nu6q4ErKxf0XIsasomfOihuSUa3/xw6w8dnOtCDgEItQFJG8KyXPzQXzcODDrrbOg==}
 
-  fast-xml-parser@5.5.3:
-    resolution: {integrity: sha512-Ymnuefk6VzAhT3SxLzVUw+nMio/wB1NGypHkgetwtXcK1JfryaHk4DWQFGVwQ9XgzyS5iRZ7C2ZGI4AMsdMZ6A==}
+  fast-xml-parser@5.5.6:
+    resolution: {integrity: sha512-3+fdZyBRVg29n4rXP0joHthhcHdPUHaIC16cuyyd1iLsuaO6Vea36MPrxgAzbZna8lhvZeRL8Bc9GP56/J9xEw==}
     hasBin: true
 
   fastq@1.20.1:
@@ -3124,12 +3130,14 @@ snapshots:
 
   '@hyperjump/browser@1.3.1':
     dependencies:
-      '@hyperjump/json-pointer': 1.1.1
-      '@hyperjump/uri': 1.3.2
+      '@hyperjump/json-pointer': 1.1.2
+      '@hyperjump/uri': 1.3.3
       content-type: 1.0.5
       just-curry-it: 5.3.0
 
   '@hyperjump/json-pointer@1.1.1': {}
+
+  '@hyperjump/json-pointer@1.1.2': {}
 
   '@hyperjump/json-schema-formats@1.0.1':
     dependencies:
@@ -3151,6 +3159,8 @@ snapshots:
   '@hyperjump/pact@1.4.0': {}
 
   '@hyperjump/uri@1.3.2': {}
+
+  '@hyperjump/uri@1.3.3': {}
 
   '@inquirer/ansi@2.0.3': {}
 
@@ -4078,13 +4088,13 @@ snapshots:
     dependencies:
       fast-string-width: 3.0.2
 
-  fast-xml-builder@1.1.2:
+  fast-xml-builder@1.1.4:
     dependencies:
       path-expression-matcher: 1.1.3
 
-  fast-xml-parser@5.5.3:
+  fast-xml-parser@5.5.6:
     dependencies:
-      fast-xml-builder: 1.1.2
+      fast-xml-builder: 1.1.4
       path-expression-matcher: 1.1.3
       strnum: 2.1.2
 

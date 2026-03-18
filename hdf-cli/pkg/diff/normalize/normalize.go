@@ -115,8 +115,8 @@ func normalizeProfile(profile map[string]any) (hdf.EvaluatedBaseline, []string) 
 	// Supports
 	baseline.Supports = normalizeSupports(profile)
 
-	// Attributes
-	baseline.Attributes = normalizeAttributes(profile)
+	// Inputs (v1 "attributes" → v2 "inputs")
+	baseline.Inputs = normalizeInputs(profile)
 
 	// Controls -> Requirements
 	controls, _ := profile["controls"].([]any)
@@ -339,7 +339,7 @@ func normalizeSupports(profile map[string]any) []hdf.SupportedPlatform {
 	return result
 }
 
-func normalizeAttributes(profile map[string]any) []map[string]any {
+func normalizeInputs(profile map[string]any) []map[string]any {
 	attrs, ok := profile["attributes"].([]any)
 	if !ok {
 		return []map[string]any{}

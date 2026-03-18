@@ -87,7 +87,7 @@ function normalizeProfile(profile: V1Profile): Record<string, unknown> {
     checksum: profile.sha256 ? { algorithm: 'sha256', value: profile.sha256 } : undefined,
     groups: profile.groups ?? [],
     supports: profile.supports ?? [],
-    attributes: profile.attributes ?? [],
+    inputs: profile.attributes ?? [],
     requirements,
   };
 }
