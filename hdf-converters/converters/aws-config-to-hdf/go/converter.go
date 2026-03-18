@@ -62,7 +62,7 @@ type EvaluationResultQualifier struct {
 
 // ---- Converter ----------------------------------------------------------
 
-var accountIDRe = regexp.MustCompile(`:(\d{12}):config-rule`)
+var arnRe = regexp.MustCompile(`arn:aws[^:]*:config:([^:]+):(\d{12}):config-rule`)
 
 // ConvertAWSConfigToHDF converts a ConfigRulesFile JSON export to HDF format.
 func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
@@ -83,12 +83,31 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	baseline := buildBaseline(data.ConfigRules, checksum)
 	now := time.Now().UTC()
 
+	// Extract account/region from first rule's ARN for target labels
+	firstArn := ""
+	if len(data.ConfigRules) > 0 {
+		firstArn = data.ConfigRules[0].ConfigRuleArn
+	}
+	accountID := getAccountID(firstArn)
+	region := getRegion(firstArn)
+
+	target := hdf.Target{
+		Name: fmt.Sprintf("AWS Account %s", accountID),
+		Type: hdf.CloudAccount,
+		Labels: map[string]string{
+			"account":  accountID,
+			"region":   region,
+			"provider": "aws",
+			"service":  "config",
+		},
+	}
+
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "aws-config-to-hdf",
 		ConverterVersion: converterVersion,
 		DataSourceName:   "AWS Config",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets:          []hdf.Target{},
+		Targets:          []hdf.Target{target},
 		Timestamp:        &now,
 	}), nil
 }
@@ -198,9 +217,18 @@ func buildTitle(rule ConfigRule) string {
 
 // getAccountID extracts the 12-digit AWS account ID from a config-rule ARN.
 func getAccountID(arn string) string {
-	m := accountIDRe.FindStringSubmatch(arn)
-	if len(m) < 2 {
+	m := arnRe.FindStringSubmatch(arn)
+	if len(m) < 3 {
 		return "no-account-id"
+	}
+	return m[2]
+}
+
+// getRegion extracts the AWS region from a config-rule ARN.
+func getRegion(arn string) string {
+	m := arnRe.FindStringSubmatch(arn)
+	if len(m) < 2 {
+		return "unknown"
 	}
 	return m[1]
 }
