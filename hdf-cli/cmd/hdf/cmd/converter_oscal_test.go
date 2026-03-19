@@ -325,3 +325,69 @@ func TestConvertOSCALAutoDetect_InvalidInput(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "oscal auto-detect")
 }
+
+func TestConvertHDFToOSCALSAR(t *testing.T) {
+	// First convert SAR to HDF to get a valid HDF fixture
+	sarPath := filepath.Join(oscalFixtureDir, "sar-fedramp.json")
+	if _, err := os.Stat(sarPath); err != nil {
+		t.Skip("OSCAL SAR fixture not available")
+	}
+
+	tmpDir := t.TempDir()
+	hdfPath := filepath.Join(tmpDir, "intermediate.json")
+
+	// SAR -> HDF
+	cmd1 := NewRootCmd()
+	cmd1.SetArgs([]string{"convert", "oscal-sar", "to", "hdf", sarPath, hdfPath})
+	require.NoError(t, cmd1.Execute())
+
+	// HDF -> OSCAL SAR
+	outputPath := filepath.Join(tmpDir, "output-sar.json")
+	cmd2 := NewRootCmd()
+	cmd2.SetArgs([]string{"convert", "hdf", "to", "oscal-sar", hdfPath, outputPath})
+
+	err := cmd2.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(outputPath)
+	require.NoError(t, err)
+
+	// Verify it's valid OSCAL SAR JSON
+	var raw map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(data, &raw))
+	assert.Contains(t, raw, "assessment-results")
+}
+
+func TestConvertHDFToOSCALSAR_MinimalInline(t *testing.T) {
+	// Create minimal HDF inline
+	hdfJSON := `{
+		"baselines": [{
+			"name": "test-baseline",
+			"requirements": [{
+				"id": "AC-1",
+				"impact": 0.5,
+				"tags": {"nist": ["AC-1"]},
+				"descriptions": [{"label": "default", "data": "Test"}],
+				"results": [{"status": "passed", "codeDesc": "test", "startTime": "2024-01-01T00:00:00Z"}]
+			}]
+		}]
+	}`
+
+	tmpDir := t.TempDir()
+	inputPath := filepath.Join(tmpDir, "input.json")
+	require.NoError(t, os.WriteFile(inputPath, []byte(hdfJSON), 0o600))
+
+	outputPath := filepath.Join(tmpDir, "output.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"convert", "hdf", "to", "oscal-sar", inputPath, outputPath})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(outputPath)
+	require.NoError(t, err)
+
+	var raw map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(data, &raw))
+	assert.Contains(t, raw, "assessment-results")
+}
