@@ -46,9 +46,10 @@
         "baseline",
         "fleet",
         "multiSource",
-        "baselineEvolution"
+        "baselineEvolution",
+        "systemDrift"
       ],
-      "description": "The mode of comparison. 'temporal' compares the same target over time. 'baseline' compares against a golden reference. 'fleet' compares across multiple systems. 'multiSource' compares outputs from different scanners. 'baselineEvolution' compares two baseline documents to detect requirement changes between versions.",
+      "description": "The mode of comparison. 'temporal' compares the same target over time. 'baseline' compares against a golden reference. 'fleet' compares across multiple systems. 'multiSource' compares outputs from different scanners. 'baselineEvolution' compares two baseline documents to detect requirement changes between versions. 'systemDrift' compares two system documents to detect component-level changes.",
       "title": "Comparison Mode"
     },
     "Source_Role": {
@@ -507,6 +508,45 @@
       },
       "description": "Comparison of a baseline between sources.",
       "title": "Baseline Diff"
+    },
+    "Component_Diff": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "name",
+        "state"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Component name used for matching across system versions."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "new",
+            "absent",
+            "unchanged",
+            "updated"
+          ],
+          "description": "The state of this component in the comparison."
+        },
+        "before": {
+          "description": "Component snapshot from the old system document."
+        },
+        "after": {
+          "description": "Component snapshot from the new system document."
+        },
+        "fieldChanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Field_Change"
+          },
+          "description": "Detailed field-level changes between the before and after component snapshots."
+        }
+      },
+      "description": "Comparison of a single component between two system document versions.",
+      "title": "Component Diff"
     },
     "Scanner_Conflict": {
       "type": "object",

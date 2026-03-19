@@ -2,6 +2,7 @@ import type {
   HdfComparison,
   RequirementDiff,
   BaselineDiff,
+  ComponentDiff,
   FieldChange,
   Source,
 } from './types.js';
@@ -19,7 +20,7 @@ export interface DiffOptions {
   /** Fields to track for field-level diffs (default: ['impact', 'severity', 'tags']) */
   trackedFields?: string[];
   /** Comparison mode (default: 'temporal') */
-  comparisonMode?: 'temporal' | 'baseline' | 'fleet' | 'multiSource' | 'baselineEvolution';
+  comparisonMode?: 'temporal' | 'baseline' | 'fleet' | 'multiSource' | 'baselineEvolution' | 'systemDrift';
   /** Primary matching strategy name (default: 'exactId') */
   matchStrategy?: string;
   /** Fallback strategy names, applied in order to remaining unmatched requirements */
@@ -101,6 +102,8 @@ export function diffHdf(
   if (!options?.comparisonMode && !Array.isArray(newResults)) {
     if (isBaselineDocument(oldResults) && isBaselineDocument(newResults)) {
       comparisonMode = 'baselineEvolution';
+    } else if (isSystemDocument(oldResults) && isSystemDocument(newResults)) {
+      comparisonMode = 'systemDrift';
     }
   }
 
@@ -120,6 +123,12 @@ export function diffHdf(
   if (comparisonMode === 'baselineEvolution') {
     const newDoc = Array.isArray(newResults) ? newResults[0]! : newResults;
     return diffBaselines(oldResults, newDoc, options);
+  }
+
+  // System drift mode: compare two system documents
+  if (comparisonMode === 'systemDrift') {
+    const newDoc = Array.isArray(newResults) ? newResults[0]! : newResults;
+    return diffSystems(oldResults, newDoc, options);
   }
 
   // Fleet mode: compare reference against each system
@@ -692,4 +701,182 @@ export function diffBaselines(
   }
 
   return comparison;
+}
+
+/**
+ * Detect whether a document is a system document (has components[] but no baselines/requirements).
+ */
+function isSystemDocument(doc: Record<string, unknown>): boolean {
+  return (
+    Array.isArray(doc['components']) &&
+    !Array.isArray(doc['baselines']) &&
+    !Array.isArray(doc['requirements']) &&
+    doc['statistics'] === undefined
+  );
+}
+
+/** Fields tracked for system-level field changes. */
+const SYSTEM_TOP_LEVEL_FIELDS = ['authorizationStatus', 'categorizationLevel', 'description'];
+
+/** Fields tracked for component-level field changes. */
+const COMPONENT_TRACKED_FIELDS = [
+  'type', 'description', 'baselineRefs', 'inputOverrides', 'sbomRef', 'targetSelector',
+];
+
+/**
+ * Compare two HDF system documents and produce a structured comparison
+ * showing component-level changes between system versions.
+ *
+ * Components are matched by exact name. Top-level system fields
+ * (authorizationStatus, categorizationLevel, description) are also compared.
+ */
+export function diffSystems(
+  oldSystem: Record<string, unknown>,
+  newSystem: Record<string, unknown>,
+  options?: DiffOptions,
+): HdfComparison {
+  const oldComponents = (oldSystem['components'] as Record<string, unknown>[] | undefined) ?? [];
+  const newComponents = (newSystem['components'] as Record<string, unknown>[] | undefined) ?? [];
+
+  // Build maps by component name
+  const oldMap = new Map<string, Record<string, unknown>>();
+  for (const c of oldComponents) {
+    const name = c['name'] as string;
+    if (name) oldMap.set(name, c);
+  }
+  const newMap = new Map<string, Record<string, unknown>>();
+  for (const c of newComponents) {
+    const name = c['name'] as string;
+    if (name) newMap.set(name, c);
+  }
+
+  const allNames = new Set([...oldMap.keys(), ...newMap.keys()]);
+  const componentDiffs: ComponentDiff[] = [];
+
+  for (const name of allNames) {
+    const oldComp = oldMap.get(name);
+    const newComp = newMap.get(name);
+
+    if (oldComp && newComp) {
+      // Compare tracked fields
+      const fieldChanges = computeComponentFieldChanges(oldComp, newComp, COMPONENT_TRACKED_FIELDS);
+      const state = fieldChanges.length > 0 ? 'updated' : 'unchanged';
+      componentDiffs.push({
+        name,
+        state,
+        before: oldComp,
+        after: newComp,
+        fieldChanges,
+      });
+    } else if (oldComp && !newComp) {
+      componentDiffs.push({
+        name,
+        state: 'absent',
+        before: oldComp,
+        after: null,
+        fieldChanges: [],
+      });
+    } else if (!oldComp && newComp) {
+      componentDiffs.push({
+        name,
+        state: 'new',
+        before: null,
+        after: newComp,
+        fieldChanges: [],
+      });
+    }
+  }
+
+  // Sort component diffs by name
+  componentDiffs.sort((a, b) => a.name.localeCompare(b.name));
+
+  // Compare top-level system fields
+  const systemFieldChanges = computeComponentFieldChanges(
+    oldSystem, newSystem, SYSTEM_TOP_LEVEL_FIELDS,
+  );
+
+  // Build summary counts based on component diffs
+  const counts = { new: 0, absent: 0, unchanged: 0, updated: 0 };
+  for (const cd of componentDiffs) {
+    counts[cd.state]++;
+  }
+
+  const oldName = oldSystem['name'] as string | undefined ?? '';
+  const newName = newSystem['name'] as string | undefined ?? '';
+  const systemName = newName || oldName;
+
+  // Build sources
+  const sources: Source[] = [
+    { role: 'old', label: systemName ? `${systemName} (old)` : 'Old system' },
+    { role: 'new', label: systemName ? `${systemName} (new)` : 'New system' },
+  ];
+
+  const comparison: HdfComparison = {
+    formatVersion: '1.0.0',
+    comparisonMode: 'systemDrift',
+    timestamp: new Date().toISOString(),
+    sources,
+    summary: {
+      total: allNames.size,
+      matchedCount: counts.unchanged + counts.updated,
+      unmatchedOldCount: counts.absent,
+      unmatchedNewCount: counts.new,
+      new: counts.new,
+      absent: counts.absent,
+      unchanged: counts.unchanged,
+      updated: counts.updated,
+      fixed: 0,
+      regressed: 0,
+    },
+    baselineDiffs: [],
+    requirementDiffs: [],
+    componentDiffs,
+  };
+
+  // Attach system-level field changes as extensions if present
+  if (systemFieldChanges.length > 0) {
+    comparison.extensions = {
+      systemFieldChanges,
+    };
+  }
+
+  if (options?.validateOutput) {
+    const result = validateComparison(comparison);
+    /* c8 ignore start */
+    if (!result.valid) {
+      throw new Error(`Output validation failed: ${result.errors?.join(', ')}`);
+    }
+    /* c8 ignore stop */
+  }
+
+  return comparison;
+}
+
+/**
+ * Compute field-level changes for component or system fields.
+ * Uses JSON Patch-like op/path format.
+ */
+function computeComponentFieldChanges(
+  oldObj: Record<string, unknown>,
+  newObj: Record<string, unknown>,
+  trackedFields: string[],
+): FieldChange[] {
+  const changes: FieldChange[] = [];
+
+  for (const field of trackedFields) {
+    const oldVal = oldObj[field];
+    const newVal = newObj[field];
+
+    if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+      if (oldVal === undefined && newVal !== undefined) {
+        changes.push({ op: 'add', path: field, newValue: newVal });
+      } else if (oldVal !== undefined && newVal === undefined) {
+        changes.push({ op: 'remove', path: field, oldValue: oldVal });
+      } else {
+        changes.push({ op: 'replace', path: field, oldValue: oldVal, newValue: newVal });
+      }
+    }
+  }
+
+  return changes;
 }

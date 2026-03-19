@@ -4,6 +4,7 @@ export type {
   RequirementState,
   FieldChange,
   RequirementDiff,
+  ComponentDiff,
   ComparisonSummary,
   BaselineDiff,
   Source,
@@ -20,7 +21,7 @@ export type {
 } from './types.js';
 
 // Diff engine
-export { diffHdf, diffBaselines } from './diff.js';
+export { diffHdf, diffBaselines, diffSystems } from './diff.js';
 export type { DiffOptions } from './diff.js';
 
 // Status utilities

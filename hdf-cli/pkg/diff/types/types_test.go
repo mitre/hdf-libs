@@ -62,6 +62,7 @@ func TestComparisonModeConstants(t *testing.T) {
 		{ModeFleet, "fleet"},
 		{ModeMultiSource, "multiSource"},
 		{ModeBaselineEvolution, "baselineEvolution"},
+		{ModeSystemDrift, "systemDrift"},
 	}
 	for _, tt := range tests {
 		assert.Equal(t, tt.want, string(tt.got), "ComparisonMode constant %q", tt.want)
