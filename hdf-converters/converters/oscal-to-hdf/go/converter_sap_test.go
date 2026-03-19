@@ -29,7 +29,7 @@ func TestConvertAssessmentPlanToHDF_NotAssessmentPlan(t *testing.T) {
 
 	_, err = ConvertAssessmentPlanToHDF(input, "1.0.0")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not an assessment-plan")
+	assert.Contains(t, err.Error(), "expected assessment-plan document")
 }
 
 func TestConvertAssessmentPlanToHDF_FedRAMPFixture(t *testing.T) {
@@ -117,8 +117,7 @@ func TestSapPlanName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
-			ap := &AssessmentPlan{Metadata: Metadata{Title: tt.title}}
-			assert.Equal(t, tt.expected, sapPlanName(ap))
+			assert.Equal(t, tt.expected, ToKebabCase(tt.title, "oscal-assessment-plan"))
 		})
 	}
 }

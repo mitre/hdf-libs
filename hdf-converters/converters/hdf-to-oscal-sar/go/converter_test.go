@@ -73,7 +73,7 @@ func TestConvertHDFToOSCALSAR_MinimalPassed(t *testing.T) {
 	sar := doc.AssessmentResults
 	assert.NotEmpty(t, sar.UUID)
 	assert.Equal(t, "HDF Assessment Results Export", sar.Metadata.Title)
-	assert.Equal(t, oscalVersion, sar.Metadata.OscalVersion)
+	assert.Equal(t, oscal.OscalVersion, sar.Metadata.OscalVersion)
 	assert.NotNil(t, sar.ImportAP)
 	assert.Equal(t, "#", sar.ImportAP.Href)
 
@@ -255,7 +255,7 @@ func TestConvertHDFToOSCALSAR_ImpactSeverityMapping(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		assert.Equal(t, tc.severity, impactToSeverity(tc.impact))
+		assert.Equal(t, tc.severity, oscal.ImpactToSeverity(tc.impact))
 	}
 }
 
@@ -271,7 +271,7 @@ func TestConvertHDFToOSCALSAR_NistTagToControlID(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		assert.Equal(t, tc.expected, nistTagToControlID(tc.tag))
+		assert.Equal(t, tc.expected, oscal.NistTagToControlID(tc.tag))
 	}
 }
 
@@ -361,7 +361,7 @@ func TestConvertHDFToOSCALSAR_RoundTrip(t *testing.T) {
 
 	// Verify valid OSCAL structure
 	assert.NotEmpty(t, doc.AssessmentResults.UUID)
-	assert.Equal(t, oscalVersion, doc.AssessmentResults.Metadata.OscalVersion)
+	assert.Equal(t, oscal.OscalVersion, doc.AssessmentResults.Metadata.OscalVersion)
 	assert.NotNil(t, doc.AssessmentResults.ImportAP)
 }
 

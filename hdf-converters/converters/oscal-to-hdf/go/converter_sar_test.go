@@ -29,7 +29,7 @@ func TestConvertAssessmentResultsToHDF_WrongDocumentType(t *testing.T) {
 
 	_, err = ConvertAssessmentResultsToHDF(input, "1.0.0")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not an assessment-results")
+	assert.Contains(t, err.Error(), "expected assessment-results document")
 }
 
 func TestConvertAssessmentResultsToHDF_FedRAMPFixture(t *testing.T) {

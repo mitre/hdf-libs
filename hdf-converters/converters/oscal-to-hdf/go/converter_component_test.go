@@ -29,7 +29,7 @@ func TestConvertComponentDefinitionToHDF_NotComponentDef(t *testing.T) {
 
 	_, err = ConvertComponentDefinitionToHDF(input, "1.0.0")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not a component-definition")
+	assert.Contains(t, err.Error(), "expected component-definition document")
 }
 
 func TestConvertComponentDefinitionToHDF_NoComponents(t *testing.T) {
@@ -161,9 +161,11 @@ func TestComponentBaselineName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.compTitle+"/"+tt.metaTitle, func(t *testing.T) {
-			comp := Component{Title: tt.compTitle}
-			compDef := &ComponentDefinition{Metadata: Metadata{Title: tt.metaTitle}}
-			assert.Equal(t, tt.expected, componentBaselineName(comp, compDef))
+			name := tt.compTitle
+			if name == "" {
+				name = tt.metaTitle
+			}
+			assert.Equal(t, tt.expected, ToKebabCase(name, "oscal-component-definition"))
 		})
 	}
 }

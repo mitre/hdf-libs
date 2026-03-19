@@ -663,3 +663,27 @@ func TestBuildHDFResults_DataSourcePartialFields(t *testing.T) {
 	assert.Nil(t, result.DataSource.Version)
 	assert.Equal(t, "XML", *result.DataSource.Format)
 }
+
+func TestValidateJSONSize(t *testing.T) {
+	t.Run("within limit", func(t *testing.T) {
+		err := ValidateJSONSize([]byte(`{"key":"value"}`), "test-converter", 0)
+		assert.NoError(t, err)
+	})
+
+	t.Run("exceeds custom limit", func(t *testing.T) {
+		err := ValidateJSONSize([]byte(`{"key":"value"}`), "test-converter", 5)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "test-converter")
+		assert.Contains(t, err.Error(), "exceeds maximum allowed size")
+	})
+
+	t.Run("empty input within limit", func(t *testing.T) {
+		err := ValidateJSONSize([]byte{}, "test-converter", 0)
+		assert.NoError(t, err)
+	})
+
+	t.Run("uses default max size", func(t *testing.T) {
+		err := ValidateJSONSize([]byte("small"), "test-converter", 0)
+		assert.NoError(t, err)
+	})
+}

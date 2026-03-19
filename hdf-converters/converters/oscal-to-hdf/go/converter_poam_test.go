@@ -29,7 +29,7 @@ func TestConvertPOAMToHDF_NotPOAM(t *testing.T) {
 
 	_, err = ConvertPOAMToHDF(input, "1.0.0")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not a plan-of-action-and-milestones")
+	assert.Contains(t, err.Error(), "expected plan-of-action-and-milestones document")
 }
 
 func TestConvertPOAMToHDF_FedRAMPFixture(t *testing.T) {
@@ -143,8 +143,7 @@ func TestPoamAmendmentsName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
-			poam := &PlanOfActionAndMilestones{Metadata: Metadata{Title: tt.title}}
-			assert.Equal(t, tt.expected, poamAmendmentsName(poam))
+			assert.Equal(t, tt.expected, ToKebabCase(tt.title, "oscal-poam"))
 		})
 	}
 }

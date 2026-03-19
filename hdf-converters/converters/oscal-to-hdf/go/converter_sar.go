@@ -1,8 +1,6 @@
 package oscal
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 
@@ -14,16 +12,9 @@ import (
 // document to HDF Results. Each results[] entry becomes an EvaluatedBaseline,
 // and each finding becomes an EvaluatedRequirement with pass/fail results.
 func ConvertAssessmentResultsToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("empty input")
-	}
-
-	var doc OscalDocument
-	if err := json.Unmarshal(input, &doc); err != nil {
-		return nil, fmt.Errorf("oscal-assessment-results: failed to parse JSON: %w", err)
-	}
-	if doc.AssessmentResults == nil {
-		return nil, fmt.Errorf("oscal-assessment-results: input is not an assessment-results document (root key is not 'assessment-results')")
+	doc, err := ParseOscalDocument(input, "assessment-results", "oscal-assessment-results")
+	if err != nil {
+		return nil, err
 	}
 
 	return sarToHDFResults(doc.AssessmentResults, input, converterVersion)
@@ -86,8 +77,9 @@ func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput 
 	controlOrder := make([]string, 0)
 	controlMap := make(map[string]*controlFindings)
 
-	for i := range result.Findings {
-		f := &result.Findings[i]
+	limitedFindings, _ := shared.LimitSlice(result.Findings, 0)
+	for i := range limitedFindings {
+		f := &limitedFindings[i]
 		controlID := extractControlIDFromFinding(f)
 		if existing, ok := controlMap[controlID]; ok {
 			existing.findings = append(existing.findings, f)
@@ -389,23 +381,5 @@ func sarBaselineName(result *Result, sar *AssessmentResults) string {
 	if title == "" {
 		title = sar.Metadata.Title
 	}
-	if title == "" {
-		return "oscal-assessment-results"
-	}
-
-	name := strings.ToLower(title)
-	name = strings.Map(func(r rune) rune {
-		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
-			return r
-		}
-		return '-'
-	}, name)
-	for strings.Contains(name, "--") {
-		name = strings.ReplaceAll(name, "--", "-")
-	}
-	name = strings.Trim(name, "-")
-	if len(name) > 80 {
-		name = name[:80]
-	}
-	return name
+	return ToKebabCase(title, "oscal-assessment-results")
 }

@@ -1,10 +1,6 @@
 package oscal
 
 import (
-	"encoding/json"
-	"fmt"
-	"strings"
-
 	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -13,16 +9,9 @@ import (
 // Each control (including enhancements) becomes a BaselineRequirement.
 // Groups map to RequirementGroups.
 func ConvertCatalogToHDF(input []byte, converterVersion string) (*hdf.HDFBaseline, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("empty input")
-	}
-
-	var doc OscalDocument
-	if err := json.Unmarshal(input, &doc); err != nil {
-		return nil, fmt.Errorf("oscal-catalog: failed to parse JSON: %w", err)
-	}
-	if doc.Catalog == nil {
-		return nil, fmt.Errorf("oscal-catalog: input is not a catalog document (root key is not 'catalog')")
+	doc, err := ParseOscalDocument(input, "catalog", "oscal-catalog")
+	if err != nil {
+		return nil, err
 	}
 
 	return catalogToBaseline(doc.Catalog, input, converterVersion)
@@ -42,8 +31,9 @@ func catalogToBaseline(catalog *Catalog, rawInput []byte, converterVersion strin
 		group := &catalog.Groups[i]
 		var reqIDs []string
 
-		for j := range group.Controls {
-			ctrl := &group.Controls[j]
+		limitedControls, _ := shared.LimitSlice(group.Controls, 0)
+		for j := range limitedControls {
+			ctrl := &limitedControls[j]
 			req := controlToBaselineRequirement(ctrl)
 			requirements = append(requirements, req)
 			reqIDs = append(reqIDs, req.ID)
@@ -82,7 +72,7 @@ func catalogToBaseline(catalog *Catalog, rawInput []byte, converterVersion strin
 	status := "loaded"
 
 	baseline := &hdf.HDFBaseline{
-		Name:         catalogBaselineName(catalog),
+		Name:         ToKebabCase(catalog.Metadata.Title, "oscal-catalog"),
 		Title:        shared.Ptr(meta.Title),
 		Version:      shared.Ptr(meta.Version),
 		Status:       &status,
@@ -182,27 +172,3 @@ func catalogControlImpact(_ *Control) float64 {
 	return 0.5
 }
 
-// catalogBaselineName derives a baseline name from catalog metadata.
-func catalogBaselineName(catalog *Catalog) string {
-	title := catalog.Metadata.Title
-	if title == "" {
-		return "oscal-catalog"
-	}
-	// Use a simplified kebab-case of the title
-	name := strings.ToLower(title)
-	name = strings.Map(func(r rune) rune {
-		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
-			return r
-		}
-		return '-'
-	}, name)
-	// Collapse consecutive dashes and trim
-	for strings.Contains(name, "--") {
-		name = strings.ReplaceAll(name, "--", "-")
-	}
-	name = strings.Trim(name, "-")
-	if len(name) > 80 {
-		name = name[:80]
-	}
-	return name
-}

@@ -4,7 +4,7 @@
  * Mirrors the Go helpers in converters/oscal-to-hdf/go/shared.go.
  */
 
-import type { Property, Part, Characterization, DocumentMetadata } from './types.js';
+import type { Property, Part, Characterization, DocumentMetadata, Oscal } from './types.js';
 
 const controlEnhancementRe = /^([a-z]{2}-\d+)\.(\d+)$/;
 const objectiveIDRe = /^([a-z]{2}-\d+(?:\.\d+)?)/;
@@ -196,6 +196,76 @@ export function extractMetadata(m: DocumentMetadata): MetadataInfo {
     oscalVersion: m['oscal-version'],
     lastModified: String(m['last-modified']),
   };
+}
+
+/** Matches NIST 800-53 tags with enhancements like "AC-2 (3)". */
+const nistEnhancementReverseRe = /^([A-Z]{2}-\d+)\s*\((\d+)\)$/;
+
+/**
+ * Converts NIST 800-53 notation back to OSCAL control ID.
+ * "AC-1" -> "ac-1", "AC-2 (3)" -> "ac-2.3", "SI-7 (1)" -> "si-7.1"
+ */
+export function nistTagToControlId(tag: string): string {
+  tag = tag.trim();
+  const m = nistEnhancementReverseRe.exec(tag);
+  if (m) {
+    return `${m[1]!.toLowerCase()}.${m[2]!}`;
+  }
+  return tag.toLowerCase();
+}
+
+/**
+ * Converts a 0.0-1.0 impact value to an OSCAL severity string.
+ * This is the reverse of extractRiskSeverity.
+ */
+export function impactToSeverity(impact: number): string {
+  if (impact >= 0.9) return 'critical';
+  if (impact >= 0.7) return 'high';
+  if (impact >= 0.4) return 'moderate';
+  if (impact >= 0.1) return 'low';
+  return 'info';
+}
+
+/**
+ * Maps an HDF status string to an OSCAL risk status string.
+ * "passed"/"notApplicable" -> "closed", everything else -> "open".
+ */
+export function hdfStatusToOscalRiskStatus(status: string): string {
+  if (status === 'passed' || status === 'notApplicable') {
+    return 'closed';
+  }
+  return 'open';
+}
+
+/** OSCAL specification version used in reverse converter output documents. */
+export const OSCAL_VERSION = '1.1.2';
+
+/**
+ * Parses an OSCAL document from JSON input, validates the document type.
+ * Throws if input is empty, invalid JSON, or not the expected type.
+ */
+export function parseOscalDocument<T extends keyof Oscal>(
+  input: string,
+  expectedKey: T,
+  converterName: string,
+): NonNullable<Oscal[T]> {
+  if (!input || input.trim().length === 0) {
+    throw new Error(`${converterName}: empty input`);
+  }
+
+  let doc: Oscal;
+  try {
+    doc = JSON.parse(input) as Oscal;
+  } catch {
+    throw new Error(`${converterName}: failed to parse JSON`);
+  }
+
+  const value = doc[expectedKey];
+  if (!value) {
+    throw new Error(`${converterName}: expected ${String(expectedKey)} document`);
+  }
+
+  return value as NonNullable<Oscal[T]>;
 }
 
 /**

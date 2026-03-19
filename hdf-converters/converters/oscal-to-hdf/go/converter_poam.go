@@ -1,9 +1,6 @@
 package oscal
 
 import (
-	"encoding/json"
-	"fmt"
-	"strings"
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
@@ -14,16 +11,9 @@ import (
 // document to HDF Amendments. Each poam-item becomes a StandaloneOverride
 // with type "poam".
 func ConvertPOAMToHDF(input []byte, converterVersion string) (*hdf.HDFAmendments, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("empty input")
-	}
-
-	var doc OscalDocument
-	if err := json.Unmarshal(input, &doc); err != nil {
-		return nil, fmt.Errorf("oscal-poam: failed to parse JSON: %w", err)
-	}
-	if doc.PlanOfActionAndMilestones == nil {
-		return nil, fmt.Errorf("oscal-poam: input is not a plan-of-action-and-milestones document (root key is not 'plan-of-action-and-milestones')")
+	doc, err := ParseOscalDocument(input, "plan-of-action-and-milestones", "oscal-poam")
+	if err != nil {
+		return nil, err
 	}
 
 	return poamToHDFAmendments(doc.PlanOfActionAndMilestones, input, converterVersion)
@@ -38,9 +28,10 @@ func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, conve
 	riskMap := buildRiskMap(poam.Risks)
 
 	// Convert poam-items to StandaloneOverrides
-	overrides := make([]hdf.StandaloneOverride, 0, len(poam.POAMItems))
-	for i := range poam.POAMItems {
-		override := poamItemToOverride(&poam.POAMItems[i], riskMap, poam)
+	limitedPOAMItems, _ := shared.LimitSlice(poam.POAMItems, 0)
+	overrides := make([]hdf.StandaloneOverride, 0, len(limitedPOAMItems))
+	for i := range limitedPOAMItems {
+		override := poamItemToOverride(&limitedPOAMItems[i], riskMap, poam)
 		overrides = append(overrides, override)
 	}
 
@@ -55,7 +46,7 @@ func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, conve
 
 	genName := "hdf-converters"
 	amendments := &hdf.HDFAmendments{
-		Name:      poamAmendmentsName(poam),
+		Name:      ToKebabCase(poam.Metadata.Title, "oscal-poam"),
 		Overrides: overrides,
 		Checksum:  checksum,
 		SystemRef: systemRef,
@@ -259,25 +250,3 @@ func extractAppliedBy(meta Metadata) *hdf.Identity {
 	return nil
 }
 
-// poamAmendmentsName derives an amendments name from POA&M metadata.
-func poamAmendmentsName(poam *PlanOfActionAndMilestones) string {
-	title := poam.Metadata.Title
-	if title == "" {
-		return "oscal-poam"
-	}
-	name := strings.ToLower(title)
-	name = strings.Map(func(r rune) rune {
-		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
-			return r
-		}
-		return '-'
-	}, name)
-	for strings.Contains(name, "--") {
-		name = strings.ReplaceAll(name, "--", "-")
-	}
-	name = strings.Trim(name, "-")
-	if len(name) > 80 {
-		name = name[:80]
-	}
-	return name
-}

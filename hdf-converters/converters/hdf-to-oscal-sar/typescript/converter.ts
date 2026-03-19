@@ -6,6 +6,7 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
+import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
@@ -19,12 +20,11 @@ import type {
   IdentifiedRisk,
   Property,
 } from '../../oscal-to-hdf/typescript/types.js';
-
-/** OSCAL specification version used in output documents. */
-const OSCAL_VERSION = '1.1.2';
-
-/** Matches NIST 800-53 tags with enhancements like "AC-2 (3)". */
-const nistEnhancementRe = /^([A-Z]{2}-\d+)\s*\((\d+)\)$/;
+import {
+  nistTagToControlId,
+  impactToSeverity,
+  OSCAL_VERSION,
+} from '../../oscal-to-hdf/typescript/shared.js';
 
 /** Root wrapper for the output JSON. */
 interface OscalSARDocument {
@@ -38,6 +38,8 @@ interface OscalSARDocument {
  * @returns OSCAL SAR JSON string
  */
 export async function convertHdfToOscalSar(input: string): Promise<string> {
+  validateInputSize(input, 'hdf-to-oscal-sar');
+
   if (!input || input.trim().length === 0) {
     throw new Error('hdf-to-oscal-sar: empty input');
   }
@@ -146,7 +148,7 @@ function requirementToFindingSet(
   req: EvaluatedRequirement,
   timestamp: string,
 ): { finding: Finding; observation: Observation | undefined; risk: IdentifiedRisk | undefined } {
-  const controlID = nistTagToControlID(req.id);
+  const controlID = nistTagToControlId(req.id);
   const { state, reason } = aggregateStatus(req.results);
   const findingDesc = extractDefaultDescription(req.descriptions);
 
@@ -230,17 +232,6 @@ function requirementToFindingSet(
   return { finding, observation, risk };
 }
 
-/**
- * Converts NIST 800-53 notation back to OSCAL control ID.
- * "AC-1" -> "ac-1", "AC-2 (3)" -> "ac-2.3"
- */
-export function nistTagToControlID(tag: string): string {
-  const m = nistEnhancementRe.exec(tag);
-  if (m) {
-    return `${m[1]!.toLowerCase()}.${m[2]!}`;
-  }
-  return tag.toLowerCase();
-}
 
 /**
  * Determines the overall finding status from requirement results.
@@ -330,16 +321,6 @@ function buildObservationDescription(results: RequirementResult[]): string {
   return parts.join('\n');
 }
 
-/**
- * Converts a 0.0-1.0 impact value to an OSCAL severity string.
- */
-export function impactToSeverity(impact: number): string {
-  if (impact >= 0.9) return 'critical';
-  if (impact >= 0.7) return 'high';
-  if (impact >= 0.4) return 'moderate';
-  if (impact >= 0.1) return 'low';
-  return 'info';
-}
 
 /**
  * Maps OSCAL finding state to risk status.

@@ -108,9 +108,16 @@ func applyOverrideToDoc(doc, override map[string]interface{}, reqID, baselineRef
 				continue
 			}
 
-			// Set effectiveStatus from the override's status.
-			if status, ok := override["status"]; ok {
-				req["effectiveStatus"] = status
+			// Set effectiveStatus from the override's status, validating it first.
+			if statusRaw, ok := override["status"]; ok {
+				validStatuses := map[string]bool{
+					"passed": true, "failed": true, "notApplicable": true,
+					"notReviewed": true, "error": true,
+				}
+				status, isString := statusRaw.(string)
+				if isString && validStatuses[status] {
+					req["effectiveStatus"] = status
+				}
 			}
 
 			// Build a statusOverride entry from the standalone override fields.

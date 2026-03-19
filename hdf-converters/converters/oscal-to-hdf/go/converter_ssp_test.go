@@ -29,7 +29,7 @@ func TestConvertSSPToHDF_NotSSP(t *testing.T) {
 
 	_, err = ConvertSSPToHDF(input, "1.0.0")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not a system-security-plan")
+	assert.Contains(t, err.Error(), "expected system-security-plan document")
 }
 
 func TestConvertSSPToHDF_Fixture(t *testing.T) {

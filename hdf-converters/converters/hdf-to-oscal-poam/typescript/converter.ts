@@ -5,6 +5,7 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
+import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type { HdfAmendments, StandaloneOverride } from '@mitre/hdf-schema';
 import type {
   Oscal,
@@ -17,12 +18,11 @@ import type {
   RiskResponse,
   RiskLog,
 } from '../../oscal-to-hdf/typescript/types.js';
-
-/** OSCAL specification version emitted by this converter. */
-const OSCAL_VERSION = '1.1.2';
-
-/** Matches NIST 800-53 notation like "AC-2 (3)". */
-const nistEnhancementRe = /^([A-Z]{2}-\d+)\s*\((\d+)\)$/;
+import {
+  nistTagToControlId,
+  hdfStatusToOscalRiskStatus,
+  OSCAL_VERSION,
+} from '../../oscal-to-hdf/typescript/shared.js';
 
 /**
  * Convert HDF Amendments JSON to OSCAL POA&M JSON.
@@ -31,6 +31,8 @@ const nistEnhancementRe = /^([A-Z]{2}-\d+)\s*\((\d+)\)$/;
  * @returns OSCAL POA&M JSON string
  */
 export async function convertHdfToOscalPoam(input: string): Promise<string> {
+  validateInputSize(input, 'hdf-to-oscal-poam');
+
   if (!input || input.trim().length === 0) {
     throw new Error('hdf-to-oscal-poam: empty input');
   }
@@ -122,10 +124,10 @@ function overrideToPOAMItem(override: StandaloneOverride): { item: POAMItem; ite
   const riskUUID = crypto.randomUUID();
 
   // Map HDF status to OSCAL risk status
-  const riskStatus = hdfStatusToOSCAL(String(override.status));
+  const riskStatus = hdfStatusToOscalRiskStatus(String(override.status));
 
   // Convert requirement ID from NIST notation to OSCAL control ID
-  const controlID = nistTagToControlID(override.requirementId);
+  const controlID = nistTagToControlId(override.requirementId);
 
   // Build risk props with impacted-control-id
   const riskProps: Property[] = [
@@ -189,35 +191,3 @@ function overrideToPOAMItem(override: StandaloneOverride): { item: POAMItem; ite
   return { item, itemRisks: [risk] };
 }
 
-/**
- * Maps an HDF ResultStatus to an OSCAL risk status string.
- */
-export function hdfStatusToOSCAL(status: string): string {
-  switch (status) {
-    case 'passed':
-      return 'closed';
-    case 'failed':
-      return 'open';
-    case 'error':
-      return 'open';
-    case 'notApplicable':
-      return 'closed';
-    case 'notReviewed':
-      return 'open';
-    default:
-      return 'open';
-  }
-}
-
-/**
- * Converts a NIST 800-53 tag back to an OSCAL control ID.
- * "AC-1" -> "ac-1", "AC-2 (3)" -> "ac-2.3"
- */
-export function nistTagToControlID(tag: string): string {
-  tag = tag.trim();
-  const m = nistEnhancementRe.exec(tag);
-  if (m) {
-    return `${m[1]!.toLowerCase()}.${m[2]!}`;
-  }
-  return tag.toLowerCase();
-}

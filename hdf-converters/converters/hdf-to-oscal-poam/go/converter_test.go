@@ -428,22 +428,22 @@ func TestNistTagToControlID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			assert.Equal(t, tt.expected, nistTagToControlID(tt.input))
+			assert.Equal(t, tt.expected, oscal.NistTagToControlID(tt.input))
 		})
 	}
 }
 
 func TestHdfStatusToOSCAL(t *testing.T) {
-	assert.Equal(t, "closed", hdfStatusToOSCAL(hdf.Passed))
-	assert.Equal(t, "open", hdfStatusToOSCAL(hdf.Failed))
-	assert.Equal(t, "open", hdfStatusToOSCAL(hdf.Error))
-	assert.Equal(t, "closed", hdfStatusToOSCAL(hdf.NotApplicable))
-	assert.Equal(t, "open", hdfStatusToOSCAL(hdf.NotReviewed))
+	assert.Equal(t, "closed", oscal.HDFStatusToOSCALRiskStatus(hdf.Passed))
+	assert.Equal(t, "open", oscal.HDFStatusToOSCALRiskStatus(hdf.Failed))
+	assert.Equal(t, "open", oscal.HDFStatusToOSCALRiskStatus(hdf.Error))
+	assert.Equal(t, "closed", oscal.HDFStatusToOSCALRiskStatus(hdf.NotApplicable))
+	assert.Equal(t, "open", oscal.HDFStatusToOSCALRiskStatus(hdf.NotReviewed))
 }
 
 func TestGenerateUUID(t *testing.T) {
-	uuid1 := generateUUID()
-	uuid2 := generateUUID()
+	uuid1 := oscal.GenerateUUID()
+	uuid2 := oscal.GenerateUUID()
 
 	// Should be proper UUID format
 	assert.Len(t, uuid1, 36)

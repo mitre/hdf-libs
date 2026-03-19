@@ -5,37 +5,23 @@
 package hdftooscalsar
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
 	oscal "github.com/mitre/hdf-converters/converters/oscal-to-hdf/go"
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 )
-
-// oscalVersion is the OSCAL specification version used in output documents.
-const oscalVersion = "1.1.2"
-
-// newUUID generates a random UUID v4 string.
-func newUUID() string {
-	var u [16]byte
-	_, _ = rand.Read(u[:])
-	u[6] = (u[6] & 0x0f) | 0x40 // version 4
-	u[8] = (u[8] & 0x3f) | 0x80 // variant RFC 4122
-	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
-		u[0:4], u[4:6], u[6:8], u[8:10], u[10:16])
-}
-
-// nistEnhancementRe matches NIST tags with enhancements like "AC-2 (3)".
-var nistEnhancementRe = regexp.MustCompile(`^([A-Z]{2}-\d+)\s*\((\d+)\)$`)
 
 // ConvertHDFToOSCALSAR converts HDF Results JSON bytes to OSCAL Assessment
 // Results JSON bytes. The converterVersion parameter is unused but present
 // to conform to the RawConvertFn signature.
 func ConvertHDFToOSCALSAR(input []byte, _ string) ([]byte, error) {
+	if err := shared.ValidateJSONSize(input, "hdf-to-oscal-sar", 0); err != nil {
+		return nil, err
+	}
 	if len(input) == 0 {
 		return nil, fmt.Errorf("hdf-to-oscal-sar: empty input")
 	}
@@ -76,7 +62,7 @@ func buildOSCALDocument(hdfResults *hdf.HDFResults) *oscalSARDocument {
 		Title:        "HDF Assessment Results Export",
 		LastModified: now,
 		Version:      "1.0.0",
-		OscalVersion: oscalVersion,
+		OscalVersion: oscal.OscalVersion,
 	}
 
 	// Build import-ap reference
@@ -96,7 +82,7 @@ func buildOSCALDocument(hdfResults *hdf.HDFResults) *oscalSARDocument {
 
 	return &oscalSARDocument{
 		AssessmentResults: oscal.AssessmentResults{
-			UUID:     newUUID(),
+			UUID:     oscal.GenerateUUID(),
 			Metadata: metadata,
 			ImportAP: importAP,
 			Results:  results,
@@ -133,7 +119,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string) oscal.R
 	}
 
 	return oscal.Result{
-		UUID:         newUUID(),
+		UUID:         oscal.GenerateUUID(),
 		Title:        title,
 		Description:  description,
 		Start:        timestamp,
@@ -146,7 +132,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string) oscal.R
 // requirementToFindingSet converts an EvaluatedRequirement into a Finding,
 // optional Observation, and optional Risk.
 func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (oscal.Finding, *oscal.Observation, *oscal.Risk) {
-	controlID := nistTagToControlID(req.ID)
+	controlID := oscal.NistTagToControlID(req.ID)
 
 	// Determine overall status from results
 	state, reason := aggregateStatus(req.Results)
@@ -177,7 +163,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (o
 	}
 
 	finding := oscal.Finding{
-		UUID:        newUUID(),
+		UUID:        oscal.GenerateUUID(),
 		Title:       title,
 		Description: findingDesc,
 		Props:       props,
@@ -194,7 +180,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (o
 	// Build observation from requirement results
 	var observation *oscal.Observation
 	if len(req.Results) > 0 {
-		obsUUID := newUUID()
+		obsUUID := oscal.GenerateUUID()
 		obsDesc := buildObservationDescription(req.Results)
 		observation = &oscal.Observation{
 			UUID:        obsUUID,
@@ -210,8 +196,8 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (o
 	// Build risk from impact
 	var risk *oscal.Risk
 	if req.Impact > 0 {
-		riskUUID := newUUID()
-		severity := impactToSeverity(req.Impact)
+		riskUUID := oscal.GenerateUUID()
+		severity := oscal.ImpactToSeverity(req.Impact)
 		risk = &oscal.Risk{
 			UUID:        riskUUID,
 			Title:       fmt.Sprintf("Risk for %s", req.ID),
@@ -235,19 +221,6 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string) (o
 	}
 
 	return finding, observation, risk
-}
-
-// nistTagToControlID converts NIST 800-53 notation back to OSCAL control ID.
-// Examples:
-//
-//	"AC-1"    -> "ac-1"
-//	"AC-2 (3)" -> "ac-2.3"
-//	"SI-7 (1)" -> "si-7.1"
-func nistTagToControlID(tag string) string {
-	if m := nistEnhancementRe.FindStringSubmatch(tag); m != nil {
-		return fmt.Sprintf("%s.%s", strings.ToLower(m[1]), m[2])
-	}
-	return strings.ToLower(tag)
 }
 
 // aggregateStatus determines the overall finding status from requirement results.
@@ -328,23 +301,6 @@ func buildObservationDescription(results []hdf.RequirementResult) string {
 		return "No observations recorded"
 	}
 	return strings.Join(parts, "\n")
-}
-
-// impactToSeverity converts a 0.0-1.0 impact value to an OSCAL severity string.
-// This is the reverse of ExtractRiskSeverity in shared.go.
-func impactToSeverity(impact float64) string {
-	switch {
-	case impact >= 0.9:
-		return "critical"
-	case impact >= 0.7:
-		return "high"
-	case impact >= 0.4:
-		return "moderate"
-	case impact >= 0.1:
-		return "low"
-	default:
-		return "info"
-	}
 }
 
 // riskStatusFromState maps OSCAL finding state to risk status.

@@ -313,6 +313,23 @@ func BuildHDFResults(opts HDFResultsOptions) *hdf.HDFResults {
 	return result
 }
 
+// DefaultMaxJSONSize is the maximum allowed JSON input size (50 MB).
+// This provides defense against memory exhaustion when converters are used
+// as libraries outside the CLI (which has its own 50 MB input limit).
+const DefaultMaxJSONSize = 50 * 1024 * 1024
+
+// ValidateJSONSize checks that JSON input doesn't exceed the maximum allowed size.
+// If maxSize <= 0, DefaultMaxJSONSize is used.
+func ValidateJSONSize(input []byte, converterName string, maxSize int) error {
+	if maxSize <= 0 {
+		maxSize = DefaultMaxJSONSize
+	}
+	if len(input) > maxSize {
+		return fmt.Errorf("%s: input exceeds maximum allowed size of %d bytes (%d bytes provided)", converterName, maxSize, len(input))
+	}
+	return nil
+}
+
 // DefaultMaxXMLSize is the maximum allowed XML input size (50 MB).
 // This provides defense against entity expansion DoS when converters are used
 // as libraries outside the CLI (which has its own 50 MB input limit).

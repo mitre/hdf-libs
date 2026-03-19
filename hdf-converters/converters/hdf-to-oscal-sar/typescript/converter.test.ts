@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { convertHdfToOscalSar, nistTagToControlID, impactToSeverity, aggregateStatus } from './converter.js';
+import { convertHdfToOscalSar, aggregateStatus } from './converter.js';
+import { nistTagToControlId as nistTagToControlID, impactToSeverity } from '../../oscal-to-hdf/typescript/shared.js';
 
 /**
  * Returns a minimal valid HDF Results JSON string with one baseline,

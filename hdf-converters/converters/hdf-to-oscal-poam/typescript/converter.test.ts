@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { convertHdfToOscalPoam, hdfStatusToOSCAL, nistTagToControlID } from './converter.js';
+import { convertHdfToOscalPoam } from './converter.js';
+import { hdfStatusToOscalRiskStatus as hdfStatusToOSCAL, nistTagToControlId as nistTagToControlID } from '../../oscal-to-hdf/typescript/shared.js';
 
 describe('convertHdfToOscalPoam', () => {
   it('should reject empty input', async () => {

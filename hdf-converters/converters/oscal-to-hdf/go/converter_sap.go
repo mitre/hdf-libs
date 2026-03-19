@@ -1,8 +1,6 @@
 package oscal
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
@@ -13,16 +11,9 @@ import (
 // to an HDFPlan. Each control-selection maps to an Assessment entry, and the
 // import-ssp reference becomes the systemRef.
 func ConvertAssessmentPlanToHDF(input []byte, converterVersion string) (*hdf.HDFPlan, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("empty input")
-	}
-
-	var doc OscalDocument
-	if err := json.Unmarshal(input, &doc); err != nil {
-		return nil, fmt.Errorf("oscal-assessment-plan: failed to parse JSON: %w", err)
-	}
-	if doc.AssessmentPlan == nil {
-		return nil, fmt.Errorf("oscal-assessment-plan: input is not an assessment-plan document (root key is not 'assessment-plan')")
+	doc, err := ParseOscalDocument(input, "assessment-plan", "oscal-assessment-plan")
+	if err != nil {
+		return nil, err
 	}
 
 	return assessmentPlanToHDFPlan(doc.AssessmentPlan, input, converterVersion)
@@ -50,7 +41,7 @@ func assessmentPlanToHDFPlan(ap *AssessmentPlan, rawInput []byte, converterVersi
 
 	genName := "hdf-converters"
 	plan := &hdf.HDFPlan{
-		Name:        sapPlanName(ap),
+		Name:        ToKebabCase(ap.Metadata.Title, "oscal-assessment-plan"),
 		Assessments: assessments,
 		Checksum:    checksum,
 		SystemRef:   systemRef,
@@ -270,27 +261,4 @@ func buildPlanDescription(ap *AssessmentPlan) *string {
 	return &desc
 }
 
-// sapPlanName derives a plan name from assessment plan metadata.
-func sapPlanName(ap *AssessmentPlan) string {
-	title := ap.Metadata.Title
-	if title == "" {
-		return "oscal-assessment-plan"
-	}
-	// Use a simplified kebab-case of the title
-	name := strings.ToLower(title)
-	name = strings.Map(func(r rune) rune {
-		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
-			return r
-		}
-		return '-'
-	}, name)
-	for strings.Contains(name, "--") {
-		name = strings.ReplaceAll(name, "--", "-")
-	}
-	name = strings.Trim(name, "-")
-	if len(name) > 80 {
-		name = name[:80]
-	}
-	return name
-}
 

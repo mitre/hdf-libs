@@ -2,6 +2,7 @@ package amend
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -414,4 +415,45 @@ func TestVerifyAmendments(t *testing.T) {
 		_, err := VerifyAmendments([]byte("bad"))
 		require.Error(t, err)
 	})
+}
+
+func TestMergeAmendments_InvalidStatusValues(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusJSON string
+		desc       string
+	}{
+		{"invalid string", `"EVIL_INJECTION"`, "invalid status string should not set effectiveStatus"},
+		{"non-string type", `42`, "non-string status should not set effectiveStatus"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			amendments := fmt.Sprintf(`{
+				"name": "bad-status-test",
+				"overrides": [{
+					"type": "waiver",
+					"requirementId": "AC-1",
+					"status": %s,
+					"reason": "test",
+					"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+					"appliedAt": "2026-03-01T00:00:00Z",
+					"expiresAt": "2026-12-31T00:00:00Z"
+				}]
+			}`, tc.statusJSON)
+			merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
+			require.NoError(t, err)
+
+			var doc map[string]interface{}
+			require.NoError(t, json.Unmarshal(merged, &doc))
+
+			baselines := doc["baselines"].([]interface{})
+			baseline := baselines[0].(map[string]interface{})
+			reqs := baseline["requirements"].([]interface{})
+			req := reqs[0].(map[string]interface{})
+
+			_, hasEffective := req["effectiveStatus"]
+			assert.False(t, hasEffective, tc.desc)
+		})
+	}
 }

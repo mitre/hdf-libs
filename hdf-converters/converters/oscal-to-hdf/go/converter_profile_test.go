@@ -146,35 +146,35 @@ func TestConvertProfileToHDF_EmptyProfileInput(t *testing.T) {
 	catalog := loadFixture(t, "../fixtures/input/catalog-800-53-rev5.json")
 	_, err := ConvertProfileToHDF(nil, catalog, "1.0.0")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "empty profile")
+	assert.Contains(t, err.Error(), "empty input")
 }
 
 func TestConvertProfileToHDF_EmptyCatalogInput(t *testing.T) {
 	profile := loadFixture(t, "../fixtures/input/profile-moderate.json")
 	_, err := ConvertProfileToHDF(profile, nil, "1.0.0")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "empty catalog")
+	assert.Contains(t, err.Error(), "empty input")
 }
 
 func TestConvertProfileToHDF_NotProfile(t *testing.T) {
 	catalog := loadFixture(t, "../fixtures/input/catalog-800-53-rev5.json")
 	_, err := ConvertProfileToHDF(catalog, catalog, "1.0.0")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not a profile")
+	assert.Contains(t, err.Error(), "expected profile document")
 }
 
 func TestConvertProfileToHDF_CatalogNotCatalog(t *testing.T) {
 	profile := loadFixture(t, "../fixtures/input/profile-moderate.json")
 	_, err := ConvertProfileToHDF(profile, profile, "1.0.0")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not a catalog")
+	assert.Contains(t, err.Error(), "expected catalog document")
 }
 
 func TestConvertProfileToHDF_InvalidJSON(t *testing.T) {
 	catalog := loadFixture(t, "../fixtures/input/catalog-800-53-rev5.json")
 	_, err := ConvertProfileToHDF([]byte("not json"), catalog, "1.0.0")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse profile")
+	assert.Contains(t, err.Error(), "failed to parse JSON")
 }
 
 func TestConvertProfileToHDF_RoundTrip(t *testing.T) {

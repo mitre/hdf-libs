@@ -1,7 +1,6 @@
 package oscal
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -27,30 +26,15 @@ import (
 //
 // For full profile resolution, use NIST's oscal-cli or pre-resolved catalogs.
 func ConvertProfileToHDF(profileInput, catalogInput []byte, converterVersion string) (*hdf.HDFBaseline, error) {
-	if len(profileInput) == 0 {
-		return nil, fmt.Errorf("empty profile input")
-	}
-	if len(catalogInput) == 0 {
-		return nil, fmt.Errorf("empty catalog input")
-	}
-
-	// Parse profile
-	var profileDoc OscalDocument
-	if err := json.Unmarshal(profileInput, &profileDoc); err != nil {
-		return nil, fmt.Errorf("oscal-profile: failed to parse profile JSON: %w", err)
-	}
-	if profileDoc.Profile == nil {
-		return nil, fmt.Errorf("oscal-profile: input is not a profile document (root key is not 'profile')")
+	profileDoc, err := ParseOscalDocument(profileInput, "profile", "oscal-profile")
+	if err != nil {
+		return nil, err
 	}
 	profile := profileDoc.Profile
 
-	// Parse catalog
-	var catalogDoc OscalDocument
-	if err := json.Unmarshal(catalogInput, &catalogDoc); err != nil {
-		return nil, fmt.Errorf("oscal-profile: failed to parse catalog JSON: %w", err)
-	}
-	if catalogDoc.Catalog == nil {
-		return nil, fmt.Errorf("oscal-profile: catalog input is not a catalog document (root key is not 'catalog')")
+	catalogDoc, err := ParseOscalDocument(catalogInput, "catalog", "oscal-profile-catalog")
+	if err != nil {
+		return nil, err
 	}
 	catalog := catalogDoc.Catalog
 

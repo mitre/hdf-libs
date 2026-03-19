@@ -1,8 +1,6 @@
 package oscal
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
@@ -14,16 +12,9 @@ import (
 // map to HDF Components, and control implementations are used to populate
 // baseline references on components.
 func ConvertSSPToHDF(input []byte, converterVersion string) (*hdf.HDFSystem, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("empty input")
-	}
-
-	var doc OscalDocument
-	if err := json.Unmarshal(input, &doc); err != nil {
-		return nil, fmt.Errorf("oscal-ssp: failed to parse JSON: %w", err)
-	}
-	if doc.SystemSecurityPlan == nil {
-		return nil, fmt.Errorf("oscal-ssp: input is not a system-security-plan document (root key is not 'system-security-plan')")
+	doc, err := ParseOscalDocument(input, "system-security-plan", "oscal-ssp")
+	if err != nil {
+		return nil, err
 	}
 
 	ssp := doc.SystemSecurityPlan
