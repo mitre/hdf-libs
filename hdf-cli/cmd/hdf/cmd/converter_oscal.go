@@ -26,8 +26,59 @@ func init() {
 		oscal.ConvertCatalogToHDF,
 	)
 
+	// oscal-component-definition — Convert component definition to baseline
+	registerHDFBaselineConverter(
+		"oscal-component-definition",
+		"OSCAL Component Definition to HDF Baseline", "oscal-component-definition",
+		oscal.ConvertComponentDefinitionToHDF,
+	)
+
+	// oscal-ssp — Convert system security plan to HDF system
+	registerRawConverter(
+		"oscal-ssp",
+		"OSCAL System Security Plan to HDF System", "oscal-ssp",
+		oscalSSPRawConvert,
+	)
+
 	// oscal-profile — Resolve profile against catalog, produce baseline
 	RegisterConverter("oscal-profile", "hdf", &oscalProfileConverter{})
+
+	// oscal-assessment-plan — Convert assessment plan to HDF plan
+	registerHDFPlanConverter(
+		"oscal-assessment-plan",
+		"OSCAL Assessment Plan to HDF Plan", "oscal-assessment-plan",
+		oscal.ConvertAssessmentPlanToHDF,
+	)
+
+	// oscal-poam — Convert POA&M to HDF amendments
+	registerHDFAmendmentsConverter(
+		"oscal-poam",
+		"OSCAL POA&M to HDF Amendments", "oscal-poam",
+		oscal.ConvertPOAMToHDF,
+	)
+
+	// oscal-assessment-results / oscal-sar — Convert SAR to HDF results
+	registerHDFConverterMulti(
+		[]string{"oscal-assessment-results", "oscal-sar"},
+		"OSCAL Assessment Results to HDF", "oscal-assessment-results",
+		oscal.ConvertAssessmentResultsToHDF,
+	)
+}
+
+// oscalSSPRawConvert wraps the SSP converter to produce raw JSON bytes,
+// since HDFSystem is neither HDFResults nor HDFBaseline.
+func oscalSSPRawConvert(input []byte, converterVersion string) ([]byte, error) {
+	system, err := oscal.ConvertSSPToHDF(input, converterVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	output, err := json.MarshalIndent(system, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize HDF output: %w", err)
+	}
+
+	return output, nil
 }
 
 // oscalProfileConverter handles OSCAL profile → HDF baseline conversion,

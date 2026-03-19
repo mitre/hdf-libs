@@ -200,3 +200,81 @@ func registerRawConverter(source, displayName, errPrefix string, fn RawConvertFn
 		convertFn:   fn,
 	})
 }
+
+// HDFPlanConvertFn is the signature for converters that produce HDF Plan.
+type HDFPlanConvertFn func(input []byte, converterVersion string) (*hdf.HDFPlan, error)
+
+// hdfPlanConverter wraps a HDFPlanConvertFn, handling JSON serialization
+// and error wrapping.
+type hdfPlanConverter struct {
+	displayName string
+	errPrefix   string
+	convertFn   HDFPlanConvertFn
+}
+
+func (c *hdfPlanConverter) Name() string {
+	return c.displayName
+}
+
+func (c *hdfPlanConverter) Convert(input []byte) ([]byte, error) {
+	result, err := c.convertFn(input, version)
+	if err != nil {
+		return nil, fmt.Errorf("%s conversion failed: %w", c.errPrefix, err)
+	}
+
+	output, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize HDF output: %w", err)
+	}
+
+	return output, nil
+}
+
+// registerHDFPlanConverter registers an HDF Plan converter under one source
+// format name. The dest is always "hdf".
+func registerHDFPlanConverter(source, displayName, errPrefix string, fn HDFPlanConvertFn) {
+	RegisterConverter(source, "hdf", &hdfPlanConverter{
+		displayName: displayName,
+		errPrefix:   errPrefix,
+		convertFn:   fn,
+	})
+}
+
+// HDFAmendmentsConvertFn is the signature for converters that produce HDF Amendments.
+type HDFAmendmentsConvertFn func(input []byte, converterVersion string) (*hdf.HDFAmendments, error)
+
+// hdfAmendmentsConverter wraps a HDFAmendmentsConvertFn, handling JSON
+// serialization and error wrapping.
+type hdfAmendmentsConverter struct {
+	displayName string
+	errPrefix   string
+	convertFn   HDFAmendmentsConvertFn
+}
+
+func (c *hdfAmendmentsConverter) Name() string {
+	return c.displayName
+}
+
+func (c *hdfAmendmentsConverter) Convert(input []byte) ([]byte, error) {
+	result, err := c.convertFn(input, version)
+	if err != nil {
+		return nil, fmt.Errorf("%s conversion failed: %w", c.errPrefix, err)
+	}
+
+	output, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize HDF output: %w", err)
+	}
+
+	return output, nil
+}
+
+// registerHDFAmendmentsConverter registers an HDF Amendments converter under
+// one source format name. The dest is always "hdf".
+func registerHDFAmendmentsConverter(source, displayName, errPrefix string, fn HDFAmendmentsConvertFn) {
+	RegisterConverter(source, "hdf", &hdfAmendmentsConverter{
+		displayName: displayName,
+		errPrefix:   errPrefix,
+		convertFn:   fn,
+	})
+}

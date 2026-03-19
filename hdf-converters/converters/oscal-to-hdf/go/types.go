@@ -315,19 +315,30 @@ type ControlImplementation struct {
 
 // ImplementedRequirement maps a control to its implementation.
 type ImplementedRequirement struct {
-	UUID       string      `json:"uuid"`
-	ControlID  string      `json:"control-id"`
-	Props      []Property  `json:"props,omitempty"`
-	Statements []Statement `json:"statements,omitempty"`
+	UUID         string        `json:"uuid"`
+	ControlID    string        `json:"control-id"`
+	Description  string        `json:"description,omitempty"`
+	Props        []Property    `json:"props,omitempty"`
+	Statements   []Statement   `json:"statements,omitempty"`
+	ByComponents []ByComponent `json:"by-components,omitempty"`
 }
 
 // Statement describes how a specific control statement is implemented.
 type Statement struct {
-	StatementID string     `json:"statement-id"`
-	UUID        string     `json:"uuid"`
-	Description string     `json:"description,omitempty"`
-	Props       []Property `json:"props,omitempty"`
-	Remarks     string     `json:"remarks,omitempty"`
+	StatementID  string        `json:"statement-id"`
+	UUID         string        `json:"uuid"`
+	Description  string        `json:"description,omitempty"`
+	Props        []Property    `json:"props,omitempty"`
+	Remarks      string        `json:"remarks,omitempty"`
+	ByComponents []ByComponent `json:"by-components,omitempty"`
+}
+
+// ByComponent links a control implementation to a specific system component.
+type ByComponent struct {
+	ComponentUUID string     `json:"component-uuid"`
+	UUID          string     `json:"uuid"`
+	Description   string     `json:"description,omitempty"`
+	Props         []Property `json:"props,omitempty"`
 }
 
 // ---------------------------------------------------------------------------

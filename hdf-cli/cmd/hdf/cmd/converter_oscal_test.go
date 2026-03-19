@@ -112,3 +112,162 @@ func TestConvertOSCALProfile_BadCatalogPath(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to read catalog")
 }
+
+func TestConvertOSCALComponentDefinition(t *testing.T) {
+	inputPath := filepath.Join(oscalFixtureDir, "component-example.json")
+	if _, err := os.Stat(inputPath); err != nil {
+		t.Skip("OSCAL component-definition fixture not available")
+	}
+
+	output := filepath.Join(t.TempDir(), "out.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"convert", "oscal-component-definition", "to", "hdf", inputPath, output})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(output)
+	require.NoError(t, err)
+
+	var baseline hdf.HDFBaseline
+	err = json.Unmarshal(data, &baseline)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, baseline.Name)
+	assert.NotEmpty(t, baseline.Requirements)
+	assert.NotNil(t, baseline.Generator)
+}
+
+func TestConvertOSCALSSP(t *testing.T) {
+	inputPath := filepath.Join(oscalFixtureDir, "ssp-example.json")
+	if _, err := os.Stat(inputPath); err != nil {
+		t.Skip("OSCAL SSP fixture not available")
+	}
+
+	output := filepath.Join(t.TempDir(), "out.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"convert", "oscal-ssp", "to", "hdf", inputPath, output})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(output)
+	require.NoError(t, err)
+
+	var system hdf.HDFSystem
+	err = json.Unmarshal(data, &system)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Enterprise Logging and Auditing System", system.Name)
+	assert.NotEmpty(t, system.Components)
+	assert.NotNil(t, system.Generator)
+}
+
+func TestConvertOSCALAssessmentPlan(t *testing.T) {
+	inputPath := filepath.Join(oscalFixtureDir, "sap-fedramp.json")
+	if _, err := os.Stat(inputPath); err != nil {
+		t.Skip("OSCAL SAP fixture not available")
+	}
+
+	output := filepath.Join(t.TempDir(), "out.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"convert", "oscal-assessment-plan", "to", "hdf", inputPath, output})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(output)
+	require.NoError(t, err)
+
+	var plan hdf.HDFPlan
+	err = json.Unmarshal(data, &plan)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, plan.Name)
+	assert.Contains(t, plan.Name, "fedramp")
+	assert.NotEmpty(t, plan.Assessments)
+	assert.NotNil(t, plan.SystemRef)
+	assert.NotNil(t, plan.Generator)
+}
+
+func TestConvertOSCALAssessmentResults(t *testing.T) {
+	inputPath := filepath.Join(oscalFixtureDir, "sar-fedramp.json")
+	if _, err := os.Stat(inputPath); err != nil {
+		t.Skip("OSCAL SAR fixture not available")
+	}
+
+	output := filepath.Join(t.TempDir(), "out.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"convert", "oscal-assessment-results", "to", "hdf", inputPath, output})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(output)
+	require.NoError(t, err)
+
+	var results hdf.HDFResults
+	err = json.Unmarshal(data, &results)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, results.Baselines)
+	assert.NotEmpty(t, results.Baselines[0].Requirements)
+	assert.NotNil(t, results.Generator)
+	assert.Equal(t, "oscal-assessment-results-to-hdf", results.Generator.Name)
+	assert.NotNil(t, results.DataSource)
+}
+
+func TestConvertOSCALAssessmentResults_SARAlias(t *testing.T) {
+	inputPath := filepath.Join(oscalFixtureDir, "sar-fedramp.json")
+	if _, err := os.Stat(inputPath); err != nil {
+		t.Skip("OSCAL SAR fixture not available")
+	}
+
+	output := filepath.Join(t.TempDir(), "out.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"convert", "oscal-sar", "to", "hdf", inputPath, output})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(output)
+	require.NoError(t, err)
+
+	var results hdf.HDFResults
+	err = json.Unmarshal(data, &results)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, results.Baselines)
+}
+
+func TestConvertOSCALPOAM(t *testing.T) {
+	inputPath := filepath.Join(oscalFixtureDir, "poam-fedramp.json")
+	if _, err := os.Stat(inputPath); err != nil {
+		t.Skip("OSCAL POAM fixture not available")
+	}
+
+	output := filepath.Join(t.TempDir(), "out.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"convert", "oscal-poam", "to", "hdf", inputPath, output})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(output)
+	require.NoError(t, err)
+
+	var amendments hdf.HDFAmendments
+	err = json.Unmarshal(data, &amendments)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, amendments.Name)
+	assert.Contains(t, amendments.Name, "fedramp")
+	assert.NotEmpty(t, amendments.Overrides)
+	assert.NotNil(t, amendments.SystemRef)
+	assert.NotNil(t, amendments.Generator)
+
+	// All overrides should be type "poam"
+	for _, override := range amendments.Overrides {
+		assert.Equal(t, hdf.Poam, override.Type)
+	}
+}
