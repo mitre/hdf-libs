@@ -258,3 +258,22 @@ func TestSubstituteParams_NoMatch(t *testing.T) {
 	result := substituteParams(text, map[string][]string{"x": {"y"}})
 	assert.Equal(t, "No parameters here.", result)
 }
+
+// ---- Red Hat OSCAL profile fixture (real organizational profile) ----
+
+func TestConvertProfileToHDF_RedHatAltersNotSupported(t *testing.T) {
+	// Red Hat FedRAMP High profile uses "alters" directives which our
+	// simple resolver does not support. This tests the clear error message.
+	profile := loadFixture(t, "../fixtures/input/profile-redhat-fedramp-high.json")
+	catalog := loadFixture(t, "../fixtures/input/catalog-800-53-rev5.json")
+	_, err := ConvertProfileToHDF(profile, catalog, "1.0.0")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "alter")
+}
+
+func TestDetectDocumentType_RedHatProfile(t *testing.T) {
+	profile := loadFixture(t, "../fixtures/input/profile-redhat-fedramp-high.json")
+	docType, err := DetectDocumentType(profile)
+	require.NoError(t, err)
+	assert.Equal(t, "profile", docType)
+}
