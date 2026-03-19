@@ -8,7 +8,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type { HdfBaseline, BaselineRequirement } from '@mitre/hdf-schema';
 import type { Description, RequirementGroup } from '@mitre/hdf-schema';
-import type { OscalDocument, Catalog, Control } from './types.js';
+import type { Oscal, Catalog, Control } from './types.js';
 import {
   controlIdToNistTag,
   extractPropValue,
@@ -30,7 +30,7 @@ export async function convertOscalCatalogToHdf(input: string): Promise<string> {
     throw new Error('empty input');
   }
 
-  const doc = parseJSON<OscalDocument>(input);
+  const doc = parseJSON<Oscal>(input);
   if (!doc.catalog) {
     throw new Error(
       "oscal-catalog: input is not a catalog document (root key is not 'catalog')",
@@ -73,7 +73,7 @@ export async function catalogToBaseline(
 
     if (reqIDs.length > 0) {
       groups.push({
-        id: group.id,
+        id: group.id ?? '',
         title: group.title,
         requirements: reqIDs,
       });

@@ -8,15 +8,15 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult } from '@mitre/hdf-schema';
 import type {
-  AssessmentResults,
-  Metadata,
-  ImportAP,
-  Result,
+  SecurityAssessmentResultsSAR,
+  DocumentMetadata,
+  ImportAssessmentPlan,
+  AssessmentResult,
   Finding,
-  FindingTarget,
-  TargetStatus,
+  TargetClass,
+  StatusClass,
   Observation,
-  Risk,
+  IdentifiedRisk,
   Property,
 } from '../../oscal-to-hdf/typescript/types.js';
 
@@ -28,7 +28,7 @@ const nistEnhancementRe = /^([A-Z]{2}-\d+)\s*\((\d+)\)$/;
 
 /** Root wrapper for the output JSON. */
 interface OscalSARDocument {
-  'assessment-results': AssessmentResults;
+  'assessment-results': SecurityAssessmentResultsSAR;
 }
 
 /**
@@ -68,21 +68,21 @@ function buildOSCALDocument(hdfResults: HdfResults): OscalSARDocument {
       : hdfResults.timestamp.toISOString();
   }
 
-  const metadata: Metadata = {
+  const metadata = {
     title: 'HDF Assessment Results Export',
     'last-modified': timestamp,
     version: '1.0.0',
     'oscal-version': OSCAL_VERSION,
-  };
+  } as unknown as DocumentMetadata;
 
-  let importAP: ImportAP;
+  let importAP: ImportAssessmentPlan;
   if (hdfResults.planRef && hdfResults.planRef !== '') {
     importAP = { href: hdfResults.planRef };
   } else {
     importAP = { href: '#' };
   }
 
-  const results: Result[] = [];
+  const results: AssessmentResult[] = [];
   for (const baseline of hdfResults.baselines) {
     results.push(baselineToResult(baseline, timestamp));
   }
@@ -100,7 +100,7 @@ function buildOSCALDocument(hdfResults: HdfResults): OscalSARDocument {
 /**
  * Converts a single EvaluatedBaseline to an OSCAL Result.
  */
-function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Result {
+function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): AssessmentResult {
   let title = baseline.name;
   if (baseline.title && baseline.title !== '') {
     title = baseline.title;
@@ -113,7 +113,7 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Resul
 
   const findings: Finding[] = [];
   const observations: Observation[] = [];
-  const risks: Risk[] = [];
+  const risks: IdentifiedRisk[] = [];
 
   for (const req of baseline.requirements) {
     const { finding, observation, risk } = requirementToFindingSet(req, timestamp);
@@ -126,7 +126,7 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Resul
     }
   }
 
-  const result: Result = {
+  const result = {
     uuid: crypto.randomUUID(),
     title,
     description,
@@ -134,7 +134,7 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Resul
     findings,
     observations,
     risks,
-  };
+  } as unknown as AssessmentResult;
 
   return result;
 }
@@ -145,7 +145,7 @@ function baselineToResult(baseline: EvaluatedBaseline, timestamp: string): Resul
 function requirementToFindingSet(
   req: EvaluatedRequirement,
   timestamp: string,
-): { finding: Finding; observation: Observation | undefined; risk: Risk | undefined } {
+): { finding: Finding; observation: Observation | undefined; risk: IdentifiedRisk | undefined } {
   const controlID = nistTagToControlID(req.id);
   const { state, reason } = aggregateStatus(req.results);
   const findingDesc = extractDefaultDescription(req.descriptions);
@@ -168,24 +168,24 @@ function requirementToFindingSet(
     title = req.title;
   }
 
-  const targetStatus: TargetStatus = { state };
+  const targetStatus: StatusClass = { state } as unknown as StatusClass;
   if (reason) {
     targetStatus.reason = reason;
   }
 
-  const target: FindingTarget = {
+  const target = {
     type: 'objective-id',
     'target-id': controlID,
     status: targetStatus,
-  };
+  } as unknown as TargetClass;
 
-  const finding: Finding = {
+  const finding = {
     uuid: crypto.randomUUID(),
     title,
-    description: findingDesc || undefined,
+    description: findingDesc || '',
     props: props.length > 0 ? props : undefined,
     target,
-  };
+  } as Finding;
 
   // Build observation from requirement results
   let observation: Observation | undefined;
@@ -197,12 +197,12 @@ function requirementToFindingSet(
       description: obsDesc,
       methods: ['TEST'],
       collected: timestamp,
-    };
+    } as unknown as Observation;
     finding['related-observations'] = [{ 'observation-uuid': obsUUID }];
   }
 
   // Build risk from impact
-  let risk: Risk | undefined;
+  let risk: IdentifiedRisk | undefined;
   if (req.impact > 0) {
     const riskUUID = crypto.randomUUID();
     const severity = impactToSeverity(req.impact);
@@ -210,6 +210,7 @@ function requirementToFindingSet(
       uuid: riskUUID,
       title: `Risk for ${req.id}`,
       description: `Impact: ${req.impact.toFixed(1)} (${severity})`,
+      statement: `Impact: ${req.impact.toFixed(1)} (${severity})`,
       status: riskStatusFromState(state),
       characterizations: [
         {
@@ -222,7 +223,7 @@ function requirementToFindingSet(
           ],
         },
       ],
-    };
+    } as unknown as IdentifiedRisk;
     finding['related-risks'] = [{ 'risk-uuid': riskUUID }];
   }
 

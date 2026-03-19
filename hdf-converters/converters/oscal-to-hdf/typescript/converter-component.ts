@@ -8,7 +8,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type { HdfBaseline, BaselineRequirement } from '@mitre/hdf-schema';
 import type { Description } from '@mitre/hdf-schema';
-import type { OscalDocument, ImplementedRequirement, OscalComponent, ComponentDefinition } from './types.js';
+import type { Oscal, ImplementedRequirementElement, ComponentDefinitionComponent, ComponentDefinition } from './types.js';
 import { controlIdToNistTag, extractMetadata, toKebabCase } from './shared.js';
 
 /**
@@ -24,7 +24,7 @@ export async function convertOscalComponentToHdf(input: string): Promise<string>
     throw new Error('empty input');
   }
 
-  const doc = parseJSON<OscalDocument>(input);
+  const doc = parseJSON<Oscal>(input);
   if (!doc['component-definition']) {
     throw new Error(
       "oscal-component-definition: input is not a component-definition document (root key is not 'component-definition')",
@@ -68,7 +68,7 @@ export async function convertOscalComponentToHdf(input: string): Promise<string>
 
 /** Converts a single ImplementedRequirement to a BaselineRequirement. */
 function implementedRequirementToBaselineRequirement(
-  ir: ImplementedRequirement,
+  ir: ImplementedRequirementElement,
 ): BaselineRequirement {
   const nistTag = controlIdToNistTag(ir['control-id']);
 
@@ -111,7 +111,7 @@ function implementedRequirementToBaselineRequirement(
 
 /** Derives a baseline name from the component or component-definition metadata. */
 function componentBaselineName(
-  comp: OscalComponent,
+  comp: ComponentDefinitionComponent,
   compDef: ComponentDefinition,
 ): string {
   const name = comp.title || compDef.metadata.title;

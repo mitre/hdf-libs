@@ -20,12 +20,12 @@ import {
   type Description,
 } from '@mitre/hdf-schema';
 import type {
-  OscalDocument,
-  AssessmentResults,
-  Result,
+  Oscal,
+  SecurityAssessmentResultsSAR,
+  AssessmentResult,
   Finding,
   Observation,
-  Risk,
+  IdentifiedRisk,
 } from './types.js';
 import {
   controlIdToNistTag,
@@ -49,7 +49,7 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
     throw new Error('empty input');
   }
 
-  const doc = parseJSON<OscalDocument>(input);
+  const doc = parseJSON<Oscal>(input);
   if (!doc['assessment-results']) {
     throw new Error(
       "oscal-assessment-results: input is not an assessment-results document (root key is not 'assessment-results')",
@@ -95,8 +95,8 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
 }
 
 async function resultToEvaluatedBaseline(
-  result: Result,
-  sar: AssessmentResults,
+  result: AssessmentResult,
+  sar: SecurityAssessmentResultsSAR,
   rawInput: string,
 ): Promise<EvaluatedBaseline> {
   const checksum = await inputChecksum(rawInput);
@@ -149,8 +149,8 @@ function findingsToEvaluatedRequirement(
   controlId: string,
   findings: Finding[],
   obsMap: Map<string, Observation>,
-  riskMap: Map<string, Risk>,
-  result: Result,
+  riskMap: Map<string, IdentifiedRisk>,
+  result: AssessmentResult,
 ): EvaluatedRequirement {
   const nistTag = controlIdToNistTag(controlId);
 
@@ -180,8 +180,8 @@ function findingsToEvaluatedRequirement(
 function findingToRequirementResult(
   f: Finding,
   obsMap: Map<string, Observation>,
-  riskMap: Map<string, Risk>,
-  result: Result,
+  riskMap: Map<string, IdentifiedRisk>,
+  result: AssessmentResult,
 ): RequirementResult {
   const status = mapFindingStatus(f);
   const codeDesc = buildCodeDesc(f, obsMap);
@@ -244,7 +244,7 @@ function buildCodeDesc(f: Finding, obsMap: Map<string, Observation>): string {
   return parts.join('; ');
 }
 
-function buildRiskMessage(f: Finding, riskMap: Map<string, Risk>): string {
+function buildRiskMessage(f: Finding, riskMap: Map<string, IdentifiedRisk>): string {
   const messages: string[] = [];
 
   for (const ref of f['related-risks'] ?? []) {
@@ -265,7 +265,7 @@ function buildRiskMessage(f: Finding, riskMap: Map<string, Risk>): string {
 
 function sarFindingsImpact(
   findings: Finding[],
-  riskMap: Map<string, Risk>,
+  riskMap: Map<string, IdentifiedRisk>,
 ): number {
   let highestImpact = -1.0;
 
@@ -336,15 +336,15 @@ function buildObservationMap(observations: Observation[]): Map<string, Observati
   return m;
 }
 
-function buildRiskMap(risks: Risk[]): Map<string, Risk> {
-  const m = new Map<string, Risk>();
+function buildRiskMap(risks: IdentifiedRisk[]): Map<string, IdentifiedRisk> {
+  const m = new Map<string, IdentifiedRisk>();
   for (const risk of risks) {
     m.set(risk.uuid, risk);
   }
   return m;
 }
 
-function parseResultStartTime(result: Result): Date {
+function parseResultStartTime(result: AssessmentResult): Date {
   if (result.start) {
     const t = new Date(result.start);
     if (!isNaN(t.getTime())) {
@@ -354,7 +354,7 @@ function parseResultStartTime(result: Result): Date {
   return new Date(0);
 }
 
-function sarBaselineName(result: Result, sar: AssessmentResults): string {
+function sarBaselineName(result: AssessmentResult, sar: SecurityAssessmentResultsSAR): string {
   const title = result.title || sar.metadata.title;
   return toKebabCase(title, 'oscal-assessment-results');
 }

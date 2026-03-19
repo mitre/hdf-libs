@@ -16,11 +16,11 @@ import {
   ComponentType,
 } from '@mitre/hdf-schema';
 import type {
-  OscalDocument,
-  SystemSecurityPlan,
+  Oscal,
+  SystemSecurityPlanSSP,
   SecurityImpactLevel,
-  SystemComponent,
-  SSPControlImpl,
+  AssessmentAssetsComponent,
+  ControlImplementationClass,
 } from './types.js';
 import { controlIdToNistTag, extractMetadata } from './shared.js';
 
@@ -37,7 +37,7 @@ export async function convertOscalSspToHdf(input: string): Promise<string> {
     throw new Error('empty input');
   }
 
-  const doc = parseJSON<OscalDocument>(input);
+  const doc = parseJSON<Oscal>(input);
   if (!doc['system-security-plan']) {
     throw new Error(
       "oscal-ssp: input is not a system-security-plan document (root key is not 'system-security-plan')",
@@ -116,7 +116,7 @@ export async function convertOscalSspToHdf(input: string): Promise<string> {
   return JSON.stringify(system, null, 2);
 }
 
-function sspSystemName(ssp: SystemSecurityPlan): string {
+function sspSystemName(ssp: SystemSecurityPlanSSP): string {
   const sc = ssp['system-characteristics'];
   if (sc?.['system-name']) {
     return sc['system-name'];
@@ -221,7 +221,7 @@ function sspAuthorizationStatus(state: string): AuthorizationStatus | null {
 }
 
 function buildComponentControlMap(
-  ci: SSPControlImpl | undefined,
+  ci: ControlImplementationClass | undefined,
 ): Map<string, Set<string>> {
   const result = new Map<string, Set<string>>();
   if (!ci) return result;
@@ -259,7 +259,7 @@ function addComponentControl(
 }
 
 function sspComponentToHDFComponent(
-  sc: SystemComponent,
+  sc: AssessmentAssetsComponent,
   componentControls: Map<string, Set<string>>,
 ): HdfComponent {
   const comp: HdfComponent = {

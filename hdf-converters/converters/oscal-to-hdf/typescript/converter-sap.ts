@@ -13,10 +13,10 @@ import type {
 } from '@mitre/hdf-schema';
 import { PlanType } from '@mitre/hdf-schema';
 import type {
-  OscalDocument,
-  AssessmentPlan,
-  ControlSelection,
-  ControlObjective,
+  Oscal,
+  SecurityAssessmentPlanSAP,
+  AssessedControls,
+  ReferencedControlObjectives,
 } from './types.js';
 import {
   controlIdToNistTag,
@@ -41,7 +41,7 @@ export async function convertOscalSapToHdf(input: string): Promise<string> {
     throw new Error('empty input');
   }
 
-  const doc = parseJSON<OscalDocument>(input);
+  const doc = parseJSON<Oscal>(input);
   if (!doc['assessment-plan']) {
     throw new Error(
       "oscal-assessment-plan: input is not an assessment-plan document (root key is not 'assessment-plan')",
@@ -81,7 +81,7 @@ export async function convertOscalSapToHdf(input: string): Promise<string> {
   return JSON.stringify(plan, null, 2);
 }
 
-function buildAssessments(ap: AssessmentPlan): Assessment[] {
+function buildAssessments(ap: SecurityAssessmentPlanSAP): Assessment[] {
   if (!ap['reviewed-controls']) {
     return [{ baselineRef: 'oscal-assessment-plan' }];
   }
@@ -125,7 +125,7 @@ function buildAssessments(ap: AssessmentPlan): Assessment[] {
   return assessments;
 }
 
-function deriveBaselineRef(ap: AssessmentPlan, cs: ControlSelection): string {
+function deriveBaselineRef(ap: SecurityAssessmentPlanSAP, cs: AssessedControls): string {
   if (cs['include-all'] !== undefined) {
     if (ap['import-ssp']?.href) {
       return ap['import-ssp'].href;
@@ -146,8 +146,8 @@ function deriveBaselineRef(ap: AssessmentPlan, cs: ControlSelection): string {
 }
 
 function deriveBaselineRefFromObjectives(
-  ap: AssessmentPlan,
-  co: ControlObjective,
+  ap: SecurityAssessmentPlanSAP,
+  co: ReferencedControlObjectives,
 ): string {
   if (co['include-all'] !== undefined) {
     if (ap['import-ssp']?.href) {
@@ -158,7 +158,7 @@ function deriveBaselineRefFromObjectives(
 
   if (co['include-objectives'] && co['include-objectives'].length > 0) {
     const ids = co['include-objectives'].map(sc =>
-      extractControlIdFromObjectiveId(sc['control-id']),
+      extractControlIdFromObjectiveId(sc['objective-id']),
     );
     return controlIdsToNistTags(ids).join(',');
   }
@@ -166,7 +166,7 @@ function deriveBaselineRefFromObjectives(
   return 'oscal-assessment-plan';
 }
 
-function extractRunnerConfig(ap: AssessmentPlan): RunnerConfig | null {
+function extractRunnerConfig(ap: SecurityAssessmentPlanSAP): RunnerConfig | null {
   const assets = ap['assessment-assets'];
   if (!assets) return null;
 
@@ -198,7 +198,7 @@ function extractRunnerConfig(ap: AssessmentPlan): RunnerConfig | null {
 }
 
 function buildTargetSelector(
-  ap: AssessmentPlan,
+  ap: SecurityAssessmentPlanSAP,
 ): Record<string, string> | null {
   const subjects = ap['assessment-subjects'];
   if (!subjects || subjects.length === 0) return null;
@@ -222,7 +222,7 @@ function buildTargetSelector(
   return selector;
 }
 
-function determinePlanType(ap: AssessmentPlan): PlanType | undefined {
+function determinePlanType(ap: SecurityAssessmentPlanSAP): PlanType | undefined {
   const aType = extractPropValue(ap.metadata.props, 'assessment-type');
   if (aType) {
     switch (aType.toLowerCase()) {
@@ -240,7 +240,7 @@ function determinePlanType(ap: AssessmentPlan): PlanType | undefined {
   return undefined;
 }
 
-function buildPlanDescription(ap: AssessmentPlan): string | undefined {
+function buildPlanDescription(ap: SecurityAssessmentPlanSAP): string | undefined {
   const parts: string[] = [];
 
   if (ap.metadata.remarks) {

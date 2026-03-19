@@ -21,11 +21,11 @@ import {
 // We use string literals with type casts for these fields.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type {
-  OscalDocument,
-  PlanOfActionAndMilestones,
+  Oscal,
+  PlanOfActionAndMilestonesPOAM,
   POAMItem,
-  Risk,
-  Metadata,
+  IdentifiedRisk,
+  DocumentMetadata,
 } from './types.js';
 import {
   controlIdToNistTag,
@@ -48,7 +48,7 @@ export async function convertOscalPoamToHdf(input: string): Promise<string> {
     throw new Error('empty input');
   }
 
-  const doc = parseJSON<OscalDocument>(input);
+  const doc = parseJSON<Oscal>(input);
   if (!doc['plan-of-action-and-milestones']) {
     throw new Error(
       "oscal-poam: input is not a plan-of-action-and-milestones document (root key is not 'plan-of-action-and-milestones')",
@@ -90,8 +90,8 @@ export async function convertOscalPoamToHdf(input: string): Promise<string> {
   return JSON.stringify(amendments, null, 2);
 }
 
-function buildRiskMap(risks: Risk[]): Map<string, Risk> {
-  const m = new Map<string, Risk>();
+function buildRiskMap(risks: IdentifiedRisk[]): Map<string, IdentifiedRisk> {
+  const m = new Map<string, IdentifiedRisk>();
   for (const risk of risks) {
     m.set(risk.uuid, risk);
   }
@@ -100,8 +100,8 @@ function buildRiskMap(risks: Risk[]): Map<string, Risk> {
 
 function poamItemToOverride(
   item: POAMItem,
-  riskMap: Map<string, Risk>,
-  poam: PlanOfActionAndMilestones,
+  riskMap: Map<string, IdentifiedRisk>,
+  poam: PlanOfActionAndMilestonesPOAM,
 ): StandaloneOverride {
   return {
     type: OverrideType.Poam,
@@ -117,7 +117,7 @@ function poamItemToOverride(
 
 function extractRequirementIdFromPOAMItem(
   item: POAMItem,
-  riskMap: Map<string, Risk>,
+  riskMap: Map<string, IdentifiedRisk>,
 ): string {
   // Check related risks for impacted-control-id
   for (const rr of item['related-risks'] ?? []) {
@@ -151,7 +151,7 @@ function poamItemReason(item: POAMItem): string {
 
 function poamItemStatus(
   item: POAMItem,
-  riskMap: Map<string, Risk>,
+  riskMap: Map<string, IdentifiedRisk>,
 ): any {
   for (const rr of item['related-risks'] ?? []) {
     const riskUuid = rr['risk-uuid'];
@@ -170,7 +170,7 @@ function poamItemStatus(
 }
 
 function poamItemAppliedBy(
-  poam: PlanOfActionAndMilestones,
+  poam: PlanOfActionAndMilestonesPOAM,
 ): StandaloneOverride['appliedBy'] {
   // Look for prepared-by in responsible-parties
   const rps = poam.metadata['responsible-parties'];
@@ -199,7 +199,7 @@ function poamItemAppliedBy(
   };
 }
 
-function poamItemAppliedAt(poam: PlanOfActionAndMilestones): Date {
+function poamItemAppliedAt(poam: PlanOfActionAndMilestonesPOAM): Date {
   if (poam.metadata['last-modified']) {
     const t = new Date(poam.metadata['last-modified']);
     if (!isNaN(t.getTime())) {
@@ -218,7 +218,7 @@ function poamItemExpiresAt(): Date {
 
 function extractMilestones(
   item: POAMItem,
-  riskMap: Map<string, Risk>,
+  riskMap: Map<string, IdentifiedRisk>,
 ): HdfMilestone[] {
   const milestones: HdfMilestone[] = [];
 
@@ -246,7 +246,7 @@ function extractMilestones(
 }
 
 function extractAppliedBy(
-  meta: Metadata,
+  meta: DocumentMetadata,
 ): HdfAmendments['appliedBy'] {
   const rps = meta['responsible-parties'];
   if (rps) {

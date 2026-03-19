@@ -4,7 +4,7 @@
  * Mirrors the Go helpers in converters/oscal-to-hdf/go/shared.go.
  */
 
-import type { Property, Part, Characterization, Metadata } from './types.js';
+import type { Property, Part, Characterization, DocumentMetadata } from './types.js';
 
 const controlEnhancementRe = /^([a-z]{2}-\d+)\.(\d+)$/;
 const objectiveIDRe = /^([a-z]{2}-\d+(?:\.\d+)?)/;
@@ -189,12 +189,12 @@ export interface MetadataInfo {
 }
 
 /** Pulls common fields from OSCAL metadata. */
-export function extractMetadata(m: Metadata): MetadataInfo {
+export function extractMetadata(m: DocumentMetadata): MetadataInfo {
   return {
     title: m.title,
     version: m.version,
     oscalVersion: m['oscal-version'],
-    lastModified: m['last-modified'],
+    lastModified: String(m['last-modified']),
   };
 }
 

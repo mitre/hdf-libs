@@ -7,14 +7,14 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import type { HdfAmendments, StandaloneOverride } from '@mitre/hdf-schema';
 import type {
-  OscalDocument,
-  Metadata,
-  ImportSSP,
-  PlanOfActionAndMilestones,
+  Oscal,
+  DocumentMetadata,
+  ImportSystemSecurityPlan,
+  PlanOfActionAndMilestonesPOAM,
   POAMItem,
-  Risk,
+  IdentifiedRisk,
   Property,
-  Remediation,
+  RiskResponse,
   RiskLog,
 } from '../../oscal-to-hdf/typescript/types.js';
 
@@ -44,7 +44,7 @@ export async function convertHdfToOscalPoam(input: string): Promise<string> {
 
   const poam = amendmentsToPOAM(amendments);
 
-  const doc: OscalDocument = {
+  const doc: Oscal = {
     'plan-of-action-and-milestones': poam,
   };
 
@@ -54,15 +54,15 @@ export async function convertHdfToOscalPoam(input: string): Promise<string> {
 /**
  * Converts parsed HdfAmendments to an OSCAL PlanOfActionAndMilestones.
  */
-function amendmentsToPOAM(amendments: HdfAmendments): PlanOfActionAndMilestones {
+function amendmentsToPOAM(amendments: HdfAmendments): PlanOfActionAndMilestonesPOAM {
   const now = new Date().toISOString();
 
-  const metadata: Metadata = {
+  const metadata = {
     title: amendments.name,
     'last-modified': now,
     version: '1.0.0',
     'oscal-version': OSCAL_VERSION,
-  };
+  } as unknown as DocumentMetadata;
 
   // Add responsible parties from appliedBy
   if (amendments.appliedBy) {
@@ -70,10 +70,10 @@ function amendmentsToPOAM(amendments: HdfAmendments): PlanOfActionAndMilestones 
     metadata.parties = [
       {
         uuid: partyUUID,
-        type: 'person',
+        type: 'person' as unknown,
         name: amendments.appliedBy.identifier,
       },
-    ];
+    ] as unknown as DocumentMetadata['parties'];
     metadata['responsible-parties'] = [
       {
         'role-id': 'prepared-by',
@@ -89,16 +89,16 @@ function amendmentsToPOAM(amendments: HdfAmendments): PlanOfActionAndMilestones 
   }
 
   // Build import-ssp
-  let importSSP: ImportSSP;
+  let importSSP: ImportSystemSecurityPlan;
   if (amendments.systemRef && amendments.systemRef !== '') {
-    importSSP = { href: amendments.systemRef };
+    importSSP = { href: amendments.systemRef } as ImportSystemSecurityPlan;
   } else {
-    importSSP = { href: '#' };
+    importSSP = { href: '#' } as ImportSystemSecurityPlan;
   }
 
   // Convert overrides to poam-items and collect risks
   const poamItems: POAMItem[] = [];
-  const risks: Risk[] = [];
+  const risks: IdentifiedRisk[] = [];
 
   for (const override of amendments.overrides) {
     const { item, itemRisks } = overrideToPOAMItem(override);
@@ -118,7 +118,7 @@ function amendmentsToPOAM(amendments: HdfAmendments): PlanOfActionAndMilestones 
 /**
  * Converts a single StandaloneOverride to a POAMItem and its associated Risk(s).
  */
-function overrideToPOAMItem(override: StandaloneOverride): { item: POAMItem; itemRisks: Risk[] } {
+function overrideToPOAMItem(override: StandaloneOverride): { item: POAMItem; itemRisks: IdentifiedRisk[] } {
   const riskUUID = crypto.randomUUID();
 
   // Map HDF status to OSCAL risk status
@@ -136,7 +136,7 @@ function overrideToPOAMItem(override: StandaloneOverride): { item: POAMItem; ite
   ];
 
   // Build remediations from milestones
-  const remediations: Remediation[] = [];
+  const remediations: RiskResponse[] = [];
   if (override.milestones) {
     for (const ms of override.milestones) {
       remediations.push({
@@ -164,19 +164,20 @@ function overrideToPOAMItem(override: StandaloneOverride): { item: POAMItem; ite
             'status-change': riskStatus,
           },
         ],
-      };
+      } as unknown as RiskLog;
     }
   }
 
-  const risk: Risk = {
+  const risk = {
     uuid: riskUUID,
     title: override.requirementId,
     description: override.reason,
+    statement: override.reason,
     status: riskStatus,
     props: riskProps,
     remediations: remediations.length > 0 ? remediations : undefined,
     'risk-log': riskLog,
-  };
+  } as unknown as IdentifiedRisk;
 
   const item: POAMItem = {
     uuid: crypto.randomUUID(),

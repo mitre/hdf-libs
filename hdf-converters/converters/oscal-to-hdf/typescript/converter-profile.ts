@@ -19,13 +19,13 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
-  OscalDocument,
+  Oscal,
   Catalog,
   Control,
-  Group,
-  Import,
+  CatalogControlGroup,
+  ImportResource,
   Part,
-  SetParameter,
+  ParameterSetting,
 } from './types.js';
 import { catalogToBaseline } from './converter-catalog.js';
 
@@ -50,7 +50,7 @@ export async function convertOscalProfileToHdf(
   }
 
   // Parse profile
-  const profileDoc = parseJSON<OscalDocument>(profileInput);
+  const profileDoc = parseJSON<Oscal>(profileInput);
   if (!profileDoc.profile) {
     throw new Error(
       "oscal-profile: input is not a profile document (root key is not 'profile')",
@@ -59,7 +59,7 @@ export async function convertOscalProfileToHdf(
   const profile = profileDoc.profile;
 
   // Parse catalog
-  const catalogDoc = parseJSON<OscalDocument>(catalogInput);
+  const catalogDoc = parseJSON<Oscal>(catalogInput);
   if (!catalogDoc.catalog) {
     throw new Error(
       "oscal-profile: catalog input is not a catalog document (root key is not 'catalog')",
@@ -113,7 +113,7 @@ export async function convertOscalProfileToHdf(
 }
 
 /** Extracts all control IDs from an import's include-controls. Returns null if include all. */
-function collectIncludedIDs(imp: Import): Set<string> | null {
+function collectIncludedIDs(imp: ImportResource): Set<string> | null {
   const includeControls = imp['include-controls'];
   if (!includeControls || includeControls.length === 0) {
     return null; // include all
@@ -129,7 +129,7 @@ function collectIncludedIDs(imp: Import): Set<string> | null {
 }
 
 /** Extracts all control IDs from an import's exclude-controls. */
-function collectExcludedIDs(imp: Import): Set<string> | null {
+function collectExcludedIDs(imp: ImportResource): Set<string> | null {
   const excludeControls = imp['exclude-controls'];
   if (!excludeControls || excludeControls.length === 0) {
     return null;
@@ -178,12 +178,12 @@ function filterCatalog(
 }
 
 function filterGroupControls(
-  group: Group,
+  group: CatalogControlGroup,
   includedIDs: Set<string> | null,
   excludedIDs: Set<string> | null,
   includeAll: boolean,
-): Group {
-  const filtered: Group = {
+): CatalogControlGroup {
+  const filtered: CatalogControlGroup = {
     id: group.id,
     class: group.class,
     title: group.title,
@@ -246,14 +246,16 @@ function shouldIncludeControl(
 /** Applies set-parameters from the profile's modify section to the resolved catalog. */
 function applyParameterOverrides(
   catalog: Catalog,
-  setParams: SetParameter[],
+  setParams: ParameterSetting[],
 ): void {
   if (setParams.length === 0) return;
 
   // Build param-id -> values lookup
   const overrides = new Map<string, string[]>();
   for (const sp of setParams) {
-    overrides.set(sp['param-id'], sp.values ?? []);
+    if (sp['param-id']) {
+      overrides.set(sp['param-id'], sp.values ?? []);
+    }
   }
 
   // Apply to all controls in groups
@@ -281,6 +283,7 @@ function applyParamOverridesToControl(
 ): void {
   if (ctrl.params) {
     for (const param of ctrl.params) {
+      if (!param.id) continue;
       const values = overrides.get(param.id);
       if (values) {
         param.label = values.join(', ');

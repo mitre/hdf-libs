@@ -5,7 +5,7 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
-import type { OscalDocument } from './types.js';
+import type { Oscal } from './types.js';
 
 /** The 7 valid OSCAL document type strings. */
 export type OscalDocumentType =
@@ -24,7 +24,7 @@ export type OscalDocumentType =
  * @throws Error if the input is not valid OSCAL
  */
 export function detectOscalDocumentType(input: string): OscalDocumentType {
-  const doc = parseJSON<OscalDocument>(input);
+  const doc = parseJSON<Oscal>(input);
 
   if (doc.catalog) return 'catalog';
   if (doc.profile) return 'profile';
