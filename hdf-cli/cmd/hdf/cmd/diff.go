@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
@@ -45,6 +46,9 @@ type exitCodeError struct {
 func (e *exitCodeError) Error() string { return e.message }
 func (e *exitCodeError) ExitCode() int { return e.code }
 
+// groupByBaseline is the key value for grouping by baseline name.
+const groupByBaselineKey = "baseline"
+
 // diffState represents the classification of a requirement between two scans.
 type diffState string
 
@@ -64,6 +68,7 @@ type diffRequirement struct {
 	OldStatus string    `json:"oldStatus,omitempty"`
 	NewStatus string    `json:"newStatus,omitempty"`
 	Title     string    `json:"title,omitempty"`
+	Baseline  string    `json:"baseline,omitempty"` // baseline name this requirement belongs to
 }
 
 // diffSummary holds the aggregate counts for a comparison.
@@ -77,12 +82,23 @@ type diffSummary struct {
 	Updated   int `json:"updated"`
 }
 
+// componentSummary holds per-component compliance information for system-aware diffs.
+type componentSummary struct {
+	Name            string      `json:"name"`
+	BaselineRefs    []string    `json:"baselineRefs"`
+	Summary         diffSummary `json:"summary"`
+	OldCompliance   float64     `json:"oldCompliance"`
+	NewCompliance   float64     `json:"newCompliance"`
+	ComplianceDelta float64     `json:"complianceDelta"`
+}
+
 // diffResult is the full output of a diff operation.
 type diffResult struct {
-	FormatVersion  string            `json:"formatVersion"`
-	ComparisonMode string            `json:"comparisonMode"`
-	Summary        diffSummary       `json:"summary"`
-	Requirements   []diffRequirement `json:"requirements"`
+	FormatVersion      string             `json:"formatVersion"`
+	ComparisonMode     string             `json:"comparisonMode"`
+	Summary            diffSummary        `json:"summary"`
+	Requirements       []diffRequirement  `json:"requirements"`
+	ComponentSummaries []componentSummary `json:"componentSummaries,omitempty"`
 }
 
 // diffFlags holds the local flags for the diff command.
@@ -98,6 +114,8 @@ type diffFlags struct {
 	quiet            bool
 	stat             bool
 	nameOnly         bool
+	system           string
+	groupBy          string
 }
 
 // NewDiffCmd creates a new diff command with fresh state.
@@ -140,7 +158,9 @@ Examples:
   hdf diff scan-before.json scan-after.json --detailed-exitcode
   hdf diff scan-before.json scan-after.json -q           # quiet: exit code only
   hdf diff scan-before.json scan-after.json --stat        # summary counts only
-  hdf diff scan-before.json scan-after.json --name-only   # changed requirement IDs only`,
+  hdf diff scan-before.json scan-after.json --name-only   # changed requirement IDs only
+  hdf diff old.json new.json --system system.json         # component-aware comparison
+  hdf diff old.json new.json --group-by baseline          # group by baseline name`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDiff(cmd, args, &flags)
@@ -159,86 +179,115 @@ Examples:
 	cmd.Flags().BoolVarP(&flags.quiet, "quiet", "q", false, "Suppress output, return exit code only (implies --exit-code)")
 	cmd.Flags().BoolVar(&flags.stat, "stat", false, "Show summary counts only (like git diff --stat)")
 	cmd.Flags().BoolVar(&flags.nameOnly, "name-only", false, "List only changed requirement IDs")
+	cmd.Flags().StringVar(&flags.system, "system", "", "System document for component-aware comparison")
+	cmd.Flags().StringVar(&flags.groupBy, "group-by", "", "Group results by label key (e.g., baseline)")
 
 	return cmd
 }
 
 func runDiff(_ *cobra.Command, args []string, flags *diffFlags) error {
+	if flags.system != "" && flags.groupBy != "" {
+		return fmt.Errorf("--system and --group-by are mutually exclusive")
+	}
+
 	oldFile := args[0]
 	newFile := args[1]
 
-	// Read and parse old file
-	oldData, err := readInputFile(oldFile)
+	oldResults, newResults, err := loadDiffInputs(oldFile, newFile)
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
-	oldResults, err := parseHDFResults(oldData)
-	if err != nil {
-		printError(fmt.Sprintf("Failed to parse old HDF file: %v", err))
-		return err
-	}
-
-	// Read and parse new file
-	newData, err := readInputFile(newFile)
-	if err != nil {
-		printError(err.Error())
-		return err
-	}
-
-	newResults, err := parseHDFResults(newData)
-	if err != nil {
-		printError(fmt.Sprintf("Failed to parse new HDF file: %v", err))
-		return err
-	}
-
-	// Perform comparison
 	result := compareHDFResults(oldResults, newResults)
 
-	// Apply filters
+	if err := applyComponentGrouping(flags, oldResults, newResults, &result); err != nil {
+		printError(err.Error())
+		return err
+	}
+
 	filtered := applyDiffFilters(result, flags)
 
-	// --quiet implies --exit-code and suppresses all output
 	if flags.quiet {
 		flags.exitCode = true
 	}
-
-	// Output (unless --quiet)
 	if !flags.quiet {
-		switch {
-		case flags.nameOnly:
-			outputDiffNameOnly(filtered)
-		case flags.stat:
-			outputDiffSummary(result.Summary)
-		case jsonOutput || flags.format == "json":
-			if err := outputDiffJSON(filtered); err != nil {
-				return err
-			}
-		case flags.format == "markdown":
-			outputDiffMarkdown(filtered, oldFile, newFile)
-		default:
-			outputDiffTable(filtered, oldFile, newFile)
+		if err := renderDiffOutput(filtered, flags, oldFile, newFile); err != nil {
+			return err
 		}
 	}
 
-	// Exit code handling: --detailed-exitcode takes precedence over --exit-code.
+	return computeDiffExitCode(result.Summary, flags)
+}
+
+// loadDiffInputs reads and parses the old and new HDF results files.
+func loadDiffInputs(oldFile, newFile string) (hdf.HdfResults, hdf.HdfResults, error) {
+	oldData, err := readInputFile(oldFile)
+	if err != nil {
+		printError(err.Error())
+		return hdf.HdfResults{}, hdf.HdfResults{}, err
+	}
+	oldResults, err := parseHDFResults(oldData)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to parse old HDF file: %v", err))
+		return hdf.HdfResults{}, hdf.HdfResults{}, err
+	}
+	newData, err := readInputFile(newFile)
+	if err != nil {
+		printError(err.Error())
+		return hdf.HdfResults{}, hdf.HdfResults{}, err
+	}
+	newResults, err := parseHDFResults(newData)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to parse new HDF file: %v", err))
+		return hdf.HdfResults{}, hdf.HdfResults{}, err
+	}
+	return oldResults, newResults, nil
+}
+
+// renderDiffOutput writes the diff output in the requested format.
+func renderDiffOutput(filtered diffResult, flags *diffFlags, oldFile, newFile string) error {
+	switch {
+	case flags.nameOnly:
+		outputDiffNameOnly(filtered)
+	case flags.stat:
+		outputDiffSummary(filtered.Summary)
+	case jsonOutput || flags.format == "json":
+		if err := outputDiffJSON(filtered); err != nil {
+			return err
+		}
+	case flags.format == "markdown":
+		outputDiffMarkdown(filtered, oldFile, newFile)
+		outputComponentSummariesIfPresent(filtered.ComponentSummaries)
+	default:
+		outputDiffTable(filtered, oldFile, newFile)
+		outputComponentSummariesIfPresent(filtered.ComponentSummaries)
+	}
+	return nil
+}
+
+// outputComponentSummariesIfPresent prints component summaries when they exist.
+func outputComponentSummariesIfPresent(summaries []componentSummary) {
+	if len(summaries) > 0 {
+		fmt.Println()
+		outputComponentSummaries(summaries)
+	}
+}
+
+// computeDiffExitCode returns an exit code error if --exit-code or --detailed-exitcode is set.
+func computeDiffExitCode(summary diffSummary, flags *diffFlags) error {
 	if flags.detailedExitCode {
-		code := computeDetailedExitCode(result.Summary)
+		code := computeDetailedExitCode(summary)
 		if code != 0 {
 			return &exitCodeError{code: code, message: fmt.Sprintf("detailed exit code: %d", code)}
 		}
 		return nil
 	}
-
 	if flags.exitCode {
-		code := computeBasicExitCode(result.Summary)
+		code := computeBasicExitCode(summary)
 		if code != 0 {
 			return &exitCodeError{code: code, message: "differences found"}
 		}
-		return nil
 	}
-
 	return nil
 }
 
@@ -248,6 +297,10 @@ func compareHDFResults(oldResults, newResults hdf.HdfResults) diffResult {
 	// Build maps of requirement ID → requirement
 	oldMap := buildRequirementMap(oldResults)
 	newMap := buildRequirementMap(newResults)
+
+	// Build baseline membership maps (requirement ID → baseline name)
+	oldBaselineMap := buildRequirementBaselineMap(oldResults)
+	newBaselineMap := buildRequirementBaselineMap(newResults)
 
 	var requirements []diffRequirement
 
@@ -273,6 +326,13 @@ func compareHDFResults(oldResults, newResults hdf.HdfResults) diffResult {
 
 		var dr diffRequirement
 		dr.ID = id
+
+		// Resolve baseline name: prefer new, fall back to old
+		if b, ok := newBaselineMap[id]; ok {
+			dr.Baseline = b
+		} else if b, ok := oldBaselineMap[id]; ok {
+			dr.Baseline = b
+		}
 
 		switch {
 		case inOld && !inNew:
@@ -317,6 +377,17 @@ func buildRequirementMap(results hdf.HdfResults) map[string]hdf.EvaluatedRequire
 		}
 	}
 	return reqMap
+}
+
+// buildRequirementBaselineMap returns a map from requirement ID to baseline name.
+func buildRequirementBaselineMap(results hdf.HdfResults) map[string]string {
+	m := make(map[string]string)
+	for _, baseline := range results.Baselines {
+		for _, req := range baseline.Requirements {
+			m[req.ID] = baseline.Name
+		}
+	}
+	return m
 }
 
 // classifyChange determines the diff state based on old and new status values.
@@ -401,10 +472,11 @@ func applyDiffFilters(result diffResult, flags *diffFlags) diffResult {
 	}
 
 	return diffResult{
-		FormatVersion:  result.FormatVersion,
-		ComparisonMode: result.ComparisonMode,
-		Summary:        buildDiffSummary(filtered),
-		Requirements:   filtered,
+		FormatVersion:      result.FormatVersion,
+		ComparisonMode:     result.ComparisonMode,
+		Summary:            buildDiffSummary(filtered),
+		Requirements:       filtered,
+		ComponentSummaries: result.ComponentSummaries,
 	}
 }
 
@@ -565,4 +637,285 @@ func truncate(s string, maxLen int) string {
 		return s[:maxLen]
 	}
 	return s[:maxLen-3] + "..."
+}
+
+// --- System-aware grouping ---
+
+// systemDocument represents the minimal structure of a system document needed for grouping.
+type systemDocument struct {
+	Name       string            `json:"name"`
+	Components []systemComponent `json:"components"`
+}
+
+// systemComponent represents a component in a system document.
+type systemComponent struct {
+	Name         string   `json:"name"`
+	BaselineRefs []string `json:"baselineRefs"`
+}
+
+// parseSystemDocument reads and parses a system document from a file path.
+func parseSystemDocument(path string) (systemDocument, error) {
+	data, err := os.ReadFile(path) //nolint:gosec // path is user-provided CLI arg
+	if err != nil {
+		return systemDocument{}, fmt.Errorf("failed to read system document: %w", err)
+	}
+	var doc systemDocument
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return systemDocument{}, fmt.Errorf("failed to parse system document: %w", err)
+	}
+	return doc, nil
+}
+
+// applyComponentGrouping applies either system-aware or label-based grouping to the diff result.
+func applyComponentGrouping(flags *diffFlags, oldResults, newResults hdf.HdfResults, result *diffResult) error {
+	if flags.system != "" {
+		summaries, err := applySystemGrouping(flags.system, oldResults, newResults, *result)
+		if err != nil {
+			return err
+		}
+		result.ComponentSummaries = summaries
+	}
+	if flags.groupBy != "" {
+		result.ComponentSummaries = applyGroupBy(flags.groupBy, oldResults, newResults, *result)
+	}
+	return nil
+}
+
+// applySystemGrouping reads the system document and groups diff requirements by component.
+// Components reference baselines via baselineRefs; requirements are matched to components
+// by their baseline membership.
+func applySystemGrouping(
+	systemPath string,
+	oldResults, newResults hdf.HdfResults,
+	result diffResult,
+) ([]componentSummary, error) {
+	sysDoc, err := parseSystemDocument(systemPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return buildComponentSummaries(sysDoc.Components, oldResults, newResults, result), nil
+}
+
+// buildComponentSummaries creates per-component summaries by grouping requirements
+// that belong to each component's referenced baselines.
+func buildComponentSummaries(
+	components []systemComponent,
+	oldResults, newResults hdf.HdfResults,
+	result diffResult,
+) []componentSummary {
+	var summaries []componentSummary
+
+	for _, comp := range components {
+		// Build a set of baseline names this component references
+		baselineSet := make(map[string]bool, len(comp.BaselineRefs))
+		for _, ref := range comp.BaselineRefs {
+			baselineSet[ref] = true
+		}
+
+		// Filter requirements belonging to this component's baselines
+		var compReqs []diffRequirement
+		for _, req := range result.Requirements {
+			if baselineSet[req.Baseline] {
+				compReqs = append(compReqs, req)
+			}
+		}
+
+		compSummary := buildDiffSummary(compReqs)
+
+		// Compute compliance percentages from the original results
+		oldCompliance := computeBaselineCompliance(oldResults, baselineSet)
+		newCompliance := computeBaselineCompliance(newResults, baselineSet)
+
+		summaries = append(summaries, componentSummary{
+			Name:            comp.Name,
+			BaselineRefs:    comp.BaselineRefs,
+			Summary:         compSummary,
+			OldCompliance:   oldCompliance,
+			NewCompliance:   newCompliance,
+			ComplianceDelta: newCompliance - oldCompliance,
+		})
+	}
+
+	return summaries
+}
+
+// computeBaselineCompliance computes the compliance percentage for a set of baselines
+// in an HDF results document. Compliance = passed / (passed + failed + error + notReviewed).
+func computeBaselineCompliance(results hdf.HdfResults, baselineSet map[string]bool) float64 {
+	var passed, total int
+	for _, baseline := range results.Baselines {
+		if !baselineSet[baseline.Name] {
+			continue
+		}
+		for _, req := range baseline.Requirements {
+			status := determineControlStatus(req)
+			if status == StatusPassed || isFailingStatus(status) {
+				total++
+				if status == StatusPassed {
+					passed++
+				}
+			}
+		}
+	}
+	if total == 0 {
+		return 0
+	}
+	return float64(passed) / float64(total) * 100 //nolint:mnd // percentage conversion
+}
+
+// applyGroupBy groups diff requirements by a label key. Currently supports "baseline"
+// as the group-by key, which groups by the baseline name each requirement belongs to.
+func applyGroupBy(
+	groupKey string,
+	oldResults, newResults hdf.HdfResults,
+	result diffResult,
+) []componentSummary {
+	if groupKey != groupByBaselineKey {
+		// For label-based grouping, prefix "labels." is stripped
+		groupKey = strings.TrimPrefix(groupKey, "labels.")
+	}
+
+	if groupKey == groupByBaselineKey {
+		return groupByBaselineName(oldResults, newResults, result)
+	}
+
+	// For arbitrary label keys, group by baseline labels
+	return groupByLabel(groupKey, oldResults, newResults, result)
+}
+
+// groupByBaselineName groups requirements by their baseline name.
+func groupByBaselineName(
+	oldResults, newResults hdf.HdfResults,
+	result diffResult,
+) []componentSummary {
+	// Collect unique baseline names
+	groups := make(map[string][]diffRequirement)
+	for _, req := range result.Requirements {
+		if req.Baseline == "" {
+			continue
+		}
+		groups[req.Baseline] = append(groups[req.Baseline], req)
+	}
+
+	// Sort group names for deterministic output
+	names := make([]string, 0, len(groups))
+	for name := range groups {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	var summaries []componentSummary
+	for _, name := range names {
+		reqs := groups[name]
+		compSummary := buildDiffSummary(reqs)
+
+		baselineSet := map[string]bool{name: true}
+		oldCompliance := computeBaselineCompliance(oldResults, baselineSet)
+		newCompliance := computeBaselineCompliance(newResults, baselineSet)
+
+		summaries = append(summaries, componentSummary{
+			Name:            name,
+			BaselineRefs:    []string{name},
+			Summary:         compSummary,
+			OldCompliance:   oldCompliance,
+			NewCompliance:   newCompliance,
+			ComplianceDelta: newCompliance - oldCompliance,
+		})
+	}
+
+	return summaries
+}
+
+// groupByLabel groups requirements by a label value found on baselines.
+// It looks for the label key in baseline extensions.labels or top-level baseline metadata.
+func groupByLabel(
+	labelKey string,
+	oldResults, newResults hdf.HdfResults,
+	result diffResult,
+) []componentSummary {
+	// Build a map from baseline name → label value by examining both old and new results
+	baselineLabelMap := make(map[string]string)
+	for _, results := range []hdf.HdfResults{oldResults, newResults} {
+		for _, baseline := range results.Baselines {
+			if baseline.Extensions != nil {
+				if labels, ok := baseline.Extensions["labels"].(map[string]interface{}); ok {
+					if val, ok := labels[labelKey].(string); ok {
+						baselineLabelMap[baseline.Name] = val
+					}
+				}
+			}
+		}
+	}
+
+	// Group requirements by their baseline's label value
+	groups := make(map[string][]diffRequirement)
+	for _, req := range result.Requirements {
+		labelVal, ok := baselineLabelMap[req.Baseline]
+		if !ok {
+			labelVal = "(unlabeled)"
+		}
+		groups[labelVal] = append(groups[labelVal], req)
+	}
+
+	// Sort group names
+	names := make([]string, 0, len(groups))
+	for name := range groups {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	var summaries []componentSummary
+	for _, name := range names {
+		reqs := groups[name]
+		compSummary := buildDiffSummary(reqs)
+
+		// Collect baselines for this group
+		baselineSet := make(map[string]bool)
+		for _, req := range reqs {
+			if req.Baseline != "" {
+				baselineSet[req.Baseline] = true
+			}
+		}
+
+		refs := make([]string, 0, len(baselineSet))
+		for b := range baselineSet {
+			refs = append(refs, b)
+		}
+		sort.Strings(refs)
+
+		oldCompliance := computeBaselineCompliance(oldResults, baselineSet)
+		newCompliance := computeBaselineCompliance(newResults, baselineSet)
+
+		summaries = append(summaries, componentSummary{
+			Name:            name,
+			BaselineRefs:    refs,
+			Summary:         compSummary,
+			OldCompliance:   oldCompliance,
+			NewCompliance:   newCompliance,
+			ComplianceDelta: newCompliance - oldCompliance,
+		})
+	}
+
+	return summaries
+}
+
+// outputComponentSummaries prints component summaries in human-readable format.
+func outputComponentSummaries(summaries []componentSummary) {
+	for _, cs := range summaries {
+		refs := strings.Join(cs.BaselineRefs, ", ")
+		fmt.Printf("Component: %s (%s)\n", sanitizeOutput(cs.Name), sanitizeOutput(refs))
+		fmt.Printf("  Fixed: %d  Regressed: %d  New: %d  Absent: %d  Unchanged: %d\n",
+			cs.Summary.Fixed, cs.Summary.Regressed, cs.Summary.New, cs.Summary.Absent, cs.Summary.Unchanged)
+
+		delta := cs.ComplianceDelta
+		deltaStr := "no change"
+		if delta > 0 {
+			deltaStr = fmt.Sprintf("+%.0f%%", delta)
+		} else if delta < 0 {
+			deltaStr = fmt.Sprintf("%.0f%%", delta)
+		}
+		fmt.Printf("  Compliance: %.0f%% -> %.0f%% (%s)\n", cs.OldCompliance, cs.NewCompliance, deltaStr)
+		fmt.Println()
+	}
 }

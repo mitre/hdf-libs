@@ -3,6 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -604,5 +606,252 @@ func TestDiffCommand_HelpOutput(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "old-file") {
 		t.Errorf("expected 'old-file' in help output, got:\n%s", stdout)
+	}
+}
+
+// --- System-aware diff tests ---
+
+// makeTwoBaselineFixture builds an HDF fixture with two baselines (RHEL9-STIG, PostgreSQL-STIG).
+// Parameters control the checksum and per-requirement statuses.
+func makeTwoBaselineFixture(
+	checksum1, checksum2 string,
+	req1Status, req2Status, req3Status, req4Status string,
+) map[string]interface{} {
+	return map[string]interface{}{
+		"baselines": []interface{}{
+			map[string]interface{}{
+				"name":     "RHEL9-STIG",
+				"checksum": map[string]interface{}{"algorithm": "sha256", "value": checksum1},
+				"requirements": []interface{}{
+					makeRequirementWithResultStatus("REQ-001", req1Status),
+					makeRequirementWithResultStatus("REQ-002", req2Status),
+				},
+			},
+			map[string]interface{}{
+				"name":     "PostgreSQL-STIG",
+				"checksum": map[string]interface{}{"algorithm": "sha256", "value": checksum2},
+				"requirements": []interface{}{
+					makeRequirementWithResultStatus("REQ-003", req3Status),
+					makeRequirementWithResultStatus("REQ-004", req4Status),
+				},
+			},
+		},
+		"targets":    []interface{}{},
+		"statistics": map[string]interface{}{},
+	}
+}
+
+// syntheticHDFTwoBaselinesOld builds a fixture with two baselines for system-aware testing.
+// RHEL9-STIG: REQ-001 (failed), REQ-002 (passed). PostgreSQL-STIG: REQ-003 (passed), REQ-004 (failed).
+func syntheticHDFTwoBaselinesOld() map[string]interface{} {
+	return makeTwoBaselineFixture("aaa111", "bbb222", "failed", "passed", "passed", "failed")
+}
+
+// syntheticHDFTwoBaselinesNew builds a "new" fixture with the same two baselines.
+// RHEL9-STIG: REQ-001 now passed (fixed), REQ-002 still passed (unchanged).
+// PostgreSQL-STIG: REQ-003 still passed (unchanged), REQ-004 still failed (unchanged).
+func syntheticHDFTwoBaselinesNew() map[string]interface{} {
+	return makeTwoBaselineFixture("ccc333", "ddd444", "passed", "passed", "passed", "failed")
+}
+
+// syntheticSystemDoc builds a minimal system document with two components.
+func syntheticSystemDoc() map[string]interface{} {
+	return map[string]interface{}{
+		"name": "TestSystem",
+		"components": []interface{}{
+			map[string]interface{}{
+				"name":         "WebTier",
+				"type":         "software",
+				"baselineRefs": []interface{}{"RHEL9-STIG"},
+			},
+			map[string]interface{}{
+				"name":         "DatabaseTier",
+				"type":         "software",
+				"baselineRefs": []interface{}{"PostgreSQL-STIG"},
+			},
+		},
+	}
+}
+
+// writeJSONFixture writes arbitrary JSON data to a temp file and returns the path.
+func writeJSONFixture(t *testing.T, data interface{}) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "fixture.json")
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		t.Fatalf("failed to marshal fixture: %v", err)
+	}
+	if err := os.WriteFile(path, jsonData, 0o600); err != nil {
+		t.Fatalf("failed to write fixture: %v", err)
+	}
+	return path
+}
+
+// TestDiffCommand_SystemFlag verifies that --system produces component-grouped output.
+func TestDiffCommand_SystemFlag(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
+	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
+	sysPath := writeJSONFixture(t, syntheticSystemDoc())
+
+	stdout, stderr, err := executeCommand("diff", "--system", sysPath, oldPath, newPath)
+	if err != nil {
+		t.Fatalf("diff --system failed: %v (stderr: %s)", err, stderr)
+	}
+
+	// Should contain component names
+	if !strings.Contains(stdout, "WebTier") {
+		t.Errorf("expected 'WebTier' in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "DatabaseTier") {
+		t.Errorf("expected 'DatabaseTier' in output, got:\n%s", stdout)
+	}
+
+	// Should contain compliance info
+	if !strings.Contains(stdout, "Compliance:") {
+		t.Errorf("expected 'Compliance:' in output, got:\n%s", stdout)
+	}
+}
+
+// TestDiffCommand_SystemFlag_JSON verifies that --system with --json includes componentSummaries.
+func TestDiffCommand_SystemFlag_JSON(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
+	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
+	sysPath := writeJSONFixture(t, syntheticSystemDoc())
+
+	stdout, stderr, err := executeCommand("diff", "--json", "--system", sysPath, oldPath, newPath)
+	if err != nil {
+		t.Fatalf("diff --system --json failed: %v (stderr: %s)", err, stderr)
+	}
+
+	var output map[string]interface{}
+	if err := json.Unmarshal([]byte(stdout), &output); err != nil {
+		t.Fatalf("invalid JSON: %v\noutput: %s", err, stdout)
+	}
+
+	// Should have componentSummaries
+	cs, ok := output["componentSummaries"].([]interface{})
+	if !ok {
+		t.Fatalf("expected 'componentSummaries' array in JSON output, got: %v", output["componentSummaries"])
+	}
+	if len(cs) != 2 {
+		t.Errorf("expected 2 component summaries, got %d", len(cs))
+	}
+
+	// Verify first component has expected fields
+	first, ok := cs[0].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected component summary to be a map")
+	}
+	for _, key := range []string{"name", "baselineRefs", "summary", "oldCompliance", "newCompliance", "complianceDelta"} {
+		if _, exists := first[key]; !exists {
+			t.Errorf("expected key %q in component summary", key)
+		}
+	}
+}
+
+// TestDiffCommand_SystemFlag_MissingFile verifies error when system file doesn't exist.
+func TestDiffCommand_SystemFlag_MissingFile(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
+	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
+
+	_, _, err := executeCommand("diff", "--system", "nonexistent-system.json", oldPath, newPath)
+	if err == nil {
+		t.Error("expected error for missing system file")
+	}
+}
+
+// TestDiffCommand_GroupByBaseline verifies --group-by baseline groups by baseline name.
+func TestDiffCommand_GroupByBaseline(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
+	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
+
+	stdout, stderr, err := executeCommand("diff", "--group-by", "baseline", oldPath, newPath)
+	if err != nil {
+		t.Fatalf("diff --group-by baseline failed: %v (stderr: %s)", err, stderr)
+	}
+
+	// Should show baseline names as group labels
+	if !strings.Contains(stdout, "RHEL9-STIG") {
+		t.Errorf("expected 'RHEL9-STIG' in grouped output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "PostgreSQL-STIG") {
+		t.Errorf("expected 'PostgreSQL-STIG' in grouped output, got:\n%s", stdout)
+	}
+}
+
+// TestDiffCommand_SystemAndGroupByMutuallyExclusive verifies that --system and --group-by
+// cannot be used together.
+func TestDiffCommand_SystemAndGroupByMutuallyExclusive(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
+	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
+	sysPath := writeJSONFixture(t, syntheticSystemDoc())
+
+	_, _, err := executeCommand("diff", "--system", sysPath, "--group-by", "baseline", oldPath, newPath)
+	if err == nil {
+		t.Error("expected error when both --system and --group-by are provided")
+	}
+}
+
+// TestDiffCommand_SystemFlag_ComplianceValues verifies compliance percentages are correct.
+func TestDiffCommand_SystemFlag_ComplianceValues(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
+	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
+	sysPath := writeJSONFixture(t, syntheticSystemDoc())
+
+	stdout, stderr, err := executeCommand("diff", "--json", "--system", sysPath, oldPath, newPath)
+	if err != nil {
+		t.Fatalf("diff --system --json failed: %v (stderr: %s)", err, stderr)
+	}
+
+	var output struct {
+		ComponentSummaries []struct {
+			Name            string  `json:"name"`
+			OldCompliance   float64 `json:"oldCompliance"`
+			NewCompliance   float64 `json:"newCompliance"`
+			ComplianceDelta float64 `json:"complianceDelta"`
+		} `json:"componentSummaries"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &output); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+
+	// WebTier (RHEL9-STIG): old = 1/2 passed = 50%, new = 2/2 passed = 100%
+	for _, cs := range output.ComponentSummaries {
+		switch cs.Name {
+		case "WebTier":
+			if cs.OldCompliance != 50 {
+				t.Errorf("WebTier old compliance: got %.0f%%, want 50%%", cs.OldCompliance)
+			}
+			if cs.NewCompliance != 100 {
+				t.Errorf("WebTier new compliance: got %.0f%%, want 100%%", cs.NewCompliance)
+			}
+			if cs.ComplianceDelta != 50 {
+				t.Errorf("WebTier compliance delta: got %.0f%%, want 50%%", cs.ComplianceDelta)
+			}
+		case "DatabaseTier":
+			// PostgreSQL-STIG: old = 1/2 passed = 50%, new = 1/2 passed = 50%
+			if cs.OldCompliance != 50 {
+				t.Errorf("DatabaseTier old compliance: got %.0f%%, want 50%%", cs.OldCompliance)
+			}
+			if cs.NewCompliance != 50 {
+				t.Errorf("DatabaseTier new compliance: got %.0f%%, want 50%%", cs.NewCompliance)
+			}
+			if cs.ComplianceDelta != 0 {
+				t.Errorf("DatabaseTier compliance delta: got %.0f%%, want 0%%", cs.ComplianceDelta)
+			}
+		}
+	}
+}
+
+// TestDiffCommand_HelpOutput_SystemFlag verifies --system appears in help.
+func TestDiffCommand_HelpOutput_SystemFlag(t *testing.T) {
+	stdout, _, _ := executeCommand("diff", "--help")
+
+	if !strings.Contains(stdout, "--system") {
+		t.Errorf("expected '--system' in help output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "--group-by") {
+		t.Errorf("expected '--group-by' in help output, got:\n%s", stdout)
 	}
 }
