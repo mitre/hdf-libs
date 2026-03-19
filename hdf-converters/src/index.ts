@@ -110,3 +110,19 @@ export { convertMsftDefenderCloudToHdf } from '../converters/msft-defender-cloud
 
 // Microsoft Defender for Endpoint to HDF converter
 export { convertMsftDefenderEndpointToHdf } from '../converters/msft-defender-endpoint-to-hdf/typescript/index.js';
+
+// HDF to OSCAL SAR converter
+export { convertHdfToOscalSar } from '../converters/hdf-to-oscal-sar/typescript/index.js';
+
+// HDF to OSCAL POA&M converter
+export { convertHdfToOscalPoam } from '../converters/hdf-to-oscal-poam/typescript/index.js';
+
+// OSCAL to HDF converters
+export { convertOscalCatalogToHdf } from '../converters/oscal-to-hdf/typescript/index.js';
+export { convertOscalProfileToHdf } from '../converters/oscal-to-hdf/typescript/index.js';
+export { convertOscalComponentToHdf } from '../converters/oscal-to-hdf/typescript/index.js';
+export { convertOscalSspToHdf } from '../converters/oscal-to-hdf/typescript/index.js';
+export { convertOscalSapToHdf } from '../converters/oscal-to-hdf/typescript/index.js';
+export { convertOscalPoamToHdf } from '../converters/oscal-to-hdf/typescript/index.js';
+export { convertOscalSarToHdf } from '../converters/oscal-to-hdf/typescript/index.js';
+export { detectOscalDocumentType } from '../converters/oscal-to-hdf/typescript/index.js';

@@ -34,6 +34,16 @@ import {
   convertMsftDefenderDevopsToHdf,
   convertMsftDefenderCloudToHdf,
   convertMsftDefenderEndpointToHdf,
+  convertHdfToOscalSar,
+  convertHdfToOscalPoam,
+  convertOscalCatalogToHdf,
+  convertOscalProfileToHdf,
+  convertOscalComponentToHdf,
+  convertOscalSspToHdf,
+  convertOscalSapToHdf,
+  convertOscalPoamToHdf,
+  convertOscalSarToHdf,
+  detectOscalDocumentType,
 } from '../src/index.js';
 
 describe('Main exports', () => {
@@ -218,6 +228,56 @@ describe('Main exports', () => {
   it('should export convertNeuvectorToHdf from main index', () => {
     expect(convertNeuvectorToHdf).toBeDefined();
     expect(typeof convertNeuvectorToHdf).toBe('function');
+  });
+
+  it('should export convertHdfToOscalSar from main index', () => {
+    expect(convertHdfToOscalSar).toBeDefined();
+    expect(typeof convertHdfToOscalSar).toBe('function');
+  });
+
+  it('should export convertHdfToOscalPoam from main index', () => {
+    expect(convertHdfToOscalPoam).toBeDefined();
+    expect(typeof convertHdfToOscalPoam).toBe('function');
+  });
+
+  it('should export convertOscalCatalogToHdf from main index', () => {
+    expect(convertOscalCatalogToHdf).toBeDefined();
+    expect(typeof convertOscalCatalogToHdf).toBe('function');
+  });
+
+  it('should export convertOscalProfileToHdf from main index', () => {
+    expect(convertOscalProfileToHdf).toBeDefined();
+    expect(typeof convertOscalProfileToHdf).toBe('function');
+  });
+
+  it('should export convertOscalComponentToHdf from main index', () => {
+    expect(convertOscalComponentToHdf).toBeDefined();
+    expect(typeof convertOscalComponentToHdf).toBe('function');
+  });
+
+  it('should export convertOscalSspToHdf from main index', () => {
+    expect(convertOscalSspToHdf).toBeDefined();
+    expect(typeof convertOscalSspToHdf).toBe('function');
+  });
+
+  it('should export convertOscalSapToHdf from main index', () => {
+    expect(convertOscalSapToHdf).toBeDefined();
+    expect(typeof convertOscalSapToHdf).toBe('function');
+  });
+
+  it('should export convertOscalPoamToHdf from main index', () => {
+    expect(convertOscalPoamToHdf).toBeDefined();
+    expect(typeof convertOscalPoamToHdf).toBe('function');
+  });
+
+  it('should export convertOscalSarToHdf from main index', () => {
+    expect(convertOscalSarToHdf).toBeDefined();
+    expect(typeof convertOscalSarToHdf).toBe('function');
+  });
+
+  it('should export detectOscalDocumentType from main index', () => {
+    expect(detectOscalDocumentType).toBeDefined();
+    expect(typeof detectOscalDocumentType).toBe('function');
   });
 
   it('should have working validator from main export', () => {
