@@ -1,5 +1,6 @@
 import {
   type Checksum,
+  Copyright,
   createMinimalBaseline,
   type DataSource,
   type EvaluatedBaseline,
@@ -148,6 +149,13 @@ export async function convertNiktoToHdf(input: string): Promise<string> {
 
   const hdf: HdfResults = {
     baselines: [baseline],
+    targets: [{
+      type: Copyright.Application,
+      name: targetName,
+      labels: {
+        service: 'nikto',
+      },
+    }],
     generator: {
       name: 'nikto-to-hdf',
       version: 'unknown',

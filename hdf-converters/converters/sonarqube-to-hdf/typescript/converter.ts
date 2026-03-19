@@ -12,6 +12,7 @@ import type {
   DataSource,
 } from '@mitre/hdf-schema';
 import {
+  Copyright,
   ResultStatus,
   createMinimalBaseline,
   createRequirement,
@@ -197,11 +198,20 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
 
   const dataSource: DataSource = { name: 'SonarQube' };
 
+  // Build targets from project keys
+  const targets = Array.from(issuesByProject.keys()).map(projectKey => ({
+    type: Copyright.Application,
+    name: projectKey,
+    labels: {
+      service: 'sonarqube',
+    },
+  }));
+
   // Build HDF
   const hdf: HdfResults = {
     timestamp: new Date(),
     baselines,
-    targets: [],
+    targets,
     generator: {
       name: 'sonarqube-to-hdf',
       version: '1.0.0',

@@ -1,5 +1,6 @@
 import {
   type Checksum,
+  Copyright,
   createMinimalBaseline,
   type DataSource,
   type EvaluatedBaseline,
@@ -362,6 +363,13 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
   // Build HDF results
   const hdf: HdfResults = {
     baselines: [baseline],
+    targets: [{
+      type: Copyright.Artifact,
+      name: targetName,
+      labels: {
+        service: 'grype',
+      },
+    }],
     generator: {
       name: grypeData.descriptor?.name || 'grype',
       version: grypeData.descriptor?.version || 'unknown',

@@ -67,6 +67,9 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         id: 'server-123',
         name: 'redhat',
         release: '8.5',
+        labels: {
+          service: 'inspec',
+        },
       });
     });
 
@@ -172,6 +175,9 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         type: 'host',
         id: 'test-system',
         name: 'test-system',
+        labels: {
+          service: 'inspec',
+        },
       });
       expect(v2.targets![0]).not.toHaveProperty('release');
     });

@@ -238,6 +238,46 @@ func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 	return v2
 }
 
+// convertAttributes converts v1.0 attributes to v2.0 Input structs.
+// V1 attributes are generic maps with "name" and "options" (containing "default").
+func convertAttributes(attrs []map[string]interface{}) []hdf.Input {
+	inputs := make([]hdf.Input, 0, len(attrs))
+	for _, attr := range attrs {
+		name, _ := attr["name"].(string)
+		if name == "" {
+			continue
+		}
+		input := hdf.Input{
+			Name: name,
+		}
+		// Extract default value from options
+		if options, ok := attr["options"].(map[string]interface{}); ok {
+			if val, exists := options["default"]; exists {
+				input.Value = val
+			}
+		}
+		// Extract description if present
+		if desc, ok := attr["description"].(string); ok {
+			input.Description = &desc
+		}
+		// Extract sensitive flag if present
+		if sensitive, ok := attr["sensitive"].(bool); ok {
+			input.Sensitive = &sensitive
+		}
+		// Extract required flag if present
+		if required, ok := attr["required"].(bool); ok {
+			input.Required = &required
+		}
+		// Extract type if present
+		if t, ok := attr["type"].(string); ok {
+			inputType := hdf.InputType(t)
+			input.Type = &inputType
+		}
+		inputs = append(inputs, input)
+	}
+	return inputs
+}
+
 // convertGroup converts a v1.0 group to v2.0 RequirementGroup.
 // Renames controls array to requirements.
 func convertGroup(v1 V1Group) hdf.RequirementGroup {
@@ -284,6 +324,11 @@ func convertProfile(v1 V1Profile) hdf.EvaluatedBaseline {
 			Algorithm: hdf.Sha256,
 			Value:     *v1.SHA256,
 		}
+	}
+
+	// Transform attributes to inputs
+	if v1.Attributes != nil {
+		v2.Inputs = convertAttributes(v1.Attributes)
 	}
 
 	// Transform groups (controls → requirements)
@@ -343,6 +388,9 @@ func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 	target := hdf.Target{
 		Type: hdf.Host,
 		Name: v1.Platform.Name,
+		Labels: map[string]string{
+			"service": "inspec",
+		},
 	}
 	if v1.Platform.TargetID != nil {
 		target.OSName = &v1.Platform.Name // Use platform name as OS name

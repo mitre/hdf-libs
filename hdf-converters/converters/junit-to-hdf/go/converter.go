@@ -85,12 +85,21 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 	now := time.Now().UTC()
 
+	target := hdf.Target{
+		Name: name,
+		Type: hdf.CopyrightApplication,
+		Labels: map[string]string{
+			"service": "junit",
+		},
+	}
+
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "hdf-converters",
 		ConverterVersion: converterVersion,
 		DataSourceName:   "JUnit XML",
 		DataSourceFormat: "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Targets:          []hdf.Target{target},
 		Timestamp:        &now,
 	}), nil
 }

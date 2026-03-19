@@ -9,6 +9,7 @@ import type {
   Description,
 } from '@mitre/hdf-schema';
 import {
+  Copyright,
   ResultStatus,
   createMinimalBaseline,
   createRequirement,
@@ -88,6 +89,13 @@ export async function convertJunitToHdf(input: string): Promise<string> {
 
   const hdf: HdfResults = {
     baselines: [baseline],
+    targets: [{
+      type: Copyright.Application,
+      name,
+      labels: {
+        service: 'junit',
+      },
+    }],
     generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
     dataSource: { name: 'JUnit XML', format: 'XML' },
     timestamp: new Date(),

@@ -553,6 +553,9 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
         id: v1Data.platform.target_id || v1Data.platform.name,
         name: v1Data.platform.name,
         ...(v1Data.platform.release && { release: v1Data.platform.release }),
+        labels: {
+          service: 'inspec',
+        },
       },
     ];
   }
