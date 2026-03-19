@@ -63,6 +63,9 @@ func init() {
 		"OSCAL Assessment Results to HDF", "oscal-assessment-results",
 		oscal.ConvertAssessmentResultsToHDF,
 	)
+
+	// oscal — Auto-detect OSCAL document type and delegate
+	RegisterConverter("oscal", "hdf", &oscalAutoDetectConverter{})
 }
 
 // oscalSSPRawConvert wraps the SSP converter to produce raw JSON bytes,
@@ -79,6 +82,50 @@ func oscalSSPRawConvert(input []byte, converterVersion string) ([]byte, error) {
 	}
 
 	return output, nil
+}
+
+// oscalAutoDetectConverter detects the OSCAL document type and delegates
+// to the appropriate converter. Profile requires --catalog so it gets
+// special handling.
+type oscalAutoDetectConverter struct{}
+
+func (c *oscalAutoDetectConverter) Name() string {
+	return "OSCAL (auto-detect) to HDF"
+}
+
+func (c *oscalAutoDetectConverter) Convert(input []byte) ([]byte, error) {
+	docType, err := oscal.DetectDocumentType(input)
+	if err != nil {
+		return nil, fmt.Errorf("oscal auto-detect failed: %w", err)
+	}
+
+	// Map detected type to registered converter name
+	converterName := ""
+	switch docType {
+	case "catalog":
+		converterName = "oscal-catalog"
+	case "profile":
+		converterName = "oscal-profile"
+	case "component-definition":
+		converterName = "oscal-component-definition"
+	case "system-security-plan":
+		converterName = "oscal-ssp"
+	case "assessment-plan":
+		converterName = "oscal-assessment-plan"
+	case "assessment-results":
+		converterName = "oscal-assessment-results"
+	case "plan-of-action-and-milestones":
+		converterName = "oscal-poam"
+	default:
+		return nil, fmt.Errorf("oscal auto-detect: unsupported document type %q", docType)
+	}
+
+	delegate, err := GetConverter(converterName, "hdf")
+	if err != nil {
+		return nil, fmt.Errorf("oscal auto-detect: no converter for %s: %w", docType, err)
+	}
+
+	return delegate.Convert(input)
 }
 
 // oscalProfileConverter handles OSCAL profile → HDF baseline conversion,

@@ -271,3 +271,57 @@ func TestConvertOSCALPOAM(t *testing.T) {
 		assert.Equal(t, hdf.Poam, override.Type)
 	}
 }
+
+func TestConvertOSCALAutoDetect_Catalog(t *testing.T) {
+	inputPath := filepath.Join(oscalFixtureDir, "catalog-moderate-resolved.json")
+	if _, err := os.Stat(inputPath); err != nil {
+		t.Skip("OSCAL fixture not available")
+	}
+
+	output := filepath.Join(t.TempDir(), "out.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"convert", "oscal", "to", "hdf", inputPath, output})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(output)
+	require.NoError(t, err)
+
+	var baseline hdf.HDFBaseline
+	require.NoError(t, json.Unmarshal(data, &baseline))
+	assert.NotEmpty(t, baseline.Requirements)
+}
+
+func TestConvertOSCALAutoDetect_SAR(t *testing.T) {
+	inputPath := filepath.Join(oscalFixtureDir, "sar-fedramp.json")
+	if _, err := os.Stat(inputPath); err != nil {
+		t.Skip("OSCAL fixture not available")
+	}
+
+	output := filepath.Join(t.TempDir(), "out.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"convert", "oscal", "to", "hdf", inputPath, output})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(output)
+	require.NoError(t, err)
+
+	var results hdf.HDFResults
+	require.NoError(t, json.Unmarshal(data, &results))
+	assert.NotEmpty(t, results.Baselines)
+}
+
+func TestConvertOSCALAutoDetect_InvalidInput(t *testing.T) {
+	tmpFile := filepath.Join(t.TempDir(), "invalid.json")
+	require.NoError(t, os.WriteFile(tmpFile, []byte(`{"not-oscal": true}`), 0o600))
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"convert", "oscal", "to", "hdf", tmpFile})
+
+	err := cmd.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "oscal auto-detect")
+}
