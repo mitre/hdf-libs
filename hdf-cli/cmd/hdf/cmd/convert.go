@@ -21,6 +21,7 @@ func NewConvertCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
+	cmd.Flags().StringSlice("labels", nil, "Labels to apply to all targets (key=value pairs, e.g., --labels system=Portal,environment=production)")
 
 	// Converter-specific flags
 	AddOSCALFlags(cmd)
@@ -160,6 +161,20 @@ func runConvert(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("conversion failed: %w", err)
 	}
 	printDebug("Conversion produced %d bytes", len(output))
+
+	// Apply labels if --labels flag was provided
+	labelPairs, _ := cmd.Flags().GetStringSlice("labels")
+	if len(labelPairs) > 0 {
+		labels, err := parseLabelsFlag(labelPairs)
+		if err != nil {
+			return fmt.Errorf("invalid --labels flag: %w", err)
+		}
+		output, err = applyLabels(output, labels)
+		if err != nil {
+			return fmt.Errorf("failed to apply labels: %w", err)
+		}
+		printDebug("Applied %d labels to output", len(labels))
+	}
 
 	// Write output
 	return writeConvertOutput(output, outputPath)
