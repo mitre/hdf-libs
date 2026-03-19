@@ -50,10 +50,11 @@ type ComparisonMode string
 
 // ComparisonMode values.
 const (
-	ModeTemporal    ComparisonMode = "temporal"
-	ModeBaseline    ComparisonMode = "baseline"
-	ModeFleet       ComparisonMode = "fleet"
-	ModeMultiSource ComparisonMode = "multiSource"
+	ModeTemporal          ComparisonMode = "temporal"
+	ModeBaseline          ComparisonMode = "baseline"
+	ModeFleet             ComparisonMode = "fleet"
+	ModeMultiSource       ComparisonMode = "multiSource"
+	ModeBaselineEvolution ComparisonMode = "baselineEvolution"
 )
 
 // SourceRole defines the role of a source document.

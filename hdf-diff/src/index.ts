@@ -20,7 +20,7 @@ export type {
 } from './types.js';
 
 // Diff engine
-export { diffHdf } from './diff.js';
+export { diffHdf, diffBaselines } from './diff.js';
 export type { DiffOptions } from './diff.js';
 
 // Status utilities

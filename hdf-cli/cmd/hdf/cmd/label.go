@@ -94,7 +94,7 @@ Examples:
 func runLabelShow(_ *cobra.Command, args []string) error {
 	filePath := args[0]
 
-	data, err := os.ReadFile(filePath)
+	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
@@ -149,7 +149,7 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	data, err := os.ReadFile(filePath)
+	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
@@ -167,7 +167,7 @@ func runLabelRemove(cmd *cobra.Command, args []string) error {
 	filePath := args[0]
 	keys := args[1:]
 
-	data, err := os.ReadFile(filePath)
+	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
@@ -194,7 +194,7 @@ func writeLabelOutput(data []byte, originalPath, outputPath string) error {
 		data = append(data, '\n')
 	}
 
-	if err := os.WriteFile(target, data, 0o600); err != nil { //nolint:gosec // G703: output path from user CLI arg
+	if err := os.WriteFile(target, data, 0o600); err != nil { // #nosec G703 -- output path from user CLI arg
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 

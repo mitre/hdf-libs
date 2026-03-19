@@ -182,7 +182,7 @@ export interface HdfComparison {
   /** Schema version for the comparison format */
   formatVersion: '1.0.0';
   /** The mode of comparison */
-  comparisonMode: 'temporal' | 'baseline' | 'fleet' | 'multiSource';
+  comparisonMode: 'temporal' | 'baseline' | 'fleet' | 'multiSource' | 'baselineEvolution';
   /** When the comparison was generated */
   timestamp?: string;
   /** Source documents used in the comparison */

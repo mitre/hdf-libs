@@ -19,7 +19,7 @@ export interface DiffOptions {
   /** Fields to track for field-level diffs (default: ['impact', 'severity', 'tags']) */
   trackedFields?: string[];
   /** Comparison mode (default: 'temporal') */
-  comparisonMode?: 'temporal' | 'baseline' | 'fleet' | 'multiSource';
+  comparisonMode?: 'temporal' | 'baseline' | 'fleet' | 'multiSource' | 'baselineEvolution';
   /** Primary matching strategy name (default: 'exactId') */
   matchStrategy?: string;
   /** Fallback strategy names, applied in order to remaining unmatched requirements */
@@ -93,8 +93,16 @@ export function diffHdf(
   options?: DiffOptions,
 ): HdfComparison {
   const trackedFields = options?.trackedFields ?? DEFAULT_TRACKED_FIELDS;
-  const comparisonMode = options?.comparisonMode ?? 'temporal';
+  let comparisonMode = options?.comparisonMode ?? 'temporal';
   const matchOpts = buildMatchOptions(options);
+
+  // Auto-detect baseline evolution mode when both inputs are baseline documents
+  // (have requirements[] but no baselines[], targets[], or statistics[])
+  if (!options?.comparisonMode && !Array.isArray(newResults)) {
+    if (isBaselineDocument(oldResults) && isBaselineDocument(newResults)) {
+      comparisonMode = 'baselineEvolution';
+    }
+  }
 
   // Validate array inputs up front (applies to all modes)
   if (Array.isArray(newResults)) {
@@ -106,6 +114,12 @@ export function diffHdf(
         `Mode '${comparisonMode}' expects a single document, got ${newResults.length}. Use 'fleet' mode for multiple documents.`
       );
     }
+  }
+
+  // Baseline evolution mode: compare two baseline documents
+  if (comparisonMode === 'baselineEvolution') {
+    const newDoc = Array.isArray(newResults) ? newResults[0]! : newResults;
+    return diffBaselines(oldResults, newDoc, options);
   }
 
   // Fleet mode: compare reference against each system
@@ -509,4 +523,173 @@ function computeFieldChanges(
   }
 
   return changes;
+}
+
+/**
+ * Detect whether a document is a baseline (not results).
+ * Baselines have `requirements` at the top level and lack `baselines`, `targets`, and `statistics`.
+ */
+function isBaselineDocument(doc: Record<string, unknown>): boolean {
+  return (
+    Array.isArray(doc['requirements']) &&
+    !Array.isArray(doc['baselines']) &&
+    !Array.isArray(doc['targets']) &&
+    doc['statistics'] === undefined
+  );
+}
+
+/** Default tracked fields for baseline evolution comparisons. */
+const BASELINE_TRACKED_FIELDS = ['title', 'impact', 'descriptions', 'tags'];
+
+/**
+ * Compare two HDF baseline documents and produce a structured comparison
+ * showing requirement changes between baseline versions.
+ *
+ * Unlike diffHdf (which compares results/evaluations), this compares baseline
+ * definitions — requirements without results. There is no status-based classification
+ * (fixed/regressed); only metadata changes (title, impact, descriptions, tags) are tracked.
+ */
+export function diffBaselines(
+  oldBaseline: Record<string, unknown>,
+  newBaseline: Record<string, unknown>,
+  options?: DiffOptions,
+): HdfComparison {
+  const trackedFields = options?.trackedFields ?? BASELINE_TRACKED_FIELDS;
+  const matchOpts = buildMatchOptions(options);
+
+  // Extract requirements from baseline documents
+  const oldReqs = (oldBaseline['requirements'] as RequirementLike[] | undefined) ?? [];
+  const newReqs = (newBaseline['requirements'] as RequirementLike[] | undefined) ?? [];
+
+  // Use the matching system to pair requirements
+  const matchResult = matchRequirements(
+    oldReqs as unknown as Record<string, unknown>[],
+    newReqs as unknown as Record<string, unknown>[],
+    matchOpts,
+  );
+
+  // Build requirement diffs from match results
+  const requirementDiffs: RequirementDiff[] = [];
+
+  // Matched pairs
+  for (const pair of matchResult.matched) {
+    const oldReq = pair.oldReq as RequirementLike;
+    const newReq = pair.newReq as RequirementLike;
+    const id = (newReq.id ?? oldReq.id) as string;
+
+    const fieldChanges = computeFieldChanges(oldReq, newReq, trackedFields);
+
+    // For baseline evolution, state is determined by metadata changes only
+    const state: 'unchanged' | 'updated' = fieldChanges.length > 0 ? 'updated' : 'unchanged';
+
+    // Determine change reasons for baseline evolution
+    const changeReasons: Array<'impactChanged' | 'metadataChanged'> = [];
+    if (oldReq.impact !== newReq.impact) {
+      changeReasons.push('impactChanged');
+    }
+    const oldTags = JSON.stringify(oldReq['tags'] ?? {});
+    const newTags = JSON.stringify(newReq['tags'] ?? {});
+    const oldDescs = JSON.stringify(oldReq['descriptions'] ?? []);
+    const newDescs = JSON.stringify(newReq['descriptions'] ?? []);
+    const oldTitle = oldReq['title'] as string | undefined;
+    const newTitle = newReq['title'] as string | undefined;
+    if (oldTags !== newTags || oldDescs !== newDescs || oldTitle !== newTitle) {
+      changeReasons.push('metadataChanged');
+    }
+
+    requirementDiffs.push({
+      id,
+      title: newReq.title ?? oldReq.title,
+      state,
+      changeReasons,
+      oldImpact: oldReq.impact,
+      newImpact: newReq.impact,
+      fieldChanges,
+      before: oldReq as unknown as Record<string, unknown>,
+      after: newReq as unknown as Record<string, unknown>,
+      matchStrategy: pair.strategy,
+      matchConfidence: pair.confidence,
+    });
+  }
+
+  // Unmatched old requirements (absent)
+  for (const req of matchResult.unmatchedOld) {
+    const oldReq = req as RequirementLike;
+    requirementDiffs.push({
+      id: oldReq.id,
+      title: oldReq.title,
+      state: 'absent',
+      changeReasons: [],
+      oldImpact: oldReq.impact,
+      fieldChanges: [],
+      before: oldReq as unknown as Record<string, unknown>,
+      after: null,
+    });
+  }
+
+  // Unmatched new requirements (new)
+  for (const req of matchResult.unmatchedNew) {
+    const newReq = req as RequirementLike;
+    requirementDiffs.push({
+      id: newReq.id,
+      title: newReq.title,
+      state: 'new',
+      changeReasons: [],
+      newImpact: newReq.impact,
+      fieldChanges: [],
+      before: null,
+      after: newReq as unknown as Record<string, unknown>,
+    });
+  }
+
+  // Sort by id
+  requirementDiffs.sort((a, b) => a.id.localeCompare(b.id));
+
+  // Build baseline diff from top-level baseline metadata
+  const oldName = oldBaseline['name'] as string | undefined ?? '';
+  const newName = newBaseline['name'] as string | undefined ?? '';
+  const oldVersion = oldBaseline['version'] as string | undefined;
+  const newVersion = newBaseline['version'] as string | undefined;
+
+  const baselineDiffs: BaselineDiff[] = [];
+  const baselineName = newName || oldName;
+  if (baselineName) {
+    const versionChanged = oldVersion !== newVersion;
+    baselineDiffs.push({
+      name: baselineName,
+      oldVersion,
+      newVersion,
+      state: versionChanged ? 'updated' : 'unchanged',
+    });
+  }
+
+  // Build sources
+  const sources: Source[] = [
+    { role: 'old', label: oldVersion ? `${baselineName} ${oldVersion}` : baselineName || 'Old baseline' },
+    { role: 'new', label: newVersion ? `${baselineName} ${newVersion}` : baselineName || 'New baseline' },
+  ];
+
+  const comparison: HdfComparison = {
+    formatVersion: '1.0.0',
+    comparisonMode: 'baselineEvolution',
+    timestamp: new Date().toISOString(),
+    sources,
+    matching: {
+      primaryStrategy: resolveStrategyName(options),
+    },
+    summary: computeSummary(requirementDiffs),
+    baselineDiffs,
+    requirementDiffs,
+  };
+
+  if (options?.validateOutput) {
+    const result = validateComparison(comparison);
+    /* c8 ignore start */
+    if (!result.valid) {
+      throw new Error(`Output validation failed: ${result.errors?.join(', ')}`);
+    }
+    /* c8 ignore stop */
+  }
+
+  return comparison;
 }

@@ -45,9 +45,10 @@
         "temporal",
         "baseline",
         "fleet",
-        "multiSource"
+        "multiSource",
+        "baselineEvolution"
       ],
-      "description": "The mode of comparison. 'temporal' compares the same target over time. 'baseline' compares against a golden reference. 'fleet' compares across multiple systems. 'multiSource' compares outputs from different scanners.",
+      "description": "The mode of comparison. 'temporal' compares the same target over time. 'baseline' compares against a golden reference. 'fleet' compares across multiple systems. 'multiSource' compares outputs from different scanners. 'baselineEvolution' compares two baseline documents to detect requirement changes between versions.",
       "title": "Comparison Mode"
     },
     "Source_Role": {
