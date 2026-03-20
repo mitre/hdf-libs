@@ -74,16 +74,19 @@ Examples:
 
 func newAmendVerifyCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "verify <amendments-file>",
-		Short: "Verify amendment validity and expiration",
+		Use:   "verify <amendments-file> [results-file]",
+		Short: "Verify amendment validity, expiration, and chain integrity",
 		Long: `Check that all overrides in an amendments file have valid, non-expired dates.
 
-Reports the number of valid and expired overrides.
+If a results file is also provided, performs full chain verification:
+- Verifies previousChecksum matches the SHA-256 of the results document
+- Checks that all requirementIds reference actual requirements in the results
 
 Examples:
-  hdf amend verify waivers.json
-  hdf amend verify waivers.json --json`,
-		Args: cobra.ExactArgs(1),
+  hdf amend verify waivers.json                     # Expiration check only
+  hdf amend verify waivers.json results.json         # Full chain verification
+  hdf amend verify waivers.json results.json --json`,
+		Args: cobra.RangeArgs(1, 2),
 		RunE: runAmendVerify,
 	}
 }
@@ -177,14 +180,20 @@ func runAmendList(_ *cobra.Command, args []string) error {
 }
 
 func runAmendVerify(_ *cobra.Command, args []string) error {
-	filePath := args[0]
+	amendPath := args[0]
 
-	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
+	amendData, err := os.ReadFile(amendPath) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read amendments file: %w", err)
 	}
 
-	result, err := amend.VerifyAmendments(data)
+	// If results file provided, do full chain verification
+	if len(args) == 2 {
+		return runAmendVerifyChain(amendData, args[1])
+	}
+
+	// Otherwise, expiration check only
+	result, err := amend.VerifyAmendments(amendData)
 	if err != nil {
 		return err
 	}
@@ -208,6 +217,54 @@ func runAmendVerify(_ *cobra.Command, args []string) error {
 		fmt.Println("\nAll overrides are valid.")
 	}
 
+	return nil
+}
+
+func runAmendVerifyChain(amendData []byte, resultsPath string) error {
+	resultsData, err := os.ReadFile(resultsPath) // #nosec G304 -- CLI reads user-provided file path
+	if err != nil {
+		return fmt.Errorf("failed to read results file: %w", err)
+	}
+
+	result, err := amend.VerifyChain(resultsData, amendData)
+	if err != nil {
+		return err
+	}
+
+	if jsonOutput {
+		output, marshalErr := json.MarshalIndent(result, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to serialize chain verification: %w", marshalErr)
+		}
+		fmt.Println(string(output))
+		return nil
+	}
+
+	// Expiration summary
+	exp := result.ExpirationResult
+	fmt.Printf("Expiration: %d/%d valid", exp.ValidOverrides, exp.TotalOverrides)
+	if exp.ExpiredCount > 0 {
+		fmt.Printf(", %d expired", exp.ExpiredCount)
+	}
+	fmt.Println()
+
+	// Chain verification
+	if result.ChainValid {
+		fmt.Printf("Chain: \u2713 %s\n", result.ChainMessage)
+	} else {
+		fmt.Printf("Chain: \u2717 %s\n", result.ChainMessage)
+	}
+
+	// Missing requirements
+	if len(result.MissingReqIDs) > 0 {
+		fmt.Printf("Missing requirements: %v\n", result.MissingReqIDs)
+	}
+
+	if !result.ChainValid || exp.HasErrors || len(result.MissingReqIDs) > 0 {
+		return fmt.Errorf("verification failed")
+	}
+
+	fmt.Println("\nAll checks passed.")
 	return nil
 }
 

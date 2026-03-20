@@ -207,6 +207,93 @@ func ListOverrides(amendments []byte) (name, systemRef string, overrides []Parse
 	return name, systemRef, parsed, nil
 }
 
+// ChainVerifyResult holds the result of verifying an amendment chain against results.
+type ChainVerifyResult struct {
+	ExpirationResult *VerifyResult `json:"expiration"`
+	ChainValid       bool          `json:"chainValid"`
+	ChainMessage     string        `json:"chainMessage,omitempty"`
+	MissingReqIDs    []string      `json:"missingRequirementIds,omitempty"`
+}
+
+// VerifyChain performs full amendment verification including expiration,
+// previousChecksum chain, and requirementId existence.
+func VerifyChain(resultsData, amendmentsData []byte) (*ChainVerifyResult, error) {
+	// Step 1: Expiration check
+	expResult, err := VerifyAmendments(amendmentsData)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ChainVerifyResult{
+		ExpirationResult: expResult,
+		ChainValid:       true,
+	}
+
+	// Step 2: Check previousChecksum chain
+	var amendDoc map[string]interface{}
+	if err := json.Unmarshal(amendmentsData, &amendDoc); err != nil {
+		return nil, fmt.Errorf("failed to parse amendments: %w", err)
+	}
+
+	if prevChecksum, ok := amendDoc["previousChecksum"].(map[string]interface{}); ok {
+		expectedValue, _ := prevChecksum["value"].(string)
+		if expectedValue != "" {
+			hash := sha256.Sum256(resultsData)
+			actualValue := fmt.Sprintf("%x", hash)
+			if actualValue != expectedValue {
+				result.ChainValid = false
+				result.ChainMessage = fmt.Sprintf("previousChecksum mismatch: expected %s, got %s", expectedValue, actualValue)
+			} else {
+				result.ChainMessage = "previousChecksum verified"
+			}
+		}
+	} else {
+		result.ChainMessage = "no previousChecksum present (chain not established)"
+	}
+
+	// Step 3: Check requirementIds exist in results
+	var resultsDoc map[string]interface{}
+	if err := json.Unmarshal(resultsData, &resultsDoc); err != nil {
+		return nil, fmt.Errorf("failed to parse results: %w", err)
+	}
+
+	reqIDs := make(map[string]bool)
+	baselines, _ := resultsDoc["baselines"].([]interface{})
+	for _, bRaw := range baselines {
+		b, ok := bRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		reqs, _ := b["requirements"].([]interface{})
+		for _, rRaw := range reqs {
+			r, ok := rRaw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if id, ok := r["id"].(string); ok {
+				reqIDs[id] = true
+			}
+		}
+	}
+
+	overrides, _ := amendDoc["overrides"].([]interface{})
+	for _, ovRaw := range overrides {
+		ov, ok := ovRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		reqID, ok := ov["requirementId"].(string)
+		if !ok {
+			continue
+		}
+		if !reqIDs[reqID] {
+			result.MissingReqIDs = append(result.MissingReqIDs, reqID)
+		}
+	}
+
+	return result, nil
+}
+
 // VerifyResult holds the verification status of an amendments document.
 type VerifyResult struct {
 	TotalOverrides int  `json:"totalOverrides"`
