@@ -548,6 +548,49 @@
       "description": "Comparison of a single component between two system document versions.",
       "title": "Component Diff"
     },
+    "Package_Diff": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "purl",
+        "state"
+      ],
+      "properties": {
+        "purl": {
+          "type": "string",
+          "description": "Package URL (purl) used as the identity key for matching across SBOMs."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable package name."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "added",
+            "removed",
+            "updated",
+            "unchanged"
+          ],
+          "description": "The state of this package: added (new in new SBOM), removed (absent from new SBOM), updated (version changed), unchanged."
+        },
+        "oldVersion": {
+          "type": "string",
+          "description": "Package version in the old SBOM."
+        },
+        "newVersion": {
+          "type": "string",
+          "description": "Package version in the new SBOM."
+        },
+        "licenses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "License identifiers for this package."
+        }
+      },
+      "description": "Comparison of a single package between two SBOM versions, matched by purl.",
+      "title": "Package Diff"
+    },
     "Scanner_Conflict": {
       "type": "object",
       "unevaluatedProperties": false,

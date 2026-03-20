@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mitre/hdf-cli/pkg/diff/sbom"
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
 	"github.com/spf13/cobra"
 )
@@ -116,6 +117,7 @@ type diffFlags struct {
 	nameOnly         bool
 	system           string
 	groupBy          string
+	sbomMode         bool
 }
 
 // NewDiffCmd creates a new diff command with fresh state.
@@ -160,7 +162,8 @@ Examples:
   hdf diff scan-before.json scan-after.json --stat        # summary counts only
   hdf diff scan-before.json scan-after.json --name-only   # changed requirement IDs only
   hdf diff old.json new.json --system system.json         # component-aware comparison
-  hdf diff old.json new.json --group-by baseline          # group by baseline name`,
+  hdf diff old.json new.json --group-by baseline          # group by baseline name
+  hdf diff --sbom old.cdx.json new.cdx.json               # SBOM comparison mode`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDiff(cmd, args, &flags)
@@ -181,6 +184,7 @@ Examples:
 	cmd.Flags().BoolVar(&flags.nameOnly, "name-only", false, "List only changed requirement IDs")
 	cmd.Flags().StringVar(&flags.system, "system", "", "System document for component-aware comparison")
 	cmd.Flags().StringVar(&flags.groupBy, "group-by", "", "Group results by label key (e.g., baseline)")
+	cmd.Flags().BoolVar(&flags.sbomMode, "sbom", false, "SBOM comparison mode: treat inputs as CycloneDX or SPDX documents")
 
 	return cmd
 }
@@ -188,6 +192,11 @@ Examples:
 func runDiff(_ *cobra.Command, args []string, flags *diffFlags) error {
 	if flags.system != "" && flags.groupBy != "" {
 		return fmt.Errorf("--system and --group-by are mutually exclusive")
+	}
+
+	// SBOM comparison mode
+	if flags.sbomMode {
+		return runSbomDiff(args, flags)
 	}
 
 	oldFile := args[0]
@@ -898,6 +907,76 @@ func groupByLabel(
 	}
 
 	return summaries
+}
+
+// runSbomDiff handles the --sbom flag: reads two SBOM files and outputs a package diff.
+func runSbomDiff(args []string, flags *diffFlags) error {
+	oldData, err := os.ReadFile(args[0]) //nolint:gosec // path is user-provided CLI arg
+	if err != nil {
+		return fmt.Errorf("failed to read old SBOM file: %w", err)
+	}
+	newData, err := os.ReadFile(args[1]) //nolint:gosec // path is user-provided CLI arg
+	if err != nil {
+		return fmt.Errorf("failed to read new SBOM file: %w", err)
+	}
+
+	result, err := sbom.DiffSBOMs(oldData, newData)
+	if err != nil {
+		return err
+	}
+
+	if flags.quiet {
+		return nil
+	}
+
+	if jsonOutput || flags.format == "json" {
+		return outputSbomJSON(result)
+	}
+
+	outputSbomTable(result, args[0], args[1])
+	return nil
+}
+
+// outputSbomJSON renders the SBOM diff result as JSON.
+func outputSbomJSON(result *sbom.DiffResult) error {
+	output, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(output))
+	return nil
+}
+
+// outputSbomTable renders the SBOM diff result as a human-readable table.
+func outputSbomTable(result *sbom.DiffResult, oldFile, newFile string) {
+	fmt.Printf("SBOM Comparison: %s → %s\n\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
+
+	for _, d := range result.PackageDiffs {
+		prefix := " "
+		switch d.State {
+		case "added":
+			prefix = "+"
+		case "removed":
+			prefix = "-"
+		case "updated":
+			prefix = "~"
+		}
+
+		version := ""
+		switch d.State {
+		case "updated":
+			version = fmt.Sprintf("%s → %s", d.OldVersion, d.NewVersion)
+		case "added":
+			version = d.NewVersion
+		case "removed":
+			version = d.OldVersion
+		}
+
+		fmt.Printf("  %s %-30s %-20s (%s)\n", prefix, sanitizeOutput(d.Name), version, d.State)
+	}
+
+	fmt.Printf("\nSummary: %d added, %d removed, %d updated, %d unchanged\n",
+		result.Added, result.Removed, result.Updated, result.Unchanged)
 }
 
 // outputComponentSummaries prints component summaries in human-readable format.

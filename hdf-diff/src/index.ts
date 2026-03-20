@@ -77,3 +77,7 @@ export {
 // Renderers
 export { render, renderJson, renderMarkdown, renderTerminal, renderCsv } from './renderers/index.js';
 export type { DetailLevel, RenderOptions } from './renderers/types.js';
+
+// SBOM comparison
+export { diffSboms } from './sbom.js';
+export type { PackageDiff, SbomDiffResult } from './sbom.js';
