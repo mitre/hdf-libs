@@ -3,7 +3,8 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { detectFormat } from '../../../shared/typescript/formatdetect.js';
+import { detectConverter } from '../../../shared/typescript/fingerprint.js';
+import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
 import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
@@ -174,7 +175,9 @@ export async function convertSnykToHdf(input: string): Promise<string> {
   validateInputSize(input, 'snyk');
 
   // Detect format: if SARIF, delegate to the shared SARIF converter
-  if (detectFormat(input) === 'sarif') {
+  registerAllFingerprints();
+  const detected = detectConverter(input);
+  if (detected && detected.fingerprint.id === 'sarif-to-hdf') {
     return convertSarifToHdf(input);
   }
 

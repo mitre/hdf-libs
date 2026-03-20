@@ -8,6 +8,7 @@ import (
 	"time"
 
 	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
+	"github.com/mitre/hdf-converters/registry"
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
@@ -158,7 +159,7 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 	}
 
 	// Detect format: if SARIF, delegate to the shared SARIF converter
-	if shared.DetectFormat(input) == shared.FormatSARIF {
+	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
 		return sarif.ConvertSarifToHDF(input, converterVersion)
 	}
 
