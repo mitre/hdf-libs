@@ -32,6 +32,14 @@ Examples:
 	}
 }
 
+// Verification status constants.
+const (
+	verifyMatch    = "match"
+	verifyMismatch = "mismatch"
+	verifySkipped  = "skipped"
+	verifyError    = "error"
+)
+
 // evidenceVerifyResult holds per-document verification status.
 type evidenceVerifyResult struct {
 	URI      string `json:"uri"`
@@ -89,13 +97,13 @@ func verifyContents(contents []interface{}, pkgDir string) ([]evidenceVerifyResu
 		results = append(results, r)
 
 		switch r.Status {
-		case "match":
+		case verifyMatch:
 			counts.match++
-		case "mismatch":
+		case verifyMismatch:
 			counts.mismatch++
-		case "skipped":
+		case verifySkipped:
 			counts.skipped++
-		case "error":
+		case verifyError:
 			counts.errors++
 		}
 	}
@@ -106,27 +114,27 @@ func verifyContents(contents []interface{}, pkgDir string) ([]evidenceVerifyResu
 func verifyContentEntry(entry map[string]interface{}, uri, docType, pkgDir string) evidenceVerifyResult {
 	checksumObj, hasChecksum := entry["checksum"].(map[string]interface{})
 	if !hasChecksum {
-		return evidenceVerifyResult{URI: uri, Type: docType, Status: "skipped"}
+		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifySkipped}
 	}
 
 	expectedHash, _ := checksumObj["value"].(string)
 	if expectedHash == "" {
-		return evidenceVerifyResult{URI: uri, Type: docType, Status: "skipped"}
+		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifySkipped}
 	}
 
 	filePath := filepath.Join(pkgDir, uri)
 	fileData, err := os.ReadFile(filePath) // #nosec G304 -- resolves relative to package
 	if err != nil {
-		return evidenceVerifyResult{URI: uri, Type: docType, Status: "error", Error: err.Error()}
+		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifyError, Error: err.Error()}
 	}
 
 	actualHash := sha256.Sum256(fileData)
 	actualHex := hex.EncodeToString(actualHash[:])
 
 	if actualHex == expectedHash {
-		return evidenceVerifyResult{URI: uri, Type: docType, Status: "match"}
+		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifyMatch}
 	}
-	return evidenceVerifyResult{URI: uri, Type: docType, Status: "mismatch", Expected: expectedHash, Actual: actualHex}
+	return evidenceVerifyResult{URI: uri, Type: docType, Status: verifyMismatch, Expected: expectedHash, Actual: actualHex}
 }
 
 func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResult, counts verifyCounts) {
@@ -149,13 +157,13 @@ func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResu
 	}
 	for _, r := range results {
 		switch r.Status {
-		case "match":
+		case verifyMatch:
 			fmt.Printf("  \u2713 %s (sha256 match)\n", sanitizeOutput(r.URI))
-		case "mismatch":
+		case verifyMismatch:
 			fmt.Printf("  \u2717 %s (sha256 MISMATCH)\n", sanitizeOutput(r.URI))
-		case "skipped":
+		case verifySkipped:
 			fmt.Printf("  - %s (no checksum)\n", sanitizeOutput(r.URI))
-		case "error":
+		case verifyError:
 			fmt.Printf("  ! %s (error: %s)\n", sanitizeOutput(r.URI), r.Error)
 		}
 	}

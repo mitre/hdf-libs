@@ -25,6 +25,7 @@ Examples:
   hdf amend verify waivers.json`,
 	}
 
+	cmd.AddCommand(newAmendCreateCmd())
 	cmd.AddCommand(newAmendApplyCmd())
 	cmd.AddCommand(newAmendListCmd())
 	cmd.AddCommand(newAmendVerifyCmd())
