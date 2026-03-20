@@ -30,7 +30,7 @@ func DetectConverterAll(input []byte) []DetectionResult {
 		return nil
 	}
 
-	var parsed interface{}
+	var parsed any
 	if family == FamilyJSON {
 		if err := json.Unmarshal(input, &parsed); err != nil {
 			return nil

@@ -17,15 +17,15 @@ func registerTestFingerprints() {
 	Register(ConverterFingerprint{
 		ID: "sarif-to-hdf", Label: "SARIF",
 		Direction: DirectionIngest, InputFamily: FamilyJSON, OutputType: OutputResults,
-		Fingerprint: func(input interface{}) float64 {
-			obj, ok := input.(map[string]interface{})
+		Fingerprint: func(input any) float64 {
+			obj, ok := input.(map[string]any)
 			if !ok {
 				return 0
 			}
 			if _, hasVersion := obj["version"]; hasVersion {
 				if _, hasRuns := obj["runs"]; hasRuns {
 					if _, isStr := obj["version"].(string); isStr {
-						if _, isArr := obj["runs"].([]interface{}); isArr {
+						if _, isArr := obj["runs"].([]any); isArr {
 							return 0.9
 						}
 					}
@@ -37,8 +37,8 @@ func registerTestFingerprints() {
 	Register(ConverterFingerprint{
 		ID: "gosec-to-hdf", Label: "GoSec",
 		Direction: DirectionIngest, InputFamily: FamilyJSON, OutputType: OutputResults,
-		Fingerprint: func(input interface{}) float64 {
-			obj, ok := input.(map[string]interface{})
+		Fingerprint: func(input any) float64 {
+			obj, ok := input.(map[string]any)
 			if !ok {
 				return 0
 			}
@@ -53,7 +53,7 @@ func registerTestFingerprints() {
 	Register(ConverterFingerprint{
 		ID: "junit-to-hdf", Label: "JUnit",
 		Direction: DirectionIngest, InputFamily: FamilyXML, OutputType: OutputResults,
-		Fingerprint: func(input interface{}) float64 {
+		Fingerprint: func(input any) float64 {
 			s, ok := input.(string)
 			if !ok {
 				return 0
@@ -67,7 +67,7 @@ func registerTestFingerprints() {
 	Register(ConverterFingerprint{
 		ID: "xccdf-results-to-hdf", Label: "XCCDF",
 		Direction: DirectionIngest, InputFamily: FamilyXML, OutputType: OutputResults,
-		Fingerprint: func(input interface{}) float64 {
+		Fingerprint: func(input any) float64 {
 			s, ok := input.(string)
 			if !ok {
 				return 0
@@ -168,7 +168,7 @@ func TestDetectConverter(t *testing.T) {
 		Register(ConverterFingerprint{
 			ID: "json-only", Label: "J", Direction: DirectionIngest,
 			InputFamily: FamilyJSON, OutputType: OutputResults,
-			Fingerprint: func(input interface{}) float64 { return 1.0 },
+			Fingerprint: func(input any) float64 { return 1.0 },
 		})
 		assert.Nil(t, DetectConverter([]byte(junitInput)))
 	})
@@ -178,7 +178,7 @@ func TestDetectConverter(t *testing.T) {
 		Register(ConverterFingerprint{
 			ID: "hdf-to-csv", Label: "Export", Direction: DirectionExport,
 			InputFamily: FamilyJSON, OutputType: OutputRaw,
-			Fingerprint: func(input interface{}) float64 { return 1.0 },
+			Fingerprint: func(input any) float64 { return 1.0 },
 		})
 		assert.Nil(t, DetectConverter([]byte(sarifInput)))
 	})
@@ -190,8 +190,8 @@ func TestDetectConverterAll(t *testing.T) {
 		Register(ConverterFingerprint{
 			ID: "snyk-to-hdf", Label: "Snyk", Direction: DirectionIngest,
 			InputFamily: FamilyJSON, OutputType: OutputResults,
-			Fingerprint: func(input interface{}) float64 {
-				obj, ok := input.(map[string]interface{})
+			Fingerprint: func(input any) float64 {
+				obj, ok := input.(map[string]any)
 				if !ok {
 					return 0
 				}
@@ -204,8 +204,8 @@ func TestDetectConverterAll(t *testing.T) {
 		Register(ConverterFingerprint{
 			ID: "gitlab-to-hdf", Label: "GitLab", Direction: DirectionIngest,
 			InputFamily: FamilyJSON, OutputType: OutputResults,
-			Fingerprint: func(input interface{}) float64 {
-				obj, ok := input.(map[string]interface{})
+			Fingerprint: func(input any) float64 {
+				obj, ok := input.(map[string]any)
 				if !ok {
 					return 0
 				}
@@ -227,8 +227,8 @@ func TestDetectConverterAll(t *testing.T) {
 }
 
 // helper to parse JSON for testing
-func parseJSON(data []byte) interface{} {
-	var v interface{}
+func parseJSON(data []byte) any {
+	var v any
 	_ = json.Unmarshal(data, &v)
 	return v
 }

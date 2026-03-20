@@ -14,7 +14,7 @@ func makeFP(id string) ConverterFingerprint {
 		Direction:   DirectionIngest,
 		InputFamily: FamilyJSON,
 		OutputType:  OutputResults,
-		Fingerprint: func(input interface{}) float64 { return 1.0 },
+		Fingerprint: func(input any) float64 { return 1.0 },
 	}
 }
 

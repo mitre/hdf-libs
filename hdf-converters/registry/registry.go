@@ -44,9 +44,9 @@ type ConverterFingerprint struct {
 	InputFamily InputFamily
 	OutputType  OutputType
 	// Fingerprint returns a confidence score 0.0-1.0 for the given input.
-	// JSON input is passed as map[string]interface{} or []interface{}.
+	// JSON input is passed as map[string]any or []any.
 	// XML/text input is passed as string.
-	Fingerprint func(input interface{}) float64
+	Fingerprint func(input any) float64
 }
 
 var registry []ConverterFingerprint
