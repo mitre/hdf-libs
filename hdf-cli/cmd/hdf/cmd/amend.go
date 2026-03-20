@@ -213,6 +213,33 @@ func runAmendVerify(_ *cobra.Command, args []string) error {
 
 // truncateToDate extracts the date portion from an RFC3339 timestamp string.
 // Falls back to the original string if parsing fails.
+// outputAmendmentsInfoHuman displays amendments summary from a parsed doc.
+// Used by the auto-detecting `hdf info` command.
+func outputAmendmentsInfoHuman(doc map[string]interface{}) error {
+	name, _ := doc["name"].(string)
+	systemRef, _ := doc["systemRef"].(string)
+
+	fmt.Printf("Amendments: %s\n", name)
+	if systemRef != "" {
+		fmt.Printf("System: %s\n", systemRef)
+	}
+
+	overrides, _ := doc["overrides"].([]interface{})
+	fmt.Printf("Overrides: %d\n", len(overrides))
+	for _, ov := range overrides {
+		o, _ := ov.(map[string]interface{})
+		if o == nil {
+			continue
+		}
+		reqID, _ := o["requirementId"].(string)
+		ovType, _ := o["type"].(string)
+		status, _ := o["status"].(string)
+		reason, _ := o["reason"].(string)
+		fmt.Printf("  %-8s %-12s %-14s %s\n", reqID, ovType, status, reason)
+	}
+	return nil
+}
+
 func truncateToDate(ts string) string {
 	if len(ts) >= 10 {
 		return ts[:10]

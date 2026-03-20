@@ -22,6 +22,7 @@ Examples:
 	}
 
 	cmd.AddCommand(newPlanInfoCmd())
+	cmd.AddCommand(newPlanCreateCmd())
 
 	return cmd
 }

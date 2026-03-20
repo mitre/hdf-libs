@@ -48,7 +48,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "results", "Schema type: results, baseline, comparison, system, plan, amendments, evidence-package")
+	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "", "Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package")
 	cmd.Flags().BoolVarP(&localQuiet, "quiet", "q", false, "Suppress output on success (exit code only)")
 
 	return cmd
@@ -70,6 +70,12 @@ func runValidate(_ *cobra.Command, args []string) error {
 	}
 
 	printDebug("Read %d bytes", len(data))
+
+	// Auto-detect document type if --type not provided
+	if schemaType == "" {
+		schemaType = detectHDFDocumentType(data)
+		printDebug("Auto-detected document type: %s", schemaType)
+	}
 
 	// Determine display name for output
 	displayName := filename

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
 
@@ -13,16 +14,15 @@ import (
 func NewInfoCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "info <file>",
-		Short: "Display summary information about an HDF file",
-		Long: `Display summary information about an HDF results file including:
-- Generator tool and version
-- Platform information
-- Profile/baseline names and versions
-- Target information
-- Assessment timestamp
+		Short: "Display summary information about any HDF document",
+		Long: `Display summary information about an HDF document. Auto-detects the
+document type (results, baseline, system, plan, amendments, evidence-package)
+and displays type-appropriate information.
 
 Examples:
   hdf info results.json
+  hdf info portal-prod.hdf-system.json
+  hdf info waivers.hdf-amendments.json
   hdf info results.json --json`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: runInfo,
@@ -43,17 +43,47 @@ func runInfo(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	results, err := parseHDFResults(data)
-	if err != nil {
-		printError(fmt.Sprintf("Failed to parse HDF file: %v", err))
-		return err
-	}
+	docType := detectHDFDocumentType(data)
 
-	if jsonOutput {
-		return outputInfoJSON(results, filename)
+	// For non-results types, display via generic doc info
+	switch docType {
+	case string(validators.TypeSystem), string(validators.TypePlan),
+		string(validators.TypeEvidencePackage), string(validators.TypeAmendments):
+		var doc map[string]interface{}
+		if parseErr := json.Unmarshal(data, &doc); parseErr != nil {
+			return fmt.Errorf("failed to parse JSON: %w", parseErr)
+		}
+		if jsonOutput {
+			output, marshalErr := json.MarshalIndent(doc, "", "  ")
+			if marshalErr != nil {
+				return marshalErr
+			}
+			fmt.Println(string(output))
+			return nil
+		}
+		switch docType {
+		case string(validators.TypeSystem):
+			return outputSystemInfoHuman(doc)
+		case string(validators.TypePlan):
+			return outputPlanInfoHuman(doc)
+		case string(validators.TypeEvidencePackage):
+			return outputEvidenceInfoHuman(doc)
+		case string(validators.TypeAmendments):
+			return outputAmendmentsInfoHuman(doc)
+		}
+	default:
+		// results, baseline, comparison — use the original results display
+		results, parseErr := parseHDFResults(data)
+		if parseErr != nil {
+			printError(fmt.Sprintf("Failed to parse HDF file: %v", parseErr))
+			return parseErr
+		}
+		if jsonOutput {
+			return outputInfoJSON(results, filename)
+		}
+		return outputInfoHuman(results, filename)
 	}
-
-	return outputInfoHuman(results, filename)
+	return nil
 }
 
 func outputInfoJSON(results hdf.HdfResults, filename string) error {
