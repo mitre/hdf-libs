@@ -36,6 +36,25 @@ if (isHDFV1(data)) {
 - `platform` (single object) → `targets` (array, supports multiple targets)
 - Extension fields moved to `extensions` object
 
+## Auto-Detection (Fingerprint Registry)
+
+Automatically detect which converter to use for a given input:
+
+```typescript
+import { registerAllFingerprints, detectConverter } from '@mitre/hdf-converters/detect';
+
+registerAllFingerprints();
+const result = detectConverter(rawInput);
+// result.fingerprint.id === 'gosec-to-hdf'
+// result.confidence === 1.0
+```
+
+Each converter self-registers a lightweight structural fingerprint.
+Detection is cheap (~2KB, no converter imports). Conversion is lazy-loaded.
+
+See **[Fingerprint Registry Guide](../docs/guides/converter-fingerprint-registry.md)**
+for full documentation, usage examples, and how to add fingerprints for new converters.
+
 ## Adding New Converters
 
 This package maintains **dual implementations** (TypeScript and Go) for all converters:
