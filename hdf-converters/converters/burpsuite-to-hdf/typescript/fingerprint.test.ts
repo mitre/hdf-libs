@@ -31,11 +31,11 @@ describe('burpsuite-to-hdf fingerprint', () => {
     expect(result!.confidence).toBe(1.0);
   });
 
-  it('detects minimal Burp Suite XML at confidence 0.9', () => {
+  it('detects minimal Burp Suite XML (no burpVersion) at confidence 0.7', () => {
     const result = detectConverter(BURP_MINIMAL);
     expect(result).toBeDefined();
     expect(result!.fingerprint.id).toBe('burpsuite-to-hdf');
-    expect(result!.confidence).toBe(0.9);
+    expect(result!.confidence).toBe(0.7);
   });
 
   it('does not match XML with wrong root element', () => {

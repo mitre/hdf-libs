@@ -14,16 +14,11 @@ export const burpsuiteFingerprint: ConverterFingerprint = {
   outputType: 'results',
   fingerprint: (input: unknown): number => {
     if (typeof input !== 'string') return 0;
-    // Extract root element: match first opening tag after XML declaration/comments
-    // Handle namespace prefixes: <ns:ElementName or <ElementName
-    const rootMatch = input.match(/<(?:\?[^?]*\?>[\s]*)*(?:!--[\s\S]*?-->[\s]*)*<(?:[a-zA-Z_][\w.-]*:)?([a-zA-Z_][\w.-]*)/);
-    if (!rootMatch) return 0;
-    const root = rootMatch[1];
-    // <issues> with burpVersion attribute is a stronger signal
-    if (root === 'issues') {
-      if (input.includes('burpVersion')) return 1.0;
-      return 0.9;
-    }
+    // BurpSuite XML has <!DOCTYPE issues [...]> before <issues> root,
+    // so we check for burpVersion attribute + <issues element directly
+    if (input.includes('burpVersion') && input.includes('<issues')) return 1.0;
+    // Fallback: <issues> root without burpVersion (less certain)
+    if (input.match(/<issues[\s>]/)) return 0.7;
     return 0;
   },
 };
