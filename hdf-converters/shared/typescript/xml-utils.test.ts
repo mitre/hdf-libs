@@ -14,8 +14,19 @@ describe('extractXmlRootElement', () => {
     expect(extractXmlRootElement('<xccdf:Benchmark/>')).toBe('Benchmark');
   });
 
-  it('extracts root after DOCTYPE declaration', () => {
-    expect(extractXmlRootElement('<?xml?>\n<!DOCTYPE issues [...]>\n<issues/>')).toBe('issues');
+  it('extracts root after simple DOCTYPE declaration', () => {
+    expect(extractXmlRootElement('<?xml?>\n<!DOCTYPE root>\n<root/>')).toBe('root');
+  });
+
+  it('extracts root after DOCTYPE with internal subset', () => {
+    const input = `<?xml version="1.0"?>
+<!DOCTYPE issues [
+<!ELEMENT issues (issue*)>
+<!ATTLIST issues burpVersion CDATA "">
+<!ELEMENT issue (name, severity)>
+]>
+<issues burpVersion="2024.1"><issue/></issues>`;
+    expect(extractXmlRootElement(input)).toBe('issues');
   });
 
   it('extracts root after comments', () => {

@@ -294,7 +294,6 @@ Add `"sideEffects": false` — our registration is explicit, not side-effect bas
 | twistlock | `results[]` + `complianceDistribution` | — | results |
 | scoutsuite | `services` + `last_run.ruleset` | — | results |
 | conveyor | `findings[]` + `pipeline` | — | results |
-| veracode | `findings[]` + `build_id` | — | results |
 | nikto | `vulnerabilities[]` + `host`/`port` | `vulnerabilities[]` (0.85) | results |
 | zap | `site[]` + `@version`/`@generated` | `site[]` (0.85) | results |
 | hdf-v2 (passthrough) | `baselines[]` + `targets[]` | `baselines[]` (0.8) | results |
@@ -321,6 +320,7 @@ Add `"sideEffects": false` — our registration is explicit, not side-effect bas
 | burpsuite | `issues` | — | results |
 | fortify | `FVDL` | `xmlns.fortify.com` | results |
 | dbprotect | `dataset` | — | results |
+| veracode | `detailedreport` | — | results |
 
 ### Text/CSV converters
 

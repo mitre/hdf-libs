@@ -43,7 +43,8 @@ export function getIngestFingerprints(): readonly ConverterFingerprint[] {
 }
 
 export function getFingerprint(id: string): ConverterFingerprint | undefined {
-  return registry.find(d => d.id === id);
+  const found = registry.find(d => d.id === id);
+  return found ? { ...found } : undefined;
 }
 
 export function _resetRegistry(): void {

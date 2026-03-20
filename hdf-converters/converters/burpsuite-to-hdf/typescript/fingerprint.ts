@@ -5,6 +5,7 @@
  */
 
 import { registerFingerprint, getFingerprint, type ConverterFingerprint } from '../../../shared/typescript/registry.js';
+import { extractXmlRootElement } from '../../../shared/typescript/xml-utils.js';
 
 export const burpsuiteFingerprint: ConverterFingerprint = {
   id: 'burpsuite-to-hdf',
@@ -14,12 +15,13 @@ export const burpsuiteFingerprint: ConverterFingerprint = {
   outputType: 'results',
   fingerprint: (input: unknown): number => {
     if (typeof input !== 'string') return 0;
-    // BurpSuite XML has <!DOCTYPE issues [...]> before <issues> root,
-    // so we check for burpVersion attribute + <issues element directly
-    if (input.includes('burpVersion') && input.includes('<issues')) return 1.0;
-    // Fallback: <issues> root without burpVersion (less certain)
-    if (input.match(/<issues[\s>]/)) return 0.7;
-    return 0;
+    // BurpSuite XML has <!DOCTYPE issues [...]> before <issues> root.
+    // extractXmlRootElement handles DOCTYPE stripping.
+    const root = extractXmlRootElement(input);
+    if (root !== 'issues') return 0;
+    // burpVersion attribute is a strong signal
+    if (input.includes('burpVersion')) return 1.0;
+    return 0.7;
   },
 };
 
