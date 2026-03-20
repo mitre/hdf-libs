@@ -14,6 +14,10 @@
       "import": "./dist/src/detect.js",
       "types": "./dist/src/detect.d.ts"
     },
+    "./registry": {
+      "import": "./dist/shared/typescript/registry.js",
+      "types": "./dist/shared/typescript/registry.d.ts"
+    },
     "./package.json": "./package.json"
   },
   "sideEffects": false,

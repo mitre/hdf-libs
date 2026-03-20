@@ -413,7 +413,7 @@ in 3 places. This is a separate task tracked under a different card:
 ### Phase 1: TS infrastructure complete
 5. Create `register-all.ts` with explicit registration
 6. Update barrel export (`src/index.ts`) + package.json exports map
-7. Backward compat: `formatdetect.ts` delegates to registry
+   (Note: `formatdetect.ts` backward-compat delegation deferred to Phase 4)
 
 ### Phase 2: Go infrastructure
 8. Create `registry/` package with Go types + register/detect

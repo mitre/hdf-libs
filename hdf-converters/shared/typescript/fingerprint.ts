@@ -42,6 +42,7 @@ export function detectFamily(input: string): InputFamily | undefined {
   if (!trimmed) return undefined;
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) return 'json';
   if (trimmed.startsWith('<')) return 'xml';
+  // CSV intentionally excluded — too many false positives (see design doc D1)
   return 'text';
 }
 

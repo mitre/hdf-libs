@@ -17,14 +17,11 @@ const allFingerprints: ConverterFingerprint[] = [
   sarifFingerprint,
 ];
 
-let registered = false;
-
+/**
+ * Register all known converter fingerprints.
+ * Idempotent — safe to call multiple times or after _resetRegistry().
+ */
 export function registerAllFingerprints(): void {
-  if (registered) {
-    // Already registered — check if registry was reset (test scenario)
-    if (getFingerprint(allFingerprints[0].id)) return;
-  }
-  registered = true;
   for (const fp of allFingerprints) {
     if (!getFingerprint(fp.id)) {
       registerFingerprint(fp);
