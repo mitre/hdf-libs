@@ -34,6 +34,7 @@ import {
   convertMsftDefenderDevopsToHdf,
   convertMsftDefenderCloudToHdf,
   convertMsftDefenderEndpointToHdf,
+  convertHdfToXccdf,
   convertHdfToOscalSar,
   convertHdfToOscalPoam,
   convertOscalCatalogToHdf,
@@ -228,6 +229,11 @@ describe('Main exports', () => {
   it('should export convertNeuvectorToHdf from main index', () => {
     expect(convertNeuvectorToHdf).toBeDefined();
     expect(typeof convertNeuvectorToHdf).toBe('function');
+  });
+
+  it('should export convertHdfToXccdf from main index', () => {
+    expect(convertHdfToXccdf).toBeDefined();
+    expect(typeof convertHdfToXccdf).toBe('function');
   });
 
   it('should export convertHdfToOscalSar from main index', () => {

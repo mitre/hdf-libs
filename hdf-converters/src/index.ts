@@ -111,6 +111,9 @@ export { convertMsftDefenderCloudToHdf } from '../converters/msft-defender-cloud
 // Microsoft Defender for Endpoint to HDF converter
 export { convertMsftDefenderEndpointToHdf } from '../converters/msft-defender-endpoint-to-hdf/typescript/index.js';
 
+// HDF to XCCDF converter
+export { convertHdfToXccdf } from '../converters/hdf-to-xccdf/typescript/index.js';
+
 // HDF to OSCAL SAR converter
 export { convertHdfToOscalSar } from '../converters/hdf-to-oscal-sar/typescript/index.js';
 
