@@ -80,10 +80,12 @@ func GetIngestFingerprints() []ConverterFingerprint {
 }
 
 // GetFingerprint returns a fingerprint by ID, or nil if not found.
+// Returns a copy to prevent callers from mutating the registry.
 func GetFingerprint(id string) *ConverterFingerprint {
 	for i := range registry {
 		if registry[i].ID == id {
-			return &registry[i]
+			fp := registry[i]
+			return &fp
 		}
 	}
 	return nil

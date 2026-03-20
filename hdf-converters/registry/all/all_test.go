@@ -17,12 +17,11 @@ func fixtureRoot() string {
 	return filepath.Join(filepath.Dir(filename), "..", "..", "converters")
 }
 
-func readFixture(converter, filename string) []byte {
+func readFixture(t *testing.T, converter, filename string) []byte {
+	t.Helper()
 	path := filepath.Join(fixtureRoot(), converter, "fixtures", "input", filename)
 	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
+	require.NoError(t, err, "fixture must exist: %s", path)
 	return data
 }
 
@@ -83,11 +82,7 @@ var fixtureTests = []struct {
 func TestDetectConverterFixtures(t *testing.T) {
 	for _, tc := range fixtureTests {
 		t.Run(tc.expectID+"/"+tc.fixture, func(t *testing.T) {
-			data := readFixture(tc.converter, tc.fixture)
-			if data == nil {
-				t.Skipf("fixture not found: %s/%s", tc.converter, tc.fixture)
-				return
-			}
+			data := readFixture(t, tc.converter, tc.fixture)
 			result := registry.DetectConverter(data)
 			require.NotNilf(t, result, "detectConverter returned nil for %s/%s", tc.converter, tc.fixture)
 			assert.Equal(t, tc.expectID, result.Fingerprint.ID)
@@ -96,11 +91,7 @@ func TestDetectConverterFixtures(t *testing.T) {
 }
 
 func TestSarifTierOrdering(t *testing.T) {
-	data := readFixture("msft-defender-devops-to-hdf", "minimal.sarif")
-	if data == nil {
-		t.Skip("MSDO fixture not found")
-		return
-	}
+	data := readFixture(t, "msft-defender-devops-to-hdf", "minimal.sarif")
 	results := registry.DetectConverterAll(data)
 	require.NotEmpty(t, results)
 	// MSDO (0.95) should outrank generic SARIF (0.9)

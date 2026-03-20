@@ -81,6 +81,9 @@ const allFingerprints: ConverterFingerprint[] = [
   splunkFingerprint,
   trufflehogFingerprint,
   twistlockFingerprint,
+  // JSON ingest (input is JSON despite tool names)
+  niktoFingerprint,
+  zapFingerprint,
   // XML ingest
   burpsuiteFingerprint,
   dbprotectFingerprint,
@@ -88,10 +91,8 @@ const allFingerprints: ConverterFingerprint[] = [
   junitFingerprint,
   nessusFingerprint,
   netsparkerFingerprint,
-  niktoFingerprint,
   veracodeFingerprint,
   xccdfFingerprint,
-  zapFingerprint,
   // Text/CSV ingest
   prismaFingerprint,
   // HDF native

@@ -35,7 +35,7 @@ export function registerFingerprint(fp: ConverterFingerprint): void {
 }
 
 export function getFingerprints(): readonly ConverterFingerprint[] {
-  return registry;
+  return [...registry];
 }
 
 export function getIngestFingerprints(): readonly ConverterFingerprint[] {

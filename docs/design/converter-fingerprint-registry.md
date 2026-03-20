@@ -10,7 +10,7 @@
 
 hdf-libs has three separate auto-detection systems that violate DRY:
 
-1. **Converter detection** (`formatdetect.ts/go`) — "What security tool made this?"
+1. **Converter detection** — "What security tool made this?"
    Covers 4 of 32 formats. Each converter has internal validation but it's scattered.
 
 2. **HDF type detection** — "What HDF schema variant is this?"
@@ -88,11 +88,9 @@ hdf-converters/
   shared/
     typescript/
       registry.ts           <-- ConverterFingerprint type + register/get/detect
-      register-all.ts        <-- NEW: imports all fingerprints, ensures registration
-      formatdetect.ts        <-- KEEP: backward compat, delegates to registry
-    go/
-      formatdetect.go        <-- KEEP: backward compat
-  registry/                  <-- NEW: Go registry package (avoids package testing)
+      register-all.ts        <-- imports all fingerprints, ensures registration
+      xml-utils.ts           <-- shared XML utilities (extractXmlRootElement)
+  registry/                  <-- Go registry package (avoids package testing)
     registry.go
     fingerprint.go
     register_all.go
@@ -297,6 +295,8 @@ Add `"sideEffects": false` — our registration is explicit, not side-effect bas
 | scoutsuite | `services` + `last_run.ruleset` | — | results |
 | conveyor | `findings[]` + `pipeline` | — | results |
 | veracode | `findings[]` + `build_id` | — | results |
+| nikto | `vulnerabilities[]` + `host`/`port` | `vulnerabilities[]` (0.85) | results |
+| zap | `site[]` + `@version`/`@generated` | `site[]` (0.85) | results |
 | hdf-v2 (passthrough) | `baselines[]` + `targets[]` | `baselines[]` (0.8) | results |
 | hdf-v1 (legacy) | delegates to `isHDFV1()` | — | results |
 
@@ -307,6 +307,8 @@ Add `"sideEffects": false` — our registration is explicit, not side-effect bas
 - ~~Fortify listed as JSON~~ → Fortify is XML-only (FVDL root element)
 - Added HDF v2 native detection (most common upload format)
 - Added HDF v1 legacy detection (delegates to existing `isHDFV1()`)
+- ~~Nikto listed as XML~~ → Nikto input is JSON (`vulnerabilities[]` + `host`/`port`)
+- ~~ZAP listed as XML~~ → ZAP input is JSON (`site[]` + `@version`/`@generated`)
 
 ### XML converters
 
@@ -315,12 +317,10 @@ Add `"sideEffects": false` — our registration is explicit, not side-effect bas
 | xccdf + arf | `Benchmark` / `asset-report-collection` | `checklists.nist.gov/xccdf` | results |
 | junit | `testsuites` / `testsuite` | — | results |
 | nessus | `NessusClientData_v2` | — | results |
-| netsparker | `netsparker` | — | results |
-| nikto | `niktoscan` | — | results |
-| zap | `OWASPZAPReport` | — | results |
+| netsparker | `netsparker-enterprise` / `invicti-enterprise` | — | results |
 | burpsuite | `issues` | — | results |
 | fortify | `FVDL` | `xmlns.fortify.com` | results |
-| dbprotect | `DBProtectResults` | — | results |
+| dbprotect | `dataset` | — | results |
 
 ### Text/CSV converters
 
@@ -413,7 +413,7 @@ in 3 places. This is a separate task tracked under a different card:
 ### Phase 1: TS infrastructure complete
 5. Create `register-all.ts` with explicit registration
 6. Update barrel export (`src/index.ts`) + package.json exports map
-   (Note: `formatdetect.ts` backward-compat delegation deferred to Phase 4)
+   (Note: legacy format detection files have been removed)
 
 ### Phase 2: Go infrastructure
 8. Create `registry/` package with Go types + register/detect

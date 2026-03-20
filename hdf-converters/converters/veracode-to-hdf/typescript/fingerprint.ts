@@ -12,6 +12,7 @@
  */
 
 import { registerFingerprint, getFingerprint, type ConverterFingerprint } from '../../../shared/typescript/registry.js';
+import { extractXmlRootElement } from '../../../shared/typescript/xml-utils.js';
 
 export const veracodeFingerprint: ConverterFingerprint = {
   id: 'veracode-to-hdf',
@@ -21,7 +22,8 @@ export const veracodeFingerprint: ConverterFingerprint = {
   outputType: 'results',
   fingerprint: (input: unknown): number => {
     if (typeof input !== 'string') return 0;
-    if (input.match(/<(?:[a-zA-Z_][\w.-]*:)?detailedreport[\s>]/)) return 1.0;
+    const root = extractXmlRootElement(input);
+    if (root === 'detailedreport') return 1.0;
     return 0;
   },
 };

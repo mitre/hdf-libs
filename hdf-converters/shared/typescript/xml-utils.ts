@@ -14,9 +14,28 @@
  * Returns null if no element found.
  */
 export function extractXmlRootElement(input: string): string | null {
-  // Skip past XML declaration, DOCTYPE, and comments to find first real element
-  const rootMatch = input.match(
-    /<(?:\?[^?]*\?>[\s]*)*(?:![^>]*>[\s]*)*<(?:[a-zA-Z_][\w.-]*:)?([a-zA-Z_][\w.-]*)/
-  );
-  return rootMatch ? rootMatch[1] : null;
+  // Strip leading whitespace, XML declarations (<?...?>), DOCTYPEs (<!...>), and comments (<!--...-->)
+  let s = input;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    s = s.trimStart();
+    if (s.startsWith('<?')) {
+      const end = s.indexOf('?>');
+      if (end === -1) return null;
+      s = s.slice(end + 2);
+    } else if (s.startsWith('<!--')) {
+      const end = s.indexOf('-->');
+      if (end === -1) return null;
+      s = s.slice(end + 3);
+    } else if (s.startsWith('<!')) {
+      const end = s.indexOf('>');
+      if (end === -1) return null;
+      s = s.slice(end + 1);
+    } else {
+      break;
+    }
+  }
+  // Now s should start with the root element tag (or not be XML at all)
+  const m = s.match(/^<(?:[a-zA-Z_][\w.-]*:)?([a-zA-Z_][\w.-]*)/);
+  return m ? m[1] : null;
 }
