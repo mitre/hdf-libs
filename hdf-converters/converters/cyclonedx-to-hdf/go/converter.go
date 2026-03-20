@@ -14,11 +14,11 @@ import (
 
 // CycloneDXBom is the top-level CycloneDX BOM structure.
 type CycloneDXBom struct {
-	BomFormat       string              `json:"bomFormat"`
-	SpecVersion     string              `json:"specVersion"`
-	Metadata        *CDXMetadata        `json:"metadata"`
-	Components      []CDXComponent      `json:"components"`
-	Vulnerabilities []CDXVulnerability  `json:"vulnerabilities"`
+	BomFormat       string             `json:"bomFormat"`
+	SpecVersion     string             `json:"specVersion"`
+	Metadata        *CDXMetadata       `json:"metadata"`
+	Components      []CDXComponent     `json:"components"`
+	Vulnerabilities []CDXVulnerability `json:"vulnerabilities"`
 }
 
 // CDXMetadata holds BOM metadata.

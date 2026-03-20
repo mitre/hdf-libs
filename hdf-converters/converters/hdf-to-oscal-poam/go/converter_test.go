@@ -124,8 +124,8 @@ func TestConvertHDFToOSCALPOAM_SystemRef(t *testing.T) {
 
 func TestConvertHDFToOSCALPOAM_StatusMapping(t *testing.T) {
 	tests := []struct {
-		hdfStatus    hdf.ResultStatus
-		oscalStatus  string
+		hdfStatus   hdf.ResultStatus
+		oscalStatus string
 	}{
 		{hdf.Passed, "closed"},
 		{hdf.Failed, "open"},

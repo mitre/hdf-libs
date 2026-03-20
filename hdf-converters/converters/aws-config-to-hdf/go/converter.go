@@ -158,8 +158,8 @@ func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 		ID:           rule.ConfigRuleID,
 		Title:        shared.Ptr(buildTitle(rule)),
 		Descriptions: descriptions,
-		Impact: 0.5,
-		Tags:   tags,
+		Impact:       0.5,
+		Tags:         tags,
 		SourceLocation: &hdf.SourceLocation{
 			Ref:  &arnRef,
 			Line: &line,

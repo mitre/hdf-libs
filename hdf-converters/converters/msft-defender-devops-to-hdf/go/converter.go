@@ -19,10 +19,10 @@ type msdoSarif struct {
 }
 
 type msdoRun struct {
-	Tool                     msdoTool                  `json:"tool"`
+	Tool                     msdoTool                   `json:"tool"`
 	VersionControlProvenance []VersionControlProvenance `json:"versionControlProvenance"`
-	Policies                 []Policy                  `json:"policies"`
-	Results                  []msdoResult              `json:"results"`
+	Policies                 []Policy                   `json:"policies"`
+	Results                  []msdoResult               `json:"results"`
 }
 
 type msdoTool struct {

@@ -185,8 +185,8 @@ func TestGetAccountID_EmptyARN(t *testing.T) {
 
 func TestBuildCheckText_WithParams(t *testing.T) {
 	rule := ConfigRule{
-		ConfigRuleArn: "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-7hytm9",
-		Source:        ConfigRuleSource{SourceIdentifier: "ACCESS_KEYS_ROTATED"},
+		ConfigRuleArn:   "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-7hytm9",
+		Source:          ConfigRuleSource{SourceIdentifier: "ACCESS_KEYS_ROTATED"},
 		InputParameters: `{"maxAccessKeyAge":"90"}`,
 	}
 	text := buildCheckText(rule)

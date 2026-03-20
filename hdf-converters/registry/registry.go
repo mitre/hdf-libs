@@ -4,7 +4,6 @@
 // the highest-confidence match for a given input.
 package registry
 
-
 // InputFamily represents the broad format category of converter input.
 type InputFamily string
 
@@ -26,13 +25,13 @@ const (
 type OutputType string
 
 const (
-	OutputResults        OutputType = "results"
-	OutputBaseline       OutputType = "baseline"
-	OutputPlan           OutputType = "plan"
-	OutputAmendments     OutputType = "amendments"
-	OutputSystem         OutputType = "system"
-	OutputEvidencePkg    OutputType = "evidence-package"
-	OutputRaw            OutputType = "raw"
+	OutputResults     OutputType = "results"
+	OutputBaseline    OutputType = "baseline"
+	OutputPlan        OutputType = "plan"
+	OutputAmendments  OutputType = "amendments"
+	OutputSystem      OutputType = "system"
+	OutputEvidencePkg OutputType = "evidence-package"
+	OutputRaw         OutputType = "raw"
 )
 
 // ConverterFingerprint is lightweight metadata for format detection.

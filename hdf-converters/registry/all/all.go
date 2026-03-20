@@ -69,7 +69,7 @@ import (
 // Export converters
 import (
 	_ "github.com/mitre/hdf-converters/converters/hdf-to-csv/go"
-	_ "github.com/mitre/hdf-converters/converters/hdf-to-xml/go"
-	_ "github.com/mitre/hdf-converters/converters/hdf-to-oscal-sar/go"
 	_ "github.com/mitre/hdf-converters/converters/hdf-to-oscal-poam/go"
+	_ "github.com/mitre/hdf-converters/converters/hdf-to-oscal-sar/go"
+	_ "github.com/mitre/hdf-converters/converters/hdf-to-xml/go"
 )

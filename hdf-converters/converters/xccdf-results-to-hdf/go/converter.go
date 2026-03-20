@@ -39,16 +39,16 @@ func isXccdfNS(ns string) bool {
 
 // Benchmark is the root element of an XCCDF document.
 type Benchmark struct {
-	XMLName     xml.Name     `xml:"Benchmark"`
-	ID          string       `xml:"id,attr"`
-	Status      string       `xml:"status"`
-	Title       string       `xml:"title"`
-	Description string       `xml:"description"`
-	Version     string       `xml:"version"`
-	Platforms   []Platform   `xml:"platform"`
-	Groups      []Group      `xml:"Group"`
-	Rules       []Rule       `xml:"Rule"`
-	TestResult  TestResult   `xml:"TestResult"`
+	XMLName     xml.Name   `xml:"Benchmark"`
+	ID          string     `xml:"id,attr"`
+	Status      string     `xml:"status"`
+	Title       string     `xml:"title"`
+	Description string     `xml:"description"`
+	Version     string     `xml:"version"`
+	Platforms   []Platform `xml:"platform"`
+	Groups      []Group    `xml:"Group"`
+	Rules       []Rule     `xml:"Rule"`
+	TestResult  TestResult `xml:"TestResult"`
 }
 
 // Platform represents an XCCDF platform element.
@@ -1042,9 +1042,9 @@ func mapResultStatus(result string) hdf.ResultStatus {
 // buildTarget constructs an HDF Target from the TestResult metadata.
 func buildTarget(tr *TestResult) hdf.Target {
 	target := hdf.Target{
-		Name: tr.Target,
-		Type: hdf.Host,
-			Labels: map[string]string{"service": "xccdf"},
+		Name:   tr.Target,
+		Type:   hdf.Host,
+		Labels: map[string]string{"service": "xccdf"},
 	}
 
 	// Use the first target-address as the IP address

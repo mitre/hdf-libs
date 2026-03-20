@@ -22,14 +22,14 @@ type TwistlockReport struct {
 
 // TwistlockResult represents a single scan result (one image or repository).
 type TwistlockResult struct {
-	ID                          string                    `json:"id"`
-	Name                        string                    `json:"name"`
-	Repository                  string                    `json:"repository"`
-	Distro                      string                    `json:"distro"`
-	Collections                 []string                  `json:"collections"`
-	Vulnerabilities             []TwistlockVuln           `json:"vulnerabilities"`
-	VulnerabilityDistribution   *TwistlockDistribution    `json:"vulnerabilityDistribution"`
-	ComplianceDistribution      *TwistlockDistribution    `json:"complianceDistribution"`
+	ID                        string                 `json:"id"`
+	Name                      string                 `json:"name"`
+	Repository                string                 `json:"repository"`
+	Distro                    string                 `json:"distro"`
+	Collections               []string               `json:"collections"`
+	Vulnerabilities           []TwistlockVuln        `json:"vulnerabilities"`
+	VulnerabilityDistribution *TwistlockDistribution `json:"vulnerabilityDistribution"`
+	ComplianceDistribution    *TwistlockDistribution `json:"complianceDistribution"`
 }
 
 // TwistlockVuln represents a single vulnerability entry.

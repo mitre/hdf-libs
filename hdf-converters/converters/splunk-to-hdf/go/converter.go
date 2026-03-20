@@ -69,17 +69,17 @@ type SplunkGroup struct {
 
 // SplunkControl represents a control event.
 type SplunkControl struct {
-	Meta           SplunkMeta            `json:"meta"`
-	ID             string                `json:"id"`
-	Title          string                `json:"title"`
-	Desc           string                `json:"desc"`
-	Descriptions   map[string]string     `json:"descriptions"`
-	Impact         float64               `json:"impact"`
-	Code           string                `json:"code"`
+	Meta           SplunkMeta             `json:"meta"`
+	ID             string                 `json:"id"`
+	Title          string                 `json:"title"`
+	Desc           string                 `json:"desc"`
+	Descriptions   map[string]string      `json:"descriptions"`
+	Impact         float64                `json:"impact"`
+	Code           string                 `json:"code"`
 	Tags           map[string]interface{} `json:"tags"`
-	Results        []SplunkResult        `json:"results"`
-	Refs           []interface{}         `json:"refs"`
-	SourceLocation *SplunkSourceLocation `json:"source_location,omitempty"`
+	Results        []SplunkResult         `json:"results"`
+	Refs           []interface{}          `json:"refs"`
+	SourceLocation *SplunkSourceLocation  `json:"source_location,omitempty"`
 }
 
 // SplunkResult represents a single test result within a control.
@@ -209,9 +209,9 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 
 		// Build target from header platform info.
 		target := hdf.Target{
-			Name: header.Platform.Name,
-			Type: hdf.Host,
-				Labels: map[string]string{"service": "splunk"},
+			Name:   header.Platform.Name,
+			Type:   hdf.Host,
+			Labels: map[string]string{"service": "splunk"},
 		}
 		if header.Platform.Release != "" {
 			target.OSVersion = shared.Ptr(header.Platform.Release)

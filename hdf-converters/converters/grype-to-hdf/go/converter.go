@@ -8,8 +8,8 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
-	hdf "github.com/mitre/hdf-schema"
 	"github.com/mitre/hdf-mappings/go/cci"
+	hdf "github.com/mitre/hdf-schema"
 )
 
 // Grype JSON report input structures
@@ -41,10 +41,10 @@ type GrypeDistro struct {
 }
 
 type GrypeMatch struct {
-	Vulnerability          GrypeVulnerability           `json:"vulnerability"`
-	RelatedVulnerabilities []GrypeRelatedVulnerability  `json:"relatedVulnerabilities,omitempty"`
-	MatchDetails           []GrypeMatchDetail           `json:"matchDetails"`
-	Artifact               GrypeArtifact                `json:"artifact"`
+	Vulnerability          GrypeVulnerability          `json:"vulnerability"`
+	RelatedVulnerabilities []GrypeRelatedVulnerability `json:"relatedVulnerabilities,omitempty"`
+	MatchDetails           []GrypeMatchDetail          `json:"matchDetails"`
+	Artifact               GrypeArtifact               `json:"artifact"`
 }
 
 type GrypeVulnerability struct {
@@ -86,8 +86,8 @@ type GrypeFix struct {
 }
 
 type GrypeMatchDetail struct {
-	Type    string                 `json:"type,omitempty"` // "exact-direct-match", "exact-indirect-match", "cpe-match"
-	Matcher string                 `json:"matcher,omitempty"`
+	Type       string                 `json:"type,omitempty"` // "exact-direct-match", "exact-indirect-match", "cpe-match"
+	Matcher    string                 `json:"matcher,omitempty"`
 	SearchedBy map[string]interface{} `json:"searchedBy,omitempty"`
 	Found      map[string]interface{} `json:"found,omitempty"`
 }
@@ -108,7 +108,6 @@ type GrypeLocation struct {
 	Path    string `json:"path,omitempty"`
 	LayerID string `json:"layerID,omitempty"`
 }
-
 
 // Severity to impact mapping.
 // Grype maps "critical" to 0.9 (not the standard 1.0) and adds "negligible"=0.0.

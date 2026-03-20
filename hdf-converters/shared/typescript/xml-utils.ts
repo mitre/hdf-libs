@@ -15,7 +15,6 @@
  */
 export function extractXmlRootElement(input: string): string | null {
   let s = input;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     s = s.trimStart();
     if (s.startsWith('<?')) {
@@ -53,5 +52,5 @@ export function extractXmlRootElement(input: string): string | null {
   }
   // Match the root element, stripping optional namespace prefix
   const m = s.match(/^<(?:[a-zA-Z_][\w.-]*:)?([a-zA-Z_][\w.-]*)/);
-  return m ? m[1] : null;
+  return m?.[1] ?? null;
 }

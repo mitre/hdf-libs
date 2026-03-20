@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	hdf "github.com/mitre/hdf-schema"
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -447,7 +447,7 @@ func TestKindMappingIntegration(t *testing.T) {
 		// result's level or "warning". Non-fail-only results get "warning" → 0.5.
 		{"pass", hdf.Passed, 0.5},
 		{"fail", hdf.Failed, 0.7},
-		{"", hdf.Failed, 0.7},       // default kind=fail, level=error → 0.7
+		{"", hdf.Failed, 0.7}, // default kind=fail, level=error → 0.7
 		{"open", hdf.Failed, 0.5},
 		{"review", hdf.NotReviewed, 0.5},
 		{"informational", hdf.NotApplicable, 0.5},
@@ -503,10 +503,10 @@ func TestKindMappingIntegration(t *testing.T) {
 
 func TestApplySuppression(t *testing.T) {
 	tests := []struct {
-		name                 string
-		suppressions         []Suppression
-		expectSuppressed     bool
-		expectJustification  string
+		name                string
+		suppressions        []Suppression
+		expectSuppressed    bool
+		expectJustification string
 	}{
 		{
 			"no suppressions",

@@ -13,9 +13,9 @@ import (
 
 // DeptrackReport is the top-level Dependency-Track Finding Packaging Format (FPF) structure.
 type DeptrackReport struct {
-	Version  string           `json:"version"`
-	Meta     DeptrackMeta     `json:"meta"`
-	Project  DeptrackProject  `json:"project"`
+	Version  string            `json:"version"`
+	Meta     DeptrackMeta      `json:"meta"`
+	Project  DeptrackProject   `json:"project"`
 	Findings []DeptrackFinding `json:"findings"`
 }
 

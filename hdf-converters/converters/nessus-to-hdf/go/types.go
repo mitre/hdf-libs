@@ -79,10 +79,10 @@ type ReportItem struct {
 	CVE                    string `xml:"cve"`
 
 	// Compliance-specific fields (with cm: namespace)
-	ComplianceReference  string `xml:"http://www.nessus.org/cm compliance-reference"`
-	ComplianceCheckName  string `xml:"http://www.nessus.org/cm compliance-check-name"`
-	ComplianceInfo       string `xml:"http://www.nessus.org/cm compliance-info"`
-	ComplianceSolution   string `xml:"http://www.nessus.org/cm compliance-solution"`
-	ComplianceResult     string `xml:"http://www.nessus.org/cm compliance-result"`
+	ComplianceReference   string `xml:"http://www.nessus.org/cm compliance-reference"`
+	ComplianceCheckName   string `xml:"http://www.nessus.org/cm compliance-check-name"`
+	ComplianceInfo        string `xml:"http://www.nessus.org/cm compliance-info"`
+	ComplianceSolution    string `xml:"http://www.nessus.org/cm compliance-solution"`
+	ComplianceResult      string `xml:"http://www.nessus.org/cm compliance-result"`
 	ComplianceActualValue string `xml:"http://www.nessus.org/cm compliance-actual-value"`
 }

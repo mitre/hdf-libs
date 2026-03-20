@@ -43,16 +43,16 @@ type SarifDriver struct {
 
 // ReportingDescriptor is a rule or taxonomy entry definition.
 type ReportingDescriptor struct {
-	ID                   string                          `json:"id"`
-	Name                 string                          `json:"name,omitempty"`
-	ShortDescription     *MultiformatMessage             `json:"shortDescription,omitempty"`
-	FullDescription      *MultiformatMessage             `json:"fullDescription,omitempty"`
-	HelpURI              string                          `json:"helpUri,omitempty"`
-	Help                 *MultiformatMessage             `json:"help,omitempty"`
-	DefaultConfiguration *ReportingConfiguration         `json:"defaultConfiguration,omitempty"`
-	Relationships        []ReportingDescriptorRelation   `json:"relationships,omitempty"`
-	Properties           map[string]interface{}          `json:"properties,omitempty"`
-	MessageStrings       map[string]MultiformatMessage   `json:"messageStrings,omitempty"`
+	ID                   string                        `json:"id"`
+	Name                 string                        `json:"name,omitempty"`
+	ShortDescription     *MultiformatMessage           `json:"shortDescription,omitempty"`
+	FullDescription      *MultiformatMessage           `json:"fullDescription,omitempty"`
+	HelpURI              string                        `json:"helpUri,omitempty"`
+	Help                 *MultiformatMessage           `json:"help,omitempty"`
+	DefaultConfiguration *ReportingConfiguration       `json:"defaultConfiguration,omitempty"`
+	Relationships        []ReportingDescriptorRelation `json:"relationships,omitempty"`
+	Properties           map[string]interface{}        `json:"properties,omitempty"`
+	MessageStrings       map[string]MultiformatMessage `json:"messageStrings,omitempty"`
 }
 
 // MultiformatMessage carries text and optional markdown.
@@ -118,8 +118,8 @@ type SarifMessage struct {
 
 // Suppression records a suppression on a result.
 type Suppression struct {
-	Kind          string `json:"kind"`                    // "inSource" or "external"
-	Status        string `json:"status,omitempty"`        // "accepted", "underReview", "rejected"
+	Kind          string `json:"kind"`             // "inSource" or "external"
+	Status        string `json:"status,omitempty"` // "accepted", "underReview", "rejected"
 	Justification string `json:"justification,omitempty"`
 }
 

@@ -24,10 +24,10 @@ type ConveyorData struct {
 
 // ConveyorAPIResp is the api_response block in Conveyor output.
 type ConveyorAPIResp struct {
-	FileTree map[string]FileTreeNode            `json:"file_tree"`
-	Results  map[string]ConveyorResult          `json:"results"`
-	Params   map[string]interface{}             `json:"params"`
-	MaxScore float64                            `json:"max_score"`
+	FileTree map[string]FileTreeNode   `json:"file_tree"`
+	Results  map[string]ConveyorResult `json:"results"`
+	Params   map[string]interface{}    `json:"params"`
+	MaxScore float64                   `json:"max_score"`
 }
 
 // FileTreeNode represents a node in the Conveyor file tree.
@@ -42,24 +42,24 @@ type FileTreeNode struct {
 
 // ConveyorResult represents a single result entry from Conveyor output.
 type ConveyorResult struct {
-	SHA256         string          `json:"sha256"`
-	Classification string          `json:"classification"`
-	Created        string          `json:"created"`
-	Response       ConveyorResp    `json:"response"`
-	Result         ConveyorScore   `json:"result"`
-	Size           interface{}     `json:"size"`
-	Type           interface{}     `json:"type"`
+	SHA256         string        `json:"sha256"`
+	Classification string        `json:"classification"`
+	Created        string        `json:"created"`
+	Response       ConveyorResp  `json:"response"`
+	Result         ConveyorScore `json:"result"`
+	Size           interface{}   `json:"size"`
+	Type           interface{}   `json:"type"`
 }
 
 // ConveyorResp is the response metadata for a result.
 type ConveyorResp struct {
-	ServiceName       string            `json:"service_name"`
-	ServiceVersion    string            `json:"service_version"`
-	ServiceContext    interface{}       `json:"service_context"`
-	ServiceDebugInfo  interface{}       `json:"service_debug_info"`
-	ServiceToolVer    interface{}       `json:"service_tool_version"`
-	Supplementary     interface{}       `json:"supplementary"`
-	Milestones        ConveyorMilestone `json:"milestones"`
+	ServiceName      string            `json:"service_name"`
+	ServiceVersion   string            `json:"service_version"`
+	ServiceContext   interface{}       `json:"service_context"`
+	ServiceDebugInfo interface{}       `json:"service_debug_info"`
+	ServiceToolVer   interface{}       `json:"service_tool_version"`
+	Supplementary    interface{}       `json:"supplementary"`
+	Milestones       ConveyorMilestone `json:"milestones"`
 }
 
 // ConveyorMilestone holds timing data for a service run.

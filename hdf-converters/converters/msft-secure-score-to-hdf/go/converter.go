@@ -51,25 +51,25 @@ type ControlScore struct {
 
 // ProfileResponse wraps the MS Graph secureScoreControlProfiles response.
 type ProfileResponse struct {
-	ODataContext  string                    `json:"@odata.context"`
-	ODataNextLink string                   `json:"@odata.nextLink"`
+	ODataContext  string                      `json:"@odata.context"`
+	ODataNextLink string                      `json:"@odata.nextLink"`
 	Value         []SecureScoreControlProfile `json:"value"`
 }
 
 // SecureScoreControlProfile represents a control profile with remediation details.
 type SecureScoreControlProfile struct {
-	ID                 string      `json:"id"`
-	AzureTenantID      string      `json:"azureTenantId"`
-	ControlCategory    string      `json:"controlCategory"`
-	Title              string      `json:"title"`
-	MaxScore           float64     `json:"maxScore"`
-	Rank               interface{} `json:"rank"`
-	Remediation        string      `json:"remediation"`
-	RemediationImpact  string      `json:"remediationImpact"`
-	Service            string      `json:"service"`
-	Threats            interface{} `json:"threats"`
-	Tier               string      `json:"tier"`
-	UserImpact         string      `json:"userImpact"`
+	ID                string      `json:"id"`
+	AzureTenantID     string      `json:"azureTenantId"`
+	ControlCategory   string      `json:"controlCategory"`
+	Title             string      `json:"title"`
+	MaxScore          float64     `json:"maxScore"`
+	Rank              interface{} `json:"rank"`
+	Remediation       string      `json:"remediation"`
+	RemediationImpact string      `json:"remediationImpact"`
+	Service           string      `json:"service"`
+	Threats           interface{} `json:"threats"`
+	Tier              string      `json:"tier"`
+	UserImpact        string      `json:"userImpact"`
 }
 
 // getProfiles returns all profiles matching a given control name.

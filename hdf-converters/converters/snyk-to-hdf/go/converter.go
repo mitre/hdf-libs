@@ -16,14 +16,14 @@ import (
 
 // SnykReport is the top-level Snyk test JSON output structure.
 type SnykReport struct {
-	OK              bool              `json:"ok"`
-	Vulnerabilities []SnykVuln        `json:"vulnerabilities"`
-	DependencyCount int               `json:"dependencyCount"`
-	Org             string            `json:"org"`
-	PackageManager  string            `json:"packageManager"`
-	Summary         string            `json:"summary"`
-	ProjectName     string            `json:"projectName"`
-	Path            string            `json:"path"`
+	OK              bool       `json:"ok"`
+	Vulnerabilities []SnykVuln `json:"vulnerabilities"`
+	DependencyCount int        `json:"dependencyCount"`
+	Org             string     `json:"org"`
+	PackageManager  string     `json:"packageManager"`
+	Summary         string     `json:"summary"`
+	ProjectName     string     `json:"projectName"`
+	Path            string     `json:"path"`
 }
 
 // SnykVuln represents a single vulnerability entry from Snyk output.

@@ -57,17 +57,17 @@ func (d *OscalDocument) DocumentType() string {
 
 // Metadata contains document-level metadata shared across all OSCAL models.
 type Metadata struct {
-	Title              string              `json:"title"`
-	LastModified       string              `json:"last-modified"`
-	Version            string              `json:"version"`
-	OscalVersion       string              `json:"oscal-version"`
-	Roles              []Role              `json:"roles,omitempty"`
-	Parties            []Party             `json:"parties,omitempty"`
-	ResponsibleParties []ResponsibleParty  `json:"responsible-parties,omitempty"`
-	Props              []Property          `json:"props,omitempty"`
-	Links              []Link              `json:"links,omitempty"`
-	Revisions          []Revision          `json:"revisions,omitempty"`
-	Remarks            string              `json:"remarks,omitempty"`
+	Title              string             `json:"title"`
+	LastModified       string             `json:"last-modified"`
+	Version            string             `json:"version"`
+	OscalVersion       string             `json:"oscal-version"`
+	Roles              []Role             `json:"roles,omitempty"`
+	Parties            []Party            `json:"parties,omitempty"`
+	ResponsibleParties []ResponsibleParty `json:"responsible-parties,omitempty"`
+	Props              []Property         `json:"props,omitempty"`
+	Links              []Link             `json:"links,omitempty"`
+	Revisions          []Revision         `json:"revisions,omitempty"`
+	Remarks            string             `json:"remarks,omitempty"`
 }
 
 // Role defines a responsibility or function.
@@ -78,9 +78,9 @@ type Role struct {
 
 // Party represents an organization or person.
 type Party struct {
-	UUID  string `json:"uuid"`
-	Type  string `json:"type"`
-	Name  string `json:"name"`
+	UUID string `json:"uuid"`
+	Type string `json:"type"`
+	Name string `json:"name"`
 }
 
 // ResponsibleParty maps a role to party UUIDs.
@@ -213,12 +213,12 @@ type Catalog struct {
 
 // Profile represents a control baseline that selects/modifies catalog controls.
 type Profile struct {
-	UUID       string       `json:"uuid"`
-	Metadata   Metadata     `json:"metadata"`
-	Imports    []Import     `json:"imports"`
-	Merge      *Merge       `json:"merge,omitempty"`
-	Modify     *Modify      `json:"modify,omitempty"`
-	BackMatter BackMatter   `json:"back-matter"`
+	UUID       string     `json:"uuid"`
+	Metadata   Metadata   `json:"metadata"`
+	Imports    []Import   `json:"imports"`
+	Merge      *Merge     `json:"merge,omitempty"`
+	Modify     *Modify    `json:"modify,omitempty"`
+	BackMatter BackMatter `json:"back-matter"`
 }
 
 // Import specifies a catalog or profile to include controls from.
@@ -258,9 +258,9 @@ type SetParameter struct {
 
 // Alter modifies a control (add/remove parts, props).
 type Alter struct {
-	ControlID string       `json:"control-id"`
-	Removes   []Remove     `json:"removes,omitempty"`
-	Adds      []Addition   `json:"adds,omitempty"`
+	ControlID string     `json:"control-id"`
+	Removes   []Remove   `json:"removes,omitempty"`
+	Adds      []Addition `json:"adds,omitempty"`
 }
 
 // Remove specifies items to remove from a control.
@@ -296,7 +296,7 @@ type Component struct {
 	Description            string                  `json:"description"`
 	Props                  []Property              `json:"props,omitempty"`
 	ResponsibleRoles       []ResponsibleRole       `json:"responsible-roles,omitempty"`
-	ControlImplementations []ControlImplementation  `json:"control-implementations,omitempty"`
+	ControlImplementations []ControlImplementation `json:"control-implementations,omitempty"`
 }
 
 // ResponsibleRole maps a role to party references.
@@ -307,10 +307,10 @@ type ResponsibleRole struct {
 
 // ControlImplementation describes how controls are satisfied.
 type ControlImplementation struct {
-	UUID                    string                    `json:"uuid"`
-	Source                  string                    `json:"source"`
-	Description             string                    `json:"description"`
-	ImplementedRequirements []ImplementedRequirement   `json:"implemented-requirements,omitempty"`
+	UUID                    string                   `json:"uuid"`
+	Source                  string                   `json:"source"`
+	Description             string                   `json:"description"`
+	ImplementedRequirements []ImplementedRequirement `json:"implemented-requirements,omitempty"`
 }
 
 // ImplementedRequirement maps a control to its implementation.
@@ -349,11 +349,11 @@ type ByComponent struct {
 type SystemSecurityPlan struct {
 	UUID                  string                 `json:"uuid"`
 	Metadata              Metadata               `json:"metadata"`
-	ImportProfile         *ImportProfile          `json:"import-profile,omitempty"`
-	SystemCharacteristics *SystemCharacteristics  `json:"system-characteristics,omitempty"`
-	SystemImplementation  *SystemImplementation   `json:"system-implementation,omitempty"`
-	ControlImplementation *SSPControlImpl         `json:"control-implementation,omitempty"`
-	BackMatter            BackMatter              `json:"back-matter"`
+	ImportProfile         *ImportProfile         `json:"import-profile,omitempty"`
+	SystemCharacteristics *SystemCharacteristics `json:"system-characteristics,omitempty"`
+	SystemImplementation  *SystemImplementation  `json:"system-implementation,omitempty"`
+	ControlImplementation *SSPControlImpl        `json:"control-implementation,omitempty"`
+	BackMatter            BackMatter             `json:"back-matter"`
 }
 
 // ImportProfile references the baseline profile.
@@ -363,14 +363,14 @@ type ImportProfile struct {
 
 // SystemCharacteristics describes the system.
 type SystemCharacteristics struct {
-	SystemIDs          []SystemID  `json:"system-ids,omitempty"`
-	SystemName         string     `json:"system-name"`
-	Description        string     `json:"description"`
-	SecuritySensLevel  *SecLevel  `json:"security-sensitivity-level,omitempty"`
-	Props              []Property `json:"props,omitempty"`
+	SystemIDs           []SystemID           `json:"system-ids,omitempty"`
+	SystemName          string               `json:"system-name"`
+	Description         string               `json:"description"`
+	SecuritySensLevel   *SecLevel            `json:"security-sensitivity-level,omitempty"`
+	Props               []Property           `json:"props,omitempty"`
 	SecurityImpactLevel *SecurityImpactLevel `json:"security-impact-level,omitempty"`
-	AuthorizationBound *AuthBoundary `json:"authorization-boundary,omitempty"`
-	Status             *SystemStatus `json:"status,omitempty"`
+	AuthorizationBound  *AuthBoundary        `json:"authorization-boundary,omitempty"`
+	Status              *SystemStatus        `json:"status,omitempty"`
 }
 
 // SystemID is a system identifier.
@@ -415,11 +415,11 @@ type SystemUser struct {
 
 // SystemComponent represents a system component.
 type SystemComponent struct {
-	UUID        string     `json:"uuid"`
-	Type        string     `json:"type"`
-	Title       string     `json:"title"`
-	Description string     `json:"description"`
-	Props       []Property `json:"props,omitempty"`
+	UUID        string           `json:"uuid"`
+	Type        string           `json:"type"`
+	Title       string           `json:"title"`
+	Description string           `json:"description"`
+	Props       []Property       `json:"props,omitempty"`
 	Status      *ComponentStatus `json:"status,omitempty"`
 }
 
@@ -430,8 +430,8 @@ type ComponentStatus struct {
 
 // SSPControlImpl is the SSP-specific control implementation container.
 type SSPControlImpl struct {
-	Description             string                    `json:"description,omitempty"`
-	ImplementedRequirements []ImplementedRequirement   `json:"implemented-requirements,omitempty"`
+	Description             string                   `json:"description,omitempty"`
+	ImplementedRequirements []ImplementedRequirement `json:"implemented-requirements,omitempty"`
 }
 
 // ---------------------------------------------------------------------------
@@ -490,8 +490,8 @@ type TermsAndConditions struct {
 
 // ReviewedControls defines the set of controls to assess.
 type ReviewedControls struct {
-	ControlSelections  []ControlSelection  `json:"control-selections,omitempty"`
-	ControlObjectives  []ControlObjective  `json:"control-objective-selections,omitempty"`
+	ControlSelections []ControlSelection `json:"control-selections,omitempty"`
+	ControlObjectives []ControlObjective `json:"control-objective-selections,omitempty"`
 }
 
 // ControlSelection identifies controls included in the assessment.
@@ -518,15 +518,15 @@ type ControlObjective struct {
 
 // AssessmentSubject defines what is being assessed.
 type AssessmentSubject struct {
-	Type        string     `json:"type"`
-	Description string     `json:"description,omitempty"`
+	Type        string      `json:"type"`
+	Description string      `json:"description,omitempty"`
 	IncludeAll  *IncludeAll `json:"include-all,omitempty"`
-	Props       []Property `json:"props,omitempty"`
+	Props       []Property  `json:"props,omitempty"`
 }
 
 // AssessmentAssets describes testing tools and platforms.
 type AssessmentAssets struct {
-	Components     []SystemComponent  `json:"components,omitempty"`
+	Components          []SystemComponent    `json:"components,omitempty"`
 	AssessmentPlatforms []AssessmentPlatform `json:"assessment-platforms,omitempty"`
 }
 
@@ -599,22 +599,22 @@ type Result struct {
 
 // Finding is an assessment determination about a control.
 type Finding struct {
-	UUID        string      `json:"uuid"`
-	Title       string      `json:"title"`
-	Description string      `json:"description,omitempty"`
-	Props       []Property  `json:"props,omitempty"`
-	Target      FindingTarget `json:"target"`
-	RelatedObservations []RelatedRef `json:"related-observations,omitempty"`
-	RelatedRisks        []RelatedRef `json:"related-risks,omitempty"`
+	UUID                string        `json:"uuid"`
+	Title               string        `json:"title"`
+	Description         string        `json:"description,omitempty"`
+	Props               []Property    `json:"props,omitempty"`
+	Target              FindingTarget `json:"target"`
+	RelatedObservations []RelatedRef  `json:"related-observations,omitempty"`
+	RelatedRisks        []RelatedRef  `json:"related-risks,omitempty"`
 }
 
 // FindingTarget identifies what was assessed and the result.
 type FindingTarget struct {
-	Type        string     `json:"type"`
-	TargetID    string     `json:"target-id"`
-	Title       string     `json:"title,omitempty"`
-	Description string     `json:"description,omitempty"`
-	Props       []Property `json:"props,omitempty"`
+	Type        string       `json:"type"`
+	TargetID    string       `json:"target-id"`
+	Title       string       `json:"title,omitempty"`
+	Description string       `json:"description,omitempty"`
+	Props       []Property   `json:"props,omitempty"`
 	Status      TargetStatus `json:"status"`
 }
 
@@ -633,15 +633,15 @@ type RelatedRef struct {
 
 // Observation records evidence from the assessment.
 type Observation struct {
-	UUID        string     `json:"uuid"`
-	Title       string     `json:"title,omitempty"`
-	Description string     `json:"description"`
-	Props       []Property `json:"props,omitempty"`
-	Methods     []string   `json:"methods,omitempty"`
-	Types       []string   `json:"types,omitempty"`
-	Collected   string     `json:"collected"`
-	Expires     string     `json:"expires,omitempty"`
-	Remarks     string     `json:"remarks,omitempty"`
+	UUID        string       `json:"uuid"`
+	Title       string       `json:"title,omitempty"`
+	Description string       `json:"description"`
+	Props       []Property   `json:"props,omitempty"`
+	Methods     []string     `json:"methods,omitempty"`
+	Types       []string     `json:"types,omitempty"`
+	Collected   string       `json:"collected"`
+	Expires     string       `json:"expires,omitempty"`
+	Remarks     string       `json:"remarks,omitempty"`
 	Subjects    []SubjectRef `json:"subjects,omitempty"`
 }
 
@@ -659,15 +659,15 @@ type SubjectRef struct {
 
 // PlanOfActionAndMilestones tracks risks and remediation.
 type PlanOfActionAndMilestones struct {
-	UUID             string          `json:"uuid"`
-	Metadata         Metadata        `json:"metadata"`
-	ImportSSP        *ImportSSP      `json:"import-ssp,omitempty"`
-	SystemID         *SystemID       `json:"system-id,omitempty"`
-	LocalDefinitions *POAMLocalDefs  `json:"local-definitions,omitempty"`
-	Observations     []Observation   `json:"observations,omitempty"`
-	Risks            []Risk          `json:"risks,omitempty"`
-	POAMItems        []POAMItem      `json:"poam-items"`
-	BackMatter       BackMatter      `json:"back-matter"`
+	UUID             string         `json:"uuid"`
+	Metadata         Metadata       `json:"metadata"`
+	ImportSSP        *ImportSSP     `json:"import-ssp,omitempty"`
+	SystemID         *SystemID      `json:"system-id,omitempty"`
+	LocalDefinitions *POAMLocalDefs `json:"local-definitions,omitempty"`
+	Observations     []Observation  `json:"observations,omitempty"`
+	Risks            []Risk         `json:"risks,omitempty"`
+	POAMItems        []POAMItem     `json:"poam-items"`
+	BackMatter       BackMatter     `json:"back-matter"`
 }
 
 // POAMLocalDefs contains POA&M-specific local definitions.
@@ -677,21 +677,21 @@ type POAMLocalDefs struct {
 
 // Risk describes an identified security risk.
 type Risk struct {
-	UUID            string          `json:"uuid"`
-	Title           string          `json:"title"`
-	Description     string          `json:"description"`
-	Statement       string          `json:"statement,omitempty"`
-	Props           []Property      `json:"props,omitempty"`
-	Status          string          `json:"status"`
+	UUID              string             `json:"uuid"`
+	Title             string             `json:"title"`
+	Description       string             `json:"description"`
+	Statement         string             `json:"statement,omitempty"`
+	Props             []Property         `json:"props,omitempty"`
+	Status            string             `json:"status"`
 	Characterizations []Characterization `json:"characterizations,omitempty"`
-	Remediations    []Remediation   `json:"remediations,omitempty"`
-	RiskLog         *RiskLog        `json:"risk-log,omitempty"`
+	Remediations      []Remediation      `json:"remediations,omitempty"`
+	RiskLog           *RiskLog           `json:"risk-log,omitempty"`
 }
 
 // Characterization provides risk characterization details.
 type Characterization struct {
-	Origin *Origin  `json:"origin,omitempty"`
-	Facets []Facet  `json:"facets,omitempty"`
+	Origin *Origin `json:"origin,omitempty"`
+	Facets []Facet `json:"facets,omitempty"`
 }
 
 // Origin identifies who made the characterization.
@@ -701,8 +701,8 @@ type Origin struct {
 
 // Actor identifies an assessment actor.
 type Actor struct {
-	Type     string `json:"type"`
-	ActorID  string `json:"actor-uuid"`
+	Type    string `json:"type"`
+	ActorID string `json:"actor-uuid"`
 }
 
 // Facet is a risk facet (e.g., likelihood, impact).
@@ -729,12 +729,12 @@ type RiskLog struct {
 
 // RiskLogEntry is a single risk log entry.
 type RiskLogEntry struct {
-	UUID        string     `json:"uuid"`
-	Title       string     `json:"title,omitempty"`
-	Description string     `json:"description,omitempty"`
-	Start       string     `json:"start"`
-	StatusChange string    `json:"status-change,omitempty"`
-	Props       []Property `json:"props,omitempty"`
+	UUID         string     `json:"uuid"`
+	Title        string     `json:"title,omitempty"`
+	Description  string     `json:"description,omitempty"`
+	Start        string     `json:"start"`
+	StatusChange string     `json:"status-change,omitempty"`
+	Props        []Property `json:"props,omitempty"`
 }
 
 // POAMItem tracks a specific remediation item.

@@ -12,21 +12,21 @@ import (
 
 // TrufflehogFinding represents a single finding from TruffleHog output.
 type TrufflehogFinding struct {
-	SourceMetadata     SourceMetadata         `json:"SourceMetadata"`
-	SourceID           int                    `json:"SourceID"`
-	SourceType         int                    `json:"SourceType"`
-	SourceName         string                 `json:"SourceName"`
-	DetectorType       int                    `json:"DetectorType"`
-	DetectorName       string                 `json:"DetectorName"`
-	DetectorDescription string               `json:"DetectorDescription"`
-	DecoderName        string                 `json:"DecoderName"`
-	Verified           bool                   `json:"Verified"`
-	VerificationError  string                 `json:"VerificationError"`
-	Raw                string                 `json:"Raw"`
-	RawV2              string                 `json:"RawV2"`
-	Redacted           string                 `json:"Redacted"`
-	ExtraData          map[string]interface{} `json:"ExtraData"`
-	StructuredData     interface{}            `json:"StructuredData"`
+	SourceMetadata      SourceMetadata         `json:"SourceMetadata"`
+	SourceID            int                    `json:"SourceID"`
+	SourceType          int                    `json:"SourceType"`
+	SourceName          string                 `json:"SourceName"`
+	DetectorType        int                    `json:"DetectorType"`
+	DetectorName        string                 `json:"DetectorName"`
+	DetectorDescription string                 `json:"DetectorDescription"`
+	DecoderName         string                 `json:"DecoderName"`
+	Verified            bool                   `json:"Verified"`
+	VerificationError   string                 `json:"VerificationError"`
+	Raw                 string                 `json:"Raw"`
+	RawV2               string                 `json:"RawV2"`
+	Redacted            string                 `json:"Redacted"`
+	ExtraData           map[string]interface{} `json:"ExtraData"`
+	StructuredData      interface{}            `json:"StructuredData"`
 }
 
 // SourceMetadata wraps the Data field containing source-specific info.
