@@ -10,8 +10,13 @@
       "import": "./dist/src/index.js",
       "types": "./dist/src/index.d.ts"
     },
+    "./detect": {
+      "import": "./dist/src/detect.js",
+      "types": "./dist/src/detect.d.ts"
+    },
     "./package.json": "./package.json"
   },
+  "sideEffects": false,
   "files": [
     "dist"
   ],
