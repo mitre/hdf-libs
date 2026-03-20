@@ -17,10 +17,16 @@ func init() {
 			// ZAP JSON has a "site" array and optionally "@version", "@generated"
 			if site, exists := obj["site"]; exists {
 				if _, isArr := site.([]any); isArr {
-					// Higher confidence if @version or @generated present
-					_, hasVersion := obj["@version"]
-					_, hasGenerated := obj["@generated"]
-					if hasVersion || hasGenerated {
+					// Higher confidence if @version or @generated present as strings
+					versionIsStr := false
+					generatedIsStr := false
+					if v, hasVersion := obj["@version"]; hasVersion {
+						_, versionIsStr = v.(string)
+					}
+					if g, hasGenerated := obj["@generated"]; hasGenerated {
+						_, generatedIsStr = g.(string)
+					}
+					if versionIsStr || generatedIsStr {
 						return 0.95
 					}
 					return 0.85
