@@ -6,11 +6,11 @@
  * EVERY ingest converter with fixtures MUST be represented here.
  */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { detectConverter, detectConverterAll } from './fingerprint.js';
 import { registerAllFingerprints } from './register-all.js';
-import { _resetRegistry, getFingerprints, getIngestFingerprints } from './registry.js';
+import { _resetRegistry, getFingerprints } from './registry.js';
 
 const root = resolve(__dirname, '../..');
 
