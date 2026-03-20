@@ -3,18 +3,105 @@
  *
  * Consumers call registerAllFingerprints() once at startup.
  * This avoids side-effect imports that bundlers tree-shake away.
- *
- * As converters add fingerprints (Phase 3), add them to the array below.
  */
 
 import { registerFingerprint, getFingerprint, type ConverterFingerprint } from './registry.js';
 
-// Import fingerprint data from each converter
+// JSON ingest converters
+import { awsConfigFingerprint } from '../../converters/aws-config-to-hdf/typescript/fingerprint.js';
+import { conveyorFingerprint } from '../../converters/conveyor-to-hdf/typescript/fingerprint.js';
+import { cyclonedxFingerprint } from '../../converters/cyclonedx-to-hdf/typescript/fingerprint.js';
+import { deptrackFingerprint } from '../../converters/deptrack-to-hdf/typescript/fingerprint.js';
+import { gitlabFingerprint } from '../../converters/gitlab-to-hdf/typescript/fingerprint.js';
+import { gosecFingerprint } from '../../converters/gosec-to-hdf/typescript/fingerprint.js';
+import { grypeFingerprint } from '../../converters/grype-to-hdf/typescript/fingerprint.js';
+import { jfrogXrayFingerprint } from '../../converters/jfrog-xray-to-hdf/typescript/fingerprint.js';
+import { msftDefenderCloudFingerprint } from '../../converters/msft-defender-cloud-to-hdf/typescript/fingerprint.js';
+import { msftDefenderDevopsFingerprint } from '../../converters/msft-defender-devops-to-hdf/typescript/fingerprint.js';
+import { msftDefenderEndpointFingerprint } from '../../converters/msft-defender-endpoint-to-hdf/typescript/fingerprint.js';
+import { msftSecureScoreFingerprint } from '../../converters/msft-secure-score-to-hdf/typescript/fingerprint.js';
+import { neuvectorFingerprint } from '../../converters/neuvector-to-hdf/typescript/fingerprint.js';
 import { sarifFingerprint } from '../../converters/sarif-to-hdf/typescript/fingerprint.js';
+import { scoutsuiteFingerprint } from '../../converters/scoutsuite-to-hdf/typescript/fingerprint.js';
+import { snykFingerprint } from '../../converters/snyk-to-hdf/typescript/fingerprint.js';
+import { sonarqubeFingerprint } from '../../converters/sonarqube-to-hdf/typescript/fingerprint.js';
+import { splunkFingerprint } from '../../converters/splunk-to-hdf/typescript/fingerprint.js';
+import { trufflehogFingerprint } from '../../converters/trufflehog-to-hdf/typescript/fingerprint.js';
+import { twistlockFingerprint } from '../../converters/twistlock-to-hdf/typescript/fingerprint.js';
 
-// Add new fingerprints here as they are created (Phase 3 batches)
+// XML ingest converters
+import { burpsuiteFingerprint } from '../../converters/burpsuite-to-hdf/typescript/fingerprint.js';
+import { dbprotectFingerprint } from '../../converters/dbprotect-to-hdf/typescript/fingerprint.js';
+import { fortifyFingerprint } from '../../converters/fortify-to-hdf/typescript/fingerprint.js';
+import { junitFingerprint } from '../../converters/junit-to-hdf/typescript/fingerprint.js';
+import { nessusFingerprint } from '../../converters/nessus-to-hdf/typescript/fingerprint.js';
+import { netsparkerFingerprint } from '../../converters/netsparker-to-hdf/typescript/fingerprint.js';
+import { niktoFingerprint } from '../../converters/nikto-to-hdf/typescript/fingerprint.js';
+import { veracodeFingerprint } from '../../converters/veracode-to-hdf/typescript/fingerprint.js';
+import { xccdfFingerprint } from '../../converters/xccdf-results-to-hdf/typescript/fingerprint.js';
+import { zapFingerprint } from '../../converters/zap-to-hdf/typescript/fingerprint.js';
+
+// Text/CSV ingest converters
+import { prismaFingerprint } from '../../converters/prisma-to-hdf/typescript/fingerprint.js';
+
+// HDF native detection
+import { hdfV2Fingerprint } from '../../converters/hdf-v2-passthrough/typescript/fingerprint.js';
+import { legacyHdfFingerprint } from '../../converters/legacyhdf-to-hdf/typescript/fingerprint.js';
+
+// OSCAL converters (7 fingerprints in one array)
+import { oscalFingerprints } from '../../converters/oscal-to-hdf/typescript/fingerprint.js';
+
+// Export converters
+import { hdfToCsvFingerprint } from '../../converters/hdf-to-csv/typescript/fingerprint.js';
+import { hdfToXmlFingerprint } from '../../converters/hdf-to-xml/typescript/fingerprint.js';
+import { hdfToOscalSarFingerprint } from '../../converters/hdf-to-oscal-sar/typescript/fingerprint.js';
+import { hdfToOscalPoamFingerprint } from '../../converters/hdf-to-oscal-poam/typescript/fingerprint.js';
+
 const allFingerprints: ConverterFingerprint[] = [
+  // JSON ingest
+  awsConfigFingerprint,
+  conveyorFingerprint,
+  cyclonedxFingerprint,
+  deptrackFingerprint,
+  gitlabFingerprint,
+  gosecFingerprint,
+  grypeFingerprint,
+  jfrogXrayFingerprint,
+  msftDefenderCloudFingerprint,
+  msftDefenderDevopsFingerprint,
+  msftDefenderEndpointFingerprint,
+  msftSecureScoreFingerprint,
+  neuvectorFingerprint,
   sarifFingerprint,
+  scoutsuiteFingerprint,
+  snykFingerprint,
+  sonarqubeFingerprint,
+  splunkFingerprint,
+  trufflehogFingerprint,
+  twistlockFingerprint,
+  // XML ingest
+  burpsuiteFingerprint,
+  dbprotectFingerprint,
+  fortifyFingerprint,
+  junitFingerprint,
+  nessusFingerprint,
+  netsparkerFingerprint,
+  niktoFingerprint,
+  veracodeFingerprint,
+  xccdfFingerprint,
+  zapFingerprint,
+  // Text/CSV ingest
+  prismaFingerprint,
+  // HDF native
+  hdfV2Fingerprint,
+  legacyHdfFingerprint,
+  // OSCAL (7 fingerprints)
+  ...oscalFingerprints,
+  // Export converters
+  hdfToCsvFingerprint,
+  hdfToXmlFingerprint,
+  hdfToOscalSarFingerprint,
+  hdfToOscalPoamFingerprint,
 ];
 
 /**
