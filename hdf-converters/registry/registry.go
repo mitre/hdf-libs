@@ -52,6 +52,7 @@ type ConverterFingerprint struct {
 var registry []ConverterFingerprint
 
 // Register adds a fingerprint to the registry. Panics on duplicate ID.
+// Must only be called from init() functions or before any concurrent reads.
 func Register(fp ConverterFingerprint) {
 	for _, existing := range registry {
 		if existing.ID == fp.ID {
@@ -61,9 +62,10 @@ func Register(fp ConverterFingerprint) {
 	registry = append(registry, fp)
 }
 
-// GetFingerprints returns all registered fingerprints.
+// GetFingerprints returns a copy of all registered fingerprints.
+// The returned slice is safe to iterate without affecting the registry.
 func GetFingerprints() []ConverterFingerprint {
-	return registry
+	return append([]ConverterFingerprint{}, registry...)
 }
 
 // GetIngestFingerprints returns only ingest-direction fingerprints.

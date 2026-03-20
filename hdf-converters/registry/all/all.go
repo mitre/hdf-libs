@@ -32,6 +32,12 @@ import (
 	_ "github.com/mitre/hdf-converters/converters/twistlock-to-hdf/go"
 )
 
+// JSON ingest converters (input is JSON despite tool names suggesting XML)
+import (
+	_ "github.com/mitre/hdf-converters/converters/nikto-to-hdf/go"
+	_ "github.com/mitre/hdf-converters/converters/zap-to-hdf/go"
+)
+
 // XML ingest converters
 import (
 	_ "github.com/mitre/hdf-converters/converters/burpsuite-to-hdf/go"
@@ -40,10 +46,8 @@ import (
 	_ "github.com/mitre/hdf-converters/converters/junit-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/nessus-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/netsparker-to-hdf/go"
-	_ "github.com/mitre/hdf-converters/converters/nikto-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/veracode-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/xccdf-results-to-hdf/go"
-	_ "github.com/mitre/hdf-converters/converters/zap-to-hdf/go"
 )
 
 // Text/CSV ingest

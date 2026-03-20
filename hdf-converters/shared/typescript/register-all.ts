@@ -29,6 +29,10 @@ import { splunkFingerprint } from '../../converters/splunk-to-hdf/typescript/fin
 import { trufflehogFingerprint } from '../../converters/trufflehog-to-hdf/typescript/fingerprint.js';
 import { twistlockFingerprint } from '../../converters/twistlock-to-hdf/typescript/fingerprint.js';
 
+// JSON ingest converters (input is JSON despite tool names suggesting XML)
+import { niktoFingerprint } from '../../converters/nikto-to-hdf/typescript/fingerprint.js';
+import { zapFingerprint } from '../../converters/zap-to-hdf/typescript/fingerprint.js';
+
 // XML ingest converters
 import { burpsuiteFingerprint } from '../../converters/burpsuite-to-hdf/typescript/fingerprint.js';
 import { dbprotectFingerprint } from '../../converters/dbprotect-to-hdf/typescript/fingerprint.js';
@@ -36,10 +40,8 @@ import { fortifyFingerprint } from '../../converters/fortify-to-hdf/typescript/f
 import { junitFingerprint } from '../../converters/junit-to-hdf/typescript/fingerprint.js';
 import { nessusFingerprint } from '../../converters/nessus-to-hdf/typescript/fingerprint.js';
 import { netsparkerFingerprint } from '../../converters/netsparker-to-hdf/typescript/fingerprint.js';
-import { niktoFingerprint } from '../../converters/nikto-to-hdf/typescript/fingerprint.js';
 import { veracodeFingerprint } from '../../converters/veracode-to-hdf/typescript/fingerprint.js';
 import { xccdfFingerprint } from '../../converters/xccdf-results-to-hdf/typescript/fingerprint.js';
-import { zapFingerprint } from '../../converters/zap-to-hdf/typescript/fingerprint.js';
 
 // Text/CSV ingest converters
 import { prismaFingerprint } from '../../converters/prisma-to-hdf/typescript/fingerprint.js';

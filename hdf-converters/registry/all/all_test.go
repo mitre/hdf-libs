@@ -43,22 +43,29 @@ var fixtureTests = []struct {
 	fixture   string
 	expectID  string
 }{
+	// JSON ingest
 	{"aws-config-to-hdf", "minimal.json", "aws-config-to-hdf"},
 	{"cyclonedx-to-hdf", "minimal-vulns.json", "cyclonedx-to-hdf"},
 	{"conveyor-to-hdf", "sample-results.json", "conveyor-to-hdf"},
 	{"deptrack-to-hdf", "fpf-default.json", "deptrack-to-hdf"},
 	{"gitlab-to-hdf", "minimal-sast.json", "gitlab-to-hdf"},
+	{"gosec-to-hdf", "real.json", "gosec-to-hdf"},
 	{"grype-to-hdf", "anchore_grype.json", "grype-to-hdf"},
+	{"jfrog-xray-to-hdf", "jfrog_xray_sample.json", "jfrog-xray-to-hdf"},
 	{"msft-defender-cloud-to-hdf", "minimal.json", "msft-defender-cloud-to-hdf"},
 	{"msft-defender-endpoint-to-hdf", "minimal.json", "msft-defender-endpoint-to-hdf"},
 	{"msft-secure-score-to-hdf", "minimal.json", "msft-secure-score-to-hdf"},
 	{"neuvector-to-hdf", "minimal.json", "neuvector-to-hdf"},
+	{"nikto-to-hdf", "minimal.json", "nikto-to-hdf"},
 	{"snyk-to-hdf", "minimal.json", "snyk-to-hdf"},
 	{"sonarqube-to-hdf", "minimal.json", "sonarqube-to-hdf"},
 	{"splunk-to-hdf", "splunk-minimal.json", "splunk-to-hdf"},
+	{"trufflehog-to-hdf", "minimal.json", "trufflehog-to-hdf"},
 	{"twistlock-to-hdf", "twistlock-twistcli-sample-1.json", "twistlock-to-hdf"},
+	{"zap-to-hdf", "minimal.json", "zap-to-hdf"},
 	{"legacyhdf-to-hdf", "minimal.json", "legacyhdf-to-hdf"},
 	// XML
+	{"nessus-to-hdf", "sample.nessus", "nessus-to-hdf"},
 	{"netsparker-to-hdf", "sample-netsparker-invicti.xml", "netsparker-to-hdf"},
 	{"burpsuite-to-hdf", "zero.webappsecurity.com.xml", "burpsuite-to-hdf"},
 	{"fortify-to-hdf", "fortify_webgoat_results.fvdl", "fortify-to-hdf"},

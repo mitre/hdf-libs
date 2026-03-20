@@ -8,6 +8,7 @@
  */
 
 import { registerFingerprint, getFingerprint, type ConverterFingerprint } from '../../../shared/typescript/registry.js';
+import { extractXmlRootElement } from '../../../shared/typescript/xml-utils.js';
 
 export const xccdfFingerprint: ConverterFingerprint = {
   id: 'xccdf-results-to-hdf',
@@ -17,11 +18,8 @@ export const xccdfFingerprint: ConverterFingerprint = {
   outputType: 'results',
   fingerprint: (input: unknown): number => {
     if (typeof input !== 'string') return 0;
-    // Extract root element: match first opening tag after XML declaration/comments
-    // Handle namespace prefixes: <ns:ElementName or <ElementName
-    const rootMatch = input.match(/<(?:\?[^?]*\?>[\s]*)*(?:!--[\s\S]*?-->[\s]*)*<(?:[a-zA-Z_][\w.-]*:)?([a-zA-Z_][\w.-]*)/);
-    if (!rootMatch) return 0;
-    const root = rootMatch[1];
+    const root = extractXmlRootElement(input);
+    if (!root) return 0;
     if (root === 'Benchmark' || root === 'asset-report-collection') return 1.0;
     return 0;
   },
