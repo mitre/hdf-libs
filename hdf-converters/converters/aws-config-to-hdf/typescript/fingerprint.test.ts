@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { _resetRegistry, getFingerprint } from '../../../shared/typescript/registry.js';
-import { detectConverter } from '../../../shared/typescript/fingerprint.js';
+import { detectConverter, detectConverterAll } from '../../../shared/typescript/fingerprint.js';
 import { register, awsConfigFingerprint } from './fingerprint.js';
 
 // Known-good AWS Config fixture: ConfigRules array
@@ -55,7 +55,7 @@ describe('aws-config-to-hdf fingerprint', () => {
   });
 
   it('detects single config rule at confidence 0.7', () => {
-    const result = detectConverter(AWS_CONFIG_SINGLE_RULE);
+    const result = detectConverterAll(AWS_CONFIG_SINGLE_RULE)[0];
     expect(result).toBeDefined();
     expect(result!.fingerprint.id).toBe('aws-config-to-hdf');
     expect(result!.confidence).toBe(0.7);

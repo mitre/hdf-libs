@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { _resetRegistry, getFingerprint } from '../../../shared/typescript/registry.js';
-import { detectConverter } from '../../../shared/typescript/fingerprint.js';
+import { detectConverter, detectConverterAll } from '../../../shared/typescript/fingerprint.js';
 import { register, gosecFingerprint } from './fingerprint.js';
 
 // Known-good GoSec fixture: full report with GosecVersion + Issues + Stats
@@ -71,7 +71,7 @@ describe('gosec-to-hdf fingerprint', () => {
   });
 
   it('detects GoSec without version at confidence 0.6', () => {
-    const result = detectConverter(GOSEC_NO_VERSION);
+    const result = detectConverterAll(GOSEC_NO_VERSION)[0];
     expect(result).toBeDefined();
     expect(result!.fingerprint.id).toBe('gosec-to-hdf');
     expect(result!.confidence).toBe(0.6);

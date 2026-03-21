@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { _resetRegistry, getFingerprint } from '../../../shared/typescript/registry.js';
-import { detectConverter } from '../../../shared/typescript/fingerprint.js';
+import { detectConverter, detectConverterAll } from '../../../shared/typescript/fingerprint.js';
 import { register, msftDefenderCloudFingerprint } from './fingerprint.js';
 
 const DEFENDER_CLOUD_GOOD = JSON.stringify({
@@ -65,7 +65,7 @@ describe('msft-defender-cloud-to-hdf fingerprint', () => {
   });
 
   it('detects empty value array at confidence 0.5', () => {
-    const result = detectConverter(DEFENDER_CLOUD_EMPTY_VALUE);
+    const result = detectConverterAll(DEFENDER_CLOUD_EMPTY_VALUE)[0];
     expect(result).toBeDefined();
     expect(result!.fingerprint.id).toBe('msft-defender-cloud-to-hdf');
     expect(result!.confidence).toBe(0.5);

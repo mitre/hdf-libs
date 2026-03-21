@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { _resetRegistry, getFingerprint } from '../../../shared/typescript/registry.js';
-import { detectConverter } from '../../../shared/typescript/fingerprint.js';
+import { detectConverter, detectConverterAll } from '../../../shared/typescript/fingerprint.js';
 import { register, sonarqubeFingerprint } from './fingerprint.js';
 
 const SONARQUBE_GOOD = JSON.stringify({
@@ -60,7 +60,7 @@ describe('sonarqube-to-hdf fingerprint', () => {
   });
 
   it('detects SonarQube with empty issues at confidence 0.5', () => {
-    const result = detectConverter(SONARQUBE_EMPTY_ISSUES);
+    const result = detectConverterAll(SONARQUBE_EMPTY_ISSUES)[0];
     expect(result).toBeDefined();
     expect(result!.fingerprint.id).toBe('sonarqube-to-hdf');
     expect(result!.confidence).toBe(0.5);
