@@ -15,10 +15,10 @@ import (
 // Nikto JSON input structures
 
 type NiktoReport struct {
-	Banner          string              `json:"banner,omitempty"`
-	Host            string              `json:"host,omitempty"`
-	IP              string              `json:"ip,omitempty"`
-	Port            string              `json:"port,omitempty"`
+	Banner          string               `json:"banner,omitempty"`
+	Host            string               `json:"host,omitempty"`
+	IP              string               `json:"ip,omitempty"`
+	Port            string               `json:"port,omitempty"`
 	Vulnerabilities []NiktoVulnerability `json:"vulnerabilities"`
 }
 

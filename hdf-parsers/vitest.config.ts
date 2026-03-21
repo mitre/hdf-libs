@@ -1,6 +1,14 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  // Resolve workspace packages to source (not stale dist/) during tests.
+  // The 'development' condition in each package's exports map points to
+  // the TypeScript source. This prevents stale-dist bugs.
+  ssr: {
+    resolve: {
+      conditions: ['development', 'import', 'default'],
+    },
+  },
   test: {
     globals: true,
     environment: 'node',

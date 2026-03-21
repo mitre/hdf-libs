@@ -1,5 +1,6 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { detectFormat } from '../../../shared/typescript/formatdetect.js';
+import { detectConverter } from '../../../shared/typescript/fingerprint.js';
+import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
 import { inputChecksum, limitArray, validateInputSize, mapCWEToNIST, DEFAULT_REMEDIATION_NIST_TAGS } from '../../../shared/typescript/converterutil.js';
 import type {
@@ -147,7 +148,9 @@ function buildRequirement(ruleId: string, issues: GosecIssue[]): EvaluatedRequir
 export async function convertGosecToHdf(input: string): Promise<string> {
   validateInputSize(input, 'gosec');
   // Detect format: if SARIF, delegate to the shared SARIF converter
-  if (detectFormat(input) === 'sarif') {
+  registerAllFingerprints();
+  const detected = detectConverter(input);
+  if (detected && detected.fingerprint.id === 'sarif-to-hdf') {
     return convertSarifToHdf(input);
   }
 

@@ -8,26 +8,26 @@ import (
 	"time"
 
 	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
+	"github.com/mitre/hdf-converters/registry"
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
 )
 
-
 // GosecReport is the top-level gosec JSON output structure.
 type GosecReport struct {
-	GolangErrors interface{}    `json:"Golang errors"`
-	Issues       []GosecIssue   `json:"Issues"`
-	Stats        GosecStats     `json:"Stats"`
-	GosecVersion string         `json:"GosecVersion"`
+	GolangErrors interface{}  `json:"Golang errors"`
+	Issues       []GosecIssue `json:"Issues"`
+	Stats        GosecStats   `json:"Stats"`
+	GosecVersion string       `json:"GosecVersion"`
 }
 
 // GosecStats holds scan statistics from gosec output.
 type GosecStats struct {
-	Files  int `json:"files"`
-	Lines  int `json:"lines"`
-	Nosec  int `json:"nosec"`
-	Found  int `json:"found"`
+	Files int `json:"files"`
+	Lines int `json:"lines"`
+	Nosec int `json:"nosec"`
+	Found int `json:"found"`
 }
 
 // GosecCWE holds the CWE reference attached to each gosec issue.
@@ -203,7 +203,7 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	}
 
 	// Detect format: if SARIF, delegate to the shared SARIF converter
-	if shared.DetectFormat(input) == shared.FormatSARIF {
+	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
 		return sarif.ConvertSarifToHDF(input, converterVersion)
 	}
 

@@ -39,20 +39,19 @@ func veracodeSeverityToImpact(severity string) float64 {
 	return shared.SeverityToImpactWithAliases(severity, veracodeAliases, 0.1)
 }
 
-
 // XML structures for Veracode DetailedReport
 
 // DetailedReport is the root element of a Veracode detailed report XML.
 type DetailedReport struct {
-	XMLName                xml.Name               `xml:"detailedreport"`
-	AppName                string                 `xml:"app_name,attr"`
-	PolicyName             string                 `xml:"policy_name,attr"`
-	PolicyVersion          string                 `xml:"policy_version,attr"`
-	FirstBuildSubmitted    string                 `xml:"first_build_submitted_date,attr"`
-	TotalFlaws             string                 `xml:"total_flaws,attr"`
-	FlawsNotMitigated      string                 `xml:"flaws_not_mitigated,attr"`
-	StaticAnalysis         *StaticAnalysis        `xml:"static-analysis"`
-	Severities             []Severity             `xml:"severity"`
+	XMLName                xml.Name                `xml:"detailedreport"`
+	AppName                string                  `xml:"app_name,attr"`
+	PolicyName             string                  `xml:"policy_name,attr"`
+	PolicyVersion          string                  `xml:"policy_version,attr"`
+	FirstBuildSubmitted    string                  `xml:"first_build_submitted_date,attr"`
+	TotalFlaws             string                  `xml:"total_flaws,attr"`
+	FlawsNotMitigated      string                  `xml:"flaws_not_mitigated,attr"`
+	StaticAnalysis         *StaticAnalysis         `xml:"static-analysis"`
+	Severities             []Severity              `xml:"severity"`
 	SoftwareCompositionSCA *SoftwareCompositionSCA `xml:"software_composition_analysis"`
 }
 
@@ -79,12 +78,12 @@ type Severity struct {
 
 // Category represents a CWE-based finding category.
 type Category struct {
-	CategoryID   string          `xml:"categoryid,attr"`
-	CategoryName string          `xml:"categoryname,attr"`
-	PCIRelated   string          `xml:"pcirelated,attr"`
-	Desc         Desc            `xml:"desc"`
+	CategoryID      string          `xml:"categoryid,attr"`
+	CategoryName    string          `xml:"categoryname,attr"`
+	PCIRelated      string          `xml:"pcirelated,attr"`
+	Desc            Desc            `xml:"desc"`
 	Recommendations Recommendations `xml:"recommendations"`
-	CWEs         []CWE           `xml:"cwe"`
+	CWEs            []CWE           `xml:"cwe"`
 }
 
 // Desc contains description paragraphs.
@@ -115,17 +114,17 @@ type Para struct {
 
 // CWE represents a CWE entry with description, static flaws, and category metadata.
 type CWE struct {
-	CWEID       string       `xml:"cweid,attr"`
-	CWEName     string       `xml:"cwename,attr"`
-	PCIRelated  string       `xml:"pcirelated,attr"`
-	OWASP       string       `xml:"owasp,attr"`
-	SANS        string       `xml:"sans,attr"`
-	CERTC       string       `xml:"certc,attr"`
-	CERTCPP     string       `xml:"certcpp,attr"`
-	CERTJava    string       `xml:"certjava,attr"`
-	OWASPMobile string       `xml:"owaspmobile,attr"`
-	Description CWEDesc      `xml:"description"`
-	StaticFlaws StaticFlaws  `xml:"staticflaws"`
+	CWEID       string      `xml:"cweid,attr"`
+	CWEName     string      `xml:"cwename,attr"`
+	PCIRelated  string      `xml:"pcirelated,attr"`
+	OWASP       string      `xml:"owasp,attr"`
+	SANS        string      `xml:"sans,attr"`
+	CERTC       string      `xml:"certc,attr"`
+	CERTCPP     string      `xml:"certcpp,attr"`
+	CERTJava    string      `xml:"certjava,attr"`
+	OWASPMobile string      `xml:"owaspmobile,attr"`
+	Description CWEDesc     `xml:"description"`
+	StaticFlaws StaticFlaws `xml:"staticflaws"`
 }
 
 // CWEDesc wraps the CWE description text.
@@ -185,20 +184,20 @@ type VulnerableComponents struct {
 
 // Component represents a third-party software component.
 type Component struct {
-	ComponentID                     string              `xml:"component_id,attr"`
-	FileName                        string              `xml:"file_name,attr"`
-	SHA1                            string              `xml:"sha1,attr"`
-	Vulnerabilities                 string              `xml:"vulnerabilities,attr"`
-	MaxCVSSScore                    string              `xml:"max_cvss_score,attr"`
-	Version                         string              `xml:"version,attr"`
-	Library                         string              `xml:"library,attr"`
-	LibraryID                       string              `xml:"library_id,attr"`
-	Vendor                          string              `xml:"vendor,attr"`
-	Description                     string              `xml:"description,attr"`
-	AddedDate                       string              `xml:"added_date,attr"`
-	ComponentAffectsPolicyCompliance string              `xml:"component_affects_policy_compliance,attr"`
-	FilePaths                       ComponentFilePaths  `xml:"file_paths"`
-	VulnerabilityList               VulnerabilityList   `xml:"vulnerabilities"`
+	ComponentID                      string             `xml:"component_id,attr"`
+	FileName                         string             `xml:"file_name,attr"`
+	SHA1                             string             `xml:"sha1,attr"`
+	Vulnerabilities                  string             `xml:"vulnerabilities,attr"`
+	MaxCVSSScore                     string             `xml:"max_cvss_score,attr"`
+	Version                          string             `xml:"version,attr"`
+	Library                          string             `xml:"library,attr"`
+	LibraryID                        string             `xml:"library_id,attr"`
+	Vendor                           string             `xml:"vendor,attr"`
+	Description                      string             `xml:"description,attr"`
+	AddedDate                        string             `xml:"added_date,attr"`
+	ComponentAffectsPolicyCompliance string             `xml:"component_affects_policy_compliance,attr"`
+	FilePaths                        ComponentFilePaths `xml:"file_paths"`
+	VulnerabilityList                VulnerabilityList  `xml:"vulnerabilities"`
 }
 
 // ComponentFilePaths wraps the list of file paths for a component.
@@ -218,13 +217,13 @@ type VulnerabilityList struct {
 
 // Vulnerability represents a single CVE vulnerability in an SCA component.
 type Vulnerability struct {
-	CVEID           string `xml:"cve_id,attr"`
-	CVSSScore       string `xml:"cvss_score,attr"`
-	Severity        string `xml:"severity,attr"`
-	CWEID           string `xml:"cwe_id,attr"`
-	FirstFoundDate  string `xml:"first_found_date,attr"`
-	CVESummary      string `xml:"cve_summary,attr"`
-	SeverityDesc    string `xml:"severity_desc,attr"`
+	CVEID          string `xml:"cve_id,attr"`
+	CVSSScore      string `xml:"cvss_score,attr"`
+	Severity       string `xml:"severity,attr"`
+	CWEID          string `xml:"cwe_id,attr"`
+	FirstFoundDate string `xml:"first_found_date,attr"`
+	CVESummary     string `xml:"cve_summary,attr"`
+	SeverityDesc   string `xml:"severity_desc,attr"`
 }
 
 // SummaryReport is the root element of a Veracode summary report (not supported).

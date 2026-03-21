@@ -122,7 +122,6 @@ const defaultNistTag = "SA-11"
 // SonarQube omits the colon in the timezone offset, so time.RFC3339 does not parse it.
 const sonarTimestampFormat = "2006-01-02T15:04:05-0700"
 
-
 // ConvertSonarqubeToHDF converts SonarQube issues JSON to HDF format
 func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	// Calculate checksum of source scan data
@@ -349,7 +348,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 
 			// Check for CWE tags
 			if strings.HasPrefix(lowerTag, "cwe-") || strings.Contains(lowerTag, "cwe") {
-					if match := shared.CWEPattern.FindStringSubmatch(tag); match != nil {
+				if match := shared.CWEPattern.FindStringSubmatch(tag); match != nil {
 					cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 				}
 			}
@@ -378,7 +377,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 			lowerTag := strings.ToLower(tag)
 
 			if strings.HasPrefix(lowerTag, "cwe-") {
-					if match := shared.CWEPattern.FindStringSubmatch(tag); match != nil {
+				if match := shared.CWEPattern.FindStringSubmatch(tag); match != nil {
 					cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 				}
 			}
@@ -434,7 +433,6 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 	return cweIds, owaspTags, allTags
 }
 
-
 func createResultFromIssue(issue Issue, componentMap map[string]Component) hdf.RequirementResult {
 	status := hdf.Failed
 	if issue.Status == "RESOLVED" || issue.Status == "CLOSED" {
@@ -489,4 +487,3 @@ func extractSourceLocation(issue Issue, componentMap map[string]Component) *hdf.
 		Line: &lineFloat,
 	}
 }
-

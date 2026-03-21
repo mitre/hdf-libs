@@ -41,16 +41,16 @@ func TestConvertHDFToCSV_Minimal(t *testing.T) {
 	// Verify first data row
 	row1 := records[1]
 	assert.Equal(t, "Example STIG Baseline", row1[0]) // Baseline ID
-	assert.Equal(t, "SV-123456", row1[5])            // Requirement ID
-	assert.Equal(t, "passed", row1[10])              // Status
-	assert.Contains(t, row1[11], "IA-5 (1)")         // NIST Controls
-	assert.Contains(t, row1[12], "CCI-000192")       // CCI Controls
+	assert.Equal(t, "SV-123456", row1[5])             // Requirement ID
+	assert.Equal(t, "passed", row1[10])               // Status
+	assert.Contains(t, row1[11], "IA-5 (1)")          // NIST Controls
+	assert.Contains(t, row1[12], "CCI-000192")        // CCI Controls
 
 	// Verify second data row
 	row2 := records[2]
-	assert.Equal(t, "SV-123457", row2[5])                           // Requirement ID
-	assert.Equal(t, "failed", row2[10])                             // Status
-	assert.Equal(t, "Audit logging is not configured", row2[13])    // Message
+	assert.Equal(t, "SV-123457", row2[5])                        // Requirement ID
+	assert.Equal(t, "failed", row2[10])                          // Status
+	assert.Equal(t, "Audit logging is not configured", row2[13]) // Message
 }
 
 func TestConvertHDFToCSV_EmptyBaselines(t *testing.T) {

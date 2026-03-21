@@ -8,6 +8,7 @@ import (
 	"time"
 
 	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
+	"github.com/mitre/hdf-converters/registry"
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
@@ -15,14 +16,14 @@ import (
 
 // SnykReport is the top-level Snyk test JSON output structure.
 type SnykReport struct {
-	OK              bool              `json:"ok"`
-	Vulnerabilities []SnykVuln        `json:"vulnerabilities"`
-	DependencyCount int               `json:"dependencyCount"`
-	Org             string            `json:"org"`
-	PackageManager  string            `json:"packageManager"`
-	Summary         string            `json:"summary"`
-	ProjectName     string            `json:"projectName"`
-	Path            string            `json:"path"`
+	OK              bool       `json:"ok"`
+	Vulnerabilities []SnykVuln `json:"vulnerabilities"`
+	DependencyCount int        `json:"dependencyCount"`
+	Org             string     `json:"org"`
+	PackageManager  string     `json:"packageManager"`
+	Summary         string     `json:"summary"`
+	ProjectName     string     `json:"projectName"`
+	Path            string     `json:"path"`
 }
 
 // SnykVuln represents a single vulnerability entry from Snyk output.
@@ -158,7 +159,7 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 	}
 
 	// Detect format: if SARIF, delegate to the shared SARIF converter
-	if shared.DetectFormat(input) == shared.FormatSARIF {
+	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
 		return sarif.ConvertSarifToHDF(input, converterVersion)
 	}
 

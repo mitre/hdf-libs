@@ -21,7 +21,7 @@ import (
 // <invicti-enterprise> root elements. We use xml.Decoder manually rather than
 // xml.Unmarshal so we can detect which root element is used.
 type NetsparkerXML struct {
-	Generated       string          `xml:"generated,attr"`
+	Generated       string           `xml:"generated,attr"`
 	Target          NetsparkerTarget `xml:"target"`
 	Vulnerabilities struct {
 		Vulnerability []NetsparkerVuln `xml:"vulnerability"`
@@ -38,27 +38,27 @@ type NetsparkerTarget struct {
 
 // NetsparkerVuln represents a single <vulnerability> element.
 type NetsparkerVuln struct {
-	LookupID       string                    `xml:"LookupId"`
-	URL            string                    `xml:"url"`
-	Type           string                    `xml:"type"`
-	Name           string                    `xml:"name"`
-	Severity       string                    `xml:"severity"`
-	Certainty      string                    `xml:"certainty"`
-	Confirmed      string                    `xml:"confirmed"`
-	State          string                    `xml:"state"`
-	FirstSeenDate  string                    `xml:"FirstSeenDate"`
-	LastSeenDate   string                    `xml:"LastSeenDate"`
-	Classification NetsparkerClassification  `xml:"classification"`
-	HTTPRequest    NetsparkerHTTPRequest     `xml:"http-request"`
-	HTTPResponse   NetsparkerHTTPResponse    `xml:"http-response"`
-	Description    string                    `xml:"description"`
-	Impact         string                    `xml:"impact"`
-	RemedialActions   string                 `xml:"remedial-actions"`
-	ExploitationSkills string               `xml:"exploitation-skills"`
-	RemedialProcedure  string               `xml:"remedial-procedure"`
-	RemedyReferences   string               `xml:"remedy-references"`
-	ExternalReferences string               `xml:"external-references"`
-	ProofOfConcept     string               `xml:"proof-of-concept"`
+	LookupID           string                   `xml:"LookupId"`
+	URL                string                   `xml:"url"`
+	Type               string                   `xml:"type"`
+	Name               string                   `xml:"name"`
+	Severity           string                   `xml:"severity"`
+	Certainty          string                   `xml:"certainty"`
+	Confirmed          string                   `xml:"confirmed"`
+	State              string                   `xml:"state"`
+	FirstSeenDate      string                   `xml:"FirstSeenDate"`
+	LastSeenDate       string                   `xml:"LastSeenDate"`
+	Classification     NetsparkerClassification `xml:"classification"`
+	HTTPRequest        NetsparkerHTTPRequest    `xml:"http-request"`
+	HTTPResponse       NetsparkerHTTPResponse   `xml:"http-response"`
+	Description        string                   `xml:"description"`
+	Impact             string                   `xml:"impact"`
+	RemedialActions    string                   `xml:"remedial-actions"`
+	ExploitationSkills string                   `xml:"exploitation-skills"`
+	RemedialProcedure  string                   `xml:"remedial-procedure"`
+	RemedyReferences   string                   `xml:"remedy-references"`
+	ExternalReferences string                   `xml:"external-references"`
+	ProofOfConcept     string                   `xml:"proof-of-concept"`
 }
 
 // NetsparkerClassification represents the <classification> element.
@@ -376,9 +376,9 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Targets: []hdf.Target{
 			{
-				Name: targetName,
-				Type: hdf.CopyrightApplication,
-					Labels: map[string]string{"service": "netsparker"},
+				Name:   targetName,
+				Type:   hdf.CopyrightApplication,
+				Labels: map[string]string{"service": "netsparker"},
 			},
 		},
 	}), nil

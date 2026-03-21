@@ -17,13 +17,13 @@ import (
 
 // ScoutSuiteReport is the top-level ScoutSuite JSON output structure.
 type ScoutSuiteReport struct {
-	AccountID    string                       `json:"account_id"`
-	Environment  string                       `json:"environment"`
-	LastRun      LastRun                      `json:"last_run"`
-	Partition    string                       `json:"partition"`
-	ProviderCode string                      `json:"provider_code"`
-	ProviderName string                      `json:"provider_name"`
-	Services     map[string]json.RawMessage   `json:"services"`
+	AccountID    string                     `json:"account_id"`
+	Environment  string                     `json:"environment"`
+	LastRun      LastRun                    `json:"last_run"`
+	Partition    string                     `json:"partition"`
+	ProviderCode string                     `json:"provider_code"`
+	ProviderName string                     `json:"provider_name"`
+	Services     map[string]json.RawMessage `json:"services"`
 }
 
 // LastRun holds metadata about the ScoutSuite run.
@@ -41,18 +41,18 @@ type ServiceData struct {
 
 // Finding represents a single ScoutSuite finding/rule result.
 type Finding struct {
-	CheckedItems  int               `json:"checked_items"`
-	Compliance    json.RawMessage   `json:"compliance"`
-	Description   string            `json:"description"`
-	FlaggedItems  int               `json:"flagged_items"`
-	IDSuffix      string            `json:"id_suffix"`
-	Items         []string          `json:"items"`
-	Level         string            `json:"level"`
-	Path          string            `json:"path"`
-	Rationale     string            `json:"rationale"`
-	References    []string          `json:"references"`
-	Remediation   *string           `json:"remediation"`
-	Service       string            `json:"service"`
+	CheckedItems int             `json:"checked_items"`
+	Compliance   json.RawMessage `json:"compliance"`
+	Description  string          `json:"description"`
+	FlaggedItems int             `json:"flagged_items"`
+	IDSuffix     string          `json:"id_suffix"`
+	Items        []string        `json:"items"`
+	Level        string          `json:"level"`
+	Path         string          `json:"path"`
+	Rationale    string          `json:"rationale"`
+	References   []string        `json:"references"`
+	Remediation  *string         `json:"remediation"`
+	Service      string          `json:"service"`
 }
 
 // ComplianceItem represents a compliance reference in a finding.

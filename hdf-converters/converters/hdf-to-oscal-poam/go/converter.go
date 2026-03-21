@@ -180,4 +180,3 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride) (oscal.POAMItem, []osc
 
 	return item, []oscal.Risk{risk}
 }
-

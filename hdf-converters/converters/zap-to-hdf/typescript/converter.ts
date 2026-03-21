@@ -15,7 +15,8 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {detectFormat} from '../../../shared/typescript/formatdetect.js';
+import {detectConverter} from '../../../shared/typescript/fingerprint.js';
+import {registerAllFingerprints} from '../../../shared/typescript/register-all.js';
 import {convertSarifToHdf} from '../../sarif-to-hdf/typescript/converter.js';
 import {inputChecksum, buildNistCciTags, limitArray, stripHTML, validateInputSize} from '../../../shared/typescript/converterutil.js';
 
@@ -149,7 +150,9 @@ function selectSite(sites: ZapSite[]): ZapSite | undefined {
 export async function convertZapToHdf(input: string): Promise<string> {
   validateInputSize(input, 'zap');
   // SARIF routing — delegate to the shared SARIF converter
-  if (detectFormat(input) === 'sarif') {
+  registerAllFingerprints();
+  const detected = detectConverter(input);
+  if (detected && detected.fingerprint.id === 'sarif-to-hdf') {
     return convertSarifToHdf(input);
   }
 

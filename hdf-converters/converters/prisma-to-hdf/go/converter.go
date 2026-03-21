@@ -19,17 +19,17 @@ import (
 
 // prismaRecord represents a single row from the Prisma Cloud CSV export.
 type prismaRecord struct {
-	Hostname         string
-	Distro           string
-	CVEID            string
-	ComplianceID     string
-	Type             string
-	Severity         string
-	Packages         string
-	Description      string
-	Cause            string
-	FixStatus        string
-	Published        string
+	Hostname          string
+	Distro            string
+	CVEID             string
+	ComplianceID      string
+	Type              string
+	Severity          string
+	Packages          string
+	Description       string
+	Cause             string
+	FixStatus         string
+	Published         string
 	VulnerabilityLink string
 }
 
@@ -273,9 +273,9 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	for i, hostname := range hostOrder {
 		baselines[i] = buildBaseline(hostname, hostGroups[hostname], checksum)
 		targets[i] = hdf.Target{
-			Name: hostname,
-			Type: hdf.Host,
-				Labels: map[string]string{"service": "prisma"},
+			Name:   hostname,
+			Type:   hdf.Host,
+			Labels: map[string]string{"service": "prisma"},
 		}
 	}
 

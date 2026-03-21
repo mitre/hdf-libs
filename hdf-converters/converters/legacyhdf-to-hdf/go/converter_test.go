@@ -548,8 +548,8 @@ func TestConvertV1ToV2_PassthroughNoOverlays(t *testing.T) {
 		Profiles: []V1Profile{{
 			Name: "simple-profile",
 			Controls: []V1Control{{
-				ID:     "V-1",
-				Impact: 0.5,
+				ID:      "V-1",
+				Impact:  0.5,
 				Results: []V1Result{{Status: "passed"}},
 			}},
 		}},

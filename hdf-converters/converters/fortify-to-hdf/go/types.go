@@ -106,13 +106,13 @@ type SourceLocation struct {
 
 // Description represents a vulnerability class description in FVDL.
 type Description struct {
-	ContentType     string      `xml:"contentType,attr"`
-	ClassID         string      `xml:"classID,attr"`
-	Abstract        string      `xml:"Abstract"`
-	Explanation     string      `xml:"Explanation"`
-	Recommendations string      `xml:"Recommendations"`
-	Tips            Tips        `xml:"Tips"`
-	References      References  `xml:"References"`
+	ContentType     string     `xml:"contentType,attr"`
+	ClassID         string     `xml:"classID,attr"`
+	Abstract        string     `xml:"Abstract"`
+	Explanation     string     `xml:"Explanation"`
+	Recommendations string     `xml:"Recommendations"`
+	Tips            Tips       `xml:"Tips"`
+	References      References `xml:"References"`
 }
 
 // Tips contains Tip elements.

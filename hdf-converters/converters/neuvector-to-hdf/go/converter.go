@@ -49,8 +49,8 @@ type NeuVectorVuln struct {
 	Link                  string   `json:"link"`
 	ScoreV3               float64  `json:"score_v3"`
 	VectorsV3             string   `json:"vectors_v3"`
-	PublishedTimestamp     int64    `json:"published_timestamp"`
-	LastModifiedTimestamp  int64    `json:"last_modified_timestamp"`
+	PublishedTimestamp    int64    `json:"published_timestamp"`
+	LastModifiedTimestamp int64    `json:"last_modified_timestamp"`
 	Cpes                  []string `json:"cpes"`
 	Cves                  []string `json:"cves"`
 	FeedRating            string   `json:"feed_rating"`

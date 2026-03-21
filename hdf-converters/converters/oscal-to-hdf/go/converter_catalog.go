@@ -171,4 +171,3 @@ func buildCatalogTags(ctrl *Control) map[string]interface{} {
 func catalogControlImpact(_ *Control) float64 {
 	return 0.5
 }
-

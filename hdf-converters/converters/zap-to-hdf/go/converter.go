@@ -8,6 +8,7 @@ import (
 	"time"
 
 	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
+	"github.com/mitre/hdf-converters/registry"
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	"github.com/mitre/hdf-mappings/go/cwe"
@@ -171,7 +172,7 @@ func selectSite(sites []ZapSite) *ZapSite {
 // If the input is detected as SARIF, it delegates to the SARIF converter.
 func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	// SARIF routing — delegate to the shared SARIF converter
-	if shared.DetectFormat(input) == shared.FormatSARIF {
+	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
 		return sarif.ConvertSarifToHDF(input, converterVersion)
 	}
 

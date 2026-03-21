@@ -51,11 +51,11 @@ type XMLBaselines struct {
 
 // XMLBaseline represents a baseline in XML
 type XMLBaseline struct {
-	Name         string            `xml:"name"`
-	Version      *string           `xml:"version,omitempty"`
-	Title        *string           `xml:"title,omitempty"`
-	Checksum     XMLChecksum       `xml:"checksum"`
-	Requirements *XMLRequirements  `xml:"requirements,omitempty"`
+	Name         string           `xml:"name"`
+	Version      *string          `xml:"version,omitempty"`
+	Title        *string          `xml:"title,omitempty"`
+	Checksum     XMLChecksum      `xml:"checksum"`
+	Requirements *XMLRequirements `xml:"requirements,omitempty"`
 }
 
 // XMLChecksum represents a checksum
@@ -71,12 +71,12 @@ type XMLRequirements struct {
 
 // XMLRequirement represents a requirement in XML
 type XMLRequirement struct {
-	ID           string            `xml:"id"`
-	Title        *string           `xml:"title,omitempty"`
-	Descriptions *XMLDescriptions  `xml:"descriptions,omitempty"`
-	Impact       float64           `xml:"impact"`
-	Tags         *XMLTags          `xml:"tags,omitempty"`
-	Results      *XMLResults       `xml:"results,omitempty"`
+	ID           string           `xml:"id"`
+	Title        *string          `xml:"title,omitempty"`
+	Descriptions *XMLDescriptions `xml:"descriptions,omitempty"`
+	Impact       float64          `xml:"impact"`
+	Tags         *XMLTags         `xml:"tags,omitempty"`
+	Results      *XMLResults      `xml:"results,omitempty"`
 }
 
 // XMLDescriptions wraps description array
@@ -92,8 +92,8 @@ type XMLDescription struct {
 
 // XMLTags represents requirement tags with array support
 type XMLTags struct {
-	NIST []string               `xml:"nist,omitempty"`
-	CCI  []string               `xml:"cci,omitempty"`
+	NIST  []string               `xml:"nist,omitempty"`
+	CCI   []string               `xml:"cci,omitempty"`
 	Other map[string]interface{} `xml:",omitempty"`
 }
 

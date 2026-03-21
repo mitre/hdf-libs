@@ -10,8 +10,17 @@
       "import": "./dist/src/index.js",
       "types": "./dist/src/index.d.ts"
     },
+    "./detect": {
+      "import": "./dist/src/detect.js",
+      "types": "./dist/src/detect.d.ts"
+    },
+    "./registry": {
+      "import": "./dist/shared/typescript/registry.js",
+      "types": "./dist/shared/typescript/registry.d.ts"
+    },
     "./package.json": "./package.json"
   },
+  "sideEffects": false,
   "files": [
     "dist"
   ],

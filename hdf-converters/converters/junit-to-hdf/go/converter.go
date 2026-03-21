@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	hdf "github.com/mitre/hdf-schema"
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-schema"
 )
 
 // JUnit XML struct types
