@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { _resetRegistry, getFingerprint } from '../../../shared/typescript/registry.js';
-import { detectConverter } from '../../../shared/typescript/fingerprint.js';
+import { detectConverter, detectConverterAll } from '../../../shared/typescript/fingerprint.js';
 import { register, gitlabFingerprint } from './fingerprint.js';
 
 // Known-good GitLab Security Report fixture (v14+ schema with scan.type)
@@ -65,7 +65,7 @@ describe('gitlab-to-hdf fingerprint', () => {
   });
 
   it('detects minimal GitLab report (vulnerabilities only) at confidence 0.5', () => {
-    const result = detectConverter(GITLAB_MINIMAL);
+    const result = detectConverterAll(GITLAB_MINIMAL)[0];
     expect(result).toBeDefined();
     expect(result!.fingerprint.id).toBe('gitlab-to-hdf');
     expect(result!.confidence).toBe(0.5);

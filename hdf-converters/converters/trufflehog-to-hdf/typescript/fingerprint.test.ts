@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { _resetRegistry, getFingerprint } from '../../../shared/typescript/registry.js';
-import { detectConverter } from '../../../shared/typescript/fingerprint.js';
+import { detectConverter, detectConverterAll } from '../../../shared/typescript/fingerprint.js';
 import { register, trufflehogFingerprint } from './fingerprint.js';
 
 const TRUFFLEHOG_FULL = JSON.stringify({
@@ -65,7 +65,7 @@ describe('trufflehog-to-hdf fingerprint', () => {
   });
 
   it('detects minimal TruffleHog finding (Raw + Verified, no SourceMetadata) at confidence 0.7', () => {
-    const result = detectConverter(TRUFFLEHOG_MINIMAL);
+    const result = detectConverterAll(TRUFFLEHOG_MINIMAL)[0];
     expect(result).toBeDefined();
     expect(result!.fingerprint.id).toBe('trufflehog-to-hdf');
     expect(result!.confidence).toBe(0.7);
@@ -79,7 +79,7 @@ describe('trufflehog-to-hdf fingerprint', () => {
   });
 
   it('detects Raw + Verified (no SourceMetadata) at confidence 0.7', () => {
-    const result = detectConverter(TRUFFLEHOG_RAW_ONLY);
+    const result = detectConverterAll(TRUFFLEHOG_RAW_ONLY)[0];
     expect(result).toBeDefined();
     expect(result!.fingerprint.id).toBe('trufflehog-to-hdf');
     expect(result!.confidence).toBe(0.7);

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { _resetRegistry, getFingerprint } from '../../../shared/typescript/registry.js';
-import { detectConverter } from '../../../shared/typescript/fingerprint.js';
+import { detectConverter, detectConverterAll } from '../../../shared/typescript/fingerprint.js';
 import { register, snykFingerprint } from './fingerprint.js';
 
 const SNYK_FULL = JSON.stringify({
@@ -80,7 +80,7 @@ describe('snyk-to-hdf fingerprint', () => {
   });
 
   it('detects Snyk JSON without packageManager at confidence 0.5', () => {
-    const result = detectConverter(SNYK_NO_PKG_MGR);
+    const result = detectConverterAll(SNYK_NO_PKG_MGR)[0];
     expect(result).toBeDefined();
     expect(result!.fingerprint.id).toBe('snyk-to-hdf');
     expect(result!.confidence).toBe(0.5);

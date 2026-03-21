@@ -12,15 +12,37 @@ export interface DetectionResult {
   confidence: number;
 }
 
+/** Minimum confidence to accept an auto-detection result. */
+const MIN_CONFIDENCE = 0.8;
+
 export function detectConverter(input: string): DetectionResult | undefined {
-  return detectConverterAll(input)[0];
+  const results = detectConverterAll(input);
+  if (results.length === 0) return undefined;
+  const best = results[0]!;
+  // Refuse to guess if confidence is too low
+  if (best.confidence < MIN_CONFIDENCE) return undefined;
+  // Refuse to guess if there's an ambiguous tie at the top
+  if (results.length > 1 && results[1]!.confidence === best.confidence) return undefined;
+  return best;
 }
 
+/** Maximum input size for fingerprint detection (100 MB). */
+const MAX_DETECT_SIZE = 100 * 1024 * 1024;
+/** Maximum characters scanned for XML/text root element detection. */
+const MAX_XML_PREAMBLE = 8 * 1024;
+
 export function detectConverterAll(input: string): DetectionResult[] {
+  if (!input || input.length > MAX_DETECT_SIZE) return [];
+
   const family = detectFamily(input);
   if (!family) return [];
 
-  const parsed = family === 'json' ? tryParseJSON(input) : input;
+  // For XML/text, only pass the preamble to fingerprints
+  const effectiveInput = (family !== 'json' && input.length > MAX_XML_PREAMBLE)
+    ? input.slice(0, MAX_XML_PREAMBLE)
+    : input;
+
+  const parsed = family === 'json' ? tryParseJSON(input) : effectiveInput;
   if (parsed === undefined) return [];
 
   const results: DetectionResult[] = [];
@@ -32,13 +54,16 @@ export function detectConverterAll(input: string): DetectionResult[] {
     }
   }
 
-  results.sort((a, b) => b.confidence - a.confidence);
+  // Stable sort: by confidence desc, then by ID asc for deterministic tiebreaking
+  results.sort((a, b) => b.confidence - a.confidence || a.fingerprint.id.localeCompare(b.fingerprint.id));
   return results;
 }
 
 export function detectFamily(input: string): InputFamily | undefined {
   if (!input) return undefined;
-  const trimmed = input.trim();
+  // Strip UTF-8 BOM (U+FEFF) — common on Windows-generated files
+  const stripped = input.replace(/^\uFEFF/, '');
+  const trimmed = stripped.trim();
   if (!trimmed) return undefined;
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) return 'json';
   if (trimmed.startsWith('<')) return 'xml';

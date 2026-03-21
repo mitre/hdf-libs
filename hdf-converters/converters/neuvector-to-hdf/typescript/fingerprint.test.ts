@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { _resetRegistry, getFingerprint } from '../../../shared/typescript/registry.js';
-import { detectConverter } from '../../../shared/typescript/fingerprint.js';
+import { detectConverter, detectConverterAll } from '../../../shared/typescript/fingerprint.js';
 import { register, neuvectorFingerprint } from './fingerprint.js';
 
 const NEUVECTOR_GOOD = JSON.stringify({
@@ -90,7 +90,7 @@ describe('neuvector-to-hdf fingerprint', () => {
   });
 
   it('detects NeuVector with empty vulnerabilities at confidence 0.7', () => {
-    const result = detectConverter(NEUVECTOR_EMPTY_VULNS);
+    const result = detectConverterAll(NEUVECTOR_EMPTY_VULNS)[0];
     expect(result).toBeDefined();
     expect(result!.fingerprint.id).toBe('neuvector-to-hdf');
     expect(result!.confidence).toBe(0.7);

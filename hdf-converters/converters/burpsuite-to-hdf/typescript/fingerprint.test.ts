@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { _resetRegistry, getFingerprint } from '../../../shared/typescript/registry.js';
-import { detectConverter } from '../../../shared/typescript/fingerprint.js';
+import { detectConverter, detectConverterAll } from '../../../shared/typescript/fingerprint.js';
 import { register, burpsuiteFingerprint } from './fingerprint.js';
 
 const BURP_XML = '<?xml version="1.0"?><issues burpVersion="2024.1" exportTime="2024-01-01"><issue><serialNumber>1</serialNumber></issue></issues>';
@@ -32,7 +32,7 @@ describe('burpsuite-to-hdf fingerprint', () => {
   });
 
   it('detects minimal Burp Suite XML (no burpVersion) at confidence 0.7', () => {
-    const result = detectConverter(BURP_MINIMAL);
+    const result = detectConverterAll(BURP_MINIMAL)[0];
     expect(result).toBeDefined();
     expect(result!.fingerprint.id).toBe('burpsuite-to-hdf');
     expect(result!.confidence).toBe(0.7);
