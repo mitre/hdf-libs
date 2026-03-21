@@ -110,4 +110,3 @@ func implementedRequirementToBaselineRequirement(ir *ImplementedRequirement) hdf
 		Tags:         tags,
 	}
 }
-

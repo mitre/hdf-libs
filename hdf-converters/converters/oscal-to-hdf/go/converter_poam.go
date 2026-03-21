@@ -249,4 +249,3 @@ func extractAppliedBy(meta Metadata) *hdf.Identity {
 	}
 	return nil
 }
-

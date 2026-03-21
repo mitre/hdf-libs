@@ -260,5 +260,3 @@ func buildPlanDescription(ap *AssessmentPlan) *string {
 	desc := strings.Join(parts, "\n\n")
 	return &desc
 }
-
-
