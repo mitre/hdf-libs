@@ -24,20 +24,28 @@ func NewListCmd() *cobra.Command { //nolint:dupl // Cobra command setup; flags a
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list <what> <file>",
-		Short: "List controls, profiles, or targets from an HDF file",
-		Long: `List items from an HDF results file.
+		Use:   "list <file> [--detail <section>]",
+		Short: "Show contents of any HDF document",
+		Long: `Show a summary of any HDF document. Auto-detects the document type
+(results, baseline, system, plan, amendments, evidence-package).
 
-Available list types:
-  controls   List all controls/requirements with their status
-  profiles   List all profiles/baselines
-  targets    List all scan targets
+Use --detail to expand a specific section to item-level detail.
+
+Detail sections by document type:
+  results:          requirements, baselines, targets, inputs
+  baseline:         requirements, groups
+  system:           components, interconnections
+  plan:             assessments
+  amendments:       overrides
+  evidence-package: contents
 
 Examples:
-  hdf list controls results.json
-  hdf list controls results.json --status failed
-  hdf list profiles results.json
-  hdf list targets results.json --json`,
+  hdf list results.json                              Summary of a results file
+  hdf list results.json --detail requirements        List individual requirements
+  hdf list results.json --detail requirements --status failed
+  hdf list system.json                               Summary of a system document
+  hdf list system.json --detail components           List components
+  hdf list amendments.json --detail overrides        List amendments`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Sync local flags to global variables for runList
@@ -70,15 +78,15 @@ func runList(_ *cobra.Command, args []string) error {
 	}
 
 	switch listType {
-	case "controls", "control", "c":
+	case "requirements", "requirement", "c":
 		return listControls(results)
-	case "profiles", "profile", "p":
+	case "baselines", "baseline", "p":
 		return listProfiles(results)
 	case "targets", "target", "t":
 		return listTargets(results)
 	default:
 		printError(fmt.Sprintf("Unknown list type: %s", listType),
-			"Valid types: controls, profiles, targets")
+			"Valid types: requirements, baselines, targets")
 		return fmt.Errorf("unknown list type: %s", listType)
 	}
 }
@@ -88,7 +96,7 @@ type controlInfo struct {
 	Title   string  `json:"title,omitempty"`
 	Status  string  `json:"status"`
 	Impact  float64 `json:"impact"`
-	Profile string  `json:"profile"`
+	Profile string  `json:"baseline"`
 }
 
 func listControls(results hdf.HdfResults) error {
@@ -98,7 +106,7 @@ func listControls(results hdf.HdfResults) error {
 		return printControlsJSON(controls)
 	}
 
-	fmt.Printf("Controls: %d\n\n", len(controls))
+	fmt.Printf("Requirements: %d\n\n", len(controls))
 
 	if statusFilter == "" && !showAll {
 		printControlsSummary(controls)

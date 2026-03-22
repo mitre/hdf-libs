@@ -44,8 +44,8 @@ func NewQueryCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "query <file>",
-		Short: "Search and filter controls in an HDF file",
-		Long: `Search and filter controls based on status, severity, tags, and text.
+		Short: "Search and filter requirements in an HDF document",
+		Long: `Search and filter requirements based on status, severity, tags, and text.
 
 Filters can be combined (AND logic). Use multiple flags to narrow results.
 
@@ -58,6 +58,7 @@ Examples:
   hdf query results.json --tag "severity:high"
   hdf query results.json --search "password"
   hdf query results.json --impact ">0.5" --status failed
+  hdf query results.json --baseline "RHEL9-STIG"
   hdf query results.json --status failed --count`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -85,8 +86,8 @@ Examples:
 	cmd.Flags().StringVar(&localQuerySTIGID, "stig-id", "", "Filter by STIG ID (e.g., V-230221)")
 	cmd.Flags().StringVarP(&localQueryTag, "tag", "t", "", "Filter by tag key:value (e.g., severity:high)")
 	cmd.Flags().StringVar(&localQuerySearch, "search", "", "Search in title and description")
-	cmd.Flags().StringVarP(&localQueryProfile, "profile", "p", "", "Filter by profile name")
-	cmd.Flags().BoolVarP(&localQueryCount, "count", "c", false, "Show only the count of matching controls")
+	cmd.Flags().StringVarP(&localQueryProfile, "baseline", "p", "", "Filter by profile name")
+	cmd.Flags().BoolVarP(&localQueryCount, "count", "c", false, "Show only the count of matching requirements")
 	cmd.Flags().IntVarP(&localQueryLimit, "limit", "l", 0, "Limit number of results (0 = unlimited)")
 
 	return cmd
@@ -98,7 +99,7 @@ type queryResult struct {
 	Status   string  `json:"status"`
 	Impact   float64 `json:"impact"`
 	Severity string  `json:"severity"`
-	Profile  string  `json:"profile"`
+	Profile  string  `json:"baseline"`
 }
 
 func runQuery(_ *cobra.Command, args []string) error {
@@ -192,11 +193,11 @@ func outputQueryResults(matches []queryResult) error {
 
 	// Human-readable output
 	if len(matches) == 0 {
-		fmt.Println("No matching controls found.")
+		fmt.Println("No matching requirements found.")
 		return nil
 	}
 
-	fmt.Printf("Found %d matching control(s):\n\n", len(matches))
+	fmt.Printf("Found %d matching requirement(s):\n\n", len(matches))
 
 	for _, m := range matches {
 		symbol := statusToSymbol(m.Status)

@@ -75,16 +75,19 @@ func NewRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "hdf",
 		Short: "Work with Heimdall Data Format (HDF) files",
-		Long: `hdf is a CLI tool for working with Heimdall Data Format (HDF) files.
+		Long: `hdf is a CLI tool for working with Heimdall Data Format (HDF) documents.
 
-HDF is a standardized format for security assessment results, designed to work
-with compliance tools like Chef InSpec, AWS Security Hub, and more.
+HDF is a standardized format for security assessments covering the full
+compliance lifecycle: baselines, results, system architecture, assessment
+plans, amendments (waivers/attestations), and evidence packages.
 
 Examples:
-  hdf validate results.json           Validate an HDF results file
-  hdf info results.json               Display summary information
-  hdf stats results.json              Show assessment statistics
-  hdf list controls results.json      List all controls/requirements
+  hdf validate results.json                 Validate any HDF document
+  hdf list results.json                     Summary of what's in a file
+  hdf list results.json --detail requirements   List individual requirements
+  hdf query results.json --status failed    Filter requirements by status
+  hdf convert scan.nessus                   Auto-detect and convert to HDF
+  hdf diff old.json new.json                Compare two assessments
 
 For more information: https://github.com/mitre/hdf-libs`,
 		SilenceUsage:  true,
@@ -112,20 +115,18 @@ For more information: https://github.com/mitre/hdf-libs`,
 
 	// Add subcommands
 	cmd.AddCommand(NewValidateCmd())
-	cmd.AddCommand(NewInfoCmd())
-	cmd.AddCommand(NewStatsCmd())
 	cmd.AddCommand(NewListCmd())
 	cmd.AddCommand(NewQueryCmd())
-	cmd.AddCommand(NewVersionCmd())
 	cmd.AddCommand(NewConvertCmd())
 	cmd.AddCommand(NewDiffCmd())
-	cmd.AddCommand(NewFetchCmd())
-	cmd.AddCommand(NewGenerateCmd())
-	cmd.AddCommand(NewLabelCmd())
+	cmd.AddCommand(NewAmendCmd())
+	cmd.AddCommand(NewEvidenceCmd())
 	cmd.AddCommand(NewSystemCmd())
 	cmd.AddCommand(NewPlanCmd())
-	cmd.AddCommand(NewEvidenceCmd())
-	cmd.AddCommand(NewAmendCmd())
+	cmd.AddCommand(NewLabelCmd())
+	cmd.AddCommand(NewGenerateCmd())
+	cmd.AddCommand(NewFetchCmd())
+	cmd.AddCommand(NewVersionCmd())
 
 	return cmd
 }
