@@ -417,3 +417,9 @@ func TestSeverityToImpact(t *testing.T) {
 		})
 	}
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "cyclonedx-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertCycloneDXToHDF(input, "0.1.0")
+	})
+}

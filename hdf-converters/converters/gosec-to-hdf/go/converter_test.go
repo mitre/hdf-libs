@@ -589,3 +589,9 @@ func TestConvertGosecToHDF_NativeJSONNotRoutedToSARIF(t *testing.T) {
 	// Native output uses "gosec Scan" baseline name (not tool driver name)
 	assert.Equal(t, "gosec Scan", result.Baselines[0].Name)
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "gosec-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertGosecToHDF(input, "0.1.0")
+	})
+}

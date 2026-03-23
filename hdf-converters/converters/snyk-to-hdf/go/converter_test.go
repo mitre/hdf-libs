@@ -396,3 +396,9 @@ func TestSeverityToImpact(t *testing.T) {
 		})
 	}
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "snyk-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertSnykToHDF(input, "0.1.0")
+	})
+}

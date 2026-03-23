@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -311,4 +312,10 @@ func Test_scanTypeLabel(t *testing.T) {
 	assert.Equal(t, "Container Scanning", scanTypeLabel("container_scanning"))
 	assert.Equal(t, "Secret Detection", scanTypeLabel("secret_detection"))
 	assert.Equal(t, "CUSTOM", scanTypeLabel("custom"))
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "gitlab-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertGitlabToHDF(input, "0.1.0")
+	})
 }

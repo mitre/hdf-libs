@@ -1298,6 +1298,12 @@ func TestConvertSarifToHDF_DockleFixture(t *testing.T) {
 	assert.True(t, hasCheck, "Dockle rules with help should have check description")
 }
 
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "sarif-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertSarifToHDF(input, "0.1.0")
+	})
+}
+
 func TestConvertSarifToHDF_GosecFixture(t *testing.T) {
 	inputData, err := os.ReadFile(fixturePath("gosec.sarif"))
 	require.NoError(t, err, "Failed to read gosec.sarif fixture")

@@ -338,3 +338,9 @@ func TestConvertConveyor_Timestamp(t *testing.T) {
 
 	assert.NotNil(t, result.Timestamp, "HDF result should have a timestamp")
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "conveyor-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertConveyorToHDF(input, "0.1.0")
+	})
+}

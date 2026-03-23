@@ -241,3 +241,9 @@ func TestConvertVeracodeToHDF_EntityExpansion(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity declarations")
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "veracode-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertVeracodeToHDF(input, "0.1.0")
+	})
+}

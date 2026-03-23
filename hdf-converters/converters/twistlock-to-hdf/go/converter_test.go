@@ -354,3 +354,9 @@ func TestConvertTwistlock_StartTime(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expected, req.Results[0].StartTime)
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "twistlock-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertTwistlockToHDF(input, "0.1.0")
+	})
+}

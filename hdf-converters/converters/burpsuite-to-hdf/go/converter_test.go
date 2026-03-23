@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -451,4 +452,10 @@ func TestConvertBurpsuiteToHDF_EntityExpansion(t *testing.T) {
 	_, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "burpsuite-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertBurpsuiteToHDF(input, "0.1.0")
+	})
 }

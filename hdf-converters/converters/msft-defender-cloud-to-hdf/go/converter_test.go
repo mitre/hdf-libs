@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -367,4 +368,10 @@ func TestConvert_JSONRoundTrip(t *testing.T) {
 	err = json.Unmarshal(jsonBytes, &roundTrip)
 	require.NoError(t, err)
 	assert.Len(t, roundTrip.Baselines[0].Requirements, 2)
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "msft-defender-cloud-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertMsftDefenderCloudToHDF(input, "0.1.0")
+	})
 }

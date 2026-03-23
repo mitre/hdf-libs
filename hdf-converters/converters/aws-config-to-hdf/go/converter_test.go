@@ -421,3 +421,9 @@ func TestConvertAWSConfigToHDF_ChecksumIsSet(t *testing.T) {
 	require.NotNil(t, result.Baselines[0].Checksum)
 	assert.NotEmpty(t, result.Baselines[0].Checksum.Value)
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "aws-config-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertAWSConfigToHDF(input, "0.1.0")
+	})
+}

@@ -497,3 +497,9 @@ func TestConvertZapToHDF_Webgoat_DataSourceVersion(t *testing.T) {
 	require.NotNil(t, result.DataSource)
 	assert.Equal(t, "2.7.0", *result.DataSource.Version)
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "zap-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertZapToHDF(input, "0.1.0")
+	})
+}

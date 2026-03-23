@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -232,4 +233,10 @@ func TestRepoNameFromURI(t *testing.T) {
 			assert.Equal(t, tc.expected, repoNameFromURI(tc.uri))
 		})
 	}
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "msft-defender-devops-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertMsftDefenderDevopsToHDF(input, "0.1.0")
+	})
 }

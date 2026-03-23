@@ -298,3 +298,9 @@ func TestConvertTrufflehogToHDF_OutputIsValidJSON(t *testing.T) {
 	var parsed map[string]interface{}
 	require.NoError(t, json.Unmarshal(output, &parsed))
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "trufflehog-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertTrufflehogToHDF(input, "0.1.0")
+	})
+}

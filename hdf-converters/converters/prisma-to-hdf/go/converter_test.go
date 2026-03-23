@@ -360,3 +360,9 @@ func TestConvertPrisma_MessageField(t *testing.T) {
 	require.NotNil(t, msg)
 	assert.Contains(t, *msg, "File ownership is wrong")
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "prisma-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertPrismaToHDF(input, "0.1.0")
+	})
+}

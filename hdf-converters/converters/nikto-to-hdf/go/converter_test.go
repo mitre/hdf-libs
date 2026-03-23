@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -257,4 +258,10 @@ func TestConvertNiktoToHDF_InvalidJSON(t *testing.T) {
 func TestConvertNiktoToHDF_EmptyInput(t *testing.T) {
 	_, err := ConvertNiktoToHDF([]byte(""), testConverterVersion)
 	assert.Error(t, err)
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "nikto-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertNiktoToHDF(input, "0.1.0")
+	})
 }

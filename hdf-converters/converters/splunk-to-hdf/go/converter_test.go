@@ -284,3 +284,9 @@ func TestConvertSplunkToHDF_JSONRoundTrip(t *testing.T) {
 	assert.Contains(t, parsed, "targets")
 	assert.Contains(t, parsed, "generator")
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "splunk-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertSplunkToHDF(input, "0.1.0")
+	})
+}

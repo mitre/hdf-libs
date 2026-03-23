@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -487,4 +488,10 @@ func TestMinimalReport(t *testing.T) {
 	if len(hdfResults.Baselines[0].Requirements) != 0 {
 		t.Errorf("Expected 0 requirements, got %d", len(hdfResults.Baselines[0].Requirements))
 	}
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "grype-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertGrypeToHDF(input, "0.1.0")
+	})
 }

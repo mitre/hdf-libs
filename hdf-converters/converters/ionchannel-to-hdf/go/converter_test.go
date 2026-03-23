@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -361,4 +362,10 @@ func TestBuildDependencyGraph_ParentAssociation(t *testing.T) {
 			assert.Contains(t, dep.ParentDependencies, "parent-org/parent")
 		}
 	}
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "ionchannel-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertIonChannelToHDF(input, "0.1.0")
+	})
 }

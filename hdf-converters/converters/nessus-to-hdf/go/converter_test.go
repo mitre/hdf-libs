@@ -325,3 +325,9 @@ func TestConvertNessusToHDF_EmptyInput(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "empty input")
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "nessus-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertNessusToHDF(input, converterVersion)
+	})
+}

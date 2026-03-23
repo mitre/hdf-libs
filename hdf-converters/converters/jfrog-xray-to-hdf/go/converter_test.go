@@ -328,3 +328,9 @@ func TestGetImpact(t *testing.T) {
 		})
 	}
 }
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "jfrog-xray-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertJfrogXrayToHDF(input, "0.1.0")
+	})
+}

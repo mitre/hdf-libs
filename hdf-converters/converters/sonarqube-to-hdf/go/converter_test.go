@@ -586,6 +586,12 @@ func TestExtractDescription_FallsBackToDescriptionSections(t *testing.T) {
 	})
 }
 
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "sonarqube-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertSonarqubeToHDF(input, "0.1.0")
+	})
+}
+
 func TestConvert_SQ26Format(t *testing.T) {
 	result, err := ConvertSonarqubeToHDF(loadSQ26Fixture(t), testConverterVersion)
 	require.NoError(t, err, "SQ 26 fixture conversion should succeed")

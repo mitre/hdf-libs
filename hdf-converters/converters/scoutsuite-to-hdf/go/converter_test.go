@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -365,4 +366,10 @@ func TestGetImpact(t *testing.T) {
 	assert.Equal(t, 0.5, getImpact("warning"))
 	assert.Equal(t, 0.3, getImpact("unknown"))
 	assert.Equal(t, 0.3, getImpact(""))
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "scoutsuite-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertScoutsuiteToHDF(input, "0.1.0")
+	})
 }

@@ -981,6 +981,13 @@ func findBaselineRequirement(requirements []hdf.BaselineRequirement, id string) 
 	return nil
 }
 
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTestsRaw(t, "xccdf-results-to-hdf", func(input []byte) ([]byte, error) {
+		output, _, err := ConvertXccdfToHDF(input, "0.1.0")
+		return output, err
+	})
+}
+
 func findDescription(descriptions []hdf.Description, label string) *hdf.Description {
 	for i := range descriptions {
 		if descriptions[i].Label == label {
