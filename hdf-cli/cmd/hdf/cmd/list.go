@@ -24,8 +24,9 @@ func NewListCmd() *cobra.Command { //nolint:dupl // Cobra command setup; flags a
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list <file> [--detail <section>]",
-		Short: "Show contents of any HDF document",
+		Use:     "list <file> [--detail <section>]",
+		Aliases: []string{"ls"},
+		Short:   "Show contents of any HDF document",
 		Long: `Show a summary of any HDF document. Auto-detects the document type
 (results, baseline, system, plan, amendments, evidence-package).
 

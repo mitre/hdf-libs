@@ -234,6 +234,8 @@ func TestListFilters(t *testing.T) {
 		{name: "list c (short)", args: []string{"list", "c", fixture}, wantContain: "Requirements:"},
 		{name: "list p (short)", args: []string{"list", "p", fixture}, wantContain: "Baselines:"},
 		{name: "list t (short)", args: []string{"list", "t", fixture}},
+		// ls alias for list
+		{name: "ls alias", args: []string{"ls", "requirements", fixture}, wantContain: "Requirements:"},
 	})
 }
 
