@@ -24,11 +24,15 @@ func NewListCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:     "list <file> [--detail <section>]",
+		Use:     "list <file> [file...] [--detail <section>]",
 		Aliases: []string{"ls"},
 		Short:   "Show contents of any HDF document",
 		Long: `Show a summary of any HDF document. Auto-detects the document type
 (results, baseline, system, plan, amendments, evidence-package).
+
+Multiple files and glob patterns are supported:
+  hdf list file1.json file2.json
+  hdf list "scans/*.json"
 
 Use --detail to expand a specific section to item-level detail.
 
@@ -47,14 +51,15 @@ Examples:
   hdf list results.json                                Summary of a results file
   hdf list results.json --detail requirements          List individual requirements
   hdf list results.json --detail requirements -s failed
+  hdf list file1.json file2.json                       Summary of multiple files
   hdf list system.json                                 Summary of a system document
   hdf list system.json --detail components             List components
   hdf list amendments.json --detail overrides          List amendments`,
-		Args: cobra.ExactArgs(1),
+		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			statusFilter = localStatusFilter
 			showAll = localShowAll
-			return runList(cmd, args[0], detailSection)
+			return runListBulk(cmd, args, detailSection)
 		},
 	}
 
@@ -86,16 +91,12 @@ func resolveDetailAlias(s string) string {
 func runList(_ *cobra.Command, filename, detail string) error {
 	data, err := readInputFile(filename)
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
-	// Currently we only fully parse HDF results.
-	// For other doc types we'd need additional parsers.
 	results, err := parseHDFResults(data)
 	if err != nil {
-		printError(fmt.Sprintf("Failed to parse HDF file: %v", err))
-		return err
+		return fmt.Errorf("failed to parse HDF file: %w", err)
 	}
 
 	if detail == "" {
@@ -111,9 +112,7 @@ func runList(_ *cobra.Command, filename, detail string) error {
 	case "targets":
 		return listTargets(results)
 	default:
-		printError(fmt.Sprintf("Unknown detail section: %s", detail),
-			"Valid sections for results: requirements, baselines, targets")
-		return fmt.Errorf("unknown detail section: %s", detail)
+		return fmt.Errorf("unknown detail section: %s\nValid sections for results: requirements, baselines, targets", detail)
 	}
 }
 
@@ -380,6 +379,22 @@ func listTargets(results hdf.HdfResults) error {
 	}
 
 	return nil
+}
+
+// runListBulk dispatches to single-file or multi-file mode.
+func runListBulk(cmd *cobra.Command, args []string, detail string) error {
+	files, err := expandGlobs(args)
+	if err != nil {
+		return err
+	}
+
+	if len(files) == 1 {
+		return runList(cmd, files[0], detail)
+	}
+
+	return runBulk(files, "list", "listed", func(file string) error {
+		return runList(cmd, file, detail)
+	})
 }
 
 const noTitlePlaceholder = "(no title)"

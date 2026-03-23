@@ -60,7 +60,7 @@ Examples:
   hdf query results.json --impact ">0.5" --status failed
   hdf query results.json --baseline "RHEL9-STIG"
   hdf query results.json --status failed --count`,
-		Args: cobra.MaximumNArgs(1),
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Sync local flags to global variables for runQuery
 			queryStatus = localQueryStatus
@@ -74,6 +74,13 @@ Examples:
 			queryProfile = localQueryProfile
 			queryCount = localQueryCount
 			queryLimit = localQueryLimit
+			files, err := expandGlobs(args)
+			if err != nil {
+				return err
+			}
+			if len(files) > 1 {
+				return runQueryBulk(cmd, files)
+			}
 			return runQuery(cmd, args)
 		},
 	}
@@ -112,14 +119,12 @@ func runQuery(_ *cobra.Command, args []string) error {
 
 	data, err := readInputFile(filename)
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
 	results, err := parseHDFResults(data)
 	if err != nil {
-		printError(fmt.Sprintf("Failed to parse HDF file: %v", err))
-		return err
+		return fmt.Errorf("failed to parse HDF file: %w", err)
 	}
 
 	// Build filter chain and find matches
@@ -481,4 +486,10 @@ func globToRegex(glob string) string {
 	result = strings.ReplaceAll(result, "*", ".*")
 	result = strings.ReplaceAll(result, "?", ".")
 	return "^" + result + "$"
+}
+
+func runQueryBulk(cmd *cobra.Command, files []string) error {
+	return runBulk(files, "query", "queried", func(file string) error {
+		return runQuery(cmd, []string{file})
+	})
 }

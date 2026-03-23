@@ -21,11 +21,18 @@ func NewConvertCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "convert <file> [flags]",
+		Use:   "convert <file> [file...] [flags]",
 		Short: "Convert between HDF and other security formats",
 		Long:  buildConvertLong(),
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			files, err := expandGlobs(args)
+			if err != nil {
+				return err
+			}
+			if len(files) > 1 {
+				return runConvertBulk(cmd, files, fromFormat, toFormat, outputPath)
+			}
 			return runConvert(cmd, args, fromFormat, toFormat, outputPath)
 		},
 	}
@@ -64,12 +71,12 @@ Input can be a file path or "-" for stdin.
 Output defaults to stdout if not specified.
 
 Examples:
-  hdf convert scan.nessus                         # Auto-detect, convert to HDF
-  hdf convert scan.nessus -o results.json         # Auto-detect, write to file
-  hdf convert --to csv results.json               # Auto-detect, convert to CSV
-  hdf convert --from nessus --to hdf scan.nessus  # Explicit formats
-  hdf convert --from hdf --to csv results.json -o output.csv
-  cat scan.json | hdf convert -                   # Read from stdin`)
+  hdf convert scan.nessus                              # Auto-detect, convert to HDF
+  hdf convert scan.nessus -o results.json              # Write to file
+  hdf convert --from nessus --to hdf scan.nessus       # Explicit formats
+  hdf convert scan1.nessus scan2.xml -o output-dir/    # Bulk convert to directory
+  hdf convert *.sarif -o converted/ -k                 # Bulk, skip failures
+  cat scan.json | hdf convert -                        # Read from stdin`)
 
 	return sb.String()
 }
@@ -100,9 +107,9 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 	if fromFormat == "" {
 		result := registry.DetectConverter(data)
 		if result == nil {
-			return fmt.Errorf("could not auto-detect input format (confidence too low or ambiguous)\n" +
-				"Specify the format explicitly with --from <format>\n" +
-				"Run 'hdf convert --help' to see supported formats")
+			return fmt.Errorf("could not auto-detect input format for %s (confidence too low or ambiguous)\n"+
+				"Specify the format explicitly with --from <format>\n"+
+				"Run 'hdf convert --help' to see supported formats", inputPath)
 		}
 		fromFormat = result.Fingerprint.ID
 		// Strip the "-to-hdf" suffix to get the source format name
@@ -206,4 +213,23 @@ func writeConvertOutput(data []byte, path string) error {
 	}
 
 	return os.WriteFile(path, data, 0o600)
+}
+
+// runConvertBulk converts multiple files, writing output to a directory.
+// Each output file is named <stem>.hdf.json (or .hdf.<ext> for non-HDF targets).
+func runConvertBulk(cmd *cobra.Command, files []string, fromFormat, toFormat, outputDir string) error {
+	// -o is required for bulk convert (stdout doesn't work for multiple files).
+	if outputDir == "" {
+		return fmt.Errorf("bulk convert requires -o <output-directory> for multiple files")
+	}
+
+	// Ensure output directory exists.
+	if err := os.MkdirAll(outputDir, 0o750); err != nil { // #nosec G301 -- CLI creates user-requested directory
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	return runBulk(files, "conversion", "converted", func(file string) error {
+		outPath := bulkOutputPath(outputDir, file, toFormat)
+		return runConvert(cmd, []string{file}, fromFormat, toFormat, outPath)
+	})
 }

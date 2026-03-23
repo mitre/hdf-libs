@@ -149,7 +149,7 @@ func TestListCommand(t *testing.T) {
 		{name: "list summary", args: []string{"list", fixture}, wantContain: "Baselines:"},
 		{name: "list --detail requirements", args: []string{"list", fixture, "--detail", "requirements"}, wantContain: "Requirements:"},
 		{name: "list --detail baselines", args: []string{"list", fixture, "--detail", "baselines"}, wantContain: "Baselines:"},
-		{name: "list --detail invalid", args: []string{"list", fixture, "--detail", "invalid"}, wantErr: true, wantErrMsg: "Unknown detail section"},
+		{name: "list --detail invalid", args: []string{"list", fixture, "--detail", "invalid"}, wantErr: true, wantErrMsg: "unknown detail section"},
 		{name: "list no args", args: []string{"list"}, wantErr: true},
 	})
 }

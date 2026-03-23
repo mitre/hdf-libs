@@ -39,11 +39,19 @@ Examples:
   hdf validate waivers.json --type amendments
   hdf validate evidence.json --type evidence-package
   cat results.json | hdf validate -`,
-		Args: cobra.MaximumNArgs(1),
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Sync local flags to global variables for runValidate
 			schemaType = localSchemaType
 			quiet = localQuiet
+
+			files, err := expandGlobs(args)
+			if err != nil {
+				return err
+			}
+			if len(files) > 1 {
+				return runValidateBulk(cmd, files)
+			}
 			return runValidate(cmd, args)
 		},
 	}
@@ -65,7 +73,6 @@ func runValidate(_ *cobra.Command, args []string) error {
 	printDebug("Reading input")
 	data, err := readInputFile(filename)
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
@@ -133,4 +140,10 @@ func runValidate(_ *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func runValidateBulk(cmd *cobra.Command, files []string) error {
+	return runBulk(files, "validation", "validated", func(file string) error {
+		return runValidate(cmd, []string{file})
+	})
 }
