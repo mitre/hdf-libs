@@ -120,6 +120,9 @@ export { convertHdfToOscalSar } from '../converters/hdf-to-oscal-sar/typescript/
 // HDF to OSCAL POA&M converter
 export { convertHdfToOscalPoam } from '../converters/hdf-to-oscal-poam/typescript/index.js';
 
+// Ion Channel to HDF converter
+export { convertIonchannelToHdf } from '../converters/ionchannel-to-hdf/typescript/index.js';
+
 // OSCAL to HDF converters
 export { convertOscalCatalogToHdf } from '../converters/oscal-to-hdf/typescript/index.js';
 export { convertOscalProfileToHdf } from '../converters/oscal-to-hdf/typescript/index.js';

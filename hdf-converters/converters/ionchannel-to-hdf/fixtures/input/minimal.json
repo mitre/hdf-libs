@@ -1,0 +1,105 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "analysis_id": "analysis-001-abcdef",
+  "team_id": "team-001-ghijkl",
+  "project_id": "project-001-mnopqr",
+  "name": "example-project",
+  "text": "",
+  "type": "git",
+  "source": "https://github.com/example-org/example-project.git",
+  "branch": "main",
+  "description": "Example project for dependency analysis",
+  "risk": "low",
+  "summary": "All dependencies are up to date",
+  "passed": true,
+  "ruleset_id": "ruleset-001",
+  "ruleset_name": "default",
+  "status": "finished",
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:35:00Z",
+  "duration": 12345,
+  "trigger_hash": "abc123def456",
+  "trigger_text": "feat: add new feature",
+  "trigger_author": "developer@example.com",
+  "trigger": "source_commit",
+  "public": false,
+  "scan_summaries": [
+    {
+      "id": "scan-001",
+      "team_id": "team-001-ghijkl",
+      "project_id": "project-001-mnopqr",
+      "analysis_id": "analysis-001-abcdef",
+      "summary": "Dependency scan completed",
+      "results": {
+        "type": "dependency",
+        "data": {
+          "dependencies": [
+            {
+              "latest_version": "4.18.3",
+              "org": "expressjs",
+              "name": "express",
+              "type": "npm",
+              "package": "npm",
+              "version": "4.18.2",
+              "scope": "runtime",
+              "requirement": "^4.18.0",
+              "file": "package.json",
+              "outdated_version": {
+                "major_behind": 0,
+                "minor_behind": 0,
+                "patch_behind": 1
+              },
+              "dependencies": [
+                {
+                  "latest_version": "1.20.2",
+                  "org": "jshttp",
+                  "name": "accepts",
+                  "type": "npm",
+                  "package": "npm",
+                  "version": "1.3.8",
+                  "scope": "runtime",
+                  "requirement": "~1.3.8",
+                  "file": "",
+                  "outdated_version": {
+                    "major_behind": 0,
+                    "minor_behind": 17,
+                    "patch_behind": 0
+                  },
+                  "dependencies": []
+                }
+              ]
+            },
+            {
+              "latest_version": "10.4.0",
+              "org": "lodash",
+              "name": "lodash",
+              "type": "npm",
+              "package": "npm",
+              "version": "4.17.21",
+              "scope": "runtime",
+              "requirement": "^4.17.0",
+              "file": "package.json",
+              "outdated_version": {
+                "major_behind": 6,
+                "minor_behind": 0,
+                "patch_behind": 0
+              },
+              "dependencies": []
+            }
+          ],
+          "meta": {
+            "first_degree_count": 2,
+            "no_version_count": 0,
+            "total_unique_count": 3,
+            "update_available_count": 2
+          }
+        }
+      },
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:35:00Z",
+      "duration": 5000,
+      "name": "dependency",
+      "description": "Dependency analysis"
+    }
+  ]
+}
