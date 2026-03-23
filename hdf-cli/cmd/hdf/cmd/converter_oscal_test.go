@@ -25,7 +25,7 @@ func TestConvertOSCALCatalog(t *testing.T) {
 
 	output := filepath.Join(t.TempDir(), "out.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal-catalog", "to", "hdf", inputPath, output})
+	cmd.SetArgs([]string{"convert", "--from", "oscal-catalog", "--to", "hdf", inputPath, "-o", output})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -58,8 +58,7 @@ func TestConvertOSCALProfile(t *testing.T) {
 	oscalCatalogFlag = ""
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal-profile", "to", "hdf", profilePath, output,
-		"--catalog", catalogPath})
+	cmd.SetArgs([]string{"convert", "--from", "oscal-profile", "--to", "hdf", profilePath, "-o", output, "--catalog", catalogPath})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -82,13 +81,11 @@ func TestConvertOSCALProfile_NoCatalogFlag(t *testing.T) {
 		t.Skip("OSCAL profile fixture not available")
 	}
 
-	output := filepath.Join(t.TempDir(), "out.json")
-
 	// Reset flag for test isolation
 	oscalCatalogFlag = ""
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal-profile", "to", "hdf", profilePath, output})
+	cmd.SetArgs([]string{"convert", "--from", "oscal-profile", "--to", "hdf", profilePath})
 
 	err := cmd.Execute()
 	assert.Error(t, err)
@@ -101,12 +98,10 @@ func TestConvertOSCALProfile_BadCatalogPath(t *testing.T) {
 		t.Skip("OSCAL profile fixture not available")
 	}
 
-	output := filepath.Join(t.TempDir(), "out.json")
 	oscalCatalogFlag = ""
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal-profile", "to", "hdf", profilePath, output,
-		"--catalog", "/nonexistent/catalog.json"})
+	cmd.SetArgs([]string{"convert", "--from", "oscal-profile", "--to", "hdf", profilePath, "--catalog", "/nonexistent/catalog.json"})
 
 	err := cmd.Execute()
 	assert.Error(t, err)
@@ -121,7 +116,7 @@ func TestConvertOSCALComponentDefinition(t *testing.T) {
 
 	output := filepath.Join(t.TempDir(), "out.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal-component-definition", "to", "hdf", inputPath, output})
+	cmd.SetArgs([]string{"convert", "--from", "oscal-component-definition", "--to", "hdf", inputPath, "-o", output})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -146,7 +141,7 @@ func TestConvertOSCALSSP(t *testing.T) {
 
 	output := filepath.Join(t.TempDir(), "out.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal-ssp", "to", "hdf", inputPath, output})
+	cmd.SetArgs([]string{"convert", "--from", "oscal-ssp", "--to", "hdf", inputPath, "-o", output})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -171,7 +166,7 @@ func TestConvertOSCALAssessmentPlan(t *testing.T) {
 
 	output := filepath.Join(t.TempDir(), "out.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal-assessment-plan", "to", "hdf", inputPath, output})
+	cmd.SetArgs([]string{"convert", "--from", "oscal-assessment-plan", "--to", "hdf", inputPath, "-o", output})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -198,7 +193,7 @@ func TestConvertOSCALAssessmentResults(t *testing.T) {
 
 	output := filepath.Join(t.TempDir(), "out.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal-assessment-results", "to", "hdf", inputPath, output})
+	cmd.SetArgs([]string{"convert", "--from", "oscal-assessment-results", "--to", "hdf", inputPath, "-o", output})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -225,7 +220,7 @@ func TestConvertOSCALAssessmentResults_SARAlias(t *testing.T) {
 
 	output := filepath.Join(t.TempDir(), "out.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal-sar", "to", "hdf", inputPath, output})
+	cmd.SetArgs([]string{"convert", "--from", "oscal-sar", "--to", "hdf", inputPath, "-o", output})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -248,7 +243,7 @@ func TestConvertOSCALPOAM(t *testing.T) {
 
 	output := filepath.Join(t.TempDir(), "out.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal-poam", "to", "hdf", inputPath, output})
+	cmd.SetArgs([]string{"convert", "--from", "oscal-poam", "--to", "hdf", inputPath, "-o", output})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -280,7 +275,7 @@ func TestConvertOSCALAutoDetect_Catalog(t *testing.T) {
 
 	output := filepath.Join(t.TempDir(), "out.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal", "to", "hdf", inputPath, output})
+	cmd.SetArgs([]string{"convert", "--from", "oscal", "--to", "hdf", inputPath, "-o", output})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -301,7 +296,7 @@ func TestConvertOSCALAutoDetect_SAR(t *testing.T) {
 
 	output := filepath.Join(t.TempDir(), "out.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal", "to", "hdf", inputPath, output})
+	cmd.SetArgs([]string{"convert", "--from", "oscal", "--to", "hdf", inputPath, "-o", output})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -319,7 +314,7 @@ func TestConvertOSCALAutoDetect_InvalidInput(t *testing.T) {
 	require.NoError(t, os.WriteFile(tmpFile, []byte(`{"not-oscal": true}`), 0o600))
 
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "oscal", "to", "hdf", tmpFile})
+	cmd.SetArgs([]string{"convert", "--from", "oscal", "--to", "hdf", tmpFile})
 
 	err := cmd.Execute()
 	assert.Error(t, err)
@@ -338,13 +333,13 @@ func TestConvertHDFToOSCALSAR(t *testing.T) {
 
 	// SAR -> HDF
 	cmd1 := NewRootCmd()
-	cmd1.SetArgs([]string{"convert", "oscal-sar", "to", "hdf", sarPath, hdfPath})
+	cmd1.SetArgs([]string{"convert", "--from", "oscal-sar", "--to", "hdf", sarPath, "-o", hdfPath})
 	require.NoError(t, cmd1.Execute())
 
 	// HDF -> OSCAL SAR
 	outputPath := filepath.Join(tmpDir, "output-sar.json")
 	cmd2 := NewRootCmd()
-	cmd2.SetArgs([]string{"convert", "hdf", "to", "oscal-sar", hdfPath, outputPath})
+	cmd2.SetArgs([]string{"convert", "--from", "hdf", "--to", "oscal-sar", hdfPath, "-o", outputPath})
 
 	err := cmd2.Execute()
 	require.NoError(t, err)
@@ -379,7 +374,7 @@ func TestConvertHDFToOSCALSAR_MinimalInline(t *testing.T) {
 
 	outputPath := filepath.Join(tmpDir, "output.json")
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"convert", "hdf", "to", "oscal-sar", inputPath, outputPath})
+	cmd.SetArgs([]string{"convert", "--from", "hdf", "--to", "oscal-sar", inputPath, "-o", outputPath})
 
 	err := cmd.Execute()
 	require.NoError(t, err)

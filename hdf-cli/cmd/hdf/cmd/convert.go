@@ -7,19 +7,32 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mitre/hdf-converters/registry"
+	_ "github.com/mitre/hdf-converters/registry/all" // register all fingerprints via init()
 	"github.com/spf13/cobra"
 )
 
 // NewConvertCmd creates the convert command.
 func NewConvertCmd() *cobra.Command {
+	var (
+		fromFormat string
+		toFormat   string
+		outputPath string
+	)
+
 	cmd := &cobra.Command{
-		Use:   "convert <src-format> to <dest-format> <input> [output]",
+		Use:   "convert <file> [flags]",
 		Short: "Convert between HDF and other security formats",
 		Long:  buildConvertLong(),
-		Args:  validateConvertArgs,
-		RunE:  runConvert,
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runConvert(cmd, args, fromFormat, toFormat, outputPath)
+		},
 	}
 
+	cmd.Flags().StringVar(&fromFormat, "from", "", "Source format (auto-detected if omitted)")
+	cmd.Flags().StringVar(&toFormat, "to", "hdf", "Target format (default: hdf)")
+	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
 	cmd.Flags().StringSlice("labels", nil, "Labels to apply to all targets (key=value pairs, e.g., --labels system=Portal,environment=production)")
 
@@ -39,96 +52,31 @@ func buildConvertLong() string {
 	})
 
 	var sb strings.Builder
-	sb.WriteString("Convert security assessment data between formats.\n\nSupported conversions:\n")
+	sb.WriteString("Convert security assessment data between formats.\n\n")
+	sb.WriteString("Auto-detects the input format when --from is omitted.\n")
+	sb.WriteString("Default output format is HDF.\n\n")
+	sb.WriteString("Supported conversions:\n")
 	for _, pair := range pairs {
-		fmt.Fprintf(&sb, "  %s to %s\n", pair.Source, pair.Dest)
+		fmt.Fprintf(&sb, "  %s → %s\n", pair.Source, pair.Dest)
 	}
 	sb.WriteString(`
 Input can be a file path or "-" for stdin.
 Output defaults to stdout if not specified.
 
 Examples:
-  hdf convert nessus to hdf scan.nessus results.json        # Convert to file
-  hdf convert hdf to csv results.json output.csv            # Export HDF to CSV
-  hdf convert legacyhdf to hdf - output.json                # Read from stdin
-  cat scan.json | hdf convert legacyhdf to hdf -            # Pipe through stdin`)
+  hdf convert scan.nessus                         # Auto-detect, convert to HDF
+  hdf convert scan.nessus -o results.json         # Auto-detect, write to file
+  hdf convert --to csv results.json               # Auto-detect, convert to CSV
+  hdf convert --from nessus --to hdf scan.nessus  # Explicit formats
+  hdf convert --from hdf --to csv results.json -o output.csv
+  cat scan.json | hdf convert -                   # Read from stdin`)
 
 	return sb.String()
 }
 
-// validateConvertArgs validates the convert command arguments.
-func validateConvertArgs(_ *cobra.Command, args []string) error {
-	if len(args) < 4 || len(args) > 5 {
-		return fmt.Errorf("requires: <src-format> to <dest-format> <input> [output]\n" +
-			"Run 'hdf convert --help' for usage")
-	}
-
-	if strings.ToLower(args[1]) != "to" {
-		return fmt.Errorf("expected 'to' keyword between formats, got %q\n"+
-			"Usage: hdf convert <src-format> to <dest-format> <input> [output]", args[1])
-	}
-
-	// Validate converter exists for this format pair
-	source, dest := args[0], args[2]
-	if _, err := GetConverter(source, dest); err != nil {
-		return buildConverterNotFoundError(source, dest)
-	}
-
-	return nil
-}
-
-// buildConverterNotFoundError creates a helpful error message when a converter is not found.
-func buildConverterNotFoundError(source, dest string) error {
-	// Get all available converters
-	allPairs := ListConverters()
-
-	// Find what formats the source can convert to
-	var sourceDestinations []string
-	for _, pair := range allPairs {
-		if strings.EqualFold(pair.Source, source) {
-			sourceDestinations = append(sourceDestinations, pair.Dest)
-		}
-	}
-
-	// Find what formats can convert to the destination
-	var destSources []string
-	for _, pair := range allPairs {
-		if strings.EqualFold(pair.Dest, dest) {
-			destSources = append(destSources, pair.Source)
-		}
-	}
-
-	// Build helpful error message
-	var msg strings.Builder
-	fmt.Fprintf(&msg, "no converter found for: %s to %s", source, dest)
-
-	switch {
-	case len(sourceDestinations) > 0:
-		fmt.Fprintf(&msg, "\n\nThe '%s' format can convert to: %s", source, strings.Join(sourceDestinations, ", "))
-	case len(destSources) > 0:
-		// Source format not recognized, but dest is
-		fmt.Fprintf(&msg, "\n\nUnrecognized source format: '%s'", source)
-		fmt.Fprintf(&msg, "\nFormats that can convert to '%s': %s", dest, strings.Join(destSources, ", "))
-	default:
-		// Neither format recognized or no converters available
-		fmt.Fprintf(&msg, "\n\nUnrecognized format(s): '%s', '%s'", source, dest)
-	}
-
-	msg.WriteString("\n\nRun 'hdf convert --help' to see all available conversions")
-
-	return fmt.Errorf("%s", msg.String())
-}
-
 // runConvert executes the convert command.
-func runConvert(cmd *cobra.Command, args []string) error {
-	srcFormat := args[0]
-	destFormat := args[2]
-	inputPath := args[3]
-
-	var outputPath string
-	if len(args) == 5 {
-		outputPath = args[4]
-	}
+func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputPath string) error {
+	inputPath := args[0]
 
 	// Check if output would overwrite input
 	if outputPath != "" && outputPath != "-" && inputPath != "-" {
@@ -148,10 +96,27 @@ func runConvert(cmd *cobra.Command, args []string) error {
 	}
 	printDebug("Read %d bytes", len(data))
 
+	// Auto-detect source format if --from not provided
+	if fromFormat == "" {
+		result := registry.DetectConverter(data)
+		if result == nil {
+			return fmt.Errorf("could not auto-detect input format (confidence too low or ambiguous)\n" +
+				"Specify the format explicitly with --from <format>\n" +
+				"Run 'hdf convert --help' to see supported formats")
+		}
+		fromFormat = result.Fingerprint.ID
+		// Strip the "-to-hdf" suffix to get the source format name
+		if idx := strings.Index(fromFormat, "-to-"); idx > 0 {
+			fromFormat = fromFormat[:idx]
+		}
+		printDebug("Auto-detected format: %s (confidence: %.0f%%)", fromFormat, result.Confidence*100)
+		fmt.Fprintf(os.Stderr, "Detected: %s (confidence: %.0f%%)\n", result.Fingerprint.Label, result.Confidence*100)
+	}
+
 	// Get converter
-	converter, err := GetConverter(srcFormat, destFormat)
+	converter, err := GetConverter(fromFormat, toFormat)
 	if err != nil {
-		return err
+		return buildConverterNotFoundError(fromFormat, toFormat)
 	}
 	printDebug("Using converter: %s", converter.Name())
 
@@ -180,8 +145,44 @@ func runConvert(cmd *cobra.Command, args []string) error {
 	return writeConvertOutput(output, outputPath)
 }
 
+// buildConverterNotFoundError creates a helpful error message when a converter is not found.
+func buildConverterNotFoundError(source, dest string) error {
+	allPairs := ListConverters()
+
+	var sourceDestinations []string
+	for _, pair := range allPairs {
+		if strings.EqualFold(pair.Source, source) {
+			sourceDestinations = append(sourceDestinations, pair.Dest)
+		}
+	}
+
+	var destSources []string
+	for _, pair := range allPairs {
+		if strings.EqualFold(pair.Dest, dest) {
+			destSources = append(destSources, pair.Source)
+		}
+	}
+
+	var msg strings.Builder
+	fmt.Fprintf(&msg, "no converter found for: %s → %s", source, dest)
+
+	switch {
+	case len(sourceDestinations) > 0:
+		fmt.Fprintf(&msg, "\n\nThe '%s' format can convert to: %s", source, strings.Join(sourceDestinations, ", "))
+	case len(destSources) > 0:
+		fmt.Fprintf(&msg, "\n\nUnrecognized source format: '%s'", source)
+		fmt.Fprintf(&msg, "\nFormats that can convert to '%s': %s", dest, strings.Join(destSources, ", "))
+	default:
+		fmt.Fprintf(&msg, "\n\nUnrecognized format(s): '%s', '%s'", source, dest)
+	}
+
+	msg.WriteString("\n\nRun 'hdf convert --help' to see all available conversions")
+
+	return fmt.Errorf("%s", msg.String())
+}
+
 // checkOutputOverwritesInput returns an error if the resolved output path
-// is the same file as the input path. This prevents accidental data loss.
+// is the same file as the input path.
 func checkOutputOverwritesInput(inputPath, outputPath string) error {
 	inputAbs, err := filepath.Abs(inputPath)
 	if err != nil {

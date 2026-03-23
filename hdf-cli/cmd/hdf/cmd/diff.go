@@ -664,7 +664,7 @@ type systemComponent struct {
 
 // parseSystemDocument reads and parses a system document from a file path.
 func parseSystemDocument(path string) (systemDocument, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // path is user-provided CLI arg
+	data, err := os.ReadFile(path) // #nosec G304 -- path is user-provided CLI arg
 	if err != nil {
 		return systemDocument{}, fmt.Errorf("failed to read system document: %w", err)
 	}
