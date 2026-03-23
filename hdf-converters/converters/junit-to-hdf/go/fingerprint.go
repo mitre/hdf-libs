@@ -1,9 +1,8 @@
 package junit
 
 import (
-	"strings"
-
 	"github.com/mitre/hdf-converters/registry"
+	shared "github.com/mitre/hdf-converters/shared/go"
 )
 
 func init() {
@@ -18,7 +17,8 @@ func init() {
 			if !ok {
 				return 0
 			}
-			if strings.Contains(s, "<testsuites") || strings.Contains(s, "<testsuite") {
+			root := shared.ExtractXMLRootElement(s)
+			if root == "testsuites" || root == "testsuite" {
 				return 1.0
 			}
 			return 0

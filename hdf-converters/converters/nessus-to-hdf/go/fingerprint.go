@@ -1,9 +1,8 @@
 package nessus
 
 import (
-	"strings"
-
 	"github.com/mitre/hdf-converters/registry"
+	shared "github.com/mitre/hdf-converters/shared/go"
 )
 
 func init() {
@@ -18,7 +17,7 @@ func init() {
 			if !ok {
 				return 0
 			}
-			if strings.Contains(s, "<NessusClientData_v2") {
+			if shared.ExtractXMLRootElement(s) == "NessusClientData_v2" {
 				return 1.0
 			}
 			return 0

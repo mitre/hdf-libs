@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/mitre/hdf-converters/registry"
+	shared "github.com/mitre/hdf-converters/shared/go"
 )
 
 func init() {
@@ -18,15 +19,14 @@ func init() {
 			if !ok {
 				return 0
 			}
-			// BurpSuite XML has burpVersion attribute + <issues element
-			if strings.Contains(s, "burpVersion") && strings.Contains(s, "<issues") {
+			if shared.ExtractXMLRootElement(s) != "issues" {
+				return 0
+			}
+			// burpVersion attribute is a strong signal
+			if strings.Contains(s, "burpVersion") {
 				return 1.0
 			}
-			// Fallback: <issues> root without burpVersion (less certain)
-			if strings.Contains(s, "<issues>") || strings.Contains(s, "<issues ") {
-				return 0.7
-			}
-			return 0
+			return 0.7
 		},
 	})
 }

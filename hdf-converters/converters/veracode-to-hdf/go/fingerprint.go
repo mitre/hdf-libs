@@ -1,9 +1,8 @@
 package veracode
 
 import (
-	"strings"
-
 	"github.com/mitre/hdf-converters/registry"
+	shared "github.com/mitre/hdf-converters/shared/go"
 )
 
 func init() {
@@ -18,8 +17,7 @@ func init() {
 			if !ok {
 				return 0
 			}
-			// Match <detailedreport or <ns:detailedreport with optional namespace prefix
-			if strings.Contains(s, "detailedreport") && (strings.Contains(s, "<detailedreport") || strings.Contains(s, ":detailedreport")) {
+			if shared.ExtractXMLRootElement(s) == "detailedreport" {
 				return 1.0
 			}
 			return 0

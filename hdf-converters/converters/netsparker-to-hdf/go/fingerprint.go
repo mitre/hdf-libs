@@ -1,9 +1,8 @@
 package netsparker
 
 import (
-	"strings"
-
 	"github.com/mitre/hdf-converters/registry"
+	shared "github.com/mitre/hdf-converters/shared/go"
 )
 
 func init() {
@@ -18,7 +17,8 @@ func init() {
 			if !ok {
 				return 0
 			}
-			if strings.Contains(s, "<netsparker-enterprise") || strings.Contains(s, "<invicti-enterprise") {
+			root := shared.ExtractXMLRootElement(s)
+			if root == "netsparker-enterprise" || root == "invicti-enterprise" {
 				return 1.0
 			}
 			return 0

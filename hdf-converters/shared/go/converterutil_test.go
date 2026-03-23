@@ -664,6 +664,79 @@ func TestBuildHDFResults_DataSourcePartialFields(t *testing.T) {
 	assert.Equal(t, "XML", *result.DataSource.Format)
 }
 
+func TestExtractXMLRootElement(t *testing.T) {
+	t.Run("extracts root from simple XML", func(t *testing.T) {
+		assert.Equal(t, "root", ExtractXMLRootElement("<root/>"))
+	})
+
+	t.Run("extracts root after XML declaration", func(t *testing.T) {
+		assert.Equal(t, "Benchmark", ExtractXMLRootElement(`<?xml version="1.0"?><Benchmark/>`))
+	})
+
+	t.Run("strips namespace prefix", func(t *testing.T) {
+		assert.Equal(t, "Benchmark", ExtractXMLRootElement("<xccdf:Benchmark/>"))
+	})
+
+	t.Run("extracts root after simple DOCTYPE", func(t *testing.T) {
+		assert.Equal(t, "root", ExtractXMLRootElement("<?xml?>\n<!DOCTYPE root>\n<root/>"))
+	})
+
+	t.Run("extracts root after DOCTYPE with internal subset", func(t *testing.T) {
+		input := `<?xml version="1.0"?>
+<!DOCTYPE issues [
+<!ELEMENT issues (issue*)>
+<!ATTLIST issues burpVersion CDATA "">
+<!ELEMENT issue (name, severity)>
+]>
+<issues burpVersion="2024.1"><issue/></issues>`
+		assert.Equal(t, "issues", ExtractXMLRootElement(input))
+	})
+
+	t.Run("extracts root after comments", func(t *testing.T) {
+		assert.Equal(t, "root", ExtractXMLRootElement("<!-- comment --><root/>"))
+	})
+
+	t.Run("returns empty for plain text", func(t *testing.T) {
+		assert.Equal(t, "", ExtractXMLRootElement("plain text"))
+	})
+
+	t.Run("returns empty for empty string", func(t *testing.T) {
+		assert.Equal(t, "", ExtractXMLRootElement(""))
+	})
+
+	t.Run("handles whitespace before declarations", func(t *testing.T) {
+		assert.Equal(t, "root", ExtractXMLRootElement("  \n\t <?xml version=\"1.0\"?> <root/>"))
+	})
+
+	t.Run("handles multiple comments", func(t *testing.T) {
+		assert.Equal(t, "data", ExtractXMLRootElement("<!-- a --><!-- b --><data/>"))
+	})
+
+	t.Run("handles element with attributes", func(t *testing.T) {
+		assert.Equal(t, "NessusClientData_v2", ExtractXMLRootElement(`<NessusClientData_v2 xmlns="http://nessus.org">`))
+	})
+
+	t.Run("handles unterminated processing instruction", func(t *testing.T) {
+		assert.Equal(t, "", ExtractXMLRootElement("<?xml version"))
+	})
+
+	t.Run("handles unterminated comment", func(t *testing.T) {
+		assert.Equal(t, "", ExtractXMLRootElement("<!-- unterminated"))
+	})
+
+	t.Run("handles unterminated DOCTYPE", func(t *testing.T) {
+		assert.Equal(t, "", ExtractXMLRootElement("<!DOCTYPE foo"))
+	})
+
+	t.Run("handles DOCTYPE with internal subset but no closing bracket", func(t *testing.T) {
+		assert.Equal(t, "", ExtractXMLRootElement("<!DOCTYPE foo [<!ENTITY x \"y\">"))
+	})
+
+	t.Run("handles other markup declarations", func(t *testing.T) {
+		assert.Equal(t, "root", ExtractXMLRootElement("<!NOTATION foo SYSTEM \"bar\">\n<root/>"))
+	})
+}
+
 func TestValidateJSONSize(t *testing.T) {
 	t.Run("within limit", func(t *testing.T) {
 		err := ValidateJSONSize([]byte(`{"key":"value"}`), "test-converter", 0)

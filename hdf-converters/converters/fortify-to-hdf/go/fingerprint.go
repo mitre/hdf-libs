@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/mitre/hdf-converters/registry"
+	shared "github.com/mitre/hdf-converters/shared/go"
 )
 
 func init() {
@@ -18,14 +19,14 @@ func init() {
 			if !ok {
 				return 0
 			}
-			if strings.Contains(s, "<FVDL") {
-				// Higher confidence with Fortify namespace
-				if strings.Contains(s, "xmlns.fortify.com") {
-					return 1.0
-				}
-				return 0.95
+			if shared.ExtractXMLRootElement(s) != "FVDL" {
+				return 0
 			}
-			return 0
+			// Higher confidence with Fortify namespace
+			if strings.Contains(s, "xmlns.fortify.com") {
+				return 1.0
+			}
+			return 0.95
 		},
 	})
 }
