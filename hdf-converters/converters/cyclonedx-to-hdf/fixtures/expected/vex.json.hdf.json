@@ -1,0 +1,65 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Description: com.fasterxml.jackson.core:jackson-databind is a library which contains the general-purpose data-binding functionality and tree-model for Jackson Data Processor.\n\nAffected versions of this package are vulnerable to XML External Entity (XXE) Injection. A flaw was found in FasterXML Jackson Databind, where it does not have entity expansion secured properly in the DOMDeserializer class. The highest threat from this vulnerability is data integrity.\n\nDetail: XXE Injection is a type of attack against an application that parses XML input. XML is a markup language that defines a set of rules for encoding documents in a format that is both human-readable and machine-readable. By default, many XML processors allow specification of an external entity, a URI that is dereferenced and evaluated during XML processing. When an XML document is being parsed, the parser can make a request and include the content at the specified URI inside of the XML document.\n\nAttacks can include disclosing local files, which may contain sensitive data such as passwords or private user data, using file: schemes or relative paths in the system identifier.",
+              "label": "default"
+            },
+            {
+              "data": "Upgrade com.fasterxml.jackson.core:jackson-databind to version 2.6.7.4, 2.9.10.7, 2.10.5.1 or higher.\n\nWorkaround: Automated dataflow analysis and manual code review indicates that the vulnerable code is not reachable, either directly or indirectly.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Component urn:cdx:3e671687-395b-41f5-a30f-a58921a69b79/1#pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.10.0?type=jar is vulnerable",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "CVE-2020-25649",
+          "impact": 0.82,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cweid": [
+              "CWE-611"
+            ],
+            "nist": [
+              "SI-10"
+            ],
+            "ratings": "NVD - high, SNYK - high, Acme Inc - none"
+          },
+          "title": "CVE-2020-25649 (NVD)"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "4cfa8b68ecfc66dc68a992764b2b73b2e7687871e4e2e51701fba77f68b4492e"
+      },
+      "name": "CycloneDX Scan"
+    }
+  ],
+  "dataSource": {
+    "format": "JSON",
+    "name": "CycloneDX"
+  },
+  "generator": {
+    "name": "cyclonedx-to-hdf",
+    "version": "0.1.0"
+  },
+  "targets": [
+    {
+      "labels": {
+        "service": "cyclonedx"
+      },
+      "name": "",
+      "type": "application"
+    }
+  ],
+  "timestamp": "2026-03-23T05:53:50.564403Z"
+}

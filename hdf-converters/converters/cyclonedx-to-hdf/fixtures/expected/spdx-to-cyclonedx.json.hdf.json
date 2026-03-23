@@ -1,0 +1,30 @@
+{
+  "baselines": [
+    {
+      "requirements": [],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "7e3819603cd7927ee6dccb45009ebc029f2dab5aa876e34039705fb472b55141"
+      },
+      "name": "CycloneDX Scan"
+    }
+  ],
+  "dataSource": {
+    "format": "JSON",
+    "name": "CycloneDX"
+  },
+  "generator": {
+    "name": "cyclonedx-to-hdf",
+    "version": "0.1.0"
+  },
+  "targets": [
+    {
+      "labels": {
+        "service": "cyclonedx"
+      },
+      "name": "",
+      "type": "application"
+    }
+  ],
+  "timestamp": "2026-03-23T05:53:50.564256Z"
+}
