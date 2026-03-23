@@ -30,5 +30,15 @@ func init() {
 			}
 			return 0.9
 		},
+		DetectVersion: func(input any) string {
+			obj, ok := input.(map[string]any)
+			if !ok {
+				return ""
+			}
+			if v, ok := obj["version"].(string); ok {
+				return v
+			}
+			return ""
+		},
 	})
 }

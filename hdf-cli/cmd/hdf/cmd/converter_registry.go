@@ -21,6 +21,25 @@ type Converter interface {
 	Name() string
 }
 
+// VersionedConverter is an optional interface for converters that support
+// multiple input format versions (e.g. SARIF 2.0 vs 2.1). Single-version
+// converters need not implement this — they are unaffected.
+type VersionedConverter interface {
+	Converter
+	// SetInputVersion sets the version of the input format to use for conversion.
+	// An empty string means "use the latest supported version" (default behavior).
+	SetInputVersion(version string)
+	// SupportedVersions returns the list of supported input versions, latest first.
+	SupportedVersions() []string
+}
+
+// OutputVersionSetter is an optional interface for converters that support
+// setting the output schema version. Used by the HDF version converter
+// when --to hdf@N specifies a version.
+type OutputVersionSetter interface {
+	SetOutputVersion(version string)
+}
+
 // FormatPair represents a source-to-destination format conversion.
 type FormatPair struct {
 	Source string

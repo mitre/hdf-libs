@@ -49,6 +49,17 @@ func NewConvertCmd() *cobra.Command {
 	return cmd
 }
 
+// parseFormatVersion splits a format@version specifier on the last '@'.
+// Returns (format, version). If there is no '@' or only a leading '@', version
+// is empty. An empty version string after '@' is treated as no version.
+func parseFormatVersion(s string) (format, version string) {
+	idx := strings.LastIndex(s, "@")
+	if idx <= 0 {
+		return s, ""
+	}
+	return s[:idx], s[idx+1:]
+}
+
 // buildConvertLong generates the Long help text from the live converter registry.
 func buildConvertLong() string {
 	pairs := ListConverters()
@@ -70,10 +81,16 @@ func buildConvertLong() string {
 Input can be a file path or "-" for stdin.
 Output defaults to stdout if not specified.
 
+Use format@version to specify a format version:
+  --from sarif@2.0    Convert SARIF 2.0 input
+  --from hdf@1        Convert from HDF v1 (legacy)
+  --to hdf@1          Downgrade output to HDF v1
+
 Examples:
   hdf convert scan.nessus                              # Auto-detect, convert to HDF
   hdf convert scan.nessus -o results.json              # Write to file
   hdf convert --from nessus --to hdf scan.nessus       # Explicit formats
+  hdf convert --from sarif@2.0 scan.sarif              # Explicit version
   hdf convert scan1.nessus scan2.xml -o output-dir/    # Bulk convert to directory
   hdf convert *.sarif -o converted/ -k                 # Bulk, skip failures
   cat scan.json | hdf convert -                        # Read from stdin`)
@@ -84,6 +101,10 @@ Examples:
 // runConvert executes the convert command.
 func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputPath string) error {
 	inputPath := args[0]
+
+	// Parse version specifiers from format flags (e.g. "sarif@2.0" → "sarif", "2.0")
+	fromFormat, fromVersion := parseFormatVersion(fromFormat)
+	toFormat, toVersion := parseFormatVersion(toFormat)
 
 	// Check if output would overwrite input
 	if outputPath != "" && outputPath != "-" && inputPath != "-" {
@@ -105,19 +126,14 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 
 	// Auto-detect source format if --from not provided
 	if fromFormat == "" {
-		result := registry.DetectConverter(data)
-		if result == nil {
-			return fmt.Errorf("could not auto-detect input format for %s (confidence too low or ambiguous)\n"+
-				"Specify the format explicitly with --from <format>\n"+
-				"Run 'hdf convert --help' to see supported formats", inputPath)
+		detected, detectedVersion, err := autoDetectFormat(data, inputPath)
+		if err != nil {
+			return err
 		}
-		fromFormat = result.Fingerprint.ID
-		// Strip the "-to-hdf" suffix to get the source format name
-		if idx := strings.Index(fromFormat, "-to-"); idx > 0 {
-			fromFormat = fromFormat[:idx]
+		fromFormat = detected
+		if fromVersion == "" {
+			fromVersion = detectedVersion
 		}
-		printDebug("Auto-detected format: %s (confidence: %.0f%%)", fromFormat, result.Confidence*100)
-		fmt.Fprintf(os.Stderr, "Detected: %s (confidence: %.0f%%)\n", result.Fingerprint.Label, result.Confidence*100)
 	}
 
 	// Get converter
@@ -127,12 +143,11 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 	}
 	printDebug("Using converter: %s", converter.Name())
 
-	// Convert
-	output, err := converter.Convert(data)
+	// Run conversion with version handling
+	output, err := runVersionedConvert(converter, data, fromVersion, toVersion)
 	if err != nil {
-		return fmt.Errorf("conversion failed: %w", err)
+		return err
 	}
-	printDebug("Conversion produced %d bytes", len(output))
 
 	// Apply labels if --labels flag was provided
 	labelPairs, _ := cmd.Flags().GetStringSlice("labels")
@@ -150,6 +165,69 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 
 	// Write output
 	return writeConvertOutput(output, outputPath)
+}
+
+// runVersionedConvert passes version specifiers to the converter and runs
+// the conversion with optional post-processing for output version downgrades.
+func runVersionedConvert(converter Converter, data []byte, fromVersion, toVersion string) ([]byte, error) {
+	// Pass input version to versioned converters
+	if fromVersion != "" {
+		if vc, ok := converter.(VersionedConverter); ok {
+			vc.SetInputVersion(fromVersion)
+		}
+	}
+
+	// Pass output version to converters that support it (e.g. hdf→hdf)
+	if toVersion != "" {
+		if ovs, ok := converter.(OutputVersionSetter); ok {
+			ovs.SetOutputVersion(toVersion)
+		}
+	}
+
+	// Convert
+	output, err := converter.Convert(data)
+	if err != nil {
+		return nil, fmt.Errorf("conversion failed: %w", err)
+	}
+	printDebug("Conversion produced %d bytes", len(output))
+
+	// Post-process: downgrade HDF version if --to hdf@N was specified
+	// (only for non-HDF→HDF converters; the hdf→hdf converter handles it internally)
+	if toVersion != "" && toVersion != "2" {
+		if _, isHDFVer := converter.(*hdfVersionConverter); !isHDFVer {
+			printDebug("Post-processing output to HDF version %s", toVersion)
+			output, err = PostProcessToVersion(output, toVersion)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return output, nil
+}
+
+// autoDetectFormat runs fingerprint detection on the input and returns the
+// detected format name and version. Prints the detection result to stderr.
+func autoDetectFormat(data []byte, inputPath string) (format, version string, err error) {
+	result := registry.DetectConverter(data)
+	if result == nil {
+		return "", "", fmt.Errorf("could not auto-detect input format for %s (confidence too low or ambiguous)\n"+
+			"Specify the format explicitly with --from <format>\n"+
+			"Run 'hdf convert --help' to see supported formats", inputPath)
+	}
+	format = result.Fingerprint.ID
+	// Strip the "-to-hdf" suffix to get the source format name
+	if idx := strings.Index(format, "-to-"); idx > 0 {
+		format = format[:idx]
+	}
+	version = result.Version
+	printDebug("Auto-detected format: %s (confidence: %.0f%%)", format, result.Confidence*100)
+	if result.Version != "" {
+		fmt.Fprintf(os.Stderr, "Detected: %s %s (confidence: %.0f%%)\n", result.Fingerprint.Label, result.Version, result.Confidence*100)
+	} else {
+		fmt.Fprintf(os.Stderr, "Detected: %s (confidence: %.0f%%)\n", result.Fingerprint.Label, result.Confidence*100)
+	}
+	return format, version, nil
 }
 
 // buildConverterNotFoundError creates a helpful error message when a converter is not found.

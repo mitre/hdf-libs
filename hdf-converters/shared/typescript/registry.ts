@@ -23,6 +23,12 @@ export interface ConverterFingerprint {
   outputType: OutputType;
   /** Structural fingerprint. Returns confidence 0.0-1.0. */
   fingerprint: (input: unknown) => number;
+  /**
+   * Optional version detector. Returns a version string from the parsed input.
+   * For example, SARIF returns obj.version ("2.1.0"), CycloneDX returns
+   * obj.specVersion ("1.5"). Undefined means version detection is not supported.
+   */
+  detectVersion?: (input: unknown) => string;
 }
 
 const registry: ConverterFingerprint[] = [];

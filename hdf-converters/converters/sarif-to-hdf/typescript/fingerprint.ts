@@ -19,6 +19,11 @@ export const sarifFingerprint: ConverterFingerprint = {
     if (typeof obj.version === 'string' && Array.isArray(obj.runs)) return 0.9;
     return 0;
   },
+  detectVersion: (input: unknown): string => {
+    if (typeof input !== 'object' || input === null) return '';
+    const obj = input as Record<string, unknown>;
+    return typeof obj.version === 'string' ? obj.version : '';
+  },
 };
 
 export function register(): void {

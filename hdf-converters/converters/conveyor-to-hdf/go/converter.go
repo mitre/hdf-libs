@@ -171,9 +171,19 @@ func buildCodeDesc(section ConveyorSection, scannerName string) string {
 
 // groupResultsByScanner groups Conveyor results by their service (scanner) name.
 // Returns scanner names in sorted order and a map from scanner name to results.
+// Results within each group are sorted by SHA256 for deterministic output.
 func groupResultsByScanner(results map[string]ConveyorResult) ([]string, map[string][]ConveyorResult) {
 	groups := make(map[string][]ConveyorResult)
-	for _, result := range results {
+
+	// Sort map keys for deterministic iteration order
+	keys := make([]string, 0, len(results))
+	for k := range results {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		result := results[k]
 		name := result.Response.ServiceName
 		groups[name] = append(groups[name], result)
 	}

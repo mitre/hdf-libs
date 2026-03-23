@@ -21,5 +21,15 @@ func init() {
 			}
 			return 0
 		},
+		DetectVersion: func(input any) string {
+			obj, ok := input.(map[string]any)
+			if !ok {
+				return ""
+			}
+			if v, ok := obj["specVersion"].(string); ok {
+				return v
+			}
+			return ""
+		},
 	})
 }

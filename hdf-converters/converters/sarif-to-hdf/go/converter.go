@@ -190,11 +190,28 @@ var sarifAliases = map[string]float64{
 // --- Conversion entry point ---
 
 // ConvertSarifToHDF converts SARIF JSON to HDF format.
-func ConvertSarifToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// ConvertSarifToHDF converts SARIF input to HDF Results.
+// The optional inputVersion parameter specifies the SARIF schema version
+// (e.g. "2.0.0", "2.1.0"). When omitted or empty, the version is read from
+// the input's "version" field. SARIF 2.0 input is normalized to 2.1 structure
+// before processing.
+func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...string) (*hdf.HDFResults, error) {
 	resultsChecksum := shared.InputChecksum(input)
 
+	// Determine effective input version from parameter or input
+	effectiveVersion := ""
+	if len(inputVersion) > 0 && inputVersion[0] != "" {
+		effectiveVersion = inputVersion[0]
+	}
+
+	// Normalize SARIF 2.0 → 2.1 structure if needed
+	normalized, err := normalizeSarifVersion(input, effectiveVersion)
+	if err != nil {
+		return nil, err
+	}
+
 	var sarif SarifFile
-	if err := json.Unmarshal(input, &sarif); err != nil {
+	if err := json.Unmarshal(normalized, &sarif); err != nil {
 		return nil, fmt.Errorf("invalid SARIF JSON: %w", err)
 	}
 
@@ -235,6 +252,92 @@ func ConvertSarifToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	})
 
 	return hdfResult, nil
+}
+
+// normalizeSarifVersion handles structural differences between SARIF versions.
+// SARIF 2.0 uses "resources.rules" instead of "tool.driver.rules"; this function
+// rewrites 2.0 structure to 2.1 layout so the converter logic can be unified.
+// If the version is not 2.0 or if the input already has 2.1 structure, the
+// input is returned unchanged.
+func normalizeSarifVersion(input []byte, explicitVersion string) ([]byte, error) {
+	// Quick check: only normalize if version indicates 2.0
+	if !isSarif20(input, explicitVersion) {
+		return input, nil
+	}
+
+	// Parse into a generic map for structural rewriting
+	var doc map[string]any
+	if err := json.Unmarshal(input, &doc); err != nil {
+		return nil, fmt.Errorf("invalid SARIF JSON: %w", err)
+	}
+
+	runs, ok := doc["runs"].([]any)
+	if !ok || len(runs) == 0 {
+		return input, nil
+	}
+
+	modified := false
+	for _, runRaw := range runs {
+		run, ok := runRaw.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		// SARIF 2.0: "resources" → { "rules": [...] }
+		// SARIF 2.1: "tool" → { "driver": { "rules": [...] } }
+		resources, hasResources := run["resources"].(map[string]any)
+		if !hasResources {
+			continue
+		}
+
+		rules, hasRules := resources["rules"]
+		if !hasRules {
+			continue
+		}
+
+		// Move resources.rules → tool.driver.rules (only if tool.driver exists
+		// and doesn't already have rules)
+		tool, _ := run["tool"].(map[string]any)
+		if tool == nil {
+			continue
+		}
+		driver, _ := tool["driver"].(map[string]any)
+		if driver == nil {
+			continue
+		}
+		if _, alreadyHasRules := driver["rules"]; !alreadyHasRules {
+			driver["rules"] = rules
+			modified = true
+		}
+
+		// Clean up the resources field
+		delete(run, "resources")
+	}
+
+	// Update version to 2.1.0 so downstream code doesn't re-normalize
+	if modified {
+		doc["version"] = "2.1.0"
+		return json.Marshal(doc)
+	}
+
+	return input, nil
+}
+
+// isSarif20 checks if the input is SARIF 2.0 based on the explicit version
+// parameter or the version field in the document. When an explicit version is
+// provided, it takes precedence over the document's version field.
+func isSarif20(input []byte, explicitVersion string) bool {
+	if explicitVersion != "" {
+		return strings.HasPrefix(explicitVersion, "2.0")
+	}
+	// No explicit version — check the document's version field
+	var peek struct {
+		Version string `json:"version"`
+	}
+	if err := json.Unmarshal(input, &peek); err != nil {
+		return false
+	}
+	return strings.HasPrefix(peek.Version, "2.0")
 }
 
 // --- Run-level conversion ---

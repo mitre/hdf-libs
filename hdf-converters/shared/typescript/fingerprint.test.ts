@@ -200,3 +200,52 @@ describe('detectConverterAll', () => {
     expect(results[1].confidence).toBe(0.4);
   });
 });
+
+describe('version detection', () => {
+  beforeEach(() => _resetRegistry());
+
+  it('populates version from detectVersion', () => {
+    registerFingerprint({
+      ...sarifFP,
+      detectVersion: (input: unknown): string => {
+        if (typeof input !== 'object' || input === null) return '';
+        const obj = input as Record<string, unknown>;
+        return typeof obj.version === 'string' ? obj.version : '';
+      },
+    });
+    const result = detectConverter(SARIF_INPUT);
+    expect(result).toBeDefined();
+    expect(result!.version).toBe('2.1.0');
+  });
+
+  it('version is empty when detectVersion is undefined', () => {
+    registerFingerprint(sarifFP); // no detectVersion
+    const result = detectConverter(SARIF_INPUT);
+    expect(result).toBeDefined();
+    expect(result!.version).toBe('');
+  });
+
+  it('version is empty when detectVersion throws', () => {
+    registerFingerprint({
+      ...sarifFP,
+      detectVersion: () => { throw new Error('boom'); },
+    });
+    const result = detectConverter(SARIF_INPUT);
+    expect(result).toBeDefined();
+    expect(result!.version).toBe('');
+  });
+
+  it('detectConverterAll includes version for each result', () => {
+    registerFingerprint({
+      ...sarifFP,
+      detectVersion: (input: unknown): string => {
+        if (typeof input !== 'object' || input === null) return '';
+        const obj = input as Record<string, unknown>;
+        return typeof obj.version === 'string' ? obj.version : '';
+      },
+    });
+    const results = detectConverterAll(SARIF_INPUT);
+    expect(results).toHaveLength(1);
+    expect(results[0].version).toBe('2.1.0');
+  });
+});

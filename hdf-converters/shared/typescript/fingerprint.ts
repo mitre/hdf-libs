@@ -10,6 +10,8 @@ import { getIngestFingerprints, type ConverterFingerprint, type InputFamily } fr
 export interface DetectionResult {
   fingerprint: ConverterFingerprint;
   confidence: number;
+  /** Detected format version (e.g. "2.1.0" for SARIF). Empty when not available. */
+  version: string;
 }
 
 /** Minimum confidence to accept an auto-detection result. */
@@ -50,7 +52,15 @@ export function detectConverterAll(input: string): DetectionResult[] {
     if (fp.inputFamily !== family) continue;
     const confidence = fp.fingerprint(parsed);
     if (confidence > 0) {
-      results.push({ fingerprint: fp, confidence });
+      let version = '';
+      if (fp.detectVersion) {
+        try {
+          version = fp.detectVersion(parsed);
+        } catch {
+          version = '';
+        }
+      }
+      results.push({ fingerprint: fp, confidence, version });
     }
   }
 

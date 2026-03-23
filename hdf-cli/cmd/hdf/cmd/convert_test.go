@@ -11,6 +11,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestParseFormatVersion(t *testing.T) {
+	tests := []struct {
+		input       string
+		wantFormat  string
+		wantVersion string
+	}{
+		{"sarif", "sarif", ""},
+		{"sarif@2.0", "sarif", "2.0"},
+		{"hdf@1", "hdf", "1"},
+		{"hdf@2", "hdf", "2"},
+		{"@sec", "@sec", ""},      // single @ at start — no split (idx <= 0)
+		{"@sec@v1", "@sec", "v1"}, // split on last @
+		{"", "", ""},              // empty string
+		{"cyclonedx@1.5", "cyclonedx", "1.5"},
+		{"format@", "format", ""}, // trailing @ with empty version
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			format, version := parseFormatVersion(tt.input)
+			assert.Equal(t, tt.wantFormat, format, "format mismatch")
+			assert.Equal(t, tt.wantVersion, version, "version mismatch")
+		})
+	}
+}
+
 func TestConvertCommand_ArgValidation(t *testing.T) {
 	// Note: Cobra's Args validation errors are returned but not printed
 	// when SilenceErrors is true, so we only check wantErr, not wantErrMsg

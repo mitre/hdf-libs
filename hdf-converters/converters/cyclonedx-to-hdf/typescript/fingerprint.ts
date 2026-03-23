@@ -19,6 +19,11 @@ export const cyclonedxFingerprint: ConverterFingerprint = {
     if (obj.bomFormat === 'CycloneDX') return 1.0;
     return 0;
   },
+  detectVersion: (input: unknown): string => {
+    if (typeof input !== 'object' || input === null) return '';
+    const obj = input as Record<string, unknown>;
+    return typeof obj.specVersion === 'string' ? obj.specVersion : '';
+  },
 };
 
 export function register(): void {

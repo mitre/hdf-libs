@@ -46,6 +46,11 @@ type ConverterFingerprint struct {
 	// JSON input is passed as map[string]any or []any.
 	// XML/text input is passed as string.
 	Fingerprint func(input any) float64
+	// DetectVersion optionally returns a version string from the parsed input.
+	// For example, SARIF returns obj["version"] ("2.1.0"), CycloneDX returns
+	// obj["specVersion"] ("1.5"). Nil means the fingerprint does not detect
+	// versions and DetectionResult.Version will be empty.
+	DetectVersion func(input any) string
 }
 
 var registry []ConverterFingerprint

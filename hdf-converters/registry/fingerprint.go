@@ -10,6 +10,9 @@ import (
 type DetectionResult struct {
 	Fingerprint ConverterFingerprint
 	Confidence  float64
+	// Version is the detected format version (e.g. "2.1.0" for SARIF).
+	// Empty when the fingerprint does not implement DetectVersion.
+	Version string
 }
 
 // DetectConverter returns the highest-confidence ingest converter match,
@@ -78,9 +81,14 @@ func DetectConverterAll(input []byte) []DetectionResult {
 		}
 		confidence := safeFingerprint(fp.Fingerprint, parsed)
 		if confidence > 0 {
+			ver := ""
+			if fp.DetectVersion != nil {
+				ver = safeDetectVersion(fp.DetectVersion, parsed)
+			}
 			results = append(results, DetectionResult{
 				Fingerprint: fp,
 				Confidence:  confidence,
+				Version:     ver,
 			})
 		}
 	}
@@ -100,6 +108,16 @@ func safeFingerprint(fn func(any) float64, input any) (confidence float64) {
 	defer func() {
 		if r := recover(); r != nil {
 			confidence = 0
+		}
+	}()
+	return fn(input)
+}
+
+// safeDetectVersion calls a DetectVersion function, recovering from panics.
+func safeDetectVersion(fn func(any) string, input any) (ver string) {
+	defer func() {
+		if r := recover(); r != nil {
+			ver = ""
 		}
 	}()
 	return fn(input)

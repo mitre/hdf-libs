@@ -226,6 +226,100 @@ func TestDetectConverterAll(t *testing.T) {
 	})
 }
 
+func TestDetectConverterAll_VersionDetection(t *testing.T) {
+	t.Run("populates Version from DetectVersion", func(t *testing.T) {
+		ResetRegistry()
+		Register(ConverterFingerprint{
+			ID: "sarif-to-hdf", Label: "SARIF",
+			Direction: DirectionIngest, InputFamily: FamilyJSON, OutputType: OutputResults,
+			Fingerprint: func(input any) float64 {
+				obj, ok := input.(map[string]any)
+				if !ok {
+					return 0
+				}
+				if _, hasVer := obj["version"]; hasVer {
+					if _, hasRuns := obj["runs"]; hasRuns {
+						return 0.9
+					}
+				}
+				return 0
+			},
+			DetectVersion: func(input any) string {
+				obj, ok := input.(map[string]any)
+				if !ok {
+					return ""
+				}
+				if v, ok := obj["version"].(string); ok {
+					return v
+				}
+				return ""
+			},
+		})
+
+		results := DetectConverterAll([]byte(sarifInput))
+		require.Len(t, results, 1)
+		assert.Equal(t, "sarif-to-hdf", results[0].Fingerprint.ID)
+		assert.Equal(t, "2.1.0", results[0].Version)
+	})
+
+	t.Run("Version empty when DetectVersion is nil", func(t *testing.T) {
+		ResetRegistry()
+		registerTestFingerprints() // these have nil DetectVersion
+		results := DetectConverterAll([]byte(sarifInput))
+		require.NotEmpty(t, results)
+		assert.Equal(t, "", results[0].Version)
+	})
+
+	t.Run("Version empty when DetectVersion panics", func(t *testing.T) {
+		ResetRegistry()
+		Register(ConverterFingerprint{
+			ID: "panic-ver", Label: "PanicVer",
+			Direction: DirectionIngest, InputFamily: FamilyJSON, OutputType: OutputResults,
+			Fingerprint: func(input any) float64 { return 0.9 },
+			DetectVersion: func(input any) string {
+				panic("version detection failed")
+			},
+		})
+		results := DetectConverterAll([]byte(`{"key":"val"}`))
+		require.Len(t, results, 1)
+		assert.Equal(t, "", results[0].Version)
+	})
+}
+
+func TestDetectConverter_VersionPassthrough(t *testing.T) {
+	ResetRegistry()
+	Register(ConverterFingerprint{
+		ID: "sarif-to-hdf", Label: "SARIF",
+		Direction: DirectionIngest, InputFamily: FamilyJSON, OutputType: OutputResults,
+		Fingerprint: func(input any) float64 {
+			obj, ok := input.(map[string]any)
+			if !ok {
+				return 0
+			}
+			if _, hasVer := obj["version"]; hasVer {
+				if _, hasRuns := obj["runs"]; hasRuns {
+					return 0.9
+				}
+			}
+			return 0
+		},
+		DetectVersion: func(input any) string {
+			obj, ok := input.(map[string]any)
+			if !ok {
+				return ""
+			}
+			if v, ok := obj["version"].(string); ok {
+				return v
+			}
+			return ""
+		},
+	})
+
+	result := DetectConverter([]byte(sarifInput))
+	require.NotNil(t, result)
+	assert.Equal(t, "2.1.0", result.Version)
+}
+
 // helper to parse JSON for testing
 func parseJSON(data []byte) any {
 	var v any

@@ -1346,3 +1346,113 @@ func TestConvertSarifToHDF_GosecFixture(t *testing.T) {
 	cweIds3 := r3.Tags["cwe"].([]string)
 	assert.Contains(t, cweIds3, "CWE-798")
 }
+
+// --- Version handling tests ---
+
+func TestConvertSarifToHDF_ExplicitVersion(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("sarif_input.sarif"))
+	require.NoError(t, err)
+
+	// Explicit version "2.1.0" should produce same result as no version
+	resultDefault, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+
+	resultExplicit, err := ConvertSarifToHDF(inputData, testConverterVersion, "2.1.0")
+	require.NoError(t, err)
+
+	// Both should produce the same number of baselines and requirements
+	require.Len(t, resultExplicit.Baselines, len(resultDefault.Baselines))
+	for i := range resultDefault.Baselines {
+		assert.Equal(t, len(resultDefault.Baselines[i].Requirements),
+			len(resultExplicit.Baselines[i].Requirements),
+			"baseline %d requirement count should match", i)
+	}
+}
+
+func TestNormalizeSarifVersion_21Passthrough(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"test","rules":[{"id":"R1"}]}},"results":[]}]}`)
+	output, err := normalizeSarifVersion(input, "")
+	require.NoError(t, err)
+	// 2.1 input should pass through unchanged
+	assert.Equal(t, input, output)
+}
+
+func TestNormalizeSarifVersion_20ResourcesRules(t *testing.T) {
+	// SARIF 2.0 has resources.rules instead of tool.driver.rules
+	input := []byte(`{
+		"version": "2.0.0",
+		"runs": [{
+			"tool": {"driver": {"name": "test"}},
+			"resources": {"rules": [{"id": "R1", "name": "TestRule"}]},
+			"results": []
+		}]
+	}`)
+
+	output, err := normalizeSarifVersion(input, "")
+	require.NoError(t, err)
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(output, &doc))
+
+	// Version should be upgraded to 2.1.0
+	assert.Equal(t, "2.1.0", doc["version"])
+
+	// resources should be removed, rules should be in tool.driver.rules
+	runs := doc["runs"].([]any)
+	run := runs[0].(map[string]any)
+	_, hasResources := run["resources"]
+	assert.False(t, hasResources, "resources field should be removed")
+
+	tool := run["tool"].(map[string]any)
+	driver := tool["driver"].(map[string]any)
+	rules, hasRules := driver["rules"].([]any)
+	assert.True(t, hasRules, "tool.driver.rules should exist")
+	assert.Len(t, rules, 1)
+	assert.Equal(t, "R1", rules[0].(map[string]any)["id"])
+}
+
+func TestNormalizeSarifVersion_ExplicitVersionOverride(t *testing.T) {
+	// Document says 2.1.0 but explicit version says 2.0 — trust explicit
+	input := []byte(`{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": {"driver": {"name": "test"}},
+			"resources": {"rules": [{"id": "R1"}]},
+			"results": []
+		}]
+	}`)
+
+	output, err := normalizeSarifVersion(input, "2.0.0")
+	require.NoError(t, err)
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(output, &doc))
+
+	// resources.rules should be moved even though doc version says 2.1
+	tool := doc["runs"].([]any)[0].(map[string]any)["tool"].(map[string]any)
+	driver := tool["driver"].(map[string]any)
+	_, hasRules := driver["rules"]
+	assert.True(t, hasRules, "should normalize when explicit version is 2.0")
+}
+
+func TestIsSarif20(t *testing.T) {
+	tests := []struct {
+		name     string
+		version  string
+		docVer   string
+		expected bool
+	}{
+		{"explicit 2.0.0", "2.0.0", "2.1.0", true},
+		{"explicit 2.0.0-csd", "2.0.0-csd.2", "2.1.0", true},
+		{"explicit 2.1.0", "2.1.0", "2.0.0", false},
+		{"empty explicit, doc 2.0", "", "2.0.0", true},
+		{"empty explicit, doc 2.1", "", "2.1.0", false},
+		{"empty both", "", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := []byte(`{"version":"` + tt.docVer + `"}`)
+			assert.Equal(t, tt.expected, isSarif20(doc, tt.version))
+		})
+	}
+}
