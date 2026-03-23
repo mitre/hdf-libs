@@ -20,7 +20,7 @@ Amendments are standalone documents that modify requirement compliance status
 in HDF results. Use subcommands to apply, list, or verify amendments.
 
 Examples:
-  hdf amend apply results.json waivers.json -o merged.json
+  hdf amend apply --results results.json --amendments waivers.json -o merged.json
   hdf amend list waivers.json
   hdf amend verify waivers.json`,
 	}
@@ -34,8 +34,14 @@ Examples:
 }
 
 func newAmendApplyCmd() *cobra.Command {
+	var (
+		resultsPath    string
+		amendmentsPath string
+		outputPath     string
+	)
+
 	cmd := &cobra.Command{
-		Use:   "apply <results-file> <amendments-file>",
+		Use:   "apply --results <file> --amendments <file> [-o output]",
 		Short: "Apply amendments to an HDF results file",
 		Long: `Merge amendments into an HDF results file.
 
@@ -43,16 +49,22 @@ For each override in the amendments, the matching requirement's effectiveStatus
 is updated and the override is appended to statusOverrides[]. A previousChecksum
 is recorded for chain verification.
 
-Output goes to stdout by default, or to a file with --output.
+Output goes to stdout by default, or to a file with -o/--output.
 
 Examples:
-  hdf amend apply results.json waivers.json
-  hdf amend apply results.json waivers.json -o merged.json`,
-		Args: cobra.ExactArgs(2),
-		RunE: runAmendApply,
+  hdf amend apply --results results.json --amendments waivers.json
+  hdf amend apply --results results.json --amendments waivers.json -o merged.json`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runAmendApply(cmd, resultsPath, amendmentsPath, outputPath)
+		},
 	}
 
-	cmd.Flags().StringP("output", "o", "", "Write merged output to file instead of stdout")
+	cmd.Flags().StringVar(&resultsPath, "results", "", "HDF results file to amend (required)")
+	cmd.Flags().StringVar(&amendmentsPath, "amendments", "", "Amendments file to apply (required)")
+	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Write merged output to file instead of stdout")
+	_ = cmd.MarkFlagRequired("results")
+	_ = cmd.MarkFlagRequired("amendments")
 
 	return cmd
 }
@@ -92,10 +104,7 @@ Examples:
 	}
 }
 
-func runAmendApply(cmd *cobra.Command, args []string) error {
-	resultsPath := args[0]
-	amendmentsPath := args[1]
-
+func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath string) error {
 	resultsData, err := os.ReadFile(resultsPath) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read results file: %w", err)
@@ -111,7 +120,6 @@ func runAmendApply(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("merge failed: %w", err)
 	}
 
-	outputPath, _ := cmd.Flags().GetString("output")
 	if outputPath != "" {
 		// Ensure trailing newline.
 		if len(merged) > 0 && merged[len(merged)-1] != '\n' {
