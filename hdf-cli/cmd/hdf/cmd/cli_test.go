@@ -146,9 +146,10 @@ func TestListCommand(t *testing.T) {
 	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
-		{name: "list requirements", args: []string{"list", "requirements", fixture}, wantContain: "Requirements:"},
-		{name: "list baselines", args: []string{"list", "baselines", fixture}, wantContain: "Baselines:"},
-		{name: "list invalid type", args: []string{"list", "invalid", fixture}, wantErr: true, wantErrMsg: "Unknown list type"},
+		{name: "list summary", args: []string{"list", fixture}, wantContain: "Baselines:"},
+		{name: "list --detail requirements", args: []string{"list", fixture, "--detail", "requirements"}, wantContain: "Requirements:"},
+		{name: "list --detail baselines", args: []string{"list", fixture, "--detail", "baselines"}, wantContain: "Baselines:"},
+		{name: "list --detail invalid", args: []string{"list", fixture, "--detail", "invalid"}, wantErr: true, wantErrMsg: "Unknown detail section"},
 		{name: "list no args", args: []string{"list"}, wantErr: true},
 	})
 }
@@ -223,19 +224,20 @@ func TestListFilters(t *testing.T) {
 	fixture := testFixturePath(t, "minimal-v2.json")
 
 	runCLITests(t, []cliTest{
-		{name: "list requirements with status filter", args: []string{"list", "requirements", fixture, "--status", "passed"}},
-		{name: "list requirements with status short flag", args: []string{"list", "requirements", fixture, "-s", "passed"}},
-		{name: "list requirements with --all", args: []string{"list", "requirements", fixture, "--all"}},
-		{name: "list requirements with -a", args: []string{"list", "requirements", fixture, "-a"}},
-		{name: "list targets", args: []string{"list", "targets", fixture}},
-		// Aliases
-		{name: "list control (singular)", args: []string{"list", "requirement", fixture}, wantContain: "Requirements:"},
-		{name: "list profile (singular)", args: []string{"list", "baseline", fixture}, wantContain: "Baselines:"},
-		{name: "list c (short)", args: []string{"list", "c", fixture}, wantContain: "Requirements:"},
-		{name: "list p (short)", args: []string{"list", "p", fixture}, wantContain: "Baselines:"},
-		{name: "list t (short)", args: []string{"list", "t", fixture}},
+		{name: "list requirements with status filter", args: []string{"list", fixture, "--detail", "requirements", "--status", "passed"}},
+		{name: "list requirements with status short flag", args: []string{"list", fixture, "--detail", "requirements", "-s", "passed"}},
+		{name: "list requirements with --all", args: []string{"list", fixture, "--detail", "requirements", "--all"}},
+		{name: "list requirements with -a", args: []string{"list", fixture, "--detail", "requirements", "-a"}},
+		{name: "list targets", args: []string{"list", fixture, "--detail", "targets"}},
+		// Detail aliases
+		{name: "detail requirement (singular)", args: []string{"list", fixture, "--detail", "requirement"}, wantContain: "Requirements:"},
+		{name: "detail baseline (singular)", args: []string{"list", fixture, "--detail", "baseline"}, wantContain: "Baselines:"},
+		{name: "detail r (short)", args: []string{"list", fixture, "--detail", "r"}, wantContain: "Requirements:"},
+		{name: "detail p (short)", args: []string{"list", fixture, "--detail", "p"}, wantContain: "Baselines:"},
+		{name: "detail t (short)", args: []string{"list", fixture, "--detail", "t"}},
 		// ls alias for list
-		{name: "ls alias", args: []string{"ls", "requirements", fixture}, wantContain: "Requirements:"},
+		{name: "ls alias", args: []string{"ls", fixture}, wantContain: "Baselines:"},
+		{name: "ls alias with detail", args: []string{"ls", fixture, "--detail", "requirements"}, wantContain: "Requirements:"},
 	})
 }
 
@@ -245,8 +247,10 @@ func TestJSONOutput(t *testing.T) {
 
 	runCLITests(t, []cliTest{
 		{name: "validate --json", args: []string{"validate", "--json", fixture}, wantContain: `"valid":`},
-		{name: "list requirements --json", args: []string{"list", "requirements", fixture, "--json"}, wantContain: `"id":`},
-		{name: "list baselines --json", args: []string{"list", "baselines", fixture, "--json"}, wantContain: `"name":`},
+		{name: "list --json summary", args: []string{"list", fixture, "--json"}, wantContain: `"baselines":`},
+		{name: "list --json requirements", args: []string{"list", fixture, "--detail", "requirements", "--json"}, wantContain: `"id":`},
+		{name: "list --json baselines", args: []string{"list", fixture, "--detail", "baselines", "--json"}, wantContain: `"name":`},
+		{name: "list --json targets", args: []string{"list", fixture, "--detail", "targets", "--json"}, wantContain: `[`},
 		{name: "query --json", args: []string{"query", "--json", fixture}, wantContain: "["},
 		{name: "query --json --count", args: []string{"query", "--json", "--count", fixture}, wantContain: `"count":`},
 		{name: "version --json", args: []string{"version", "--json"}, wantContain: `"version":`},
@@ -258,7 +262,7 @@ func TestHelpOutput(t *testing.T) {
 	runCLITests(t, []cliTest{
 		{name: "root help", args: []string{"--help"}, wantContain: "hdf is a CLI tool"},
 		{name: "validate help", args: []string{"validate", "--help"}, wantContain: "Validate"},
-		{name: "list help", args: []string{"list", "--help"}, wantContain: "List"},
+		{name: "list help", args: []string{"list", "--help"}, wantContain: "Show a summary"},
 		{name: "query help", args: []string{"query", "--help"}, wantContain: "Search"},
 		{name: "version help", args: []string{"version", "--help"}, wantContain: "version"},
 	})
@@ -323,7 +327,7 @@ func TestNoColorFlag(t *testing.T) {
 	runCLITests(t, []cliTest{
 		{name: "validate --no-color", args: []string{"validate", "--no-color", fixture}},
 		{name: "query --no-color", args: []string{"query", "--no-color", fixture}},
-		{name: "list --no-color", args: []string{"list", "requirements", fixture, "--no-color"}},
+		{name: "list --no-color", args: []string{"list", fixture, "--no-color"}},
 	})
 }
 

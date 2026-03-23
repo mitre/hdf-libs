@@ -16,11 +16,11 @@ var (
 )
 
 // NewListCmd creates a new list command with fresh state.
-func NewListCmd() *cobra.Command { //nolint:dupl // Cobra command setup; flags and args differ per command
-	// Local flag variables for this command instance
+func NewListCmd() *cobra.Command {
 	var (
 		localStatusFilter string
 		localShowAll      bool
+		detailSection     string
 	)
 
 	cmd := &cobra.Command{
@@ -33,63 +33,148 @@ func NewListCmd() *cobra.Command { //nolint:dupl // Cobra command setup; flags a
 Use --detail to expand a specific section to item-level detail.
 
 Detail sections by document type:
-  results:          requirements, baselines, targets, inputs
+  results:          requirements, baselines, targets
   baseline:         requirements, groups
   system:           components, interconnections
   plan:             assessments
   amendments:       overrides
   evidence-package: contents
 
+Short aliases for --detail: r (requirements), b (baselines), t (targets),
+  c (components), g (groups), a (assessments), o (overrides)
+
 Examples:
-  hdf list results.json                              Summary of a results file
-  hdf list results.json --detail requirements        List individual requirements
-  hdf list results.json --detail requirements --status failed
-  hdf list system.json                               Summary of a system document
-  hdf list system.json --detail components           List components
-  hdf list amendments.json --detail overrides        List amendments`,
-		Args: cobra.ExactArgs(2),
+  hdf list results.json                                Summary of a results file
+  hdf list results.json --detail requirements          List individual requirements
+  hdf list results.json --detail requirements -s failed
+  hdf list system.json                                 Summary of a system document
+  hdf list system.json --detail components             List components
+  hdf list amendments.json --detail overrides          List amendments`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Sync local flags to global variables for runList
 			statusFilter = localStatusFilter
 			showAll = localShowAll
-			return runList(cmd, args)
+			return runList(cmd, args[0], detailSection)
 		},
 	}
 
+	cmd.Flags().StringVar(&detailSection, "detail", "", "Section to expand (requirements, baselines, targets, components, ...)")
 	cmd.Flags().StringVarP(&localStatusFilter, "status", "s", "", "Filter by status (passed, failed, error, not_applicable, not_reviewed)")
 	cmd.Flags().BoolVarP(&localShowAll, "all", "a", false, "Show all details")
 
 	return cmd
 }
 
-func runList(_ *cobra.Command, args []string) error {
-	listType := strings.ToLower(args[0])
-	filename := args[1]
+// resolveDetailAlias maps short aliases to canonical detail section names.
+func resolveDetailAlias(s string) string {
+	aliases := map[string]string{
+		"r": "requirements", "requirement": "requirements",
+		"b": "baselines", "baseline": "baselines",
+		"t": "targets", "target": "targets",
+		"c": "components", "component": "components",
+		"g": "groups", "group": "groups",
+		"a": "assessments", "assessment": "assessments",
+		"o": "overrides", "override": "overrides",
+		"p": "baselines", // legacy alias
+	}
+	if canonical, ok := aliases[s]; ok {
+		return canonical
+	}
+	return s
+}
 
+func runList(_ *cobra.Command, filename, detail string) error {
 	data, err := readInputFile(filename)
 	if err != nil {
 		printError(err.Error())
 		return err
 	}
 
+	// Currently we only fully parse HDF results.
+	// For other doc types we'd need additional parsers.
 	results, err := parseHDFResults(data)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to parse HDF file: %v", err))
 		return err
 	}
 
-	switch listType {
-	case "requirements", "requirement", "c":
+	if detail == "" {
+		return listSummary(results)
+	}
+
+	section := resolveDetailAlias(strings.ToLower(detail))
+	switch section {
+	case "requirements":
 		return listControls(results)
-	case "baselines", "baseline", "p":
+	case "baselines":
 		return listProfiles(results)
-	case "targets", "target", "t":
+	case "targets":
 		return listTargets(results)
 	default:
-		printError(fmt.Sprintf("Unknown list type: %s", listType),
-			"Valid types: requirements, baselines, targets")
-		return fmt.Errorf("unknown list type: %s", listType)
+		printError(fmt.Sprintf("Unknown detail section: %s", detail),
+			"Valid sections for results: requirements, baselines, targets")
+		return fmt.Errorf("unknown detail section: %s", detail)
 	}
+}
+
+func listSummary(results hdf.HdfResults) error {
+	if jsonOutput {
+		summary := struct {
+			Baselines     int `json:"baselines"`
+			Requirements  int `json:"requirements"`
+			Targets       int `json:"targets"`
+			Passed        int `json:"passed"`
+			Failed        int `json:"failed"`
+			Error         int `json:"error"`
+			NotApplicable int `json:"not_applicable"`
+			NotReviewed   int `json:"not_reviewed"`
+		}{
+			Baselines: len(results.Baselines),
+			Targets:   len(results.Targets),
+		}
+		for _, b := range results.Baselines {
+			summary.Requirements += len(b.Requirements)
+			for _, r := range b.Requirements {
+				switch determineControlStatus(r) {
+				case StatusPassed:
+					summary.Passed++
+				case StatusFailed:
+					summary.Failed++
+				case StatusError:
+					summary.Error++
+				case StatusNotApplicable:
+					summary.NotApplicable++
+				case StatusNotReviewed:
+					summary.NotReviewed++
+				}
+			}
+		}
+		output, _ := json.MarshalIndent(summary, "", "  ")
+		fmt.Println(string(output))
+		return nil
+	}
+
+	totalReqs := 0
+	counts := make(map[string]int)
+	for _, b := range results.Baselines {
+		totalReqs += len(b.Requirements)
+		for _, r := range b.Requirements {
+			counts[determineControlStatus(r)]++
+		}
+	}
+
+	fmt.Printf("Baselines:    %d\n", len(results.Baselines))
+	fmt.Printf("Requirements: %d\n", totalReqs)
+	fmt.Printf("Targets:      %d\n", len(results.Targets))
+	fmt.Println()
+
+	for _, status := range []string{StatusPassed, StatusFailed, StatusError, StatusNotApplicable, StatusNotReviewed} {
+		if c := counts[status]; c > 0 {
+			fmt.Printf("  %s %-15s %d\n", statusToSymbol(status), status, c)
+		}
+	}
+
+	return nil
 }
 
 type controlInfo struct {
