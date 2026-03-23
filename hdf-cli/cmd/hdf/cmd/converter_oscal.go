@@ -150,7 +150,7 @@ func (c *oscalProfileConverter) Convert(input []byte) ([]byte, error) {
 
 	baseline, err := oscal.ConvertProfileToHDF(input, catalogData, version)
 	if err != nil {
-		return nil, fmt.Errorf("oscal-profile conversion failed: %w", err)
+		return nil, fmt.Errorf("oscal-profile conversion failed (catalog: %s): %w", oscalCatalogFlag, err)
 	}
 
 	output, err := json.MarshalIndent(baseline, "", "  ")

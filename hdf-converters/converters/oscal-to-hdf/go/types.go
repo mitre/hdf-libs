@@ -271,7 +271,8 @@ type Remove struct {
 
 // Addition specifies items to add to a control.
 type Addition struct {
-	Position string     `json:"position,omitempty"`
+	Position string     `json:"position,omitempty"` // before, after, starting, ending
+	ByID     string     `json:"by-id,omitempty"`    // target part ID for positional adds
 	Parts    []Part     `json:"parts,omitempty"`
 	Props    []Property `json:"props,omitempty"`
 }
