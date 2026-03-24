@@ -116,7 +116,7 @@ Output defaults to stdout when no output path is given.`,
 	}
 
 	cmd.Flags().StringVarP(&serverURL, "url", "u", "", "SonarQube server URL (required)")
-	cmd.Flags().StringVarP(&projectKey, "project-key", "k", "", "SonarQube project key (required)")
+	cmd.Flags().StringVar(&projectKey, "project-key", "", "SonarQube project key (required)")
 	cmd.Flags().StringVar(&branch, "branch", "", "Branch name (mutually exclusive with --pull-request)")
 	cmd.Flags().StringVar(&pullRequest, "pull-request", "", "Pull request ID (mutually exclusive with --branch)")
 	cmd.Flags().StringVar(&organization, "organization", "", "SonarCloud organization key")

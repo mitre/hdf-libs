@@ -26,6 +26,11 @@ const (
 
 	// sonarqubeFetchTimeout is applied when the caller has not set a deadline.
 	sonarqubeFetchTimeout = 5 * time.Minute
+
+	// sonarqubeESLimit is the Elasticsearch result cap enforced by SonarQube.
+	// When p*ps exceeds this, the API returns HTTP 400. We detect this and
+	// fall back to component-tree-partitioned fetching.
+	sonarqubeESLimit = 10000
 )
 
 // SonarqubeParams holds parameters for a live SonarQube fetch.
@@ -204,38 +209,26 @@ func (f *SonarqubeFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		limit = sonarqubeMaxPages
 	}
 
-	var allIssues []sonarqubeconv.Issue
 	componentMap := make(map[string]sonarqubeconv.Component)
 	ruleMap := make(map[string]sonarqubeconv.Rule)
-	var total int
 
-	for page := 1; ; page++ {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-		if page > limit {
-			return nil, fmt.Errorf("sonarqube: exceeded maximum page limit (%d)", limit)
-		}
+	// First attempt: fetch issues for the whole project
+	allIssues, total, err := f.fetchIssuesForComponent(ctx, token, limit, f.params.ProjectKey, componentMap, ruleMap)
+	if err != nil {
+		return nil, err
+	}
 
-		resp, err := f.fetchPage(ctx, token, page)
+	// Detect the Elasticsearch 10K limit: if total exceeds the cap and we
+	// couldn't fetch everything, fall back to component-tree traversal.
+	// This fetches issues per sub-component (directory/file) instead of
+	// per whole project, recursing deeper if a sub-component also exceeds 10K.
+	if total > sonarqubeESLimit && len(allIssues) < total {
+		log.Printf("WARNING: Project has %d issues (exceeds Elasticsearch 10K limit). "+ //nolint:gosec // total is from API response integer
+			"Fetching by component tree — this may take longer.", total)
+
+		allIssues, err = f.fetchByComponentTree(ctx, token, limit, componentMap, ruleMap)
 		if err != nil {
-			return nil, fmt.Errorf("sonarqube: fetching page %d: %w", page, err)
-		}
-
-		total = resp.Paging.Total
-		allIssues = append(allIssues, resp.Issues...)
-
-		// Accumulate components and rules (deduplicate by key)
-		for _, c := range resp.Components {
-			componentMap[c.Key] = c
-		}
-		for _, r := range resp.Rules {
-			ruleMap[r.Key] = r
-		}
-
-		// Stop when we have accumulated all reported issues, or the page was empty
-		if len(resp.Issues) == 0 || len(allIssues) >= total {
-			break
+			return nil, err
 		}
 	}
 
@@ -255,7 +248,7 @@ func (f *SonarqubeFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	}
 
 	result := sonarqubeconv.IssuesResponse{
-		Total:         total,
+		Total:         len(allIssues),
 		Page:          1,
 		PageSize:      sonarqubePageSize,
 		Issues:        allIssues,
@@ -267,14 +260,196 @@ func (f *SonarqubeFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	return json.Marshal(result)
 }
 
-func (f *SonarqubeFetcher) fetchPage(ctx context.Context, token string, page int) (*sonarqubeconv.IssuesResponse, error) {
+// fetchIssuesForComponent paginates through /api/issues/search for a specific
+// component key. Returns collected issues, the reported total, and any error.
+// Stops early if it hits the Elasticsearch 10K cap (HTTP 400) and returns
+// what was collected so the caller can fall back to sub-component traversal.
+func (f *SonarqubeFetcher) fetchIssuesForComponent(
+	ctx context.Context, token string, maxPages int, componentKey string,
+	componentMap map[string]sonarqubeconv.Component, ruleMap map[string]sonarqubeconv.Rule,
+) ([]sonarqubeconv.Issue, int, error) {
+	var allIssues []sonarqubeconv.Issue
+	var total int
+
+	for page := 1; ; page++ {
+		if err := ctx.Err(); err != nil {
+			return nil, 0, err
+		}
+		if page > maxPages {
+			return nil, 0, fmt.Errorf("sonarqube: exceeded maximum page limit (%d)", maxPages)
+		}
+
+		resp, err := f.fetchIssuePage(ctx, token, page, componentKey)
+		if err != nil {
+			// Detect the 10K Elasticsearch limit (HTTP 400 on high page numbers).
+			// Return what we have so the caller can fall back to component tree.
+			if page > 1 && strings.Contains(err.Error(), "HTTP 400") {
+				return allIssues, total, nil
+			}
+			return nil, 0, fmt.Errorf("sonarqube: fetching page %d: %w", page, err)
+		}
+
+		total = resp.Paging.Total
+		allIssues = append(allIssues, resp.Issues...)
+
+		for _, c := range resp.Components {
+			componentMap[c.Key] = c
+		}
+		for _, r := range resp.Rules {
+			ruleMap[r.Key] = r
+		}
+
+		if len(resp.Issues) == 0 || len(allIssues) >= total {
+			break
+		}
+	}
+
+	return allIssues, total, nil
+}
+
+// fetchByComponentTree fetches issues by traversing the project's component
+// tree. When the project exceeds the Elasticsearch 10K result limit, this
+// fetches child components (directories/files) and queries each individually.
+// If a child also exceeds 10K, it recurses into that child's children.
+// Results are deduplicated by issue key.
+func (f *SonarqubeFetcher) fetchByComponentTree(
+	ctx context.Context, token string, maxPages int,
+	componentMap map[string]sonarqubeconv.Component, ruleMap map[string]sonarqubeconv.Rule,
+) ([]sonarqubeconv.Issue, error) {
+	seen := make(map[string]bool)
+	var allIssues []sonarqubeconv.Issue
+
+	// BFS queue of component keys to process
+	queue := []string{f.params.ProjectKey}
+
+	for len(queue) > 0 {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		component := queue[0]
+		queue = queue[1:]
+
+		// First check: how many issues does this component have?
+		issues, total, err := f.fetchIssuesForComponent(ctx, token, maxPages, component, componentMap, ruleMap)
+		if err != nil {
+			return nil, fmt.Errorf("sonarqube: fetching component %s: %w", component, err)
+		}
+
+		if total > sonarqubeESLimit && len(issues) < total {
+			// This component exceeds the 10K limit — drill into children
+			log.Printf("Component %s has %d issues (exceeds 10K limit), fetching children", component, total)
+			children, err := f.fetchChildComponents(ctx, token, component, maxPages)
+			if err != nil {
+				log.Printf("WARNING: failed to fetch children of %s: %v; using %d partial issues", component, err, len(issues))
+				// Fall through to use partial results
+			} else if len(children) > 0 {
+				queue = append(queue, children...)
+				continue // Don't add partial results — children will cover them
+			}
+			// No children found or fetch failed — use what we got
+		}
+
+		for _, issue := range issues {
+			if !seen[issue.Key] {
+				seen[issue.Key] = true
+				allIssues = append(allIssues, issue)
+			}
+		}
+	}
+
+	return allIssues, nil
+}
+
+// componentTreeResponse wraps the /api/components/tree response.
+type componentTreeResponse struct {
+	Paging     sonarqubeconv.Paging `json:"paging"`
+	Components []struct {
+		Key       string `json:"key"`
+		Name      string `json:"name"`
+		Qualifier string `json:"qualifier"`
+		Path      string `json:"path"`
+	} `json:"components"`
+}
+
+// fetchChildComponents retrieves direct child components (directories/files)
+// of a given component via /api/components/tree with strategy=children.
+func (f *SonarqubeFetcher) fetchChildComponents(ctx context.Context, token, componentKey string, maxPages int) ([]string, error) {
+	var children []string
+
+	for page := 1; ; page++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if page > maxPages {
+			break
+		}
+
+		apiURL, err := ValidateAndBuildAPIURL(f.params.URL, "/api/components/tree", "SonarQube")
+		if err != nil {
+			return nil, err
+		}
+
+		q := url.Values{}
+		q.Set("component", componentKey)
+		q.Set("strategy", "children")
+		q.Set("ps", fmt.Sprintf("%d", sonarqubePageSize))
+		q.Set("p", fmt.Sprintf("%d", page))
+		if f.params.Branch != "" {
+			q.Set("branch", f.params.Branch)
+		}
+		if f.params.PullRequestID != "" {
+			q.Set("pullRequest", f.params.PullRequestID)
+		}
+		apiURL.RawQuery = q.Encode()
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL.String(), http.NoBody)
+		if err != nil {
+			return nil, err
+		}
+		f.setAuthHeader(req, token)
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := f.client.Do(req) //#nosec G704 -- host is user-configured
+		if err != nil {
+			return nil, err
+		}
+
+		const maxSize = 10 * 1024 * 1024
+		body, err := readLimitedBody(resp.Body, maxSize)
+		resp.Body.Close() //nolint:errcheck
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("components/tree API returned HTTP %d", resp.StatusCode)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		var treeResp componentTreeResponse
+		if err := json.Unmarshal(body, &treeResp); err != nil {
+			return nil, fmt.Errorf("parsing components/tree response: %w", err)
+		}
+
+		for _, c := range treeResp.Components {
+			children = append(children, c.Key)
+		}
+
+		if len(treeResp.Components) == 0 || len(children) >= treeResp.Paging.Total {
+			break
+		}
+	}
+
+	return children, nil
+}
+
+func (f *SonarqubeFetcher) fetchIssuePage(ctx context.Context, token string, page int, componentKey string) (*sonarqubeconv.IssuesResponse, error) {
 	apiURL, err := ValidateAndBuildAPIURL(f.params.URL, "/api/issues/search", "SonarQube")
 	if err != nil {
 		return nil, err
 	}
 
 	q := url.Values{}
-	q.Set("componentKeys", f.params.ProjectKey)
+	q.Set("componentKeys", componentKey)
 	q.Set("additionalFields", "rules")
 	q.Set("ps", fmt.Sprintf("%d", sonarqubePageSize))
 	q.Set("p", fmt.Sprintf("%d", page))
