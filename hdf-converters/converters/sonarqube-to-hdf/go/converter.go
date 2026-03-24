@@ -13,15 +13,18 @@ import (
 	hdf "github.com/mitre/hdf-schema"
 )
 
-// SonarQube /api/issues/search response structure
+// IssuesResponse is the SonarQube /api/issues/search response structure.
+// ServerVersion is populated by the fetcher from /api/server/version and
+// travels with the data so the converter can include it in the HDF output.
 type IssuesResponse struct {
-	Total      int         `json:"total"`
-	Page       int         `json:"p"`
-	PageSize   int         `json:"ps"`
-	Paging     Paging      `json:"paging"`
-	Issues     []Issue     `json:"issues"`
-	Components []Component `json:"components,omitempty"`
-	Rules      []Rule      `json:"rules,omitempty"`
+	Total         int         `json:"total"`
+	Page          int         `json:"p"`
+	PageSize      int         `json:"ps"`
+	Paging        Paging      `json:"paging"`
+	Issues        []Issue     `json:"issues"`
+	Components    []Component `json:"components,omitempty"`
+	Rules         []Rule      `json:"rules,omitempty"`
+	ServerVersion string      `json:"serverVersion,omitempty"`
 }
 
 type Paging struct {
@@ -181,12 +184,13 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	timestamp := time.Now()
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:    "sonarqube-to-hdf",
-		ConverterVersion: converterVersion,
-		DataSourceName:   "SonarQube",
-		Baselines:        baselines,
-		Targets:          targets,
-		Timestamp:        &timestamp,
+		GeneratorName:     "sonarqube-to-hdf",
+		ConverterVersion:  converterVersion,
+		DataSourceName:    "SonarQube",
+		DataSourceVersion: sonarData.ServerVersion,
+		Baselines:         baselines,
+		Targets:           targets,
+		Timestamp:         &timestamp,
 	}), nil
 }
 

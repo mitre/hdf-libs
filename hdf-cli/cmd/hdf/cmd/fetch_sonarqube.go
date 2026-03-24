@@ -13,13 +13,14 @@ import (
 
 func newFetchSonarqubeCmd() *cobra.Command {
 	var (
-		serverURL    string
-		projectKey   string
-		branch       string
-		pullRequest  string
-		organization string
-		format       string
-		outputPath   string
+		serverURL     string
+		projectKey    string
+		branch        string
+		pullRequest   string
+		organization  string
+		format        string
+		outputPath    string
+		serverVersion string
 	)
 
 	cmd := &cobra.Command{
@@ -33,6 +34,10 @@ credential exposure in process lists and shell history.
 
   export SONARQUBE_TOKEN=<your-token>
   hdf fetch sonarqube --url https://sonarqube.example.com --project-key my-project output.json
+
+The server version is auto-detected via /api/server/version and determines
+the authentication method (Basic auth for <10, Bearer for 10+). Override
+with --sonarqube-version if auto-detection fails.
 
 For SonarCloud, also pass --organization:
   hdf fetch sonarqube --url https://sonarcloud.io --project-key my-project \
@@ -81,6 +86,9 @@ Output defaults to stdout when no output path is given.`,
 			if err != nil {
 				return fmt.Errorf("failed to initialize SonarQube fetcher: %w", err)
 			}
+			if serverVersion != "" {
+				f.SetServerVersion(serverVersion)
+			}
 
 			printDebug("Fetching SonarQube issues for project %s from %s", projectKey, serverURL)
 			raw, err := f.Fetch(cmd.Context())
@@ -114,6 +122,7 @@ Output defaults to stdout when no output path is given.`,
 	cmd.Flags().StringVar(&organization, "organization", "", "SonarCloud organization key")
 	cmd.Flags().StringVar(&format, "format", "hdf", "Output format: hdf (convert to HDF) or raw (native tool output)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file path (default: stdout)")
+	cmd.Flags().StringVar(&serverVersion, "sonarqube-version", "", "SonarQube server version (auto-detected if omitted; affects auth method)")
 
 	_ = cmd.MarkFlagRequired("url")
 	_ = cmd.MarkFlagRequired("project-key")

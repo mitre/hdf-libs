@@ -24,7 +24,16 @@ func mustUnmarshalSonarqube(t *testing.T, data []byte) sonarqubeconv.IssuesRespo
 
 func sonarqubeServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	t.Helper()
-	srv := httptest.NewServer(handler)
+	// Wrap handler to intercept /api/server/version (needed for version
+	// auto-detection) and delegate everything else to the test handler.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/server/version" {
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = fmt.Fprint(w, "10.8.1")
+			return
+		}
+		handler(w, r)
+	}))
 	t.Cleanup(srv.Close)
 	return srv
 }

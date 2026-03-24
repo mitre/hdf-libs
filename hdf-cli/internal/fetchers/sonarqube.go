@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	sonarqubeconv "github.com/mitre/hdf-converters/converters/sonarqube-to-hdf/go"
@@ -42,9 +45,11 @@ type SonarqubeParams struct {
 // SonarqubeFetcher fetches SonarQube issues from the API and returns them
 // as IssuesResponse JSON, ready for ConvertSonarqubeToHDF.
 type SonarqubeFetcher struct {
-	client   *http.Client
-	params   SonarqubeParams
-	maxPages int // 0 → sonarqubeMaxPages
+	client        *http.Client
+	params        SonarqubeParams
+	maxPages      int    // 0 → sonarqubeMaxPages
+	serverVersion string // set externally to skip /api/server/version probe
+	useBearer     bool   // determined from server version at Fetch time
 }
 
 // NewSonarqubeFetcher creates a fetcher after validating the server URL.
@@ -75,6 +80,12 @@ func newSonarqubeFetcherWithClient(params SonarqubeParams, client *http.Client) 
 	}, nil
 }
 
+// SetServerVersion overrides the auto-detected server version.
+// Use this when the user explicitly specifies the SonarQube version.
+func (f *SonarqubeFetcher) SetServerVersion(v string) {
+	f.serverVersion = v
+}
+
 // validateSonarqubeURL ensures the URL parses and uses only http or https.
 func validateSonarqubeURL(rawURL string) error {
 	if rawURL == "" {
@@ -85,6 +96,76 @@ func validateSonarqubeURL(rawURL string) error {
 		return err
 	}
 	return nil
+}
+
+// sonarqubeUseBearerAuth returns true if the server version requires Bearer
+// token auth (SonarQube 10+). Older versions use the token as HTTP Basic
+// username with empty password. Returns true for unrecognized versions as
+// a safe default (Bearer is the modern standard).
+func sonarqubeUseBearerAuth(serverVersion string) bool {
+	major := sonarqubeMajorVersion(serverVersion)
+	// SQ 10+ supports Bearer, SQ 25+ requires it.
+	// Versions <10 use token-as-username Basic auth.
+	return major == 0 || major >= 10
+}
+
+// sonarqubeMajorVersion extracts the major version number from a version
+// string like "10.8.1" or "2025.1.0". Returns 0 if unparseable.
+func sonarqubeMajorVersion(version string) int {
+	version = strings.TrimSpace(version)
+	if version == "" {
+		return 0
+	}
+	parts := strings.SplitN(version, ".", 2)
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0
+	}
+	return major
+}
+
+// fetchServerVersion calls /api/server/version to determine the SonarQube
+// server version. Returns empty string on failure (non-fatal — version
+// detection is best-effort).
+func (f *SonarqubeFetcher) fetchServerVersion(ctx context.Context, token string) string {
+	apiURL, err := ValidateAndBuildAPIURL(f.params.URL, "/api/server/version", "SonarQube")
+	if err != nil {
+		return ""
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL.String(), http.NoBody)
+	if err != nil {
+		return ""
+	}
+	// Try Bearer first; /api/server/version is often unauthenticated but
+	// some installations lock it down.
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := f.client.Do(req) //#nosec G704 -- host is user-configured SonarQube server
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close() //nolint:errcheck
+
+	if resp.StatusCode != http.StatusOK {
+		return ""
+	}
+
+	// Version is returned as plain text (e.g. "10.8.1")
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(body))
+}
+
+// setAuthHeader sets the appropriate auth header based on server version.
+func (f *SonarqubeFetcher) setAuthHeader(req *http.Request, token string) {
+	if f.useBearer {
+		req.Header.Set("Authorization", "Bearer "+token)
+	} else {
+		req.SetBasicAuth(token, "")
+	}
 }
 
 // Fetch retrieves all issues from the SonarQube API and returns them as
@@ -103,6 +184,19 @@ func (f *SonarqubeFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, sonarqubeFetchTimeout)
 		defer cancel()
+	}
+
+	// Detect server version and set auth method accordingly
+	serverVersion := f.serverVersion
+	if serverVersion == "" {
+		serverVersion = f.fetchServerVersion(ctx, token)
+		if serverVersion != "" {
+			log.Printf("SonarQube server version: %s", serverVersion)
+		}
+	}
+	f.useBearer = sonarqubeUseBearerAuth(serverVersion)
+	if !f.useBearer {
+		log.Printf("Using Basic auth (token-as-username) for SonarQube %s", serverVersion)
 	}
 
 	limit := f.maxPages
@@ -161,12 +255,13 @@ func (f *SonarqubeFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	}
 
 	result := sonarqubeconv.IssuesResponse{
-		Total:      total,
-		Page:       1,
-		PageSize:   sonarqubePageSize,
-		Issues:     allIssues,
-		Components: components,
-		Rules:      rules,
+		Total:         total,
+		Page:          1,
+		PageSize:      sonarqubePageSize,
+		Issues:        allIssues,
+		Components:    components,
+		Rules:         rules,
+		ServerVersion: serverVersion,
 	}
 
 	return json.Marshal(result)
@@ -201,8 +296,7 @@ func (f *SonarqubeFetcher) fetchPage(ctx context.Context, token string, page int
 		return nil, fmt.Errorf("building request: %w", err)
 	}
 
-	// Token is passed as Bearer auth; never logged or included in error messages
-	req.Header.Set("Authorization", "Bearer "+token)
+	f.setAuthHeader(req, token)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := f.client.Do(req) //#nosec G704 -- host is user-configured SonarQube server; scheme validated in ValidateAndBuildAPIURL
@@ -290,7 +384,7 @@ func (f *SonarqubeFetcher) fetchRuleDetail(ctx context.Context, token, ruleKey s
 		return nil, fmt.Errorf("building request: %w", err)
 	}
 
-	req.Header.Set("Authorization", "Bearer "+token)
+	f.setAuthHeader(req, token)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := f.client.Do(req) //#nosec G704 -- host is user-configured SonarQube server
