@@ -26,6 +26,16 @@ const OSCAL_SPECS: OscalFingerprintSpec[] = [
   { key: 'component-definition', id: 'oscal-component-to-hdf', label: 'OSCAL Component', outputType: 'baseline' },
 ];
 
+function oscalDetectVersion(rootKey: string, input: unknown): string {
+  if (typeof input !== 'object' || input === null) return '';
+  const obj = input as Record<string, unknown>;
+  const root = obj[rootKey] as Record<string, unknown> | undefined;
+  if (!root || typeof root !== 'object') return '';
+  const meta = root.metadata as Record<string, unknown> | undefined;
+  if (!meta || typeof meta !== 'object') return '';
+  return typeof meta['oscal-version'] === 'string' ? meta['oscal-version'] : '';
+}
+
 function buildFingerprint(spec: OscalFingerprintSpec): ConverterFingerprint {
   return {
     id: spec.id,
@@ -39,6 +49,7 @@ function buildFingerprint(spec: OscalFingerprintSpec): ConverterFingerprint {
       if (spec.key in obj) return 1.0;
       return 0;
     },
+    detectVersion: (input: unknown): string => oscalDetectVersion(spec.key, input),
   };
 }
 

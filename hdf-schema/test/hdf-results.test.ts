@@ -223,7 +223,7 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should validate baseline with sha512 checksum', () => {
       const baseline = {
         name: 'test-baseline',
-        requirements: [],
+        requirements: [createMinimalRequirement()],
         checksum: { algorithm: 'sha512', value: 'longer-sha512-hash-value' },
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
@@ -242,7 +242,7 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should accept baseline without checksum', () => {
       const baseline = {
         name: 'test-baseline',
-        requirements: [],
+        requirements: [createMinimalRequirement()],
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
       expect(validate(doc)).toBe(true);
@@ -251,7 +251,7 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should accept baseline without supports field', () => {
       const baseline = {
         name: 'test-baseline',
-        requirements: [],
+        requirements: [createMinimalRequirement()],
         checksum: { algorithm: 'sha256', value: 'abc123' },
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
@@ -261,7 +261,7 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should accept baseline without attributes field', () => {
       const baseline = {
         name: 'test-baseline',
-        requirements: [],
+        requirements: [createMinimalRequirement()],
         checksum: { algorithm: 'sha256', value: 'abc123' },
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
@@ -271,7 +271,7 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should accept baseline without groups field', () => {
       const baseline = {
         name: 'test-baseline',
-        requirements: [],
+        requirements: [createMinimalRequirement()],
         checksum: { algorithm: 'sha256', value: 'abc123' },
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
@@ -281,7 +281,7 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should accept baseline with supports field when provided', () => {
       const baseline = {
         name: 'test-baseline',
-        requirements: [],
+        requirements: [createMinimalRequirement()],
         checksum: { algorithm: 'sha256', value: 'abc123' },
         supports: [{ platformFamily: 'redhat', platformName: 'centos' }],
       };

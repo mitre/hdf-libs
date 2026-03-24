@@ -136,4 +136,38 @@ describe('oscal-to-hdf fingerprints', () => {
     expect(getFingerprint('oscal-ssp-to-hdf')).toBeDefined();
     expect(getFingerprint('oscal-catalog-to-hdf')).toBeDefined();
   });
+
+  describe('version detection', () => {
+    it('detects oscal-version from SAR metadata', () => {
+      const sarWithVersion = JSON.stringify({
+        'assessment-results': { uuid: 'sar-1', metadata: { 'oscal-version': '1.0.4', title: 'Test' } },
+      });
+      const result = detectConverter(sarWithVersion);
+      expect(result).toBeDefined();
+      expect(result!.fingerprint.id).toBe('oscal-sar-to-hdf');
+      expect(result!.version).toBe('1.0.4');
+    });
+
+    it('detects oscal-version from catalog metadata', () => {
+      const catWithVersion = JSON.stringify({
+        catalog: { uuid: 'cat-1', metadata: { 'oscal-version': '1.1.3', title: 'NIST 800-53' } },
+      });
+      const result = detectConverter(catWithVersion);
+      expect(result).toBeDefined();
+      expect(result!.version).toBe('1.1.3');
+    });
+
+    it('returns empty version when metadata has no oscal-version', () => {
+      const result = detectConverter(OSCAL_SSP);
+      expect(result).toBeDefined();
+      expect(result!.version).toBe('');
+    });
+
+    it('returns empty version when metadata is missing', () => {
+      const noMeta = JSON.stringify({ catalog: { uuid: 'cat-1' } });
+      const result = detectConverter(noMeta);
+      expect(result).toBeDefined();
+      expect(result!.version).toBe('');
+    });
+  });
 });

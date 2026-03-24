@@ -19,6 +19,27 @@ var oscalSpecs = []oscalFingerprintSpec{
 	{key: "component-definition", id: "oscal-component-to-hdf", label: "OSCAL Component", outputType: registry.OutputBaseline},
 }
 
+// oscalDetectVersion extracts the OSCAL schema version from
+// metadata.oscal-version inside the document's root key.
+func oscalDetectVersion(rootKey string, input any) string {
+	obj, ok := input.(map[string]any)
+	if !ok {
+		return ""
+	}
+	root, ok := obj[rootKey].(map[string]any)
+	if !ok {
+		return ""
+	}
+	meta, ok := root["metadata"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	if v, ok := meta["oscal-version"].(string); ok {
+		return v
+	}
+	return ""
+}
+
 func init() {
 	for _, spec := range oscalSpecs {
 		spec := spec // capture loop variable
@@ -37,6 +58,9 @@ func init() {
 					return 1.0
 				}
 				return 0
+			},
+			DetectVersion: func(input any) string {
+				return oscalDetectVersion(spec.key, input)
 			},
 		})
 	}

@@ -1,6 +1,7 @@
 package oscal
 
 import (
+	"log"
 	"strings"
 	"time"
 
@@ -26,7 +27,16 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(sar.Results))
 	for i := range sar.Results {
-		baseline := resultToEvaluatedBaseline(&sar.Results[i], sar, rawInput)
+		r := &sar.Results[i]
+		if len(r.Findings) == 0 {
+			title := r.Title
+			if title == "" {
+				title = r.UUID
+			}
+			log.Printf("WARNING: Skipping assessment result %q: no findings (empty result set)", title)
+			continue
+		}
+		baseline := resultToEvaluatedBaseline(r, sar, rawInput)
 		baselines = append(baselines, baseline)
 	}
 

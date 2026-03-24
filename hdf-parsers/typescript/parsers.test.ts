@@ -38,11 +38,12 @@ describe('HDF Results Parsing', () => {
     });
 
     it('should parse HDF results from bytes', () => {
+      const minReq = { id: 'SV-1', impact: 0.5, tags: {}, descriptions: [{ label: 'default', data: 'Test' }], results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }] };
       const validJson = JSON.stringify({
         baselines: [{
           name: 'Test',
           checksum: { algorithm: 'sha256', value: 'test' },
-          requirements: []
+          requirements: [minReq]
         }],
         targets: [],
         statistics: {}
@@ -293,11 +294,12 @@ describe('HDF Baseline Parsing', () => {
 
 describe('Auto-Detection Parsing', () => {
   it('should auto-detect and parse HDF Results', () => {
+    const minReq = { id: 'SV-1', impact: 0.5, tags: {}, descriptions: [{ label: 'default', data: 'Test' }], results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }] };
     const resultsJson = JSON.stringify({
       baselines: [{
         name: 'Test',
         checksum: { algorithm: 'sha256', value: 'test' },
-        requirements: []
+        requirements: [minReq]
       }],
       targets: [],
       statistics: {}

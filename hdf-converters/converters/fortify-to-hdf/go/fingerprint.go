@@ -1,11 +1,15 @@
 package fortify
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/mitre/hdf-converters/registry"
 	shared "github.com/mitre/hdf-converters/shared/go"
 )
+
+var fvdlVersionRe = regexp.MustCompile(`<FVDL\b[^>]*\bversion="([^"]+)"`)
+
 
 func init() {
 	registry.Register(registry.ConverterFingerprint{
@@ -27,6 +31,17 @@ func init() {
 				return 1.0
 			}
 			return 0.95
+		},
+		DetectVersion: func(input any) string {
+			s, ok := input.(string)
+			if !ok {
+				return ""
+			}
+			m := fvdlVersionRe.FindStringSubmatch(s)
+			if len(m) > 1 {
+				return m[1]
+			}
+			return ""
 		},
 	})
 }

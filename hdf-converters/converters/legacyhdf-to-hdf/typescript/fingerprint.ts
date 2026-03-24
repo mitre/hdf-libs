@@ -39,6 +39,11 @@ export const legacyHdfFingerprint: ConverterFingerprint = {
 
     return 0;
   },
+  detectVersion: (input: unknown): string => {
+    if (typeof input !== 'object' || input === null) return '';
+    const obj = input as Record<string, unknown>;
+    return typeof obj.version === 'string' ? obj.version : '';
+  },
 };
 
 export function register(): void {

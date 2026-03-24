@@ -123,7 +123,8 @@
           "items": {
             "$ref": "#/$defs/Evaluated_Requirement"
           },
-          "description": "The set of requirements including any findings."
+          "minItems": 1,
+          "description": "The set of requirements including any findings. A baseline must have at least one requirement."
         },
         "groups": {
           "type": "array",

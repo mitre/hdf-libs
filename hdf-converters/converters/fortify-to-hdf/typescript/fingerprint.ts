@@ -26,6 +26,11 @@ export const fortifyFingerprint: ConverterFingerprint = {
     }
     return 0;
   },
+  detectVersion: (input: unknown): string => {
+    if (typeof input !== 'string') return '';
+    const m = input.match(/<FVDL\b[^>]*\bversion="([^"]+)"/);
+    return m?.[1] ?? '';
+  },
 };
 
 export function register(): void {

@@ -22,5 +22,15 @@ func init() {
 			}
 			return 0
 		},
+		DetectVersion: func(input any) string {
+			s, ok := input.(string)
+			if !ok {
+				return ""
+			}
+			if shared.ExtractXMLRootElement(s) == "NessusClientData_v2" {
+				return "2"
+			}
+			return ""
+		},
 	})
 }

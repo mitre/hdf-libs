@@ -146,11 +146,11 @@ func TestConvertAssessmentResultsToHDF_MultipleResultSets(t *testing.T) {
 	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0-test")
 	require.NoError(t, err)
 
-	// The FedRAMP SAR fixture has 3 result sets (2023, 2022, 2021)
-	assert.Equal(t, 3, len(results.Baselines), "should have one baseline per result set")
-
-	// First baseline should have findings (requirements), others may be empty
-	assert.NotEmpty(t, results.Baselines[0].Requirements, "first result set should have requirements from findings")
+	// The FedRAMP SAR fixture has 3 result sets (2023, 2022, 2021).
+	// Only 2023 has findings; 2022 and 2021 are empty template stubs
+	// and should be skipped with a warning.
+	assert.Equal(t, 1, len(results.Baselines), "should only include baselines with findings (empty result sets are skipped)")
+	assert.NotEmpty(t, results.Baselines[0].Requirements, "baseline should have requirements from findings")
 }
 
 func TestConvertAssessmentResultsToHDF_FindingsGroupedByControlID(t *testing.T) {

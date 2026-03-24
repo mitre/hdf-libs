@@ -19,6 +19,11 @@ export const nessusFingerprint: ConverterFingerprint = {
     if (!root) return 0;
     return root === 'NessusClientData_v2' ? 1.0 : 0;
   },
+  detectVersion: (input: unknown): string => {
+    if (typeof input !== 'string') return '';
+    const root = extractXmlRootElement(input);
+    return root === 'NessusClientData_v2' ? '2' : '';
+  },
 };
 
 export function register(): void {

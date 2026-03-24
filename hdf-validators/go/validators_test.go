@@ -227,7 +227,7 @@ func TestSetSchemaDir(t *testing.T) {
 			"baselines": [{
 				"name": "Test",
 				"checksum": { "algorithm": "sha256", "value": "abc" },
-				"requirements": []
+				"requirements": [{"id": "SV-1", "impact": 0.5, "tags": {}, "descriptions": [{"label": "default", "data": "Test"}], "results": [{"status": "passed", "codeDesc": "Test", "startTime": "2025-01-01T00:00:00Z"}]}]
 			}],
 			"targets": [],
 			"statistics": {}

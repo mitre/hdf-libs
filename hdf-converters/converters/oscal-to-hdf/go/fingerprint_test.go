@@ -74,5 +74,34 @@ func TestOscalFingerprints(t *testing.T) {
 			require.NotNil(t, fp)
 			assert.Equal(t, 0.0, fp.Fingerprint("not a map"))
 		})
+
+		t.Run(tc.id+" detects oscal-version from metadata", func(t *testing.T) {
+			fp := registry.GetFingerprint(tc.id)
+			require.NotNil(t, fp)
+			require.NotNil(t, fp.DetectVersion, "OSCAL fingerprints should have DetectVersion")
+
+			input := map[string]any{
+				tc.key: map[string]any{
+					"uuid": "test-uuid",
+					"metadata": map[string]any{
+						"oscal-version": "1.0.4",
+						"title":         "Test",
+					},
+				},
+			}
+			assert.Equal(t, "1.0.4", fp.DetectVersion(input))
+		})
+
+		t.Run(tc.id+" returns empty version when metadata missing", func(t *testing.T) {
+			fp := registry.GetFingerprint(tc.id)
+			require.NotNil(t, fp)
+
+			input := map[string]any{
+				tc.key: map[string]any{
+					"uuid": "test-uuid",
+				},
+			}
+			assert.Equal(t, "", fp.DetectVersion(input))
+		})
 	}
 }
