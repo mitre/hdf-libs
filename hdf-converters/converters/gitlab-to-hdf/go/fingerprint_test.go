@@ -4,70 +4,23 @@ import (
 	"testing"
 
 	"github.com/mitre/hdf-converters/registry"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/mitre/hdf-converters/registry/fptest"
 )
 
 func TestGitlabFingerprint(t *testing.T) {
-	t.Run("is registered with correct metadata", func(t *testing.T) {
-		fp := registry.GetFingerprint("gitlab-to-hdf")
-		require.NotNil(t, fp, "gitlab-to-hdf should be registered via init()")
-		assert.Equal(t, "GitLab", fp.Label)
-		assert.Equal(t, registry.DirectionIngest, fp.Direction)
-		assert.Equal(t, registry.FamilyJSON, fp.InputFamily)
-		assert.Equal(t, registry.OutputResults, fp.OutputType)
-	})
-
-	t.Run("detects vulnerabilities with scan.type at confidence 0.9", func(t *testing.T) {
-		input := map[string]any{
-			"vulnerabilities": []any{},
-			"scan": map[string]any{
-				"type": "sast",
-			},
-		}
-		fp := registry.GetFingerprint("gitlab-to-hdf")
-		require.NotNil(t, fp)
-		assert.Equal(t, 0.9, fp.Fingerprint(input))
-	})
-
-	t.Run("detects vulnerabilities with scan but no type at confidence 0.7", func(t *testing.T) {
-		input := map[string]any{
-			"vulnerabilities": []any{},
-			"scan":            map[string]any{},
-		}
-		fp := registry.GetFingerprint("gitlab-to-hdf")
-		require.NotNil(t, fp)
-		assert.Equal(t, 0.7, fp.Fingerprint(input))
-	})
-
-	t.Run("detects bare vulnerabilities array at confidence 0.5", func(t *testing.T) {
-		input := map[string]any{
-			"vulnerabilities": []any{},
-		}
-		fp := registry.GetFingerprint("gitlab-to-hdf")
-		require.NotNil(t, fp)
-		assert.Equal(t, 0.5, fp.Fingerprint(input))
-	})
-
-	t.Run("does not match different format", func(t *testing.T) {
-		input := map[string]any{
-			"version": "2.1.0",
-			"runs":    []any{},
-		}
-		fp := registry.GetFingerprint("gitlab-to-hdf")
-		require.NotNil(t, fp)
-		assert.Equal(t, 0.0, fp.Fingerprint(input))
-	})
-
-	t.Run("does not match nil input", func(t *testing.T) {
-		fp := registry.GetFingerprint("gitlab-to-hdf")
-		require.NotNil(t, fp)
-		assert.Equal(t, 0.0, fp.Fingerprint(nil))
-	})
-
-	t.Run("does not match string input", func(t *testing.T) {
-		fp := registry.GetFingerprint("gitlab-to-hdf")
-		require.NotNil(t, fp)
-		assert.Equal(t, 0.0, fp.Fingerprint("not a map"))
+	fptest.RunFingerprintTests(t, fptest.FingerprintSpec{
+		ID:          "gitlab-to-hdf",
+		Label:       "GitLab",
+		Direction:   registry.DirectionIngest,
+		InputFamily: registry.FamilyJSON,
+		OutputType:  registry.OutputResults,
+		Positive: []fptest.DetectionCase{
+			{Name: "detects vulnerabilities with scan.type at confidence 0.9", Input: map[string]any{"vulnerabilities": []any{}, "scan": map[string]any{"type": "sast"}}, Confidence: 0.9},
+			{Name: "detects vulnerabilities with scan but no type at confidence 0.7", Input: map[string]any{"vulnerabilities": []any{}, "scan": map[string]any{}}, Confidence: 0.7},
+			{Name: "detects bare vulnerabilities array at confidence 0.5", Input: map[string]any{"vulnerabilities": []any{}}, Confidence: 0.5},
+		},
+		Negative: []fptest.DetectionCase{
+			{Name: "does not match different format", Input: map[string]any{"version": "2.1.0", "runs": []any{}}},
+		},
 	})
 }
