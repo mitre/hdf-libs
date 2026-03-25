@@ -1,0 +1,75 @@
+name: Deploy Schemas
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'hdf-schema/src/schemas/**'
+
+permissions:
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy schemas to GitHub Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup
+
+      - name: Build schemas
+        run: cd hdf-schema && pnpm build:schemas
+
+      - name: Prepare Pages directory
+        run: |
+          mkdir -p _site/schemas
+          # Copy bundled schemas (these are the fully resolved versions)
+          cp hdf-schema/dist/schemas/*.schema.json _site/schemas/
+
+          # Create versioned directories matching $id URLs
+          for schema in _site/schemas/*.schema.json; do
+            basename=$(basename "$schema" .schema.json)
+            mkdir -p "_site/schemas/$basename/v2.0.0"
+            cp "$schema" "_site/schemas/$basename/v2.0.0/index.json"
+          done
+
+          # Create index page
+          cat > _site/index.html << 'HTML'
+          <!DOCTYPE html>
+          <html>
+          <head><title>HDF Schemas</title></head>
+          <body>
+          <h1>Heimdall Data Format (HDF) v2.0 Schemas</h1>
+          <ul>
+            <li><a href="schemas/hdf-results/v2.0.0/">hdf-results v2.0.0</a></li>
+            <li><a href="schemas/hdf-baseline/v2.0.0/">hdf-baseline v2.0.0</a></li>
+            <li><a href="schemas/hdf-system/v2.0.0/">hdf-system v2.0.0</a></li>
+            <li><a href="schemas/hdf-plan/v2.0.0/">hdf-plan v2.0.0</a></li>
+            <li><a href="schemas/hdf-amendments/v2.0.0/">hdf-amendments v2.0.0</a></li>
+            <li><a href="schemas/hdf-comparison/v2.0.0/">hdf-comparison v2.0.0</a></li>
+            <li><a href="schemas/hdf-evidence-package/v2.0.0/">hdf-evidence-package v2.0.0</a></li>
+          </ul>
+          <p><a href="https://github.com/mitre/hdf-libs">Source on GitHub</a></p>
+          </body>
+          </html>
+          HTML
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
