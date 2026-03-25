@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertMsftDefenderEndpointToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,16 +13,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'msft-defender-endpoint-to-hdf',
+  convertFn: convertMsftDefenderEndpointToHdf,
+  minimalFixture: 'minimal.json',
+});
+
 describe('msft-defender-endpoint to HDF converter', async () => {
   describe('error handling', async () => {
-    it('should throw on empty input', async () => {
-      await expect(convertMsftDefenderEndpointToHdf('')).rejects.toThrow();
-    });
-
-    it('should throw on invalid JSON', async () => {
-      await expect(convertMsftDefenderEndpointToHdf('not json')).rejects.toThrow();
-    });
-
     it('should throw when value array is missing', async () => {
       await expect(convertMsftDefenderEndpointToHdf(JSON.stringify({ foo: 'bar' }))).rejects.toThrow(
         'missing or invalid value array',

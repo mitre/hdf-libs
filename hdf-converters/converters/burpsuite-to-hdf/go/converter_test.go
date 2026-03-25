@@ -34,15 +34,13 @@ func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedR
 
 // --- Validation tests ---
 
-func TestConvertBurpsuiteToHDF_InvalidXML(t *testing.T) {
-	_, err := ConvertBurpsuiteToHDF([]byte("not valid xml"), testConverterVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse BurpSuite XML")
-}
-
-func TestConvertBurpsuiteToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertBurpsuiteToHDF([]byte(""), testConverterVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "burpsuite-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertBurpsuiteToHDF(input, testConverterVersion) },
+		MinimalFixture: "zero.webappsecurity.com.xml",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 func TestConvertBurpsuiteToHDF_EmptyIssues(t *testing.T) {

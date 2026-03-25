@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertTrufflehogToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,16 +13,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'trufflehog-to-hdf',
+  convertFn: convertTrufflehogToHdf,
+  minimalFixture: 'minimal.json',
+});
+
 describe('trufflehog to HDF converter', async () => {
   describe('input validation', async () => {
-    it('should throw on empty input', async () => {
-      await expect(convertTrufflehogToHdf('')).rejects.toThrow();
-    });
-
-    it('should throw on invalid JSON', async () => {
-      await expect(convertTrufflehogToHdf('not json')).rejects.toThrow();
-    });
-
     it('should throw on empty array', async () => {
       await expect(convertTrufflehogToHdf('[]')).rejects.toThrow(/no findings/);
     });

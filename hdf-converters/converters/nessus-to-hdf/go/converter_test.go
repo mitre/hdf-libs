@@ -110,13 +110,13 @@ func TestConvertNessusToHDF_Compliance(t *testing.T) {
 	shared.WriteOutput(t, "nessus-to-hdf", "compliance.json", result)
 }
 
-func TestConvertNessusToHDF_InvalidXML(t *testing.T) {
-	invalidXML := []byte("not valid xml")
-
-	result, err := ConvertNessusToHDF(invalidXML, converterVersion)
-	assert.Error(t, err, "Should fail on invalid XML")
-	assert.Nil(t, result, "Result should be nil on error")
-	assert.Contains(t, err.Error(), "failed to parse Nessus XML")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "nessus-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertNessusToHDF(input, converterVersion) },
+		MinimalFixture: "compliance.nessus",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 func TestConvertNessusToHDF_EmptyHosts(t *testing.T) {
@@ -318,12 +318,6 @@ func TestConvertNessusToHDF_EntityExpansion(t *testing.T) {
 	_, err := ConvertNessusToHDF(input, converterVersion)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity declarations")
-}
-
-func TestConvertNessusToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertNessusToHDF([]byte{}, converterVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "empty input")
 }
 
 func TestSnapshots(t *testing.T) {

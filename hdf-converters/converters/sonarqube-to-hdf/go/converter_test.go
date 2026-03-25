@@ -265,10 +265,12 @@ func TestExtractTags_KeyValueParsing(t *testing.T) {
 	assert.Len(t, allTags["category"], 2)
 }
 
-func TestConvertSonarqubeToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertSonarqubeToHDF([]byte("not valid json"), testConverterVersion)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid SonarQube JSON")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "sonarqube-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertSonarqubeToHDF(input, testConverterVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestConvertSonarqubeToHDF_MissingIssuesField(t *testing.T) {

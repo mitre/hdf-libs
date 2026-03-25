@@ -3,6 +3,7 @@ import {dirname, join} from 'path';
 import {fileURLToPath} from 'url';
 import {describe, expect, it} from 'vitest';
 import {convertGitlabToHdf} from './converter';
+import {runConverterContractTests} from '../../../shared/typescript/converter-contract.js';
 import {parseJSON} from '@mitre/hdf-utilities';
 import type {HdfResults} from '@mitre/hdf-schema';
 
@@ -13,16 +14,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'gitlab-to-hdf',
+  convertFn: convertGitlabToHdf,
+  minimalFixture: 'minimal-dast.json',
+});
+
 describe('GitLab to HDF converter', () => {
   describe('validation', () => {
-    it('should throw error for empty input', async () => {
-      await expect(convertGitlabToHdf('')).rejects.toThrow();
-    });
-
-    it('should throw error for invalid JSON', async () => {
-      await expect(convertGitlabToHdf('not valid json')).rejects.toThrow();
-    });
-
     it('should handle missing vulnerabilities array', async () => {
       const input = JSON.stringify({version: '15.1.0', scan: {type: 'sast'}});
       const output = await convertGitlabToHdf(input);

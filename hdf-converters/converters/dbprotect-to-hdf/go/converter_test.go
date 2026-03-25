@@ -32,16 +32,13 @@ func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedR
 
 // ---- Input validation ----
 
-func TestConvertDbprotect_EmptyInput(t *testing.T) {
-	_, err := ConvertDbprotectToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "dbprotect")
-}
-
-func TestConvertDbprotect_InvalidXML(t *testing.T) {
-	_, err := ConvertDbprotectToHDF([]byte("not valid xml"), testVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "dbprotect")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "dbprotect-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertDbprotectToHDF(input, testVersion) },
+		MinimalFixture: "sample-check-results.xml",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 // ---- Check Results Details fixture ----

@@ -40,14 +40,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertJfrogXray_InvalidJSON(t *testing.T) {
-	_, err := ConvertJfrogXrayToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertJfrogXray_EmptyInput(t *testing.T) {
-	_, err := ConvertJfrogXrayToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "jfrog-xray-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertJfrogXrayToHDF(input, testVersion) },
+		MinimalFixture: "jfrog_xray_sample.json",
+	})
 }
 
 // ---- Baseline structure ----

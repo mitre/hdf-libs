@@ -35,15 +35,12 @@ func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedR
 
 // --- Validation tests ---
 
-func TestConvertZapToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertZapToHDF([]byte("not valid json"), testConverterVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid ZAP JSON")
-}
-
-func TestConvertZapToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertZapToHDF([]byte(""), testConverterVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "zap-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertZapToHDF(input, testConverterVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestConvertZapToHDF_MissingSiteArray(t *testing.T) {

@@ -27,18 +27,15 @@ func loadFixture(t *testing.T, name string) []byte {
 
 // --- Error handling tests ---
 
-func TestConvertXccdfResultsToHDF_EmptyInput(t *testing.T) {
-	result, err := ConvertXccdfResultsToHDF([]byte{}, converterVersion)
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "empty input")
-}
-
-func TestConvertXccdfResultsToHDF_InvalidXML(t *testing.T) {
-	result, err := ConvertXccdfResultsToHDF([]byte("not valid xml at all"), converterVersion)
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "not an XCCDF or ARF")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName: "xccdf-results-to-hdf",
+		ConvertFn: func(input []byte) (interface{}, error) {
+			return ConvertXccdfResultsToHDF(input, converterVersion)
+		},
+		MinimalFixture: "minimal.xml",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 func TestConvertXccdfResultsToHDF_NonXccdfXML(t *testing.T) {

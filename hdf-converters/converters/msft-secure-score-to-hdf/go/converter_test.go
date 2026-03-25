@@ -40,14 +40,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertMsftSecureScore_InvalidJSON(t *testing.T) {
-	_, err := ConvertMsftSecureScoreToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertMsftSecureScore_EmptyInput(t *testing.T) {
-	_, err := ConvertMsftSecureScoreToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "msft-secure-score-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertMsftSecureScoreToHDF(input, testVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestConvertMsftSecureScore_MissingSecureScore(t *testing.T) {

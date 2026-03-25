@@ -221,6 +221,54 @@ func normalizeValue(v interface{}) {
 	}
 }
 
+// ConverterContractSpec defines the inputs for RunConverterContractTests.
+type ConverterContractSpec struct {
+	// ConverterName is the directory name under converters/ (e.g. "gosec-to-hdf").
+	ConverterName string
+	// ConvertFn is the converter function to test.
+	ConvertFn ConvertFn
+	// MinimalFixture is the path relative to fixtures/input/ (e.g. "minimal.json").
+	MinimalFixture string
+	// InvalidInput is the bytes to use for the invalid input test.
+	// Defaults to "not valid json" if empty.
+	InvalidInput string
+}
+
+// RunConverterContractTests runs universal converter contract tests:
+// empty input fails, invalid input fails, minimal fixture converts
+// without error. Call this alongside RunSnapshotTests to cover both
+// the contract and the output correctness.
+func RunConverterContractTests(t *testing.T, spec ConverterContractSpec) {
+	t.Helper()
+
+	t.Run("rejects empty input", func(t *testing.T) {
+		_, err := spec.ConvertFn([]byte(""))
+		require.Error(t, err, "empty input should produce an error")
+	})
+
+	t.Run("rejects invalid input", func(t *testing.T) {
+		invalid := spec.InvalidInput
+		if invalid == "" {
+			invalid = "not valid json"
+		}
+		_, err := spec.ConvertFn([]byte(invalid))
+		require.Error(t, err, "invalid input should produce an error")
+	})
+
+	t.Run("converts minimal fixture", func(t *testing.T) {
+		inputPath := filepath.Join(GetConvertersDir(), spec.ConverterName, "fixtures", "input", spec.MinimalFixture)
+		data, err := os.ReadFile(inputPath)
+		if err != nil {
+			t.Skipf("Fixture not found: %s", inputPath)
+			return
+		}
+
+		result, err := spec.ConvertFn(data)
+		require.NoError(t, err, "minimal fixture should convert without error")
+		require.NotNil(t, result, "converter output should not be nil")
+	})
+}
+
 // LoadJSON loads and unmarshals a JSON file
 func LoadJSON(t *testing.T, path string, v interface{}) {
 	data, err := os.ReadFile(path)

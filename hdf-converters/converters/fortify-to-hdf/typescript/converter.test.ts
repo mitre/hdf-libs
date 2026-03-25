@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertFortifyToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -22,17 +23,13 @@ function findRequirement(baselines: Array<Record<string, unknown>>, id: string) 
   return undefined;
 }
 
+runConverterContractTests({
+  converterName: 'fortify-to-hdf',
+  convertFn: convertFortifyToHdf,
+  minimalFixture: 'fortify_webgoat_results.fvdl',
+});
+
 describe('Fortify to HDF Converter', () => {
-  // --- Validation tests ---
-
-  it('should reject empty input', async () => {
-    await expect(convertFortifyToHdf('')).rejects.toThrow('empty input');
-  });
-
-  it('should reject invalid XML', async () => {
-    await expect(convertFortifyToHdf('not valid xml')).rejects.toThrow();
-  });
-
   // --- Real fixture tests ---
 
   describe('with webgoat FVDL fixture', () => {

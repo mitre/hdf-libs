@@ -40,14 +40,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertCycloneDX_EmptyInput(t *testing.T) {
-	_, err := ConvertCycloneDXToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertCycloneDX_InvalidJSON(t *testing.T) {
-	_, err := ConvertCycloneDXToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "cyclonedx-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertCycloneDXToHDF(input, testVersion) },
+		MinimalFixture: "minimal-vulns.json",
+	})
 }
 
 func TestConvertCycloneDX_MissingBomFormat(t *testing.T) {

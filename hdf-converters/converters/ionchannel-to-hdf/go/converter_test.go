@@ -31,16 +31,12 @@ func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedR
 
 // ---- Input validation ----
 
-func TestConvert_InvalidJSON(t *testing.T) {
-	_, err := ConvertIonChannelToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse Ion Channel JSON")
-}
-
-func TestConvert_EmptyInput(t *testing.T) {
-	_, err := ConvertIonChannelToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "empty input")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "ionchannel-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertIonChannelToHDF(input, testVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestConvert_MissingScanSummaries(t *testing.T) {

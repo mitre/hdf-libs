@@ -54,14 +54,12 @@ func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedR
 
 // ---- Input validation ----
 
-func TestConvertConveyor_EmptyInput(t *testing.T) {
-	_, err := ConvertConveyorToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertConveyor_InvalidJSON(t *testing.T) {
-	_, err := ConvertConveyorToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "conveyor-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertConveyorToHDF(input, testVersion) },
+		MinimalFixture: "sample-results.json",
+	})
 }
 
 func TestConvertConveyor_MissingApiResponse(t *testing.T) {

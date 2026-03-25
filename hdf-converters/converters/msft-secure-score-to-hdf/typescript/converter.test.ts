@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertMsftSecureScoreToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,16 +13,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'msft-secure-score-to-hdf',
+  convertFn: convertMsftSecureScoreToHdf,
+  minimalFixture: 'minimal.json',
+});
+
 describe('msft-secure-score to HDF converter', async () => {
   describe('input validation', async () => {
-    it('should throw on invalid JSON', async () => {
-      await expect(convertMsftSecureScoreToHdf('not json')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertMsftSecureScoreToHdf('')).rejects.toThrow();
-    });
-
     it('should throw when secureScore is missing', async () => {
       await expect(convertMsftSecureScoreToHdf('{"profiles": {"value": []}}')).rejects.toThrow();
     });

@@ -325,22 +325,12 @@ func TestChecksumCalculation(t *testing.T) {
 	}
 }
 
-func TestInvalidJSON(t *testing.T) {
-	input := []byte("not valid json")
-	_, err := ConvertGrypeToHDF(input, testConverterVersion)
-
-	if err == nil {
-		t.Error("Expected error for invalid JSON")
-	}
-}
-
-func TestEmptyInput(t *testing.T) {
-	input := []byte("")
-	_, err := ConvertGrypeToHDF(input, testConverterVersion)
-
-	if err == nil {
-		t.Error("Expected error for empty input")
-	}
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "grype-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertGrypeToHDF(input, testConverterVersion) },
+		MinimalFixture: "amazon.json",
+	})
 }
 
 func TestGetVulnDescription_RelatedFallback(t *testing.T) {

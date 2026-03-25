@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertDbprotectToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,17 +13,13 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'dbprotect-to-hdf',
+  convertFn: convertDbprotectToHdf,
+  minimalFixture: 'sample-check-results.xml',
+});
+
 describe('dbprotect to HDF converter', () => {
-  describe('input validation', () => {
-    it('should throw on invalid XML', async () => {
-      await expect(convertDbprotectToHdf('not valid xml')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertDbprotectToHdf('')).rejects.toThrow();
-    });
-  });
-
   describe('check results details', () => {
     it('should produce valid HDF from check results fixture', async () => {
       const output = await convertDbprotectToHdf(loadFixture('sample-check-results.xml'));

@@ -40,14 +40,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertNeuVector_InvalidJSON(t *testing.T) {
-	_, err := ConvertNeuVectorToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertNeuVector_EmptyInput(t *testing.T) {
-	_, err := ConvertNeuVectorToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "neuvector-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertNeuVectorToHDF(input, testVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 // ---- Minimal fixture: baseline structure ----

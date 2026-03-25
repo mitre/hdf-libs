@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertScoutsuiteToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -22,16 +23,14 @@ function findRequirement(baselines: Array<Record<string, unknown>>, id: string) 
   return undefined;
 }
 
+runConverterContractTests({
+  converterName: 'scoutsuite-to-hdf',
+  convertFn: convertScoutsuiteToHdf,
+  minimalFixture: 'scoutsuite_sample.js',
+});
+
 describe('ScoutSuite to HDF Converter', () => {
   // --- Validation tests ---
-
-  it('should reject empty input', async () => {
-    await expect(convertScoutsuiteToHdf('')).rejects.toThrow('empty input');
-  });
-
-  it('should reject input that is not valid JSON after prefix stripping', async () => {
-    await expect(convertScoutsuiteToHdf('not valid json')).rejects.toThrow();
-  });
 
   it('should handle pure JSON without JS prefix', async () => {
     const input = '{"account_id": "123", "provider_name": "AWS", "services": {}, "last_run": {"time": "2021-01-01 00:00:00+0000", "version": "5.0.0", "ruleset_name": "test", "ruleset_about": "test"}}';

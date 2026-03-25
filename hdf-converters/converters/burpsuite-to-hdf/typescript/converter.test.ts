@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertBurpsuiteToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -24,16 +25,14 @@ function findRequirement(baselines: Array<Record<string, unknown>>, id: string) 
   return undefined;
 }
 
+runConverterContractTests({
+  converterName: 'burpsuite-to-hdf',
+  convertFn: convertBurpsuiteToHdf,
+  minimalFixture: 'zero.webappsecurity.com.xml',
+});
+
 describe('BurpSuite to HDF Converter', () => {
   // --- Validation tests ---
-
-  it('should reject empty input', async () => {
-    await expect(convertBurpsuiteToHdf('')).rejects.toThrow('empty input');
-  });
-
-  it('should reject invalid XML', async () => {
-    await expect(convertBurpsuiteToHdf('not valid xml')).rejects.toThrow();
-  });
 
   it('should handle empty issues element', async () => {
     const xml = '<?xml version="1.0"?><issues burpVersion="2020.1" exportTime="Thu Feb 27 09:28:17 EST 2020"></issues>';

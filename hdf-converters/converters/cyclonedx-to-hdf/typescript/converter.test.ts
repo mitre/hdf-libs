@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertCyclonedxToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,16 +13,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'cyclonedx-to-hdf',
+  convertFn: convertCyclonedxToHdf,
+  minimalFixture: 'minimal-vulns.json',
+});
+
 describe('cyclonedx to HDF converter', async () => {
   describe('input validation', async () => {
-    it('should throw on empty input', async () => {
-      await expect(convertCyclonedxToHdf('')).rejects.toThrow();
-    });
-
-    it('should throw on invalid JSON', async () => {
-      await expect(convertCyclonedxToHdf('not json')).rejects.toThrow();
-    });
-
     it('should throw on missing bomFormat', async () => {
       await expect(
         convertCyclonedxToHdf(JSON.stringify({ specVersion: '1.5' }))

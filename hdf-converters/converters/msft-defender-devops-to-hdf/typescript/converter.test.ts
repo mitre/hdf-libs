@@ -2,24 +2,23 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertMsftDefenderDevopsToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 function loadFixture(name: string): string {
   return readFileSync(join(__dirname, '..', 'fixtures', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'msft-defender-devops-to-hdf',
+  convertFn: convertMsftDefenderDevopsToHdf,
+  minimalFixture: 'minimal.sarif',
+});
+
 describe('msft-defender-devops-to-hdf', () => {
   // ---- Error handling ----
 
   describe('error handling', () => {
-    it('should reject empty input', async () => {
-      await expect(convertMsftDefenderDevopsToHdf('')).rejects.toThrow();
-    });
-
-    it('should reject invalid JSON', async () => {
-      await expect(convertMsftDefenderDevopsToHdf('not json')).rejects.toThrow();
-    });
-
     it('should reject JSON without runs', async () => {
       await expect(convertMsftDefenderDevopsToHdf('{"version": "2.1.0"}')).rejects.toThrow();
     });

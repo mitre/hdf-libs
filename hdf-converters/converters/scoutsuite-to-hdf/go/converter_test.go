@@ -43,15 +43,13 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // --- Validation tests ---
 
-func TestConvertScoutsuiteToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertScoutsuiteToHDF([]byte(""), testConverterVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "empty input")
-}
-
-func TestConvertScoutsuiteToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertScoutsuiteToHDF([]byte("not valid json"), testConverterVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "scoutsuite-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertScoutsuiteToHDF(input, testConverterVersion) },
+		MinimalFixture: "scoutsuite_sample.js",
+		InvalidInput:   "not valid",
+	})
 }
 
 func TestConvertScoutsuiteToHDF_PureJSON(t *testing.T) {

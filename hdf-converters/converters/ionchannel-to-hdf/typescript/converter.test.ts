@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertIonchannelToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { DEFAULT_MAX_INPUT_SIZE } from '../../../shared/typescript/converterutil.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
@@ -13,16 +14,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'ionchannel-to-hdf',
+  convertFn: convertIonchannelToHdf,
+  minimalFixture: 'minimal.json',
+});
+
 describe('ionchannel to HDF converter', async () => {
   describe('input validation', async () => {
-    it('should throw on invalid JSON', async () => {
-      await expect(convertIonchannelToHdf('not json')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertIonchannelToHdf('')).rejects.toThrow();
-    });
-
     it('should throw on oversized input', async () => {
       const big = '{' + 'x'.repeat(DEFAULT_MAX_INPUT_SIZE + 1) + '}';
       await expect(convertIonchannelToHdf(big)).rejects.toThrow('exceeds maximum');

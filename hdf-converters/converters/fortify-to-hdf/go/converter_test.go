@@ -199,18 +199,13 @@ func TestConvertFortifyToHDF_Timestamp(t *testing.T) {
 	assert.Equal(t, 2, result.Timestamp.Day())
 }
 
-func TestConvertFortifyToHDF_InvalidXML(t *testing.T) {
-	result, err := ConvertFortifyToHDF([]byte("not valid xml"), converterVersion)
-	assert.Error(t, err, "Should fail on invalid XML")
-	assert.Nil(t, result, "Result should be nil on error")
-	assert.Contains(t, err.Error(), "failed to parse Fortify FVDL")
-}
-
-func TestConvertFortifyToHDF_EmptyInput(t *testing.T) {
-	result, err := ConvertFortifyToHDF([]byte{}, converterVersion)
-	assert.Error(t, err, "Should fail on empty input")
-	assert.Nil(t, result, "Result should be nil on error")
-	assert.Contains(t, err.Error(), "empty input")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "fortify-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertFortifyToHDF(input, converterVersion) },
+		MinimalFixture: "fortify_webgoat_results.fvdl",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 func TestConvertFortifyToHDF_MinimalFVDL(t *testing.T) {

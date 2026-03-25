@@ -40,14 +40,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertDeptrack_InvalidJSON(t *testing.T) {
-	_, err := ConvertDeptrackToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertDeptrack_EmptyInput(t *testing.T) {
-	_, err := ConvertDeptrackToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "deptrack-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertDeptrackToHDF(input, testVersion) },
+		MinimalFixture: "fpf-default.json",
+	})
 }
 
 // ---- Default fixture: baseline structure ----

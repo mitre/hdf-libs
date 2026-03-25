@@ -23,16 +23,12 @@ func loadFixture(t *testing.T, name string) []byte {
 
 // ---- Error handling ----
 
-func TestConvert_EmptyInput(t *testing.T) {
-	_, err := ConvertMsftDefenderCloudToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "empty input")
-}
-
-func TestConvert_InvalidJSON(t *testing.T) {
-	_, err := ConvertMsftDefenderCloudToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid JSON")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "msft-defender-cloud-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertMsftDefenderCloudToHDF(input, testVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestConvert_MissingValueArray(t *testing.T) {

@@ -151,17 +151,13 @@ func TestConvertVeracodeToHDF_SeverityImpactMapping(t *testing.T) {
 	}
 }
 
-func TestConvertVeracodeToHDF_InvalidXML(t *testing.T) {
-	result, err := ConvertVeracodeToHDF([]byte("not valid xml"), testConverterVersion)
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "veracode")
-}
-
-func TestConvertVeracodeToHDF_EmptyInput(t *testing.T) {
-	result, err := ConvertVeracodeToHDF([]byte{}, testConverterVersion)
-	assert.Error(t, err)
-	assert.Nil(t, result)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "veracode-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertVeracodeToHDF(input, testConverterVersion) },
+		MinimalFixture: "veracode.xml",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 func TestConvertVeracodeToHDF_SummaryReport(t *testing.T) {

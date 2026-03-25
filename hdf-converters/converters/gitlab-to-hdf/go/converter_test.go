@@ -21,14 +21,12 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func TestConvertGitlabToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertGitlabToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertGitlabToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertGitlabToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "gitlab-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertGitlabToHDF(input, testVersion) },
+		MinimalFixture: "minimal-dast.json",
+	})
 }
 
 func TestConvertGitlabToHDF_EmptyVulnerabilities(t *testing.T) {

@@ -60,15 +60,12 @@ func TestConvertSplunkToHDF_Minimal(t *testing.T) {
 
 // ---- Error tests ----
 
-func TestConvertSplunkToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertSplunkToHDF([]byte(""), testConverterVersion)
-	assert.Error(t, err, "Should fail on empty input")
-}
-
-func TestConvertSplunkToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertSplunkToHDF([]byte("not valid json"), testConverterVersion)
-	assert.Error(t, err, "Should fail on invalid JSON")
-	assert.Contains(t, err.Error(), "invalid Splunk JSON")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "splunk-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertSplunkToHDF(input, testConverterVersion) },
+		MinimalFixture: "splunk-events.json",
+	})
 }
 
 func TestConvertSplunkToHDF_EmptyArray(t *testing.T) {

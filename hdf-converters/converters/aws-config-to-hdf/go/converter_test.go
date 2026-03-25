@@ -85,14 +85,12 @@ func TestConvertAWSConfigToHDF_MultiRule(t *testing.T) {
 	assert.True(t, ruleIDs["config-rule-jkl012"])
 }
 
-func TestConvertAWSConfigToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertAWSConfigToHDF([]byte("not valid json"), converterVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertAWSConfigToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertAWSConfigToHDF([]byte(""), converterVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "aws-config-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertAWSConfigToHDF(input, converterVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestConvertAWSConfigToHDF_EmptyRules(t *testing.T) {

@@ -249,15 +249,12 @@ func TestConvertNiktoToHDF_RequirementTitle(t *testing.T) {
 	assert.Equal(t, "Retrieved access-control-allow-origin header: *", *req.Title)
 }
 
-func TestConvertNiktoToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertNiktoToHDF([]byte("not valid json"), testConverterVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid Nikto JSON")
-}
-
-func TestConvertNiktoToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertNiktoToHDF([]byte(""), testConverterVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "nikto-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertNiktoToHDF(input, testConverterVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestSnapshots(t *testing.T) {

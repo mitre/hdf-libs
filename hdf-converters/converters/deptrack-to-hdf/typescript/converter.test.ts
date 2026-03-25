@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertDeptrackToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,17 +13,13 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'deptrack-to-hdf',
+  convertFn: convertDeptrackToHdf,
+  minimalFixture: 'fpf-default.json',
+});
+
 describe('Dependency-Track to HDF converter', async () => {
-  describe('input validation', async () => {
-    it('should throw on invalid JSON', async () => {
-      await expect(convertDeptrackToHdf('not json')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertDeptrackToHdf('')).rejects.toThrow();
-    });
-  });
-
   describe('conversion basics', async () => {
     it('should produce valid HDF from default fixture', async () => {
       const output = await convertDeptrackToHdf(loadFixture('fpf-default.json'));

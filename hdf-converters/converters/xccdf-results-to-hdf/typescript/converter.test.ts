@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertXccdfResultsToHdf, convertXccdfBenchmarkToHdf, convertXccdfToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults, HdfBaseline, BaselineRequirement, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
 
@@ -39,20 +40,18 @@ function findBaselineReq(
 // Fixtures sourced from real OpenSCAP / DISA STIG scan output
 // ---------------------------------------------------------------------------
 
+runConverterContractTests({
+  converterName: 'xccdf-results-to-hdf',
+  convertFn: convertXccdfResultsToHdf,
+  minimalFixture: 'minimal.xml',
+});
+
 describe('xccdf-results-to-hdf converter', async () => {
   // --- Input validation ---
 
   describe('input validation', () => {
-    it('should throw on empty input', async () => {
-      await expect(convertXccdfResultsToHdf('')).rejects.toThrow('Empty input');
-    });
-
     it('should throw on whitespace-only input', async () => {
       await expect(convertXccdfResultsToHdf('   ')).rejects.toThrow('Empty input');
-    });
-
-    it('should throw on invalid XML', async () => {
-      await expect(convertXccdfResultsToHdf('not xml at all')).rejects.toThrow();
     });
 
     it('should throw on non-XCCDF XML', async () => {

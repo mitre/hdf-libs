@@ -40,14 +40,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertSnyk_InvalidJSON(t *testing.T) {
-	_, err := ConvertSnykToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertSnyk_EmptyInput(t *testing.T) {
-	_, err := ConvertSnykToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "snyk-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertSnykToHDF(input, testVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 // ---- Minimal fixture: baseline structure ----

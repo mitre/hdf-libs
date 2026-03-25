@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { convertVeracodeToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -16,6 +18,12 @@ async function convert(input: string): Promise<string> {
   const mod = await import('./converter.js');
   return mod.convertVeracodeToHdf(input);
 }
+
+runConverterContractTests({
+  converterName: 'veracode-to-hdf',
+  convertFn: convertVeracodeToHdf,
+  minimalFixture: 'veracode.xml',
+});
 
 describe('Veracode to HDF converter', () => {
   it('should convert sample Veracode XML to valid HDF', async () => {
@@ -153,14 +161,6 @@ describe('Veracode to HDF converter', () => {
     expect(baseline.resultsChecksum).toBeDefined();
     expect(baseline.resultsChecksum!.algorithm).toBe('sha256');
     expect(baseline.resultsChecksum!.value).toBeTruthy();
-  });
-
-  it('should reject empty input', async () => {
-    await expect(convert('')).rejects.toThrow();
-  });
-
-  it('should reject invalid XML', async () => {
-    await expect(convert('not valid xml')).rejects.toThrow();
   });
 
   it('should reject summary reports', async () => {

@@ -40,14 +40,13 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertNetsparker_InvalidXML(t *testing.T) {
-	_, err := ConvertNetsparkerToHDF([]byte("not xml"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertNetsparker_EmptyInput(t *testing.T) {
-	_, err := ConvertNetsparkerToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "netsparker-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertNetsparkerToHDF(input, testVersion) },
+		MinimalFixture: "sample-netsparker-invicti.xml",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 // ---- Baseline structure ----

@@ -3,9 +3,16 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { convertSonarqubeToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+runConverterContractTests({
+  converterName: 'sonarqube-to-hdf',
+  convertFn: convertSonarqubeToHdf,
+  minimalFixture: 'minimal.json',
+});
 
 describe('SonarQube to HDF Converter', async () => {
   describe('convertSonarqubeToHdf', async () => {
@@ -171,10 +178,6 @@ describe('SonarQube to HDF Converter', async () => {
       expect(reqWithLocation).toBeDefined();
       expect(reqWithLocation!.sourceLocation?.ref).toBeTruthy();
       expect(reqWithLocation!.sourceLocation?.line).toBeGreaterThan(0);
-    });
-
-    it('should throw error for invalid JSON', async () => {
-      await expect(convertSonarqubeToHdf('not valid json')).rejects.toThrow();
     });
 
     it('should throw error for missing issues field', async () => {

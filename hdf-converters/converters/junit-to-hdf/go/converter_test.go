@@ -53,14 +53,13 @@ func TestConvertJUnitToHDF_DataSource(t *testing.T) {
 	assert.Equal(t, "XML", *result.DataSource.Format)
 }
 
-func TestConvertJUnitToHDF_InvalidInput(t *testing.T) {
-	_, err := ConvertJUnitToHDF([]byte("not xml"), converterVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertJUnitToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertJUnitToHDF([]byte(""), converterVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "junit-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertJUnitToHDF(input, converterVersion) },
+		MinimalFixture: "surefire-error.xml",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 func TestConvertJUnitToHDF_InvalidXML(t *testing.T) {

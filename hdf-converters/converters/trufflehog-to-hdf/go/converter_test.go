@@ -32,14 +32,12 @@ func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedR
 
 // ---- Input validation ----
 
-func TestConvertTrufflehogToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertTrufflehogToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertTrufflehogToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertTrufflehogToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "trufflehog-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertTrufflehogToHDF(input, testVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestConvertTrufflehogToHDF_EmptyArray(t *testing.T) {

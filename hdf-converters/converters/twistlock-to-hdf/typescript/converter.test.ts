@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertTwistlockToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,17 +13,13 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'twistlock-to-hdf',
+  convertFn: convertTwistlockToHdf,
+  minimalFixture: 'twistlock-twistcli-coderepo-scan-sample.json',
+});
+
 describe('twistlock to HDF converter', async () => {
-  describe('input validation', async () => {
-    it('should throw on invalid JSON', async () => {
-      await expect(convertTwistlockToHdf('not json')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertTwistlockToHdf('')).rejects.toThrow();
-    });
-  });
-
   describe('container scan (results wrapper)', async () => {
     it('should produce 1 baseline from sample-1', async () => {
       const output = await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'));

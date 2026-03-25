@@ -3,9 +3,16 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { convertSplunkToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+runConverterContractTests({
+  converterName: 'splunk-to-hdf',
+  convertFn: convertSplunkToHdf,
+  minimalFixture: 'splunk-events.json',
+});
 
 function loadFixture(name: string): string {
   return readFileSync(join(__dirname, `../fixtures/input/${name}`), 'utf-8');
@@ -199,14 +206,6 @@ describe('Splunk to HDF Converter', () => {
   });
 
   describe('convertSplunkToHdf - error handling', () => {
-    it('should throw on empty input', async () => {
-      await expect(convertSplunkToHdf('')).rejects.toThrow();
-    });
-
-    it('should throw on invalid JSON', async () => {
-      await expect(convertSplunkToHdf('not json')).rejects.toThrow();
-    });
-
     it('should throw on empty array', async () => {
       await expect(convertSplunkToHdf('[]')).rejects.toThrow('No Splunk events found');
     });

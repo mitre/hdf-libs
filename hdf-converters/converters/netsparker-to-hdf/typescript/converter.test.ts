@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { convertNetsparkerToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 function loadFixture(name: string): string {
@@ -32,15 +33,13 @@ function findDescription(
 
 // ---- Input validation ----
 
+runConverterContractTests({
+  converterName: 'netsparker-to-hdf',
+  convertFn: convertNetsparkerToHdf,
+  minimalFixture: 'sample-netsparker-invicti.xml',
+});
+
 describe('Netsparker to HDF converter', () => {
-  it('should reject empty input', async () => {
-    await expect(convertNetsparkerToHdf('')).rejects.toThrow('empty input');
-  });
-
-  it('should reject invalid XML', async () => {
-    await expect(convertNetsparkerToHdf('not xml')).rejects.toThrow();
-  });
-
   // ---- Baseline structure ----
 
   it('should produce exactly one baseline', async () => {

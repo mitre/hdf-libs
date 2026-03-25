@@ -22,14 +22,12 @@ func loadFixture(t *testing.T, name string) []byte {
 
 // ---- ConvertGosecToHDF top-level ----
 
-func TestConvertGosecToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertGosecToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertGosecToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertGosecToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "gosec-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertGosecToHDF(input, testVersion) },
+		MinimalFixture: "ethereum.json",
+	})
 }
 
 func TestConvertGosecToHDF_Generator(t *testing.T) {

@@ -2,6 +2,7 @@ import {readFileSync} from 'fs';
 import {join} from 'path';
 import {describe, expect, it} from 'vitest';
 import {convertGrypeToHdf} from './converter';
+import {runConverterContractTests} from '../../../shared/typescript/converter-contract.js';
 import {parseJSON} from '@mitre/hdf-utilities';
 import type {HdfResults} from '@mitre/hdf-schema';
 
@@ -10,6 +11,12 @@ const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
+
+runConverterContractTests({
+  converterName: 'grype-to-hdf',
+  convertFn: convertGrypeToHdf,
+  minimalFixture: 'amazon.json',
+});
 
 describe('Grype Converter', async () => {
   describe('convertGrypeToHdf', async () => {
@@ -161,14 +168,6 @@ describe('Grype Converter', async () => {
       expect(req.results[0].codeDesc).toContain('Package:');
       expect(req.results[0].codeDesc).toContain('Type:');
       expect(req.results[0].codeDesc).toContain('Location:');
-    });
-
-    it('should throw error for invalid JSON', async () => {
-      await expect(convertGrypeToHdf('not valid json')).rejects.toThrow();
-    });
-
-    it('should throw error for empty input', async () => {
-      await expect(convertGrypeToHdf('')).rejects.toThrow();
     });
 
     it('should handle missing optional fields gracefully', async () => {
