@@ -39,7 +39,8 @@
       "properties": {
         "baselineRef": {
           "type": "string",
-          "description": "Name of the baseline to evaluate. Must match a baseline name in the referenced system's components."
+          "format": "uri-reference",
+          "description": "Reference to the baseline to evaluate. May be a baseline name (e.g. 'RHEL9-STIG'), a relative path to an HDF Baseline document (e.g. 'rhel9-stig.hdf-baseline.json'), or an absolute URI."
         },
         "targetSelector": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Target_Selector",
