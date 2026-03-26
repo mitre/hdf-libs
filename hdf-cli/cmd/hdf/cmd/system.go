@@ -25,6 +25,8 @@ Examples:
 
 	cmd.AddCommand(newSystemInfoCmd())
 	cmd.AddCommand(newSystemCreateCmd())
+	cmd.AddCommand(newSystemAddComponentCmd())
+	cmd.AddCommand(newSystemUpdateComponentCmd())
 
 	return cmd
 }

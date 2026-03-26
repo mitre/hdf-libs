@@ -200,6 +200,12 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		return nil, fmt.Errorf("cyclonedx: input has neither components nor vulnerabilities")
 	}
 
+	if len(bom.Vulnerabilities) == 0 {
+		return nil, fmt.Errorf("cyclonedx: this file is an SBOM inventory with no vulnerabilities; " +
+			"to import SBOM data into a system document, use:\n" +
+			"  hdf system create --from <sbom-file> --component-name <name>")
+	}
+
 	checksum := shared.InputChecksum(input)
 
 	// Flatten nested components and build lookup by bom-ref

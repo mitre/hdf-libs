@@ -20,7 +20,7 @@
     "test:go": "pnpm -r run test:go",
     "test:coverage": "pnpm -r run test:coverage",
     "security": "pnpm run security:ts; pnpm run security:go",
-    "security:ts": "pnpm audit --audit-level=high || true",
+    "security:ts": "pnpm audit --audit-level=moderate",
     "security:go": "pnpm --filter hdf-cli run security:vuln",
     "lint": "pnpm -r run lint",
     "lint:fix": "pnpm -r run lint:fix",
@@ -59,7 +59,8 @@
       "qs@<6.14.2": "6.14.2",
       "flatted@<3.4.2": "3.4.2",
       "picomatch@<2.3.2": "2.3.2",
-      "picomatch@>=4.0.0 <4.0.4": "4.0.4"
+      "picomatch@>=4.0.0 <4.0.4": "4.0.4",
+      "yaml@>=2.0.0 <2.8.3": "2.8.3"
     }
   }
 }

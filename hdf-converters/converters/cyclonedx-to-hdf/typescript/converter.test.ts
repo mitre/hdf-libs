@@ -290,11 +290,10 @@ describe('cyclonedx to HDF converter', async () => {
   });
 
   describe('no-vuln SBOM', async () => {
-    it('should produce empty requirements for SBOM without vulnerabilities', async () => {
-      const hdf = JSON.parse(
-        await convertCyclonedxToHdf(loadFixture('spdx-to-cyclonedx.json'))
-      ) as HdfResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    it('should reject SBOM-only input with helpful message', async () => {
+      await expect(
+        convertCyclonedxToHdf(loadFixture('spdx-to-cyclonedx.json'))
+      ).rejects.toThrow('SBOM inventory with no vulnerabilities');
     });
   });
 

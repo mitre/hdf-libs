@@ -312,14 +312,14 @@ func TestConvertCycloneDX_MixedSeverityNotSkipped(t *testing.T) {
 	assert.Equal(t, hdf.Failed, result.Baselines[0].Requirements[0].Results[0].Status)
 }
 
-// ---- No-vuln SBOM ----
+// ---- No-vuln SBOM: rejected with helpful message ----
 
-func TestConvertCycloneDX_NoVulnSBOM(t *testing.T) {
+func TestConvertCycloneDX_NoVulnSBOM_Rejected(t *testing.T) {
 	input := loadFixture(t, "input/spdx-to-cyclonedx.json")
-	result, err := ConvertCycloneDXToHDF(input, testVersion)
-	require.NoError(t, err)
-
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+	_, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "SBOM inventory with no vulnerabilities")
+	assert.Contains(t, err.Error(), "hdf system create")
 }
 
 // ---- VEX format ----

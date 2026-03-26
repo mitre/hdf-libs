@@ -211,6 +211,14 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
     );
   }
 
+  if (!bom.vulnerabilities || bom.vulnerabilities.length === 0) {
+    throw new Error(
+      'cyclonedx: this file is an SBOM inventory with no vulnerabilities; ' +
+      'to import SBOM data into a system document, use:\n' +
+      '  hdf system create --from <sbom-file> --component-name <name>'
+    );
+  }
+
   const resultsChecksum: Checksum = await inputChecksum(input);
 
   // Flatten nested components and build lookup by bom-ref
