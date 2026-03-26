@@ -231,8 +231,8 @@ describe('cyclonedx to HDF converter', async () => {
     });
   });
 
-  describe('info/unknown severity skip', async () => {
-    it('should mark results as NotReviewed when only info/unknown ratings', async () => {
+  describe('info/unknown severity — still Failed', async () => {
+    it('should mark info/unknown severity vulns as Failed', async () => {
       const input = JSON.stringify({
         bomFormat: 'CycloneDX',
         specVersion: '1.5',
@@ -255,15 +255,16 @@ describe('cyclonedx to HDF converter', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(input)
       ) as HdfResults;
+      // Info/unknown severity vulns are still Failed — a vuln is a finding
+      // regardless of severity confidence. Impact reflects the severity.
       for (const req of hdf.baselines[0]!.requirements) {
         for (const result of req.results) {
-          expect(result.status).toBe('notReviewed');
-          expect(result.message).toContain('Manual review required');
+          expect(result.status).toBe('failed');
         }
       }
     });
 
-    it('should NOT mark as NotReviewed when mixed with other severities', async () => {
+    it('should also mark mixed severity vulns as Failed', async () => {
       const input = JSON.stringify({
         bomFormat: 'CycloneDX',
         specVersion: '1.5',

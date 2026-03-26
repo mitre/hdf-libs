@@ -271,9 +271,9 @@ func TestConvertCycloneDX_AllResultsFailed(t *testing.T) {
 	}
 }
 
-// ---- Info/unknown severity skip ----
+// ---- Info/unknown severity — still Failed ----
 
-func TestConvertCycloneDX_InfoUnknownSkip(t *testing.T) {
+func TestConvertCycloneDX_InfoUnknownStillFailed(t *testing.T) {
 	input := []byte(`{
 		"bomFormat": "CycloneDX",
 		"specVersion": "1.5",
@@ -286,11 +286,11 @@ func TestConvertCycloneDX_InfoUnknownSkip(t *testing.T) {
 	result, err := ConvertCycloneDXToHDF(input, testVersion)
 	require.NoError(t, err)
 
+	// Info/unknown severity vulns are still Failed — a vuln is a finding
+	// regardless of severity confidence. Impact reflects the severity.
 	for _, req := range result.Baselines[0].Requirements {
 		for _, r := range req.Results {
-			assert.Equal(t, hdf.NotReviewed, r.Status)
-			require.NotNil(t, r.Message)
-			assert.Contains(t, *r.Message, "Manual review required")
+			assert.Equal(t, hdf.Failed, r.Status)
 		}
 	}
 }

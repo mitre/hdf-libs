@@ -2602,9 +2602,8 @@
           "results": [
             {
               "codeDesc": "Component com.h2database/h2@1.4.197 is vulnerable",
-              "message": "Manual review required because a CycloneDX rating severity is set to `info` or `unknown`.",
               "startTime": "0001-01-01T00:00:00Z",
-              "status": "notReviewed"
+              "status": "failed"
             }
           ],
           "id": "GHSA-h376-j262-vhq6",
@@ -2633,9 +2632,8 @@
           "results": [
             {
               "codeDesc": "Component com.h2database/h2@1.4.197 is vulnerable",
-              "message": "Manual review required because a CycloneDX rating severity is set to `info` or `unknown`.",
               "startTime": "0001-01-01T00:00:00Z",
-              "status": "notReviewed"
+              "status": "failed"
             }
           ],
           "id": "GHSA-45hx-wfhj-473x",
@@ -2681,5 +2679,5 @@
       "type": "application"
     }
   ],
-  "timestamp": "2026-03-23T05:53:50.561212Z"
+  "timestamp": "2026-03-26T01:59:53.699645Z"
 }

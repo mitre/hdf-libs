@@ -126,26 +126,12 @@ func maxImpact(ratings []CDXRating) float64 {
 	return max
 }
 
-var infoUnknownSeverities = map[string]bool{
-	"info":    true,
-	"unknown": true,
-}
-
-// isInfoOrUnknownOnly returns true if all ratings have only info or unknown severity.
-//
-// NOTE: This replicates heimdall2 behavior. The semantic correctness of mapping
-// "unknown severity" to "not reviewed" is debatable and should be re-examined.
-func isInfoOrUnknownOnly(ratings []CDXRating) bool {
-	if len(ratings) == 0 {
-		return false
-	}
-	for _, r := range ratings {
-		if !infoUnknownSeverities[strings.ToLower(r.Severity)] {
-			return false
-		}
-	}
-	return true
-}
+// NOTE: heimdall2 mapped info/unknown severity to NotReviewed status.
+// We intentionally do NOT replicate that behavior — a vulnerability is a
+// finding regardless of severity confidence. Info/unknown severity vulns
+// are Failed with impact derived from the severity mapping (info→0.1,
+// unknown→0.5). NotReviewed means "not evaluated" which is incorrect
+// when a scanner has identified a CVE.
 
 // formatRatingsTag formats ratings as a human-readable tag string.
 func formatRatingsTag(ratings []CDXRating) string {
@@ -231,8 +217,6 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(limitedVulns))
 
-	infoUnknownMsg := "Manual review required because a CycloneDX rating severity is set to `info` or `unknown`."
-
 	for _, vuln := range limitedVulns {
 		ratings := vuln.Ratings
 		impact := maxImpact(ratings)
@@ -294,42 +278,22 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			})
 		}
 
-		// Determine if this is an info/unknown-only vulnerability
-		infoUnknown := isInfoOrUnknownOnly(ratings)
-
-		// Build results: one per affected component
+		// Build results: one per affected component.
+		// All vulnerabilities are Failed — info/unknown severity affects impact
+		// score but not status (a vuln is a finding regardless of severity confidence).
 		var results []hdf.RequirementResult
 		if len(vuln.Affects) > 0 {
 			for _, affect := range vuln.Affects {
-				codeDesc := formatCodeDesc(componentLookup, affect.Ref)
-				if infoUnknown {
-					results = append(results, hdf.RequirementResult{
-						Status:   hdf.NotReviewed,
-						Message:  &infoUnknownMsg,
-						CodeDesc: codeDesc,
-					})
-				} else {
-					results = append(results, hdf.RequirementResult{
-						Status:   hdf.Failed,
-						CodeDesc: codeDesc,
-					})
-				}
-			}
-		} else {
-			// Vulnerability with no affects — create a single result
-			codeDesc := fmt.Sprintf("Vulnerability %s", vuln.ID)
-			if infoUnknown {
-				results = append(results, hdf.RequirementResult{
-					Status:   hdf.NotReviewed,
-					Message:  &infoUnknownMsg,
-					CodeDesc: codeDesc,
-				})
-			} else {
 				results = append(results, hdf.RequirementResult{
 					Status:   hdf.Failed,
-					CodeDesc: codeDesc,
+					CodeDesc: formatCodeDesc(componentLookup, affect.Ref),
 				})
 			}
+		} else {
+			results = append(results, hdf.RequirementResult{
+				Status:   hdf.Failed,
+				CodeDesc: fmt.Sprintf("Vulnerability %s", vuln.ID),
+			})
 		}
 
 		title := vuln.ID
