@@ -87,28 +87,20 @@ func runSystemAddComponent(systemFile, fromFile, componentName, outputPath strin
 		return fmt.Errorf("failed to parse system file: %w", err)
 	}
 
-	// Load and parse SBOM
-	sbomData, err := os.ReadFile(fromFile) // #nosec G304
+	// Load and parse SBOM (or handle URL)
+	sbomDoc, sbomFormat, err := loadSBOM(fromFile)
 	if err != nil {
-		return fmt.Errorf("failed to read SBOM file: %w", err)
-	}
-	var sbomDoc map[string]interface{}
-	if err := json.Unmarshal(sbomData, &sbomDoc); err != nil {
-		return fmt.Errorf("failed to parse SBOM file: %w", err)
-	}
-
-	// Detect format
-	sbomFormat := detectSBOMFormat(sbomDoc)
-	if sbomFormat == "" {
-		return fmt.Errorf("input is not a recognized CycloneDX or SPDX SBOM")
+		return err
 	}
 
 	// Extract component name
 	if componentName == "" {
-		componentName = extractSBOMComponentName(sbomDoc, sbomFormat)
+		if sbomDoc != nil {
+			componentName = extractSBOMComponentName(sbomDoc, sbomFormat)
+		}
 	}
 	if componentName == "" {
-		return fmt.Errorf("cannot determine component name from SBOM; use --component-name to specify")
+		return fmt.Errorf("cannot determine component name; use --component-name to specify")
 	}
 
 	// Check for duplicate
@@ -122,14 +114,22 @@ func runSystemAddComponent(systemFile, fromFile, componentName, outputPath strin
 	}
 
 	// Build new component
-	comp := map[string]interface{}{
-		"name":       componentName,
-		"type":       extractSBOMComponentType(sbomDoc, sbomFormat),
-		"sbomRef":    fromFile,
-		"sbomFormat": sbomFormat,
+	compType := compTypeApplication
+	if sbomDoc != nil {
+		compType = extractSBOMComponentType(sbomDoc, sbomFormat)
 	}
-	if ver := extractSBOMComponentVersion(sbomDoc, sbomFormat); ver != "" {
-		comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
+	comp := map[string]interface{}{
+		"name":    componentName,
+		"type":    compType,
+		"sbomRef": fromFile,
+	}
+	if sbomFormat != "" {
+		comp["sbomFormat"] = sbomFormat
+	}
+	if sbomDoc != nil {
+		if ver := extractSBOMComponentVersion(sbomDoc, sbomFormat); ver != "" {
+			comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
+		}
 	}
 
 	// Append to components
@@ -154,20 +154,10 @@ func runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath st
 		return fmt.Errorf("failed to parse system file: %w", err)
 	}
 
-	// Load and parse SBOM
-	sbomData, err := os.ReadFile(fromFile) // #nosec G304
+	// Load and parse SBOM (or handle URL)
+	sbomDoc, sbomFormat, err := loadSBOM(fromFile)
 	if err != nil {
-		return fmt.Errorf("failed to read SBOM file: %w", err)
-	}
-	var sbomDoc map[string]interface{}
-	if err := json.Unmarshal(sbomData, &sbomDoc); err != nil {
-		return fmt.Errorf("failed to parse SBOM file: %w", err)
-	}
-
-	// Detect format
-	sbomFormat := detectSBOMFormat(sbomDoc)
-	if sbomFormat == "" {
-		return fmt.Errorf("input is not a recognized CycloneDX or SPDX SBOM")
+		return err
 	}
 
 	// Find and update the component
@@ -180,9 +170,13 @@ func runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath st
 		}
 		if comp["name"] == componentName {
 			comp["sbomRef"] = fromFile
-			comp["sbomFormat"] = sbomFormat
-			if ver := extractSBOMComponentVersion(sbomDoc, sbomFormat); ver != "" {
-				comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
+			if sbomFormat != "" {
+				comp["sbomFormat"] = sbomFormat
+			}
+			if sbomDoc != nil {
+				if ver := extractSBOMComponentVersion(sbomDoc, sbomFormat); ver != "" {
+					comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
+				}
 			}
 			components[i] = comp
 			found = true
@@ -209,6 +203,30 @@ const (
 	compTypeApplication = "application"
 	compTypeCompute     = "compute"
 )
+
+// loadSBOM reads and parses an SBOM file, or returns nil doc with a guessed
+// format if the input is a URL. Returns (doc, format, error).
+func loadSBOM(fromRef string) (map[string]interface{}, string, error) {
+	if isURL(fromRef) {
+		return nil, guessFormatFromURI(fromRef), nil
+	}
+
+	data, err := os.ReadFile(fromRef) // #nosec G304
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read SBOM file: %w", err)
+	}
+	var doc map[string]interface{}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, "", fmt.Errorf("failed to parse SBOM file: %w", err)
+	}
+
+	format := detectSBOMFormat(doc)
+	if format == "" {
+		return nil, "", fmt.Errorf("input is not a recognized CycloneDX or SPDX SBOM")
+	}
+
+	return doc, format, nil
+}
 
 // detectSBOMFormat returns sbomFormatCycloneDX, sbomFormatSPDX, or "" for unrecognized input.
 func detectSBOMFormat(doc map[string]interface{}) string {

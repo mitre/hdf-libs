@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -64,8 +65,18 @@ func targetTypeToComponentType(targetType string) string {
 	}
 }
 
-func runSystemCreate(fromFile, systemName, componentName, outputPath string) error {
-	data, err := os.ReadFile(fromFile) // #nosec G304 -- CLI reads user-provided file path
+// isURL returns true if the string looks like an HTTP(S) URL.
+func isURL(s string) bool {
+	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
+}
+
+func runSystemCreate(fromRef, systemName, componentName, outputPath string) error {
+	// If --from is a URL, we can't read the file — require metadata flags
+	if isURL(fromRef) {
+		return runSystemCreateFromSBOMRef(fromRef, systemName, componentName, outputPath)
+	}
+
+	data, err := os.ReadFile(fromRef) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read input file: %w", err)
 	}
@@ -77,16 +88,57 @@ func runSystemCreate(fromFile, systemName, componentName, outputPath string) err
 
 	// Detect input type: HDF Results vs CycloneDX SBOM
 	if bomFormat, ok := doc["bomFormat"].(string); ok && bomFormat == "CycloneDX" {
-		return runSystemCreateFromSBOM(doc, fromFile, systemName, componentName, outputPath, sbomFormatCycloneDX)
+		return runSystemCreateFromSBOM(doc, fromRef, systemName, componentName, outputPath, sbomFormatCycloneDX)
 	}
 
 	// Check for SPDX (has spdxVersion field)
 	if _, ok := doc["spdxVersion"]; ok {
-		return runSystemCreateFromSBOM(doc, fromFile, systemName, componentName, outputPath, sbomFormatSPDX)
+		return runSystemCreateFromSBOM(doc, fromRef, systemName, componentName, outputPath, sbomFormatSPDX)
 	}
 
 	// Default: treat as HDF Results
 	return runSystemCreateFromResults(doc, systemName, outputPath)
+}
+
+// runSystemCreateFromSBOMRef creates a system document from a remote SBOM URI.
+// Since we can't read the file, --component-name is required.
+func runSystemCreateFromSBOMRef(sbomURI, systemName, componentName, outputPath string) error {
+	if componentName == "" {
+		return fmt.Errorf("--component-name is required when --from is a URL\n" +
+			"(cannot read remote file to extract component metadata)")
+	}
+
+	if systemName == "" {
+		systemName = componentName + "-system"
+	}
+
+	// Guess format from URL extension
+	sbomFormat := guessFormatFromURI(sbomURI)
+
+	comp := map[string]interface{}{
+		"name":    componentName,
+		"type":    compTypeApplication,
+		"sbomRef": sbomURI,
+	}
+	if sbomFormat != "" {
+		comp["sbomFormat"] = sbomFormat
+	}
+
+	fmt.Fprintf(os.Stderr, "Created component %q from URI (type: %s)\n", componentName, compTypeApplication)
+	fmt.Fprintf(os.Stderr, "Note: component type defaulted to %q; edit the system document to correct if needed\n", compTypeApplication)
+	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath)
+}
+
+// guessFormatFromURI attempts to determine SBOM format from the URI extension.
+func guessFormatFromURI(uri string) string {
+	lower := strings.ToLower(uri)
+	if strings.Contains(lower, ".cdx.") || strings.Contains(lower, "cyclonedx") {
+		return sbomFormatCycloneDX
+	}
+	if strings.Contains(lower, ".spdx.") || strings.Contains(lower, "spdx") {
+		return sbomFormatSPDX
+	}
+	return ""
 }
 
 func runSystemCreateFromResults(results map[string]interface{}, systemName, outputPath string) error {
