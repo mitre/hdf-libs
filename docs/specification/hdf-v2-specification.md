@@ -10,7 +10,7 @@ HDF is a JSON format for representing security assessment data. It normalizes ou
 
 | Document | Purpose | Key Fields |
 |----------|---------|------------|
-| **Results** | Assessment findings (pass/fail) | baselines, targets, statistics |
+| **Results** | Assessment findings (pass/fail) | baselines, components, statistics |
 | **Baseline** | Requirements sets (without findings attached) | requirements, groups, inputs |
 | **System** | Description of system under assessment | components, interconnections |
 | **Plan** | Assessment plan | assessments, schedule |
@@ -39,17 +39,17 @@ Assessment findings from running security checks against target systems.
 
 ### Top-Level Fields
 
-A Results document is the primary output of HDF converters. It captures what was scanned (targets), what was checked (baselines with requirements), and what happened (results with pass/fail status). The `dataSource` identifies the original security tool; `generator` identifies the converter that produced the HDF file. Cross-document links (`systemRef`, `planRef`) connect results to the broader assessment context.
+A Results document is the primary output of HDF converters. It captures what was scanned (components), what was checked (baselines with requirements), and what happened (results with pass/fail status). The `dataSource` identifies the original security tool; `generator` identifies the converter that produced the HDF file. Cross-document links (`systemRef`, `planRef`) connect results to the broader assessment context.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | baselines | Evaluated_Baseline[] | **yes** | Baselines evaluated with findings |
-| targets | Target[] | no | Systems assessed |
+| components | Component[] | no | System components assessed |
 | statistics | Statistics | no | Duration, result counts |
 | timestamp | date-time | no | When assessment ran |
 | dataSource | DataSource | no | Tool that produced scan data (`{name, version, format}`) |
 | generator | Generator | no | Tool that produced this HDF file |
-| runner | Runner | no | Execution environment (distinct from targets) |
+| runner | Runner | no | Execution environment (distinct from components) |
 | integrity | Integrity | no | Cryptographic integrity metadata |
 | systemRef | URI-reference | no | Link to System document |
 | planRef | URI-reference | no | Link to Plan document |

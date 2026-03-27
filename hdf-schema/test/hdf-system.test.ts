@@ -3,6 +3,8 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import commonSchema from '../src/schemas/primitives/common.schema.json';
 import systemSchema from '../src/schemas/primitives/system.schema.json';
+import componentSchema from '../src/schemas/primitives/component.schema.json';
+import dataFlowSchema from '../src/schemas/primitives/data-flow.schema.json';
 import hdfSystemSchema from '../src/schemas/hdf-system.schema.json';
 
 describe('hdf-system.schema.json', () => {
@@ -11,13 +13,15 @@ describe('hdf-system.schema.json', () => {
 
   ajv.addSchema(commonSchema);
   ajv.addSchema(systemSchema);
+  ajv.addSchema(componentSchema);
+  ajv.addSchema(dataFlowSchema);
   const validate = ajv.compile(hdfSystemSchema);
 
   // -- Minimal valid document --
 
   const minimal = {
     name: 'Test System',
-    components: [{ name: 'AppTier', type: 'application' }],
+    components: [{ name: 'AppTier', type: 'application', componentId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' }],
   };
 
   it('should validate a minimal hdf-system document', () => {
@@ -44,6 +48,7 @@ describe('hdf-system.schema.json', () => {
       {
         name: 'WebTier',
         type: 'application',
+        componentId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
         description: 'RHEL 9 web servers',
         targetSelector: { 'labels.component': 'WebTier' },
         baselineRefs: ['RHEL9-STIG', 'DISA-Container-STIG'],
@@ -62,18 +67,19 @@ describe('hdf-system.schema.json', () => {
       {
         name: 'DatabaseTier',
         type: 'database',
+        componentId: '11111111-2222-3333-4444-555555555555',
         targetSelector: { 'labels.component': 'DatabaseTier' },
         baselineRefs: ['PostgreSQL-15-STIG'],
       },
     ],
-    interconnections: [
+    dataFlows: [
       {
-        name: 'External API Gateway',
-        externalSystem: 'CDN-Provider',
-        direction: 'inbound',
-        protocol: 'HTTPS',
-        description: 'Public internet traffic via CDN',
-        securityMeasures: 'TLS 1.3, WAF, DDoS protection',
+        from: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        to: '11111111-2222-3333-4444-555555555555',
+        protocol: 'jdbc',
+        port: 5432,
+        direction: 'unidirectional',
+        description: 'Web tier connects to database',
       },
     ],
   };
@@ -86,7 +92,7 @@ describe('hdf-system.schema.json', () => {
   // -- Required fields --
 
   it('should reject document missing required name', () => {
-    const doc = { components: [{ name: 'App', type: 'application' }] };
+    const doc = { components: [{ name: 'App', type: 'application', componentId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' }] };
     expect(validate(doc)).toBe(false);
   });
 
@@ -150,6 +156,93 @@ describe('hdf-system.schema.json', () => {
 
   it('should accept document with checksum', () => {
     const doc = { ...minimal, checksum: { algorithm: 'sha256', value: 'abc' } };
+    expect(validate(doc)).toBe(true);
+  });
+
+  // -- Data flows --
+
+  it('should accept document with dataFlows', () => {
+    const doc = {
+      ...minimal,
+      dataFlows: [
+        {
+          from: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+          to: '11111111-2222-3333-4444-555555555555',
+          protocol: 'https',
+          description: 'API calls',
+        },
+      ],
+    };
+    expect(validate(doc)).toBe(true);
+  });
+
+  it('should accept empty dataFlows array', () => {
+    const doc = { ...minimal, dataFlows: [] };
+    expect(validate(doc)).toBe(true);
+  });
+
+  it('should reject invalid dataFlow items', () => {
+    const doc = {
+      ...minimal,
+      dataFlows: [{ protocol: 'https' }], // missing from + to
+    };
+    expect(validate(doc)).toBe(false);
+  });
+
+  it('should accept cross-system data flow', () => {
+    const doc = {
+      ...minimal,
+      dataFlows: [
+        {
+          from: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+          to: { systemRef: '../other-system.json', componentId: '22222222-3333-4444-5555-666666666666' },
+          protocol: 'https',
+          description: 'Cross-system API call',
+        },
+      ],
+    };
+    expect(validate(doc)).toBe(true);
+  });
+
+  it('should accept external data flow', () => {
+    const doc = {
+      ...minimal,
+      dataFlows: [
+        {
+          from: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+          to: { external: true, description: 'CDN Provider' },
+          protocol: 'https',
+          description: 'Public traffic via CDN',
+        },
+      ],
+    };
+    expect(validate(doc)).toBe(true);
+  });
+
+  // -- Interconnections removed --
+
+  it('should reject interconnections field (replaced by dataFlows)', () => {
+    const doc = {
+      ...minimal,
+      interconnections: [
+        { name: 'External API', externalSystem: 'CDN', direction: 'inbound' },
+      ],
+    };
+    expect(validate(doc)).toBe(false);
+  });
+
+  // -- Components use full hdf-component type --
+
+  it('should accept component with componentId and externalIds', () => {
+    const doc = {
+      ...minimal,
+      components: [{
+        type: 'host',
+        name: 'web-server-01',
+        componentId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        externalIds: { aws: 'i-abc123', cmdb: 'ASSET-101' },
+      }],
+    };
     expect(validate(doc)).toBe(true);
   });
 });
@@ -412,11 +505,13 @@ describe('hdf-system.schema.json — controlDesignations array', () => {
   addFormats(ajv);
   ajv.addSchema(commonSchema);
   ajv.addSchema(systemSchema);
+  ajv.addSchema(componentSchema);
+  ajv.addSchema(dataFlowSchema);
   const validate = ajv.compile(hdfSystemSchema);
 
   const minimalSystem = {
     name: 'Test System',
-    components: [{ name: 'AppTier', type: 'application' }],
+    components: [{ name: 'AppTier', type: 'application', componentId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' }],
   };
 
   it('should validate a system document with controlDesignations', () => {

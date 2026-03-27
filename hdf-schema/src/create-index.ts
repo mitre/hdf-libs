@@ -115,10 +115,10 @@ export type { HdfBaseline, BaselineRequirement } from './ts/hdf-baseline.js';
 ${comparisonDtsExport}
 // Re-export system types
 export type {
-  HdfSystem, Component, InputOverride, Interconnection, TargetSelector,
+  HdfSystem, Component, InputOverride, ControlDesignation, DataFlow,
 } from './ts/hdf-system.js';
 export {
-  AuthorizationStatus, CategorizationLevel, ComponentType,
+  AuthorizationStatus, BoundaryDescription, CategorizationLevel, Designation, Direction,
 } from './ts/hdf-system.js';
 
 // Re-export plan types
@@ -174,7 +174,7 @@ export * from './ts/hdf-results.js';
 ${comparisonJsExport}
 // Re-export system enums (runtime values)
 export {
-  AuthorizationStatus, CategorizationLevel, ComponentType,
+  AuthorizationStatus, BoundaryDescription, CategorizationLevel, Designation, Direction,
 } from './ts/hdf-system.js';
 
 // Re-export plan enums (runtime values)
