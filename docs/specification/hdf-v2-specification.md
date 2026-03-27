@@ -12,7 +12,7 @@ HDF is a JSON format for representing security assessment data. It normalizes ou
 |----------|---------|------------|
 | **Results** | Assessment findings (pass/fail) | baselines, components, statistics |
 | **Baseline** | Requirements sets (without findings attached) | requirements, groups, inputs |
-| **System** | Description of system under assessment | components, interconnections |
+| **System** | Description of system under assessment | components, dataFlows, controlDesignations |
 | **Plan** | Assessment plan | assessments, schedule |
 | **Amendments** | Status overrides (waivers, POAMs) | overrides |
 | **Comparison** | Diff between assessments | requirementDiffs, summary |
@@ -123,23 +123,38 @@ A single test execution within a requirement. Each result records what was teste
 | resourceId | string | no | Resource identifier, e.g. "/etc/passwd" |
 | backtrace | string[] | no | Stack trace if exception occurred |
 
-### Target
+### Component
 
-The resource that was assessed. Targets are polymorphic — each has a `type` discriminator that determines which additional fields are available. A host target carries OS details and network addresses; a cloud account carries provider and region; a container target carries image and runtime information. All targets share `name` and `labels`. Multiple targets are supported for scans that span several systems (e.g. a fleet scan or a multi-tier application assessment).
+The system element that was assessed. Components are polymorphic — each has a `type` discriminator that determines which additional fields are available. All components share `name`, `type`, and optional fields for identity (`componentId`), external cross-references (`externalIds`), labels, SBOM embedding, and baseline references. Components in Results are typically populated with minimal fields by converters; components in System documents carry the full set including `componentId` for cross-document correlation.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| name | string | **yes** | Human-readable component name |
+| type | ComponentType | **yes** | Discriminator (see types below) |
+| componentId | UUID | no | Stable identity for cross-document correlation |
+| description | string | no | Component role or purpose |
+| externalIds | {string: string} | no | External ID map (aws, azure, cmdb, emass) |
+| labels | {string: string} | no | Key-value grouping metadata |
+| sbom | object | no | Embedded CycloneDX or SPDX SBOM |
+| sbomRef | URI-reference | no | Reference to external SBOM document |
+| sbomFormat | "cyclonedx" \| "spdx" | no | SBOM format (required when sbom/sbomRef present) |
+| baselineRefs | string[] | no | Names of baselines that apply |
+
+**Type-specific fields:**
 
 | Type | Extra Fields |
 |------|-------------|
-| host | fqdn, ipAddress, mac, osName, osVersion, osFamily |
-| containerImage | imageId, repository, tag, digest |
-| containerInstance | containerId, imageId, runtime |
-| containerPlatform | platform, clusterName, namespace |
-| cloudAccount | accountId, provider, region, partition |
-| cloudResource | resourceId, arn, provider, resourceType, region |
+| host | fqdn, ipAddress, macAddress, osName, osVersion |
+| containerImage | imageId, registry, repository, tag, digest |
+| containerInstance | containerId, image, runtime |
+| containerPlatform | platformType, clusterName, namespace, version |
+| cloudAccount | provider, accountId, region |
+| cloudResource | provider, resourceType, resourceId, arn, region |
 | repository | url, branch, commit |
-| application | url, technology, version |
-| artifact | path, digest, mediaType, size |
-| network | cidr, vlanId, zone |
-| database | engine, version, instanceId |
+| application | url, version, environment |
+| artifact | packageManager, packageName, version, checksum |
+| network | cidr, gateway |
+| database | engine, version, host, port |
 
 ---
 
@@ -210,22 +225,29 @@ Describes a system under assessment. A system document defines the authorization
 | categorizationLevel | CategorizationLevel | no | FIPS 199 categorization |
 | boundaryDescription | string | no | System boundary narrative |
 | controlDesignations | ControlDesignation[] | no | Control inheritance declarations |
-| interconnections | Interconnection[] | no | External system connections |
+| dataFlows | DataFlow[] | no | Data flows between components or external endpoints |
 | labels | {string: string} | no | Key-value grouping metadata |
 | checksum | Checksum | no | Document integrity hash |
 | version | string | no | Document version |
 | generator | Generator | no | Tool that produced this file |
 
-### Component
+### System Component
 
-A discrete part of the system — an application, database, network segment, storage volume, or service. Components provide the system decomposition that maps targets and baselines to the organizational structure. Labels can further classify components by team, environment, or region.
+System components use the same polymorphic Component type as Results (see Section 1), with `componentId` required for stable cross-document references, data flow endpoints, and control designation binding.
+
+### Data Flow
+
+Describes a data flow between components within the system or to external endpoints. Used for authorization boundary diagrams and data flow documentation.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| name | string | **yes** | Component name |
-| type | ComponentType | **yes** | Component category |
-| description | string | no | Component description |
-| labels | {string: string} | no | Key-value grouping metadata |
+| from | UUID | **yes** | Source componentId |
+| to | UUID or External_Endpoint | **yes** | Destination (local component or external) |
+| protocol | string | no | Protocol (e.g. "HTTPS", "TCP") |
+| port | integer | no | Port number (1–65535) |
+| direction | Direction | no | inbound, outbound, or bidirectional |
+| description | string | no | Flow description |
+| labels | {string: string} | no | Key-value metadata |
 
 ### Control Designation
 
@@ -261,6 +283,19 @@ Assessment plan defining what to assess and how. A plan document describes the s
 | version | string | no | Document version |
 | generator | Generator | no | Tool that produced this file |
 
+### Assessment
+
+A single assessment within a plan — defines which baseline to run against which component.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| baselineRef | URI-reference | **yes** | Reference to baseline to evaluate |
+| componentRef | UUID | no | componentId of target component (direct binding) |
+| targetSelector | TargetSelector | no | Label selector for target matching |
+| inputs | object | no | Resolved input values |
+| runner | RunnerConfig | no | Runner/scanner configuration |
+| description | string | no | Assessment purpose |
+
 ---
 
 ## 5. Amendments
@@ -295,6 +330,7 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 | justification | string | **yes** | Reason for override |
 | authority | Identity | no | Authorizing entity |
 | expiration | date-time | no | When override expires |
+| componentRef | UUID | no | Scopes override to a specific component |
 | inheritedFrom | UUID | no | componentId of local control provider |
 | previousChecksum | Checksum | no | Links to prior state (amendment chain) |
 
@@ -348,6 +384,18 @@ Bundles references to assessment artifacts for audit and compliance submission. 
 | version | string | no | Document version |
 | generator | Generator | no | Tool that produced this file |
 
+### Content Reference
+
+A reference to an HDF document or SBOM included in the evidence package.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| type | ContentType | **yes** | Document type |
+| uri | URI-reference | **yes** | Document location |
+| checksum | Checksum | no | Document integrity hash |
+| description | string | no | Entry description |
+| componentRef | UUID | no | componentId this content relates to |
+
 ---
 
 ## Enumerations
@@ -388,7 +436,10 @@ Impact is a float 0.0 to 1.0. Conventional mapping to severity:
 `low` | `moderate` | `high`
 
 ### ComponentType
-`application` | `database` | `network` | `storage` | `compute` | `service` | `other`
+`host` | `containerImage` | `containerInstance` | `containerPlatform` | `cloudAccount` | `cloudResource` | `repository` | `application` | `artifact` | `network` | `database`
+
+### Direction (data flow)
+`inbound` | `outbound` | `bidirectional`
 
 ### ControlDesignationType
 `common` | `system-specific` | `hybrid`
@@ -484,16 +535,23 @@ HDF supports 4 trust levels for tamper detection:
 ## Cross-Document References
 
 ```
-Plan ---- baselineRef ----> Baseline
-Plan ---- systemRef ------> System
-Results - planRef ---------> Plan
-Results - systemRef -------> System
-Results - baselines[] -----> Baseline (embedded, not referenced)
-Amendments - systemRef ----> System
-Evidence Package - systemRef -> System
+Plan ---- baselineRef ---------> Baseline
+Plan ---- systemRef -----------> System
+Plan ---- componentRef --------> Component (by UUID)
+Results - planRef -------------> Plan
+Results - systemRef -----------> System
+Results - baselines[] ---------> Baseline (embedded, not referenced)
+Results - components[] --------> Component (embedded)
+Amendments - systemRef --------> System
+Amendments - componentRef -----> Component (by UUID)
+Amendments - inheritedFrom ----> Component (by UUID)
+Evidence Package - systemRef --> System
+Evidence Package - componentRef -> Component (by UUID, on Content_Reference)
+System - dataFlows[].from/to --> Component (by UUID)
+System - controlDesignations --> Component (by UUID, providedBy/inheritedBy)
 ```
 
-All `*Ref` fields are URI-reference strings (relative path, absolute URI, or fragment identifier). The `baselines[]` relationship is composition — Results embed Evaluated Baselines with findings attached, rather than referencing external Baseline documents.
+All `*Ref` fields are URI-reference strings (relative path, absolute URI, or fragment identifier) unless noted as UUID. Component references use `componentId` (UUID) for local binding. The `baselines[]` and `components[]` relationships in Results are composition — they embed the data rather than referencing external documents.
 
 ---
 
