@@ -8,7 +8,7 @@ func TestDetectHDFDocumentType(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"results", `{"baselines": [], "targets": [], "statistics": {}}`, "results"},
+		{"results", `{"baselines": [], "components": [], "statistics": {}}`, "results"},
 		{"baseline", `{"name": "test", "requirements": [], "supports": []}`, "baseline"},
 		{"system", `{"name": "Portal", "components": []}`, "system"},
 		{"plan", `{"name": "plan", "assessments": []}`, "plan"},

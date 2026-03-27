@@ -7448,6 +7448,16 @@
       "version": "0.1.66"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "xccdf"
+      },
+      "name": "localhost.localdomain",
+      "sbom": null,
+      "type": "host"
+    }
+  ],
   "dataSource": {
     "format": "XCCDF",
     "name": "XCCDF"
@@ -7459,14 +7469,5 @@
   "statistics": {
     "duration": 1
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "xccdf"
-      },
-      "name": "localhost.localdomain",
-      "type": "host"
-    }
-  ],
   "timestamp": "2023-03-20T12:28:11-05:00"
 }

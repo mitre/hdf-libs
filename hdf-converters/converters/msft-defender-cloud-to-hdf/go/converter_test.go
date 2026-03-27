@@ -158,8 +158,8 @@ func TestConvert_Target(t *testing.T) {
 	result, err := ConvertMsftDefenderCloudToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets, "should have at least one target")
-	target := result.Targets[0]
+	require.NotEmpty(t, result.Components, "should have at least one target")
+	target := result.Components[0]
 
 	assert.Equal(t, hdf.CloudAccount, target.Type)
 	assert.Contains(t, target.Name, "a1b2c3d4-e5f6-7890-abcd-ef1234567890")

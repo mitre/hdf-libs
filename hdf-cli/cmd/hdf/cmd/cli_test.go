@@ -228,7 +228,7 @@ func TestListFilters(t *testing.T) {
 		{name: "list requirements with status short flag", args: []string{"list", fixture, "--detail", "requirements", "-s", "passed"}},
 		{name: "list requirements with --all", args: []string{"list", fixture, "--detail", "requirements", "--all"}},
 		{name: "list requirements with -a", args: []string{"list", fixture, "--detail", "requirements", "-a"}},
-		{name: "list targets", args: []string{"list", fixture, "--detail", "targets"}},
+		{name: "list components", args: []string{"list", fixture, "--detail", "components"}},
 		// Detail aliases
 		{name: "detail requirement (singular)", args: []string{"list", fixture, "--detail", "requirement"}, wantContain: "Requirements:"},
 		{name: "detail baseline (singular)", args: []string{"list", fixture, "--detail", "baseline"}, wantContain: "Baselines:"},
@@ -250,7 +250,7 @@ func TestJSONOutput(t *testing.T) {
 		{name: "list --json summary", args: []string{"list", fixture, "--json"}, wantContain: `"baselines":`},
 		{name: "list --json requirements", args: []string{"list", fixture, "--detail", "requirements", "--json"}, wantContain: `"id":`},
 		{name: "list --json baselines", args: []string{"list", fixture, "--detail", "baselines", "--json"}, wantContain: `"name":`},
-		{name: "list --json targets", args: []string{"list", fixture, "--detail", "targets", "--json"}, wantContain: `[`},
+		{name: "list --json targets", args: []string{"list", fixture, "--detail", "components", "--json"}, wantContain: `[`},
 		{name: "query --json", args: []string{"query", "--json", fixture}, wantContain: "["},
 		{name: "query --json --count", args: []string{"query", "--json", "--count", fixture}, wantContain: `"count":`},
 		{name: "version --json", args: []string{"version", "--json"}, wantContain: `"version":`},

@@ -290,7 +290,7 @@ export async function convertMsftSecureScoreToHdf(input: string): Promise<string
       version: '1.0.0',
     },
     dataSource,
-    targets: [{
+    components: [{
       name: `Azure Tenant: ${tenantId}`,
       type: Copyright.CloudAccount,
       labels: { account: tenantId, provider: 'azure', service: 'secure-score' },

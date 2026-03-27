@@ -24,7 +24,7 @@ func TestParseResults_Valid(t *testing.T) {
 					}]
 				}]
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -72,7 +72,7 @@ func TestParseResults_Valid(t *testing.T) {
 					}]
 				}
 			],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -98,7 +98,7 @@ func TestParseResults_Invalid(t *testing.T) {
 
 	t.Run("should reject results missing baselines field", func(t *testing.T) {
 		invalidJSON := []byte(`{
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -115,7 +115,7 @@ func TestParseResults_Invalid(t *testing.T) {
 				"checksum": { "algorithm": "sha256", "value": "test" },
 				"requirements": []
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -137,7 +137,7 @@ func TestParseResults_Invalid(t *testing.T) {
 					"results": []
 				}]
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -250,9 +250,15 @@ func TestParse_AutoDetection(t *testing.T) {
 			"baselines": [{
 				"name": "Test",
 				"checksum": { "algorithm": "sha256", "value": "test" },
-				"requirements": []
+				"requirements": [{
+					"id": "REQ-001",
+					"descriptions": [{ "label": "default", "data": "Test" }],
+					"impact": 0.5,
+					"tags": {},
+					"results": [{ "status": "passed", "codeDesc": "OK", "startTime": "2025-01-01T00:00:00Z" }]
+				}]
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -311,7 +317,7 @@ func TestErrorMessages(t *testing.T) {
 			"baselines": [{
 				"name": "Test"
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 

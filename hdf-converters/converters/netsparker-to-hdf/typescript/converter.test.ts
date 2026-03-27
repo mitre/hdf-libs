@@ -97,9 +97,9 @@ describe('Netsparker to HDF converter', () => {
   it('should set target name to scan URL', async () => {
     const input = loadFixture('input/sample-netsparker-invicti.xml');
     const hdf = parseResult(await convertNetsparkerToHdf(input));
-    expect(hdf.targets).toBeDefined();
-    expect(hdf.targets![0]!.name).toBe('https://foo.bar/');
-    expect(hdf.targets![0]!.type).toBe('application');
+    expect(hdf.components).toBeDefined();
+    expect(hdf.components![0]!.name).toBe('https://foo.bar/');
+    expect(hdf.components![0]!.type).toBe('application');
   });
 
   // ---- Requirement IDs use LookupId ----
@@ -324,7 +324,7 @@ describe('Netsparker to HDF converter', () => {
     // No http-request/response → fallback empty strings in codeDesc
     expect(req.results[0]!.codeDesc).toContain('http-request');
     // Missing target url → 'Unknown'
-    expect(hdf.targets![0]!.name).toBe('Unknown');
+    expect(hdf.components![0]!.name).toBe('Unknown');
   });
 
   it('should handle vulnerability with no description but has name', async () => {

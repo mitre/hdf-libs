@@ -60,6 +60,16 @@
       "name": "org.apache.maven.surefire.test.FailingTest"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "junit"
+      },
+      "name": "org.apache.maven.surefire.test.FailingTest",
+      "sbom": null,
+      "type": "application"
+    }
+  ],
   "dataSource": {
     "format": "XML",
     "name": "JUnit XML"
@@ -68,14 +78,5 @@
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "junit"
-      },
-      "name": "org.apache.maven.surefire.test.FailingTest",
-      "type": "application"
-    }
-  ],
-  "timestamp": "2026-03-23T05:53:52.453931Z"
+  "timestamp": "2026-03-27T15:22:56.264427Z"
 }

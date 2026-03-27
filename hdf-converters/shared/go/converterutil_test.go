@@ -587,7 +587,7 @@ func TestBuildHDFResults_MinimalFields(t *testing.T) {
 	assert.Equal(t, "1.0.0", result.Generator.Version)
 	assert.Equal(t, &now, result.Timestamp)
 	assert.Nil(t, result.DataSource)
-	assert.Nil(t, result.Targets)
+	assert.Nil(t, result.Components)
 	assert.Nil(t, result.Statistics)
 }
 
@@ -633,7 +633,7 @@ func TestBuildHDFResults_EmptyDataSourceStringsOmitted(t *testing.T) {
 }
 
 func TestBuildHDFResults_WithTargetsAndStatistics(t *testing.T) {
-	targets := []hdf.Target{{Name: "web-server"}}
+	targets := []hdf.Component{{Name: "web-server"}}
 	dur := 42.5
 	stats := &hdf.Statistics{Duration: &dur}
 
@@ -641,11 +641,11 @@ func TestBuildHDFResults_WithTargetsAndStatistics(t *testing.T) {
 		GeneratorName:    "nessus-to-hdf",
 		ConverterVersion: "1.0.0",
 		Baselines:        []hdf.EvaluatedBaseline{},
-		Targets:          targets,
+		Components:          targets,
 		Statistics:       stats,
 	})
 
-	assert.Equal(t, targets, result.Targets)
+	assert.Equal(t, targets, result.Components)
 	assert.Equal(t, stats, result.Statistics)
 }
 

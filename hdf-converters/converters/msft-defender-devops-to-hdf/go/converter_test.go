@@ -75,8 +75,8 @@ func TestConvert_RepositoryTarget(t *testing.T) {
 	result, err := ConvertMsftDefenderDevopsToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets, "should have at least one target")
-	target := result.Targets[0]
+	require.NotEmpty(t, result.Components, "should have at least one target")
+	target := result.Components[0]
 
 	assert.Equal(t, hdf.Repository, target.Type)
 	assert.Equal(t, "security-devops-action", target.Name)
@@ -94,7 +94,7 @@ func TestConvert_RepositoryTargetDeduplicated(t *testing.T) {
 	require.NoError(t, err)
 
 	// All 7 runs reference the same repo — should deduplicate to 1 target
-	assert.Len(t, result.Targets, 1)
+	assert.Len(t, result.Components, 1)
 }
 
 // ---- Tool metadata tags ----

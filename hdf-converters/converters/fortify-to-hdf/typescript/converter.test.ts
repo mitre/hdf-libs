@@ -119,7 +119,7 @@ describe('Fortify to HDF Converter', () => {
     it('should set target as Repository type', async () => {
       const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
       const out = parseOutput(await convertFortifyToHdf(fvdl));
-      const targets = out.targets as Array<Record<string, unknown>>;
+      const targets = out.components as Array<Record<string, unknown>>;
       expect(targets).toHaveLength(1);
       expect(targets[0]!.type).toBe('repository');
     });
@@ -262,7 +262,7 @@ describe('Fortify to HDF Converter', () => {
     // No timestamp when no CreatedTS
     expect(out.timestamp).toBeUndefined();
     // Target falls back to BuildID when no SourceBasePath
-    const targets = out.targets as Array<Record<string, unknown>>;
+    const targets = out.components as Array<Record<string, unknown>>;
     expect(targets[0]!.name).toBe('test-build');
   });
 
@@ -272,7 +272,7 @@ describe('Fortify to HDF Converter', () => {
 <Vulnerabilities/>
 </FVDL>`;
     const out = parseOutput(await convertFortifyToHdf(fvdl));
-    const targets = out.targets as Array<Record<string, unknown>>;
+    const targets = out.components as Array<Record<string, unknown>>;
     expect(targets[0]!.name).toBe('Unknown');
   });
 

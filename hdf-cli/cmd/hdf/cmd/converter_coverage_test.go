@@ -508,7 +508,7 @@ func TestConverterCoverage_ConvertWithLabels(t *testing.T) {
 	// If the output has targets, labels should be applied.
 	var doc map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &doc))
-	if targets, ok := doc["targets"].([]interface{}); ok && len(targets) > 0 {
+	if targets, ok := doc["components"].([]interface{}); ok && len(targets) > 0 {
 		target := targets[0].(map[string]interface{})
 		labels := target["labels"].(map[string]interface{})
 		assert.Equal(t, "prod", labels["env"])

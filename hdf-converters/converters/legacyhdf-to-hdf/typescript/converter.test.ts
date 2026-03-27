@@ -21,8 +21,8 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
       expect(v2.baselines).toEqual([]);
       expect(v2.statistics).toEqual({});
-      expect(v2.targets).toHaveLength(1);
-      expect(v2.targets![0]).toMatchObject({
+      expect(v2.components).toHaveLength(1);
+      expect(v2.components![0]).toMatchObject({
         type: 'host',
         name: 'ubuntu',
         release: '20.04',
@@ -61,8 +61,8 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
       const v2 = convertV1ToV2(v1);
 
-      expect(v2.targets).toHaveLength(1);
-      expect(v2.targets![0]).toEqual({
+      expect(v2.components).toHaveLength(1);
+      expect(v2.components![0]).toEqual({
         type: 'host',
         id: 'server-123',
         name: 'redhat',
@@ -83,7 +83,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
       const v2 = convertV1ToV2(v1);
 
-      expect(v2.targets![0].id).toBe('debian');
+      expect(v2.components![0].id).toBe('debian');
     });
 
     it('should preserve generator information', () => {
@@ -171,7 +171,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
       const v2 = convertV1ToV2(v1);
 
-      expect(v2.targets![0]).toEqual({
+      expect(v2.components![0]).toEqual({
         type: 'host',
         id: 'test-system',
         name: 'test-system',
@@ -179,7 +179,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
           service: 'inspec',
         },
       });
-      expect(v2.targets![0]).not.toHaveProperty('release');
+      expect(v2.components![0]).not.toHaveProperty('release');
     });
 
     it('should handle complex statistics object', () => {
@@ -604,8 +604,8 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
     it('should map platform to target', () => {
       const v2 = convertV1ToV2(v1);
-      expect(v2.targets).toHaveLength(1);
-      expect(v2.targets![0]).toMatchObject({
+      expect(v2.components).toHaveLength(1);
+      expect(v2.components![0]).toMatchObject({
         type: 'host',
         name: 'redhat',
         release: '9.7',

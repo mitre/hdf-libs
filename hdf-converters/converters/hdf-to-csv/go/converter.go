@@ -67,10 +67,10 @@ func buildCSVRows(hdfData *hdf.HDFResults) [][]string {
 	rows = append(rows, header)
 
 	// Get targets (may be nil or empty)
-	targets := hdfData.Targets
+	targets := hdfData.Components
 	if len(targets) == 0 {
 		// Create single empty target entry
-		targets = []hdf.Target{{Name: "", Type: hdf.Copyright("")}}
+		targets = []hdf.Component{{Name: "", Type: hdf.Copyright("")}}
 	}
 
 	// Iterate through baselines
@@ -99,7 +99,7 @@ func buildCSVRows(hdfData *hdf.HDFResults) [][]string {
 }
 
 // createRow creates a single CSV row
-func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequirement, target *hdf.Target) []string {
+func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequirement, target *hdf.Component) []string {
 	// Get default description
 	description := ""
 	for _, desc := range requirement.Descriptions {

@@ -234,6 +234,19 @@
       "version": "5.19.0"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "nessus"
+      },
+      "name": "rhel7-server.example.com",
+      "sbom": null,
+      "type": "host",
+      "fqdn": "rhel7-server.example.com",
+      "ipAddress": "10.1.2.50",
+      "osName": "Red Hat Enterprise Linux Server 7.9"
+    }
+  ],
   "dataSource": {
     "name": "Nessus"
   },
@@ -244,17 +257,5 @@
   "statistics": {
     "duration": 930
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "nessus"
-      },
-      "name": "rhel7-server.example.com",
-      "type": "host",
-      "fqdn": "rhel7-server.example.com",
-      "ipAddress": "10.1.2.50",
-      "osName": "Red Hat Enterprise Linux Server 7.9"
-    }
-  ],
   "timestamp": "2024-01-29T10:00:00Z"
 }

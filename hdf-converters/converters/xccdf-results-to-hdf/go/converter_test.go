@@ -66,7 +66,7 @@ func TestConvertXccdfResultsToHDF_Minimal(t *testing.T) {
 	require.NotNil(t, result)
 
 	assert.Len(t, result.Baselines, 1)
-	assert.Len(t, result.Targets, 1)
+	assert.Len(t, result.Components, 1)
 
 	shared.WriteOutput(t, "xccdf-results-to-hdf", "minimal.json", result)
 }
@@ -125,10 +125,10 @@ func TestConvertXccdfResultsToHDF_MinimalTarget(t *testing.T) {
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	assert.Equal(t, "Test Target", result.Targets[0].Name)
-	assert.Equal(t, hdf.Host, result.Targets[0].Type)
-	assert.Nil(t, result.Targets[0].IPAddress, "minimal.xml has no target-address")
+	require.Len(t, result.Components, 1)
+	assert.Equal(t, "Test Target", result.Components[0].Name)
+	assert.Equal(t, hdf.Host, result.Components[0].Type)
+	assert.Nil(t, result.Components[0].IPAddress, "minimal.xml has no target-address")
 }
 
 func TestConvertXccdfResultsToHDF_MinimalTimestamp(t *testing.T) {
@@ -185,7 +185,7 @@ func TestConvertXccdfResultsToHDF_StigRhel7(t *testing.T) {
 	require.NotNil(t, result)
 
 	assert.Len(t, result.Baselines, 1)
-	assert.Len(t, result.Targets, 1)
+	assert.Len(t, result.Components, 1)
 
 	shared.WriteOutput(t, "xccdf-results-to-hdf", "stig-rhel7.json", result)
 }
@@ -277,8 +277,8 @@ func TestConvertXccdfResultsToHDF_StigTarget(t *testing.T) {
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	target := result.Targets[0]
+	require.Len(t, result.Components, 1)
+	target := result.Components[0]
 	assert.Equal(t, "localhost.localdomain", target.Name)
 	assert.Equal(t, hdf.Host, target.Type)
 	require.NotNil(t, target.IPAddress)
@@ -514,7 +514,7 @@ func TestConvertARF_Minimal(t *testing.T) {
 	require.NotNil(t, result)
 
 	assert.Len(t, result.Baselines, 1)
-	assert.Len(t, result.Targets, 1)
+	assert.Len(t, result.Components, 1)
 
 	// Should produce 1 requirement from 1 rule-result
 	assert.Len(t, result.Baselines[0].Requirements, 1)
@@ -531,8 +531,8 @@ func TestConvertARF_AssetMetadata(t *testing.T) {
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	target := result.Targets[0]
+	require.Len(t, result.Components, 1)
+	target := result.Components[0]
 
 	// Target name from TestResult <target> element
 	assert.Equal(t, "rh-hony", target.Name)

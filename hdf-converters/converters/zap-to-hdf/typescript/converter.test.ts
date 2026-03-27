@@ -80,10 +80,10 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.targets).toHaveLength(1);
-      expect(hdf.targets![0].name).toBe('example.com');
-      expect(hdf.targets![0].type).toBe('application');
-      expect(hdf.targets![0].url).toBe('https://example.com');
+      expect(hdf.components).toHaveLength(1);
+      expect(hdf.components![0].name).toBe('example.com');
+      expect(hdf.components![0].type).toBe('application');
+      expect(hdf.components![0].url).toBe('https://example.com');
     });
 
     it('should omit targets when host is unknown', async () => {
@@ -91,7 +91,7 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.targets).toHaveLength(0);
+      expect(hdf.components).toHaveLength(0);
     });
   });
 
@@ -355,8 +355,8 @@ describe('ZAP Converter', () => {
 
       // Baseline.Name is the fixed scan label; the host goes into targets
       expect(hdf.baselines[0].name).toBe('OWASP ZAP Scan');
-      expect(hdf.targets).toHaveLength(1);
-      expect(hdf.targets![0].name).toBe('mymac.com');
+      expect(hdf.components).toHaveLength(1);
+      expect(hdf.components![0].name).toBe('mymac.com');
     });
 
     it('should produce 15 unique requirements from 25 alerts with deduplication', async () => {

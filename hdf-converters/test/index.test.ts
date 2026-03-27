@@ -69,7 +69,7 @@ describe('Main exports', () => {
 
     const v2 = convertV1ToV2(v1);
     expect(v2.baselines).toEqual([]);
-    expect(v2.targets).toBeDefined();
+    expect(v2.components).toBeDefined();
   });
 
   it('should export convertJunitToHdf from main index', () => {

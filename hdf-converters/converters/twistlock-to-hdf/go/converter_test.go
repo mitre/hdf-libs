@@ -313,10 +313,10 @@ func TestConvertTwistlock_Target(t *testing.T) {
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
+	require.NotEmpty(t, result.Components)
 	// Target name should be the image name
-	assert.Contains(t, result.Targets[0].Name, "registry.io/test")
-	assert.Equal(t, hdf.ContainerImage, result.Targets[0].Type)
+	assert.Contains(t, result.Components[0].Name, "registry.io/test")
+	assert.Equal(t, hdf.ContainerImage, result.Components[0].Type)
 }
 
 // ---- Empty vulnerabilities ----

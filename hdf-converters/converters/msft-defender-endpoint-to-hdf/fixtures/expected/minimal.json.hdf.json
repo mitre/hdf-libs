@@ -45,6 +45,19 @@
       "name": "Microsoft Defender for Endpoint Scan"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "provider": "azure",
+        "service": "defender-endpoint"
+      },
+      "name": "temp123.middleeast.corp.microsoft.com",
+      "sbom": null,
+      "type": "host",
+      "fqdn": "temp123.middleeast.corp.microsoft.com",
+      "osName": "Windows10"
+    }
+  ],
   "dataSource": {
     "name": "Microsoft Defender for Endpoint"
   },
@@ -52,17 +65,5 @@
     "name": "msft-defender-endpoint-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "provider": "azure",
-        "service": "defender-endpoint"
-      },
-      "name": "temp123.middleeast.corp.microsoft.com",
-      "type": "host",
-      "fqdn": "temp123.middleeast.corp.microsoft.com",
-      "osName": "Windows10"
-    }
-  ],
-  "timestamp": "2026-03-23T05:53:52.969695Z"
+  "timestamp": "2026-03-27T15:22:56.843641Z"
 }

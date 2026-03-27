@@ -176,8 +176,8 @@ describe('snyk to HDF converter', async () => {
   describe('target', async () => {
     it('should include project name as target', async () => {
       const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.name).toBe('goof');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.name).toBe('goof');
     });
   });
 

@@ -347,7 +347,7 @@ func buildQueryFixture(t *testing.T, requirements []map[string]any) string {
 				"requirements": requirements,
 			},
 		},
-		"targets":    []any{},
+		"components": []any{},
 		"statistics": map[string]any{},
 	})
 	if err != nil {

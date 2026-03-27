@@ -115,20 +115,20 @@ describe('Microsoft Defender for Cloud to HDF converter', async () => {
   describe('target', async () => {
     it('should set target as CloudAccount type', async () => {
       const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.targets).toHaveLength(1);
-      expect(hdf.targets![0]!.type).toBe('cloudAccount');
+      expect(hdf.components).toHaveLength(1);
+      expect(hdf.components![0]!.type).toBe('cloudAccount');
     });
 
     it('should include subscription ID in target', async () => {
       const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(loadFixture('minimal.json'))) as HdfResults;
-      const target = hdf.targets![0]!;
+      const target = hdf.components![0]!;
       expect(target.accountId).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890');
       expect(target.name).toContain('a1b2c3d4-e5f6-7890-abcd-ef1234567890');
     });
 
     it('should set Azure as provider', async () => {
       const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.targets![0]!.provider).toBe('azure');
+      expect(hdf.components![0]!.provider).toBe('azure');
     });
   });
 

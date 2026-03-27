@@ -11,6 +11,16 @@
       "title": "Nikto Target: Host: clean.example.com Port: 443"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "nikto"
+      },
+      "name": "Host: clean.example.com Port: 443",
+      "sbom": null,
+      "type": "application"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "Nikto"
@@ -18,14 +28,5 @@
   "generator": {
     "name": "nikto-to-hdf",
     "version": "0.1.0"
-  },
-  "targets": [
-    {
-      "labels": {
-        "service": "nikto"
-      },
-      "name": "Host: clean.example.com Port: 443",
-      "type": "application"
-    }
-  ]
+  }
 }

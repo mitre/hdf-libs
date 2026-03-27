@@ -6,15 +6,14 @@
 
 import { parseJSON } from '@mitre/hdf-utilities';
 import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
-import type {
-  HdfSystem,
-  Component as HdfComponent,
-} from '@mitre/hdf-schema';
+import type { HdfSystem } from '@mitre/hdf-schema';
 import {
   AuthorizationStatus,
   CategorizationLevel,
   BoundaryDescription,
 } from '@mitre/hdf-schema';
+// Import Component from system types to avoid type incompatibility with results Component
+import type { Component as HdfComponent } from '@mitre/hdf-schema/hdf-system';
 import type {
   Oscal,
   SystemSecurityPlanSSP,

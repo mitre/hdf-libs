@@ -44,6 +44,16 @@
       "title": "TruffleHog Scan (trufflehog - git)"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "trufflehog"
+      },
+      "name": "https://github.com/trufflesecurity/test_keys",
+      "sbom": null,
+      "type": "repository"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "TruffleHog"
@@ -52,14 +62,5 @@
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "trufflehog"
-      },
-      "name": "https://github.com/trufflesecurity/test_keys",
-      "type": "repository"
-    }
-  ],
-  "timestamp": "2026-03-23T13:33:16.154377Z"
+  "timestamp": "2026-03-27T15:22:58.703683Z"
 }

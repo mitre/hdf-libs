@@ -236,6 +236,18 @@
       "title": "Scout Suite Report using default ruleset on Amazon Web Services with account 916481805664"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "account": "916481805664",
+        "provider": "aws",
+        "service": "scoutsuite"
+      },
+      "name": "default ruleset:Amazon Web Services:916481805664",
+      "sbom": null,
+      "type": "cloudAccount"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "ScoutSuite",
@@ -245,16 +257,5 @@
     "name": "scoutsuite-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "account": "916481805664",
-        "provider": "aws",
-        "service": "scoutsuite"
-      },
-      "name": "default ruleset:Amazon Web Services:916481805664",
-      "type": "cloudAccount"
-    }
-  ],
   "timestamp": "2021-02-19T19:16:10Z"
 }

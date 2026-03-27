@@ -5809,6 +5809,17 @@
       "version": "003.005"
     }
   ],
+  "components": [
+    {
+      "ipAddress": "127.0.0.1",
+      "labels": {
+        "service": "xccdf"
+      },
+      "name": "localhost.localdomain",
+      "sbom": null,
+      "type": "host"
+    }
+  ],
   "dataSource": {
     "format": "XCCDF",
     "name": "XCCDF"
@@ -5820,15 +5831,5 @@
   "statistics": {
     "duration": 89
   },
-  "targets": [
-    {
-      "ipAddress": "127.0.0.1",
-      "labels": {
-        "service": "xccdf"
-      },
-      "name": "localhost.localdomain",
-      "type": "host"
-    }
-  ],
   "timestamp": "2021-12-17T10:39:29Z"
 }

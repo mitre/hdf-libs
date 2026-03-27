@@ -130,9 +130,9 @@ func TestConvertNetsparker_Target(t *testing.T) {
 	result, err := ConvertNetsparkerToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, "https://foo.bar/", result.Targets[0].Name)
-	assert.Equal(t, hdf.CopyrightApplication, result.Targets[0].Type)
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, "https://foo.bar/", result.Components[0].Name)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
 }
 
 // ---- Requirement IDs use LookupId ----

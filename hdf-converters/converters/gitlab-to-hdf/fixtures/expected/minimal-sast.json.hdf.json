@@ -45,6 +45,16 @@
       "title": "GitLab SAST Security Scan"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "gitlab"
+      },
+      "name": "Semgrep",
+      "sbom": null,
+      "type": "repository"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "Semgrep",
@@ -54,14 +64,5 @@
     "name": "gitlab-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "gitlab"
-      },
-      "name": "Semgrep",
-      "type": "repository"
-    }
-  ],
   "timestamp": "2024-01-15T10:01:30Z"
 }

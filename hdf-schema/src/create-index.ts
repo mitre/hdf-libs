@@ -114,8 +114,9 @@ export * from './ts/hdf-results.js';
 export type { HdfBaseline, BaselineRequirement } from './ts/hdf-baseline.js';
 ${comparisonDtsExport}
 // Re-export system types
+// No Component re-export — it's already exported by hdf-results.js via export *
 export type {
-  HdfSystem, Component, InputOverride, ControlDesignation, DataFlow,
+  HdfSystem, InputOverride, ControlDesignation, DataFlow,
 } from './ts/hdf-system.js';
 export {
   AuthorizationStatus, BoundaryDescription, CategorizationLevel, Designation, Direction,

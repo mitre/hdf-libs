@@ -2366,6 +2366,16 @@
       "title": "Snyk Project:  Snyk Path: https://github.com/snyk-labs/nodejs-goof"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "snyk"
+      },
+      "name": "https://github.com/snyk-labs/nodejs-goof",
+      "sbom": null,
+      "type": "application"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "Snyk"
@@ -2374,14 +2384,5 @@
     "name": "snyk-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "snyk"
-      },
-      "name": "https://github.com/snyk-labs/nodejs-goof",
-      "type": "application"
-    }
-  ],
-  "timestamp": "2026-03-23T05:53:54.301363Z"
+  "timestamp": "2026-03-27T15:22:58.367352Z"
 }

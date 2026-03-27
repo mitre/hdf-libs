@@ -28,7 +28,7 @@ func TestConvertNessusToHDF_Sample(t *testing.T) {
 	assert.Equal(t, "nessus-to-hdf", result.Generator.Name)
 	assert.Equal(t, converterVersion, result.Generator.Version)
 	assert.Len(t, result.Baselines, 3, "Should have 3 baselines (one per scanned host)")
-	assert.Len(t, result.Targets, 3, "Should have 3 targets (3 scanned hosts)")
+	assert.Len(t, result.Components, 3, "Should have 3 targets (3 scanned hosts)")
 
 	// Verify each baseline has requirements
 	for _, baseline := range result.Baselines {
@@ -136,7 +136,7 @@ func TestConvertNessusToHDF_EmptyHosts(t *testing.T) {
 	require.NotNil(t, result, "Result should not be nil")
 
 	assert.Len(t, result.Baselines, 0, "Should have no baselines")
-	assert.Len(t, result.Targets, 0, "Should have no targets")
+	assert.Len(t, result.Components, 0, "Should have no targets")
 	assert.Equal(t, 0.0, *result.Statistics.Duration, "Duration should be 0")
 }
 

@@ -140,9 +140,9 @@ func TestConvertScoutsuiteToHDF_Target(t *testing.T) {
 	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	assert.Contains(t, result.Targets[0].Name, "916481805664")
-	assert.Equal(t, hdf.CloudAccount, result.Targets[0].Type)
+	require.Len(t, result.Components, 1)
+	assert.Contains(t, result.Components[0].Name, "916481805664")
+	assert.Equal(t, hdf.CloudAccount, result.Components[0].Type)
 }
 
 // --- Impact mapping ---

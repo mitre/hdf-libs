@@ -39,7 +39,7 @@ func ConvertHDFToXML(input []byte) ([]byte, error) {
 type XMLHDFResults struct {
 	XMLName    xml.Name       `xml:"HdfResults"`
 	Baselines  XMLBaselines   `xml:"baselines"`
-	Targets    *XMLTargets    `xml:"targets,omitempty"`
+	Targets    *XMLTargets    `xml:"components,omitempty"`
 	Statistics *XMLStatistics `xml:"statistics,omitempty"`
 	Timestamp  string         `xml:"timestamp,omitempty"`
 }
@@ -159,12 +159,12 @@ func transformToXMLStructure(hdf *hdf.HDFResults) *XMLHDFResults {
 		}
 	}
 
-	// Transform targets
-	if len(hdf.Targets) > 0 {
+	// Transform components
+	if len(hdf.Components) > 0 {
 		result.Targets = &XMLTargets{
-			Target: make([]XMLTarget, len(hdf.Targets)),
+			Target: make([]XMLTarget, len(hdf.Components)),
 		}
-		for i, target := range hdf.Targets {
+		for i, target := range hdf.Components {
 			result.Targets.Target[i] = XMLTarget{
 				Name:      target.Name,
 				Type:      string(target.Type),

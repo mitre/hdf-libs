@@ -85,7 +85,7 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 	now := time.Now().UTC()
 
-	target := hdf.Target{
+	target := hdf.Component{
 		Name: name,
 		Type: hdf.CopyrightApplication,
 		Labels: map[string]string{
@@ -99,7 +99,7 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		DataSourceName:   "JUnit XML",
 		DataSourceFormat: "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets:          []hdf.Target{target},
+		Components:          []hdf.Component{target},
 		Timestamp:        &now,
 	}), nil
 }

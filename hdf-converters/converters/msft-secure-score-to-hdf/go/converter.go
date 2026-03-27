@@ -292,7 +292,7 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 		DataSourceName:   "Microsoft Secure Score",
 		DataSourceFormat: "JSON",
 		Baselines:        baselines,
-		Targets: []hdf.Target{
+		Components: []hdf.Component{
 			{
 				Name:     targetName,
 				Type:     hdf.CloudAccount,

@@ -200,7 +200,7 @@ export async function convertAwsConfigToHdf(input: string): Promise<string> {
 
   const hdf: HdfResults = {
     baselines: [baseline],
-    targets: [{
+    components: [{
       type: Copyright.CloudAccount,
       name: `AWS Account ${accountId}`,
       labels: {

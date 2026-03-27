@@ -147,11 +147,11 @@ func TestConvertZapToHDF_Target(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	assert.Equal(t, "example.com", result.Targets[0].Name)
-	assert.Equal(t, hdf.CopyrightApplication, result.Targets[0].Type)
-	require.NotNil(t, result.Targets[0].URL)
-	assert.Equal(t, "https://example.com", *result.Targets[0].URL)
+	require.Len(t, result.Components, 1)
+	assert.Equal(t, "example.com", result.Components[0].Name)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
+	require.NotNil(t, result.Components[0].URL)
+	assert.Equal(t, "https://example.com", *result.Components[0].URL)
 }
 
 func TestConvertZapToHDF_NoTargetForUnknownHost(t *testing.T) {
@@ -159,7 +159,7 @@ func TestConvertZapToHDF_NoTargetForUnknownHost(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	assert.Empty(t, result.Targets)
+	assert.Empty(t, result.Components)
 }
 
 // --- Impact mapping ---
@@ -426,8 +426,8 @@ func TestConvertZapToHDF_Webgoat_SelectsSiteWithMostAlerts(t *testing.T) {
 
 	// Baseline.Name is the fixed scan label; the host goes into Targets
 	assert.Equal(t, "OWASP ZAP Scan", result.Baselines[0].Name)
-	require.Len(t, result.Targets, 1)
-	assert.Equal(t, "mymac.com", result.Targets[0].Name)
+	require.Len(t, result.Components, 1)
+	assert.Equal(t, "mymac.com", result.Components[0].Name)
 }
 
 func TestConvertZapToHDF_Webgoat_RequirementCount(t *testing.T) {

@@ -32,7 +32,7 @@ const minimalResultsJSON = `{
       "inputs": []
     }
   ],
-  "targets": [
+  "components": [
     {"name": "web-server-01", "type": "host"},
     {"name": "my-container", "type": "containerImage"}
   ],
@@ -156,7 +156,7 @@ func TestSystemCreate_InvalidJSON(t *testing.T) {
 func TestSystemCreate_NoTargets(t *testing.T) {
 	noTargets := `{
 		"baselines": [{"name": "B1", "checksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"}, "supports": [], "requirements": [], "groups": [], "depends": [], "inputs": []}],
-		"targets": [],
+		"components": [],
 		"statistics": {"duration": 1},
 		"generator": {"name": "test", "version": "1.0"}
 	}`
@@ -174,7 +174,7 @@ func TestSystemCreate_NoTargets(t *testing.T) {
 func TestSystemCreate_TargetLabelsAsSelector(t *testing.T) {
 	withLabels := `{
 		"baselines": [{"name": "B1", "checksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"}, "supports": [], "requirements": [], "groups": [], "depends": [], "inputs": []}],
-		"targets": [
+		"components": [
 			{"name": "labeled-host", "type": "host", "labels": {"env": "prod", "tier": "web"}}
 		],
 		"statistics": {"duration": 1},
@@ -409,7 +409,7 @@ func TestSystemCreate_TypeMapping(t *testing.T) {
 		t.Run(tt.targetType, func(t *testing.T) {
 			resultsJSON := `{
 				"baselines": [{"name": "B1", "checksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"}, "supports": [], "requirements": [], "groups": [], "depends": [], "inputs": []}],
-				"targets": [{"name": "target1", "type": "` + tt.targetType + `"}],
+				"components": [{"name": "target1", "type": "` + tt.targetType + `"}],
 				"statistics": {"duration": 1},
 				"generator": {"name": "test", "version": "1.0"}
 			}`

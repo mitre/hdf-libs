@@ -136,6 +136,16 @@
       "title": "Twistlock Project: My-Repo"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "image": ""
+      },
+      "name": "My-Repo",
+      "sbom": null,
+      "type": "containerImage"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "Twistlock"
@@ -144,14 +154,5 @@
     "name": "twistlock-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "image": ""
-      },
-      "name": "My-Repo",
-      "type": "containerImage"
-    }
-  ],
-  "timestamp": "2026-03-23T05:53:54.747836Z"
+  "timestamp": "2026-03-27T15:22:58.859411Z"
 }

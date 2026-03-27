@@ -31997,6 +31997,17 @@
       "version": "0.1.79"
     }
   ],
+  "components": [
+    {
+      "ipAddress": "127.0.0.1",
+      "labels": {
+        "service": "xccdf"
+      },
+      "name": "localhost",
+      "sbom": null,
+      "type": "host"
+    }
+  ],
   "dataSource": {
     "format": "XCCDF",
     "name": "XCCDF"
@@ -32008,15 +32019,5 @@
   "statistics": {
     "duration": 9
   },
-  "targets": [
-    {
-      "ipAddress": "127.0.0.1",
-      "labels": {
-        "service": "xccdf"
-      },
-      "name": "localhost",
-      "type": "host"
-    }
-  ],
   "timestamp": "2026-03-06T16:11:44-05:00"
 }

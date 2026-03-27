@@ -63,10 +63,10 @@ describe('msft-defender-devops-to-hdf', () => {
       const input = loadFixture('input/minimal.sarif');
       const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
 
-      expect(result.targets).toBeDefined();
-      expect(result.targets!.length).toBeGreaterThan(0);
+      expect(result.components).toBeDefined();
+      expect(result.components!.length).toBeGreaterThan(0);
 
-      const target = result.targets![0]!;
+      const target = result.components![0]!;
       expect(target.type).toBe('repository');
       expect(target.name).toBe('security-devops-action');
       expect(target.url).toContain('github.com');
@@ -80,7 +80,7 @@ describe('msft-defender-devops-to-hdf', () => {
       const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
 
       // All 7 runs reference the same repo
-      expect(result.targets).toHaveLength(1);
+      expect(result.components).toHaveLength(1);
     });
   });
 

@@ -247,7 +247,7 @@ export async function convertDeptrackToHdf(input: string): Promise<string> {
       version: '1.0.0',
     },
     dataSource,
-    targets: [{ name: targetName, type: Copyright.Application, labels: { service: 'dependency-track' } }],
+    components: [{ name: targetName, type: Copyright.Application, labels: { service: 'dependency-track' } }],
     timestamp: new Date(),
   };
 

@@ -120,9 +120,9 @@ func TestConvertDeptrack_Target(t *testing.T) {
 	result, err := ConvertDeptrackToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, "Acme Example", result.Targets[0].Name)
-	assert.Equal(t, hdf.CopyrightApplication, result.Targets[0].Type)
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, "Acme Example", result.Components[0].Name)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
 }
 
 // ---- Severity → Impact mapping ----
@@ -266,7 +266,7 @@ func TestConvertDeptrack_NoVulnerabilities(t *testing.T) {
 
 	require.Len(t, result.Baselines, 1)
 	assert.Len(t, result.Baselines[0].Requirements, 0)
-	assert.Equal(t, "laravel", result.Targets[0].Name)
+	assert.Equal(t, "laravel", result.Components[0].Name)
 }
 
 // ---- Timestamp ----

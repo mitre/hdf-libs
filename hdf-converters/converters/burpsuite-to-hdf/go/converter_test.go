@@ -128,9 +128,9 @@ func TestConvertBurpsuiteToHDF_Target(t *testing.T) {
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	assert.Equal(t, "http://zero.webappsecurity.com", result.Targets[0].Name)
-	assert.Equal(t, hdf.CopyrightApplication, result.Targets[0].Type)
+	require.Len(t, result.Components, 1)
+	assert.Equal(t, "http://zero.webappsecurity.com", result.Components[0].Name)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
 }
 
 // --- Impact mapping ---

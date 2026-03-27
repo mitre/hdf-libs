@@ -702,7 +702,7 @@ func TestDiffCoverage_GroupByLabel_CLI(t *testing.T) {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 	newFixture := map[string]interface{}{
@@ -720,7 +720,7 @@ func TestDiffCoverage_GroupByLabel_CLI(t *testing.T) {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 

@@ -78,13 +78,13 @@ describe('msft-secure-score to HDF converter', async () => {
   describe('target', async () => {
     it('should set target type to cloudAccount', async () => {
       const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.type).toBe('cloudAccount');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.type).toBe('cloudAccount');
     });
 
     it('should include tenant ID in target name', async () => {
       const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.targets![0]!.name).toContain('12345678-1234-1234-1234-1234567890abcd');
+      expect(hdf.components![0]!.name).toContain('12345678-1234-1234-1234-1234567890abcd');
     });
   });
 

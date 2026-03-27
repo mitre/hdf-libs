@@ -143,7 +143,7 @@ func guessFormatFromURI(uri string) string {
 
 func runSystemCreateFromResults(results map[string]interface{}, systemName, outputPath string) error {
 	// Extract targets
-	targetsRaw, ok := results["targets"].([]interface{})
+	targetsRaw, ok := results["components"].([]interface{})
 	if !ok || len(targetsRaw) == 0 {
 		return fmt.Errorf("results file has no targets: cannot bootstrap system document")
 	}

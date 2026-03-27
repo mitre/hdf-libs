@@ -10,7 +10,7 @@ import type {
   Checksum,
   Description,
   RequirementGroup,
-  Target,
+  Component,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -375,7 +375,7 @@ async function convertBenchmarkResultsToHdf(
     { resultsChecksum }
   ) as EvaluatedBaseline;
 
-  const targets = buildTargets(testResult);
+  const components = buildTargets(testResult);
 
   const timestamp = testResult['start-time']
     ? new Date(testResult['start-time'])
@@ -394,7 +394,7 @@ async function convertBenchmarkResultsToHdf(
     baselines: [baseline],
     generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
     dataSource: { name: 'XCCDF Results', format: 'XML' },
-    targets,
+    components,
     timestamp,
   };
 
@@ -575,7 +575,7 @@ async function convertArfCollection(
 
   // Process each report
   const baselines: EvaluatedBaseline[] = [];
-  const targets: Target[] = [];
+  const components: Component[] = [];
   let firstTimestamp: Date | undefined;
   let totalDuration = 0;
 
@@ -638,7 +638,7 @@ async function convertArfCollection(
         }
       }
     }
-    targets.push(...reportTargets);
+    components.push(...reportTargets);
   }
 
   if (baselines.length === 0) {
@@ -649,7 +649,7 @@ async function convertArfCollection(
     baselines,
     generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
     dataSource: { name: 'ARF', format: 'ARF' },
-    targets,
+    components,
     timestamp: firstTimestamp ?? new Date(),
   };
 
@@ -679,10 +679,10 @@ function findBenchmarkInArf(
 }
 
 /**
- * Enrich an HDF Target with metadata from an ARF asset element.
+ * Enrich an HDF Component with metadata from an ARF asset element.
  */
 function enrichTargetWithAsset(
-  target: Target,
+  target: Component,
   asset: ArfAssetElement
 ): void {
   const cd = asset['computing-device'];
@@ -810,16 +810,16 @@ function ruleResultToRequirement(
 }
 
 /**
- * Build Target array from TestResult metadata.
+ * Build Component array from TestResult metadata.
  */
-function buildTargets(testResult: TestResultElement): Target[] {
+function buildTargets(testResult: TestResultElement): Component[] {
   const targetName = testResult.target;
   if (!targetName) {
     return [];
   }
 
   const addresses = testResult['target-address'] ?? [];
-  const target: Target = {
+  const target: Component = {
     name: targetName,
     type: Copyright.Host,
         labels: { service: 'xccdf' },

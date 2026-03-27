@@ -66,10 +66,10 @@ function transformHdfToXmlObject(hdf: HdfResults): Record<string, unknown> {
     result.baselines = {};
   }
 
-  // Transform targets array
-  if (hdf.targets && hdf.targets.length > 0) {
-    result.targets = {
-      target: hdf.targets.map(target => ({
+  // Transform components array
+  if (hdf.components && hdf.components.length > 0) {
+    result.components = {
+      target: hdf.components.map(target => ({
         name: wrap(target.name),
         type: wrap(target.type),
         ...(target.fqdn && { fqdn: wrap(target.fqdn) }),

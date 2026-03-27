@@ -89,6 +89,17 @@
       "title": "OWASP ZAP Scan of https://example.com"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "zap"
+      },
+      "name": "example.com",
+      "sbom": null,
+      "type": "application",
+      "url": "https://example.com"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "OWASP ZAP",
@@ -98,15 +109,5 @@
     "name": "zap-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "zap"
-      },
-      "name": "example.com",
-      "type": "application",
-      "url": "https://example.com"
-    }
-  ],
   "timestamp": "2018-12-06T10:53:11Z"
 }

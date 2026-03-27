@@ -48,7 +48,7 @@
   "statistics": {
     "duration": 0.1
   },
-  "targets": [
+  "components": [
     {
       "type": "host",
       "id": "test-system",

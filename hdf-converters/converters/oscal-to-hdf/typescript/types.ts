@@ -3221,7 +3221,7 @@ export interface MappingEntry {
     relationship: string;
     remarks?:     string;
     sources:      MappingEntryItemSourceOrTarget[];
-    targets:      MappingEntryItemSourceOrTarget[];
+    components:      MappingEntryItemSourceOrTarget[];
     /**
      * The unique identifier for the mapping entry.
      */
@@ -3639,7 +3639,7 @@ export enum Predicate {
 export enum Subject {
     Both = "both",
     Source = "source",
-    Target = "target",
+    Component = "target",
 }
 
 /**

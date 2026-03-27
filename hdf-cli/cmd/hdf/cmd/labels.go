@@ -38,7 +38,7 @@ func applyLabels(data []byte, labels map[string]string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to parse JSON for label application: %w", err)
 	}
 
-	targetsRaw, ok := doc["targets"]
+	targetsRaw, ok := doc["components"]
 	if !ok {
 		// No targets array — nothing to label.
 		return data, nil
@@ -83,7 +83,7 @@ func removeLabels(data []byte, keys []string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to parse JSON for label removal: %w", err)
 	}
 
-	targetsRaw, ok := doc["targets"]
+	targetsRaw, ok := doc["components"]
 	if !ok {
 		return data, nil
 	}
@@ -117,49 +117,49 @@ func removeLabels(data []byte, keys []string) ([]byte, error) {
 	return json.MarshalIndent(doc, "", "  ")
 }
 
-// extractTargetLabels extracts target names, types, and labels from an HDF
-// JSON document. Returns a slice of target summaries for display.
-type targetLabelInfo struct {
+// extractComponentLabels extracts component names, types, and labels from an HDF
+// JSON document. Returns a slice of component summaries for display.
+type componentLabelInfo struct {
 	Name   string            `json:"name"`
 	Type   string            `json:"type"`
 	Labels map[string]string `json:"labels"`
 }
 
-func extractTargetLabels(data []byte) ([]targetLabelInfo, error) {
+func extractComponentLabels(data []byte) ([]componentLabelInfo, error) {
 	var doc map[string]interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
 
-	targetsRaw, ok := doc["targets"]
+	componentsRaw, ok := doc["components"]
 	if !ok {
 		return nil, nil
 	}
 
-	targets, ok := targetsRaw.([]interface{})
+	components, ok := componentsRaw.([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("targets field is not an array")
+		return nil, fmt.Errorf("components field is not an array")
 	}
 
-	result := make([]targetLabelInfo, 0, len(targets))
-	for i, tRaw := range targets {
-		target, ok := tRaw.(map[string]interface{})
+	result := make([]componentLabelInfo, 0, len(components))
+	for i, cRaw := range components {
+		comp, ok := cRaw.(map[string]interface{})
 		if !ok {
-			return nil, fmt.Errorf("target at index %d is not an object", i)
+			return nil, fmt.Errorf("component at index %d is not an object", i)
 		}
 
-		info := targetLabelInfo{
+		info := componentLabelInfo{
 			Labels: make(map[string]string),
 		}
 
-		if name, ok := target["name"].(string); ok {
+		if name, ok := comp["name"].(string); ok {
 			info.Name = name
 		}
-		if typ, ok := target["type"].(string); ok {
+		if typ, ok := comp["type"].(string); ok {
 			info.Type = typ
 		}
 
-		if labelsRaw, ok := target["labels"]; ok {
+		if labelsRaw, ok := comp["labels"]; ok {
 			if labelsMap, ok := labelsRaw.(map[string]interface{}); ok {
 				for k, v := range labelsMap {
 					if vs, ok := v.(string); ok {

@@ -47,8 +47,9 @@ type HdfResults struct {
 	SystemRef *string `json:"systemRef,omitempty"`
 	// Reference to an hdf-plan document describing the assessment plan that produced these results.
 	PlanRef *string `json:"planRef,omitempty"`
-	// The target systems that were assessed. Supports multiple targets of different types.
-	Targets []Target `json:"targets,omitempty"`
+	// The components that were assessed. Each component describes a system element
+	// (host, container, cloud resource, application, etc.).
+	Components []Target `json:"components,omitempty"`
 	// When this assessment was executed.
 	Timestamp *time.Time `json:"timestamp,omitempty"`
 }

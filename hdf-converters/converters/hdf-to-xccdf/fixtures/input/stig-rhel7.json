@@ -179,7 +179,7 @@
   "statistics": {
     "duration": 89
   },
-  "targets": [
+  "components": [
     {
       "labels": {
         "service": "xccdf"

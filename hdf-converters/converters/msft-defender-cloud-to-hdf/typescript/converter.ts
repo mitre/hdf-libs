@@ -7,7 +7,7 @@ import type {
   RequirementResult,
   Checksum,
   DataSource,
-  Target,
+  Component,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -223,15 +223,15 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
   };
 
   // Build target from subscription ID
-  const targets: Target[] = [];
+  const components: Component[] = [];
   if (limitedAssessments.length > 0) {
     const subscriptionID = extractSubscriptionID(limitedAssessments[0]!.id);
     if (subscriptionID) {
-      targets.push({
+      components.push({
         name: `Azure Subscription ${subscriptionID}`,
         type: Copyright.CloudAccount,
         accountId: subscriptionID,
-        provider: 'azure' as Target['provider'],
+        provider: 'azure' as Component['provider'],
         labels: { account: subscriptionID, provider: 'azure', service: 'defender-cloud' },
       });
     }
@@ -244,7 +244,7 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
       version: '1.0.0',
     },
     dataSource,
-    targets,
+    components,
     timestamp: new Date(),
   };
 

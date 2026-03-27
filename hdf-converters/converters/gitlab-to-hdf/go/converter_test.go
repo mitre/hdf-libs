@@ -144,8 +144,8 @@ func TestConvertGitlabToHDF_MinimalSAST_Target(t *testing.T) {
 	result, err := ConvertGitlabToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	assert.Equal(t, hdf.Repository, result.Targets[0].Type)
+	require.Len(t, result.Components, 1)
+	assert.Equal(t, hdf.Repository, result.Components[0].Type)
 }
 
 func TestConvertGitlabToHDF_MinimalDAST_Baseline(t *testing.T) {
@@ -179,8 +179,8 @@ func TestConvertGitlabToHDF_MinimalDAST_Target(t *testing.T) {
 	result, err := ConvertGitlabToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	assert.Equal(t, hdf.CopyrightApplication, result.Targets[0].Type)
+	require.Len(t, result.Components, 1)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
 }
 
 func TestConvertGitlabToHDF_MultiVuln_Count(t *testing.T) {

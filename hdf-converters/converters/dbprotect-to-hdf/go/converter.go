@@ -258,7 +258,7 @@ func ConvertDbprotectToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		DataSourceName:   "DBProtect",
 		DataSourceFormat: "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
+		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Host, Labels: map[string]string{"service": "dbprotect"}},
 		},
 		Timestamp: &now,

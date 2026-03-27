@@ -6,7 +6,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
-  Target,
+  Component,
   Description,
   Reference,
   Checksum,
@@ -122,7 +122,7 @@ export async function convertNessusToHdf(nessusXml: string): Promise<HdfResults>
   const { startTime, duration } = calculateTiming(limitedHosts);
 
   const baselines: EvaluatedBaseline[] = [];
-  const targets: Target[] = [];
+  const components: Component[] = [];
 
   // Process each ReportHost
   limitedHosts.forEach(host => {
@@ -130,14 +130,14 @@ export async function convertNessusToHdf(nessusXml: string): Promise<HdfResults>
     baselines.push(baseline);
 
     const target = convertReportHostToTarget(host);
-    targets.push(target);
+    components.push(target);
   });
 
   const dataSource: DataSource = { name: 'Nessus' };
 
   const result: HdfResults = {
     baselines,
-    targets,
+    components,
     statistics: {
       duration,
     },
@@ -391,7 +391,7 @@ function parseComplianceRef(ref: string, key: string): string[] {
   return matches.map(element => element.split('|')[1] || '');
 }
 
-function convertReportHostToTarget(host: ReportHost): Target {
+function convertReportHostToTarget(host: ReportHost): Component {
   const hostName = host['name'];
 
   // Extract host properties into a lookup map
@@ -408,12 +408,12 @@ function convertReportHostToTarget(host: ReportHost): Target {
     });
   }
 
-  const target: Target = {
+  const target: Component = {
     name: hostName,
     type: TargetType.Host,
   };
 
-  // Map host properties to typed Target fields
+  // Map host properties to typed Component fields
   if (isFQDN(hostName)) {
     target.fqdn = hostName;
   }

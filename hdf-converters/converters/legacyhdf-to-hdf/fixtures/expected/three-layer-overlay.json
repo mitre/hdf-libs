@@ -20201,7 +20201,7 @@
   "statistics": {
     "duration": 22.029998957
   },
-  "targets": [
+  "components": [
     {
       "type": "host",
       "id": "centos",

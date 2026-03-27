@@ -549,6 +549,16 @@
       "name": "JFrog Xray Scan"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "jfrog-xray"
+      },
+      "name": "JFrog Xray Scan",
+      "sbom": null,
+      "type": "application"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "JFrog Xray"
@@ -557,14 +567,5 @@
     "name": "jfrog-xray-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "jfrog-xray"
-      },
-      "name": "JFrog Xray Scan",
-      "type": "application"
-    }
-  ],
-  "timestamp": "2026-03-23T05:53:52.319337Z"
+  "timestamp": "2026-03-27T15:22:56.125813Z"
 }

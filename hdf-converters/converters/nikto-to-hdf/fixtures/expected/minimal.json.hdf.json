@@ -121,6 +121,16 @@
       "title": "Nikto Target: Host: example.com Port: 80"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "nikto"
+      },
+      "name": "Host: example.com Port: 80",
+      "sbom": null,
+      "type": "application"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "Nikto"
@@ -128,14 +138,5 @@
   "generator": {
     "name": "nikto-to-hdf",
     "version": "0.1.0"
-  },
-  "targets": [
-    {
-      "labels": {
-        "service": "nikto"
-      },
-      "name": "Host: example.com Port: 80",
-      "type": "application"
-    }
-  ]
+  }
 }

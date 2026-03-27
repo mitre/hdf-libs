@@ -3027,6 +3027,17 @@
       "title": "https://registry.hub.docker.com/mitre/heimdall2:latest - Digest: sha256:ae8e58548bb13f1aa5df8aeea51cddf118e163fbe0163165d04552de0bf0ac0a - Image ID: 756f9a308b59ec6a0812ba49f958f2a3f4f0833afc9a3df23afe58f502db10aa"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "image": "https://registry.hub.docker.com/mitre/heimdall2:latest",
+        "registry": "https://registry.hub.docker.com"
+      },
+      "name": "https://registry.hub.docker.com/mitre/heimdall2:latest",
+      "sbom": null,
+      "type": "containerImage"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "NeuVector"
@@ -3035,15 +3046,5 @@
     "name": "neuvector-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "image": "https://registry.hub.docker.com/mitre/heimdall2:latest",
-        "registry": "https://registry.hub.docker.com"
-      },
-      "name": "https://registry.hub.docker.com/mitre/heimdall2:latest",
-      "type": "containerImage"
-    }
-  ],
-  "timestamp": "2026-03-23T05:53:53.505785Z"
+  "timestamp": "2026-03-27T15:22:57.429798Z"
 }

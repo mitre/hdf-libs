@@ -188,9 +188,9 @@ function buildTestResultObj(
     testResult[`${ATTR}end-time`] = ts;
   }
 
-  // Target
-  if (hdfData.targets && hdfData.targets.length > 0) {
-    const target = hdfData.targets[0]!;
+  // Component
+  if (hdfData.components && hdfData.components.length > 0) {
+    const target = hdfData.components[0]!;
     testResult.target = wrap(target.name);
     if (target.ipAddress) {
       testResult['target-address'] = wrap(target.ipAddress);

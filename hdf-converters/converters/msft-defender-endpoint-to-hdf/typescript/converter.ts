@@ -6,7 +6,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
-  Target,
+  Component,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -165,12 +165,12 @@ function formatMessage(alert: MdeAlert): string {
 /**
  * Extracts a Host target from device evidence, or falls back to tenant as cloud account.
  */
-function extractDeviceTarget(alert: MdeAlert): Target {
+function extractDeviceTarget(alert: MdeAlert): Component {
   if (alert.evidence) {
     for (const ev of alert.evidence) {
       const odataType = ev['@odata.type'] ?? '';
       if (odataType.includes('deviceEvidence') && ev.deviceDnsName) {
-        const target: Target = {
+        const target: Component = {
           name: ev.deviceDnsName,
           type: Copyright.Host,
           labels: { provider: 'azure', service: 'defender-endpoint' },
@@ -277,14 +277,14 @@ export async function convertMsftDefenderEndpointToHdf(input: string): Promise<s
 
   const requirements: EvaluatedRequirement[] = limitedAlerts.map(alertToRequirement);
 
-  // Build targets — deduplicate by device name
+  // Build components — deduplicate by device name
   const seenTargets = new Set<string>();
-  const targets: Target[] = [];
+  const components: Component[] = [];
   for (const alert of limitedAlerts) {
     const target = extractDeviceTarget(alert);
     if (!seenTargets.has(target.name)) {
       seenTargets.add(target.name);
-      targets.push(target);
+      components.push(target);
     }
   }
 
@@ -301,7 +301,7 @@ export async function convertMsftDefenderEndpointToHdf(input: string): Promise<s
       version: '1.0.0',
     },
     dataSource: { name: 'Microsoft Defender for Endpoint' },
-    targets,
+    components,
     timestamp: new Date(),
   };
 

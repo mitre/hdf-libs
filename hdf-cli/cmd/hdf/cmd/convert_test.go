@@ -80,7 +80,7 @@ func TestConvertCommand_BasicConversion(t *testing.T) {
 	if _, ok := result["baselines"]; !ok {
 		t.Error("output missing 'baselines' field")
 	}
-	if _, ok := result["targets"]; !ok {
+	if _, ok := result["components"]; !ok {
 		t.Error("output missing 'targets' field")
 	}
 }

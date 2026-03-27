@@ -101,8 +101,8 @@ func ConvertMsftDefenderDevopsToHDF(input []byte, converterVersion string) (*hdf
 }
 
 // extractEnrichments parses all MSDO-specific data from the raw SARIF.
-func extractEnrichments(raw msdoSarif) ([]hdf.Target, []runEnrichment) {
-	var targets []hdf.Target
+func extractEnrichments(raw msdoSarif) ([]hdf.Component, []runEnrichment) {
+	var targets []hdf.Component
 	seenRepos := make(map[string]bool)
 	runEnrichments := make([]runEnrichment, len(raw.Runs))
 
@@ -111,7 +111,7 @@ func extractEnrichments(raw msdoSarif) ([]hdf.Target, []runEnrichment) {
 		for _, vcp := range run.VersionControlProvenance {
 			if vcp.RepositoryURI != "" && !seenRepos[vcp.RepositoryURI] {
 				seenRepos[vcp.RepositoryURI] = true
-				target := hdf.Target{
+				target := hdf.Component{
 					Name:   repoNameFromURI(vcp.RepositoryURI),
 					Type:   hdf.Repository,
 					URL:    shared.Ptr(vcp.RepositoryURI),
@@ -175,10 +175,10 @@ func extractEnrichments(raw msdoSarif) ([]hdf.Target, []runEnrichment) {
 }
 
 // applyEnrichments merges MSDO-specific data into the HDF result.
-func applyEnrichments(result *hdf.HDFResults, targets []hdf.Target, runEnrichments []runEnrichment) {
+func applyEnrichments(result *hdf.HDFResults, targets []hdf.Component, runEnrichments []runEnrichment) {
 	// Add targets
 	if len(targets) > 0 {
-		result.Targets = targets
+		result.Components = targets
 	}
 
 	// Apply per-baseline (per-run) enrichments

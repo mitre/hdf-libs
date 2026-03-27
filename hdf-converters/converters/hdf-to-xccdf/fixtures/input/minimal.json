@@ -67,7 +67,7 @@
   "statistics": {
     "duration": 0
   },
-  "targets": [
+  "components": [
     {
       "labels": {
         "service": "xccdf"

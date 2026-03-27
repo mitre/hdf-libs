@@ -186,7 +186,7 @@ export async function convertSarifToHdf(input: string): Promise<string> {
       }
       return limitedRuns.map(run => convertRun(run, sarif.version, resultsChecksum));
     })(),
-    targets: [],
+    components: [],
     generator: {
       name: 'sarif-to-hdf',
       version: '1.0.0',

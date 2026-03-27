@@ -213,7 +213,7 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		DataSourceName:   "NeuVector",
 		DataSourceFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
+		Components: []hdf.Component{
 			{
 				Name: targetName(scan.Report),
 				Type: hdf.ContainerImage,

@@ -33,12 +33,12 @@
       </requirements>
     </baseline>
   </baselines>
-  <targets>
+  <components>
     <target>
       <name>web-server-01</name>
       <type>host</type>
     </target>
-  </targets>
+  </components>
   <statistics>
     <duration>45.5</duration>
   </statistics>

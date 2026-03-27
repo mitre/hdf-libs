@@ -60,7 +60,7 @@ func upgradeV1ToV2(input []byte) ([]byte, error) {
 // This is a lossy transformation — v2 fields without v1 equivalents are dropped.
 //
 // Lossy fields: dataSource, generator, labels, amendments, checksum metadata,
-// multiple targets (only first is used), target type/labels/ipAddress,
+// multiple components (only first is used), component type/labels/ipAddress,
 // effectiveStatus, evidence, poams, statusOverrides.
 func downgradeV2ToV1(input []byte) ([]byte, error) {
 	var v2 hdf.HDFResults
@@ -76,9 +76,9 @@ func downgradeV2ToV1(input []byte) ([]byte, error) {
 func convertV2ToV1(v2 *hdf.HDFResults) *legacyhdf.HDFV1Results {
 	v1 := &legacyhdf.HDFV1Results{}
 
-	// Map targets → platform (use first target)
-	if len(v2.Targets) > 0 {
-		t := v2.Targets[0]
+	// Map components → platform (use first component)
+	if len(v2.Components) > 0 {
+		t := v2.Components[0]
 		v1.Platform = legacyhdf.V1Platform{
 			Name: t.Name,
 		}
@@ -286,10 +286,11 @@ func DetectHDFVersion(input []byte) (string, error) {
 		return "1", nil
 	}
 
-	// v2 has baselines + targets
+	// v2 has baselines + components (or legacy targets)
 	_, hasBaselines := obj["baselines"]
+	_, hasComponents := obj["components"]
 	_, hasTargets := obj["targets"]
-	if hasBaselines && hasTargets {
+	if hasBaselines && (hasComponents || hasTargets) {
 		return "2", nil
 	}
 

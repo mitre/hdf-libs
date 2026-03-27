@@ -7,7 +7,7 @@ import {
   type EvaluatedRequirement,
   type RequirementResult,
   type HdfResults,
-  type Target,
+  type Component,
   ResultStatus,
   severityToImpact,
 } from '@mitre/hdf-schema';
@@ -312,14 +312,14 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
     dataSource.version = scannerVersion;
   }
 
-  // Build targets based on scan type
-  const targets: Target[] = [];
+  // Build components based on scan type
+  const components: Component[] = [];
   const targetType = scanTypeToTargetType(scanType);
-  targets.push({name: scannerName, type: targetType, labels: { service: 'gitlab' }});
+  components.push({name: scannerName, type: targetType, labels: { service: 'gitlab' }});
 
   const hdf: HdfResults = {
     baselines: [baseline],
-    targets,
+    components,
     generator: {
       name: 'gitlab-to-hdf',
       version: 'unknown',

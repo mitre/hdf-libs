@@ -99,6 +99,19 @@
       "title": "Azure Secure Score report - Tenant ID: 12345678-1234-1234-1234-1234567890abcd - Run ID: 12345678-1234-1234-1234-1234567890abcd_2024-01-01"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "account": "12345678-1234-1234-1234-1234567890abcd",
+        "provider": "azure",
+        "service": "secure-score"
+      },
+      "name": "Azure Tenant: 12345678-1234-1234-1234-1234567890abcd",
+      "sbom": null,
+      "type": "cloudAccount",
+      "provider": "azure"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "Microsoft Secure Score"
@@ -107,17 +120,5 @@
     "name": "msft-secure-score-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "account": "12345678-1234-1234-1234-1234567890abcd",
-        "provider": "azure",
-        "service": "secure-score"
-      },
-      "name": "Azure Tenant: 12345678-1234-1234-1234-1234567890abcd",
-      "type": "cloudAccount",
-      "provider": "azure"
-    }
-  ],
-  "timestamp": "2026-03-23T05:53:53.102668Z"
+  "timestamp": "2026-03-27T15:22:56.993922Z"
 }

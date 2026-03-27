@@ -131,9 +131,9 @@ func TestConvertMsftSecureScore_Target(t *testing.T) {
 	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, hdf.CloudAccount, result.Targets[0].Type)
-	assert.Contains(t, result.Targets[0].Name, "12345678-1234-1234-1234-1234567890abcd")
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, hdf.CloudAccount, result.Components[0].Type)
+	assert.Contains(t, result.Components[0].Name, "12345678-1234-1234-1234-1234567890abcd")
 }
 
 // ---- Requirement ID format ----

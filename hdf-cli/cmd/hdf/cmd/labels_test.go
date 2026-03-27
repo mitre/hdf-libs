@@ -10,7 +10,7 @@ import (
 
 const (
 	noTargetsJSON    = `{"baselines": []}`
-	singleTargetJSON = `{"targets": [{"name": "h1", "type": "host"}]}`
+	singleTargetJSON = `{"components": [{"name": "h1", "type": "host"}]}`
 )
 
 func TestParseLabelsFlag(t *testing.T) {
@@ -64,7 +64,7 @@ func TestApplyLabels(t *testing.T) {
 	t.Run("apply labels to targets with no existing labels", func(t *testing.T) {
 		input := `{
   "baselines": [],
-  "targets": [
+  "components": [
     {"name": "host1", "type": "host"},
     {"name": "host2", "type": "host"}
   ]
@@ -76,7 +76,7 @@ func TestApplyLabels(t *testing.T) {
 		var doc map[string]interface{}
 		require.NoError(t, json.Unmarshal(result, &doc))
 
-		targets := doc["targets"].([]interface{})
+		targets := doc["components"].([]interface{})
 		for _, tRaw := range targets {
 			target := tRaw.(map[string]interface{})
 			targetLabels := target["labels"].(map[string]interface{})
@@ -87,7 +87,7 @@ func TestApplyLabels(t *testing.T) {
 
 	t.Run("merge with existing labels", func(t *testing.T) {
 		input := `{
-  "targets": [
+  "components": [
     {"name": "host1", "type": "host", "labels": {"existing": "value"}}
   ]
 }`
@@ -98,7 +98,7 @@ func TestApplyLabels(t *testing.T) {
 		var doc map[string]interface{}
 		require.NoError(t, json.Unmarshal(result, &doc))
 
-		targets := doc["targets"].([]interface{})
+		targets := doc["components"].([]interface{})
 		target := targets[0].(map[string]interface{})
 		targetLabels := target["labels"].(map[string]interface{})
 		assert.Equal(t, "value", targetLabels["existing"])
@@ -107,7 +107,7 @@ func TestApplyLabels(t *testing.T) {
 
 	t.Run("overwrite existing label key", func(t *testing.T) {
 		input := `{
-  "targets": [
+  "components": [
     {"name": "host1", "type": "host", "labels": {"env": "dev"}}
   ]
 }`
@@ -118,7 +118,7 @@ func TestApplyLabels(t *testing.T) {
 		var doc map[string]interface{}
 		require.NoError(t, json.Unmarshal(result, &doc))
 
-		targets := doc["targets"].([]interface{})
+		targets := doc["components"].([]interface{})
 		target := targets[0].(map[string]interface{})
 		targetLabels := target["labels"].(map[string]interface{})
 		assert.Equal(t, "prod", targetLabels["env"])
@@ -147,7 +147,7 @@ func TestApplyLabels(t *testing.T) {
 	})
 
 	t.Run("targets is not an array", func(t *testing.T) {
-		input := `{"targets": "not-an-array"}`
+		input := `{"components": "not-an-array"}`
 		_, err := applyLabels([]byte(input), map[string]string{"k": "v"})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "not an array")
@@ -157,7 +157,7 @@ func TestApplyLabels(t *testing.T) {
 func TestRemoveLabels(t *testing.T) {
 	t.Run("remove existing keys", func(t *testing.T) {
 		input := `{
-  "targets": [
+  "components": [
     {"name": "host1", "type": "host", "labels": {"env": "prod", "team": "sec"}}
   ]
 }`
@@ -167,7 +167,7 @@ func TestRemoveLabels(t *testing.T) {
 		var doc map[string]interface{}
 		require.NoError(t, json.Unmarshal(result, &doc))
 
-		targets := doc["targets"].([]interface{})
+		targets := doc["components"].([]interface{})
 		target := targets[0].(map[string]interface{})
 		targetLabels := target["labels"].(map[string]interface{})
 		assert.NotContains(t, targetLabels, "env")
@@ -176,7 +176,7 @@ func TestRemoveLabels(t *testing.T) {
 
 	t.Run("remove nonexistent keys is silent", func(t *testing.T) {
 		input := `{
-  "targets": [
+  "components": [
     {"name": "host1", "type": "host", "labels": {"env": "prod"}}
   ]
 }`
@@ -186,7 +186,7 @@ func TestRemoveLabels(t *testing.T) {
 		var doc map[string]interface{}
 		require.NoError(t, json.Unmarshal(result, &doc))
 
-		targets := doc["targets"].([]interface{})
+		targets := doc["components"].([]interface{})
 		target := targets[0].(map[string]interface{})
 		targetLabels := target["labels"].(map[string]interface{})
 		assert.Equal(t, "prod", targetLabels["env"])
@@ -207,7 +207,7 @@ func TestRemoveLabels(t *testing.T) {
 		var doc map[string]interface{}
 		require.NoError(t, json.Unmarshal(result, &doc))
 		// Should succeed without error; target unchanged except re-serialization
-		targets := doc["targets"].([]interface{})
+		targets := doc["components"].([]interface{})
 		target := targets[0].(map[string]interface{})
 		assert.Equal(t, "h1", target["name"])
 	})
@@ -229,12 +229,12 @@ func TestRemoveLabels(t *testing.T) {
 func TestExtractTargetLabels(t *testing.T) {
 	t.Run("extracts labels from targets", func(t *testing.T) {
 		input := `{
-  "targets": [
+  "components": [
     {"name": "host1", "type": "host", "labels": {"env": "prod"}},
     {"name": "host2", "type": "container"}
   ]
 }`
-		infos, err := extractTargetLabels([]byte(input))
+		infos, err := extractComponentLabels([]byte(input))
 		require.NoError(t, err)
 		require.Len(t, infos, 2)
 
@@ -249,13 +249,13 @@ func TestExtractTargetLabels(t *testing.T) {
 
 	t.Run("no targets returns nil", func(t *testing.T) {
 		input := noTargetsJSON
-		infos, err := extractTargetLabels([]byte(input))
+		infos, err := extractComponentLabels([]byte(input))
 		require.NoError(t, err)
 		assert.Nil(t, infos)
 	})
 
 	t.Run("invalid JSON", func(t *testing.T) {
-		_, err := extractTargetLabels([]byte("nope"))
+		_, err := extractComponentLabels([]byte("nope"))
 		require.Error(t, err)
 	})
 }

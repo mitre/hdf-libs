@@ -10,6 +10,16 @@
       "title": "Dependency-Track: laravel 1.0"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "dependency-track"
+      },
+      "name": "laravel",
+      "sbom": null,
+      "type": "application"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "Dependency-Track"
@@ -18,14 +28,5 @@
     "name": "deptrack-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "dependency-track"
-      },
-      "name": "laravel",
-      "type": "application"
-    }
-  ],
-  "timestamp": "2026-03-23T05:53:50.80504Z"
+  "timestamp": "2026-03-27T15:22:54.577907Z"
 }

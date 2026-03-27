@@ -327,7 +327,7 @@ func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		DataSourceName:   "Conveyor",
 		DataSourceFormat: "JSON",
 		Baselines:        baselines,
-		Targets: []hdf.Target{
+		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.CopyrightApplication, Labels: map[string]string{"service": "conveyor"}},
 		},
 		Timestamp: &now,

@@ -123,7 +123,7 @@ describe('BurpSuite to HDF Converter', () => {
     it('should set target as Application type', async () => {
       const xml = loadFixture('input/zero.webappsecurity.com.xml');
       const out = parseOutput(await convertBurpsuiteToHdf(xml));
-      const targets = out.targets as Array<Record<string, unknown>>;
+      const targets = out.components as Array<Record<string, unknown>>;
       expect(targets).toHaveLength(1);
       expect(targets[0]!.name).toBe('http://zero.webappsecurity.com');
       expect(targets[0]!.type).toBe('application');
@@ -351,7 +351,7 @@ describe('BurpSuite to HDF Converter', () => {
       const reqs = bl[0]!.requirements as unknown[];
       expect(reqs).toHaveLength(0);
       // Target should be 'Unknown' with no issues
-      const targets = out.targets as Array<Record<string, unknown>>;
+      const targets = out.components as Array<Record<string, unknown>>;
       expect(targets[0]!.name).toBe('Unknown');
     });
 

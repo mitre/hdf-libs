@@ -270,7 +270,7 @@ export async function convertScoutsuiteToHdf(input: string): Promise<string> {
       version: '1.0.0',
     },
     dataSource,
-    targets: [{
+    components: [{
       name: targetName,
       type: Copyright.CloudAccount,
       labels: {

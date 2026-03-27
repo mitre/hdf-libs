@@ -115,7 +115,7 @@ describe('ScoutSuite to HDF Converter', () => {
     it('should set target as CloudAccount type', async () => {
       const input = loadFixture('input/scoutsuite_sample.js');
       const out = parseOutput(await convertScoutsuiteToHdf(input));
-      const targets = out.targets as Array<Record<string, unknown>>;
+      const targets = out.components as Array<Record<string, unknown>>;
       expect(targets).toHaveLength(1);
       expect(targets[0]!.name).toContain('916481805664');
       expect(targets[0]!.type).toBe('cloudAccount');

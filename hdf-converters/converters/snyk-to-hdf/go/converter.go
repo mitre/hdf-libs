@@ -203,7 +203,7 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 		DataSourceName:   "Snyk",
 		DataSourceFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
+		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.CopyrightApplication, Labels: map[string]string{"service": "snyk"}},
 		},
 		Timestamp: &now,

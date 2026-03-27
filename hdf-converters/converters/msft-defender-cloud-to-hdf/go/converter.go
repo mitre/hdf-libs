@@ -132,14 +132,14 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 	}
 
 	// Build target from subscription ID
-	var targets []hdf.Target
+	var targets []hdf.Component
 	subscriptionID := ""
 	if len(limitedAssessments) > 0 {
 		subscriptionID = extractSubscriptionID(limitedAssessments[0].ID)
 	}
 	if subscriptionID != "" {
 		azureProvider := hdf.Azure
-		targets = []hdf.Target{
+		targets = []hdf.Component{
 			{
 				Name:      fmt.Sprintf("Azure Subscription %s", subscriptionID),
 				Type:      hdf.CloudAccount,
@@ -161,7 +161,7 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 		DataSourceName:   "Microsoft Defender for Cloud",
 		DataSourceFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets:          targets,
+		Components:          targets,
 		Timestamp:        &now,
 	}), nil
 }

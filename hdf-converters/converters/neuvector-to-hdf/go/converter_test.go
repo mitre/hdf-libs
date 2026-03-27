@@ -340,10 +340,10 @@ func TestConvertNeuVector_Target(t *testing.T) {
 	result, err := ConvertNeuVectorToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
+	require.NotEmpty(t, result.Components)
 	// Target name should be the image reference
-	assert.Contains(t, result.Targets[0].Name, "mitre/heimdall")
-	assert.Equal(t, hdf.ContainerImage, result.Targets[0].Type)
+	assert.Contains(t, result.Components[0].Name, "mitre/heimdall")
+	assert.Equal(t, hdf.ContainerImage, result.Components[0].Type)
 }
 
 // ---- Tags with extras ----

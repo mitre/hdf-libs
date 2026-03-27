@@ -102,6 +102,16 @@
       "version": "DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "dbprotect"
+      },
+      "name": "HOST1",
+      "sbom": null,
+      "type": "host"
+    }
+  ],
   "dataSource": {
     "format": "XML",
     "name": "DBProtect"
@@ -110,14 +120,5 @@
     "name": "dbprotect-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "dbprotect"
-      },
-      "name": "HOST1",
-      "type": "host"
-    }
-  ],
-  "timestamp": "2026-03-23T05:53:50.681148Z"
+  "timestamp": "2026-03-27T15:22:54.434238Z"
 }

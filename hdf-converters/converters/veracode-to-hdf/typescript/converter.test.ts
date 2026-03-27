@@ -33,8 +33,8 @@ describe('Veracode to HDF converter', () => {
 
     expect(output.baselines).toBeDefined();
     expect(output.baselines.length).toBe(1);
-    expect(output.targets).toBeDefined();
-    expect(output.targets!.length).toBe(1);
+    expect(output.components).toBeDefined();
+    expect(output.components!.length).toBe(1);
     expect(output.generator).toBeDefined();
   });
 
@@ -49,7 +49,7 @@ describe('Veracode to HDF converter', () => {
     const input = loadFixture('veracode.xml');
     const output: HdfResults = JSON.parse(await convert(input));
 
-    expect(output.targets![0]!.type).toBe('application');
+    expect(output.components![0]!.type).toBe('application');
   });
 
   it('should set data source name to Veracode', async () => {

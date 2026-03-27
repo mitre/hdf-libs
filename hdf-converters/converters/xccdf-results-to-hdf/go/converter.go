@@ -455,7 +455,7 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 		DataSourceName:   "XCCDF",
 		DataSourceFormat: "XCCDF",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets:          []hdf.Target{target},
+		Components:          []hdf.Component{target},
 		Timestamp:        &startTime,
 		Statistics: &hdf.Statistics{
 			Duration: &duration,
@@ -660,7 +660,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 
 	// Process each report, collecting baselines and targets
 	var baselines []hdf.EvaluatedBaseline
-	var targets []hdf.Target
+	var targets []hdf.Component
 	var firstTimestamp time.Time
 	var totalDuration float64
 
@@ -748,7 +748,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		DataSourceName:   "ARF",
 		DataSourceFormat: "ARF",
 		Baselines:        baselines,
-		Targets:          targets,
+		Components:          targets,
 		Timestamp:        &firstTimestamp,
 		Statistics: &hdf.Statistics{
 			Duration: &totalDuration,
@@ -785,7 +785,7 @@ func buildReportAssetMap(rels *ArfRelationships) map[string][]string {
 
 // enrichTargetWithAsset adds ARF asset metadata (FQDN, hostname, MAC, IP)
 // to an HDF Target.
-func enrichTargetWithAsset(target *hdf.Target, asset *ArfAsset) {
+func enrichTargetWithAsset(target *hdf.Component, asset *ArfAsset) {
 	cd := &asset.ComputingDevice
 
 	if cd.FQDN != "" {
@@ -1040,8 +1040,8 @@ func mapResultStatus(result string) hdf.ResultStatus {
 }
 
 // buildTarget constructs an HDF Target from the TestResult metadata.
-func buildTarget(tr *TestResult) hdf.Target {
-	target := hdf.Target{
+func buildTarget(tr *TestResult) hdf.Component {
+	target := hdf.Component{
 		Name:   tr.Target,
 		Type:   hdf.Host,
 		Labels: map[string]string{"service": "xccdf"},

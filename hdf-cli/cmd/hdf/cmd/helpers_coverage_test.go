@@ -689,7 +689,7 @@ func buildResultsFixtureJSON(t *testing.T) []byte {
 			},
 		},
 		"statistics": map[string]any{},
-		"targets":    []any{},
+		"components": []any{},
 	}
 	data, err := json.Marshal(results)
 	require.NoError(t, err)

@@ -23,7 +23,7 @@ func TestHDFVersionConverter_V1ToV2_CLI(t *testing.T) {
 	var result map[string]any
 	require.NoError(t, json.Unmarshal([]byte(stdout), &result))
 	assert.Contains(t, result, "baselines", "output should be v2 with baselines")
-	assert.Contains(t, result, "targets", "output should be v2 with targets")
+	assert.Contains(t, result, "components", "output should be v2 with targets")
 	assert.NotContains(t, result, "profiles", "output should not have v1 profiles")
 }
 

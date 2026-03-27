@@ -149,7 +149,7 @@ export async function convertNiktoToHdf(input: string): Promise<string> {
 
   const hdf: HdfResults = {
     baselines: [baseline],
-    targets: [{
+    components: [{
       type: Copyright.Application,
       name: targetName,
       labels: {

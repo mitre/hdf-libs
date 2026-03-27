@@ -105,18 +105,18 @@ describe('msft-defender-endpoint to HDF converter', async () => {
   describe('targets', async () => {
     it('should create Host target from device evidence', async () => {
       const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets!.length).toBeGreaterThan(0);
-      expect(hdf.targets![0]!.type).toBe('host');
-      expect(hdf.targets![0]!.name).toBe('temp123.middleeast.corp.microsoft.com');
-      expect(hdf.targets![0]!.fqdn).toBe('temp123.middleeast.corp.microsoft.com');
-      expect(hdf.targets![0]!.osName).toBe('Windows10');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components!.length).toBeGreaterThan(0);
+      expect(hdf.components![0]!.type).toBe('host');
+      expect(hdf.components![0]!.name).toBe('temp123.middleeast.corp.microsoft.com');
+      expect(hdf.components![0]!.fqdn).toBe('temp123.middleeast.corp.microsoft.com');
+      expect(hdf.components![0]!.osName).toBe('Windows10');
     });
 
     it('should deduplicate targets by name', async () => {
       const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('sample.json'))) as HdfResults;
       // 4 alerts with 4 different devices → 4 targets
-      expect(hdf.targets).toHaveLength(4);
+      expect(hdf.components).toHaveLength(4);
     });
   });
 

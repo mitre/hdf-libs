@@ -39,7 +39,7 @@ export function detectHDFVersion(input: string): string {
   const obj = JSON.parse(input) as Record<string, unknown>;
 
   if ('profiles' in obj && 'platform' in obj) return '1';
-  if ('baselines' in obj && 'targets' in obj) return '2';
+  if ('baselines' in obj && ('components' in obj || 'targets' in obj)) return '2';
 
   throw new Error('Cannot determine HDF version: missing expected structural fields');
 }
@@ -100,9 +100,9 @@ function upgradeV1ToV2(input: string): string {
 
   const baselines = (v1.profiles ?? []).map(convertProfileToBaseline);
 
-  const targets: Record<string, unknown>[] = [];
+  const components: Record<string, unknown>[] = [];
   if (v1.platform) {
-    targets.push({
+    components.push({
       type: 'host',
       name: v1.platform.name,
       ...(v1.platform.release ? { osVersion: v1.platform.release } : {}),
@@ -112,7 +112,7 @@ function upgradeV1ToV2(input: string): string {
 
   const v2: Record<string, unknown> = {
     baselines,
-    targets,
+    components,
     statistics: v1.statistics ?? {},
   };
 
@@ -194,7 +194,7 @@ function convertV1Result(r: V1Result): Record<string, unknown> {
 function downgradeV2ToV1(input: string): string {
   const v2 = JSON.parse(input) as Record<string, unknown>;
 
-  const targets = v2.targets as Array<Record<string, unknown>> ?? [];
+  const targets = v2.components as Array<Record<string, unknown>> ?? [];
   const baselines = v2.baselines as Array<Record<string, unknown>> ?? [];
   const statistics = v2.statistics as Record<string, unknown> ?? {};
 

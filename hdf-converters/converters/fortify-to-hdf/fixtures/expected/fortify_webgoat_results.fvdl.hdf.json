@@ -184,6 +184,16 @@
       "version": "19.1.0.2241"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "fortify"
+      },
+      "name": "/root/webgoat",
+      "sbom": null,
+      "type": "repository"
+    }
+  ],
   "dataSource": {
     "format": "FVDL",
     "name": "Fortify"
@@ -192,14 +202,5 @@
     "name": "fortify-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "fortify"
-      },
-      "name": "/root/webgoat",
-      "type": "repository"
-    }
-  ],
   "timestamp": "2019-10-02T23:00:39Z"
 }

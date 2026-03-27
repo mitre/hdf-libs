@@ -5,8 +5,7 @@
   "unevaluatedProperties": false,
   "required": [
     "name",
-    "requirements",
-    "checksum"
+    "requirements"
   ],
   "allOf": [
     {
@@ -743,6 +742,13 @@
             "status": {
               "type": "string",
               "description": "The status. Example: 'loaded'."
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
             }
           },
           "description": "Shared metadata fields for baselines. Used in both standalone baseline documents and evaluated baseline results.",
@@ -1084,7 +1090,7 @@
           "properties": {
             "name": {
               "type": "string",
-              "description": "The name of the tool that generated this file. Example: 'Chef InSpec'."
+              "description": "The name of the software that produced this HDF file. Example: 'gosec-to-hdf'."
             },
             "version": {
               "type": "string",
@@ -1093,6 +1099,26 @@
           },
           "description": "Information about the tool that generated this HDF file.",
           "title": "Generator"
+        },
+        "DataSource": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the tool or service that produced the data, if known. Examples: 'gosec', 'Semgrep', 'OpenSCAP', 'AWS Config'. Omit if the tool cannot be identified."
+            },
+            "version": {
+              "type": "string",
+              "description": "Version of the source tool, if available in the tool's output. Example: '5.22.3'."
+            },
+            "format": {
+              "type": "string",
+              "description": "The file format, if it is a recognized named format shared by multiple tools. Examples: 'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the format (Nessus XML, gosec JSON)."
+            }
+          },
+          "description": "The tool or service that produced the security data represented in this HDF file.",
+          "title": "DataSource"
         },
         "Integrity": {
           "type": "object",
@@ -1162,6 +1188,7 @@
           "type": "object",
           "unevaluatedProperties": false,
           "required": [
+            "status",
             "codeDesc",
             "startTime"
           ],

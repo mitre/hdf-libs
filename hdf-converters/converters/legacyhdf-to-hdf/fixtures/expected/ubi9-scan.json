@@ -33035,7 +33035,7 @@
   "statistics": {
     "duration": 47.904315
   },
-  "targets": [
+  "components": [
     {
       "type": "host",
       "id": "da39a3ee-5e6b-5b0d-b255-bfef95601890",

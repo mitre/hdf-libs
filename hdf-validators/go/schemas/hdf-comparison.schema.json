@@ -59,6 +59,25 @@
       },
       "description": "Detailed comparison of individual requirements between sources."
     },
+    "componentDiffs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v1.0.0#/$defs/Component_Diff"
+      },
+      "description": "Comparison of components between two system documents. Used in systemDrift mode."
+    },
+    "packageDiffs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v1.0.0#/$defs/Package_Diff"
+      },
+      "description": "Comparison of packages between two SBOMs. Used in systemDrift mode for SBOM comparison."
+    },
+    "systemRef": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "URI identifying the system being compared in systemDrift mode."
+    },
     "drift": {
       "type": "array",
       "items": {
@@ -133,9 +152,11 @@
             "temporal",
             "baseline",
             "fleet",
-            "multiSource"
+            "multiSource",
+            "baselineEvolution",
+            "systemDrift"
           ],
-          "description": "The mode of comparison. 'temporal' compares the same target over time. 'baseline' compares against a golden reference. 'fleet' compares across multiple systems. 'multiSource' compares outputs from different scanners.",
+          "description": "The mode of comparison. 'temporal' compares the same target over time. 'baseline' compares against a golden reference. 'fleet' compares across multiple systems. 'multiSource' compares outputs from different scanners. 'baselineEvolution' compares two baseline documents to detect requirement changes between versions. 'systemDrift' compares two system documents to detect component-level changes.",
           "title": "Comparison Mode"
         },
         "Source_Role": {
@@ -267,12 +288,12 @@
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/DataSource",
               "description": "The tool or service that produced the source data."
             },
-            "targets": {
+            "components": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Target"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0#/$defs/Component"
               },
-              "description": "The target systems assessed in this source."
+              "description": "The components assessed in this source."
             },
             "baselineRef": {
               "type": "object",
@@ -594,6 +615,90 @@
           },
           "description": "Comparison of a baseline between sources.",
           "title": "Baseline Diff"
+        },
+        "Component_Diff": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "name",
+            "state"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Component name used for matching across system versions."
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "new",
+                "absent",
+                "unchanged",
+                "updated"
+              ],
+              "description": "The state of this component in the comparison."
+            },
+            "before": {
+              "description": "Component snapshot from the old system document."
+            },
+            "after": {
+              "description": "Component snapshot from the new system document."
+            },
+            "fieldChanges": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Field_Change"
+              },
+              "description": "Detailed field-level changes between the before and after component snapshots."
+            }
+          },
+          "description": "Comparison of a single component between two system document versions.",
+          "title": "Component Diff"
+        },
+        "Package_Diff": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "purl",
+            "state"
+          ],
+          "properties": {
+            "purl": {
+              "type": "string",
+              "description": "Package URL (purl) used as the identity key for matching across SBOMs."
+            },
+            "name": {
+              "type": "string",
+              "description": "Human-readable package name."
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "added",
+                "removed",
+                "updated",
+                "unchanged"
+              ],
+              "description": "The state of this package: added (new in new SBOM), removed (absent from new SBOM), updated (version changed), unchanged."
+            },
+            "oldVersion": {
+              "type": "string",
+              "description": "Package version in the old SBOM."
+            },
+            "newVersion": {
+              "type": "string",
+              "description": "Package version in the new SBOM."
+            },
+            "licenses": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "License identifiers for this package."
+            }
+          },
+          "description": "Comparison of a single package between two SBOM versions, matched by purl.",
+          "title": "Package Diff"
         },
         "Scanner_Conflict": {
           "type": "object",
@@ -1942,13 +2047,13 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0",
-      "title": "HDF Target Primitives",
-      "description": "Polymorphic target system supporting diverse scan targets from 35+ security tools.",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0",
+      "title": "HDF Component Primitives",
+      "description": "First-class system component with identity, polymorphic type, SBOM embedding, and system-binding properties. Components are the successor to Targets, adding stable identity (componentId), external system cross-references, and software inventory.",
       "$defs": {
-        "Base_Target": {
+        "Base_Component": {
           "type": "object",
           "additionalProperties": true,
           "required": [
@@ -1958,11 +2063,27 @@
           "properties": {
             "type": {
               "type": "string",
-              "description": "Target type discriminator."
+              "description": "Component type discriminator. Same values as Target types."
             },
             "name": {
               "type": "string",
-              "description": "Human-readable name for this target."
+              "description": "Human-readable name for this component."
+            },
+            "componentId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Stable UUID (RFC 4122) for this component. Required in hdf-system documents, optional in hdf-results. Enables cross-document correlation, diffing, and data flow references."
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of this component's role or purpose."
+            },
+            "externalIds": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Map of external identifier scheme to value. Well-known schemes: aws (instance ID), azure (resource ID), cmdb (asset ID), emass (system ID), cve (CVE ID). Custom schemes are allowed."
             },
             "labels": {
               "type": "object",
@@ -1970,54 +2091,188 @@
                 "type": "string"
               },
               "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
+            },
+            "sbom": {
+              "description": "Embedded CycloneDX or SPDX SBOM document representing this component's software inventory. The sbomFormat field determines which format constraints apply.",
+              "$comment": "Validated conditionally: CycloneDX requires bomFormat='CycloneDX' + specVersion; SPDX requires spdxVersion + SPDXID. Full SBOM schema validation is a tool-level concern."
+            },
+            "sbomRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "URI reference to an external CycloneDX or SPDX SBOM document for this component. May be a relative path, absolute URI, or fragment identifier."
+            },
+            "sbomFormat": {
+              "type": "string",
+              "enum": [
+                "cyclonedx",
+                "spdx"
+              ],
+              "description": "Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present."
+            },
+            "baselineRefs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Names of baselines that apply to this component."
+            },
+            "inputOverrides": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Input_Override"
+              },
+              "description": "System-specific overrides for baseline input values."
+            },
+            "targetSelector": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Target_Selector",
+              "description": "Label selector to match targets belonging to this component during migration. Targets with matching labels are automatically included."
             }
           },
-          "description": "Base properties shared by all target types.",
-          "title": "Base Target"
+          "allOf": [
+            {
+              "if": {
+                "allOf": [
+                  {
+                    "properties": {
+                      "sbomFormat": {
+                        "const": "cyclonedx"
+                      }
+                    },
+                    "required": [
+                      "sbomFormat"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "sbom": {
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "sbom"
+                    ]
+                  }
+                ]
+              },
+              "then": {
+                "properties": {
+                  "sbom": {
+                    "type": "object",
+                    "required": [
+                      "bomFormat",
+                      "specVersion"
+                    ],
+                    "properties": {
+                      "bomFormat": {
+                        "type": "string",
+                        "const": "CycloneDX",
+                        "description": "Must be 'CycloneDX' for CycloneDX SBOM documents."
+                      },
+                      "specVersion": {
+                        "type": "string",
+                        "description": "CycloneDX specification version (e.g., '1.4', '1.5', '1.6')."
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "allOf": [
+                  {
+                    "properties": {
+                      "sbomFormat": {
+                        "const": "spdx"
+                      }
+                    },
+                    "required": [
+                      "sbomFormat"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "sbom": {
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "sbom"
+                    ]
+                  }
+                ]
+              },
+              "then": {
+                "properties": {
+                  "sbom": {
+                    "type": "object",
+                    "required": [
+                      "spdxVersion",
+                      "SPDXID"
+                    ],
+                    "properties": {
+                      "spdxVersion": {
+                        "type": "string",
+                        "description": "SPDX specification version (e.g., 'SPDX-2.3')."
+                      },
+                      "SPDXID": {
+                        "type": "string",
+                        "description": "SPDX document identifier (e.g., 'SPDXRef-DOCUMENT')."
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          ],
+          "description": "Base properties shared by all component types. Extends the Target concept with stable identity, external references, and SBOM embedding.",
+          "title": "Base Component"
         },
-        "Target": {
-          "description": "A scan target. Uses discriminated union pattern with 'type' field as discriminator.",
-          "title": "Target",
+        "Component": {
+          "description": "A system component. Uses discriminated union pattern with 'type' field as discriminator. Superset of Target with identity, external IDs, and SBOM support.",
+          "title": "Component",
           "oneOf": [
             {
-              "$ref": "#/$defs/Host_Target"
+              "$ref": "#/$defs/Host_Component"
             },
             {
-              "$ref": "#/$defs/Container_Image_Target"
+              "$ref": "#/$defs/Container_Image_Component"
             },
             {
-              "$ref": "#/$defs/Container_Instance_Target"
+              "$ref": "#/$defs/Container_Instance_Component"
             },
             {
-              "$ref": "#/$defs/Container_Platform_Target"
+              "$ref": "#/$defs/Container_Platform_Component"
             },
             {
-              "$ref": "#/$defs/Cloud_Account_Target"
+              "$ref": "#/$defs/Cloud_Account_Component"
             },
             {
-              "$ref": "#/$defs/Cloud_Resource_Target"
+              "$ref": "#/$defs/Cloud_Resource_Component"
             },
             {
-              "$ref": "#/$defs/Repository_Target"
+              "$ref": "#/$defs/Repository_Component"
             },
             {
-              "$ref": "#/$defs/Application_Target"
+              "$ref": "#/$defs/Application_Component"
             },
             {
-              "$ref": "#/$defs/Artifact_Target"
+              "$ref": "#/$defs/Artifact_Component"
             },
             {
-              "$ref": "#/$defs/Network_Target"
+              "$ref": "#/$defs/Network_Component"
             },
             {
-              "$ref": "#/$defs/Database_Target"
+              "$ref": "#/$defs/Database_Component"
             }
           ]
         },
-        "Host_Target": {
+        "Host_Component": {
           "allOf": [
             {
-              "$ref": "#/$defs/Base_Target"
+              "$ref": "#/$defs/Base_Component"
             },
             {
               "type": "object",
@@ -2046,7 +2301,7 @@
                 "macAddress": {
                   "type": "string",
                   "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
-                  "description": "MAC address of the host in colon-separated hexadecimal format (e.g., '00:1A:2B:3C:4D:5E')."
+                  "description": "MAC address in colon-separated hexadecimal format."
                 },
                 "osName": {
                   "type": "string",
@@ -2059,31 +2314,13 @@
               }
             }
           ],
-          "examples": [
-            {
-              "type": "host",
-              "name": "web-server-01",
-              "fqdn": "web01.prod.example.com",
-              "ipAddress": "192.168.1.100",
-              "macAddress": "00:1A:2B:3C:4D:5E",
-              "osName": "Ubuntu",
-              "osVersion": "22.04 LTS"
-            },
-            {
-              "type": "host",
-              "name": "database-server",
-              "ipAddress": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-              "osName": "Red Hat Enterprise Linux",
-              "osVersion": "9.2"
-            }
-          ],
           "description": "A physical or virtual server, workstation, or network device.",
-          "title": "Host Target"
+          "title": "Host Component"
         },
-        "Container_Image_Target": {
+        "Container_Image_Component": {
           "allOf": [
             {
-              "$ref": "#/$defs/Base_Target"
+              "$ref": "#/$defs/Base_Component"
             },
             {
               "type": "object",
@@ -2110,36 +2347,18 @@
                 "digest": {
                   "type": "string",
                   "pattern": "^(sha256:[a-f0-9]{64}|sha512:[a-f0-9]{128}|blake3:[a-f0-9]{64})$",
-                  "description": "Image digest for immutable reference. Example: 'sha256:abc123...'. Must be sha256 (64 hex chars), sha512 (128 hex chars), or blake3 (64 hex chars)."
+                  "description": "Image digest for immutable reference."
                 }
               }
             }
           ],
-          "examples": [
-            {
-              "type": "containerImage",
-              "name": "nginx-webserver",
-              "registry": "docker.io",
-              "repository": "library/nginx",
-              "tag": "1.25-alpine",
-              "digest": "sha256:a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d"
-            },
-            {
-              "type": "containerImage",
-              "name": "custom-api-service",
-              "registry": "gcr.io",
-              "repository": "my-project/api-service",
-              "tag": "v2.3.1",
-              "imageId": "sha256:9c27eacc5497"
-            }
-          ],
           "description": "A static container image (not running).",
-          "title": "Container Image Target"
+          "title": "Container Image Component"
         },
-        "Container_Instance_Target": {
+        "Container_Instance_Component": {
           "allOf": [
             {
-              "$ref": "#/$defs/Base_Target"
+              "$ref": "#/$defs/Base_Component"
             },
             {
               "type": "object",
@@ -2163,12 +2382,12 @@
             }
           ],
           "description": "A running container instance.",
-          "title": "Container Instance Target"
+          "title": "Container Instance Component"
         },
-        "Container_Platform_Target": {
+        "Container_Platform_Component": {
           "allOf": [
             {
-              "$ref": "#/$defs/Base_Target"
+              "$ref": "#/$defs/Base_Component"
             },
             {
               "type": "object",
@@ -2195,13 +2414,13 @@
               }
             }
           ],
-          "description": "A container orchestration platform (Kubernetes, OpenShift, ECS, etc.) or workloads running on it.",
-          "title": "Container Platform Target"
+          "description": "A container orchestration platform (Kubernetes, OpenShift, ECS, etc.).",
+          "title": "Container Platform Component"
         },
-        "Cloud_Account_Target": {
+        "Cloud_Account_Component": {
           "allOf": [
             {
-              "$ref": "#/$defs/Base_Target"
+              "$ref": "#/$defs/Base_Component"
             },
             {
               "type": "object",
@@ -2223,7 +2442,7 @@
                 },
                 "accountId": {
                   "type": "string",
-                  "description": "Cloud account identifier. Example: AWS account ID, Azure subscription ID."
+                  "description": "Cloud account identifier."
                 },
                 "region": {
                   "type": "string",
@@ -2233,12 +2452,12 @@
             }
           ],
           "description": "A cloud provider account (AWS account, Azure subscription, GCP project).",
-          "title": "Cloud Account Target"
+          "title": "Cloud Account Component"
         },
-        "Cloud_Resource_Target": {
+        "Cloud_Resource_Component": {
           "allOf": [
             {
-              "$ref": "#/$defs/Base_Target"
+              "$ref": "#/$defs/Base_Component"
             },
             {
               "type": "object",
@@ -2277,41 +2496,13 @@
               }
             }
           ],
-          "examples": [
-            {
-              "type": "cloudResource",
-              "name": "production-web-server",
-              "provider": "aws",
-              "resourceType": "ec2:instance",
-              "resourceId": "i-0123456789abcdef0",
-              "arn": "arn:aws:ec2:us-east-1:123456789012:instance/i-0123456789abcdef0",
-              "region": "us-east-1"
-            },
-            {
-              "type": "cloudResource",
-              "name": "application-data-bucket",
-              "provider": "aws",
-              "resourceType": "s3:bucket",
-              "resourceId": "my-application-data-bucket",
-              "arn": "arn:aws:s3:::my-application-data-bucket",
-              "region": "us-west-2"
-            },
-            {
-              "type": "cloudResource",
-              "name": "analytics-vm",
-              "provider": "azure",
-              "resourceType": "Microsoft.Compute/virtualMachines",
-              "resourceId": "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/analytics-rg/providers/Microsoft.Compute/virtualMachines/analytics-vm-01",
-              "region": "eastus"
-            }
-          ],
           "description": "A specific cloud resource (EC2 instance, S3 bucket, Azure VM, etc.).",
-          "title": "Cloud Resource Target"
+          "title": "Cloud Resource Component"
         },
-        "Repository_Target": {
+        "Repository_Component": {
           "allOf": [
             {
-              "$ref": "#/$defs/Base_Target"
+              "$ref": "#/$defs/Base_Component"
             },
             {
               "type": "object",
@@ -2336,12 +2527,12 @@
             }
           ],
           "description": "A code repository (for SAST tools).",
-          "title": "Repository Target"
+          "title": "Repository Component"
         },
-        "Application_Target": {
+        "Application_Component": {
           "allOf": [
             {
-              "$ref": "#/$defs/Base_Target"
+              "$ref": "#/$defs/Base_Component"
             },
             {
               "type": "object",
@@ -2366,12 +2557,12 @@
             }
           ],
           "description": "A running application or API (for DAST tools).",
-          "title": "Application Target"
+          "title": "Application Component"
         },
-        "Artifact_Target": {
+        "Artifact_Component": {
           "allOf": [
             {
-              "$ref": "#/$defs/Base_Target"
+              "$ref": "#/$defs/Base_Component"
             },
             {
               "type": "object",
@@ -2399,12 +2590,12 @@
             }
           ],
           "description": "A software artifact or dependency (for SCA tools).",
-          "title": "Artifact Target"
+          "title": "Artifact Component"
         },
-        "Network_Target": {
+        "Network_Component": {
           "allOf": [
             {
-              "$ref": "#/$defs/Base_Target"
+              "$ref": "#/$defs/Base_Component"
             },
             {
               "type": "object",
@@ -2424,12 +2615,12 @@
             }
           ],
           "description": "A network segment or network device.",
-          "title": "Network Target"
+          "title": "Network Component"
         },
-        "Database_Target": {
+        "Database_Component": {
           "allOf": [
             {
-              "$ref": "#/$defs/Base_Target"
+              "$ref": "#/$defs/Base_Component"
             },
             {
               "type": "object",
@@ -2458,26 +2649,290 @@
               }
             }
           ],
+          "description": "A database instance.",
+          "title": "Database Component"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0",
+      "title": "HDF System Primitives",
+      "description": "Types for describing system architecture, authorization boundaries, and components.",
+      "$defs": {
+        "Authorization_Status": {
+          "type": "string",
+          "enum": [
+            "authorized",
+            "denied",
+            "pendingAuthorization",
+            "conditionallyAuthorized",
+            "notYetRequested",
+            "revoked"
+          ],
+          "description": "Authorization to Operate (ATO) status for the system.",
+          "title": "Authorization Status"
+        },
+        "Categorization_Level": {
+          "type": "string",
+          "enum": [
+            "low",
+            "moderate",
+            "high"
+          ],
+          "description": "FIPS 199 security categorization level (impact level).",
+          "title": "Categorization Level"
+        },
+        "Component_Type": {
+          "type": "string",
+          "enum": [
+            "application",
+            "database",
+            "network",
+            "storage",
+            "compute",
+            "service",
+            "other"
+          ],
+          "description": "The type of system component.",
+          "title": "Component Type"
+        },
+        "Input_Override": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "inputName",
+            "value"
+          ],
+          "properties": {
+            "baselineRef": {
+              "type": "string",
+              "description": "Name of the baseline this override applies to. If omitted, applies to all baselines that define this input."
+            },
+            "inputName": {
+              "type": "string",
+              "description": "Name of the input being overridden. Must match an Input.name in the referenced baseline."
+            },
+            "value": {
+              "description": "The overridden value. Should match the type of the original input."
+            },
+            "justification": {
+              "type": "string",
+              "description": "Rationale for why this override is needed."
+            },
+            "approvedBy": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+              "description": "Identity of the person or system that approved this override."
+            }
+          },
+          "description": "An override of a baseline input value for a specific component. Enables system-specific tailoring of baseline parameters.",
+          "title": "Input Override"
+        },
+        "Target_Selector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A label selector that matches targets by label key-value pairs. All specified labels must match (AND logic). Example: { \"labels.component\": \"WebTier\" } matches targets with labels.component = \"WebTier\".",
+          "title": "Target Selector"
+        },
+        "Component": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "name",
+            "type"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Human-readable component name. Example: 'WebTier', 'DatabaseTier'."
+            },
+            "type": {
+              "$ref": "#/$defs/Component_Type",
+              "description": "The type of this component."
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of this component's role in the system."
+            },
+            "targetSelector": {
+              "$ref": "#/$defs/Target_Selector",
+              "description": "Label selector to match targets belonging to this component. Targets with matching labels are automatically included."
+            },
+            "baselineRefs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Names of baselines that apply to this component's targets."
+            },
+            "inputOverrides": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Input_Override"
+              },
+              "description": "System-specific overrides for baseline input values."
+            },
+            "sbomRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "URI to a CycloneDX or SPDX SBOM document for this component."
+            },
+            "sbomFormat": {
+              "type": "string",
+              "enum": [
+                "cyclonedx",
+                "spdx"
+              ],
+              "description": "Format of the referenced SBOM document."
+            }
+          },
           "examples": [
             {
-              "type": "database",
-              "name": "production-postgres",
-              "engine": "postgresql",
-              "version": "15.3",
-              "host": "db.prod.example.com",
-              "port": 5432
+              "name": "WebTier",
+              "type": "application",
+              "description": "RHEL 9 web servers running the portal",
+              "targetSelector": {
+                "labels.component": "WebTier"
+              },
+              "baselineRefs": [
+                "RHEL9-STIG",
+                "DISA-Container-STIG"
+              ],
+              "sbomRef": "https://artifacts.agency.gov/sbom/webtier-2026-03.cdx.json",
+              "sbomFormat": "cyclonedx",
+              "inputOverrides": [
+                {
+                  "baselineRef": "RHEL9-STIG",
+                  "inputName": "max_concurrent_sessions",
+                  "value": 5,
+                  "justification": "Admin team needs 5 sessions for shift handoff",
+                  "approvedBy": {
+                    "type": "email",
+                    "identifier": "issm@agency.gov"
+                  }
+                }
+              ]
             },
             {
+              "name": "DatabaseTier",
               "type": "database",
-              "name": "analytics-mysql",
-              "engine": "mysql",
-              "version": "8.0.34",
-              "host": "192.168.1.50",
-              "port": 3306
+              "targetSelector": {
+                "labels.component": "DatabaseTier"
+              },
+              "baselineRefs": [
+                "PostgreSQL-15-STIG"
+              ]
             }
           ],
-          "description": "A database instance.",
-          "title": "Database Target"
+          "description": "A logical component within a system's authorization boundary. Components match targets via label selectors and reference the baselines that apply to them.",
+          "title": "Component"
+        },
+        "Control_Designation": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "controlId",
+            "designation",
+            "description"
+          ],
+          "properties": {
+            "controlId": {
+              "type": "string",
+              "description": "The control identifier (e.g., 'SC-7', 'AC-2 (1)'). Must match a NIST tag in a baseline requirement's tags."
+            },
+            "designation": {
+              "type": "string",
+              "enum": [
+                "common",
+                "system-specific",
+                "hybrid"
+              ],
+              "description": "NIST SP 800-53 control designation. 'common': fully provided by another component or system. 'system-specific': implemented by the inheriting component(s) only. 'hybrid': shared responsibility between provider and inheritor."
+            },
+            "providedBy": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of a local component that provides this control. Omit when the provider is an external system."
+            },
+            "systemRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Reference to another hdf-system document whose component provides this control. Use when the provider is in a different system. Omit when the provider is local."
+            },
+            "inheritedBy": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "description": "componentIds that inherit this control. If omitted, all components in the system inherit it."
+            },
+            "description": {
+              "type": "string",
+              "description": "Justification for this designation — who provides the control, why it's inherited, and any relevant authorization references."
+            }
+          },
+          "examples": [
+            {
+              "controlId": "IA-2",
+              "designation": "common",
+              "providedBy": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+              "inheritedBy": [
+                "11111111-2222-3333-4444-555555555555"
+              ],
+              "description": "User identification and authentication provided by Keycloak SSO via SAML 2.0."
+            },
+            {
+              "controlId": "PE-2",
+              "designation": "common",
+              "description": "Physical access authorizations provided by AWS GovCloud per FedRAMP High authorization."
+            }
+          ],
+          "description": "Declares a control's designation within a system — whether it is common (provided by another component or system), system-specific (implemented locally), or hybrid (shared responsibility). Maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP by-component provided/inherited semantics.",
+          "title": "Control Designation"
+        },
+        "Interconnection": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "name",
+            "externalSystem"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the interconnection."
+            },
+            "externalSystem": {
+              "type": "string",
+              "description": "Name or identifier of the external system."
+            },
+            "direction": {
+              "type": "string",
+              "enum": [
+                "inbound",
+                "outbound",
+                "bidirectional"
+              ],
+              "description": "Data flow direction relative to this system."
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of the interconnection's purpose and data exchanged."
+            },
+            "protocol": {
+              "type": "string",
+              "description": "Communication protocol. Example: 'HTTPS', 'SSH', 'SFTP'."
+            },
+            "securityMeasures": {
+              "type": "string",
+              "description": "Security controls applied to this interconnection."
+            }
+          },
+          "description": "A connection between this system and an external system that crosses the authorization boundary.",
+          "title": "Interconnection"
         }
       }
     },
@@ -2500,12 +2955,12 @@
           "format": "date-time",
           "description": "When this assessment was executed."
         },
-        "targets": {
+        "components": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Target"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0#/$defs/Component"
           },
-          "description": "The target systems that were assessed. Supports multiple targets of different types."
+          "description": "The components that were assessed. Each component describes a system element (host, container, cloud resource, application, etc.) with optional identity, SBOM, and external references."
         },
         "baselines": {
           "type": "array",
@@ -2606,7 +3061,8 @@
               "items": {
                 "$ref": "#/$defs/Evaluated_Requirement"
               },
-              "description": "The set of requirements including any findings."
+              "minItems": 1,
+              "description": "The set of requirements including any findings. A baseline must have at least one requirement."
             },
             "groups": {
               "type": "array",

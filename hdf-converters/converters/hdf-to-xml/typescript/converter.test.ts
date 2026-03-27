@@ -25,7 +25,7 @@ describe('hdf-to-xml Converter', () => {
     it('should handle empty baselines array', () => {
       const input = JSON.stringify({
         baselines: [],
-        targets: [],
+        components: [],
         statistics: { duration: 0 }
       });
 
@@ -45,7 +45,7 @@ describe('hdf-to-xml Converter', () => {
           checksum: { algorithm: 'sha256', value: 'abc' },
           requirements: []
         }],
-        targets: [],
+        components: [],
         statistics: { duration: 0 }
       });
 
@@ -91,7 +91,7 @@ describe('hdf-to-xml Converter', () => {
             }]
           }
         ],
-        targets: [{ name: 'Target 1', type: 'host' }],
+        components: [{ name: 'Target 1', type: 'host' }],
         statistics: { duration: 10.5 }
       });
 
@@ -143,7 +143,7 @@ describe('hdf-to-xml Converter', () => {
             results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z', message: 'ok', runTime: 1.5 }]
           }]
         }],
-        targets: [{ name: 't1', type: 'host', fqdn: 'test.local', ipAddress: '1.2.3.4', hostname: 'myhost' }],
+        components: [{ name: 't1', type: 'host', fqdn: 'test.local', ipAddress: '1.2.3.4', hostname: 'myhost' }],
         timestamp: '2025-01-01T00:00:00Z',
         generator: { name: 'test', version: '1.0' },
         statistics: { duration: 10, requirements: { total: 1 } },
@@ -196,7 +196,7 @@ describe('hdf-to-xml Converter', () => {
       expect(result).not.toContain('checksum');
     });
 
-    it('should handle no targets', () => {
+    it('should handle no components', () => {
       const input = JSON.stringify({
         baselines: [{
           name: 'B1',
@@ -205,7 +205,7 @@ describe('hdf-to-xml Converter', () => {
         statistics: {},
       });
       const result = convertHdfToXml(input);
-      expect(result).not.toContain('<targets>');
+      expect(result).not.toContain('<components>');
     });
   });
 });

@@ -66,9 +66,9 @@ describe('jfrog-xray to HDF converter', async () => {
   describe('target', async () => {
     it('should include target with Application type', async () => {
       const hdf = JSON.parse(await convertJfrogXrayToHdf(loadFixture('jfrog_xray_sample.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.name).toBe('JFrog Xray Scan');
-      expect(hdf.targets![0]!.type).toBe('application');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.name).toBe('JFrog Xray Scan');
+      expect(hdf.components![0]!.type).toBe('application');
     });
   });
 

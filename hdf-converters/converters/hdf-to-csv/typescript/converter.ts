@@ -1,6 +1,6 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { buildCsv } from '@mitre/hdf-utilities';
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, Target, Description } from '@mitre/hdf-schema';
+import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, Component, Description } from '@mitre/hdf-schema';
 
 /**
  * Row structure for CSV export
@@ -40,12 +40,12 @@ export function convertHdfToCsv(input: string): string {
 
   const rows: CsvRow[] = [];
 
-  // Get targets array (may be empty or undefined)
-  const targets = hdf.targets || [];
+  // Get components array (may be empty or undefined)
+  const components = hdf.components || [];
 
-  // If no targets, create a single default target entry
-  const targetList: Array<{ name: string; type: string }> = targets.length > 0
-    ? targets.map((t: Target) => ({ name: t.name, type: t.type }))
+  // If no components, create a single default target entry
+  const targetList: Array<{ name: string; type: string }> = components.length > 0
+    ? components.map((t: Component) => ({ name: t.name, type: t.type }))
     : [{ name: '', type: '' }];
 
   // Iterate through each baseline

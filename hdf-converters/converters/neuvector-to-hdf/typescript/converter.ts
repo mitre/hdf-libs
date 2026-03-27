@@ -246,7 +246,7 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
       version: '1.0.0',
     },
     dataSource,
-    targets: [
+    components: [
       {
         name: targetNameFromReport(scan.report),
         type: Copyright.ContainerImage,

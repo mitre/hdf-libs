@@ -77,8 +77,8 @@ describe('conveyor to HDF converter', async () => {
   describe('target', async () => {
     it('should set target type to Application', async () => {
       const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.type).toBe('application');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.type).toBe('application');
     });
   });
 
@@ -294,7 +294,7 @@ describe('conveyor to HDF converter', async () => {
         },
       });
       const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
-      expect(hdf.targets![0]!.name).toBe('Custom Target');
+      expect(hdf.components![0]!.name).toBe('Custom Target');
     });
 
     it('should use default target name when params has no description', async () => {
@@ -311,7 +311,7 @@ describe('conveyor to HDF converter', async () => {
         },
       });
       const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
-      expect(hdf.targets![0]!.name).toBe('Conveyor Scan');
+      expect(hdf.components![0]!.name).toBe('Conveyor Scan');
     });
 
     it('should handle negative score → impact 0.0', async () => {

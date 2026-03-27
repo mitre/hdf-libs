@@ -116,13 +116,13 @@ func formatMessage(alert mdeAlert) string {
 
 // extractDeviceTarget extracts a Host target from device evidence if present.
 // Falls back to tenantId as a cloud account target.
-func extractDeviceTarget(alert mdeAlert) hdf.Target {
+func extractDeviceTarget(alert mdeAlert) hdf.Component {
 	for _, ev := range alert.Evidence {
 		odataType, _ := ev["@odata.type"].(string)
 		if strings.Contains(odataType, "deviceEvidence") {
 			deviceName, _ := ev["deviceDnsName"].(string)
 			osPlatform, _ := ev["osPlatform"].(string)
-			target := hdf.Target{
+			target := hdf.Component{
 				Name:   deviceName,
 				Type:   hdf.Host,
 				Labels: map[string]string{"provider": "azure", "service": "defender-endpoint"},
@@ -137,7 +137,7 @@ func extractDeviceTarget(alert mdeAlert) hdf.Target {
 		}
 	}
 	// No device evidence — use tenant as cloud account
-	return hdf.Target{
+	return hdf.Component{
 		Name:      alert.TenantID,
 		Type:      hdf.CloudAccount,
 		AccountID: shared.Ptr(alert.TenantID),
@@ -241,7 +241,7 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 
 	// Build targets — deduplicate by device name
 	seenTargets := make(map[string]bool)
-	var targets []hdf.Target
+	var targets []hdf.Component
 	for _, alert := range limitedAlerts {
 		target := extractDeviceTarget(alert)
 		if !seenTargets[target.Name] {
@@ -262,7 +262,7 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 		ConverterVersion: converterVersion,
 		DataSourceName:   "Microsoft Defender for Endpoint",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets:          targets,
+		Components:          targets,
 		Timestamp:        &now,
 	}), nil
 }

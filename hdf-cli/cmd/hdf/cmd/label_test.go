@@ -19,7 +19,7 @@ func createLabelTestFixture(t *testing.T) string {
 	content := `{
   "baselines": [],
   "statistics": {"duration": 0.1},
-  "targets": [
+  "components": [
     {"name": "test-system", "type": "host"},
     {"name": "web-server", "type": "host"}
   ]
@@ -60,7 +60,7 @@ func TestLabelShowCommand(t *testing.T) {
 		stdout, _, err := executeCommand("label", "show", "--json", fixture)
 		require.NoError(t, err)
 
-		var infos []targetLabelInfo
+		var infos []componentLabelInfo
 		require.NoError(t, json.Unmarshal([]byte(stdout), &infos))
 		require.Len(t, infos, 2)
 		assert.Equal(t, "prod", infos[0].Labels["env"])
@@ -86,7 +86,7 @@ func TestLabelSetCommand(t *testing.T) {
 		var doc map[string]interface{}
 		require.NoError(t, json.Unmarshal(data, &doc))
 
-		targets := doc["targets"].([]interface{})
+		targets := doc["components"].([]interface{})
 		for _, tRaw := range targets {
 			target := tRaw.(map[string]interface{})
 			labels := target["labels"].(map[string]interface{})
@@ -106,7 +106,7 @@ func TestLabelSetCommand(t *testing.T) {
 		var doc map[string]interface{}
 		require.NoError(t, json.Unmarshal(data, &doc))
 
-		targets := doc["targets"].([]interface{})
+		targets := doc["components"].([]interface{})
 		target := targets[0].(map[string]interface{})
 		labels := target["labels"].(map[string]interface{})
 		assert.Equal(t, "prod", labels["env"])
@@ -126,7 +126,7 @@ func TestLabelSetCommand(t *testing.T) {
 		require.NoError(t, err)
 		var originalDoc map[string]interface{}
 		require.NoError(t, json.Unmarshal(originalData, &originalDoc))
-		targets := originalDoc["targets"].([]interface{})
+		targets := originalDoc["components"].([]interface{})
 		target := targets[0].(map[string]interface{})
 		_, hasLabels := target["labels"]
 		assert.False(t, hasLabels, "original file should not have labels")
@@ -136,7 +136,7 @@ func TestLabelSetCommand(t *testing.T) {
 		require.NoError(t, err)
 		var outputDoc map[string]interface{}
 		require.NoError(t, json.Unmarshal(outputData, &outputDoc))
-		outTargets := outputDoc["targets"].([]interface{})
+		outTargets := outputDoc["components"].([]interface{})
 		outTarget := outTargets[0].(map[string]interface{})
 		outLabels := outTarget["labels"].(map[string]interface{})
 		assert.Equal(t, "prod", outLabels["env"])
@@ -172,7 +172,7 @@ func TestLabelRemoveCommand(t *testing.T) {
 		var doc map[string]interface{}
 		require.NoError(t, json.Unmarshal(data, &doc))
 
-		targets := doc["targets"].([]interface{})
+		targets := doc["components"].([]interface{})
 		target := targets[0].(map[string]interface{})
 		labels := target["labels"].(map[string]interface{})
 		assert.NotContains(t, labels, "env")
@@ -203,7 +203,7 @@ func TestLabelRemoveCommand(t *testing.T) {
 		require.NoError(t, err)
 		var originalDoc map[string]interface{}
 		require.NoError(t, json.Unmarshal(originalData, &originalDoc))
-		targets := originalDoc["targets"].([]interface{})
+		targets := originalDoc["components"].([]interface{})
 		target := targets[0].(map[string]interface{})
 		labels := target["labels"].(map[string]interface{})
 		assert.Equal(t, "prod", labels["env"])
@@ -213,7 +213,7 @@ func TestLabelRemoveCommand(t *testing.T) {
 		require.NoError(t, err)
 		var outputDoc map[string]interface{}
 		require.NoError(t, json.Unmarshal(outputData, &outputDoc))
-		outTargets := outputDoc["targets"].([]interface{})
+		outTargets := outputDoc["components"].([]interface{})
 		outTarget := outTargets[0].(map[string]interface{})
 		outLabels := outTarget["labels"].(map[string]interface{})
 		assert.NotContains(t, outLabels, "env")

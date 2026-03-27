@@ -169,35 +169,35 @@ describe('hdf-results.schema.json (refactored)', () => {
     });
   });
 
-  describe('targets array (new field)', () => {
-    it('should accept empty targets array', () => {
-      expect(validate(createMinimalResultsDoc({ targets: [] }))).toBe(true);
+  describe('components array (new field)', () => {
+    it('should accept empty components array', () => {
+      expect(validate(createMinimalResultsDoc({ components: [] }))).toBe(true);
     });
 
-    it('should accept host target', () => {
+    it('should accept host component', () => {
       const doc = createMinimalResultsDoc({
-        targets: [{ type: 'host', name: 'web-server-01', fqdn: 'web-server-01.example.com' }],
+        components: [{ type: 'host', name: 'web-server-01', fqdn: 'web-server-01.example.com' }],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept container_image target', () => {
+    it('should accept container_image component', () => {
       const doc = createMinimalResultsDoc({
-        targets: [{ type: 'containerImage', name: 'nginx:latest', imageId: 'sha256:abc123' }],
+        components: [{ type: 'containerImage', name: 'nginx:latest', imageId: 'sha256:abc123' }],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept cloud_account target', () => {
+    it('should accept cloud_account component', () => {
       const doc = createMinimalResultsDoc({
-        targets: [{ type: 'cloudAccount', name: 'prod-aws', provider: 'aws', accountId: '123456789012' }],
+        components: [{ type: 'cloudAccount', name: 'prod-aws', provider: 'aws', accountId: '123456789012' }],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept multiple targets of different types', () => {
+    it('should accept multiple components of different types', () => {
       const doc = createMinimalResultsDoc({
-        targets: [
+        components: [
           { type: 'host', name: 'server-01' },
           { type: 'containerImage', name: 'app:v1', imageId: 'sha256:xyz' },
           { type: 'database', name: 'prod-db', engine: 'postgresql' },

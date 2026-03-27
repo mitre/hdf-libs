@@ -291,7 +291,7 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		DataSourceFormat:  "JSON",
 		DataSourceVersion: report.LastRun.Version,
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
+		Components: []hdf.Component{
 			{
 				Name: targetName,
 				Type: hdf.CloudAccount,

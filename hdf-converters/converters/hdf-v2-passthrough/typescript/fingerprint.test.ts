@@ -28,7 +28,7 @@ runFingerprintTests({
           },
         ],
         generator: { name: 'hdf-converters', version: '1.0.0' },
-        targets: [{ name: 'test-host', type: 'host' }],
+        components: [{ name: 'test-host', type: 'host' }],
         timestamp: '2024-01-15T10:00:00Z',
       }),
       confidence: 0.8,

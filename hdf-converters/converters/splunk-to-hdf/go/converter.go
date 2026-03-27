@@ -141,7 +141,7 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 
 	// Process each GUID group into baselines and targets.
 	var allBaselines []hdf.EvaluatedBaseline
-	var allTargets []hdf.Target
+	var allTargets []hdf.Component
 	var lastHeader *SplunkHeader
 	timestamp := time.Now()
 
@@ -208,7 +208,7 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		}
 
 		// Build target from header platform info.
-		target := hdf.Target{
+		target := hdf.Component{
 			Name:   header.Platform.Name,
 			Type:   hdf.Host,
 			Labels: map[string]string{"service": "splunk"},
@@ -230,7 +230,7 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		ConverterVersion: converterVersion,
 		DataSourceName:   "Splunk",
 		Baselines:        allBaselines,
-		Targets:          allTargets,
+		Components:          allTargets,
 		Statistics:       stats,
 		Timestamp:        &timestamp,
 	})

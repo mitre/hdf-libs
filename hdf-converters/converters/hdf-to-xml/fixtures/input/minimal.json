@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "targets": [
+  "components": [
     {
       "name": "web-server-01",
       "type": "host"

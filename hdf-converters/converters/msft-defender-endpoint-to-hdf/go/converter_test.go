@@ -175,8 +175,8 @@ func TestConvert_Target_Host(t *testing.T) {
 	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	target := result.Targets[0]
+	require.NotEmpty(t, result.Components)
+	target := result.Components[0]
 	assert.Equal(t, hdf.Host, target.Type)
 	assert.Equal(t, "temp123.middleeast.corp.microsoft.com", target.Name)
 	require.NotNil(t, target.FQDN)
@@ -191,7 +191,7 @@ func TestConvert_Target_Deduplicated(t *testing.T) {
 	require.NoError(t, err)
 
 	// 4 alerts with 4 different devices → 4 targets
-	assert.Len(t, result.Targets, 4)
+	assert.Len(t, result.Components, 4)
 }
 
 // ---- MITRE ATT&CK techniques in tags ----

@@ -51,9 +51,9 @@ func TestConvertV1ToV2_Minimal(t *testing.T) {
 
 	// Basic structural checks
 	require.NotNil(t, v2.Baselines)
-	require.NotNil(t, v2.Targets)
-	assert.Len(t, v2.Targets, 1)
-	assert.Equal(t, hdf.Host, v2.Targets[0].Type)
+	require.NotNil(t, v2.Components)
+	assert.Len(t, v2.Components, 1)
+	assert.Equal(t, hdf.Host, v2.Components[0].Type)
 }
 
 func TestConvertV1ToV2_DataSource(t *testing.T) {
@@ -101,7 +101,7 @@ func TestConvertV1ToV2_ContainerScan(t *testing.T) {
 
 	// Basic structural checks
 	require.NotNil(t, v2.Baselines)
-	require.NotNil(t, v2.Targets)
+	require.NotNil(t, v2.Components)
 }
 
 func TestConvertV1ToV2_Wrapper(t *testing.T) {
@@ -131,7 +131,7 @@ func TestConvertV1ToV2_Wrapper(t *testing.T) {
 
 	// Basic structural checks
 	require.NotNil(t, v2.Baselines)
-	require.NotNil(t, v2.Targets)
+	require.NotNil(t, v2.Components)
 }
 
 func TestIsHDFV1(t *testing.T) {
@@ -310,9 +310,9 @@ func TestConvertV1ToV2_WithNilProfiles(t *testing.T) {
 	assert.Len(t, v2.Baselines, 0)
 
 	// Should have targets
-	require.Len(t, v2.Targets, 1)
-	assert.Equal(t, hdf.Host, v2.Targets[0].Type)
-	assert.Equal(t, "test-system", v2.Targets[0].Name)
+	require.Len(t, v2.Components, 1)
+	assert.Equal(t, hdf.Host, v2.Components[0].Type)
+	assert.Equal(t, "test-system", v2.Components[0].Name)
 }
 
 func TestConvertResult_AllOptionalFields(t *testing.T) {

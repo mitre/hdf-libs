@@ -293,8 +293,8 @@ func TestConvertSnyk_Target(t *testing.T) {
 	result, err := ConvertSnykToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, "goof", result.Targets[0].Name)
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, "goof", result.Components[0].Name)
 }
 
 // ---- SARIF routing ----

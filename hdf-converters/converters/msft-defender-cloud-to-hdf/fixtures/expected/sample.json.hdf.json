@@ -263,6 +263,20 @@
       "name": "Microsoft Defender for Cloud Assessments"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "account": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "provider": "azure",
+        "service": "defender-cloud"
+      },
+      "name": "Azure Subscription a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "sbom": null,
+      "type": "cloudAccount",
+      "accountId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "provider": "azure"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "Microsoft Defender for Cloud"
@@ -271,18 +285,5 @@
     "name": "msft-defender-cloud-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "account": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-        "provider": "azure",
-        "service": "defender-cloud"
-      },
-      "name": "Azure Subscription a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "type": "cloudAccount",
-      "accountId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "provider": "azure"
-    }
-  ],
-  "timestamp": "2026-03-23T05:53:52.709693Z"
+  "timestamp": "2026-03-27T15:22:56.549527Z"
 }

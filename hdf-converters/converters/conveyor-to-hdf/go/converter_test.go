@@ -163,8 +163,8 @@ func TestConvertConveyor_Target(t *testing.T) {
 	result, err := ConvertConveyorToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, hdf.CopyrightApplication, result.Targets[0].Type)
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
 }
 
 // ---- Score-to-impact mapping ----

@@ -2662,6 +2662,16 @@
       "name": "CycloneDX Scan"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "cyclonedx"
+      },
+      "name": "test 9",
+      "sbom": null,
+      "type": "application"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "CycloneDX"
@@ -2670,14 +2680,5 @@
     "name": "cyclonedx-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "cyclonedx"
-      },
-      "name": "test 9",
-      "type": "application"
-    }
-  ],
-  "timestamp": "2026-03-26T01:59:53.699645Z"
+  "timestamp": "2026-03-27T15:22:54.294159Z"
 }

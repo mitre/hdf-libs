@@ -1,7 +1,7 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
-import type { HdfResults, Target } from '@mitre/hdf-schema';
+import type { HdfResults, Component } from '@mitre/hdf-schema';
 import { Copyright } from '@mitre/hdf-schema';
 
 // --- MSDO-specific SARIF type definitions ---
@@ -63,14 +63,14 @@ export async function convertMsftDefenderDevopsToHdf(input: string): Promise<str
   if (!raw || !Array.isArray(raw.runs)) {
     throw new Error('Invalid MSDO SARIF structure: missing or invalid runs field');
   }
-  const { targets, runEnrichments } = extractEnrichments(raw);
+  const { components, runEnrichments } = extractEnrichments(raw);
 
   // 2. Delegate to the generic SARIF converter for base HDF
   const hdfJson = await convertSarifToHdf(input);
   const result = JSON.parse(hdfJson) as HdfResults;
 
   // 3. Apply enrichments
-  applyEnrichments(result, targets, runEnrichments);
+  applyEnrichments(result, components, runEnrichments);
 
   // 4. Override generator name and data source
   if (result.generator) {
@@ -84,19 +84,19 @@ export async function convertMsftDefenderDevopsToHdf(input: string): Promise<str
 }
 
 function extractEnrichments(raw: MsdoSarif): {
-  targets: Target[];
+  components: Component[];
   runEnrichments: RunEnrichment[];
 } {
-  const targets: Target[] = [];
+  const components: Component[] = [];
   const seenRepos = new Set<string>();
   const runEnrichments: RunEnrichment[] = [];
 
   for (const run of raw.runs) {
-    // Extract repository targets from versionControlProvenance
+    // Extract repository components from versionControlProvenance
     for (const vcp of run.versionControlProvenance ?? []) {
       if (vcp.repositoryUri && !seenRepos.has(vcp.repositoryUri)) {
         seenRepos.add(vcp.repositoryUri);
-        const target: Target = {
+        const target: Component = {
           name: repoNameFromURI(vcp.repositoryUri),
           type: Copyright.Repository,
           url: vcp.repositoryUri,
@@ -108,7 +108,7 @@ function extractEnrichments(raw: MsdoSarif): {
         if (vcp.revisionId) {
           target.commit = vcp.revisionId;
         }
-        targets.push(target);
+        components.push(target);
       }
     }
 
@@ -150,17 +150,17 @@ function extractEnrichments(raw: MsdoSarif): {
     runEnrichments.push({ toolTags, policyTag, resultProps });
   }
 
-  return { targets, runEnrichments };
+  return { components, runEnrichments };
 }
 
 function applyEnrichments(
   result: HdfResults,
-  targets: Target[],
+  components: Component[],
   runEnrichments: RunEnrichment[],
 ): void {
-  // Add targets
-  if (targets.length > 0) {
-    result.targets = targets;
+  // Add components
+  if (components.length > 0) {
+    result.components = components;
   }
 
   // Apply per-baseline (per-run) enrichments

@@ -181,7 +181,7 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		DataSourceVersion: burpData.BurpVersion,
 		DataSourceFormat:  "XML",
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
+		Components: []hdf.Component{
 			{
 				Name:   targetName,
 				Type:   hdf.CopyrightApplication,

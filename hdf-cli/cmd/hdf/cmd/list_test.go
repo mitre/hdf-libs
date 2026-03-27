@@ -78,7 +78,7 @@ const richResults = `{
       ]
     }
   ],
-  "targets": [
+  "components": [
     {"type": "host", "name": "web-server", "fqdn": "web.example.com"},
     {"type": "host", "name": "db-server", "ipAddress": "10.0.0.5"},
     {"type": "application", "name": "portal-app"}
@@ -102,7 +102,7 @@ func TestListSummary(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, stdout, "Baselines:    2")
 		assert.Contains(t, stdout, "Requirements: 5")
-		assert.Contains(t, stdout, "Targets:      3")
+		assert.Contains(t, stdout, "Components:   3")
 		assert.Contains(t, stdout, "passed")
 		assert.Contains(t, stdout, "failed")
 		assert.Contains(t, stdout, "error")
@@ -117,7 +117,7 @@ func TestListSummary(t *testing.T) {
 		require.NoError(t, json.Unmarshal([]byte(stdout), &summary))
 		assert.Equal(t, float64(2), summary["baselines"])
 		assert.Equal(t, float64(5), summary["requirements"])
-		assert.Equal(t, float64(3), summary["targets"])
+		assert.Equal(t, float64(3), summary["components"])
 		assert.Equal(t, float64(2), summary["passed"])
 		assert.Equal(t, float64(1), summary["failed"])
 		assert.Equal(t, float64(1), summary["error"])
@@ -125,13 +125,13 @@ func TestListSummary(t *testing.T) {
 	})
 }
 
-func TestListTargetsDetail(t *testing.T) {
+func TestListComponentsDetail(t *testing.T) {
 	fixture := writeRichFixture(t)
 
 	t.Run("human output shows target details with FQDN and IP", func(t *testing.T) {
-		stdout, _, err := executeCommand("list", fixture, "--detail", "targets")
+		stdout, _, err := executeCommand("list", fixture, "--detail", "components")
 		require.NoError(t, err)
-		assert.Contains(t, stdout, "Targets: 3")
+		assert.Contains(t, stdout, "Components: 3")
 		assert.Contains(t, stdout, "web-server")
 		assert.Contains(t, stdout, "web.example.com")
 		assert.Contains(t, stdout, "db-server")
@@ -140,7 +140,7 @@ func TestListTargetsDetail(t *testing.T) {
 	})
 
 	t.Run("JSON output includes FQDN and IP", func(t *testing.T) {
-		stdout, _, err := executeCommand("list", fixture, "--detail", "targets", "--json")
+		stdout, _, err := executeCommand("list", fixture, "--detail", "components", "--json")
 		require.NoError(t, err)
 
 		var targets []map[string]interface{}
@@ -157,7 +157,7 @@ func TestListTargetsDetail(t *testing.T) {
 	})
 }
 
-func TestListTargetsEmpty(t *testing.T) {
+func TestListComponentsEmpty(t *testing.T) {
 	// Create fixture with no targets
 	noTargets := `{"baselines": [{"name": "b", "checksum": {"algorithm": "sha256", "value": "x"}, "depends": [], "groups": [], "inspecVersion": "5", "supports": [], "requirements": [{"id": "SV-1", "impact": 0.5, "tags": {}, "descriptions": [{"label": "default", "data": "Test"}], "results": [{"status": "passed", "codeDesc": "Test", "startTime": "2025-01-01T00:00:00Z"}]}]}], "statistics": {"duration": 0}}`
 	tmpDir := t.TempDir()
@@ -165,13 +165,13 @@ func TestListTargetsEmpty(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte(noTargets), 0o600))
 
 	t.Run("human output says no targets", func(t *testing.T) {
-		stdout, _, err := executeCommand("list", path, "--detail", "targets")
+		stdout, _, err := executeCommand("list", path, "--detail", "components")
 		require.NoError(t, err)
-		assert.Contains(t, stdout, "No targets defined")
+		assert.Contains(t, stdout, "No components defined")
 	})
 
 	t.Run("JSON output returns empty array", func(t *testing.T) {
-		stdout, _, err := executeCommand("list", path, "--detail", "targets", "--json")
+		stdout, _, err := executeCommand("list", path, "--detail", "components", "--json")
 		require.NoError(t, err)
 		assert.Contains(t, stdout, "[]")
 	})
@@ -213,8 +213,8 @@ func TestResolveDetailAlias(t *testing.T) {
 		{"requirement", "requirements"},
 		{"b", "baselines"},
 		{"baseline", "baselines"},
-		{"t", "targets"},
-		{"target", "targets"},
+		{"t", "components"},
+		{"target", "components"},
 		{"c", "components"},
 		{"component", "components"},
 		{"g", "groups"},

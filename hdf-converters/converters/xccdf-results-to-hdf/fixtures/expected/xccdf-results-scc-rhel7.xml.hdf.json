@@ -5747,6 +5747,17 @@
       "version": "003.002"
     }
   ],
+  "components": [
+    {
+      "ipAddress": "127.0.0.1",
+      "labels": {
+        "service": "xccdf"
+      },
+      "name": "LOCKDOWN",
+      "sbom": null,
+      "type": "host"
+    }
+  ],
   "dataSource": {
     "format": "XCCDF",
     "name": "XCCDF"
@@ -5758,15 +5769,5 @@
   "statistics": {
     "duration": 470
   },
-  "targets": [
-    {
-      "ipAddress": "127.0.0.1",
-      "labels": {
-        "service": "xccdf"
-      },
-      "name": "LOCKDOWN",
-      "type": "host"
-    }
-  ],
   "timestamp": "2021-04-29T14:16:20Z"
 }

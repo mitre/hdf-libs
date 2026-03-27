@@ -209,9 +209,9 @@ describe('twistlock to HDF converter', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'))
       ) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.name).toContain('registry.io/test');
-      expect(hdf.targets![0]!.type).toBe('containerImage');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.name).toContain('registry.io/test');
+      expect(hdf.components![0]!.type).toBe('containerImage');
     });
   });
 
@@ -316,7 +316,7 @@ describe('twistlock to HDF converter', async () => {
         }],
       });
       const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
-      expect(hdf.targets![0]!.name).toBe('my-repo');
+      expect(hdf.components![0]!.name).toBe('my-repo');
     });
   });
 });

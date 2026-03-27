@@ -56,7 +56,7 @@ func TestConvertHDFToCSV_Minimal(t *testing.T) {
 func TestConvertHDFToCSV_EmptyBaselines(t *testing.T) {
 	input := `{
 		"baselines": [],
-		"targets": [],
+		"components": [],
 		"statistics": { "duration": 0 }
 	}`
 
@@ -78,7 +78,7 @@ func TestConvertHDFToCSV_NoRequirements(t *testing.T) {
 			"checksum": { "algorithm": "sha256", "value": "abc" },
 			"requirements": []
 		}],
-		"targets": [],
+		"components": [],
 		"statistics": { "duration": 0 }
 	}`
 
@@ -129,7 +129,7 @@ func TestConvertHDFToCSV_MultipleBaselines(t *testing.T) {
 				}]
 			}
 		],
-		"targets": [],
+		"components": [],
 		"statistics": { "duration": 0 }
 	}`
 
@@ -149,7 +149,7 @@ func TestConvertHDFToCSV_MultipleBaselines(t *testing.T) {
 	assert.Equal(t, "Baseline 2", records[2][0])
 }
 
-func TestConvertHDFToCSV_MultipleTargets(t *testing.T) {
+func TestConvertHDFToCSV_MultipleComponents(t *testing.T) {
 	input := `{
 		"baselines": [{
 			"name": "Test Baseline",
@@ -170,7 +170,7 @@ func TestConvertHDFToCSV_MultipleTargets(t *testing.T) {
 				"results": [{ "status": "passed", "codeDesc": "Test", "startTime": "2026-01-29T18:00:00.000Z" }]
 			}]
 		}],
-		"targets": [
+		"components": [
 			{ "name": "target1", "type": "host" },
 			{ "name": "target2", "type": "container" }
 		],
@@ -215,7 +215,7 @@ func TestConvertHDFToCSV_FieldExtraction(t *testing.T) {
 				}]
 			}]
 		}],
-		"targets": [],
+		"components": [],
 		"statistics": { "duration": 0 }
 	}`
 
@@ -278,7 +278,7 @@ func TestConvertHDFToCSV_CSVInjection(t *testing.T) {
 				}
 			]
 		}],
-		"targets": [],
+		"components": [],
 		"statistics": { "duration": 0 }
 	}`
 

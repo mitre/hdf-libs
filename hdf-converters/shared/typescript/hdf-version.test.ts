@@ -17,7 +17,7 @@ describe('transformHDF', () => {
     const v2 = transformHDF(v1, '1', '2');
     const parsed = JSON.parse(v2);
     expect(parsed).toHaveProperty('baselines');
-    expect(parsed).toHaveProperty('targets');
+    expect(parsed).toHaveProperty('components');
     expect(parsed).not.toHaveProperty('profiles');
     expect(parsed).not.toHaveProperty('platform');
   });
@@ -30,7 +30,7 @@ describe('transformHDF', () => {
     expect(parsed).toHaveProperty('profiles');
     expect(parsed).toHaveProperty('platform');
     expect(parsed).not.toHaveProperty('baselines');
-    expect(parsed).not.toHaveProperty('targets');
+    expect(parsed).not.toHaveProperty('components');
   });
 
   it('returns input unchanged for same version', () => {
@@ -58,7 +58,11 @@ describe('detectHDFVersion', () => {
     expect(detectHDFVersion('{"profiles":[],"platform":{"name":"test"}}')).toBe('1');
   });
 
-  it('detects v2', () => {
+  it('detects v2 with components', () => {
+    expect(detectHDFVersion('{"baselines":[],"components":[]}')).toBe('2');
+  });
+
+  it('detects v2 with legacy targets', () => {
     expect(detectHDFVersion('{"baselines":[],"targets":[]}')).toBe('2');
   });
 

@@ -37,14 +37,14 @@ Multiple files and glob patterns are supported:
 Use --detail to expand a specific section to item-level detail.
 
 Detail sections by document type:
-  results:          requirements, baselines, targets
+  results:          requirements, baselines, components
   baseline:         requirements, groups
   system:           components, interconnections
   plan:             assessments
   amendments:       overrides
   evidence-package: contents
 
-Short aliases for --detail: r (requirements), b (baselines), t (targets),
+Short aliases for --detail: r (requirements), b (baselines), t (components),
   c (components), g (groups), a (assessments), o (overrides)
 
 Examples:
@@ -63,7 +63,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVar(&detailSection, "detail", "", "Section to expand (requirements, baselines, targets, components, ...)")
+	cmd.Flags().StringVar(&detailSection, "detail", "", "Section to expand (requirements, baselines, components, ...)")
 	cmd.Flags().StringVarP(&localStatusFilter, "status", "s", "", "Filter by status (passed, failed, error, not_applicable, not_reviewed)")
 	cmd.Flags().BoolVarP(&localShowAll, "all", "a", false, "Show all details")
 
@@ -75,7 +75,7 @@ func resolveDetailAlias(s string) string {
 	aliases := map[string]string{
 		"r": "requirements", "requirement": "requirements",
 		"b": "baselines", "baseline": "baselines",
-		"t": "targets", "target": "targets",
+		"t": "components", "target": "components", "targets": "components",
 		"c": "components", "component": "components",
 		"g": "groups", "group": "groups",
 		"a": "assessments", "assessment": "assessments",
@@ -109,10 +109,10 @@ func runList(_ *cobra.Command, filename, detail string) error {
 		return listControls(results)
 	case "baselines":
 		return listProfiles(results)
-	case "targets":
-		return listTargets(results)
+	case "components":
+		return listComponents(results)
 	default:
-		return fmt.Errorf("unknown detail section: %s\nValid sections for results: requirements, baselines, targets", detail)
+		return fmt.Errorf("unknown detail section: %s\nValid sections for results: requirements, baselines, components", detail)
 	}
 }
 
@@ -121,15 +121,15 @@ func listSummary(results hdf.HdfResults) error {
 		summary := struct {
 			Baselines     int `json:"baselines"`
 			Requirements  int `json:"requirements"`
-			Targets       int `json:"targets"`
+			Components    int `json:"components"`
 			Passed        int `json:"passed"`
 			Failed        int `json:"failed"`
 			Error         int `json:"error"`
 			NotApplicable int `json:"not_applicable"`
 			NotReviewed   int `json:"not_reviewed"`
 		}{
-			Baselines: len(results.Baselines),
-			Targets:   len(results.Targets),
+			Baselines:  len(results.Baselines),
+			Components: len(results.Components),
 		}
 		for _, b := range results.Baselines {
 			summary.Requirements += len(b.Requirements)
@@ -164,7 +164,7 @@ func listSummary(results hdf.HdfResults) error {
 
 	fmt.Printf("Baselines:    %d\n", len(results.Baselines))
 	fmt.Printf("Requirements: %d\n", totalReqs)
-	fmt.Printf("Targets:      %d\n", len(results.Targets))
+	fmt.Printf("Components:   %d\n", len(results.Components))
 	fmt.Println()
 
 	for _, status := range []string{StatusPassed, StatusFailed, StatusError, StatusNotApplicable, StatusNotReviewed} {
@@ -325,27 +325,27 @@ func listProfiles(results hdf.HdfResults) error {
 	return nil
 }
 
-func listTargets(results hdf.HdfResults) error {
-	if len(results.Targets) == 0 {
+func listComponents(results hdf.HdfResults) error {
+	if len(results.Components) == 0 {
 		if jsonOutput {
 			fmt.Println("[]")
 		} else {
-			fmt.Println("No targets defined in this HDF file.")
+			fmt.Println("No components defined in this HDF file.")
 		}
 		return nil
 	}
 
-	type targetInfo struct {
+	type componentInfo struct {
 		Name string `json:"name"`
 		Type string `json:"type"`
 		FQDN string `json:"fqdn,omitempty"`
 		IP   string `json:"ip_address,omitempty"`
 	}
 
-	var targets []targetInfo
+	var components []componentInfo
 
-	for _, t := range results.Targets {
-		info := targetInfo{
+	for _, t := range results.Components {
+		info := componentInfo{
 			Name: t.Name,
 			Type: string(t.Type),
 		}
@@ -355,17 +355,17 @@ func listTargets(results hdf.HdfResults) error {
 		if t.IPAddress != nil {
 			info.IP = *t.IPAddress
 		}
-		targets = append(targets, info)
+		components = append(components, info)
 	}
 
 	if jsonOutput {
-		output, _ := json.MarshalIndent(targets, "", "  ")
+		output, _ := json.MarshalIndent(components, "", "  ")
 		fmt.Println(string(output))
 		return nil
 	}
 
-	fmt.Printf("Targets: %d\n\n", len(targets))
-	for _, t := range targets {
+	fmt.Printf("Components: %d\n\n", len(components))
+	for _, t := range components {
 		details := ""
 		if t.FQDN != "" {
 			details = sanitizeOutput(t.FQDN)

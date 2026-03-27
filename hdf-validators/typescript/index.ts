@@ -21,6 +21,8 @@ import systemSchema from '@mitre/hdf-schema/schemas/primitives/system.schema.jso
 import planSchema from '@mitre/hdf-schema/schemas/primitives/plan.schema.json';
 import amendmentsSchema from '@mitre/hdf-schema/schemas/primitives/amendments.schema.json';
 import comparisonSchema from '@mitre/hdf-schema/schemas/primitives/comparison.schema.json';
+import componentSchema from '@mitre/hdf-schema/schemas/primitives/component.schema.json';
+import dataFlowSchema from '@mitre/hdf-schema/schemas/primitives/data-flow.schema.json';
 
 /**
  * Validation error details
@@ -68,6 +70,8 @@ function createValidator(): Ajv {
   ajv.addSchema(planSchema);
   ajv.addSchema(amendmentsSchema);
   ajv.addSchema(comparisonSchema);
+  ajv.addSchema(componentSchema);
+  ajv.addSchema(dataFlowSchema);
 
   return ajv;
 }

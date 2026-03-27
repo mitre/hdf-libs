@@ -30,7 +30,7 @@ func syntheticHDFBefore() map[string]interface{} {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 }
@@ -56,7 +56,7 @@ func syntheticHDFAfter() map[string]interface{} {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 }
@@ -74,7 +74,7 @@ func syntheticHDFUpdated() map[string]interface{} {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 }
@@ -91,7 +91,7 @@ func syntheticHDFSingleFailed() map[string]interface{} {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 }
@@ -108,7 +108,7 @@ func syntheticHDFSinglePassed() map[string]interface{} {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 }
@@ -380,7 +380,7 @@ func TestDiffCommand_DetailedExitCode_BaselineChanged(t *testing.T) {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 	newFixture := map[string]interface{}{
@@ -393,7 +393,7 @@ func TestDiffCommand_DetailedExitCode_BaselineChanged(t *testing.T) {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 
@@ -636,7 +636,7 @@ func makeTwoBaselineFixture(
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 }

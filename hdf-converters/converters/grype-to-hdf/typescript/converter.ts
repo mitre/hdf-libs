@@ -363,7 +363,7 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
   // Build HDF results
   const hdf: HdfResults = {
     baselines: [baseline],
-    targets: [{
+    components: [{
       type: Copyright.Artifact,
       name: targetName,
       labels: {

@@ -180,9 +180,9 @@ func TestConvertTrufflehogToHDF_Target(t *testing.T) {
 	result, err := ConvertTrufflehogToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, "https://github.com/trufflesecurity/test_keys", result.Targets[0].Name)
-	assert.Equal(t, hdf.Repository, result.Targets[0].Type)
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, "https://github.com/trufflesecurity/test_keys", result.Components[0].Name)
+	assert.Equal(t, hdf.Repository, result.Components[0].Type)
 }
 
 func TestConvertTrufflehogToHDF_BaselineTitle(t *testing.T) {
@@ -257,7 +257,7 @@ func TestConvertTrufflehogToHDF_NoTargetForFilesystem(t *testing.T) {
 	require.NoError(t, err)
 
 	// NDJSON fixture only has Filesystem sources (no Git repository URL)
-	assert.Empty(t, result.Targets, "filesystem sources should not produce a target")
+	assert.Empty(t, result.Components, "filesystem sources should not produce a target")
 }
 
 // ---- Requirement ID format ----

@@ -248,7 +248,7 @@ export async function convertDbprotectToHdf(input: string): Promise<string> {
       version: '1.0.0',
     },
     dataSource,
-    targets: [{ name: targetName, type: Copyright.Host, labels: { service: 'dbprotect' } }],
+    components: [{ name: targetName, type: Copyright.Host, labels: { service: 'dbprotect' } }],
     timestamp: new Date(),
   };
 

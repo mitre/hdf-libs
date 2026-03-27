@@ -137,8 +137,8 @@ describe('Splunk to HDF Converter', () => {
       const input = loadFixture('splunk-events.json');
       const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
 
-      expect(hdf.targets.length).toBeGreaterThan(0);
-      expect(hdf.targets[0]!.name).toBe('centos');
+      expect(hdf.components.length).toBeGreaterThan(0);
+      expect(hdf.components[0]!.name).toBe('centos');
     });
   });
 
@@ -306,7 +306,7 @@ describe('Splunk to HDF Converter', () => {
 
     it('should handle empty release', async () => {
       const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noRelease: true }))) as HdfResults;
-      expect(hdf.targets![0]!.osName).toBeUndefined();
+      expect(hdf.components![0]!.osName).toBeUndefined();
     });
 
     it('should handle control with no source_location', async () => {

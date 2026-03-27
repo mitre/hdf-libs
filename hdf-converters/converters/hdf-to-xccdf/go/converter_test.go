@@ -163,7 +163,7 @@ func TestConvertHDFToXCCDF_MissingBaselines(t *testing.T) {
 func TestConvertHDFToXCCDF_EmptyBaselines(t *testing.T) {
 	input := []byte(`{
 		"baselines": [],
-		"targets": [],
+		"components": [],
 		"statistics": {}
 	}`)
 

@@ -91,7 +91,7 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	accountID := getAccountID(firstArn)
 	region := getRegion(firstArn)
 
-	target := hdf.Target{
+	target := hdf.Component{
 		Name: fmt.Sprintf("AWS Account %s", accountID),
 		Type: hdf.CloudAccount,
 		Labels: map[string]string{
@@ -107,7 +107,7 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ConverterVersion: converterVersion,
 		DataSourceName:   "AWS Config",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets:          []hdf.Target{target},
+		Components:          []hdf.Component{target},
 		Timestamp:        &now,
 	}), nil
 }

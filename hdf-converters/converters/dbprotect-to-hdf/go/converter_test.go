@@ -303,9 +303,9 @@ func TestConvertDbprotect_CheckResults_Target(t *testing.T) {
 	result, err := ConvertDbprotectToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, "CONDS181", result.Targets[0].Name)
-	assert.Equal(t, hdf.Host, result.Targets[0].Type)
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, "CONDS181", result.Components[0].Name)
+	assert.Equal(t, hdf.Host, result.Components[0].Type)
 }
 
 // ---- Findings Detail fixture ----

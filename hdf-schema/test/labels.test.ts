@@ -5,7 +5,7 @@ import commonSchema from '../src/schemas/primitives/common.schema.json';
 import targetSchema from '../src/schemas/primitives/target.schema.json';
 import platformSchema from '../src/schemas/primitives/platform.schema.json';
 
-describe('Labels — optional Record<string, string> on targets and baselines', () => {
+describe('Labels — optional Record<string, string> on components and baselines', () => {
   const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
   addFormats(ajv);
 

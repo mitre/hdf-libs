@@ -385,7 +385,7 @@ func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 	}
 
 	// Transform platform to targets array
-	target := hdf.Target{
+	target := hdf.Component{
 		Type: hdf.Host,
 		Name: v1.Platform.Name,
 		Labels: map[string]string{
@@ -396,7 +396,7 @@ func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 		target.OSName = &v1.Platform.Name // Use platform name as OS name
 		target.OSVersion = v1.Platform.Release
 	}
-	v2.Targets = []hdf.Target{target}
+	v2.Components = []hdf.Component{target}
 
 	// Flatten overlays: merge overlay/wrapper baselines so every requirement
 	// has results and consumers don't see duplicated controls (741→247 fix).

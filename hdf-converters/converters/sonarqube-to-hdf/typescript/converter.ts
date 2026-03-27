@@ -198,8 +198,8 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
 
   const dataSource: DataSource = { name: 'SonarQube' };
 
-  // Build targets from project keys
-  const targets = Array.from(issuesByProject.keys()).map(projectKey => ({
+  // Build components from project keys
+  const components = Array.from(issuesByProject.keys()).map(projectKey => ({
     type: Copyright.Application,
     name: projectKey,
     labels: {
@@ -211,7 +211,7 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
   const hdf: HdfResults = {
     timestamp: new Date(),
     baselines,
-    targets,
+    components,
     generator: {
       name: 'sonarqube-to-hdf',
       version: '1.0.0',

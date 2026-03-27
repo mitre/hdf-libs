@@ -72,6 +72,9 @@ function getValidator(): ValidateFunction {
     'primitives/result.schema.json',
     'primitives/extensions.schema.json',
     'primitives/parameter.schema.json',
+    'primitives/component.schema.json',
+    'primitives/data-flow.schema.json',
+    'primitives/system.schema.json',
     'primitives/comparison.schema.json',
   ];
 

@@ -251,11 +251,11 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
   const hostGroups = groupByHostname(records);
 
   const baselines: EvaluatedBaseline[] = [];
-  const targets: HdfResults['targets'] = [];
+  const components: HdfResults['components'] = [];
 
   for (const [hostname, hostRecords] of hostGroups) {
     baselines.push(buildBaseline(hostname, hostRecords, resultsChecksum));
-    targets.push({ name: hostname, type: Copyright.Host, labels: { service: 'prisma' } });
+    components.push({ name: hostname, type: Copyright.Host, labels: { service: 'prisma' } });
   }
 
   const dataSource: DataSource = { name: 'Prisma Cloud', format: 'CSV' };
@@ -267,7 +267,7 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
       version: '1.0.0',
     },
     dataSource,
-    targets,
+    components,
     timestamp: new Date(),
   };
 

@@ -276,7 +276,7 @@ type HDFResultsOptions struct {
 	DataSourceVersion string
 	DataSourceFormat  string
 	Baselines         []hdf.EvaluatedBaseline
-	Targets           []hdf.Target
+	Components        []hdf.Component
 	Timestamp         *time.Time
 	Statistics        *hdf.Statistics
 }
@@ -291,7 +291,7 @@ func BuildHDFResults(opts HDFResultsOptions) *hdf.HDFResults {
 			Name:    opts.GeneratorName,
 			Version: opts.ConverterVersion,
 		},
-		Targets:    opts.Targets,
+		Components: opts.Components,
 		Timestamp:  opts.Timestamp,
 		Statistics: opts.Statistics,
 	}

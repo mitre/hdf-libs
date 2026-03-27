@@ -753,6 +753,16 @@
       "title": "BurpSuite Scan: http://zero.webappsecurity.com"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "burpsuite"
+      },
+      "name": "http://zero.webappsecurity.com",
+      "sbom": null,
+      "type": "application"
+    }
+  ],
   "dataSource": {
     "format": "XML",
     "name": "BurpSuite",
@@ -762,14 +772,5 @@
     "name": "burpsuite-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "burpsuite"
-      },
-      "name": "http://zero.webappsecurity.com",
-      "type": "application"
-    }
-  ],
   "timestamp": "2020-02-27T09:28:17-05:00"
 }

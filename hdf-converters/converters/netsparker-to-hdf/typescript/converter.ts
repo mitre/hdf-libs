@@ -334,7 +334,7 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
 
   const hdf: HdfResults = {
     baselines: [baseline],
-    targets: [
+    components: [
       {
         name: targetName,
         type: Copyright.Application,

@@ -52,8 +52,8 @@ func TestConvertFortifyToHDF_Sample(t *testing.T) {
 	assert.Len(t, baseline.Requirements, 5, "Should have 5 requirements (one per Description classID)")
 
 	// Verify targets
-	require.Len(t, result.Targets, 1, "Should have 1 target")
-	assert.Equal(t, hdf.Repository, result.Targets[0].Type)
+	require.Len(t, result.Components, 1, "Should have 1 target")
+	assert.Equal(t, hdf.Repository, result.Components[0].Type)
 
 	// Write output for differential testing
 	shared.WriteOutput(t, "fortify-to-hdf", "fortify_webgoat_results.json", result)

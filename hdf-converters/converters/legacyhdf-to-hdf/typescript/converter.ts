@@ -2,7 +2,7 @@
  * HDF v1.0 to v2.0 converter.
  *
  * Comprehensive transformations:
- * - Top-level: version removed, profiles → baselines, platform → targets
+ * - Top-level: version removed, profiles → baselines, platform → components
  * - Baseline: sha256 → checksum, controls → requirements
  * - Control: source_location → sourceLocation, waiver_data → waiverData, status → effectiveStatus
  * - Results: snake_case → camelCase for all fields
@@ -197,7 +197,7 @@ export interface V2Baseline {
 export interface HDFV2Results {
   baselines: V2Baseline[];
   statistics: unknown;
-  targets?: unknown[];
+  components?: unknown[];
   generator?: unknown;
   dataSource?: { name?: string; version?: string; format?: string };
   timestamp?: string;
@@ -519,7 +519,7 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
  * Convert HDF v1.0 results to v2.0 format.
  *
  * Performs comprehensive transformation at all levels:
- * - Top-level: version removed, profiles → baselines, platform → targets
+ * - Top-level: version removed, profiles → baselines, platform → components
  * - Baselines: sha256 → checksum, controls → requirements, field renaming
  * - Requirements: snake_case → camelCase, status → effectiveStatus
  * - Results: snake_case → camelCase for all fields
@@ -536,7 +536,7 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
  *   statistics: {...}
  * };
  * const v2 = convertV1ToV2(v1);
- * // v2 = { baselines: [...], targets: [{...}], statistics: {...} }
+ * // v2 = { baselines: [...], components: [{...}], statistics: {...} }
  * ```
  */
 export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
@@ -545,9 +545,9 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
     statistics: v1Data.statistics || {},
   };
 
-  // Transform platform to targets array
+  // Transform platform to components array
   if (v1Data.platform) {
-    v2.targets = [
+    v2.components = [
       {
         type: 'host', // v2.0 uses 'host' instead of 'system'
         id: v1Data.platform.target_id || v1Data.platform.name,

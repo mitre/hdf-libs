@@ -31,11 +31,11 @@ func TestTransformHDF_V1ToV2(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, output)
 
-	// Output should be valid JSON with v2 structure (baselines, targets)
+	// Output should be valid JSON with v2 structure (baselines, components)
 	var v2 map[string]any
 	require.NoError(t, json.Unmarshal(output, &v2))
 	assert.Contains(t, v2, "baselines", "v2 output should have baselines")
-	assert.Contains(t, v2, "targets", "v2 output should have targets")
+	assert.Contains(t, v2, "components", "v2 output should have components")
 	// Should NOT have v1 fields
 	assert.NotContains(t, v2, "profiles", "v2 output should not have profiles")
 	assert.NotContains(t, v2, "platform", "v2 output should not have platform")
@@ -60,7 +60,7 @@ func TestTransformHDF_V2ToV1(t *testing.T) {
 	assert.Contains(t, v1, "statistics", "v1 output should have statistics")
 	// Should NOT have v2 fields
 	assert.NotContains(t, v1, "baselines", "v1 output should not have baselines")
-	assert.NotContains(t, v1, "targets", "v1 output should not have targets")
+	assert.NotContains(t, v1, "components", "v1 output should not have components")
 }
 
 func TestTransformHDF_SameVersion(t *testing.T) {
@@ -113,7 +113,7 @@ func TestDetectHDFVersion(t *testing.T) {
 		wantErr bool
 	}{
 		{"v1 with profiles+platform", `{"version":"3.4.5","profiles":[],"platform":{"name":"test"}}`, "1", false},
-		{"v2 with baselines+targets", `{"baselines":[],"targets":[]}`, "2", false},
+		{"v2 with baselines+components", `{"baselines":[],"components":[]}`, "2", false},
 		{"ambiguous", `{"version":"1.0"}`, "", true},
 		{"invalid json", `not json`, "", true},
 	}

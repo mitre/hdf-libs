@@ -25,7 +25,7 @@ describe('hdfcsv Converter', () => {
     it('should handle empty baselines array', () => {
       const input = JSON.stringify({
         baselines: [],
-        targets: [],
+        components: [],
         statistics: { duration: 0 }
       });
 
@@ -48,7 +48,7 @@ describe('hdfcsv Converter', () => {
           checksum: { algorithm: 'sha256', value: 'abc' },
           requirements: []
         }],
-        targets: [],
+        components: [],
         statistics: { duration: 0 }
       });
 
@@ -102,7 +102,7 @@ describe('hdfcsv Converter', () => {
             }]
           }
         ],
-        targets: [],
+        components: [],
         statistics: { duration: 0 }
       });
 
@@ -136,7 +136,7 @@ describe('hdfcsv Converter', () => {
             results: [{ status: 'passed', codeDesc: 'Test', startTime: '2026-01-29T18:00:00.000Z' }]
           }]
         }],
-        targets: [
+        components: [
           { name: 'target1', type: 'host' },
           { name: 'target2', type: 'container' }
         ],
@@ -176,7 +176,7 @@ describe('hdfcsv Converter', () => {
             results: [{ status: 'passed', codeDesc: 'Test', startTime: '2026-01-29T18:00:00.000Z' }]
           }]
         }],
-        targets: [],
+        components: [],
         statistics: { duration: 0 }
       });
 
@@ -209,7 +209,7 @@ describe('hdfcsv Converter', () => {
             results: [{ status: 'passed', codeDesc: 'Test', startTime: '2026-01-29T18:00:00.000Z' }]
           }]
         }],
-        targets: [],
+        components: [],
         statistics: { duration: 0 }
       });
 
@@ -244,7 +244,7 @@ describe('hdfcsv Converter', () => {
             }]
           }]
         }],
-        targets: [],
+        components: [],
         statistics: { duration: 0 }
       });
 
@@ -277,7 +277,7 @@ describe('hdfcsv Converter', () => {
             ]
           }]
         }],
-        targets: [],
+        components: [],
         statistics: { duration: 0 }
       });
 
@@ -311,7 +311,7 @@ describe('hdfcsv Converter', () => {
             results: [{ status: 'passed', codeDesc: 'Test', startTime: '2026-01-29T18:00:00.000Z' }]
           }]
         }],
-        targets: [],
+        components: [],
         statistics: { duration: 0 }
       });
 
@@ -363,7 +363,7 @@ describe('hdfcsv Converter', () => {
             }
           ]
         }],
-        targets: [],
+        components: [],
         statistics: { duration: 0 }
       });
 
@@ -403,7 +403,7 @@ describe('hdfcsv Converter', () => {
             results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
           }]
         }],
-        targets: [],
+        components: [],
       });
       const result = convertHdfToCsv(input);
       expect(result).toContain('R1');
@@ -421,7 +421,7 @@ describe('hdfcsv Converter', () => {
             results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
           }]
         }],
-        targets: [],
+        components: [],
       });
       const result = convertHdfToCsv(input);
       expect(result).toContain('R1');
@@ -439,7 +439,7 @@ describe('hdfcsv Converter', () => {
             results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
           }]
         }],
-        targets: [],
+        components: [],
       });
       const result = convertHdfToCsv(input);
       expect(result).toContain('high');
@@ -475,7 +475,7 @@ describe('hdfcsv Converter', () => {
             results: [{ status: 'failed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z', message: 'fail msg' }]
           }]
         }],
-        targets: [{ name: 't1', type: 'host' }],
+        components: [{ name: 't1', type: 'host' }],
       });
       const result = convertHdfToCsv(input);
       expect(result).toContain('high');
@@ -492,7 +492,7 @@ describe('hdfcsv Converter', () => {
             results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
           }]
         }],
-        targets: [],
+        components: [],
       });
       const result = convertHdfToCsv(input);
       expect(result).toContain('R1');
@@ -510,7 +510,7 @@ describe('hdfcsv Converter', () => {
             results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
           }]
         }],
-        targets: [],
+        components: [],
       });
       const result = convertHdfToCsv(input);
       expect(result).toContain('AC-1');

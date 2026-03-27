@@ -99,7 +99,7 @@ func runLabelShow(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	infos, err := extractTargetLabels(data)
+	infos, err := extractComponentLabels(data)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func runLabelShow(_ *cobra.Command, args []string) error {
 	}
 
 	if len(infos) == 0 {
-		fmt.Println("No targets found.")
+		fmt.Println("No components found.")
 		return nil
 	}
 
@@ -122,7 +122,7 @@ func runLabelShow(_ *cobra.Command, args []string) error {
 		if i > 0 {
 			fmt.Println()
 		}
-		fmt.Printf("Target: %s [%s]\n", info.Name, info.Type)
+		fmt.Printf("Component: %s [%s]\n", info.Name, info.Type)
 		if len(info.Labels) == 0 {
 			fmt.Println("  (no labels)")
 		} else {

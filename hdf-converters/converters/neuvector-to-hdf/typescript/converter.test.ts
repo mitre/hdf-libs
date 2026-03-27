@@ -238,9 +238,9 @@ describe('neuvector to HDF converter', async () => {
   describe('target', async () => {
     it('should include image reference as target', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.name).toContain('mitre/heimdall');
-      expect(hdf.targets![0]!.type).toBe('containerImage');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.name).toContain('mitre/heimdall');
+      expect(hdf.components![0]!.type).toBe('containerImage');
     });
   });
 

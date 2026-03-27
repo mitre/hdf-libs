@@ -137,9 +137,9 @@ describe('trufflehog to HDF converter', async () => {
 
     it('should set target from Git repository URL', async () => {
       const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('multi-detector.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.name).toBe('https://github.com/trufflesecurity/test_keys');
-      expect(hdf.targets![0]!.type).toBe('repository');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.name).toBe('https://github.com/trufflesecurity/test_keys');
+      expect(hdf.components![0]!.type).toBe('repository');
     });
 
     it('should include baseline title with source name', async () => {
@@ -176,7 +176,7 @@ describe('trufflehog to HDF converter', async () => {
 
     it('should not produce a target for filesystem sources', async () => {
       const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('ndjson-input.ndjson'))) as HdfResults;
-      expect(hdf.targets ?? []).toHaveLength(0);
+      expect(hdf.components ?? []).toHaveLength(0);
     });
   });
 });

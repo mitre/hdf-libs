@@ -222,8 +222,8 @@ describe('GitLab to HDF converter', () => {
       const output = await convertGitlabToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.targets).toHaveLength(1);
-      expect(hdf.targets![0].type).toBe('repository');
+      expect(hdf.components).toHaveLength(1);
+      expect(hdf.components![0].type).toBe('repository');
     });
 
     it('should set target type to application for DAST', async () => {
@@ -231,8 +231,8 @@ describe('GitLab to HDF converter', () => {
       const output = await convertGitlabToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.targets).toHaveLength(1);
-      expect(hdf.targets![0].type).toBe('application');
+      expect(hdf.components).toHaveLength(1);
+      expect(hdf.components![0].type).toBe('application');
     });
   });
 
@@ -359,7 +359,7 @@ describe('GitLab to HDF converter', () => {
         }],
       });
       const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
-      expect(hdf.targets[0].type).toBe('application');
+      expect(hdf.components[0].type).toBe('application');
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('URL:');
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('Param:');
     });
@@ -373,7 +373,7 @@ describe('GitLab to HDF converter', () => {
         }],
       });
       const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
-      expect(hdf.targets[0].type).toBe('containerImage');
+      expect(hdf.components[0].type).toBe('containerImage');
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('Image: nginx');
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('libssl@1.0');
       expect(hdf.dataSource.version).toBe('0.1');

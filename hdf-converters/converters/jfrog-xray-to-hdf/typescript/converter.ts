@@ -240,7 +240,7 @@ export async function convertJfrogXrayToHdf(input: string): Promise<string> {
       version: '1.0.0',
     },
     dataSource,
-    targets: [{ name: 'JFrog Xray Scan', type: Copyright.Application, labels: { service: 'jfrog-xray' } }],
+    components: [{ name: 'JFrog Xray Scan', type: Copyright.Application, labels: { service: 'jfrog-xray' } }],
     timestamp: new Date(),
   };
 

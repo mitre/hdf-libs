@@ -4563,6 +4563,16 @@
       "title": "Snyk Project: goof Snyk Path: .\\nodejs-goof\\"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "snyk"
+      },
+      "name": "goof",
+      "sbom": null,
+      "type": "application"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "Snyk"
@@ -4571,14 +4581,5 @@
     "name": "snyk-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "snyk"
-      },
-      "name": "goof",
-      "type": "application"
-    }
-  ],
-  "timestamp": "2026-03-23T05:53:54.291519Z"
+  "timestamp": "2026-03-27T15:22:58.35541Z"
 }

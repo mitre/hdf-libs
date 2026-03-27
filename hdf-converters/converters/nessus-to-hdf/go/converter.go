@@ -57,7 +57,7 @@ func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResu
 	startTime, duration := calculateTiming(limitedHosts)
 
 	var baselines []hdf.EvaluatedBaseline
-	var targets []hdf.Target
+	var targets []hdf.Component
 
 	// Process each ReportHost
 	for _, host := range limitedHosts {
@@ -73,7 +73,7 @@ func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResu
 		ConverterVersion: converterVersion,
 		DataSourceName:   "Nessus",
 		Baselines:        baselines,
-		Targets:          targets,
+		Components:          targets,
 		Statistics: &hdf.Statistics{
 			Duration: &duration,
 		},
@@ -405,7 +405,7 @@ func parseHTML(html string) string {
 	return shared.StripHTML(html)
 }
 
-func convertReportHostToTarget(host *ReportHost) hdf.Target {
+func convertReportHostToTarget(host *ReportHost) hdf.Component {
 	hostName := host.Name
 
 	// Extract host properties
@@ -433,7 +433,7 @@ func convertReportHostToTarget(host *ReportHost) hdf.Target {
 		osVersion = &osVer
 	}
 
-	return hdf.Target{
+	return hdf.Component{
 		Name:      hostName,
 		Type:      hdf.Host,
 		FQDN:      fqdn,

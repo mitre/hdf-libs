@@ -247,7 +247,7 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 		DataSourceVersion: dataSourceVersion,
 		DataSourceFormat:  "SARIF",
 		Baselines:         baselines,
-		Targets:           []hdf.Target{},
+		Components:           []hdf.Component{},
 		Timestamp:         &timestamp,
 	})
 

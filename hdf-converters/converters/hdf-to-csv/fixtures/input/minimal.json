@@ -72,7 +72,7 @@
       ]
     }
   ],
-  "targets": [
+  "components": [
     {
       "name": "test-server-01",
       "type": "host",

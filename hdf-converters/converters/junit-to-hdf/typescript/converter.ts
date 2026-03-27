@@ -89,7 +89,7 @@ export async function convertJunitToHdf(input: string): Promise<string> {
 
   const hdf: HdfResults = {
     baselines: [baseline],
-    targets: [{
+    components: [{
       type: Copyright.Application,
       name,
       labels: {

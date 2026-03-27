@@ -300,17 +300,17 @@ export async function convertZapToHdf(input: string): Promise<string> {
     dataSource.version = zapData['@version'];
   }
 
-  // Build targets — ZAP is a DAST tool scanning web applications
-  const targets: Array<{name: string; type: Copyright; url?: string; labels?: Record<string, string>}> = [];
+  // Build components — ZAP is a DAST tool scanning web applications
+  const components: Array<{name: string; type: Copyright; url?: string; labels?: Record<string, string>}> = [];
   if (site['@name']) {
-    targets.push({name: targetName, type: Copyright.Application, url: site['@name'], labels: { service: 'zap' }});
+    components.push({name: targetName, type: Copyright.Application, url: site['@name'], labels: { service: 'zap' }});
   } else if (targetName !== 'Unknown Host') {
-    targets.push({name: targetName, type: Copyright.Application, labels: { service: 'zap' }});
+    components.push({name: targetName, type: Copyright.Application, labels: { service: 'zap' }});
   }
 
   const hdf: HdfResults = {
     baselines: [baseline],
-    targets,
+    components,
     generator: {
       name: 'zap-to-hdf',
       version: 'unknown',

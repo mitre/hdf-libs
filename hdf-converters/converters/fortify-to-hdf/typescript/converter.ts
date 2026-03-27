@@ -341,7 +341,7 @@ export async function convertFortifyToHdf(input: string): Promise<string> {
     },
   ) as EvaluatedBaseline;
 
-  // Target name from SourceBasePath
+  // Component name from SourceBasePath
   const targetName = fvdl.Build?.SourceBasePath ?? fvdl.Build?.BuildID ?? 'Unknown';
 
   const dataSource: DataSource = {
@@ -351,7 +351,7 @@ export async function convertFortifyToHdf(input: string): Promise<string> {
 
   const hdfResult: HdfResults = {
     baselines: [baseline],
-    targets: [
+    components: [
       {
         name: targetName,
         type: Copyright.Repository,

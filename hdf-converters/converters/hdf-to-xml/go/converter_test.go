@@ -44,7 +44,7 @@ func TestConvertHDFToXML(t *testing.T) {
 	t.Run("should handle empty baselines array", func(t *testing.T) {
 		input := []byte(`{
 			"baselines": [],
-			"targets": [],
+			"components": [],
 			"statistics": { "duration": 0 }
 		}`)
 
@@ -66,7 +66,7 @@ func TestConvertHDFToXML(t *testing.T) {
 				"checksum": { "algorithm": "sha256", "value": "abc" },
 				"requirements": []
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": { "duration": 0 }
 		}`)
 
@@ -90,7 +90,7 @@ func TestConvertHDFToXML(t *testing.T) {
 		assert.Contains(t, err.Error(), "Invalid HDF structure: missing baselines field")
 	})
 
-	t.Run("should handle multiple baselines and targets", func(t *testing.T) {
+	t.Run("should handle multiple baselines and components", func(t *testing.T) {
 		input := []byte(`{
 			"baselines": [{
 				"name": "Baseline 1",
@@ -105,7 +105,7 @@ func TestConvertHDFToXML(t *testing.T) {
 					"results": [{ "status": "passed", "codeDesc": "Test", "startTime": "2025-01-01T00:00:00Z" }]
 				}]
 			}],
-			"targets": [{ "name": "Target 1", "type": "host" }],
+			"components": [{ "name": "Target 1", "type": "host" }],
 			"statistics": { "duration": 10.5 }
 		}`)
 

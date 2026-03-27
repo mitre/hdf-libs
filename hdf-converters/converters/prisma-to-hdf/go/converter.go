@@ -269,10 +269,10 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	hostOrder, hostGroups := groupByHostname(records)
 
 	baselines := make([]hdf.EvaluatedBaseline, len(hostOrder))
-	targets := make([]hdf.Target, len(hostOrder))
+	targets := make([]hdf.Component, len(hostOrder))
 	for i, hostname := range hostOrder {
 		baselines[i] = buildBaseline(hostname, hostGroups[hostname], checksum)
-		targets[i] = hdf.Target{
+		targets[i] = hdf.Component{
 			Name:   hostname,
 			Type:   hdf.Host,
 			Labels: map[string]string{"service": "prisma"},
@@ -287,7 +287,7 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		DataSourceName:   "Prisma Cloud",
 		DataSourceFormat: "CSV",
 		Baselines:        baselines,
-		Targets:          targets,
+		Components:          targets,
 		Timestamp:        &now,
 	}), nil
 }

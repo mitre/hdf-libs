@@ -307,16 +307,16 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 	}
 
 	// Build targets — ZAP is a DAST tool scanning web applications
-	var targets []hdf.Target
+	var targets []hdf.Component
 	if siteName != "" {
-		targets = append(targets, hdf.Target{
+		targets = append(targets, hdf.Component{
 			Name:   targetName,
 			Type:   hdf.CopyrightApplication,
 			URL:    &siteName,
 			Labels: map[string]string{"service": "zap"},
 		})
 	} else if targetName != "Unknown Host" {
-		targets = append(targets, hdf.Target{
+		targets = append(targets, hdf.Component{
 			Name:   targetName,
 			Type:   hdf.CopyrightApplication,
 			Labels: map[string]string{"service": "zap"},
@@ -339,7 +339,7 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 		DataSourceVersion: zapData.Version,
 		DataSourceFormat:  "JSON",
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
-		Targets:           targets,
+		Components:           targets,
 		Timestamp:         timestamp,
 	})
 

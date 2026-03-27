@@ -2320,6 +2320,17 @@
       "title": "OWASP ZAP Scan of http://mymac.com:8191"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "zap"
+      },
+      "name": "mymac.com",
+      "sbom": null,
+      "type": "application",
+      "url": "http://mymac.com:8191"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "OWASP ZAP",
@@ -2329,15 +2340,5 @@
     "name": "zap-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "zap"
-      },
-      "name": "mymac.com",
-      "type": "application",
-      "url": "http://mymac.com:8191"
-    }
-  ],
   "timestamp": "2018-12-06T10:53:11Z"
 }

@@ -146,12 +146,12 @@ func TestConvertPrisma_Targets(t *testing.T) {
 	result, err := ConvertPrismaToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 2)
-	names := []string{result.Targets[0].Name, result.Targets[1].Name}
+	require.Len(t, result.Components, 2)
+	names := []string{result.Components[0].Name, result.Components[1].Name}
 	sort.Strings(names)
 	assert.Equal(t, "host-1.example.com", names[0])
 	assert.Equal(t, "host-2.example.com", names[1])
-	for _, target := range result.Targets {
+	for _, target := range result.Components {
 		assert.Equal(t, hdf.Host, target.Type)
 	}
 }

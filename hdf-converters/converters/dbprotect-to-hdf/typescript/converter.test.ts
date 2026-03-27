@@ -181,14 +181,14 @@ describe('dbprotect to HDF converter', () => {
   describe('target', () => {
     it('should set target name from Asset column', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets!.length).toBeGreaterThan(0);
-      expect(hdf.targets![0]!.name).toBe('CONDS181');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components!.length).toBeGreaterThan(0);
+      expect(hdf.components![0]!.name).toBe('CONDS181');
     });
 
     it('should set target type to Host', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HdfResults;
-      expect(hdf.targets![0]!.type).toBe('host');
+      expect(hdf.components![0]!.type).toBe('host');
     });
   });
 

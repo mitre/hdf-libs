@@ -265,8 +265,8 @@ func buildTestResult(hdfData *hdf.HDFResults, baseline hdf.EvaluatedBaseline) *X
 	}
 
 	// Set target info
-	if len(hdfData.Targets) > 0 {
-		target := hdfData.Targets[0]
+	if len(hdfData.Components) > 0 {
+		target := hdfData.Components[0]
 		testResult.Target = target.Name
 		if target.IPAddress != nil {
 			testResult.TargetAddress = *target.IPAddress

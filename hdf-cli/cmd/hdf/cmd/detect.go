@@ -25,14 +25,15 @@ func detectHDFDocumentType(data []byte) string {
 	if _, ok := doc["assessments"]; ok {
 		return string(validators.TypePlan)
 	}
-	if _, ok := doc["components"]; ok {
-		return string(validators.TypeSystem)
-	}
 	if _, ok := doc["comparisonMode"]; ok {
 		return string(validators.TypeComparison)
 	}
+	// Results have baselines; systems have components but not baselines
 	if _, ok := doc["baselines"]; ok {
 		return string(validators.TypeResults)
+	}
+	if _, ok := doc["components"]; ok {
+		return string(validators.TypeSystem)
 	}
 	if _, ok := doc["requirements"]; ok {
 		return string(validators.TypeBaseline)

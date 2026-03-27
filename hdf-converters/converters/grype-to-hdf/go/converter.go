@@ -381,7 +381,7 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	}
 
 	// Build target from scan source
-	target := hdf.Target{
+	target := hdf.Component{
 		Name: targetName,
 		Type: hdf.Artifact,
 		Labels: map[string]string{
@@ -396,7 +396,7 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		DataSourceName:    "Grype",
 		DataSourceVersion: grypeData.Descriptor.Version,
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
-		Targets:           []hdf.Target{target},
+		Components:           []hdf.Component{target},
 		Timestamp:         timestamp,
 	})
 

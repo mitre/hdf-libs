@@ -417,6 +417,17 @@
       "version": "0.2.0"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "service": "splunk"
+      },
+      "name": "centos",
+      "sbom": null,
+      "type": "host",
+      "osVersion": "7.6.1810"
+    }
+  ],
   "dataSource": {
     "name": "Splunk"
   },
@@ -427,15 +438,5 @@
   "statistics": {
     "duration": 10.681128104
   },
-  "targets": [
-    {
-      "labels": {
-        "service": "splunk"
-      },
-      "name": "centos",
-      "type": "host",
-      "osVersion": "7.6.1810"
-    }
-  ],
-  "timestamp": "2026-03-23T01:53:54.511005-04:00"
+  "timestamp": "2026-03-27T11:22:58.568104-04:00"
 }

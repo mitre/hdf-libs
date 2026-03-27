@@ -153,7 +153,7 @@ func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ResultsChecksum: resultsChecksum,
 	}
 
-	target := hdf.Target{
+	target := hdf.Component{
 		Name: targetName,
 		Type: hdf.CopyrightApplication,
 		Labels: map[string]string{
@@ -167,7 +167,7 @@ func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		DataSourceName:   "Nikto",
 		DataSourceFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets:          []hdf.Target{target},
+		Components:          []hdf.Component{target},
 	})
 
 	return hdfResult, nil

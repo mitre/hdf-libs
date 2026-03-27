@@ -48,16 +48,23 @@
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Component"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0#/$defs/Component"
       },
-      "description": "Logical components within the system boundary. Each component groups targets via label selectors and references applicable baselines."
+      "description": "System components within the authorization boundary. Uses the full polymorphic Component type with stable identity (componentId), external references, and SBOM support."
     },
-    "interconnections": {
+    "controlDesignations": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Interconnection"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Control_Designation"
       },
-      "description": "Connections to external systems that cross the authorization boundary."
+      "description": "Declares which controls are common, hybrid, or system-specific, and which component provides them. Maps to NIST SP 800-53 control designations and OSCAL leveraged-authorizations."
+    },
+    "dataFlows": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0#/$defs/Data_Flow"
+      },
+      "description": "Inter-component data flows describing how components communicate. Supports local, cross-system, and external flows. Replaces the interconnections[] field."
     },
     "labels": {
       "type": "object",
@@ -102,10 +109,8 @@
         {
           "name": "WebTier",
           "type": "application",
+          "componentId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
           "description": "RHEL 9 web servers running the portal",
-          "targetSelector": {
-            "labels.component": "WebTier"
-          },
           "baselineRefs": [
             "RHEL9-STIG",
             "DISA-Container-STIG"
@@ -116,21 +121,20 @@
         {
           "name": "DatabaseTier",
           "type": "database",
-          "targetSelector": {
-            "labels.component": "DatabaseTier"
-          },
+          "componentId": "11111111-2222-3333-4444-555555555555",
           "baselineRefs": [
             "PostgreSQL-15-STIG"
           ]
         }
       ],
-      "interconnections": [
+      "dataFlows": [
         {
-          "name": "External API Gateway",
-          "externalSystem": "CDN-Provider",
-          "direction": "inbound",
-          "protocol": "HTTPS",
-          "description": "Public internet traffic via CDN"
+          "from": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "to": "11111111-2222-3333-4444-555555555555",
+          "protocol": "jdbc",
+          "port": 5432,
+          "direction": "unidirectional",
+          "description": "Web tier connects to database"
         }
       ]
     }
@@ -310,6 +314,70 @@
           ],
           "description": "A logical component within a system's authorization boundary. Components match targets via label selectors and reference the baselines that apply to them.",
           "title": "Component"
+        },
+        "Control_Designation": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "controlId",
+            "designation",
+            "description"
+          ],
+          "properties": {
+            "controlId": {
+              "type": "string",
+              "description": "The control identifier (e.g., 'SC-7', 'AC-2 (1)'). Must match a NIST tag in a baseline requirement's tags."
+            },
+            "designation": {
+              "type": "string",
+              "enum": [
+                "common",
+                "system-specific",
+                "hybrid"
+              ],
+              "description": "NIST SP 800-53 control designation. 'common': fully provided by another component or system. 'system-specific': implemented by the inheriting component(s) only. 'hybrid': shared responsibility between provider and inheritor."
+            },
+            "providedBy": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of a local component that provides this control. Omit when the provider is an external system."
+            },
+            "systemRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Reference to another hdf-system document whose component provides this control. Use when the provider is in a different system. Omit when the provider is local."
+            },
+            "inheritedBy": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "description": "componentIds that inherit this control. If omitted, all components in the system inherit it."
+            },
+            "description": {
+              "type": "string",
+              "description": "Justification for this designation — who provides the control, why it's inherited, and any relevant authorization references."
+            }
+          },
+          "examples": [
+            {
+              "controlId": "IA-2",
+              "designation": "common",
+              "providedBy": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+              "inheritedBy": [
+                "11111111-2222-3333-4444-555555555555"
+              ],
+              "description": "User identification and authentication provided by Keycloak SSO via SAML 2.0."
+            },
+            {
+              "controlId": "PE-2",
+              "designation": "common",
+              "description": "Physical access authorizations provided by AWS GovCloud per FedRAMP High authorization."
+            }
+          ],
+          "description": "Declares a control's designation within a system — whether it is common (provided by another component or system), system-specific (implemented locally), or hybrid (shared responsibility). Maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP by-component provided/inherited semantics.",
+          "title": "Control Designation"
         },
         "Interconnection": {
           "type": "object",
@@ -1042,6 +1110,771 @@
           },
           "description": "Core requirement fields shared between baseline requirements and evaluated requirements. Contains the fundamental requirement definition without assessment results.",
           "title": "Requirement Core"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0",
+      "title": "HDF Component Primitives",
+      "description": "First-class system component with identity, polymorphic type, SBOM embedding, and system-binding properties. Components are the successor to Targets, adding stable identity (componentId), external system cross-references, and software inventory.",
+      "$defs": {
+        "Base_Component": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "type",
+            "name"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Component type discriminator. Same values as Target types."
+            },
+            "name": {
+              "type": "string",
+              "description": "Human-readable name for this component."
+            },
+            "componentId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Stable UUID (RFC 4122) for this component. Required in hdf-system documents, optional in hdf-results. Enables cross-document correlation, diffing, and data flow references."
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of this component's role or purpose."
+            },
+            "externalIds": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Map of external identifier scheme to value. Well-known schemes: aws (instance ID), azure (resource ID), cmdb (asset ID), emass (system ID), cve (CVE ID). Custom schemes are allowed."
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
+            },
+            "sbom": {
+              "description": "Embedded CycloneDX or SPDX SBOM document representing this component's software inventory. The sbomFormat field determines which format constraints apply.",
+              "$comment": "Validated conditionally: CycloneDX requires bomFormat='CycloneDX' + specVersion; SPDX requires spdxVersion + SPDXID. Full SBOM schema validation is a tool-level concern."
+            },
+            "sbomRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "URI reference to an external CycloneDX or SPDX SBOM document for this component. May be a relative path, absolute URI, or fragment identifier."
+            },
+            "sbomFormat": {
+              "type": "string",
+              "enum": [
+                "cyclonedx",
+                "spdx"
+              ],
+              "description": "Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present."
+            },
+            "baselineRefs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Names of baselines that apply to this component."
+            },
+            "inputOverrides": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Input_Override"
+              },
+              "description": "System-specific overrides for baseline input values."
+            },
+            "targetSelector": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Target_Selector",
+              "description": "Label selector to match targets belonging to this component during migration. Targets with matching labels are automatically included."
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "allOf": [
+                  {
+                    "properties": {
+                      "sbomFormat": {
+                        "const": "cyclonedx"
+                      }
+                    },
+                    "required": [
+                      "sbomFormat"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "sbom": {
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "sbom"
+                    ]
+                  }
+                ]
+              },
+              "then": {
+                "properties": {
+                  "sbom": {
+                    "type": "object",
+                    "required": [
+                      "bomFormat",
+                      "specVersion"
+                    ],
+                    "properties": {
+                      "bomFormat": {
+                        "type": "string",
+                        "const": "CycloneDX",
+                        "description": "Must be 'CycloneDX' for CycloneDX SBOM documents."
+                      },
+                      "specVersion": {
+                        "type": "string",
+                        "description": "CycloneDX specification version (e.g., '1.4', '1.5', '1.6')."
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "allOf": [
+                  {
+                    "properties": {
+                      "sbomFormat": {
+                        "const": "spdx"
+                      }
+                    },
+                    "required": [
+                      "sbomFormat"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "sbom": {
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "sbom"
+                    ]
+                  }
+                ]
+              },
+              "then": {
+                "properties": {
+                  "sbom": {
+                    "type": "object",
+                    "required": [
+                      "spdxVersion",
+                      "SPDXID"
+                    ],
+                    "properties": {
+                      "spdxVersion": {
+                        "type": "string",
+                        "description": "SPDX specification version (e.g., 'SPDX-2.3')."
+                      },
+                      "SPDXID": {
+                        "type": "string",
+                        "description": "SPDX document identifier (e.g., 'SPDXRef-DOCUMENT')."
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          ],
+          "description": "Base properties shared by all component types. Extends the Target concept with stable identity, external references, and SBOM embedding.",
+          "title": "Base Component"
+        },
+        "Component": {
+          "description": "A system component. Uses discriminated union pattern with 'type' field as discriminator. Superset of Target with identity, external IDs, and SBOM support.",
+          "title": "Component",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Host_Component"
+            },
+            {
+              "$ref": "#/$defs/Container_Image_Component"
+            },
+            {
+              "$ref": "#/$defs/Container_Instance_Component"
+            },
+            {
+              "$ref": "#/$defs/Container_Platform_Component"
+            },
+            {
+              "$ref": "#/$defs/Cloud_Account_Component"
+            },
+            {
+              "$ref": "#/$defs/Cloud_Resource_Component"
+            },
+            {
+              "$ref": "#/$defs/Repository_Component"
+            },
+            {
+              "$ref": "#/$defs/Application_Component"
+            },
+            {
+              "$ref": "#/$defs/Artifact_Component"
+            },
+            {
+              "$ref": "#/$defs/Network_Component"
+            },
+            {
+              "$ref": "#/$defs/Database_Component"
+            }
+          ]
+        },
+        "Host_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "host"
+                },
+                "fqdn": {
+                  "type": "string",
+                  "format": "hostname",
+                  "description": "Fully qualified domain name."
+                },
+                "ipAddress": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "ipv4"
+                    },
+                    {
+                      "type": "string",
+                      "format": "ipv6"
+                    }
+                  ],
+                  "description": "IP address of the host."
+                },
+                "macAddress": {
+                  "type": "string",
+                  "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
+                  "description": "MAC address in colon-separated hexadecimal format."
+                },
+                "osName": {
+                  "type": "string",
+                  "description": "Operating system name."
+                },
+                "osVersion": {
+                  "type": "string",
+                  "description": "Operating system version."
+                }
+              }
+            }
+          ],
+          "description": "A physical or virtual server, workstation, or network device.",
+          "title": "Host Component"
+        },
+        "Container_Image_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "containerImage"
+                },
+                "imageId": {
+                  "type": "string",
+                  "description": "Container image ID."
+                },
+                "registry": {
+                  "type": "string",
+                  "description": "Container registry. Example: 'docker.io'."
+                },
+                "repository": {
+                  "type": "string",
+                  "description": "Repository name. Example: 'library/nginx'."
+                },
+                "tag": {
+                  "type": "string",
+                  "description": "Image tag. Example: '1.25'."
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^(sha256:[a-f0-9]{64}|sha512:[a-f0-9]{128}|blake3:[a-f0-9]{64})$",
+                  "description": "Image digest for immutable reference."
+                }
+              }
+            }
+          ],
+          "description": "A static container image (not running).",
+          "title": "Container Image Component"
+        },
+        "Container_Instance_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "containerInstance"
+                },
+                "containerId": {
+                  "type": "string",
+                  "description": "Running container ID."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Image the container was started from."
+                },
+                "runtime": {
+                  "type": "string",
+                  "description": "Container runtime. Example: 'docker', 'containerd', 'cri-o'."
+                }
+              }
+            }
+          ],
+          "description": "A running container instance.",
+          "title": "Container Instance Component"
+        },
+        "Container_Platform_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "containerPlatform"
+                },
+                "platformType": {
+                  "type": "string",
+                  "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
+                },
+                "clusterName": {
+                  "type": "string",
+                  "description": "Cluster name."
+                },
+                "namespace": {
+                  "type": "string",
+                  "description": "Namespace within the cluster, if applicable."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Platform version."
+                }
+              }
+            }
+          ],
+          "description": "A container orchestration platform (Kubernetes, OpenShift, ECS, etc.).",
+          "title": "Container Platform Component"
+        },
+        "Cloud_Account_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "cloudAccount"
+                },
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "aws",
+                    "azure",
+                    "gcp",
+                    "oci",
+                    "other",
+                    null
+                  ],
+                  "description": "Cloud provider."
+                },
+                "accountId": {
+                  "type": "string",
+                  "description": "Cloud account identifier."
+                },
+                "region": {
+                  "type": "string",
+                  "description": "Cloud region, if applicable."
+                }
+              }
+            }
+          ],
+          "description": "A cloud provider account (AWS account, Azure subscription, GCP project).",
+          "title": "Cloud Account Component"
+        },
+        "Cloud_Resource_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "cloudResource"
+                },
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "aws",
+                    "azure",
+                    "gcp",
+                    "oci",
+                    "other",
+                    null
+                  ],
+                  "description": "Cloud provider."
+                },
+                "resourceType": {
+                  "type": "string",
+                  "description": "Type of cloud resource. Example: 'ec2:instance', 's3:bucket'."
+                },
+                "resourceId": {
+                  "type": "string",
+                  "description": "Provider-specific resource identifier."
+                },
+                "arn": {
+                  "type": "string",
+                  "description": "Amazon Resource Name (AWS only)."
+                },
+                "region": {
+                  "type": "string",
+                  "description": "Cloud region where the resource resides."
+                }
+              }
+            }
+          ],
+          "description": "A specific cloud resource (EC2 instance, S3 bucket, Azure VM, etc.).",
+          "title": "Cloud Resource Component"
+        },
+        "Repository_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "repository"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Repository URL."
+                },
+                "branch": {
+                  "type": "string",
+                  "description": "Branch that was scanned."
+                },
+                "commit": {
+                  "type": "string",
+                  "description": "Commit SHA that was scanned."
+                }
+              }
+            }
+          ],
+          "description": "A code repository (for SAST tools).",
+          "title": "Repository Component"
+        },
+        "Application_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "application"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Application URL (for DAST tools)."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Application version."
+                },
+                "environment": {
+                  "type": "string",
+                  "description": "Environment. Example: 'production', 'staging', 'development'."
+                }
+              }
+            }
+          ],
+          "description": "A running application or API (for DAST tools).",
+          "title": "Application Component"
+        },
+        "Artifact_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "artifact"
+                },
+                "packageManager": {
+                  "type": "string",
+                  "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
+                },
+                "packageName": {
+                  "type": "string",
+                  "description": "Package name."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Package version."
+                },
+                "checksum": {
+                  "type": "string",
+                  "description": "Package checksum for verification."
+                }
+              }
+            }
+          ],
+          "description": "A software artifact or dependency (for SCA tools).",
+          "title": "Artifact Component"
+        },
+        "Network_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "network"
+                },
+                "cidr": {
+                  "type": "string",
+                  "description": "Network CIDR block."
+                },
+                "gateway": {
+                  "type": "string",
+                  "description": "Network gateway address."
+                }
+              }
+            }
+          ],
+          "description": "A network segment or network device.",
+          "title": "Network Component"
+        },
+        "Database_Component": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base_Component"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "database"
+                },
+                "engine": {
+                  "type": "string",
+                  "description": "Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'."
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Database version."
+                },
+                "host": {
+                  "type": "string",
+                  "description": "Database host."
+                },
+                "port": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535,
+                  "description": "Database port."
+                }
+              }
+            }
+          ],
+          "description": "A database instance.",
+          "title": "Database Component"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0",
+      "title": "HDF Data Flow Primitives",
+      "description": "Types for describing data flows between components within a system and across system boundaries. Data flows model network connections, API calls, database queries, and other inter-component communication.",
+      "$defs": {
+        "Cross_System_Reference": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "systemRef",
+            "componentId"
+          ],
+          "properties": {
+            "systemRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "URI reference to the hdf-system document containing the target component. May be a relative path, absolute URI, or fragment identifier."
+            },
+            "componentId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the component in the referenced system."
+            }
+          },
+          "description": "Reference to a component in a different system document, enabling cross-boundary data flow modeling.",
+          "title": "Cross-System Reference"
+        },
+        "External_Endpoint": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "external",
+            "description"
+          ],
+          "properties": {
+            "external": {
+              "type": "boolean",
+              "const": true,
+              "description": "Must be true. Discriminator indicating this endpoint is outside all modeled systems."
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of the external endpoint. Example: 'Third-party payment gateway (Stripe API)'."
+            }
+          },
+          "description": "An endpoint outside all modeled systems (e.g., a third-party API, public internet, or partner system not represented in HDF).",
+          "title": "External Endpoint"
+        },
+        "Data_Flow_Endpoint": {
+          "description": "A data flow endpoint: either a local component (UUID), a component in another system (cross-system reference), or an external endpoint outside all modeled systems.",
+          "title": "Data Flow Endpoint",
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of a component in the current system."
+            },
+            {
+              "$ref": "#/$defs/Cross_System_Reference"
+            },
+            {
+              "$ref": "#/$defs/External_Endpoint"
+            }
+          ]
+        },
+        "Data_Flow": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "from",
+            "to"
+          ],
+          "properties": {
+            "from": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the local component that is one end of this data flow. Always references a component in the current system document."
+            },
+            "to": {
+              "$ref": "#/$defs/Data_Flow_Endpoint",
+              "description": "The other end of this data flow. Can be a local component (UUID), a cross-system component reference, or an external endpoint."
+            },
+            "protocol": {
+              "type": "string",
+              "description": "Communication protocol. Examples: 'http', 'https', 'grpc', 'ssh', 'jdbc', 'k8s-api', 'socket', 'sftp'."
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "description": "Network port number."
+            },
+            "direction": {
+              "type": "string",
+              "enum": [
+                "unidirectional",
+                "bidirectional"
+              ],
+              "description": "Data flow direction. 'unidirectional' means data flows from→to only. 'bidirectional' means data flows in both directions (e.g., request/response)."
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of this data flow's purpose and the data exchanged."
+            },
+            "authentication": {
+              "type": "string",
+              "description": "Authentication mechanism used for this connection. Examples: 'mTLS', 'OAuth2', 'API key', 'SAML', 'Kerberos'."
+            }
+          },
+          "examples": [
+            {
+              "from": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+              "to": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "protocol": "https",
+              "port": 443,
+              "direction": "bidirectional",
+              "description": "REST API calls from WebTier to API Gateway",
+              "authentication": "mTLS"
+            },
+            {
+              "from": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "to": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+              "protocol": "jdbc",
+              "port": 5432,
+              "direction": "unidirectional",
+              "description": "Database queries from API Gateway to PostgreSQL",
+              "authentication": "username/password + TLS"
+            },
+            {
+              "from": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+              "to": {
+                "systemRef": "https://systems.agency.gov/auth-system.json",
+                "componentId": "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+              },
+              "protocol": "https",
+              "direction": "bidirectional",
+              "description": "SAML authentication requests to central auth system",
+              "authentication": "SAML 2.0"
+            },
+            {
+              "from": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+              "to": {
+                "external": true,
+                "description": "Stripe payment processing API"
+              },
+              "protocol": "https",
+              "port": 443,
+              "direction": "bidirectional",
+              "description": "Payment processing via Stripe",
+              "authentication": "API key + TLS"
+            }
+          ],
+          "description": "A data flow between two endpoints. The 'from' endpoint is always a local component; the 'to' endpoint can be local, cross-system, or external. Use 'direction' to indicate whether data flows one-way or both ways.",
+          "title": "Data Flow"
         }
       }
     }

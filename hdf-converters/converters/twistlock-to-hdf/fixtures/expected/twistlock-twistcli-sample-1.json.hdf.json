@@ -3019,6 +3019,16 @@
       "title": "Twistlock Project: All / TEST-COLLECTION"
     }
   ],
+  "components": [
+    {
+      "labels": {
+        "image": "sha256:b1c0237ebd29860066656372da10d8d7da33b34715986f74b3d5a7e4ba060d1b"
+      },
+      "name": "registry.io/test:1a7a431a105aa04632f5f5fbe8f753bd245add0a",
+      "sbom": null,
+      "type": "containerImage"
+    }
+  ],
   "dataSource": {
     "format": "JSON",
     "name": "Twistlock"
@@ -3027,14 +3037,5 @@
     "name": "twistlock-to-hdf",
     "version": "0.1.0"
   },
-  "targets": [
-    {
-      "labels": {
-        "image": "sha256:b1c0237ebd29860066656372da10d8d7da33b34715986f74b3d5a7e4ba060d1b"
-      },
-      "name": "registry.io/test:1a7a431a105aa04632f5f5fbe8f753bd245add0a",
-      "type": "containerImage"
-    }
-  ],
-  "timestamp": "2026-03-23T05:53:54.750955Z"
+  "timestamp": "2026-03-27T15:22:58.860703Z"
 }

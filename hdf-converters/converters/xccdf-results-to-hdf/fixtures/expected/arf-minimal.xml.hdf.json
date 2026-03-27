@@ -35,6 +35,19 @@
       "version": "1.0"
     }
   ],
+  "components": [
+    {
+      "fqdn": "rh-hony",
+      "ipAddress": "127.0.0.1",
+      "labels": {
+        "service": "xccdf"
+      },
+      "macAddress": "00:2B:67:04:65:C0",
+      "name": "rh-hony",
+      "sbom": null,
+      "type": "host"
+    }
+  ],
   "dataSource": {
     "format": "ARF",
     "name": "ARF"
@@ -46,17 +59,5 @@
   "statistics": {
     "duration": 0
   },
-  "targets": [
-    {
-      "fqdn": "rh-hony",
-      "ipAddress": "127.0.0.1",
-      "labels": {
-        "service": "xccdf"
-      },
-      "macAddress": "00:2B:67:04:65:C0",
-      "name": "rh-hony",
-      "type": "host"
-    }
-  ],
   "timestamp": "2021-11-30T13:51:50+01:00"
 }

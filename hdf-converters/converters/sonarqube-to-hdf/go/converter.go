@@ -169,9 +169,9 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}
 
 	// Build targets from project keys
-	targets := make([]hdf.Target, 0, len(issuesByProject))
+	targets := make([]hdf.Component, 0, len(issuesByProject))
 	for projectKey := range issuesByProject {
-		targets = append(targets, hdf.Target{
+		targets = append(targets, hdf.Component{
 			Name: projectKey,
 			Type: hdf.CopyrightApplication,
 			Labels: map[string]string{
@@ -189,7 +189,7 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		DataSourceName:    "SonarQube",
 		DataSourceVersion: sonarData.ServerVersion,
 		Baselines:         baselines,
-		Targets:           targets,
+		Components:           targets,
 		Timestamp:         &timestamp,
 	}), nil
 }

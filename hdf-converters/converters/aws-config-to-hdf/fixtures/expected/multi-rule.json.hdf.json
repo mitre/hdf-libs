@@ -151,14 +151,7 @@
       "version": "1.0.0"
     }
   ],
-  "dataSource": {
-    "name": "AWS Config"
-  },
-  "generator": {
-    "name": "aws-config-to-hdf",
-    "version": "0.1.0"
-  },
-  "targets": [
+  "components": [
     {
       "labels": {
         "account": "123456789012",
@@ -167,8 +160,16 @@
         "service": "config"
       },
       "name": "AWS Account 123456789012",
+      "sbom": null,
       "type": "cloudAccount"
     }
   ],
-  "timestamp": "2026-03-23T05:53:50.429345Z"
+  "dataSource": {
+    "name": "AWS Config"
+  },
+  "generator": {
+    "name": "aws-config-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-03-27T15:22:53.737448Z"
 }
