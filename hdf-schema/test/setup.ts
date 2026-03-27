@@ -26,6 +26,8 @@ export function createAjvWithPrimitives(): Ajv2020 {
     'extensions.schema.json',
     'parameter.schema.json',
     'comparison.schema.json',
+    'component.schema.json',
+    'data-flow.schema.json',
   ];
 
   for (const file of primitiveFiles) {

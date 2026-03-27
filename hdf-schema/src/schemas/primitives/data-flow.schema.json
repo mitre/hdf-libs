@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0",
+  "title": "HDF Data Flow Primitives",
+  "description": "Types for describing data flows between components within a system and across system boundaries. Data flows model network connections, API calls, database queries, and other inter-component communication.",
+  "$defs": {
+    "Cross_System_Reference": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "systemRef",
+        "componentId"
+      ],
+      "properties": {
+        "systemRef": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "URI reference to the hdf-system document containing the target component. May be a relative path, absolute URI, or fragment identifier."
+        },
+        "componentId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "UUID of the component in the referenced system."
+        }
+      },
+      "description": "Reference to a component in a different system document, enabling cross-boundary data flow modeling.",
+      "title": "Cross-System Reference"
+    },
+    "External_Endpoint": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "external",
+        "description"
+      ],
+      "properties": {
+        "external": {
+          "type": "boolean",
+          "const": true,
+          "description": "Must be true. Discriminator indicating this endpoint is outside all modeled systems."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of the external endpoint. Example: 'Third-party payment gateway (Stripe API)'."
+        }
+      },
+      "description": "An endpoint outside all modeled systems (e.g., a third-party API, public internet, or partner system not represented in HDF).",
+      "title": "External Endpoint"
+    },
+    "Data_Flow_Endpoint": {
+      "description": "A data flow endpoint: either a local component (UUID), a component in another system (cross-system reference), or an external endpoint outside all modeled systems.",
+      "title": "Data Flow Endpoint",
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid",
+          "description": "UUID of a component in the current system."
+        },
+        {
+          "$ref": "#/$defs/Cross_System_Reference"
+        },
+        {
+          "$ref": "#/$defs/External_Endpoint"
+        }
+      ]
+    },
+    "Data_Flow": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "type": "string",
+          "format": "uuid",
+          "description": "UUID of the local component that is one end of this data flow. Always references a component in the current system document."
+        },
+        "to": {
+          "$ref": "#/$defs/Data_Flow_Endpoint",
+          "description": "The other end of this data flow. Can be a local component (UUID), a cross-system component reference, or an external endpoint."
+        },
+        "protocol": {
+          "type": "string",
+          "description": "Communication protocol. Examples: 'http', 'https', 'grpc', 'ssh', 'jdbc', 'k8s-api', 'socket', 'sftp'."
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Network port number."
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "unidirectional",
+            "bidirectional"
+          ],
+          "description": "Data flow direction. 'unidirectional' means data flows from→to only. 'bidirectional' means data flows in both directions (e.g., request/response)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of this data flow's purpose and the data exchanged."
+        },
+        "authentication": {
+          "type": "string",
+          "description": "Authentication mechanism used for this connection. Examples: 'mTLS', 'OAuth2', 'API key', 'SAML', 'Kerberos'."
+        }
+      },
+      "examples": [
+        {
+          "from": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+          "to": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "protocol": "https",
+          "port": 443,
+          "direction": "bidirectional",
+          "description": "REST API calls from WebTier to API Gateway",
+          "authentication": "mTLS"
+        },
+        {
+          "from": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "to": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+          "protocol": "jdbc",
+          "port": 5432,
+          "direction": "unidirectional",
+          "description": "Database queries from API Gateway to PostgreSQL",
+          "authentication": "username/password + TLS"
+        },
+        {
+          "from": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+          "to": {
+            "systemRef": "https://systems.agency.gov/auth-system.json",
+            "componentId": "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+          },
+          "protocol": "https",
+          "direction": "bidirectional",
+          "description": "SAML authentication requests to central auth system",
+          "authentication": "SAML 2.0"
+        },
+        {
+          "from": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+          "to": {
+            "external": true,
+            "description": "Stripe payment processing API"
+          },
+          "protocol": "https",
+          "port": 443,
+          "direction": "bidirectional",
+          "description": "Payment processing via Stripe",
+          "authentication": "API key + TLS"
+        }
+      ],
+      "description": "A data flow between two endpoints. The 'from' endpoint is always a local component; the 'to' endpoint can be local, cross-system, or external. Use 'direction' to indicate whether data flows one-way or both ways.",
+      "title": "Data Flow"
+    }
+  }
+}
