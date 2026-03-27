@@ -293,6 +293,30 @@ describe('amendments.schema.json — Standalone_Override', () => {
     expect(validate(waiver)).toBe(true);
   });
 
+  // -- componentRef scoping --
+
+  it('should accept override with componentRef UUID', () => {
+    const override = {
+      ...valid,
+      componentRef: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    };
+    expect(validate(override)).toBe(true);
+  });
+
+  it('should reject override with invalid componentRef', () => {
+    expect(validate({ ...valid, componentRef: 'not-a-uuid' })).toBe(false);
+  });
+
+  it('should accept override with both componentRef and inheritedFrom', () => {
+    const override = {
+      ...valid,
+      type: 'inherited',
+      componentRef: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+      inheritedFrom: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+    };
+    expect(validate(override)).toBe(true);
+  });
+
   it('should validate inherited amendment in a full amendments document', () => {
     const doc = {
       name: 'Inheritance Overrides',

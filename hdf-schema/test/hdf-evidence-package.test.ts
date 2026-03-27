@@ -125,6 +125,30 @@ describe('hdf-evidence-package.schema.json', () => {
     expect(validate(doc)).toBe(false);
   });
 
+  it('should accept content reference with componentRef UUID', () => {
+    const doc = {
+      name: 'Test',
+      contents: [{
+        type: 'sbom',
+        uri: 'webtier.cdx.json',
+        componentRef: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+      }],
+    };
+    expect(validate(doc)).toBe(true);
+  });
+
+  it('should reject content reference with invalid componentRef', () => {
+    const doc = {
+      name: 'Test',
+      contents: [{
+        type: 'hdf-results',
+        uri: 'scan.json',
+        componentRef: 'not-a-uuid',
+      }],
+    };
+    expect(validate(doc)).toBe(false);
+  });
+
   // -- Completeness_Check --
 
   it('should accept package with partial completeness check', () => {

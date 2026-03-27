@@ -139,6 +139,27 @@ describe('plan.schema.json — Assessment', () => {
   it('should accept assessment with empty inputs', () => {
     expect(validate({ baselineRef: 'X', inputs: {} })).toBe(true);
   });
+
+  it('should accept assessment with componentRef UUID', () => {
+    const assessment = {
+      baselineRef: 'RHEL9-STIG',
+      componentRef: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    };
+    expect(validate(assessment)).toBe(true);
+  });
+
+  it('should reject assessment with invalid componentRef', () => {
+    expect(validate({ baselineRef: 'X', componentRef: 'not-a-uuid' })).toBe(false);
+  });
+
+  it('should accept assessment with both componentRef and targetSelector', () => {
+    const assessment = {
+      baselineRef: 'RHEL9-STIG',
+      componentRef: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+      targetSelector: { 'labels.tier': 'web' },
+    };
+    expect(validate(assessment)).toBe(true);
+  });
 });
 
 describe('plan.schema.json — Schedule', () => {

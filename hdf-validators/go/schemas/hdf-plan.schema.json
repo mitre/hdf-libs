@@ -143,6 +143,11 @@
               "format": "uri-reference",
               "description": "Reference to the baseline to evaluate. May be a baseline name (e.g. 'RHEL9-STIG'), a relative path to an HDF Baseline document (e.g. 'rhel9-stig.hdf-baseline.json'), or an absolute URI."
             },
+            "componentRef": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of the system component this assessment targets. Use for direct component binding. Alternative to targetSelector."
+            },
             "targetSelector": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Target_Selector",
               "description": "Label selector to match targets for this assessment. Overrides the system component's targetSelector if provided."

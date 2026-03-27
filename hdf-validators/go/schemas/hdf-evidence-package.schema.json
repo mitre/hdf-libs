@@ -117,6 +117,11 @@
         "description": {
           "type": "string",
           "description": "Optional description of this content entry."
+        },
+        "componentRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "componentId of the component this content entry relates to. Use to link SBOMs, results, or other documents to a specific system component."
         }
       },
       "examples": [

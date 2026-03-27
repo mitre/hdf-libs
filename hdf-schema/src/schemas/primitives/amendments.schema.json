@@ -89,6 +89,11 @@
           "type": "string",
           "format": "uuid",
           "description": "componentId of the local component that provides this control. Set when the provider is in the same system. Omit for external or cross-system providers; the reason field explains the source. Primarily used with type 'inherited'."
+        },
+        "componentRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "componentId of the component this amendment is scoped to. When set, the amendment only applies to the specified component. When omitted, the amendment applies system-wide."
         }
       },
       "examples": [
