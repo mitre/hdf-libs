@@ -82,10 +82,10 @@ func TestSystemCreate_Basic(t *testing.T) {
 	assert.Equal(t, "my-container", c1["name"])
 	assert.Equal(t, "compute", c1["type"]) // containerImage -> compute
 
-	// Interconnections should be empty array
-	interconnections, ok := sys["interconnections"].([]interface{})
+	// DataFlows should be empty array
+	dataFlows, ok := sys["dataFlows"].([]interface{})
 	require.True(t, ok)
-	assert.Empty(t, interconnections)
+	assert.Empty(t, dataFlows)
 
 	// Generator metadata
 	gen, ok := sys["generator"].(map[string]interface{})
@@ -110,6 +110,107 @@ func TestSystemCreate_NameFlag(t *testing.T) {
 	var sys map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &sys))
 	assert.Equal(t, "My Custom System", sys["name"])
+}
+
+func TestSystemCreate_OwnerFlag(t *testing.T) { //nolint:dupl
+	resultsFile := filepath.Join(t.TempDir(), "results.json")
+	require.NoError(t, os.WriteFile(resultsFile, []byte(minimalResultsJSON), 0o600))
+
+	outFile := filepath.Join(t.TempDir(), "system.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "--owner", "platform-team@agency.gov", "-o", outFile})
+
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	owner, ok := sys["owner"].(map[string]interface{})
+	require.True(t, ok, "owner should be present")
+	assert.Equal(t, "email", owner["type"])
+	assert.Equal(t, "platform-team@agency.gov", owner["identifier"])
+}
+
+func TestSystemCreate_OwnerPlainText(t *testing.T) { //nolint:dupl
+	resultsFile := filepath.Join(t.TempDir(), "results.json")
+	require.NoError(t, os.WriteFile(resultsFile, []byte(minimalResultsJSON), 0o600))
+
+	outFile := filepath.Join(t.TempDir(), "system.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "--owner", "Platform Engineering Team", "-o", outFile})
+
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	owner, ok := sys["owner"].(map[string]interface{})
+	require.True(t, ok, "owner should be present")
+	assert.Equal(t, "simple", owner["type"])
+	assert.Equal(t, "Platform Engineering Team", owner["identifier"])
+}
+
+func TestSystemCreate_SystemIdFlag(t *testing.T) { //nolint:dupl
+	resultsFile := filepath.Join(t.TempDir(), "results.json")
+	require.NoError(t, os.WriteFile(resultsFile, []byte(minimalResultsJSON), 0o600))
+
+	outFile := filepath.Join(t.TempDir(), "system.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "--system-id", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "-o", outFile})
+
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", sys["systemId"])
+}
+
+func TestSystemCreate_AutoGeneratesSystemId(t *testing.T) {
+	resultsFile := filepath.Join(t.TempDir(), "results.json")
+	require.NoError(t, os.WriteFile(resultsFile, []byte(minimalResultsJSON), 0o600))
+
+	outFile := filepath.Join(t.TempDir(), "system.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", outFile})
+
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	systemID, ok := sys["systemId"].(string)
+	require.True(t, ok, "systemId should be auto-generated")
+	assert.Len(t, systemID, 36, "should be a UUID")
+}
+
+func TestSystemCreate_DescriptionFlag(t *testing.T) { //nolint:dupl
+	resultsFile := filepath.Join(t.TempDir(), "results.json")
+	require.NoError(t, os.WriteFile(resultsFile, []byte(minimalResultsJSON), 0o600))
+
+	outFile := filepath.Join(t.TempDir(), "system.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "--description", "Production web application system", "-o", outFile})
+
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+	assert.Equal(t, "Production web application system", sys["description"])
 }
 
 func TestSystemCreate_Stdout(t *testing.T) {

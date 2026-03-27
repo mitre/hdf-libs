@@ -50,12 +50,10 @@ var (
 // GlobalFlags holds the global command-line flags.
 type GlobalFlags struct {
 	JSONOutput       bool
-	NoColor          bool
 	Debug            bool
 	MaxSizeMB        int
 	NoFollowSymlinks bool
 	SchemaDirFlag    string
-	Interactive      bool
 	ContinueOnError  bool
 }
 
@@ -109,12 +107,10 @@ For more information: https://github.com/mitre/hdf-libs`,
 
 	// Global persistent flags
 	cmd.PersistentFlags().BoolVar(&gf.JSONOutput, "json", false, "Output in JSON format")
-	cmd.PersistentFlags().BoolVar(&gf.NoColor, "no-color", false, "Disable colored output")
 	cmd.PersistentFlags().BoolVarP(&gf.Debug, "debug", "d", false, "Enable debug output")
 	cmd.PersistentFlags().IntVar(&gf.MaxSizeMB, "max-size", 50, "Maximum file size in MB")
 	cmd.PersistentFlags().BoolVar(&gf.NoFollowSymlinks, "no-follow-symlinks", false, "Refuse to read symlinked files")
 	cmd.PersistentFlags().StringVar(&gf.SchemaDirFlag, "schema-dir", "", "Load schemas from directory instead of embedded (for development)")
-	cmd.PersistentFlags().BoolVarP(&gf.Interactive, "interactive", "i", false, "Launch interactive TUI mode")
 	cmd.PersistentFlags().BoolVarP(&gf.ContinueOnError, "continue-on-error", "k", false, "Skip files that fail and report errors at the end")
 
 	// Add subcommands

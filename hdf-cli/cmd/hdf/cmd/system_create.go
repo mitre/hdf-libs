@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -16,6 +17,9 @@ func newSystemCreateCmd() *cobra.Command {
 		outputPath    string
 		systemName    string
 		componentName string
+		ownerEmail    string
+		systemID      string
+		description   string
 	)
 
 	cmd := &cobra.Command{
@@ -29,9 +33,19 @@ Examples:
   hdf system create --from results.json
   hdf system create --from results.json -o system.json
   hdf system create --from results.json --name "Portal Prod" -o system.json
-  hdf system create --from sbom.cdx.json --component-name "WebTier" -o system.json`,
+  hdf system create --from sbom.cdx.json --component-name "WebTier" -o system.json
+  hdf system create --from results.json --owner team@agency.gov --description "Prod portal"`,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return runSystemCreate(fromFile, systemName, componentName, outputPath)
+			opts := systemCreateOpts{
+				fromFile:      fromFile,
+				systemName:    systemName,
+				componentName: componentName,
+				outputPath:    outputPath,
+				ownerEmail:    ownerEmail,
+				systemID:      systemID,
+				description:   description,
+			}
+			return runSystemCreate(opts)
 		},
 	}
 
@@ -39,6 +53,9 @@ Examples:
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
 	cmd.Flags().StringVar(&systemName, "name", "", "System name (default: derived from input)")
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name (for SBOM input)")
+	cmd.Flags().StringVar(&ownerEmail, "owner", "", "System owner (email or plain text name)")
+	cmd.Flags().StringVar(&systemID, "system-id", "", "System UUID (auto-generated if omitted)")
+	cmd.Flags().StringVar(&description, "description", "", "System description")
 
 	if err := cmd.MarkFlagRequired("from"); err != nil {
 		panic(fmt.Sprintf("failed to mark flag required: %v", err))
@@ -70,13 +87,23 @@ func isURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }
 
-func runSystemCreate(fromRef, systemName, componentName, outputPath string) error {
+type systemCreateOpts struct {
+	fromFile      string
+	systemName    string
+	componentName string
+	outputPath    string
+	ownerEmail    string
+	systemID      string
+	description   string
+}
+
+func runSystemCreate(opts systemCreateOpts) error {
 	// If --from is a URL, we can't read the file — require metadata flags
-	if isURL(fromRef) {
-		return runSystemCreateFromSBOMRef(fromRef, systemName, componentName, outputPath)
+	if isURL(opts.fromFile) {
+		return runSystemCreateFromSBOMRef(opts.fromFile, opts.systemName, opts.componentName, opts.outputPath)
 	}
 
-	data, err := os.ReadFile(fromRef) // #nosec G304 -- CLI reads user-provided file path
+	data, err := os.ReadFile(opts.fromFile) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read input file: %w", err)
 	}
@@ -88,16 +115,16 @@ func runSystemCreate(fromRef, systemName, componentName, outputPath string) erro
 
 	// Detect input type: HDF Results vs CycloneDX SBOM
 	if bomFormat, ok := doc["bomFormat"].(string); ok && bomFormat == "CycloneDX" {
-		return runSystemCreateFromSBOM(doc, fromRef, systemName, componentName, outputPath, sbomFormatCycloneDX)
+		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, sbomFormatCycloneDX)
 	}
 
 	// Check for SPDX (has spdxVersion field)
 	if _, ok := doc["spdxVersion"]; ok {
-		return runSystemCreateFromSBOM(doc, fromRef, systemName, componentName, outputPath, sbomFormatSPDX)
+		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, sbomFormatSPDX)
 	}
 
 	// Default: treat as HDF Results
-	return runSystemCreateFromResults(doc, systemName, outputPath)
+	return runSystemCreateFromResults(doc, opts.systemName, opts.outputPath, opts)
 }
 
 // runSystemCreateFromSBOMRef creates a system document from a remote SBOM URI.
@@ -126,7 +153,7 @@ func runSystemCreateFromSBOMRef(sbomURI, systemName, componentName, outputPath s
 
 	fmt.Fprintf(os.Stderr, "Created component %q from URI (type: %s)\n", componentName, compTypeApplication)
 	fmt.Fprintf(os.Stderr, "Note: component type defaulted to %q; edit the system document to correct if needed\n", compTypeApplication)
-	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath)
+	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath, systemCreateOpts{})
 }
 
 // guessFormatFromURI attempts to determine SBOM format from the URI extension.
@@ -141,7 +168,7 @@ func guessFormatFromURI(uri string) string {
 	return ""
 }
 
-func runSystemCreateFromResults(results map[string]interface{}, systemName, outputPath string) error {
+func runSystemCreateFromResults(results map[string]interface{}, systemName, outputPath string, opts systemCreateOpts) error {
 	// Extract targets
 	targetsRaw, ok := results["components"].([]interface{})
 	if !ok || len(targetsRaw) == 0 {
@@ -174,7 +201,7 @@ func runSystemCreateFromResults(results map[string]interface{}, systemName, outp
 		components = append(components, comp)
 	}
 
-	return writeSystemDoc(systemName, components, outputPath)
+	return writeSystemDoc(systemName, components, outputPath, opts)
 }
 
 func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, componentName, outputPath, sbomFormat string) error {
@@ -206,7 +233,7 @@ func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, c
 	}
 
 	fmt.Fprintf(os.Stderr, "Imported %s SBOM as component %q (type: %s)\n", sbomFormat, componentName, compType)
-	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath)
+	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath, systemCreateOpts{})
 }
 
 // extractSBOMComponentName gets the top-level component name from a CycloneDX or SPDX SBOM.
@@ -259,16 +286,38 @@ func extractSBOMComponentVersion(doc map[string]interface{}, format string) stri
 	return ""
 }
 
-func writeSystemDoc(systemName string, components []map[string]interface{}, outputPath string) error {
+func writeSystemDoc(systemName string, components []map[string]interface{}, outputPath string, opts systemCreateOpts) error {
+	// Auto-generate systemId if not provided
+	systemID := opts.systemID
+	if systemID == "" {
+		systemID = uuid.New().String()
+	}
+
 	sysDoc := map[string]interface{}{
-		"name":             systemName,
-		"components":       components,
-		"interconnections": []interface{}{},
+		"systemId":   systemID,
+		"name":       systemName,
+		"components": components,
+		"dataFlows":  []interface{}{},
 		"generator": map[string]interface{}{
 			"name":    "hdf-cli",
 			"version": version,
 		},
 		"createdAt": time.Now().UTC().Format(time.RFC3339),
+	}
+
+	if opts.description != "" {
+		sysDoc["description"] = opts.description
+	}
+
+	if opts.ownerEmail != "" {
+		ownerType := "simple"
+		if strings.Contains(opts.ownerEmail, "@") {
+			ownerType = "email"
+		}
+		sysDoc["owner"] = map[string]interface{}{
+			"type":       ownerType,
+			"identifier": opts.ownerEmail,
+		}
 	}
 
 	output, err := json.MarshalIndent(sysDoc, "", "  ")
@@ -308,7 +357,7 @@ func extractBaselineNames(results map[string]interface{}) []string {
 	return names
 }
 
-// buildComponentFromTarget creates a system component from a results target.
+// buildComponentFromTarget creates a system component from a results component.
 func buildComponentFromTarget(target map[string]interface{}, baselineNames []string) map[string]interface{} {
 	name, _ := target["name"].(string)
 	targetType, _ := target["type"].(string)
@@ -321,6 +370,37 @@ func buildComponentFromTarget(target map[string]interface{}, baselineNames []str
 	// Wire all baselines as refs
 	if len(baselineNames) > 0 {
 		comp["baselineRefs"] = baselineNames
+	}
+
+	// Carry forward componentId if present
+	if id, ok := target["componentId"].(string); ok && id != "" {
+		comp["componentId"] = id
+	}
+
+	// Carry forward version
+	if v, ok := target["version"].(string); ok && v != "" {
+		comp["version"] = v
+	}
+
+	// Carry forward description
+	if d, ok := target["description"].(string); ok && d != "" {
+		comp["description"] = d
+	}
+
+	// Carry forward embedded SBOM
+	if sbom, ok := target["sbom"]; ok && sbom != nil {
+		comp["sbom"] = sbom
+	}
+	if sbomFmt, ok := target["sbomFormat"].(string); ok && sbomFmt != "" {
+		comp["sbomFormat"] = sbomFmt
+	}
+	if ref, ok := target["sbomRef"].(string); ok && ref != "" {
+		comp["sbomRef"] = ref
+	}
+
+	// Carry forward externalIds
+	if ids, ok := target["externalIds"].(map[string]interface{}); ok && len(ids) > 0 {
+		comp["externalIds"] = ids
 	}
 
 	// Extract labels as targetSelector

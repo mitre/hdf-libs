@@ -320,17 +320,6 @@ func TestNegativeNumbers(t *testing.T) {
 	})
 }
 
-// TestNoColorFlag tests the --no-color flag.
-func TestNoColorFlag(t *testing.T) {
-	fixture := testFixturePath(t, "minimal-v2.json")
-
-	runCLITests(t, []cliTest{
-		{name: "validate --no-color", args: []string{"validate", "--no-color", fixture}},
-		{name: "query --no-color", args: []string{"query", "--no-color", fixture}},
-		{name: "list --no-color", args: []string{"list", fixture, "--no-color"}},
-	})
-}
-
 // TestDebugFlag tests the --debug flag.
 func TestDebugFlag(t *testing.T) {
 	fixture := testFixturePath(t, "minimal-v2.json")

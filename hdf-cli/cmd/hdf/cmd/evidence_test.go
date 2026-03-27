@@ -39,7 +39,7 @@ func writeEvidenceFixture(t *testing.T) string {
 	return p
 }
 
-func TestEvidenceInfoCommand(t *testing.T) {
+func TestEvidenceInfoCommand(t *testing.T) { //nolint:dupl
 	t.Run("displays evidence info in human-readable format", func(t *testing.T) {
 		fixture := writeEvidenceFixture(t)
 		stdout, _, err := executeCommand("evidence", "info", fixture)
