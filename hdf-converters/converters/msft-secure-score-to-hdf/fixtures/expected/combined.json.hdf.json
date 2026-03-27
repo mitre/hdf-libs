@@ -1979,7 +1979,6 @@
         "service": "secure-score"
       },
       "name": "Azure Tenant: 12345678-1234-1234-1234-1234567890abcd",
-      "sbom": null,
       "type": "cloudAccount",
       "provider": "azure"
     }
@@ -1992,5 +1991,5 @@
     "name": "msft-secure-score-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:56.992913Z"
+  "timestamp": "2026-03-27T19:49:01.444476Z"
 }

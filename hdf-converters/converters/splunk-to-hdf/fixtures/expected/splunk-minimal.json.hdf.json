@@ -85,7 +85,6 @@
         "service": "splunk"
       },
       "name": "centos",
-      "sbom": null,
       "type": "host",
       "osVersion": "7.6.1810"
     }
@@ -100,5 +99,5 @@
   "statistics": {
     "duration": 10.681128104
   },
-  "timestamp": "2026-03-27T11:22:58.568748-04:00"
+  "timestamp": "2026-03-27T15:49:02.976884-04:00"
 }

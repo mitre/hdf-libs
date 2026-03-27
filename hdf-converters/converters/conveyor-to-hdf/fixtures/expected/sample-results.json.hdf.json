@@ -281,7 +281,6 @@
         "service": "conveyor"
       },
       "name": "Inspection of file: submissions/rbb_test_dir.zip",
-      "sbom": null,
       "type": "application"
     }
   ],
@@ -293,5 +292,5 @@
     "name": "conveyor-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:54.015409Z"
+  "timestamp": "2026-03-27T19:48:58.516655Z"
 }

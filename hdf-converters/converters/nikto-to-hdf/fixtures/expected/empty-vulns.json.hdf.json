@@ -17,7 +17,6 @@
         "service": "nikto"
       },
       "name": "Host: clean.example.com Port: 443",
-      "sbom": null,
       "type": "application"
     }
   ],

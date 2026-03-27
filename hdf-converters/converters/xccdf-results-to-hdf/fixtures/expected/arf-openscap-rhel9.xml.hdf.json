@@ -32006,7 +32006,6 @@
       },
       "macAddress": "6E:CD:50:2C:BD:CB",
       "name": "localhost",
-      "sbom": null,
       "type": "host"
     }
   ],

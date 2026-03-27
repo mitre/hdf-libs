@@ -52,7 +52,6 @@
         "service": "defender-endpoint"
       },
       "name": "temp123.middleeast.corp.microsoft.com",
-      "sbom": null,
       "type": "host",
       "fqdn": "temp123.middleeast.corp.microsoft.com",
       "osName": "Windows10"
@@ -65,5 +64,5 @@
     "name": "msft-defender-endpoint-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:56.843641Z"
+  "timestamp": "2026-03-27T19:49:01.297042Z"
 }

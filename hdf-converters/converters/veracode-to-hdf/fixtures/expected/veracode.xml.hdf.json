@@ -2630,7 +2630,6 @@
         "service": "veracode"
       },
       "name": "jenkinspipe",
-      "sbom": null,
       "type": "application"
     }
   ],

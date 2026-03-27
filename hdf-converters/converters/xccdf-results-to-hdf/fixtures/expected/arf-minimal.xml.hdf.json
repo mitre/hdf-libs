@@ -44,7 +44,6 @@
       },
       "macAddress": "00:2B:67:04:65:C0",
       "name": "rh-hony",
-      "sbom": null,
       "type": "host"
     }
   ],

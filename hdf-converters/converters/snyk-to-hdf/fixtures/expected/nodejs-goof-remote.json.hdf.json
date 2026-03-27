@@ -2372,7 +2372,6 @@
         "service": "snyk"
       },
       "name": "https://github.com/snyk-labs/nodejs-goof",
-      "sbom": null,
       "type": "application"
     }
   ],
@@ -2384,5 +2383,5 @@
     "name": "snyk-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:58.367352Z"
+  "timestamp": "2026-03-27T19:49:02.787905Z"
 }

@@ -759,7 +759,6 @@
         "service": "burpsuite"
       },
       "name": "http://zero.webappsecurity.com",
-      "sbom": null,
       "type": "application"
     }
   ],

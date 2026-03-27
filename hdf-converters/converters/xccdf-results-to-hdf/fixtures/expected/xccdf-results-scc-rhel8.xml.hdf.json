@@ -7697,7 +7697,6 @@
         "service": "xccdf"
       },
       "name": "LOCALHOST.LOCALDOMAIN",
-      "sbom": null,
       "type": "host"
     }
   ],

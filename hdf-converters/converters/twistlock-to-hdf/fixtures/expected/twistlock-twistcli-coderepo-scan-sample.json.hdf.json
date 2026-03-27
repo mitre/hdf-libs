@@ -142,7 +142,6 @@
         "image": ""
       },
       "name": "My-Repo",
-      "sbom": null,
       "type": "containerImage"
     }
   ],
@@ -154,5 +153,5 @@
     "name": "twistlock-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:58.859411Z"
+  "timestamp": "2026-03-27T19:49:03.245733Z"
 }

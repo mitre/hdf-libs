@@ -139,7 +139,6 @@
         "service": "junit"
       },
       "name": "JUnit Test Results",
-      "sbom": null,
       "type": "application"
     }
   ],
@@ -151,5 +150,5 @@
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:56.264925Z"
+  "timestamp": "2026-03-27T19:49:00.739775Z"
 }

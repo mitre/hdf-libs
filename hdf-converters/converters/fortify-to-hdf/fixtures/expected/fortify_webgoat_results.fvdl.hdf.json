@@ -190,7 +190,6 @@
         "service": "fortify"
       },
       "name": "/root/webgoat",
-      "sbom": null,
       "type": "repository"
     }
   ],

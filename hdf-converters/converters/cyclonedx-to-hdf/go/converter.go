@@ -325,9 +325,23 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 	now := time.Now().UTC()
 
-	targetName := ""
+	comp := hdf.Component{
+		Type:   hdf.CopyrightApplication,
+		Labels: map[string]string{"service": "cyclonedx"},
+	}
 	if bom.Metadata != nil && bom.Metadata.Component != nil {
-		targetName = bom.Metadata.Component.Name
+		comp.Name = bom.Metadata.Component.Name
+		if bom.Metadata.Component.Version != "" {
+			comp.Version = &bom.Metadata.Component.Version
+		}
+	}
+
+	// Embed the raw CycloneDX SBOM into the component
+	var rawSbom interface{}
+	if err := json.Unmarshal(input, &rawSbom); err == nil {
+		sbomFmt := hdf.Cyclonedx
+		comp.Sbom = rawSbom
+		comp.SbomFormat = &sbomFmt
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
@@ -336,9 +350,7 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		DataSourceName:   "CycloneDX",
 		DataSourceFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components: []hdf.Component{
-			{Name: targetName, Type: hdf.CopyrightApplication, Labels: map[string]string{"service": "cyclonedx"}},
-		},
-		Timestamp: &now,
+		Components:       []hdf.Component{comp},
+		Timestamp:        &now,
 	}), nil
 }

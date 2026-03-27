@@ -197,7 +197,6 @@
         "service": "dbprotect"
       },
       "name": "CONDS181",
-      "sbom": null,
       "type": "host"
     }
   ],
@@ -209,5 +208,5 @@
     "name": "dbprotect-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:54.433739Z"
+  "timestamp": "2026-03-27T19:48:58.658721Z"
 }

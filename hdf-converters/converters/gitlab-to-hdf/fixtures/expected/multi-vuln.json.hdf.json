@@ -119,7 +119,6 @@
         "service": "gitlab"
       },
       "name": "Semgrep",
-      "sbom": null,
       "type": "repository"
     }
   ],

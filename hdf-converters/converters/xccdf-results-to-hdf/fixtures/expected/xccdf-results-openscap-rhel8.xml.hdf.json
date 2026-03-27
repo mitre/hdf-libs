@@ -7697,7 +7697,6 @@
         "service": "xccdf"
       },
       "name": "localhost",
-      "sbom": null,
       "type": "host"
     }
   ],

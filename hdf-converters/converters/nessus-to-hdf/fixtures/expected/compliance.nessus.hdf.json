@@ -240,7 +240,6 @@
         "service": "nessus"
       },
       "name": "rhel7-server.example.com",
-      "sbom": null,
       "type": "host",
       "fqdn": "rhel7-server.example.com",
       "ipAddress": "10.1.2.50",

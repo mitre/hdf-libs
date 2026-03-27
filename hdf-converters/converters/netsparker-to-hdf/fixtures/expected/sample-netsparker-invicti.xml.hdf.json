@@ -122,7 +122,6 @@
         "service": "netsparker"
       },
       "name": "https://foo.bar/",
-      "sbom": null,
       "type": "application"
     }
   ],

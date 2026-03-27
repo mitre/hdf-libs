@@ -66,7 +66,6 @@
         "service": "junit"
       },
       "name": "org.apache.maven.surefire.test.FailingTest",
-      "sbom": null,
       "type": "application"
     }
   ],
@@ -78,5 +77,5 @@
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:56.264427Z"
+  "timestamp": "2026-03-27T19:49:00.739267Z"
 }

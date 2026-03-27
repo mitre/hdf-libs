@@ -2326,7 +2326,6 @@
         "service": "zap"
       },
       "name": "mymac.com",
-      "sbom": null,
       "type": "application",
       "url": "http://mymac.com:8191"
     }

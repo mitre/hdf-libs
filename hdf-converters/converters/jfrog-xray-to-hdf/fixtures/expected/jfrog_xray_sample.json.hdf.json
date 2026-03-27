@@ -555,7 +555,6 @@
         "service": "jfrog-xray"
       },
       "name": "JFrog Xray Scan",
-      "sbom": null,
       "type": "application"
     }
   ],
@@ -567,5 +566,5 @@
     "name": "jfrog-xray-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:56.125813Z"
+  "timestamp": "2026-03-27T19:49:00.594721Z"
 }

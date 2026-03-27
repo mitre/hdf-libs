@@ -252,7 +252,6 @@
         "registry": "https://registry.hub.docker.com"
       },
       "name": "https://registry.hub.docker.com/mitre/heimdall:latest",
-      "sbom": null,
       "type": "containerImage"
     }
   ],
@@ -264,5 +263,5 @@
     "name": "neuvector-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:57.422033Z"
+  "timestamp": "2026-03-27T19:49:01.868269Z"
 }

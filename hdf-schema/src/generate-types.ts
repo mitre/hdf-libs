@@ -183,10 +183,10 @@ function addGoEnumAliases(code: string): string {
  * the discriminated union semantics of the schema.
  */
 function addOmitemptyToGoCode(code: string): string {
-  // Pattern matches Go struct fields with pointer types and json tags
-  // Example: FQDN *string `json:"fqdn"`
-  // Captures: field name, type, json tag name, and closing backtick
-  const fieldPattern = /(\w+)\s+(\*\w+(?:<[^>]+>)?|\*time\.Time)\s+`json:"([^"]+)"`/g;
+  // Pattern matches Go struct fields with pointer types or interface{} and json tags
+  // Example: FQDN *string `json:"fqdn"` or Sbom interface{} `json:"sbom"`
+  // Captures: field name, type, json tag name
+  const fieldPattern = /(\w+)\s+(\*\w+(?:<[^>]+>)?|\*time\.Time|interface\{\})\s+`json:"([^"]+)"`/g;
 
   return code.replace(fieldPattern, (match, fieldName, fieldType, jsonTag) => {
     // Only add omitempty if not already present

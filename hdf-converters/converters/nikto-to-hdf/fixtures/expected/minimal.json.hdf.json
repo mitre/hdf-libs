@@ -127,7 +127,6 @@
         "service": "nikto"
       },
       "name": "Host: example.com Port: 80",
-      "sbom": null,
       "type": "application"
     }
   ],

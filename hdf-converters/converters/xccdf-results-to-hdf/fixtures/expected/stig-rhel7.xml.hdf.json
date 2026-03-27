@@ -175,7 +175,6 @@
         "service": "xccdf"
       },
       "name": "localhost.localdomain",
-      "sbom": null,
       "type": "host"
     }
   ],

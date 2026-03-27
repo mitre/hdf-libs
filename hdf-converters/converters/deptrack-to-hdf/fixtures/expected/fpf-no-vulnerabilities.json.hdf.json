@@ -16,7 +16,6 @@
         "service": "dependency-track"
       },
       "name": "laravel",
-      "sbom": null,
       "type": "application"
     }
   ],
@@ -28,5 +27,5 @@
     "name": "deptrack-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:54.577907Z"
+  "timestamp": "2026-03-27T19:48:59.054256Z"
 }

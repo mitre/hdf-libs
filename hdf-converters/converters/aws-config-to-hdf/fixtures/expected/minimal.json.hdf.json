@@ -62,7 +62,6 @@
         "service": "config"
       },
       "name": "AWS Account 123456789012",
-      "sbom": null,
       "type": "cloudAccount"
     }
   ],
@@ -73,5 +72,5 @@
     "name": "aws-config-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:53.737078Z"
+  "timestamp": "2026-03-27T19:48:58.247214Z"
 }

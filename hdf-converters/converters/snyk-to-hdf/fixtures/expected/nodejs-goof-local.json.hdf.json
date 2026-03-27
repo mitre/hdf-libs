@@ -4569,7 +4569,6 @@
         "service": "snyk"
       },
       "name": "goof",
-      "sbom": null,
       "type": "application"
     }
   ],
@@ -4581,5 +4580,5 @@
     "name": "snyk-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:58.35541Z"
+  "timestamp": "2026-03-27T19:49:02.779266Z"
 }

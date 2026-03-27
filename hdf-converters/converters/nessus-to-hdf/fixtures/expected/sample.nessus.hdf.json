@@ -5051,7 +5051,6 @@
         "service": "nessus"
       },
       "name": "10.0.0.3",
-      "sbom": null,
       "type": "host",
       "ipAddress": "10.0.0.3",
       "osName": "Linux Kernel 5.13.0-37-generic on Ubuntu 20.04",
@@ -5062,7 +5061,6 @@
         "service": "nessus"
       },
       "name": "10.0.0.2",
-      "sbom": null,
       "type": "host",
       "ipAddress": "10.0.0.2",
       "osName": "Linux Kernel 4.15 on Ubuntu 18.04 (bionic)",
@@ -5073,7 +5071,6 @@
         "service": "nessus"
       },
       "name": "10.0.0.1",
-      "sbom": null,
       "type": "host",
       "ipAddress": "10.0.0.1",
       "osName": "Linux Kernel 3.2 on Debian 7.0 (wheezy)",

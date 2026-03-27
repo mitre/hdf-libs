@@ -62,7 +62,6 @@
         "service": "xccdf"
       },
       "name": "Test Target",
-      "sbom": null,
       "type": "host"
     }
   ],

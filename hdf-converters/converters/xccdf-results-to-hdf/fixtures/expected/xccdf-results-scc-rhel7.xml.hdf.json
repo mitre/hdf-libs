@@ -5754,7 +5754,6 @@
         "service": "xccdf"
       },
       "name": "LOCKDOWN",
-      "sbom": null,
       "type": "host"
     }
   ],

@@ -41,7 +41,6 @@
         "service": "junit"
       },
       "name": "surefire.MyTest",
-      "sbom": null,
       "type": "application"
     }
   ],
@@ -53,5 +52,5 @@
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:56.264154Z"
+  "timestamp": "2026-03-27T19:49:00.738951Z"
 }

@@ -104,7 +104,6 @@
         "service": "defender-cloud"
       },
       "name": "Azure Subscription a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "sbom": null,
       "type": "cloudAccount",
       "accountId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "provider": "azure"
@@ -118,5 +117,5 @@
     "name": "msft-defender-cloud-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:56.549226Z"
+  "timestamp": "2026-03-27T19:49:01.022227Z"
 }

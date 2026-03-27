@@ -152,7 +152,6 @@
         "service": "defender-endpoint"
       },
       "name": "workstation01.corp.contoso.com",
-      "sbom": null,
       "type": "host",
       "fqdn": "workstation01.corp.contoso.com",
       "osName": "Windows11"
@@ -163,7 +162,6 @@
         "service": "defender-endpoint"
       },
       "name": "server02.corp.contoso.com",
-      "sbom": null,
       "type": "host",
       "fqdn": "server02.corp.contoso.com",
       "osName": "WindowsServer2019"
@@ -174,7 +172,6 @@
         "service": "defender-endpoint"
       },
       "name": "laptop03.corp.contoso.com",
-      "sbom": null,
       "type": "host",
       "fqdn": "laptop03.corp.contoso.com",
       "osName": "Windows10"
@@ -185,7 +182,6 @@
         "service": "defender-endpoint"
       },
       "name": "workstation04.corp.contoso.com",
-      "sbom": null,
       "type": "host",
       "fqdn": "workstation04.corp.contoso.com",
       "osName": "Windows10"
@@ -198,5 +194,5 @@
     "name": "msft-defender-endpoint-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T15:22:56.843866Z"
+  "timestamp": "2026-03-27T19:49:01.297258Z"
 }

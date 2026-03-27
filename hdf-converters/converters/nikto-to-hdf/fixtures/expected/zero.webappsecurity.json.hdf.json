@@ -401,7 +401,6 @@
         "service": "nikto"
       },
       "name": "Host: zero.webappsecurity.com Port: 443",
-      "sbom": null,
       "type": "application"
     }
   ],
