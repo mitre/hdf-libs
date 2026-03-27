@@ -85,6 +85,24 @@ describe('component.schema.json', () => {
       expect(validate(valid)).toBe(true);
     });
 
+    it('should validate a component with owner Identity', () => {
+      const valid = {
+        name: 'DatabaseTier',
+        type: 'database',
+        owner: { type: 'email', identifier: 'dba-team@agency.gov' },
+      };
+      expect(validate(valid)).toBe(true);
+    });
+
+    it('should reject component with invalid owner (missing identifier)', () => {
+      const invalid = {
+        name: 'WebTier',
+        type: 'host',
+        owner: { type: 'email' },
+      };
+      expect(validate(invalid)).toBe(false);
+    });
+
     it('should validate a component with baselineRefs', () => {
       const valid = {
         name: 'WebTier',

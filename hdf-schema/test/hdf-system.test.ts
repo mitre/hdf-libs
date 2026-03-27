@@ -111,6 +111,39 @@ describe('hdf-system.schema.json', () => {
     expect(validate(doc)).toBe(false);
   });
 
+  // -- systemId --
+
+  it('should accept system with systemId UUID', () => {
+    const doc = { ...minimal, systemId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' };
+    expect(validate(doc)).toBe(true);
+  });
+
+  it('should reject system with invalid systemId', () => {
+    const doc = { ...minimal, systemId: 'not-a-uuid' };
+    expect(validate(doc)).toBe(false);
+  });
+
+  it('should accept system without systemId (optional)', () => {
+    expect(validate(minimal)).toBe(true);
+  });
+
+  // -- owner --
+
+  it('should accept system with owner Identity', () => {
+    const doc = { ...minimal, owner: { type: 'email', identifier: 'platform-team@agency.gov' } };
+    expect(validate(doc)).toBe(true);
+  });
+
+  it('should accept system with owner including description', () => {
+    const doc = { ...minimal, owner: { type: 'other', identifier: 'TEAM-INFRA', description: 'Infrastructure Operations Team' } };
+    expect(validate(doc)).toBe(true);
+  });
+
+  it('should reject system with invalid owner (missing type)', () => {
+    const doc = { ...minimal, owner: { identifier: 'someone@example.com' } };
+    expect(validate(doc)).toBe(false);
+  });
+
   // -- Authorization status enum --
 
   it('should accept all valid authorization statuses', () => {

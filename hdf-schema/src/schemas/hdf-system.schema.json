@@ -10,6 +10,15 @@
     "components"
   ],
   "properties": {
+    "systemId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Stable UUID (RFC 4122) for this system. Enables cross-document correlation independent of file location. Optional in casual use, expected in production documents."
+    },
+    "owner": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+      "description": "Team or individual responsible for this system's authorization and compliance. Maps to OSCAL responsible-party with role 'system-owner'."
+    },
     "name": {
       "type": "string",
       "description": "Human-readable system name. Example: 'Enterprise Portal Production'."
