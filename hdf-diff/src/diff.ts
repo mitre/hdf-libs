@@ -12,6 +12,8 @@ import { normalizeToV2 } from './normalize.js';
 import { matchRequirements } from './matching/index.js';
 import type { MatchOptions } from './matching/index.js';
 import { validateComparison } from './validate.js';
+import { diffSboms } from './sbom.js';
+import type { PackageDiff } from './sbom.js';
 
 /**
  * Options for configuring the diff behavior.
@@ -727,8 +729,9 @@ const COMPONENT_TRACKED_FIELDS = [
  * Compare two HDF system documents and produce a structured comparison
  * showing component-level changes between system versions.
  *
- * Components are matched by exact name. Top-level system fields
- * (authorizationStatus, categorizationLevel, description) are also compared.
+ * Components are matched by componentId (UUID) when available, falling back
+ * to exact name matching. Top-level system fields, data flows, and embedded
+ * SBOMs are also compared.
  */
 export function diffSystems(
   oldSystem: Record<string, unknown>,
@@ -738,56 +741,22 @@ export function diffSystems(
   const oldComponents = (oldSystem['components'] as Record<string, unknown>[] | undefined) ?? [];
   const newComponents = (newSystem['components'] as Record<string, unknown>[] | undefined) ?? [];
 
-  // Build maps by component name
-  const oldMap = new Map<string, Record<string, unknown>>();
-  for (const c of oldComponents) {
-    const name = c['name'] as string;
-    if (name) oldMap.set(name, c);
-  }
-  const newMap = new Map<string, Record<string, unknown>>();
-  for (const c of newComponents) {
-    const name = c['name'] as string;
-    if (name) newMap.set(name, c);
-  }
-
-  const allNames = new Set([...oldMap.keys(), ...newMap.keys()]);
+  // Match components: prefer componentId, fall back to name
+  const pairs = matchComponents(oldComponents, newComponents);
   const componentDiffs: ComponentDiff[] = [];
 
-  for (const name of allNames) {
-    const oldComp = oldMap.get(name);
-    const newComp = newMap.get(name);
-
+  for (const { oldComp, newComp, name } of pairs) {
     if (oldComp && newComp) {
-      // Compare tracked fields
       const fieldChanges = computeComponentFieldChanges(oldComp, newComp, COMPONENT_TRACKED_FIELDS);
       const state = fieldChanges.length > 0 ? 'updated' : 'unchanged';
-      componentDiffs.push({
-        name,
-        state,
-        before: oldComp,
-        after: newComp,
-        fieldChanges,
-      });
+      componentDiffs.push({ name, state, before: oldComp, after: newComp, fieldChanges });
     } else if (oldComp && !newComp) {
-      componentDiffs.push({
-        name,
-        state: 'absent',
-        before: oldComp,
-        after: null,
-        fieldChanges: [],
-      });
+      componentDiffs.push({ name, state: 'absent', before: oldComp, after: null, fieldChanges: [] });
     } else if (!oldComp && newComp) {
-      componentDiffs.push({
-        name,
-        state: 'new',
-        before: null,
-        after: newComp,
-        fieldChanges: [],
-      });
+      componentDiffs.push({ name, state: 'new', before: null, after: newComp, fieldChanges: [] });
     }
   }
 
-  // Sort component diffs by name
   componentDiffs.sort((a, b) => a.name.localeCompare(b.name));
 
   // Compare top-level system fields
@@ -805,7 +774,6 @@ export function diffSystems(
   const newName = newSystem['name'] as string | undefined ?? '';
   const systemName = newName || oldName;
 
-  // Build sources
   const sources: Source[] = [
     { role: 'old', label: systemName ? `${systemName} (old)` : 'Old system' },
     { role: 'new', label: systemName ? `${systemName} (new)` : 'New system' },
@@ -817,7 +785,7 @@ export function diffSystems(
     timestamp: new Date().toISOString(),
     sources,
     summary: {
-      total: allNames.size,
+      total: pairs.length,
       matchedCount: counts.unchanged + counts.updated,
       unmatchedOldCount: counts.absent,
       unmatchedNewCount: counts.new,
@@ -833,11 +801,23 @@ export function diffSystems(
     componentDiffs,
   };
 
-  // Attach system-level field changes as extensions if present
+  // Extensions: system field changes + data flow changes
+  const extensions: Record<string, unknown> = {};
   if (systemFieldChanges.length > 0) {
-    comparison.extensions = {
-      systemFieldChanges,
-    };
+    extensions['systemFieldChanges'] = systemFieldChanges;
+  }
+  const dataFlowChanges = diffDataFlows(oldSystem, newSystem);
+  if (dataFlowChanges.length > 0) {
+    extensions['dataFlowChanges'] = dataFlowChanges;
+  }
+  if (Object.keys(extensions).length > 0) {
+    comparison.extensions = extensions;
+  }
+
+  // Diff embedded SBOMs across matched components
+  const allPackageDiffs = diffEmbeddedSboms(pairs);
+  if (allPackageDiffs.length > 0) {
+    comparison.packageDiffs = allPackageDiffs;
   }
 
   if (options?.validateOutput) {
@@ -850,6 +830,149 @@ export function diffSystems(
   }
 
   return comparison;
+}
+
+interface ComponentPair {
+  name: string;
+  oldComp: Record<string, unknown> | undefined;
+  newComp: Record<string, unknown> | undefined;
+}
+
+/**
+ * Match old and new components by componentId (when available) or name.
+ */
+function matchComponents(
+  oldComponents: Record<string, unknown>[],
+  newComponents: Record<string, unknown>[],
+): ComponentPair[] {
+  const matched = new Set<number>(); // indices of matched new components
+  const pairs: ComponentPair[] = [];
+
+  // First pass: match by componentId
+  const newById = new Map<string, number>();
+  for (let i = 0; i < newComponents.length; i++) {
+    const id = newComponents[i]!['componentId'] as string | undefined;
+    if (id) newById.set(id, i);
+  }
+
+  const oldMatched = new Set<number>();
+  for (let i = 0; i < oldComponents.length; i++) {
+    const oldId = oldComponents[i]!['componentId'] as string | undefined;
+    if (oldId && newById.has(oldId)) {
+      const ni = newById.get(oldId)!;
+      const newComp = newComponents[ni]!;
+      pairs.push({
+        name: (newComp['name'] as string) || (oldComponents[i]!['name'] as string) || oldId,
+        oldComp: oldComponents[i],
+        newComp,
+      });
+      matched.add(ni);
+      oldMatched.add(i);
+    }
+  }
+
+  // Second pass: match remaining by name
+  const newByName = new Map<string, number>();
+  for (let i = 0; i < newComponents.length; i++) {
+    if (matched.has(i)) continue;
+    const name = newComponents[i]!['name'] as string;
+    if (name) newByName.set(name, i);
+  }
+
+  for (let i = 0; i < oldComponents.length; i++) {
+    if (oldMatched.has(i)) continue;
+    const name = oldComponents[i]!['name'] as string;
+    if (name && newByName.has(name)) {
+      const ni = newByName.get(name)!;
+      pairs.push({ name, oldComp: oldComponents[i], newComp: newComponents[ni] });
+      matched.add(ni);
+      oldMatched.add(i);
+      newByName.delete(name);
+    }
+  }
+
+  // Unmatched old → absent
+  for (let i = 0; i < oldComponents.length; i++) {
+    if (oldMatched.has(i)) continue;
+    const name = (oldComponents[i]!['name'] as string) || `component-${i}`;
+    pairs.push({ name, oldComp: oldComponents[i], newComp: undefined });
+  }
+
+  // Unmatched new → new
+  for (let i = 0; i < newComponents.length; i++) {
+    if (matched.has(i)) continue;
+    const name = (newComponents[i]!['name'] as string) || `component-${i}`;
+    pairs.push({ name, oldComp: undefined, newComp: newComponents[i] });
+  }
+
+  return pairs;
+}
+
+/**
+ * Diff data flows between two system documents. Flows are keyed by from+to.
+ */
+function diffDataFlows(
+  oldSystem: Record<string, unknown>,
+  newSystem: Record<string, unknown>,
+): Array<{ state: string; flow: Record<string, unknown> }> {
+  const oldFlows = (oldSystem['dataFlows'] as Record<string, unknown>[] | undefined) ?? [];
+  const newFlows = (newSystem['dataFlows'] as Record<string, unknown>[] | undefined) ?? [];
+
+  if (oldFlows.length === 0 && newFlows.length === 0) return [];
+
+  const flowKey = (f: Record<string, unknown>): string => {
+    const from = f['from'] as string ?? '';
+    const to = typeof f['to'] === 'string' ? f['to'] as string : JSON.stringify(f['to']);
+    return `${from}→${to}`;
+  };
+
+  const oldMap = new Map<string, Record<string, unknown>>();
+  for (const f of oldFlows) oldMap.set(flowKey(f), f);
+  const newMap = new Map<string, Record<string, unknown>>();
+  for (const f of newFlows) newMap.set(flowKey(f), f);
+
+  const allKeys = new Set([...oldMap.keys(), ...newMap.keys()]);
+  const changes: Array<{ state: string; flow: Record<string, unknown> }> = [];
+
+  for (const key of allKeys) {
+    const oldF = oldMap.get(key);
+    const newF = newMap.get(key);
+    if (oldF && newF) {
+      if (JSON.stringify(oldF) !== JSON.stringify(newF)) {
+        changes.push({ state: 'updated', flow: newF });
+      }
+    } else if (oldF && !newF) {
+      changes.push({ state: 'removed', flow: oldF });
+    } else if (!oldF && newF) {
+      changes.push({ state: 'added', flow: newF });
+    }
+  }
+
+  return changes;
+}
+
+/**
+ * Diff embedded SBOMs across matched component pairs.
+ */
+function diffEmbeddedSboms(pairs: ComponentPair[]): PackageDiff[] {
+  const allDiffs: PackageDiff[] = [];
+
+  for (const { oldComp, newComp } of pairs) {
+    if (!oldComp || !newComp) continue;
+    const oldSbom = oldComp['sbom'];
+    const newSbom = newComp['sbom'];
+    if (!oldSbom || !newSbom) continue;
+    if (typeof oldSbom !== 'object' || typeof newSbom !== 'object') continue;
+
+    try {
+      const result = diffSboms(JSON.stringify(oldSbom), JSON.stringify(newSbom));
+      allDiffs.push(...result.packageDiffs);
+    } catch {
+      // Skip SBOM diff if formats are incompatible
+    }
+  }
+
+  return allDiffs;
 }
 
 /**

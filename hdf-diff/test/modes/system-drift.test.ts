@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { diffSystems, diffHdf } from '../../src/diff.js';
 import type { HdfComparison, ComponentDiff } from '../../src/types.js';
+import type { PackageDiff } from '../../src/sbom.js';
 
 // -- Inline fixtures ----------------------------------------------------------
 
@@ -254,6 +255,137 @@ describe('system drift comparison mode', () => {
       const names = diff.componentDiffs!.map((c) => c.name);
       const sorted = [...names].sort();
       expect(names).toEqual(sorted);
+    });
+  });
+
+  describe('componentId-based matching', () => {
+    it('should match components by componentId when available', () => {
+      const old = {
+        name: 'System',
+        components: [
+          { componentId: 'aaa-111', name: 'OldName', type: 'application' },
+        ],
+      };
+      const updated = {
+        name: 'System',
+        components: [
+          { componentId: 'aaa-111', name: 'RenamedApp', type: 'application', description: 'now with description' },
+        ],
+      };
+      const diff = diffSystems(old, updated);
+      const comp = diff.componentDiffs!.find((c) => c.name === 'RenamedApp');
+      expect(comp).toBeDefined();
+      expect(comp!.state).toBe('updated');
+      // Should NOT show OldName as absent and RenamedApp as new
+      expect(diff.componentDiffs!.find((c) => c.state === 'absent')).toBeUndefined();
+      expect(diff.componentDiffs!.find((c) => c.state === 'new')).toBeUndefined();
+    });
+
+    it('should fall back to name matching when componentId is absent', () => {
+      const old = {
+        name: 'System',
+        components: [{ name: 'App', type: 'application' }],
+      };
+      const updated = {
+        name: 'System',
+        components: [{ name: 'App', type: 'application', description: 'added' }],
+      };
+      const diff = diffSystems(old, updated);
+      expect(diff.componentDiffs).toHaveLength(1);
+      expect(diff.componentDiffs![0]!.state).toBe('updated');
+    });
+  });
+
+  describe('data flow diffing', () => {
+    it('should detect added data flows', () => {
+      const old = { name: 'System', components: [], dataFlows: [] };
+      const updated = {
+        name: 'System',
+        components: [],
+        dataFlows: [{ from: 'aaa', to: 'bbb', protocol: 'HTTPS' }],
+      };
+      const diff = diffSystems(old, updated);
+      expect(diff.extensions).toBeDefined();
+      const flowChanges = diff.extensions!['dataFlowChanges'] as Array<Record<string, unknown>>;
+      expect(flowChanges).toHaveLength(1);
+      expect(flowChanges[0]!['state']).toBe('added');
+    });
+
+    it('should detect removed data flows', () => {
+      const old = {
+        name: 'System',
+        components: [],
+        dataFlows: [{ from: 'aaa', to: 'bbb', protocol: 'HTTPS' }],
+      };
+      const updated = { name: 'System', components: [], dataFlows: [] };
+      const diff = diffSystems(old, updated);
+      const flowChanges = diff.extensions!['dataFlowChanges'] as Array<Record<string, unknown>>;
+      expect(flowChanges).toHaveLength(1);
+      expect(flowChanges[0]!['state']).toBe('removed');
+    });
+
+    it('should detect modified data flows', () => {
+      const old = {
+        name: 'System',
+        components: [],
+        dataFlows: [{ from: 'aaa', to: 'bbb', protocol: 'HTTP' }],
+      };
+      const updated = {
+        name: 'System',
+        components: [],
+        dataFlows: [{ from: 'aaa', to: 'bbb', protocol: 'HTTPS', port: 443 }],
+      };
+      const diff = diffSystems(old, updated);
+      const flowChanges = diff.extensions!['dataFlowChanges'] as Array<Record<string, unknown>>;
+      expect(flowChanges).toHaveLength(1);
+      expect(flowChanges[0]!['state']).toBe('updated');
+    });
+
+    it('should not add dataFlowChanges when no flows exist', () => {
+      const diff = diffSystems(systemV1, systemV2);
+      expect(diff.extensions?.['dataFlowChanges']).toBeUndefined();
+    });
+  });
+
+  describe('embedded SBOM diffing', () => {
+    const cdxOld = {
+      bomFormat: 'CycloneDX', specVersion: '1.5',
+      components: [
+        { 'bom-ref': 'a', name: 'lodash', version: '4.17.20', purl: 'pkg:npm/lodash@4.17.20' },
+        { 'bom-ref': 'b', name: 'express', version: '4.18.0', purl: 'pkg:npm/express@4.18.0' },
+      ],
+    };
+    const cdxNew = {
+      bomFormat: 'CycloneDX', specVersion: '1.5',
+      components: [
+        { 'bom-ref': 'a', name: 'lodash', version: '4.17.21', purl: 'pkg:npm/lodash@4.17.21' },
+        { 'bom-ref': 'c', name: 'axios', version: '1.6.0', purl: 'pkg:npm/axios@1.6.0' },
+      ],
+    };
+
+    it('should diff embedded SBOMs and produce packageDiffs', () => {
+      const old = {
+        name: 'System',
+        components: [{ componentId: 'comp-1', name: 'WebApp', type: 'application', sbom: cdxOld, sbomFormat: 'cyclonedx' }],
+      };
+      const updated = {
+        name: 'System',
+        components: [{ componentId: 'comp-1', name: 'WebApp', type: 'application', sbom: cdxNew, sbomFormat: 'cyclonedx' }],
+      };
+      const diff = diffSystems(old, updated);
+      expect(diff.packageDiffs).toBeDefined();
+      expect(diff.packageDiffs!.length).toBeGreaterThan(0);
+      const lodash = diff.packageDiffs!.find((p: PackageDiff) => p.name === 'lodash');
+      expect(lodash?.state).toBe('updated');
+      const express = diff.packageDiffs!.find((p: PackageDiff) => p.name === 'express');
+      expect(express?.state).toBe('removed');
+      const axios = diff.packageDiffs!.find((p: PackageDiff) => p.name === 'axios');
+      expect(axios?.state).toBe('added');
+    });
+
+    it('should not produce packageDiffs when no SBOMs exist', () => {
+      const diff = diffSystems(systemV1, systemV2);
+      expect(diff.packageDiffs).toBeUndefined();
     });
   });
 });

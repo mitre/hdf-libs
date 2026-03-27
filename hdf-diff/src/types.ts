@@ -214,6 +214,8 @@ export interface HdfComparison {
   requirementDiffs: RequirementDiff[];
   /** Per-component diffs (systemDrift mode only) */
   componentDiffs?: ComponentDiff[];
+  /** Per-package diffs from embedded SBOM comparison (systemDrift mode only) */
+  packageDiffs?: import('./sbom.js').PackageDiff[];
   /** URI identifying the system being compared (systemDrift mode only) */
   systemRef?: string;
   /** Requirements that drifted from a golden baseline (future use) */
