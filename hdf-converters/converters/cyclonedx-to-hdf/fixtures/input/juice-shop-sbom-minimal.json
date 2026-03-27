@@ -1,0 +1,375 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-03-26T14:18:56Z",
+    "tools": {
+      "components": [
+        {
+          "group": "@cyclonedx",
+          "name": "cdxgen",
+          "version": "12.1.3",
+          "purl": "pkg:npm/%40cyclonedx/cdxgen@12.1.3",
+          "type": "application",
+          "bom-ref": "pkg:npm/@cyclonedx/cdxgen@12.1.3",
+          "publisher": "OWASP Foundation",
+          "authors": [
+            {
+              "name": "OWASP Foundation"
+            }
+          ]
+        }
+      ]
+    },
+    "authors": [
+      {
+        "name": "OWASP Foundation"
+      }
+    ],
+    "lifecycles": [
+      {
+        "phase": "build"
+      }
+    ],
+    "component": {
+      "name": "juice-shop",
+      "group": "",
+      "version": "19.1.1",
+      "description": "Probably the most modern and sophisticated insecure web application",
+      "purl": "pkg:npm/juice-shop@19.1.1",
+      "bom-ref": "pkg:npm/juice-shop@19.1.1",
+      "author": "Bj\u00f6rn Kimminich <bjoern.kimminich@owasp.org> (https://kimminich.de)",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://owasp-juice.shop"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/juice-shop/juice-shop.git"
+        }
+      ],
+      "components": [
+        {
+          "group": "",
+          "name": "frontend",
+          "version": "19.1.1",
+          "purl": "pkg:npm/frontend@19.1.1",
+          "type": "application",
+          "bom-ref": "pkg:npm/frontend@19.1.1"
+        },
+        {
+          "group": "",
+          "name": "juice-shop",
+          "version": "latest",
+          "purl": "pkg:maven/juice-shop@latest",
+          "type": "application",
+          "bom-ref": "pkg:maven/juice-shop@latest"
+        }
+      ]
+    },
+    "properties": [
+      {
+        "name": "cdx:bom:componentTypes",
+        "value": "generic\\ngithub\\nmaven\\nnpm"
+      },
+      {
+        "name": "cdx:bom:componentNamespaces",
+        "value": "@adraffy\\n@algolia\\n@ampproject\\n@angular\\n@angular-builders\\n@angular-devkit\\n@angular-eslint\\n@babel\\n@bcoe\\n@colors\\n@cspotcode\\n@ctrl\\n@cyclonedx\\n@cypress\\n@dabh\\n@discoveryjs\\n@esbuild\\n@eslint\\n@eslint-community\\n@ethereumjs\\n@ethersproject\\n@fortawesome\\n@gar\\n@hapi\\n@hono\\n@humanfs\\n@humanwhocodes\\n@inquirer\\n@isaacs\\n@istanbuljs\\n@jest\\n@jridgewell\\n@jsonjoy.com\\n@leichtgewicht\\n@listr2\\n@lmdb\\n@modelcontextprotocol\\n@msgpackr-extract\\n@napi-rs\\n@ngtools\\n@ngx-translate\\n@nlpjs\\n@noble\\n@nodelib\\n@npmcli\\n@oozcitak\\n@otplib\\n@parcel\\n@pkgjs\\n@polka\\n@rollup\\n@rtsao\\n@scarf\\n@schematics\\n@scure\\n@sideway\\n@sigstore\\n@sinclair\\n@sindresorhus\\n@sinonjs\\n@so-ric\\n@socket.io\\n@standard-schema\\n@stylelint\\n@swc\\n@tokenizer\\n@tootallnate\\n@tsconfig\\n@tufjs\\n@types\\n@typescript-eslint\\n@ungap\\n@vitejs\\n@wagmi\\n@webassemblyjs\\n@winarg\\n@xmldom\\n@xtuc\\n@yarnpkg\\nGamesight\\nactions\\nakhileshns\\ncirrus-actions\\ncoverallsapp\\ncypress-io\\ndawidd6\\ndessant\\ndocker\\ngithub/codeql-action\\nnick-invision\\norg.slf4j\\nsoftprops\\nstefanzweifel\\nzaproxy"
+      },
+      {
+        "name": "cdx:bom:componentSrcFiles",
+        "value": "/Users/wdower/repos/sample_apps/juice-shop/.github/workflows/ci.yml\\n/Users/wdower/repos/sample_apps/juice-shop/.github/workflows/codeql-analysis.yml\\n/Users/wdower/repos/sample_apps/juice-shop/.github/workflows/lint-fixer.yml\\n/Users/wdower/repos/sample_apps/juice-shop/.github/workflows/lock.yml\\n/Users/wdower/repos/sample_apps/juice-shop/.github/workflows/rebase.yml\\n/Users/wdower/repos/sample_apps/juice-shop/.github/workflows/release.yml\\n/Users/wdower/repos/sample_apps/juice-shop/.github/workflows/stale.yml\\n/Users/wdower/repos/sample_apps/juice-shop/.github/workflows/update-challenges-ebook.yml\\n/Users/wdower/repos/sample_apps/juice-shop/.github/workflows/update-challenges-www.yml\\n/Users/wdower/repos/sample_apps/juice-shop/.github/workflows/update-news-www.yml\\n/Users/wdower/repos/sample_apps/juice-shop/.github/workflows/webpack-analysis.yml\\n/Users/wdower/repos/sample_apps/juice-shop/.github/workflows/zap_scan.yml\\n/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json\\n/Users/wdower/repos/sample_apps/juice-shop/package-lock.json\\nFilename /Users/wdower/repos/sample_apps/juice-shop/frontend/node_modules/nan/CMakeLists.txt\\nblaze.jar\\njar-deps-RdwTEZ/blaze.jar"
+      }
+    ]
+  },
+  "components": [
+    {
+      "group": "",
+      "name": "body-parser",
+      "version": "1.20.4",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "65381860b30e5d8f6a294ff9ec5028f05f870367465fb6ea19cef5b710d10b5ad2e1fadd148e51ecd865b87c47e8cd1822d00fd2c1c1e2ea8039c60ac4eeae18"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/body-parser@1.20.4",
+      "type": "library",
+      "bom-ref": "pkg:npm/body-parser@1.20.4",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/juice-shop/package-lock.json"
+        },
+        {
+          "name": "ResolvedUrl",
+          "value": "https://registry.npmjs.org/body-parser/-/body-parser-1.20.4.tgz"
+        },
+        {
+          "name": "ImportedModules",
+          "value": "body-parser"
+        },
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+          }
+        ],
+        "occurrences": [
+          {
+            "location": "server.ts#18"
+          }
+        ]
+      },
+      "tags": [
+        "parse"
+      ]
+    },
+    {
+      "group": "",
+      "name": "bytes",
+      "version": "3.1.2",
+      "scope": "optional",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "fcd7fb4f2cd3c7a4b7c9124e6ce015efde7aafc72bdbe3a3f000b976df3048fdc1400a1e5f9f0da07c8253c3fccc690d5d2b634d28ba7f33ba174a4175c61b12"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/bytes@3.1.2",
+      "type": "library",
+      "bom-ref": "pkg:npm/bytes@3.1.2",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/juice-shop/package-lock.json"
+        },
+        {
+          "name": "ResolvedUrl",
+          "value": "https://registry.npmjs.org/bytes/-/bytes-3.1.2.tgz"
+        },
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "content-type",
+      "version": "1.0.5",
+      "scope": "optional",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "9d38ea7dc045122a4a7570afe180d05827e670b64a9bcd65745d29028a53bf2ac51956dc47a3ff54001de46ecdfb4b53afc42a894d2d15a743e852b836d27038"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/content-type@1.0.5",
+      "type": "library",
+      "bom-ref": "pkg:npm/content-type@1.0.5",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/juice-shop/package-lock.json"
+        },
+        {
+          "name": "ResolvedUrl",
+          "value": "https://registry.npmjs.org/content-type/-/content-type-1.0.5.tgz"
+        },
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "debug",
+      "version": "2.6.9",
+      "scope": "optional",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "6c2ec496b7496899cf6c03fed44a2d62fa99b1bdde725e708ba05f8ba0494d470da30a7a72fb298348d7ce74532838e6fc4ec076014155e00f54c35c286b0730"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/debug@2.6.9",
+      "type": "library",
+      "bom-ref": "pkg:npm/debug@2.6.9",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/juice-shop/package-lock.json"
+        },
+        {
+          "name": "ResolvedUrl",
+          "value": "https://registry.npmjs.org/debug/-/debug-2.6.9.tgz"
+        },
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "ms",
+      "version": "2.0.0",
+      "scope": "optional",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "4e9a7ad0fe885090d3b8eabfe59f1c76c93326e8dfc2a7ce4e4af02308fb211212a679099d3e92c89e0f08f9c63281630bd75d85a979295218b40b7dee2c74e4"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/ms@2.0.0",
+      "type": "library",
+      "bom-ref": "pkg:npm/ms@2.0.0",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/juice-shop/package-lock.json"
+        },
+        {
+          "name": "ResolvedUrl",
+          "value": "https://registry.npmjs.org/ms/-/ms-2.0.0.tgz"
+        },
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/juice-shop/frontend/package-lock.json"
+          }
+        ]
+      }
+    }
+  ]
+}

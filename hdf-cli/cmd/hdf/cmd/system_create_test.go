@@ -209,6 +209,183 @@ func TestSystemCreate_TargetLabelsAsSelector(t *testing.T) {
 	assert.Equal(t, "web", sel["tier"])
 }
 
+// ---- SBOM input tests ----
+
+func TestSystemCreate_FromCycloneDXSBOM(t *testing.T) {
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/juice-shop-sbom-minimal.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "-o", outFile})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	// Component name auto-detected from metadata.component.name
+	components := sys["components"].([]interface{})
+	require.Len(t, components, 1)
+	c0 := components[0].(map[string]interface{})
+	assert.Equal(t, "juice-shop", c0["name"])
+	assert.Equal(t, "application", c0["type"])
+	assert.Equal(t, "cyclonedx", c0["sbomFormat"])
+	assert.Contains(t, c0["sbomRef"], "juice-shop-sbom-minimal.json")
+	assert.Contains(t, c0["description"].(string), "19.1.1") // version extracted
+}
+
+func TestSystemCreate_FromSBOM_RequiresComponentNameWhenNoMetadata(t *testing.T) {
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/spdx-to-cyclonedx.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", sbomFile})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "component-name")
+}
+
+func TestSystemCreate_FromSBOM_WithExplicitComponentName(t *testing.T) {
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/spdx-to-cyclonedx.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "--component-name", "MyLib", "-o", outFile})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+	components := sys["components"].([]interface{})
+	c0 := components[0].(map[string]interface{})
+	assert.Equal(t, "MyLib", c0["name"])
+}
+
+func TestSystemCreate_FromURL_RequiresComponentName(t *testing.T) {
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", "https://example.com/sbom.cdx.json"})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "component-name")
+	assert.Contains(t, err.Error(), "URL")
+}
+
+func TestSystemCreate_FromURL_WithComponentName(t *testing.T) {
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", "https://artifacts.example.com/sbom/webtier.cdx.json", "--component-name", "WebTier", "-o", outFile})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+	components := sys["components"].([]interface{})
+	c0 := components[0].(map[string]interface{})
+	assert.Equal(t, "WebTier", c0["name"])
+	assert.Equal(t, "https://artifacts.example.com/sbom/webtier.cdx.json", c0["sbomRef"])
+	assert.Equal(t, "cyclonedx", c0["sbomFormat"]) // guessed from .cdx.json
+}
+
+func TestSystemAddComponent(t *testing.T) {
+	// Create initial system from results
+	resultsFile := filepath.Join(t.TempDir(), "results.json")
+	require.NoError(t, os.WriteFile(resultsFile, []byte(minimalResultsJSON), 0o600))
+	sysFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", sysFile})
+	require.NoError(t, cmd.Execute())
+
+	// Add component from SBOM
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/webgoat-sbom.json")
+	cmd2 := NewRootCmd()
+	cmd2.SetArgs([]string{"system", "add-component", "--system", sysFile, "--from", sbomFile, "--component-name", "WebGoat"})
+	require.NoError(t, cmd2.Execute())
+
+	data, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	components := sys["components"].([]interface{})
+	assert.Len(t, components, 3) // 2 from results + 1 from SBOM
+	last := components[2].(map[string]interface{})
+	assert.Equal(t, "WebGoat", last["name"])
+	assert.Equal(t, "cyclonedx", last["sbomFormat"])
+}
+
+func TestSystemAddComponent_RejectsDuplicate(t *testing.T) {
+	// Create system with a component
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/juice-shop-sbom-minimal.json")
+	sysFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "-o", sysFile})
+	require.NoError(t, cmd.Execute())
+
+	// Try adding same component name
+	cmd2 := NewRootCmd()
+	cmd2.SetArgs([]string{"system", "add-component", "--system", sysFile, "--from", sbomFile})
+	err := cmd2.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "already exists")
+}
+
+func TestSystemUpdateComponent(t *testing.T) {
+	// Create system with juice-shop component
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/juice-shop-sbom-minimal.json")
+	sysFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "-o", sysFile})
+	require.NoError(t, cmd.Execute())
+
+	// Update with webgoat SBOM (different file, same component name)
+	webgoatFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/webgoat-sbom.json")
+	cmd2 := NewRootCmd()
+	cmd2.SetArgs([]string{"system", "update-component", "--system", sysFile, "--component-name", "juice-shop", "--from", webgoatFile})
+	require.NoError(t, cmd2.Execute())
+
+	data, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	components := sys["components"].([]interface{})
+	assert.Len(t, components, 1) // still one component
+	c0 := components[0].(map[string]interface{})
+	assert.Contains(t, c0["sbomRef"], "webgoat-sbom.json") // updated ref
+}
+
+func TestSystemUpdateComponent_RejectsNonexistent(t *testing.T) {
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/juice-shop-sbom-minimal.json")
+	sysFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "-o", sysFile})
+	require.NoError(t, cmd.Execute())
+
+	cmd2 := NewRootCmd()
+	cmd2.SetArgs([]string{"system", "update-component", "--system", sysFile, "--component-name", "DoesNotExist", "--from", sbomFile})
+	err := cmd2.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
+}
+
 func TestSystemCreate_TypeMapping(t *testing.T) {
 	// Test various target type -> component type mappings
 	tests := []struct {
