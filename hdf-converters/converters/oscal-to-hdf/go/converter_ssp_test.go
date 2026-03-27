@@ -98,7 +98,7 @@ func TestConvertSSPToHDF_ComponentTypes(t *testing.T) {
 		}
 	}
 	require.NotNil(t, loggingServer)
-	assert.Equal(t, hdf.ComponentTypeApplication, loggingServer.Type)
+	assert.Equal(t, hdf.Application, loggingServer.Type)
 	assert.NotNil(t, loggingServer.Description)
 }
 
@@ -250,18 +250,18 @@ func TestNormalizeFIPSLevel(t *testing.T) {
 func TestMapOSCALComponentType(t *testing.T) {
 	tests := []struct {
 		oscalType string
-		expected  hdf.ComponentType
+		expected  hdf.Copyright
 	}{
-		{"software", hdf.ComponentTypeApplication},
-		{"this-system", hdf.ComponentTypeApplication},
-		{"service", hdf.Service},
-		{"hardware", hdf.Compute},
-		{"network", hdf.ComponentTypeNetwork},
-		{"database", hdf.ComponentTypeDatabase},
-		{"storage", hdf.Storage},
-		{"policy", hdf.ComponentTypeOther},
-		{"process", hdf.ComponentTypeOther},
-		{"guidance", hdf.ComponentTypeOther},
+		{"software", hdf.Application},
+		{"this-system", hdf.Application},
+		{"service", hdf.Application},
+		{"hardware", hdf.Host},
+		{"network", hdf.Network},
+		{"database", hdf.Database},
+		{"storage", hdf.Artifact},
+		{"policy", hdf.Application},
+		{"process", hdf.Application},
+		{"guidance", hdf.Application},
 	}
 	for _, tt := range tests {
 		t.Run(tt.oscalType, func(t *testing.T) {

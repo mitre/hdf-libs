@@ -13,7 +13,7 @@ import type {
 import {
   AuthorizationStatus,
   CategorizationLevel,
-  ComponentType,
+  BoundaryDescription,
 } from '@mitre/hdf-schema';
 import type {
   Oscal,
@@ -286,22 +286,22 @@ function sspComponentToHDFComponent(
   return comp;
 }
 
-function mapOSCALComponentType(oscalType: string): ComponentType {
+function mapOSCALComponentType(oscalType: string): BoundaryDescription {
   switch (oscalType.toLowerCase()) {
     case 'software':
     case 'this-system':
-      return ComponentType.Application;
+      return BoundaryDescription.Application;
     case 'service':
-      return ComponentType.Service;
+      return BoundaryDescription.Application;
     case 'hardware':
-      return ComponentType.Compute;
+      return BoundaryDescription.Host;
     case 'network':
-      return ComponentType.Network;
+      return BoundaryDescription.Network;
     case 'database':
-      return ComponentType.Database;
+      return BoundaryDescription.Database;
     case 'storage':
-      return ComponentType.Storage;
+      return BoundaryDescription.Artifact;
     default:
-      return ComponentType.Other;
+      return BoundaryDescription.Application;
   }
 }
