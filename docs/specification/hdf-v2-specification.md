@@ -209,6 +209,7 @@ Describes a system under assessment. A system document defines the authorization
 | authorizationDate | date | no | Date of authorization decision |
 | categorizationLevel | CategorizationLevel | no | FIPS 199 categorization |
 | boundaryDescription | string | no | System boundary narrative |
+| controlDesignations | ControlDesignation[] | no | Control inheritance declarations |
 | interconnections | Interconnection[] | no | External system connections |
 | labels | {string: string} | no | Key-value grouping metadata |
 | checksum | Checksum | no | Document integrity hash |
@@ -225,6 +226,19 @@ A discrete part of the system — an application, database, network segment, sto
 | type | ComponentType | **yes** | Component category |
 | description | string | no | Component description |
 | labels | {string: string} | no | Key-value grouping metadata |
+
+### Control Designation
+
+Declares a control's designation within the system — whether it is common (provided by another component or external system), system-specific (implemented locally), or hybrid (shared responsibility). This maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP by-component provided/inherited semantics. When `providedBy` is set, the control is provided by a local component; when `systemRef` is set, the provider is in another system's authorization boundary. When neither is set, the provider is external with no formal HDF representation (e.g. a cloud provider's physical security).
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| controlId | string | **yes** | Control identifier (e.g. "SC-7", "AC-2 (1)") |
+| designation | ControlDesignationType | **yes** | common, system-specific, or hybrid |
+| description | string | **yes** | Justification for this designation |
+| providedBy | UUID | no | componentId of local provider |
+| systemRef | URI-reference | no | Reference to external system document |
+| inheritedBy | UUID[] | no | componentIds that inherit (default: all) |
 
 ---
 
@@ -271,7 +285,7 @@ Status overrides applied after assessment (waivers, attestations, exceptions, PO
 
 ### Override
 
-A deliberate change to an assessed requirement's compliance status. Waivers grant temporary acceptance of a known risk. Attestations assert manual verification of a requirement that cannot be automatically tested. Exceptions document approved deviations from policy. POAMs track planned remediation with milestones. Each override records who authorized it, why, and when it expires. The `previousChecksum` field creates a tamper-evident chain linking each override to the document state at the time it was applied.
+A deliberate change to an assessed requirement's compliance status. Waivers grant temporary acceptance of a known risk. Attestations assert manual verification of a requirement that cannot be automatically tested. Exceptions document approved deviations from policy. POAMs track planned remediation with milestones. Inherited overrides indicate that a control is provided by another component or system (typically overriding to notApplicable or passed). Each override records who authorized it, why, and when it expires. The `previousChecksum` field creates a tamper-evident chain linking each override to the document state at the time it was applied.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -281,6 +295,7 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 | justification | string | **yes** | Reason for override |
 | authority | Identity | no | Authorizing entity |
 | expiration | date-time | no | When override expires |
+| inheritedFrom | UUID | no | componentId of local control provider |
 | previousChecksum | Checksum | no | Links to prior state (amendment chain) |
 
 ---
@@ -355,7 +370,7 @@ Impact is a float 0.0 to 1.0. Conventional mapping to severity:
 | 0.0 | informational / notApplicable |
 
 ### OverrideType
-`waiver` | `attestation` | `exception` | `poam`
+`waiver` | `attestation` | `exception` | `poam` | `inherited`
 
 ### PlanType
 `automated` | `manual` | `hybrid`
@@ -374,6 +389,9 @@ Impact is a float 0.0 to 1.0. Conventional mapping to severity:
 
 ### ComponentType
 `application` | `database` | `network` | `storage` | `compute` | `service` | `other`
+
+### ControlDesignationType
+`common` | `system-specific` | `hybrid`
 
 ### HashAlgorithm
 `sha256` | `sha384` | `sha512`

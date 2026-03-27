@@ -52,6 +52,13 @@
       },
       "description": "Logical components within the system boundary. Each component groups targets via label selectors and references applicable baselines."
     },
+    "controlDesignations": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Control_Designation"
+      },
+      "description": "Declares which controls are common, hybrid, or system-specific, and which component provides them. Maps to NIST SP 800-53 control designations and OSCAL leveraged-authorizations."
+    },
     "interconnections": {
       "type": "array",
       "items": {

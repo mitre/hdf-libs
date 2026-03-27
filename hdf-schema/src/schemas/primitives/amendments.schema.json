@@ -10,9 +10,10 @@
         "waiver",
         "attestation",
         "exception",
-        "poam"
+        "poam",
+        "inherited"
       ],
-      "description": "The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked (no status change).",
+      "description": "The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked (no status change). 'inherited': control provided by another component or system (overrides to notApplicable/passed).",
       "title": "Override Type"
     },
     "Standalone_Override": {
@@ -83,6 +84,11 @@
             "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone"
           },
           "description": "Remediation milestones (primarily for POA&M type amendments)."
+        },
+        "inheritedFrom": {
+          "type": "string",
+          "format": "uuid",
+          "description": "componentId of the local component that provides this control. Set when the provider is in the same system. Omit for external or cross-system providers; the reason field explains the source. Primarily used with type 'inherited'."
         }
       },
       "examples": [
@@ -124,6 +130,17 @@
               "status": "pending"
             }
           ]
+        },
+        {
+          "type": "inherited",
+          "requirementId": "SV-230368",
+          "baselineRef": "RHEL9-STIG",
+          "status": "notApplicable",
+          "reason": "IA-2 is a common control provided by Keycloak SSO. This application has no local authentication mechanism.",
+          "inheritedFrom": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "appliedBy": { "type": "email", "identifier": "issm@agency.gov" },
+          "appliedAt": "2026-03-26T10:00:00Z",
+          "expiresAt": "2026-09-26T00:00:00Z"
         }
       ],
       "description": "A standalone amendment that modifies a requirement's compliance status. Extends the inline Status_Override concept with requirementId and baselineRef for use outside of results documents.",

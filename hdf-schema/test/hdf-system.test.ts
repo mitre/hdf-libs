@@ -304,3 +304,174 @@ describe('system.schema.json — Interconnection', () => {
     expect(validate({ name: 'Test', externalSystem: 'Ext', foo: 'bar' })).toBe(false);
   });
 });
+
+describe('system.schema.json — Control_Designation', () => {
+  const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
+  addFormats(ajv);
+  ajv.addSchema(commonSchema);
+  ajv.addSchema(systemSchema);
+
+  const validate = ajv.compile({
+    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Control_Designation',
+  });
+
+  const minimal = {
+    controlId: 'SC-7',
+    designation: 'common',
+    description: 'Network boundary protection provided by cloud platform.',
+  };
+
+  it('should validate a minimal designation (controlId + designation + description)', () => {
+    expect(validate(minimal)).toBe(true);
+  });
+
+  it('should validate a designation with providedBy (local component UUID)', () => {
+    const desig = { ...minimal, providedBy: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' };
+    expect(validate(desig)).toBe(true);
+  });
+
+  it('should reject providedBy that is not a valid UUID', () => {
+    const desig = { ...minimal, providedBy: 'not-a-uuid' };
+    expect(validate(desig)).toBe(false);
+  });
+
+  it('should validate a designation with systemRef (cross-system provider)', () => {
+    const desig = { ...minimal, systemRef: '../network-team/waf-system.json' };
+    expect(validate(desig)).toBe(true);
+  });
+
+  it('should validate a designation with inheritedBy array of UUIDs', () => {
+    const desig = {
+      ...minimal,
+      inheritedBy: [
+        'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      ],
+    };
+    expect(validate(desig)).toBe(true);
+  });
+
+  it('should reject inheritedBy with non-UUID strings', () => {
+    const desig = { ...minimal, inheritedBy: ['not-a-uuid'] };
+    expect(validate(desig)).toBe(false);
+  });
+
+  it('should accept all valid designation enum values', () => {
+    for (const d of ['common', 'system-specific', 'hybrid']) {
+      expect(validate({ ...minimal, designation: d })).toBe(true);
+    }
+  });
+
+  it('should reject invalid designation value', () => {
+    expect(validate({ ...minimal, designation: 'delegated' })).toBe(false);
+  });
+
+  it('should reject missing controlId', () => {
+    const obj = { designation: 'common', description: 'test' };
+    expect(validate(obj)).toBe(false);
+  });
+
+  it('should reject missing designation', () => {
+    const obj = { controlId: 'SC-7', description: 'test' };
+    expect(validate(obj)).toBe(false);
+  });
+
+  it('should reject missing description', () => {
+    const obj = { controlId: 'SC-7', designation: 'common' };
+    expect(validate(obj)).toBe(false);
+  });
+
+  it('should reject unknown properties', () => {
+    expect(validate({ ...minimal, extra: 'bad' })).toBe(false);
+  });
+
+  it('should validate a full designation with all optional fields', () => {
+    const full = {
+      controlId: 'AC-2',
+      designation: 'hybrid',
+      providedBy: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+      systemRef: '../auth/keycloak-system.json',
+      inheritedBy: ['11111111-2222-3333-4444-555555555555'],
+      description: 'Account lifecycle provided by Keycloak; RBAC implemented locally.',
+    };
+    expect(validate(full)).toBe(true);
+  });
+
+  it('should validate external-only designation (no providedBy or systemRef)', () => {
+    const external = {
+      controlId: 'PE-2',
+      designation: 'common',
+      description: 'Physical access provided by AWS GovCloud per FedRAMP High authorization.',
+    };
+    expect(validate(external)).toBe(true);
+  });
+});
+
+describe('hdf-system.schema.json — controlDesignations array', () => {
+  const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
+  addFormats(ajv);
+  ajv.addSchema(commonSchema);
+  ajv.addSchema(systemSchema);
+  const validate = ajv.compile(hdfSystemSchema);
+
+  const minimalSystem = {
+    name: 'Test System',
+    components: [{ name: 'AppTier', type: 'application' }],
+  };
+
+  it('should validate a system document with controlDesignations', () => {
+    const doc = {
+      ...minimalSystem,
+      controlDesignations: [
+        {
+          controlId: 'IA-2',
+          designation: 'common',
+          description: 'SSO provides authentication.',
+        },
+      ],
+    };
+    expect(validate(doc)).toBe(true);
+  });
+
+  it('should validate a system document with empty controlDesignations array', () => {
+    const doc = { ...minimalSystem, controlDesignations: [] };
+    expect(validate(doc)).toBe(true);
+  });
+
+  it('should validate a system document without controlDesignations (optional)', () => {
+    expect(validate(minimalSystem)).toBe(true);
+  });
+
+  it('should reject controlDesignations with invalid items', () => {
+    const doc = {
+      ...minimalSystem,
+      controlDesignations: [{ controlId: 'SC-7' }], // missing designation + description
+    };
+    expect(validate(doc)).toBe(false);
+  });
+
+  it('should validate a system with multiple designations', () => {
+    const doc = {
+      ...minimalSystem,
+      controlDesignations: [
+        {
+          controlId: 'IA-2',
+          designation: 'common',
+          providedBy: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+          description: 'Authentication by SSO.',
+        },
+        {
+          controlId: 'PE-2',
+          designation: 'common',
+          description: 'Physical security by AWS.',
+        },
+        {
+          controlId: 'AC-2',
+          designation: 'hybrid',
+          description: 'Account lifecycle shared between IdP and apps.',
+        },
+      ],
+    };
+    expect(validate(doc)).toBe(true);
+  });
+});

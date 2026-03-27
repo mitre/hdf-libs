@@ -144,7 +144,7 @@ describe('amendments.schema.json — Standalone_Override', () => {
   // -- All override types --
 
   it('should accept all override types', () => {
-    for (const type of ['waiver', 'attestation', 'exception', 'poam']) {
+    for (const type of ['waiver', 'attestation', 'exception', 'poam', 'inherited']) {
       expect(validate({ ...valid, type })).toBe(true);
     }
   });
@@ -250,5 +250,67 @@ describe('amendments.schema.json — Standalone_Override', () => {
 
   it('should reject invalid expiresAt format', () => {
     expect(validate({ ...valid, expiresAt: '2026-06-30' })).toBe(false);
+  });
+
+  // -- Inherited amendment type --
+
+  it('should validate an inherited amendment with inheritedFrom', () => {
+    const inherited = {
+      ...valid,
+      type: 'inherited',
+      status: 'notApplicable',
+      reason: 'IA-2 provided by Keycloak SSO. No local authentication.',
+      inheritedFrom: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    };
+    expect(validate(inherited)).toBe(true);
+  });
+
+  it('should validate an inherited amendment without inheritedFrom (external provider)', () => {
+    const inherited = {
+      ...valid,
+      type: 'inherited',
+      status: 'notApplicable',
+      reason: 'PE-2 provided by AWS GovCloud per FedRAMP authorization.',
+    };
+    expect(validate(inherited)).toBe(true);
+  });
+
+  it('should reject inheritedFrom with invalid UUID', () => {
+    const inherited = {
+      ...valid,
+      type: 'inherited',
+      inheritedFrom: 'not-a-uuid',
+    };
+    expect(validate(inherited)).toBe(false);
+  });
+
+  it('should accept inheritedFrom on non-inherited types (field is not type-restricted)', () => {
+    const waiver = {
+      ...valid,
+      type: 'waiver',
+      inheritedFrom: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    };
+    expect(validate(waiver)).toBe(true);
+  });
+
+  it('should validate inherited amendment in a full amendments document', () => {
+    const doc = {
+      name: 'Inheritance Overrides',
+      overrides: [
+        {
+          type: 'inherited',
+          requirementId: 'SV-230368',
+          baselineRef: 'RHEL9-STIG',
+          status: 'notApplicable',
+          reason: 'IA-2 common control provided by SSO.',
+          inheritedFrom: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+          appliedBy: { type: 'email', identifier: 'issm@agency.gov' },
+          appliedAt: '2026-03-26T10:00:00Z',
+          expiresAt: '2026-09-26T00:00:00Z',
+        },
+      ],
+    };
+    const docValidate = ajv.compile(hdfAmendmentsSchema);
+    expect(docValidate(doc)).toBe(true);
   });
 });

@@ -232,7 +232,7 @@ func determinePlanType(ap *AssessmentPlan) *hdf.PlanType {
 
 	// Default to hybrid if tasks exist (indicates a planned multi-step assessment)
 	if len(ap.Tasks) > 0 {
-		pt := hdf.Hybrid
+		pt := hdf.PlanTypeHybrid
 		return &pt
 	}
 
