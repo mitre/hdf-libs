@@ -80,13 +80,21 @@ hdf-cli/hdf validate /tmp/smoke-system.json
 # Validate JSON output
 hdf-cli/hdf validate --json /tmp/smoke-results.json
 
-# Validate invalid file
-echo '{"not": "valid"}' > /tmp/smoke-invalid.json
+# Validate invalid file — errors now include line numbers for file input
+echo '{
+  "baselines": "not an array",
+  "components": [],
+  "statistics": {}
+}' > /tmp/smoke-invalid.json
 hdf-cli/hdf validate /tmp/smoke-invalid.json
-# Expected: validation error
+# Expected: "line 2: baselines: Invalid type..."
+
+# Validate invalid file with JSON output — line numbers in error objects
+hdf-cli/hdf validate --json /tmp/smoke-invalid.json
+# Expected: each error has "line": N field
 ```
 
-**Expected**: Valid docs pass, wrong-type gives schema-specific error message, invalid JSON fails with clear errors.
+**Expected**: Valid docs pass, wrong-type gives schema-specific error message, invalid JSON fails with clear errors including line numbers (file input only, not stdin).
 
 ---
 
@@ -160,29 +168,35 @@ hdf-cli/hdf query /tmp/smoke-results.json --status failed --nist SI-10
 
 ## 5. hdf diff (bead 2no6)
 
-**Story**: A team wants to see what changed between two scans of the same system.
+**Story**: A team wants to see what changed between two scans of the same system, and also compare system documents over time.
 
 ```bash
 # Convert two different fixtures for comparison
 hdf-cli/hdf convert hdf-converters/converters/cyclonedx-to-hdf/fixtures/input/minimal-vulns.json -o /tmp/smoke-diff-old.json
 hdf-cli/hdf convert $RESULTS -o /tmp/smoke-diff-new.json
 
-# Temporal diff
+# Temporal diff (results documents)
 hdf-cli/hdf diff /tmp/smoke-diff-old.json /tmp/smoke-diff-new.json
 
 # JSON output
 hdf-cli/hdf diff /tmp/smoke-diff-old.json /tmp/smoke-diff-new.json --json
 
-# System drift diff — create two system versions
-# NOTE: Known bug (bead 8xug) — hdf diff CLI does not yet support system documents.
-# The TS hdf-diff library handles systemDrift, but the CLI gates on results schema.
-# These commands will fail until 8xug is fixed.
+# System drift diff — create two system document versions
 echo '{"name":"Sys","components":[{"name":"App","type":"application","componentId":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}]}' > /tmp/smoke-sys-v1.json
-echo '{"name":"Sys","components":[{"name":"App","type":"application","componentId":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","description":"added"},{"name":"Cache","type":"application","componentId":"11111111-2222-3333-4444-555555555555"}]}' > /tmp/smoke-sys-v2.json
-hdf-cli/hdf diff /tmp/smoke-sys-v1.json /tmp/smoke-sys-v2.json 2>&1 || echo "(expected failure — bead 8xug)"
+echo '{"name":"Sys","components":[{"name":"App","type":"application","componentId":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","description":"added"},{"name":"Cache","type":"application","componentId":"11111111-2222-3333-4444-555555555555"}],"dataFlows":[{"from":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","to":"11111111-2222-3333-4444-555555555555","protocol":"TCP","port":6379}]}' > /tmp/smoke-sys-v2.json
+hdf-cli/hdf diff /tmp/smoke-sys-v1.json /tmp/smoke-sys-v2.json
+
+# System diff JSON — verify componentDiffs and dataFlowChanges
+hdf-cli/hdf diff /tmp/smoke-sys-v1.json /tmp/smoke-sys-v2.json --json
+
+# System diff summary only
+hdf-cli/hdf diff /tmp/smoke-sys-v1.json /tmp/smoke-sys-v2.json --stat
+
+# Error case: mismatched types should give a clear error
+hdf-cli/hdf diff /tmp/smoke-diff-old.json /tmp/smoke-sys-v1.json 2>&1 || echo "(expected: cannot diff results against system)"
 ```
 
-**Expected**: Temporal diff shows requirement-level changes. System drift diff shows component-level changes (new, absent, updated).
+**Expected**: Temporal diff shows requirement-level changes (fixed, regressed, etc.). System drift diff shows component-level changes (new, absent, updated) with data flow diffs. Mismatched document types produce a clear error message.
 
 ---
 
