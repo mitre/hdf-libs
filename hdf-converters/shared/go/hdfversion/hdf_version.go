@@ -286,11 +286,10 @@ func DetectHDFVersion(input []byte) (string, error) {
 		return "1", nil
 	}
 
-	// v2 has baselines + components (or legacy targets)
+	// v2 has baselines + components
 	_, hasBaselines := obj["baselines"]
 	_, hasComponents := obj["components"]
-	_, hasTargets := obj["targets"]
-	if hasBaselines && (hasComponents || hasTargets) {
+	if hasBaselines && hasComponents {
 		return "2", nil
 	}
 

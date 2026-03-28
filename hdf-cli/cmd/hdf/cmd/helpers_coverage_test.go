@@ -524,7 +524,7 @@ func TestQueryCommand_STIGIDFilter(t *testing.T) {
 	}
 	fixturePath := buildQueryFixture(t, reqs)
 
-	stdout, _, err := executeCommand("query", "--stig-id", "V-230221", fixturePath)
+	stdout, _, err := executeCommand("query", "--id", "V-230221", fixturePath)
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "V-230221")
 }

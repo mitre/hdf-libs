@@ -76,7 +76,7 @@ func resolveDetailAlias(s string) string {
 	aliases := map[string]string{
 		"r": "requirements", "requirement": "requirements",
 		"b": "baselines", "baseline": "baselines",
-		"t": "components", "target": "components", "targets": "components",
+		"t": "components",
 		"c": "components", "component": "components",
 		"g": "groups", "group": "groups",
 		"a": "assessments", "assessment": "assessments",

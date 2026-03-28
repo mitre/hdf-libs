@@ -62,10 +62,6 @@ describe('detectHDFVersion', () => {
     expect(detectHDFVersion('{"baselines":[],"components":[]}')).toBe('2');
   });
 
-  it('detects v2 with legacy targets', () => {
-    expect(detectHDFVersion('{"baselines":[],"targets":[]}')).toBe('2');
-  });
-
   it('throws for ambiguous input', () => {
     expect(() => detectHDFVersion('{"version":"1.0"}')).toThrow('Cannot determine HDF version');
   });

@@ -266,7 +266,6 @@ func TestResolveDetailAlias(t *testing.T) {
 		{"b", "baselines"},
 		{"baseline", "baselines"},
 		{"t", "components"},
-		{"target", "components"},
 		{"c", "components"},
 		{"component", "components"},
 		{"g", "groups"},

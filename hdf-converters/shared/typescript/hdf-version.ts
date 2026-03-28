@@ -39,7 +39,7 @@ export function detectHDFVersion(input: string): string {
   const obj = JSON.parse(input) as Record<string, unknown>;
 
   if ('profiles' in obj && 'platform' in obj) return '1';
-  if ('baselines' in obj && ('components' in obj || 'targets' in obj)) return '2';
+  if ('baselines' in obj && 'components' in obj) return '2';
 
   throw new Error('Cannot determine HDF version: missing expected structural fields');
 }

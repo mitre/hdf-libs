@@ -54,7 +54,7 @@ Examples:
   hdf query results.json --status failed --severity high
   hdf query results.json --cci CCI-000366
   hdf query results.json --nist "AC-2"
-  hdf query results.json --stig-id V-230221
+  hdf query results.json --id V-230221
   hdf query results.json --tag "severity:high"
   hdf query results.json --search "password"
   hdf query results.json --impact ">0.5" --status failed
@@ -90,7 +90,7 @@ Examples:
 	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by impact (e.g., \">0.5\", \">=0.7\", \"0.5\")")
 	cmd.Flags().StringVar(&localQueryCCI, "cci", "", "Filter by CCI identifier (e.g., CCI-000366)")
 	cmd.Flags().StringVar(&localQueryNIST, "nist", "", "Filter by NIST control (e.g., AC-2, CM-6*)")
-	cmd.Flags().StringVar(&localQuerySTIGID, "stig-id", "", "Filter by STIG ID (e.g., V-230221)")
+	cmd.Flags().StringVar(&localQuerySTIGID, "id", "", "Filter by requirement ID, STIG ID, GID, or group title")
 	cmd.Flags().StringVarP(&localQueryTag, "tag", "t", "", "Filter by tag key:value (e.g., severity:high)")
 	cmd.Flags().StringVar(&localQuerySearch, "search", "", "Search in title and description")
 	cmd.Flags().StringVarP(&localQueryProfile, "baseline", "p", "", "Filter by profile name")
