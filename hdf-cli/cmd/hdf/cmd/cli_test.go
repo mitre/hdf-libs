@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -88,7 +89,13 @@ func runCLITests(t *testing.T, tests []cliTest) {
 				t.Error("expected error, got nil")
 			}
 			if !tt.wantErr && err != nil {
-				t.Errorf("unexpected error: %v", err)
+				// exitCodeError is expected behavior (e.g. grep-style exit 1 for
+				// no matches, diff-style exit 1 for differences). Only real errors
+				// should fail the test.
+				var exitErr *exitCodeError
+				if !errors.As(err, &exitErr) {
+					t.Errorf("unexpected error: %v", err)
+				}
 			}
 			if tt.wantContain != "" && !strings.Contains(stdout, tt.wantContain) {
 				t.Errorf("stdout = %q, want to contain %q", stdout, tt.wantContain)

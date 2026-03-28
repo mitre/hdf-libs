@@ -120,9 +120,7 @@ func TestDiffCommand_BasicComparison(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should contain summary with correct counts
 	if !strings.Contains(stdout, "1 fixed") {
@@ -148,9 +146,7 @@ func TestDiffCommand_IdenticalFiles(t *testing.T) {
 	path := writeHDFFixture(t, syntheticHDFBefore())
 
 	stdout, stderr, err := executeCommand("diff", path, path)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// All 4 requirements should be unchanged
 	if !strings.Contains(stdout, "4 unchanged") {
@@ -169,9 +165,7 @@ func TestDiffCommand_JSONOutput(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--json", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	var output map[string]interface{}
 	if err := json.Unmarshal([]byte(stdout), &output); err != nil {
@@ -238,9 +232,7 @@ func TestDiffCommand_FilterFixed(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--fixed", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should show REQ-001 (fixed)
 	if !strings.Contains(stdout, "REQ-001") {
@@ -262,9 +254,7 @@ func TestDiffCommand_FilterRegressed(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--regressed", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should show REQ-002 (regressed)
 	if !strings.Contains(stdout, "REQ-002") {
@@ -274,6 +264,18 @@ func TestDiffCommand_FilterRegressed(t *testing.T) {
 	// Should NOT show fixed
 	if strings.Contains(stdout, "REQ-001") {
 		t.Errorf("--regressed should not show REQ-001 (fixed), got:\n%s", stdout)
+	}
+}
+
+// allowExitCode tolerates exitCodeError (expected for diff returning 1 on differences).
+func allowExitCode(t *testing.T, err error, stderr string) {
+	t.Helper()
+	if err == nil {
+		return
+	}
+	var exitErr *exitCodeError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("unexpected error: %v (stderr: %s)", err, stderr)
 	}
 }
 
@@ -293,8 +295,29 @@ func requireExitCode(t *testing.T, err error, wantCode int) {
 	}
 }
 
-// TestDiffCommand_ExitCode_Differences verifies that --exit-code returns exit code 1
-// when any differences exist (GNU diff compatible behavior).
+// TestDiffCommand_DefaultExitCode_Differences verifies exit code 1 by default
+// when differences exist (GNU diff convention).
+func TestDiffCommand_DefaultExitCode_Differences(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFBefore())
+	newPath := writeHDFFixture(t, syntheticHDFAfter())
+
+	_, _, err := executeCommand("diff", oldPath, newPath)
+	requireExitCode(t, err, exitDifferences)
+}
+
+// TestDiffCommand_DefaultExitCode_Identical verifies exit code 0 by default
+// when files are identical.
+func TestDiffCommand_DefaultExitCode_Identical(t *testing.T) {
+	path := writeHDFFixture(t, syntheticHDFBefore())
+
+	_, _, err := executeCommand("diff", path, path)
+	if err != nil {
+		t.Errorf("expected exit 0 for identical files, got: %v", err)
+	}
+}
+
+// TestDiffCommand_ExitCode_Differences verifies --exit-code flag (now a no-op,
+// basic exit codes are always on).
 func TestDiffCommand_ExitCode_Differences(t *testing.T) {
 	oldPath := writeHDFFixture(t, syntheticHDFBefore())
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
@@ -459,9 +482,7 @@ func TestDiffCommand_MarkdownOutput(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--format", "markdown", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command with --format markdown failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Markdown tables have | delimiters and --- header separators
 	if !strings.Contains(stdout, "|") {
@@ -479,9 +500,7 @@ func TestDiffCommand_UpdatedState(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFUpdated())
 
 	stdout, stderr, err := executeCommand("diff", "--json", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	var output map[string]interface{}
 	if err := json.Unmarshal([]byte(stdout), &output); err != nil {
@@ -500,9 +519,7 @@ func TestDiffCommand_FilterNew(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--new", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should show REQ-005 (new)
 	if !strings.Contains(stdout, "REQ-005") {
@@ -521,9 +538,7 @@ func TestDiffCommand_FilterAbsent(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--absent", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should show REQ-004 (absent)
 	if !strings.Contains(stdout, "REQ-004") {
@@ -695,9 +710,7 @@ func TestDiffCommand_SystemFlag(t *testing.T) {
 	sysPath := writeJSONFixture(t, syntheticSystemDoc())
 
 	stdout, stderr, err := executeCommand("diff", "--system", sysPath, oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff --system failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should contain component names
 	if !strings.Contains(stdout, "WebTier") {
@@ -720,9 +733,7 @@ func TestDiffCommand_SystemFlag_JSON(t *testing.T) {
 	sysPath := writeJSONFixture(t, syntheticSystemDoc())
 
 	stdout, stderr, err := executeCommand("diff", "--json", "--system", sysPath, oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff --system --json failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	var output map[string]interface{}
 	if err := json.Unmarshal([]byte(stdout), &output); err != nil {
@@ -767,9 +778,7 @@ func TestDiffCommand_GroupByBaseline(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
 
 	stdout, stderr, err := executeCommand("diff", "--group-by", "baseline", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff --group-by baseline failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should show baseline names as group labels
 	if !strings.Contains(stdout, "RHEL9-STIG") {
@@ -800,9 +809,7 @@ func TestDiffCommand_SystemFlag_ComplianceValues(t *testing.T) {
 	sysPath := writeJSONFixture(t, syntheticSystemDoc())
 
 	stdout, stderr, err := executeCommand("diff", "--json", "--system", sysPath, oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff --system --json failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	var output struct {
 		ComponentSummaries []struct {

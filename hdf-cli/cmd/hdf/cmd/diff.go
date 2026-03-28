@@ -291,11 +291,11 @@ func computeDiffExitCode(summary diffSummary, flags *diffFlags) error {
 		}
 		return nil
 	}
-	if flags.exitCode {
-		code := computeBasicExitCode(summary)
-		if code != 0 {
-			return &exitCodeError{code: code, message: "differences found"}
-		}
+	// Basic exit codes are always active (GNU diff convention):
+	// 0 = identical, 1 = differences found
+	code := computeBasicExitCode(summary)
+	if code != 0 {
+		return &exitCodeError{code: code, message: "differences found"}
 	}
 	return nil
 }

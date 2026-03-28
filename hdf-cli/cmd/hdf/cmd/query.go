@@ -193,13 +193,16 @@ func outputQueryResults(matches []queryResult) error {
 	if jsonOutput {
 		output, _ := json.MarshalIndent(matches, "", "  ")
 		fmt.Println(string(output))
+		if len(matches) == 0 {
+			return &exitCodeError{code: 1, message: "no matching requirements"}
+		}
 		return nil
 	}
 
 	// Human-readable output
 	if len(matches) == 0 {
 		fmt.Println("No matching requirements found.")
-		return nil
+		return &exitCodeError{code: 1, message: "no matching requirements"}
 	}
 
 	fmt.Printf("Found %d matching requirement(s):\n\n", len(matches))

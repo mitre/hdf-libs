@@ -556,18 +556,14 @@ func TestDiffCoverage_SbomDiff_CLI(t *testing.T) {
 
 	t.Run("sbom table output", func(t *testing.T) {
 		stdout, stderr, err := executeCommand("diff", "--sbom", oldPath, newPath)
-		if err != nil {
-			t.Fatalf("diff --sbom failed: %v (stderr: %s)", err, stderr)
-		}
+		allowExitCode(t, err, stderr)
 		assert.Contains(t, stdout, "SBOM Comparison")
 		assert.Contains(t, stdout, "Summary:")
 	})
 
 	t.Run("sbom json output", func(t *testing.T) {
 		stdout, stderr, err := executeCommand("diff", "--sbom", "-f", "json", oldPath, newPath)
-		if err != nil {
-			t.Fatalf("diff --sbom --json failed: %v (stderr: %s)", err, stderr)
-		}
+		allowExitCode(t, err, stderr)
 		var parsed map[string]interface{}
 		require.NoError(t, json.Unmarshal([]byte(stdout), &parsed))
 		assert.Contains(t, parsed, "packageDiffs")
@@ -638,9 +634,7 @@ func TestDiffCoverage_NameOnly_CLI(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--name-only", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff --name-only failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should list changed requirement IDs
 	assert.Contains(t, stdout, "REQ-001") // fixed
@@ -728,9 +722,7 @@ func TestDiffCoverage_GroupByLabel_CLI(t *testing.T) {
 	newPath := writeHDFFixture(t, newFixture)
 
 	stdout, stderr, err := executeCommand("diff", "--group-by", "env", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff --group-by env failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	assert.Contains(t, stdout, "production")
 	assert.Contains(t, stdout, "Compliance:")

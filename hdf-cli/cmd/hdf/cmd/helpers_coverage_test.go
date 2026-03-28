@@ -459,7 +459,11 @@ func TestQueryCommand_NoMatches(t *testing.T) {
 	fixturePath := buildQueryFixture(t, reqs)
 
 	stdout, _, err := executeCommand("query", "--status", "error", fixturePath)
-	require.NoError(t, err)
+	// Grep convention: exit 1 when no matches found
+	require.Error(t, err)
+	var exitErr *exitCodeError
+	require.ErrorAs(t, err, &exitErr)
+	assert.Equal(t, 1, exitErr.ExitCode())
 	assert.Contains(t, stdout, "No matching requirements found")
 }
 
@@ -607,9 +611,12 @@ func TestQueryCommand_BaselineFilter(t *testing.T) {
 	}
 	fixturePath := buildQueryFixture(t, reqs)
 
-	// Should find nothing when filtering for a non-matching baseline name
+	// Should find nothing when filtering for a non-matching baseline name (exit 1)
 	stdout, _, err := executeCommand("query", "--baseline", "Nonexistent*", fixturePath)
-	require.NoError(t, err)
+	require.Error(t, err)
+	var exitErr *exitCodeError
+	require.ErrorAs(t, err, &exitErr)
+	assert.Equal(t, 1, exitErr.ExitCode())
 	assert.Contains(t, stdout, "No matching requirements found")
 }
 
