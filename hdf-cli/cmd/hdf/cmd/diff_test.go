@@ -862,3 +862,317 @@ func TestDiffCommand_HelpOutput_SystemFlag(t *testing.T) {
 		t.Errorf("expected '--group-by' in help output, got:\n%s", stdout)
 	}
 }
+
+// --- System document diff tests (systemDrift mode) ---
+
+// UUIDs for system diff test fixtures.
+const (
+	testUUIDWebTier  = "aaaaaaaa-1111-4000-a000-000000000001"
+	testUUIDDatabase = "bbbbbbbb-2222-4000-a000-000000000002"
+	testUUIDCache    = "cccccccc-3333-4000-a000-000000000003"
+	testUUIDSameID   = "dddddddd-4444-4000-a000-000000000004"
+)
+
+// syntheticSystemOld builds a system document with two components and one data flow.
+func syntheticSystemOld() map[string]interface{} {
+	return map[string]interface{}{
+		"name": "Portal-Prod",
+		"components": []interface{}{
+			map[string]interface{}{
+				"name":        "WebTier",
+				"type":        "application",
+				"componentId": testUUIDWebTier,
+				"description": "Frontend web server",
+			},
+			map[string]interface{}{
+				"name":        "Database",
+				"type":        "database",
+				"componentId": testUUIDDatabase,
+				"description": "PostgreSQL primary",
+			},
+		},
+		"dataFlows": []interface{}{
+			map[string]interface{}{
+				"from":     testUUIDWebTier,
+				"to":       testUUIDDatabase,
+				"protocol": "JDBC",
+				"port":     5432,
+			},
+		},
+	}
+}
+
+// syntheticSystemNew builds a modified system document:
+//   - WebTier: description changed (updated)
+//   - Database: removed (absent)
+//   - CacheLayer: added (new)
+//   - Data flow changed: port updated, new flow added
+func syntheticSystemNew() map[string]interface{} {
+	return map[string]interface{}{
+		"name": "Portal-Prod",
+		"components": []interface{}{
+			map[string]interface{}{
+				"name":        "WebTier",
+				"type":        "application",
+				"componentId": testUUIDWebTier,
+				"description": "Frontend web server (updated)",
+			},
+			map[string]interface{}{
+				"name":        "CacheLayer",
+				"type":        "application",
+				"componentId": testUUIDCache,
+				"description": "Redis cache tier",
+			},
+		},
+		"dataFlows": []interface{}{
+			map[string]interface{}{
+				"from":     testUUIDWebTier,
+				"to":       testUUIDDatabase,
+				"protocol": "JDBC",
+				"port":     5433,
+			},
+			map[string]interface{}{
+				"from":     testUUIDWebTier,
+				"to":       testUUIDCache,
+				"protocol": "TCP",
+				"port":     6379,
+			},
+		},
+	}
+}
+
+// TestDiffCommand_SystemDrift_BasicComparison verifies that diffing two system
+// documents auto-detects systemDrift mode and classifies components.
+func TestDiffCommand_SystemDrift_BasicComparison(t *testing.T) {
+	oldPath := writeJSONFixture(t, syntheticSystemOld())
+	newPath := writeJSONFixture(t, syntheticSystemNew())
+
+	stdout, stderr, err := executeCommand("diff", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	// Should contain component names
+	if !strings.Contains(stdout, "WebTier") {
+		t.Errorf("expected 'WebTier' in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "Database") {
+		t.Errorf("expected 'Database' in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "CacheLayer") {
+		t.Errorf("expected 'CacheLayer' in output, got:\n%s", stdout)
+	}
+
+	// Should indicate systemDrift mode
+	if !strings.Contains(stdout, "System") {
+		t.Errorf("expected system-related label in output, got:\n%s", stdout)
+	}
+}
+
+// TestDiffCommand_SystemDrift_JSON verifies JSON output for system document diffs.
+func TestDiffCommand_SystemDrift_JSON(t *testing.T) {
+	oldPath := writeJSONFixture(t, syntheticSystemOld())
+	newPath := writeJSONFixture(t, syntheticSystemNew())
+
+	stdout, stderr, err := executeCommand("diff", "--json", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	var output map[string]interface{}
+	if jsonErr := json.Unmarshal([]byte(stdout), &output); jsonErr != nil {
+		t.Fatalf("diff --json output is not valid JSON: %v\noutput: %s", jsonErr, stdout)
+	}
+
+	// Check comparison mode
+	if mode, ok := output["comparisonMode"].(string); !ok || mode != "systemDrift" {
+		t.Errorf("expected comparisonMode='systemDrift', got %v", output["comparisonMode"])
+	}
+
+	// Check component diffs
+	diffs, ok := output["componentDiffs"].([]interface{})
+	if !ok {
+		t.Fatalf("expected 'componentDiffs' array, got: %v", output["componentDiffs"])
+	}
+	if len(diffs) != 3 {
+		t.Errorf("expected 3 component diffs, got %d", len(diffs))
+	}
+
+	// Check summary
+	summary, ok := output["summary"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected 'summary' to be a map")
+	}
+	if total, ok := summary["total"].(float64); !ok || int(total) != 3 {
+		t.Errorf("expected total=3, got %v", summary["total"])
+	}
+
+	// Check data flow changes in extensions
+	extensions, _ := output["extensions"].(map[string]interface{})
+	if extensions == nil {
+		t.Fatal("expected 'extensions' with data flow changes")
+	}
+	dataFlowChanges, _ := extensions["dataFlowChanges"].([]interface{})
+	if len(dataFlowChanges) == 0 {
+		t.Error("expected non-empty dataFlowChanges")
+	}
+}
+
+// TestDiffCommand_SystemDrift_MatchByComponentId verifies that components are
+// matched by componentId even when names differ.
+func TestDiffCommand_SystemDrift_MatchByComponentId(t *testing.T) {
+	oldSys := map[string]interface{}{
+		"name": "Test",
+		"components": []interface{}{
+			map[string]interface{}{
+				"name":        "OldName",
+				"type":        "application",
+				"componentId": testUUIDSameID,
+			},
+		},
+	}
+	newSys := map[string]interface{}{
+		"name": "Test",
+		"components": []interface{}{
+			map[string]interface{}{
+				"name":        "NewName",
+				"type":        "application",
+				"componentId": testUUIDSameID,
+			},
+		},
+	}
+
+	oldPath := writeJSONFixture(t, oldSys)
+	newPath := writeJSONFixture(t, newSys)
+
+	stdout, stderr, err := executeCommand("diff", "--json", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	var output map[string]interface{}
+	if jsonErr := json.Unmarshal([]byte(stdout), &output); jsonErr != nil {
+		t.Fatalf("invalid JSON: %v", jsonErr)
+	}
+
+	diffs, _ := output["componentDiffs"].([]interface{})
+	if len(diffs) != 1 {
+		t.Fatalf("expected 1 component diff (matched by ID), got %d", len(diffs))
+	}
+
+	// Should use the new name
+	first, _ := diffs[0].(map[string]interface{})
+	if name, ok := first["name"].(string); !ok || name != "NewName" {
+		t.Errorf("expected name='NewName', got %v", first["name"])
+	}
+}
+
+// TestDiffCommand_SystemDrift_Identical verifies exit code 0 for identical system docs.
+func TestDiffCommand_SystemDrift_Identical(t *testing.T) {
+	path := writeJSONFixture(t, syntheticSystemOld())
+
+	_, _, err := executeCommand("diff", path, path)
+	if err != nil {
+		t.Errorf("expected exit 0 for identical system docs, got: %v", err)
+	}
+}
+
+// TestDiffCommand_SystemDrift_ExitCode verifies exit code 1 when system docs differ.
+func TestDiffCommand_SystemDrift_ExitCode(t *testing.T) {
+	oldPath := writeJSONFixture(t, syntheticSystemOld())
+	newPath := writeJSONFixture(t, syntheticSystemNew())
+
+	_, _, err := executeCommand("diff", oldPath, newPath)
+	requireExitCode(t, err, exitDifferences)
+}
+
+// TestDiffCommand_SystemDrift_DataFlowChanges verifies data flow diffs are reported.
+func TestDiffCommand_SystemDrift_DataFlowChanges(t *testing.T) {
+	oldPath := writeJSONFixture(t, syntheticSystemOld())
+	newPath := writeJSONFixture(t, syntheticSystemNew())
+
+	stdout, stderr, err := executeCommand("diff", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	// Should show data flow information
+	if !strings.Contains(stdout, "Data Flow") {
+		t.Errorf("expected 'Data Flow' in output, got:\n%s", stdout)
+	}
+}
+
+// TestDiffCommand_SystemDrift_NameOnly verifies --name-only shows changed component names.
+func TestDiffCommand_SystemDrift_NameOnly(t *testing.T) {
+	oldPath := writeJSONFixture(t, syntheticSystemOld())
+	newPath := writeJSONFixture(t, syntheticSystemNew())
+
+	stdout, stderr, err := executeCommand("diff", "--name-only", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	// WebTier is updated, Database is absent, CacheLayer is new — all should appear
+	if !strings.Contains(stdout, "WebTier") {
+		t.Errorf("expected 'WebTier' in --name-only output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "Database") {
+		t.Errorf("expected 'Database' in --name-only output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "CacheLayer") {
+		t.Errorf("expected 'CacheLayer' in --name-only output, got:\n%s", stdout)
+	}
+}
+
+// TestDiffCommand_SystemDrift_Stat verifies --stat shows summary counts for system diffs.
+func TestDiffCommand_SystemDrift_Stat(t *testing.T) {
+	oldPath := writeJSONFixture(t, syntheticSystemOld())
+	newPath := writeJSONFixture(t, syntheticSystemNew())
+
+	stdout, stderr, err := executeCommand("diff", "--stat", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	if !strings.Contains(stdout, "1 new") {
+		t.Errorf("expected '1 new' in --stat output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "1 absent") {
+		t.Errorf("expected '1 absent' in --stat output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "1 updated") {
+		t.Errorf("expected '1 updated' in --stat output, got:\n%s", stdout)
+	}
+}
+
+// --- Mixed document type error tests ---
+
+// TestDiffCommand_MismatchedTypes rejects diffing a results doc against a system doc.
+func TestDiffCommand_MismatchedTypes(t *testing.T) {
+	resultsPath := writeHDFFixture(t, syntheticHDFBefore())
+	systemPath := writeJSONFixture(t, syntheticSystemOld())
+
+	_, _, err := executeCommand("diff", resultsPath, systemPath)
+	if err == nil {
+		t.Fatal("expected error when diffing results against system document")
+	}
+	if !strings.Contains(err.Error(), "cannot diff") {
+		t.Errorf("expected 'cannot diff' error, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "same type") {
+		t.Errorf("expected 'same type' hint, got: %v", err)
+	}
+}
+
+// TestDiffCommand_UnsupportedType rejects diffing baseline documents (not yet supported).
+func TestDiffCommand_UnsupportedType(t *testing.T) {
+	baseline := map[string]interface{}{
+		"name":     "test-baseline",
+		"checksum": map[string]interface{}{"algorithm": "sha256", "value": "abc"},
+		"requirements": []interface{}{
+			map[string]interface{}{
+				"id": "REQ-1", "impact": 0.5,
+				"descriptions": []interface{}{map[string]interface{}{"label": "default", "data": "test"}},
+				"tags":         map[string]interface{}{}, "code": "", "refs": []interface{}{},
+				"sourceLocation": map[string]interface{}{"line": 1, "ref": "test.rb"},
+			},
+		},
+	}
+	path := writeJSONFixture(t, baseline)
+
+	_, _, err := executeCommand("diff", path, path)
+	if err == nil {
+		t.Fatal("expected error when diffing baseline documents")
+	}
+	if !strings.Contains(err.Error(), "does not support") {
+		t.Errorf("expected 'does not support' error, got: %v", err)
+	}
+}

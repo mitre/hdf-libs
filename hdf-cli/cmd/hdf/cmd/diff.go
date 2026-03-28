@@ -9,6 +9,7 @@ import (
 
 	"github.com/mitre/hdf-cli/pkg/diff/sbom"
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
 
@@ -60,6 +61,12 @@ const (
 	diffUpdated   diffState = "updated"
 	diffNew       diffState = "new"
 	diffAbsent    diffState = "absent"
+
+	// Output format and SBOM state constants.
+	formatJSON   = "json"
+	stateAdded   = "added"
+	stateRemoved = "removed"
+	stateUpdated = "updated"
 )
 
 // diffRequirement holds the comparison result for a single requirement.
@@ -126,8 +133,11 @@ func NewDiffCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "diff <old-file> <new-file>",
-		Short: "Compare two HDF results files",
-		Long: `Compare two HDF results files and show what changed between them.
+		Short: "Compare two HDF documents (results or system)",
+		Long: `Compare two HDF documents and show what changed between them.
+
+Supports results documents (temporal mode) and system documents (systemDrift mode).
+Document type is auto-detected; system documents are compared by component matching.
 
 Requirements are matched by ID across the two documents and classified as:
   fixed      - was failing, now passing
@@ -163,7 +173,8 @@ Examples:
   hdf diff scan-before.json scan-after.json --name-only   # changed requirement IDs only
   hdf diff old.json new.json --system system.json         # component-aware comparison
   hdf diff old.json new.json --group-by baseline          # group by baseline name
-  hdf diff --sbom old.cdx.json new.cdx.json               # SBOM comparison mode`,
+  hdf diff --sbom old.cdx.json new.cdx.json               # SBOM comparison mode
+  hdf diff old-system.json new-system.json                # System document comparison`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDiff(cmd, args, &flags)
@@ -202,7 +213,36 @@ func runDiff(_ *cobra.Command, args []string, flags *diffFlags) error {
 	oldFile := args[0]
 	newFile := args[1]
 
-	oldResults, newResults, err := loadDiffInputs(oldFile, newFile)
+	// Read both files raw and detect document types before parsing
+	oldData, err := readInputFile(oldFile)
+	if err != nil {
+		return err
+	}
+	newData, err := readInputFile(newFile)
+	if err != nil {
+		return err
+	}
+
+	oldType := detectHDFDocumentType(oldData)
+	newType := detectHDFDocumentType(newData)
+
+	// System drift mode: both inputs are system documents
+	if oldType == string(validators.TypeSystem) && newType == string(validators.TypeSystem) {
+		return runSystemDiff(oldData, newData, flags, oldFile, newFile)
+	}
+
+	// Reject mismatched document types with a clear error
+	if oldType != newType {
+		return fmt.Errorf("cannot diff %s document (%s) against %s document (%s) — both files must be the same type",
+			oldType, oldFile, newType, newFile)
+	}
+
+	// Only results documents are supported for requirement-level diff
+	if oldType != string(validators.TypeResults) {
+		return fmt.Errorf("hdf diff does not support %s documents — only results and system documents can be compared", oldType)
+	}
+
+	oldResults, newResults, err := loadDiffInputsFromData(oldData, newData, oldFile, newFile)
 	if err != nil {
 		return err
 	}
@@ -229,15 +269,12 @@ func runDiff(_ *cobra.Command, args []string, flags *diffFlags) error {
 }
 
 // loadDiffInputs reads and parses the old and new HDF results files.
+//
+//nolint:unparam // used in coverage tests; first return value used by callers
 func loadDiffInputs(oldFile, newFile string) (hdf.HdfResults, hdf.HdfResults, error) {
 	oldData, err := readInputFile(oldFile)
 	if err != nil {
 		printError(err.Error())
-		return hdf.HdfResults{}, hdf.HdfResults{}, err
-	}
-	oldResults, err := parseHDFResults(oldData)
-	if err != nil {
-		printError(fmt.Sprintf("Failed to parse old HDF file: %v", err))
 		return hdf.HdfResults{}, hdf.HdfResults{}, err
 	}
 	newData, err := readInputFile(newFile)
@@ -245,9 +282,19 @@ func loadDiffInputs(oldFile, newFile string) (hdf.HdfResults, hdf.HdfResults, er
 		printError(err.Error())
 		return hdf.HdfResults{}, hdf.HdfResults{}, err
 	}
+	return loadDiffInputsFromData(oldData, newData, oldFile, newFile)
+}
+
+// loadDiffInputsFromData parses pre-read data into HDF results.
+func loadDiffInputsFromData(oldData, newData []byte, oldFile, newFile string) (hdf.HdfResults, hdf.HdfResults, error) {
+	oldResults, err := parseHDFResults(oldData)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to parse old HDF file (%s): %v", oldFile, err))
+		return hdf.HdfResults{}, hdf.HdfResults{}, err
+	}
 	newResults, err := parseHDFResults(newData)
 	if err != nil {
-		printError(fmt.Sprintf("Failed to parse new HDF file: %v", err))
+		printError(fmt.Sprintf("Failed to parse new HDF file (%s): %v", newFile, err))
 		return hdf.HdfResults{}, hdf.HdfResults{}, err
 	}
 	return oldResults, newResults, nil
@@ -260,7 +307,7 @@ func renderDiffOutput(filtered diffResult, flags *diffFlags, oldFile, newFile st
 		outputDiffNameOnly(filtered)
 	case flags.stat:
 		outputDiffSummary(filtered.Summary)
-	case jsonOutput || flags.format == "json":
+	case jsonOutput || flags.format == formatJSON:
 		if err := outputDiffJSON(filtered); err != nil {
 			return err
 		}
@@ -929,7 +976,7 @@ func runSbomDiff(args []string, flags *diffFlags) error {
 		return nil
 	}
 
-	if jsonOutput || flags.format == "json" {
+	if jsonOutput || flags.format == formatJSON {
 		return outputSbomJSON(result)
 	}
 
@@ -954,21 +1001,21 @@ func outputSbomTable(result *sbom.DiffResult, oldFile, newFile string) {
 	for _, d := range result.PackageDiffs {
 		prefix := " "
 		switch d.State {
-		case "added":
+		case stateAdded:
 			prefix = "+"
-		case "removed":
+		case stateRemoved:
 			prefix = "-"
-		case "updated":
+		case stateUpdated:
 			prefix = "~"
 		}
 
 		version := ""
 		switch d.State {
-		case "updated":
+		case stateUpdated:
 			version = fmt.Sprintf("%s → %s", d.OldVersion, d.NewVersion)
-		case "added":
+		case stateAdded:
 			version = d.NewVersion
-		case "removed":
+		case stateRemoved:
 			version = d.OldVersion
 		}
 
@@ -977,6 +1024,507 @@ func outputSbomTable(result *sbom.DiffResult, oldFile, newFile string) {
 
 	fmt.Printf("\nSummary: %d added, %d removed, %d updated, %d unchanged\n",
 		result.Added, result.Removed, result.Updated, result.Unchanged)
+}
+
+// --- System document diff (systemDrift mode) ---
+
+// systemDiffComponent holds the comparison result for a single component.
+type systemDiffComponent struct {
+	Name         string                  `json:"name"`
+	State        diffState               `json:"state"`
+	FieldChanges []systemDiffFieldChange `json:"fieldChanges,omitempty"`
+}
+
+// systemDiffFieldChange represents a single field change on a component or system.
+type systemDiffFieldChange struct {
+	Op       string      `json:"op"`   // "add", "remove", "replace"
+	Path     string      `json:"path"` // field name
+	OldValue interface{} `json:"oldValue,omitempty"`
+	NewValue interface{} `json:"newValue,omitempty"`
+}
+
+// systemDiffDataFlow represents a data flow change.
+type systemDiffDataFlow struct {
+	State string                 `json:"state"` // "added", "removed", "updated"
+	Flow  map[string]interface{} `json:"flow"`
+}
+
+// systemDiffResult is the full output of a system diff operation.
+type systemDiffResult struct {
+	FormatVersion  string                 `json:"formatVersion"`
+	ComparisonMode string                 `json:"comparisonMode"`
+	Summary        diffSummary            `json:"summary"`
+	ComponentDiffs []systemDiffComponent  `json:"componentDiffs"`
+	Extensions     map[string]interface{} `json:"extensions,omitempty"`
+}
+
+// systemComponentTrackedFields are the fields tracked for component-level changes.
+var systemComponentTrackedFields = []string{
+	"type", "description", "baselineRefs", "inputOverrides", "sbomRef", "targetSelector",
+}
+
+// systemTopLevelFields are the fields tracked for system-level changes.
+var systemTopLevelFields = []string{
+	"authorizationStatus", "categorizationLevel", "description",
+}
+
+// runSystemDiff compares two system documents in systemDrift mode.
+func runSystemDiff(oldData, newData []byte, flags *diffFlags, oldFile, newFile string) error {
+	// Parse into generic maps (no schema validation — system docs don't need
+	// the HDF results pipeline, but we validate they're valid JSON)
+	var oldSys, newSys map[string]interface{}
+	if err := json.Unmarshal(oldData, &oldSys); err != nil {
+		return fmt.Errorf("failed to parse old system document: %w", err)
+	}
+	if err := json.Unmarshal(newData, &newSys); err != nil {
+		return fmt.Errorf("failed to parse new system document: %w", err)
+	}
+
+	result := compareSystemDocuments(oldSys, newSys)
+
+	if flags.quiet {
+		flags.exitCode = true
+	}
+	if !flags.quiet {
+		if err := renderSystemDiffOutput(result, flags, oldFile, newFile); err != nil {
+			return err
+		}
+	}
+
+	return computeSystemDiffExitCode(result.Summary, flags)
+}
+
+// compareSystemDocuments compares two system documents and produces a systemDiffResult.
+func compareSystemDocuments(oldSys, newSys map[string]interface{}) systemDiffResult {
+	oldComponents := toMapSlice(oldSys["components"])
+	newComponents := toMapSlice(newSys["components"])
+
+	// Match components: componentId first, then name
+	pairs := matchSystemComponents(oldComponents, newComponents)
+	var componentDiffs []systemDiffComponent
+
+	for _, p := range pairs {
+		switch {
+		case p.oldComp != nil && p.newComp != nil:
+			changes := computeFieldChanges(p.oldComp, p.newComp, systemComponentTrackedFields)
+			state := diffUnchanged
+			if len(changes) > 0 {
+				state = diffUpdated
+			}
+			componentDiffs = append(componentDiffs, systemDiffComponent{
+				Name: p.name, State: state, FieldChanges: changes,
+			})
+		case p.oldComp != nil:
+			componentDiffs = append(componentDiffs, systemDiffComponent{
+				Name: p.name, State: diffAbsent,
+			})
+		case p.newComp != nil:
+			componentDiffs = append(componentDiffs, systemDiffComponent{
+				Name: p.name, State: diffNew,
+			})
+		}
+	}
+
+	sort.Slice(componentDiffs, func(i, j int) bool {
+		return componentDiffs[i].Name < componentDiffs[j].Name
+	})
+
+	// Build summary
+	summary := buildSystemDiffSummary(componentDiffs)
+
+	// Extensions: system field changes + data flow changes
+	extensions := make(map[string]interface{})
+
+	sysFieldChanges := computeFieldChanges(oldSys, newSys, systemTopLevelFields)
+	if len(sysFieldChanges) > 0 {
+		extensions["systemFieldChanges"] = sysFieldChanges
+	}
+
+	dataFlowChanges := diffSystemDataFlows(oldSys, newSys)
+	if len(dataFlowChanges) > 0 {
+		extensions["dataFlowChanges"] = dataFlowChanges
+	}
+
+	var ext map[string]interface{}
+	if len(extensions) > 0 {
+		ext = extensions
+	}
+
+	return systemDiffResult{
+		FormatVersion:  "1.0.0",
+		ComparisonMode: "systemDrift",
+		Summary:        summary,
+		ComponentDiffs: componentDiffs,
+		Extensions:     ext,
+	}
+}
+
+// systemComponentPair holds a matched pair of old/new components.
+type systemComponentPair struct {
+	name    string
+	oldComp map[string]interface{}
+	newComp map[string]interface{}
+}
+
+// matchSystemComponents matches components by componentId first, then by name.
+func matchSystemComponents(
+	oldComponents, newComponents []map[string]interface{},
+) []systemComponentPair {
+	matched := make(map[int]bool)    // indices of matched new components
+	oldMatched := make(map[int]bool) // indices of matched old components
+	var pairs []systemComponentPair
+
+	// First pass: match by componentId
+	matchByComponentID(oldComponents, newComponents, &pairs, oldMatched, matched)
+
+	// Second pass: match remaining by name
+	matchByName(oldComponents, newComponents, &pairs, oldMatched, matched)
+
+	// Collect unmatched as absent/new
+	collectUnmatched(oldComponents, newComponents, &pairs, oldMatched, matched)
+
+	return pairs
+}
+
+// matchByComponentID matches old and new components by their componentId field.
+func matchByComponentID(
+	oldComponents, newComponents []map[string]interface{},
+	pairs *[]systemComponentPair, oldMatched, newMatched map[int]bool,
+) {
+	newByID := make(map[string]int)
+	for i, c := range newComponents {
+		if id, ok := c["componentId"].(string); ok && id != "" {
+			newByID[id] = i
+		}
+	}
+
+	for i, oldC := range oldComponents {
+		oldID, _ := oldC["componentId"].(string)
+		if oldID == "" {
+			continue
+		}
+		if ni, ok := newByID[oldID]; ok {
+			newC := newComponents[ni]
+			name := stringVal(newC, "name")
+			if name == "" {
+				name = stringVal(oldC, "name")
+			}
+			if name == "" {
+				name = oldID
+			}
+			*pairs = append(*pairs, systemComponentPair{name: name, oldComp: oldC, newComp: newC})
+			newMatched[ni] = true
+			oldMatched[i] = true
+		}
+	}
+}
+
+// matchByName matches remaining unmatched components by name.
+func matchByName(
+	oldComponents, newComponents []map[string]interface{},
+	pairs *[]systemComponentPair, oldMatched, newMatched map[int]bool,
+) {
+	newByName := make(map[string]int)
+	for i, c := range newComponents {
+		if newMatched[i] {
+			continue
+		}
+		if name, ok := c["name"].(string); ok && name != "" {
+			newByName[name] = i
+		}
+	}
+
+	for i, oldC := range oldComponents {
+		if oldMatched[i] {
+			continue
+		}
+		name := stringVal(oldC, "name")
+		if name == "" {
+			continue
+		}
+		if ni, ok := newByName[name]; ok {
+			*pairs = append(*pairs, systemComponentPair{name: name, oldComp: oldC, newComp: newComponents[ni]})
+			newMatched[ni] = true
+			oldMatched[i] = true
+			delete(newByName, name)
+		}
+	}
+}
+
+// collectUnmatched adds unmatched old components (absent) and new components (new) to pairs.
+func collectUnmatched(
+	oldComponents, newComponents []map[string]interface{},
+	pairs *[]systemComponentPair, oldMatched, newMatched map[int]bool,
+) {
+	for i, oldC := range oldComponents {
+		if oldMatched[i] {
+			continue
+		}
+		name := stringVal(oldC, "name")
+		if name == "" {
+			name = fmt.Sprintf("component-%d", i)
+		}
+		*pairs = append(*pairs, systemComponentPair{name: name, oldComp: oldC})
+	}
+
+	for i, newC := range newComponents {
+		if newMatched[i] {
+			continue
+		}
+		name := stringVal(newC, "name")
+		if name == "" {
+			name = fmt.Sprintf("component-%d", i)
+		}
+		*pairs = append(*pairs, systemComponentPair{name: name, newComp: newC})
+	}
+}
+
+// computeFieldChanges computes field-level diffs for tracked fields using JSON comparison.
+func computeFieldChanges(
+	oldObj, newObj map[string]interface{},
+	trackedFields []string,
+) []systemDiffFieldChange {
+	var changes []systemDiffFieldChange
+
+	for _, field := range trackedFields {
+		oldVal, oldOK := oldObj[field]
+		newVal, newOK := newObj[field]
+
+		oldJSON, _ := json.Marshal(oldVal)
+		newJSON, _ := json.Marshal(newVal)
+
+		if string(oldJSON) != string(newJSON) {
+			switch {
+			case !oldOK && newOK:
+				changes = append(changes, systemDiffFieldChange{Op: "add", Path: field, NewValue: newVal})
+			case oldOK && !newOK:
+				changes = append(changes, systemDiffFieldChange{Op: "remove", Path: field, OldValue: oldVal})
+			default:
+				changes = append(changes, systemDiffFieldChange{Op: "replace", Path: field, OldValue: oldVal, NewValue: newVal})
+			}
+		}
+	}
+
+	return changes
+}
+
+// diffSystemDataFlows diffs data flows between two system documents.
+// Flows are keyed by from→to.
+func diffSystemDataFlows(oldSys, newSys map[string]interface{}) []systemDiffDataFlow {
+	oldFlows := toMapSlice(oldSys["dataFlows"])
+	newFlows := toMapSlice(newSys["dataFlows"])
+
+	if len(oldFlows) == 0 && len(newFlows) == 0 {
+		return nil
+	}
+
+	flowKey := func(f map[string]interface{}) string {
+		from, _ := f["from"].(string)
+		to, _ := f["to"].(string)
+		if to == "" {
+			toJSON, _ := json.Marshal(f["to"])
+			to = string(toJSON)
+		}
+		return from + "→" + to
+	}
+
+	oldMap := make(map[string]map[string]interface{})
+	for _, f := range oldFlows {
+		oldMap[flowKey(f)] = f
+	}
+	newMap := make(map[string]map[string]interface{})
+	for _, f := range newFlows {
+		newMap[flowKey(f)] = f
+	}
+
+	allKeys := make(map[string]bool)
+	for k := range oldMap {
+		allKeys[k] = true
+	}
+	for k := range newMap {
+		allKeys[k] = true
+	}
+
+	sortedKeys := make([]string, 0, len(allKeys))
+	for k := range allKeys {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+
+	var changes []systemDiffDataFlow
+	for _, key := range sortedKeys {
+		oldF, inOld := oldMap[key]
+		newF, inNew := newMap[key]
+
+		switch {
+		case inOld && inNew:
+			oldJSON, _ := json.Marshal(oldF)
+			newJSON, _ := json.Marshal(newF)
+			if string(oldJSON) != string(newJSON) {
+				changes = append(changes, systemDiffDataFlow{State: stateUpdated, Flow: newF})
+			}
+		case inOld:
+			changes = append(changes, systemDiffDataFlow{State: stateRemoved, Flow: oldF})
+		case inNew:
+			changes = append(changes, systemDiffDataFlow{State: stateAdded, Flow: newF})
+		}
+	}
+
+	return changes
+}
+
+// buildSystemDiffSummary computes summary counts from component diffs.
+func buildSystemDiffSummary(diffs []systemDiffComponent) diffSummary {
+	summary := diffSummary{Total: len(diffs)}
+	for _, d := range diffs {
+		switch d.State { //nolint:exhaustive // system diffs only produce new/absent/unchanged/updated
+		case diffNew:
+			summary.New++
+		case diffAbsent:
+			summary.Absent++
+		case diffUnchanged:
+			summary.Unchanged++
+		case diffUpdated:
+			summary.Updated++
+		}
+	}
+	return summary
+}
+
+// computeSystemDiffExitCode returns an exit code for system diffs.
+func computeSystemDiffExitCode(summary diffSummary, flags *diffFlags) error {
+	return computeDiffExitCode(summary, flags)
+}
+
+// renderSystemDiffOutput renders system diff output in the requested format.
+func renderSystemDiffOutput(result systemDiffResult, flags *diffFlags, oldFile, newFile string) error {
+	switch {
+	case flags.nameOnly:
+		outputSystemDiffNameOnly(result)
+	case flags.stat:
+		outputSystemDiffSummary(result.Summary, result.Extensions)
+	case jsonOutput || flags.format == formatJSON:
+		return outputSystemDiffJSON(result)
+	case flags.format == "markdown":
+		outputSystemDiffMarkdown(result, oldFile, newFile)
+	default:
+		outputSystemDiffTable(result, oldFile, newFile)
+	}
+	return nil
+}
+
+func outputSystemDiffJSON(result systemDiffResult) error {
+	output, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(output))
+	return nil
+}
+
+func outputSystemDiffTable(result systemDiffResult, oldFile, newFile string) {
+	fmt.Printf("System Comparison: %s → %s\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
+	fmt.Println()
+
+	fmt.Println("Components:")
+	for _, cd := range result.ComponentDiffs {
+		prefix := statePrefix(cd.State)
+		stateLabel := fmt.Sprintf("(%s)", cd.State)
+		fmt.Printf("  %s %-30s %s\n", prefix, sanitizeOutput(cd.Name), stateLabel)
+
+		for _, fc := range cd.FieldChanges {
+			fmt.Printf("      %s %s\n", fc.Op, sanitizeOutput(fc.Path))
+		}
+	}
+
+	fmt.Println()
+	outputSystemDiffSummary(result.Summary, result.Extensions)
+}
+
+func outputSystemDiffMarkdown(result systemDiffResult, oldFile, newFile string) {
+	fmt.Printf("## System Comparison: %s → %s\n\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
+
+	fmt.Println("| Status | Component | State | Changes |")
+	fmt.Println("|--------|-----------|-------|---------|")
+
+	for _, cd := range result.ComponentDiffs {
+		prefix := statePrefix(cd.State)
+		changesStr := "-"
+		if len(cd.FieldChanges) > 0 {
+			fields := make([]string, 0, len(cd.FieldChanges))
+			for _, fc := range cd.FieldChanges {
+				fields = append(fields, fc.Path)
+			}
+			changesStr = strings.Join(fields, ", ")
+		}
+		fmt.Printf("| %s | %s | %s | %s |\n",
+			prefix, sanitizeOutput(cd.Name), cd.State, sanitizeOutput(changesStr))
+	}
+
+	fmt.Println()
+	outputSystemDiffSummary(result.Summary, result.Extensions)
+}
+
+func outputSystemDiffSummary(summary diffSummary, extensions map[string]interface{}) {
+	parts := []string{
+		fmt.Sprintf("%d new", summary.New),
+		fmt.Sprintf("%d absent", summary.Absent),
+		fmt.Sprintf("%d unchanged", summary.Unchanged),
+		fmt.Sprintf("%d updated", summary.Updated),
+	}
+	fmt.Printf("Summary: %s (%d total)\n", strings.Join(parts, ", "), summary.Total)
+
+	// Show data flow change counts if present
+	if extensions != nil {
+		if dfChanges, ok := extensions["dataFlowChanges"].([]systemDiffDataFlow); ok && len(dfChanges) > 0 {
+			added, removed, updated := 0, 0, 0
+			for _, df := range dfChanges {
+				switch df.State {
+				case stateAdded:
+					added++
+				case stateRemoved:
+					removed++
+				case stateUpdated:
+					updated++
+				}
+			}
+			fmt.Printf("Data Flows: %d added, %d removed, %d updated\n", added, removed, updated)
+		}
+	}
+}
+
+func outputSystemDiffNameOnly(result systemDiffResult) {
+	for _, cd := range result.ComponentDiffs {
+		if cd.State != diffUnchanged {
+			fmt.Println(sanitizeOutput(cd.Name))
+		}
+	}
+}
+
+// toMapSlice safely converts an interface{} to []map[string]interface{}.
+func toMapSlice(v interface{}) []map[string]interface{} {
+	arr, ok := v.([]interface{})
+	if !ok {
+		return nil
+	}
+	result := make([]map[string]interface{}, 0, len(arr))
+	for _, item := range arr {
+		if m, ok := item.(map[string]interface{}); ok {
+			result = append(result, m)
+		}
+	}
+	return result
+}
+
+// stringVal extracts a string value from a map, returning "" if not present or not a string.
+//
+//nolint:unparam // key varies by call site intent; extracting only "name" is incidental
+func stringVal(m map[string]interface{}, key string) string {
+	v, ok := m[key].(string)
+	if !ok {
+		return ""
+	}
+	return v
 }
 
 // outputComponentSummaries prints component summaries in human-readable format.
