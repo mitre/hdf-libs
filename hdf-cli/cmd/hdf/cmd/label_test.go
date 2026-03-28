@@ -224,3 +224,42 @@ func TestLabelRemoveCommand(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestLabelSet_ComponentId(t *testing.T) {
+	t.Run("stamps componentId on all components", func(t *testing.T) {
+		fixture := createLabelTestFixture(t)
+		_, _, err := executeCommand("label", "set", fixture, "--component-id", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+		require.NoError(t, err)
+
+		data, err := os.ReadFile(fixture)
+		require.NoError(t, err)
+		var doc map[string]interface{}
+		require.NoError(t, json.Unmarshal(data, &doc))
+		components := doc["components"].([]interface{})
+		for _, cRaw := range components {
+			comp := cRaw.(map[string]interface{})
+			assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", comp["componentId"])
+		}
+	})
+
+	t.Run("generate-component-id assigns unique UUIDs", func(t *testing.T) {
+		fixture := createLabelTestFixture(t)
+		_, _, err := executeCommand("label", "set", fixture, "--generate-component-id")
+		require.NoError(t, err)
+
+		data, err := os.ReadFile(fixture)
+		require.NoError(t, err)
+		var doc map[string]interface{}
+		require.NoError(t, json.Unmarshal(data, &doc))
+		components := doc["components"].([]interface{})
+		ids := make(map[string]bool)
+		for _, cRaw := range components {
+			comp := cRaw.(map[string]interface{})
+			id, ok := comp["componentId"].(string)
+			require.True(t, ok, "componentId should be set")
+			assert.Len(t, id, 36, "should be a UUID")
+			assert.False(t, ids[id], "each component should get a unique ID")
+			ids[id] = true
+		}
+	})
+}

@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -59,12 +60,16 @@ are overwritten. The file is modified in-place unless --output is specified.
 Examples:
   hdf label set results.json system=Portal
   hdf label set results.json env=prod team=security
-  hdf label set results.json env=prod -o labeled.json`,
-		Args: cobra.MinimumNArgs(2),
+  hdf label set results.json env=prod -o labeled.json
+  hdf label set results.json --component-id aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+  hdf label set results.json --generate-component-id`,
+		Args: cobra.MinimumNArgs(1),
 		RunE: runLabelSet,
 	}
 
 	cmd.Flags().StringP("output", "o", "", "Write to a different file instead of modifying in-place")
+	cmd.Flags().String("component-id", "", "Set componentId on all components")
+	cmd.Flags().Bool("generate-component-id", false, "Generate a unique componentId for each component")
 
 	return cmd
 }
@@ -144,23 +149,70 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 	filePath := args[0]
 	labelPairs := args[1:]
 
-	labels, err := parseLabelsFlag(labelPairs)
-	if err != nil {
-		return err
-	}
-
 	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	result, err := applyLabels(data, labels)
-	if err != nil {
-		return err
+	result := data
+
+	// Apply key=value labels if provided
+	if len(labelPairs) > 0 {
+		labels, parseErr := parseLabelsFlag(labelPairs)
+		if parseErr != nil {
+			return parseErr
+		}
+		result, err = applyLabels(result, labels)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Apply --component-id or --generate-component-id
+	componentID, _ := cmd.Flags().GetString("component-id")
+	generateCID, _ := cmd.Flags().GetBool("generate-component-id")
+	if componentID != "" || generateCID {
+		result, err = applyComponentIDs(result, componentID, generateCID)
+		if err != nil {
+			return err
+		}
 	}
 
 	outputPath, _ := cmd.Flags().GetString("output")
 	return writeLabelOutput(result, filePath, outputPath)
+}
+
+// applyComponentIDs stamps componentId on all components in the JSON document.
+// If fixedID is non-empty, all components get that ID. If generate is true,
+// each component gets a unique UUID.
+func applyComponentIDs(data []byte, fixedID string, generate bool) ([]byte, error) {
+	var doc map[string]interface{}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	componentsRaw, ok := doc["components"]
+	if !ok {
+		return data, nil
+	}
+	components, ok := componentsRaw.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("components field is not an array")
+	}
+
+	for _, cRaw := range components {
+		comp, ok := cRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if generate {
+			comp["componentId"] = uuid.New().String()
+		} else if fixedID != "" {
+			comp["componentId"] = fixedID
+		}
+	}
+
+	return json.MarshalIndent(doc, "", "  ")
 }
 
 func runLabelRemove(cmd *cobra.Command, args []string) error {

@@ -42,6 +42,7 @@ func NewConvertCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
 	cmd.Flags().StringSlice("labels", nil, "Labels to apply to all targets (key=value pairs, e.g., --labels system=Portal,environment=production)")
+	cmd.Flags().String("component-id", "", "Set componentId on all components in the output")
 
 	// Converter-specific flags
 	AddOSCALFlags(cmd)
@@ -161,6 +162,16 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 			return fmt.Errorf("failed to apply labels: %w", err)
 		}
 		printDebug("Applied %d labels to output", len(labels))
+	}
+
+	// Apply --component-id if provided
+	componentID, _ := cmd.Flags().GetString("component-id")
+	if componentID != "" {
+		output, err = applyComponentIDs(output, componentID, false)
+		if err != nil {
+			return fmt.Errorf("failed to apply component-id: %w", err)
+		}
+		printDebug("Applied componentId %s to output", componentID)
 	}
 
 	// Write output

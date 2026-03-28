@@ -538,6 +538,42 @@ func TestConverterCoverage_ConvertWithInvalidLabels(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid --labels")
 }
 
+func TestConverterCoverage_ConvertWithComponentId(t *testing.T) {
+	sarifJSON := `{
+		"$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+		"version": "2.1.0",
+		"runs": [{
+			"tool": {"driver": {"name": "cid-test", "rules": []}},
+			"results": []
+		}]
+	}`
+
+	tmpDir := t.TempDir()
+	inputFile := filepath.Join(tmpDir, "scan.json")
+	require.NoError(t, os.WriteFile(inputFile, []byte(sarifJSON), 0o600))
+
+	outputFile := filepath.Join(tmpDir, "out.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{
+		"convert", "--from", "sarif", "--to", "hdf",
+		inputFile, "-o", outputFile,
+		"--component-id", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+	})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(outputFile)
+	require.NoError(t, err)
+
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &doc))
+	if components, ok := doc["components"].([]interface{}); ok && len(components) > 0 {
+		comp := components[0].(map[string]interface{})
+		assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", comp["componentId"])
+	}
+}
+
 // ---------------------------------------------------------------------------
 // convert.go — missing input file
 // ---------------------------------------------------------------------------
