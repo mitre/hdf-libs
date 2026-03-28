@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
@@ -91,40 +92,58 @@ func runValidate(_ *cobra.Command, args []string) error {
 	}
 
 	// Validate based on type
-	var validationErr error
+	var validationResult *validators.ValidationResult
 	switch schemaType {
 	case "results":
-		_, validationErr = parseHDFResults(data)
+		_, err := parseHDFResults(data)
+		if err != nil {
+			validationResult = &validators.ValidationResult{
+				Valid:  false,
+				Errors: []validators.ValidationError{{Field: "(parse)", Description: err.Error()}},
+			}
+		}
 	case "baseline":
-		_, validationErr = parseHDFBaseline(data)
+		_, err := parseHDFBaseline(data)
+		if err != nil {
+			validationResult = &validators.ValidationResult{
+				Valid:  false,
+				Errors: []validators.ValidationError{{Field: "(parse)", Description: err.Error()}},
+			}
+		}
 	case "comparison", "system", "plan", "amendments", "evidence-package":
 		result := validators.Validate(data, validators.SchemaType(schemaType))
 		if !result.Valid {
-			validationErr = fmt.Errorf("schema validation failed: %s", result.Error())
+			validationResult = &result
 		}
 	default:
-		printError(fmt.Sprintf("Unknown schema type: %s", schemaType),
-			"Use --type=results|baseline|comparison|system|plan|amendments|evidence-package")
-		return fmt.Errorf("unknown schema type: %s", schemaType)
+		fmt.Fprintf(os.Stderr, "Unknown schema type: %s\n", schemaType)
+		fmt.Fprintf(os.Stderr, "  Use --type=results|baseline|comparison|system|plan|amendments|evidence-package\n")
+		return &exitCodeError{code: 1, message: fmt.Sprintf("unknown schema type: %s", schemaType)}
 	}
 
-	if validationErr != nil {
+	if validationResult != nil && !validationResult.Valid {
 		if jsonOutput {
 			result := map[string]interface{}{
-				"valid": false,
-				"file":  displayName,
-				"type":  schemaType,
-				"error": validationErr.Error(),
+				"valid":  false,
+				"file":   displayName,
+				"type":   schemaType,
+				"errors": validationResult.Errors,
 			}
 			output, _ := json.MarshalIndent(result, "", "  ")
 			fmt.Println(string(output))
 		} else {
-			hint := fmt.Sprintf("Ensure the file conforms to the HDF %s schema", schemaType)
-			printError(fmt.Sprintf("Validation failed for %s", displayName),
-				fmt.Sprintf("Error: %v", validationErr),
-				hint)
+			fmt.Fprintf(os.Stderr, "✗ %s — not a valid HDF %s document\n", displayName, schemaType)
+			fmt.Fprintf(os.Stderr, "\n  Errors:\n")
+			for _, e := range validationResult.Errors {
+				if e.Field != "" && e.Field != "(parse)" {
+					fmt.Fprintf(os.Stderr, "    %s: %s\n", e.Field, e.Description)
+				} else {
+					fmt.Fprintf(os.Stderr, "    %s\n", e.Description)
+				}
+			}
+			fmt.Fprintf(os.Stderr, "\n  Hint: ensure the file conforms to the HDF %s schema\n", schemaType)
 		}
-		return validationErr
+		return &exitCodeError{code: 1, message: fmt.Sprintf("validation failed for %s", displayName)}
 	}
 
 	// Success

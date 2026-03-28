@@ -147,11 +147,8 @@ func initConfig() {
 }
 
 // printError prints an error message to stderr with optional suggestions.
-func printError(msg string, suggestions ...string) {
+func printError(msg string, _ ...string) {
 	fmt.Fprintln(os.Stderr, "Error:", msg)
-	for _, s := range suggestions {
-		fmt.Fprintln(os.Stderr, "  →", s)
-	}
 }
 
 // printDebug prints debug information if debug mode is enabled.
