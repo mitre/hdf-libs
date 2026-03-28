@@ -268,6 +268,11 @@ func printDataFlows(doc map[string]interface{}) {
 		return
 	}
 	fmt.Printf("\nData Flows (%d):\n", len(flows))
+	printDataFlowList(flows)
+}
+
+// printDataFlowList prints individual data flow entries. Shared by system info and list.
+func printDataFlowList(flows []interface{}) {
 	for _, fRaw := range flows {
 		flow, ok := fRaw.(map[string]interface{})
 		if !ok {

@@ -204,6 +204,58 @@ func TestListErrorCases(t *testing.T) {
 	})
 }
 
+func TestListSystemDataFlows(t *testing.T) {
+	sysJSON := `{
+		"name": "Portal-Prod",
+		"components": [
+			{"name": "WebTier", "type": "application", "componentId": "comp-1"},
+			{"name": "DB", "type": "database", "componentId": "comp-2"}
+		],
+		"dataFlows": [
+			{"from": "comp-1", "to": "comp-2", "protocol": "JDBC", "port": 5432, "description": "Web to database"},
+			{"from": "comp-2", "to": "comp-1", "protocol": "JDBC", "description": "Query results"}
+		]
+	}`
+	path := filepath.Join(t.TempDir(), "system.json")
+	require.NoError(t, os.WriteFile(path, []byte(sysJSON), 0o600))
+
+	t.Run("detail dataFlows shows flows", func(t *testing.T) {
+		stdout, _, err := executeCommand("list", path, "--detail", "dataFlows")
+		require.NoError(t, err)
+		assert.Contains(t, stdout, "Data Flows: 2")
+		assert.Contains(t, stdout, "comp-1")
+		assert.Contains(t, stdout, "comp-2")
+		assert.Contains(t, stdout, "JDBC")
+	})
+
+	t.Run("detail dataFlows JSON output", func(t *testing.T) {
+		stdout, _, err := executeCommand("list", path, "--detail", "dataFlows", "--json")
+		require.NoError(t, err)
+		assert.Contains(t, stdout, "comp-1")
+	})
+
+	t.Run("alias d maps to dataFlows", func(t *testing.T) {
+		stdout, _, err := executeCommand("list", path, "--detail", "d")
+		require.NoError(t, err)
+		assert.Contains(t, stdout, "Data Flows: 2")
+	})
+
+	t.Run("detail components on system doc", func(t *testing.T) {
+		stdout, _, err := executeCommand("list", path, "--detail", "components")
+		require.NoError(t, err)
+		assert.Contains(t, stdout, "WebTier")
+		assert.Contains(t, stdout, "DB")
+	})
+
+	t.Run("system summary without detail", func(t *testing.T) {
+		stdout, _, err := executeCommand("list", path)
+		require.NoError(t, err)
+		assert.Contains(t, stdout, "Portal-Prod")
+		assert.Contains(t, stdout, "Components")
+		assert.Contains(t, stdout, "Data Flows")
+	})
+}
+
 func TestResolveDetailAlias(t *testing.T) {
 	tests := []struct {
 		input string
@@ -223,6 +275,9 @@ func TestResolveDetailAlias(t *testing.T) {
 		{"assessment", "assessments"},
 		{"o", "overrides"},
 		{"override", "overrides"},
+		{"d", "dataFlows"},
+		{"dataflow", "dataFlows"},
+		{"dataflows", "dataFlows"},
 		{"p", "baselines"}, // legacy alias
 		{"unknown", "unknown"},
 	}

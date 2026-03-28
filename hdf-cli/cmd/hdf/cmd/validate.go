@@ -119,9 +119,10 @@ func runValidate(_ *cobra.Command, args []string) error {
 			output, _ := json.MarshalIndent(result, "", "  ")
 			fmt.Println(string(output))
 		} else {
+			hint := fmt.Sprintf("Ensure the file conforms to the HDF %s schema", schemaType)
 			printError(fmt.Sprintf("Validation failed for %s", displayName),
 				fmt.Sprintf("Error: %v", validationErr),
-				"Ensure the file conforms to the HDF schema")
+				hint)
 		}
 		return validationErr
 	}

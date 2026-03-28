@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
 
@@ -80,6 +81,7 @@ func resolveDetailAlias(s string) string {
 		"g": "groups", "group": "groups",
 		"a": "assessments", "assessment": "assessments",
 		"o": "overrides", "override": "overrides",
+		"d": "dataFlows", "dataflow": "dataFlows", "dataflows": "dataFlows",
 		"p": "baselines", // legacy alias
 	}
 	if canonical, ok := aliases[s]; ok {
@@ -92,6 +94,12 @@ func runList(_ *cobra.Command, filename, detail string) error {
 	data, err := readInputFile(filename)
 	if err != nil {
 		return err
+	}
+
+	// Detect document type to dispatch correctly
+	docType := detectHDFDocumentType(data)
+	if docType == string(validators.TypeSystem) {
+		return runListSystem(data, detail)
 	}
 
 	results, err := parseHDFResults(data)
@@ -114,6 +122,103 @@ func runList(_ *cobra.Command, filename, detail string) error {
 	default:
 		return fmt.Errorf("unknown detail section: %s\nValid sections for results: requirements, baselines, components", detail)
 	}
+}
+
+func runListSystem(data []byte, detail string) error {
+	var doc map[string]interface{}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return fmt.Errorf("failed to parse system document: %w", err)
+	}
+
+	if detail == "" {
+		return listSystemSummary(doc)
+	}
+
+	section := resolveDetailAlias(strings.ToLower(detail))
+	switch section {
+	case "components":
+		return listSystemComponents(doc)
+	case "dataFlows":
+		return listSystemDataFlows(doc)
+	default:
+		return fmt.Errorf("unknown detail section: %s\nValid sections for system: components, dataFlows", detail)
+	}
+}
+
+func listSystemSummary(doc map[string]interface{}) error {
+	name, _ := doc["name"].(string)
+	components, _ := doc["components"].([]interface{})
+	flows, _ := doc["dataFlows"].([]interface{})
+
+	if jsonOutput {
+		summary := map[string]interface{}{
+			"name":       name,
+			"components": len(components),
+			"dataFlows":  len(flows),
+		}
+		if owner, ok := doc["owner"].(map[string]interface{}); ok {
+			summary["owner"] = owner
+		}
+		output, _ := json.MarshalIndent(summary, "", "  ")
+		fmt.Println(string(output))
+		return nil
+	}
+
+	fmt.Printf("System: %s\n", sanitizeOutput(name))
+	fmt.Printf("Components:   %d\n", len(components))
+	fmt.Printf("Data Flows:   %d\n", len(flows))
+	if owner, ok := doc["owner"].(map[string]interface{}); ok {
+		if id, ok := owner["identifier"].(string); ok {
+			fmt.Printf("Owner:        %s\n", sanitizeOutput(id))
+		}
+	}
+	return nil
+}
+
+func listSystemComponents(doc map[string]interface{}) error {
+	components, _ := doc["components"].([]interface{})
+
+	if jsonOutput {
+		output, _ := json.MarshalIndent(components, "", "  ")
+		fmt.Println(string(output))
+		return nil
+	}
+
+	if len(components) == 0 {
+		fmt.Println("No components defined in this system document.")
+		return nil
+	}
+
+	fmt.Printf("Components: %d\n\n", len(components))
+	for _, cRaw := range components {
+		comp, ok := cRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name, _ := comp["name"].(string)
+		compType, _ := comp["type"].(string)
+		fmt.Printf("  [%s] %s\n", sanitizeOutput(compType), sanitizeOutput(name))
+	}
+	return nil
+}
+
+func listSystemDataFlows(doc map[string]interface{}) error {
+	flows, _ := doc["dataFlows"].([]interface{})
+
+	if jsonOutput {
+		output, _ := json.MarshalIndent(flows, "", "  ")
+		fmt.Println(string(output))
+		return nil
+	}
+
+	if len(flows) == 0 {
+		fmt.Println("No data flows defined in this system document.")
+		return nil
+	}
+
+	fmt.Printf("Data Flows: %d\n\n", len(flows))
+	printDataFlowList(flows)
+	return nil
 }
 
 func listSummary(results hdf.HdfResults) error {
