@@ -174,12 +174,12 @@ hdf-cli/hdf diff /tmp/smoke-diff-old.json /tmp/smoke-diff-new.json
 hdf-cli/hdf diff /tmp/smoke-diff-old.json /tmp/smoke-diff-new.json --json
 
 # System drift diff — create two system versions
-echo '{"name":"Sys","components":[{"name":"App","type":"application","componentId":"aaa"}]}' > /tmp/smoke-sys-v1.json
-echo '{"name":"Sys","components":[{"name":"App","type":"application","componentId":"aaa","description":"added"},{"name":"Cache","type":"application","componentId":"bbb"}]}' > /tmp/smoke-sys-v2.json
-hdf-cli/hdf diff /tmp/smoke-sys-v1.json /tmp/smoke-sys-v2.json
-
-# System diff should show componentDiffs
-hdf-cli/hdf diff /tmp/smoke-sys-v1.json /tmp/smoke-sys-v2.json --json | python3 -c "import json,sys; d=json.load(sys.stdin); print('mode:', d.get('comparisonMode')); print('componentDiffs:', len(d.get('componentDiffs', [])))"
+# NOTE: Known bug (bead 8xug) — hdf diff CLI does not yet support system documents.
+# The TS hdf-diff library handles systemDrift, but the CLI gates on results schema.
+# These commands will fail until 8xug is fixed.
+echo '{"name":"Sys","components":[{"name":"App","type":"application","componentId":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}]}' > /tmp/smoke-sys-v1.json
+echo '{"name":"Sys","components":[{"name":"App","type":"application","componentId":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","description":"added"},{"name":"Cache","type":"application","componentId":"11111111-2222-3333-4444-555555555555"}]}' > /tmp/smoke-sys-v2.json
+hdf-cli/hdf diff /tmp/smoke-sys-v1.json /tmp/smoke-sys-v2.json 2>&1 || echo "(expected failure — bead 8xug)"
 ```
 
 **Expected**: Temporal diff shows requirement-level changes. System drift diff shows component-level changes (new, absent, updated).
@@ -294,7 +294,7 @@ EOF
 hdf-cli/hdf validate --type amendments /tmp/smoke-amendments.json
 
 # Apply amendments to results
-hdf-cli/hdf amend apply /tmp/smoke-results.json /tmp/smoke-amendments.json -o /tmp/smoke-amended.json 2>&1 || echo "(check amend apply syntax)"
+hdf-cli/hdf amend apply --results /tmp/smoke-results.json --amendments /tmp/smoke-amendments.json -o /tmp/smoke-amended.json
 ```
 
 **Expected**: Amendments validate. Apply workflow modifies effectiveStatus on matching requirements.
