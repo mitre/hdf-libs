@@ -233,8 +233,7 @@ hdf-cli/hdf system set /tmp/smoke-sys-created.json --unset name
 # Expected: error about required field
 
 # Create system from CycloneDX SBOM (not a vuln report)
-hdf-cli/hdf system create --from hdf-converters/converters/cyclonedx-to-hdf/fixtures/input/dropwizard-vulns.json \
-  --name "From SBOM" --component-name "Dropwizard" -o /tmp/smoke-sys-sbom.json
+hdf-cli/hdf system create --from hdf-converters/converters/cyclonedx-to-hdf/fixtures/input/dropwizard-vulns.json --name "From SBOM" --component-name "Dropwizard" -o /tmp/smoke-sys-sbom.json
 python3 -c "import json; d=json.load(open('/tmp/smoke-sys-sbom.json')); print('components:', len(d.get('components', [])))"
 
 # Add a component from another SBOM

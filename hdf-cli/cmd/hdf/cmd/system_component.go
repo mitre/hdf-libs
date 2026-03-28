@@ -14,6 +14,7 @@ func newSystemAddComponentCmd() *cobra.Command {
 		fromFile      string
 		componentName string
 		outputPath    string
+		embed         bool
 	)
 
 	cmd := &cobra.Command{
@@ -24,9 +25,9 @@ metadata from a CycloneDX or SPDX SBOM file.
 
 Examples:
   hdf system add-component --system system.json --from sbom.cdx.json --component-name AuthService
-  hdf system add-component --system system.json --from sbom.cdx.json --component-name AuthService -o updated.json`,
+  hdf system add-component --system system.json --from sbom.cdx.json --component-name AuthService --embed`,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return runSystemAddComponent(systemFile, fromFile, componentName, outputPath)
+			return runSystemAddComponent(systemFile, fromFile, componentName, outputPath, embed)
 		},
 	}
 
@@ -34,6 +35,7 @@ Examples:
 	cmd.Flags().StringVar(&fromFile, "from", "", "CycloneDX or SPDX SBOM file (required)")
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name (default: from SBOM metadata)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: overwrite --system)")
+	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
 
 	_ = cmd.MarkFlagRequired("system")
 	_ = cmd.MarkFlagRequired("from")
@@ -47,6 +49,7 @@ func newSystemUpdateComponentCmd() *cobra.Command {
 		fromFile      string
 		componentName string
 		outputPath    string
+		embed         bool
 	)
 
 	cmd := &cobra.Command{
@@ -58,9 +61,9 @@ are updated from the new SBOM.
 
 Examples:
   hdf system update-component --system system.json --component-name WebTier --from sbom-new.cdx.json
-  hdf system update-component --system system.json --component-name WebTier --from sbom-new.cdx.json -o updated.json`,
+  hdf system update-component --system system.json --component-name WebTier --from sbom-new.cdx.json --embed`,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath)
+			return runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath, embed)
 		},
 	}
 
@@ -68,6 +71,7 @@ Examples:
 	cmd.Flags().StringVar(&fromFile, "from", "", "CycloneDX or SPDX SBOM file (required)")
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name to update (required)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: overwrite --system)")
+	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
 
 	_ = cmd.MarkFlagRequired("system")
 	_ = cmd.MarkFlagRequired("from")
@@ -76,7 +80,7 @@ Examples:
 	return cmd
 }
 
-func runSystemAddComponent(systemFile, fromFile, componentName, outputPath string) error {
+func runSystemAddComponent(systemFile, fromFile, componentName, outputPath string, embed bool) error {
 	// Load existing system
 	sysData, err := os.ReadFile(systemFile) // #nosec G304
 	if err != nil {
@@ -130,6 +134,9 @@ func runSystemAddComponent(systemFile, fromFile, componentName, outputPath strin
 		if ver := extractSBOMComponentVersion(sbomDoc, sbomFormat); ver != "" {
 			comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
 		}
+		if embed {
+			comp["sbom"] = sbomDoc
+		}
 	}
 
 	// Append to components
@@ -143,7 +150,7 @@ func runSystemAddComponent(systemFile, fromFile, componentName, outputPath strin
 	return writeSystemJSON(sysDoc, outputPath, componentName, "added")
 }
 
-func runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath string) error {
+func runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath string, embed bool) error {
 	// Load existing system
 	sysData, err := os.ReadFile(systemFile) // #nosec G304
 	if err != nil {
@@ -176,6 +183,9 @@ func runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath st
 			if sbomDoc != nil {
 				if ver := extractSBOMComponentVersion(sbomDoc, sbomFormat); ver != "" {
 					comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
+				}
+				if embed {
+					comp["sbom"] = sbomDoc
 				}
 			}
 			components[i] = comp

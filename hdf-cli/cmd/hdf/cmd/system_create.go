@@ -20,6 +20,7 @@ func newSystemCreateCmd() *cobra.Command {
 		ownerEmail    string
 		systemID      string
 		description   string
+		embed         bool
 	)
 
 	cmd := &cobra.Command{
@@ -44,6 +45,7 @@ Examples:
 				ownerEmail:    ownerEmail,
 				systemID:      systemID,
 				description:   description,
+				embed:         embed,
 			}
 			return runSystemCreate(opts)
 		},
@@ -56,6 +58,7 @@ Examples:
 	cmd.Flags().StringVar(&ownerEmail, "owner", "", "System owner (email or plain text name)")
 	cmd.Flags().StringVar(&systemID, "system-id", "", "System UUID (auto-generated if omitted)")
 	cmd.Flags().StringVar(&description, "description", "", "System description")
+	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
 
 	if err := cmd.MarkFlagRequired("from"); err != nil {
 		panic(fmt.Sprintf("failed to mark flag required: %v", err))
@@ -95,6 +98,7 @@ type systemCreateOpts struct {
 	ownerEmail    string
 	systemID      string
 	description   string
+	embed         bool
 }
 
 func runSystemCreate(opts systemCreateOpts) error {
@@ -115,12 +119,12 @@ func runSystemCreate(opts systemCreateOpts) error {
 
 	// Detect input type: HDF Results vs CycloneDX SBOM
 	if bomFormat, ok := doc["bomFormat"].(string); ok && bomFormat == "CycloneDX" {
-		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, sbomFormatCycloneDX)
+		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, sbomFormatCycloneDX, opts)
 	}
 
 	// Check for SPDX (has spdxVersion field)
 	if _, ok := doc["spdxVersion"]; ok {
-		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, sbomFormatSPDX)
+		return runSystemCreateFromSBOM(doc, opts.fromFile, opts.systemName, opts.componentName, opts.outputPath, sbomFormatSPDX, opts)
 	}
 
 	// Default: treat as HDF Results
@@ -204,7 +208,7 @@ func runSystemCreateFromResults(results map[string]interface{}, systemName, outp
 	return writeSystemDoc(systemName, components, outputPath, opts)
 }
 
-func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, componentName, outputPath, sbomFormat string) error {
+func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, componentName, outputPath, sbomFormat string, opts systemCreateOpts) error {
 	// Extract component metadata from SBOM
 	if componentName == "" {
 		componentName = extractSBOMComponentName(doc, sbomFormat)
@@ -227,13 +231,18 @@ func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, c
 		"sbomFormat": sbomFormat,
 	}
 
+	// Embed full SBOM data if --embed is set
+	if opts.embed {
+		comp["sbom"] = doc
+	}
+
 	// Extract version if available
 	if ver := extractSBOMComponentVersion(doc, sbomFormat); ver != "" {
 		comp["description"] = fmt.Sprintf("%s v%s", componentName, ver)
 	}
 
 	fmt.Fprintf(os.Stderr, "Imported %s SBOM as component %q (type: %s)\n", sbomFormat, componentName, compType)
-	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath, systemCreateOpts{})
+	return writeSystemDoc(systemName, []map[string]interface{}{comp}, outputPath, opts)
 }
 
 // extractSBOMComponentName gets the top-level component name from a CycloneDX or SPDX SBOM.

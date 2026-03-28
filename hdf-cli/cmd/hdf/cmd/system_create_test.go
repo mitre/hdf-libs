@@ -487,6 +487,118 @@ func TestSystemUpdateComponent_RejectsNonexistent(t *testing.T) {
 	assert.Contains(t, err.Error(), "not found")
 }
 
+// ---- --embed flag tests ----
+
+func TestSystemCreate_FromSBOM_Embed(t *testing.T) {
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/juice-shop-sbom-minimal.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "--embed", "-o", outFile})
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	components := sys["components"].([]interface{})
+	c0 := components[0].(map[string]interface{})
+
+	// sbom field should contain the full SBOM object
+	sbom, ok := c0["sbom"].(map[string]interface{})
+	require.True(t, ok, "expected sbom to be embedded object, got %T", c0["sbom"])
+	assert.Equal(t, "CycloneDX", sbom["bomFormat"])
+
+	// sbomRef should still be present for traceability
+	assert.Contains(t, c0["sbomRef"], "juice-shop-sbom-minimal.json")
+}
+
+func TestSystemCreate_FromSBOM_NoEmbed(t *testing.T) {
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/juice-shop-sbom-minimal.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "-o", outFile})
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	components := sys["components"].([]interface{})
+	c0 := components[0].(map[string]interface{})
+
+	// Without --embed, sbom should NOT be present
+	assert.Nil(t, c0["sbom"], "sbom should not be embedded without --embed")
+	// sbomRef should be present
+	assert.Contains(t, c0["sbomRef"], "juice-shop-sbom-minimal.json")
+}
+
+func TestSystemAddComponent_Embed(t *testing.T) {
+	// Create initial system from results
+	resultsFile := filepath.Join(t.TempDir(), "results.json")
+	require.NoError(t, os.WriteFile(resultsFile, []byte(minimalResultsJSON), 0o600))
+	sysFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", sysFile})
+	require.NoError(t, cmd.Execute())
+
+	// Add component with --embed
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/webgoat-sbom.json")
+	cmd2 := NewRootCmd()
+	cmd2.SetArgs([]string{"system", "add-component", "--system", sysFile, "--from", sbomFile, "--component-name", "WebGoat", "--embed"})
+	require.NoError(t, cmd2.Execute())
+
+	data, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	components := sys["components"].([]interface{})
+	last := components[len(components)-1].(map[string]interface{})
+	assert.Equal(t, "WebGoat", last["name"])
+
+	// sbom should be embedded
+	sbom, ok := last["sbom"].(map[string]interface{})
+	require.True(t, ok, "expected sbom to be embedded")
+	assert.Equal(t, "CycloneDX", sbom["bomFormat"])
+}
+
+func TestSystemUpdateComponent_Embed(t *testing.T) {
+	// Create system with juice-shop
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/juice-shop-sbom-minimal.json")
+	sysFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "-o", sysFile})
+	require.NoError(t, cmd.Execute())
+
+	// Update with --embed
+	webgoatFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/webgoat-sbom.json")
+	cmd2 := NewRootCmd()
+	cmd2.SetArgs([]string{"system", "update-component", "--system", sysFile, "--component-name", "juice-shop", "--from", webgoatFile, "--embed"})
+	require.NoError(t, cmd2.Execute())
+
+	data, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	components := sys["components"].([]interface{})
+	c0 := components[0].(map[string]interface{})
+
+	// sbom should be the webgoat SBOM (not juice-shop)
+	sbom, ok := c0["sbom"].(map[string]interface{})
+	require.True(t, ok, "expected sbom to be embedded after update")
+	assert.Contains(t, c0["sbomRef"], "webgoat-sbom.json")
+	assert.NotNil(t, sbom["bomFormat"])
+}
+
 func TestSystemCreate_TypeMapping(t *testing.T) {
 	// Test various target type -> component type mappings
 	tests := []struct {
