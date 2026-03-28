@@ -1437,8 +1437,44 @@ func outputSystemDiffTable(result systemDiffResult, oldFile, newFile string) {
 		}
 	}
 
+	// Show data flow changes as a detail section
+	outputDataFlowDetails(result.Extensions)
+
 	fmt.Println()
 	outputSystemDiffSummary(result.Summary, result.Extensions)
+}
+
+// outputDataFlowDetails prints individual data flow changes when present.
+func outputDataFlowDetails(extensions map[string]interface{}) {
+	if extensions == nil {
+		return
+	}
+	dfChanges, ok := extensions["dataFlowChanges"].([]systemDiffDataFlow)
+	if !ok || len(dfChanges) == 0 {
+		return
+	}
+
+	fmt.Println()
+	fmt.Println("Data Flows:")
+	for _, df := range dfChanges {
+		prefix := " "
+		switch df.State {
+		case stateAdded:
+			prefix = "+"
+		case stateRemoved:
+			prefix = "-"
+		case stateUpdated:
+			prefix = "~"
+		}
+		from, _ := df.Flow["from"].(string)
+		to, _ := df.Flow["to"].(string)
+		protocol, _ := df.Flow["protocol"].(string)
+		desc := from + " → " + to
+		if protocol != "" {
+			desc += " (" + protocol + ")"
+		}
+		fmt.Printf("  %s %-50s (%s)\n", prefix, sanitizeOutput(desc), df.State)
+	}
 }
 
 func outputSystemDiffMarkdown(result systemDiffResult, oldFile, newFile string) {

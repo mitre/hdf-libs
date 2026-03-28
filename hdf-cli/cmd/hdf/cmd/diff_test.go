@@ -1088,9 +1088,17 @@ func TestDiffCommand_SystemDrift_DataFlowChanges(t *testing.T) {
 	stdout, stderr, err := executeCommand("diff", oldPath, newPath)
 	allowExitCode(t, err, stderr)
 
-	// Should show data flow information
-	if !strings.Contains(stdout, "Data Flow") {
-		t.Errorf("expected 'Data Flow' in output, got:\n%s", stdout)
+	// Should show data flow detail section
+	if !strings.Contains(stdout, "Data Flows:") {
+		t.Errorf("expected 'Data Flows:' section in output, got:\n%s", stdout)
+	}
+	// Should show the updated flow (port changed) and new flow (to cache)
+	if !strings.Contains(stdout, testUUIDDatabase) || !strings.Contains(stdout, testUUIDCache) {
+		t.Errorf("expected flow endpoints in output, got:\n%s", stdout)
+	}
+	// Summary should show flow counts
+	if !strings.Contains(stdout, "added") {
+		t.Errorf("expected 'added' data flow count in output, got:\n%s", stdout)
 	}
 }
 
