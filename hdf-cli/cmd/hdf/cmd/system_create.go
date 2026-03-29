@@ -13,14 +13,15 @@ import (
 
 func newSystemCreateCmd() *cobra.Command {
 	var (
-		fromFile      string
-		outputPath    string
-		systemName    string
-		componentName string
-		ownerEmail    string
-		systemID      string
-		description   string
-		embed         bool
+		fromFile            string
+		outputPath          string
+		systemName          string
+		componentName       string
+		ownerEmail          string
+		systemID            string
+		description         string
+		embed               bool
+		generateComponentID bool
 	)
 
 	cmd := &cobra.Command{
@@ -38,14 +39,15 @@ Examples:
   hdf system create --from results.json --owner team@agency.gov --description "Prod portal"`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			opts := systemCreateOpts{
-				fromFile:      fromFile,
-				systemName:    systemName,
-				componentName: componentName,
-				outputPath:    outputPath,
-				ownerEmail:    ownerEmail,
-				systemID:      systemID,
-				description:   description,
-				embed:         embed,
+				fromFile:            fromFile,
+				systemName:          systemName,
+				componentName:       componentName,
+				outputPath:          outputPath,
+				ownerEmail:          ownerEmail,
+				systemID:            systemID,
+				description:         description,
+				embed:               embed,
+				generateComponentID: generateComponentID,
 			}
 			return runSystemCreate(opts)
 		},
@@ -59,6 +61,7 @@ Examples:
 	cmd.Flags().StringVar(&systemID, "system-id", "", "System UUID (auto-generated if omitted)")
 	cmd.Flags().StringVar(&description, "description", "", "System description")
 	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
+	cmd.Flags().BoolVar(&generateComponentID, "generate-component-id", false, "Auto-assign UUID componentId to each component")
 
 	if err := cmd.MarkFlagRequired("from"); err != nil {
 		panic(fmt.Sprintf("failed to mark flag required: %v", err))
@@ -91,14 +94,15 @@ func isURL(s string) bool {
 }
 
 type systemCreateOpts struct {
-	fromFile      string
-	systemName    string
-	componentName string
-	outputPath    string
-	ownerEmail    string
-	systemID      string
-	description   string
-	embed         bool
+	fromFile            string
+	systemName          string
+	componentName       string
+	outputPath          string
+	ownerEmail          string
+	systemID            string
+	description         string
+	embed               bool
+	generateComponentID bool
 }
 
 func runSystemCreate(opts systemCreateOpts) error {
@@ -300,6 +304,15 @@ func writeSystemDoc(systemName string, components []map[string]interface{}, outp
 	systemID := opts.systemID
 	if systemID == "" {
 		systemID = uuid.New().String()
+	}
+
+	// Stamp componentId on components that lack one
+	if opts.generateComponentID {
+		for _, comp := range components {
+			if _, hasID := comp["componentId"]; !hasID {
+				comp["componentId"] = uuid.New().String()
+			}
+		}
 	}
 
 	sysDoc := map[string]interface{}{

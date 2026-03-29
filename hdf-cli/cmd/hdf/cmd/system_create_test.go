@@ -487,6 +487,108 @@ func TestSystemUpdateComponent_RejectsNonexistent(t *testing.T) {
 	assert.Contains(t, err.Error(), "not found")
 }
 
+// ---- --generate-component-id flag tests ----
+
+func TestSystemCreate_GenerateComponentId(t *testing.T) {
+	resultsFile := filepath.Join(t.TempDir(), "results.json")
+	require.NoError(t, os.WriteFile(resultsFile, []byte(minimalResultsJSON), 0o600))
+
+	outFile := filepath.Join(t.TempDir(), "system.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "--generate-component-id", "-o", outFile})
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	components := sys["components"].([]interface{})
+	require.Len(t, components, 2)
+
+	// Both components should have UUIDs
+	c0 := components[0].(map[string]interface{})
+	c1 := components[1].(map[string]interface{})
+	id0, ok0 := c0["componentId"].(string)
+	id1, ok1 := c1["componentId"].(string)
+	assert.True(t, ok0, "first component should have componentId")
+	assert.True(t, ok1, "second component should have componentId")
+	assert.Len(t, id0, 36, "componentId should be UUID")
+	assert.Len(t, id1, 36, "componentId should be UUID")
+	assert.NotEqual(t, id0, id1, "each component should get a unique UUID")
+}
+
+func TestSystemCreate_GenerateComponentId_SBOM(t *testing.T) {
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/juice-shop-sbom-minimal.json")
+	outFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", sbomFile, "--generate-component-id", "-o", outFile})
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	components := sys["components"].([]interface{})
+	c0 := components[0].(map[string]interface{})
+	id, ok := c0["componentId"].(string)
+	assert.True(t, ok, "SBOM component should have componentId")
+	assert.Len(t, id, 36)
+}
+
+func TestSystemCreate_NoGenerateComponentId(t *testing.T) {
+	resultsFile := filepath.Join(t.TempDir(), "results.json")
+	require.NoError(t, os.WriteFile(resultsFile, []byte(minimalResultsJSON), 0o600))
+
+	outFile := filepath.Join(t.TempDir(), "system.json")
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", outFile})
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	// Without --generate-component-id, components from results without IDs
+	// should not have componentId added
+	components := sys["components"].([]interface{})
+	c0 := components[0].(map[string]interface{})
+	_, hasID := c0["componentId"]
+	assert.False(t, hasID, "should not have componentId without --generate-component-id")
+}
+
+func TestSystemAddComponent_GenerateComponentId(t *testing.T) {
+	resultsFile := filepath.Join(t.TempDir(), "results.json")
+	require.NoError(t, os.WriteFile(resultsFile, []byte(minimalResultsJSON), 0o600))
+	sysFile := filepath.Join(t.TempDir(), "system.json")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"system", "create", "--from", resultsFile, "-o", sysFile})
+	require.NoError(t, cmd.Execute())
+
+	sbomFile := converterFixturePath(t, "cyclonedx-to-hdf", "input/webgoat-sbom.json")
+	cmd2 := NewRootCmd()
+	cmd2.SetArgs([]string{"system", "add-component", "--system", sysFile, "--from", sbomFile, "--component-name", "WebGoat", "--generate-component-id"})
+	require.NoError(t, cmd2.Execute())
+
+	data, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+	var sys map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &sys))
+
+	components := sys["components"].([]interface{})
+	last := components[len(components)-1].(map[string]interface{})
+	id, ok := last["componentId"].(string)
+	assert.True(t, ok, "added component should have componentId")
+	assert.Len(t, id, 36)
+}
+
 // ---- --embed flag tests ----
 
 func TestSystemCreate_FromSBOM_Embed(t *testing.T) {

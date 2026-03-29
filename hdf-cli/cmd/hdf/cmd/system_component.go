@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
 func newSystemAddComponentCmd() *cobra.Command {
 	var (
-		systemFile    string
-		fromFile      string
-		componentName string
-		outputPath    string
-		embed         bool
+		systemFile          string
+		fromFile            string
+		componentName       string
+		outputPath          string
+		embed               bool
+		generateComponentID bool
 	)
 
 	cmd := &cobra.Command{
@@ -27,7 +29,7 @@ Examples:
   hdf system add-component --system system.json --from sbom.cdx.json --component-name AuthService
   hdf system add-component --system system.json --from sbom.cdx.json --component-name AuthService --embed`,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return runSystemAddComponent(systemFile, fromFile, componentName, outputPath, embed)
+			return runSystemAddComponent(systemFile, fromFile, componentName, outputPath, embed, generateComponentID)
 		},
 	}
 
@@ -36,6 +38,7 @@ Examples:
 	cmd.Flags().StringVar(&componentName, "component-name", "", "Component name (default: from SBOM metadata)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: overwrite --system)")
 	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
+	cmd.Flags().BoolVar(&generateComponentID, "generate-component-id", false, "Auto-assign UUID componentId to the new component")
 
 	_ = cmd.MarkFlagRequired("system")
 	_ = cmd.MarkFlagRequired("from")
@@ -80,7 +83,7 @@ Examples:
 	return cmd
 }
 
-func runSystemAddComponent(systemFile, fromFile, componentName, outputPath string, embed bool) error {
+func runSystemAddComponent(systemFile, fromFile, componentName, outputPath string, embed, generateComponentID bool) error {
 	// Load existing system
 	sysData, err := os.ReadFile(systemFile) // #nosec G304
 	if err != nil {
@@ -137,6 +140,11 @@ func runSystemAddComponent(systemFile, fromFile, componentName, outputPath strin
 		if embed {
 			comp["sbom"] = sbomDoc
 		}
+	}
+
+	// Stamp componentId if requested
+	if generateComponentID {
+		comp["componentId"] = uuid.New().String()
 	}
 
 	// Append to components
