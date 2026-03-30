@@ -7,36 +7,77 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
 func newPlanCreateCmd() *cobra.Command {
-	var outputPath string
+	var (
+		outputPath string
+		planName   string
+		baseline   string
+		planID     string
+	)
 
 	cmd := &cobra.Command{
-		Use:   "create <system-file>",
-		Short: "Generate an assessment plan from a system definition",
-		Long: `Generate an HDF assessment plan from an hdf-system document.
+		Use:   "create [system-file]",
+		Short: "Create an assessment plan",
+		Long: `Create an HDF assessment plan, either from a system document or standalone.
 
-For each component in the system, an assessment entry is created
-referencing the component's baseline refs. The system file path
-is recorded as the plan's systemRef.
+From system file (positional arg):
+  Reads the system document and creates an assessment entry for each
+  component's baseline refs. The system file path is recorded as systemRef.
+
+Standalone (--name + --baseline):
+  Creates a minimal plan with a single assessment referencing the given
+  baseline. Use 'hdf plan set' to add system-ref and other fields later.
 
 Examples:
   hdf plan create portal-prod.hdf-system.json
-  hdf plan create portal-prod.hdf-system.json -o plan.json`,
-		Args: cobra.ExactArgs(1),
+  hdf plan create portal-prod.hdf-system.json -o plan.json
+  hdf plan create --name "RHEL9 Assessment" --baseline RHEL9-STIG -o plan.json`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runPlanCreate(args[0], outputPath)
+			if len(args) == 1 {
+				return runPlanCreateFromSystem(args[0], planID, outputPath)
+			}
+			if planName == "" || baseline == "" {
+				return fmt.Errorf("either provide a system file, or use --name and --baseline to create a standalone plan")
+			}
+			return runPlanCreateStandalone(planName, baseline, planID, outputPath)
 		},
 	}
 
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
+	cmd.Flags().StringVar(&planName, "name", "", "Plan name (required for standalone creation)")
+	cmd.Flags().StringVar(&baseline, "baseline", "", "Baseline reference for standalone plan (e.g. 'RHEL9-STIG')")
+	cmd.Flags().StringVar(&planID, "plan-id", "", "Plan UUID (auto-generated if omitted)")
 
 	return cmd
 }
 
-func runPlanCreate(systemFile, outputPath string) error {
+func runPlanCreateStandalone(planName, baseline, planID, outputPath string) error {
+	if planID == "" {
+		planID = uuid.New().String()
+	}
+
+	plan := map[string]interface{}{
+		"planId": planID,
+		"name":   planName,
+		"assessments": []map[string]interface{}{
+			{"baselineRef": baseline},
+		},
+		"generator": map[string]interface{}{
+			"name":    "hdf-cli",
+			"version": version,
+		},
+		"createdAt": time.Now().UTC().Format(time.RFC3339),
+	}
+
+	return writePlanOutput(plan, outputPath)
+}
+
+func runPlanCreateFromSystem(systemFile, planID, outputPath string) error {
 	data, err := os.ReadFile(systemFile) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read system file: %w", err)
@@ -85,8 +126,12 @@ func runPlanCreate(systemFile, outputPath string) error {
 	}
 
 	// Build plan
+	if planID == "" {
+		planID = uuid.New().String()
+	}
 	planName := toKebabCase(sysName) + "-assessment-plan"
 	plan := map[string]interface{}{
+		"planId":      planID,
 		"name":        planName,
 		"type":        "automated",
 		"systemRef":   systemFile,
@@ -98,6 +143,10 @@ func runPlanCreate(systemFile, outputPath string) error {
 		"createdAt": time.Now().UTC().Format(time.RFC3339),
 	}
 
+	return writePlanOutput(plan, outputPath)
+}
+
+func writePlanOutput(plan map[string]interface{}, outputPath string) error {
 	output, err := json.MarshalIndent(plan, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize plan: %w", err)
@@ -108,9 +157,11 @@ func runPlanCreate(systemFile, outputPath string) error {
 		return nil
 	}
 
-	if err := os.WriteFile(outputPath, output, 0o600); err != nil { // #nosec G304 -- CLI writes to user-specified path
+	if err := os.WriteFile(outputPath, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write plan: %w", err)
 	}
+
+	assessments, _ := plan["assessments"].([]map[string]interface{})
 	fmt.Fprintf(os.Stderr, "Plan written to %s (%d assessments)\n", outputPath, len(assessments))
 	return nil
 }

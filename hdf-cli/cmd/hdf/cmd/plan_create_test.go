@@ -38,6 +38,10 @@ func TestPlanCreate(t *testing.T) {
 	assert.Contains(t, plan["name"], "portal-prod")
 	assert.Equal(t, "automated", plan["type"])
 	assert.Equal(t, sysFile, plan["systemRef"])
+	// planId should be auto-generated
+	sysCreatePlanID, ok := plan["planId"].(string)
+	assert.True(t, ok, "planId should be present")
+	assert.Len(t, sysCreatePlanID, 36)
 
 	assessments, ok := plan["assessments"].([]interface{})
 	require.True(t, ok)
@@ -63,4 +67,45 @@ func TestPlanCreate_MissingFile(t *testing.T) {
 
 	err := cmd.Execute()
 	assert.Error(t, err)
+}
+
+func TestPlanCreate_Standalone(t *testing.T) {
+	outFile := filepath.Join(t.TempDir(), "plan.json")
+	_, _, err := executeCommand("plan", "create", "--name", "RHEL9 Assessment", "--baseline", "RHEL9-STIG", "-o", outFile)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var plan map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &plan))
+	assert.Equal(t, "RHEL9 Assessment", plan["name"])
+	assert.Nil(t, plan["systemRef"]) // no system reference
+	// planId should be auto-generated
+	planID, ok := plan["planId"].(string)
+	assert.True(t, ok, "planId should be present")
+	assert.Len(t, planID, 36, "planId should be a UUID")
+	assessments, ok := plan["assessments"].([]interface{})
+	require.True(t, ok)
+	assert.Len(t, assessments, 1)
+	first := assessments[0].(map[string]interface{})
+	assert.Equal(t, "RHEL9-STIG", first["baselineRef"])
+}
+
+func TestPlanCreate_StandaloneRequiresBothFlags(t *testing.T) {
+	// --name without --baseline
+	_, _, err := executeCommand("plan", "create", "--name", "Test")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "baseline")
+
+	// --baseline without --name
+	_, _, err = executeCommand("plan", "create", "--baseline", "RHEL9-STIG")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "--name")
+}
+
+func TestPlanCreate_NoArgsNoFlags(t *testing.T) {
+	_, _, err := executeCommand("plan", "create")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "system file")
 }
