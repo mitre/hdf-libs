@@ -270,6 +270,12 @@ func printDataFlows(doc map[string]interface{}) {
 
 // printDataFlowList prints individual data flow entries. Shared by system info and list.
 func printDataFlowList(flows []interface{}) {
+	tbl := NewTable(
+		Column{Header: "From"},
+		Column{Header: "To"},
+		Column{Header: "Protocol"},
+		Column{Header: "Description"},
+	)
 	for _, fRaw := range flows {
 		flow, ok := fRaw.(map[string]interface{})
 		if !ok {
@@ -279,14 +285,7 @@ func printDataFlowList(flows []interface{}) {
 		to, _ := flow["to"].(string)
 		protocol, _ := flow["protocol"].(string)
 		desc, _ := flow["description"].(string)
-		detail := ""
-		if protocol != "" {
-			detail = fmt.Sprintf(" [%s]", sanitizeOutput(protocol))
-		}
-		line := fmt.Sprintf("  %s → %s%s", sanitizeOutput(from), sanitizeOutput(to), detail)
-		if desc != "" {
-			line += fmt.Sprintf(" — %s", sanitizeOutput(desc))
-		}
-		fmt.Println(line)
+		tbl.AddRow(sanitizeOutput(from), sanitizeOutput(to), sanitizeOutput(protocol), sanitizeOutput(desc))
 	}
+	tbl.Render()
 }

@@ -159,6 +159,45 @@ func TestDiffCommand_IdenticalFiles(t *testing.T) {
 	}
 }
 
+// TestDiffCommand_HidesUnchangedByDefault verifies unchanged requirements are
+// not shown in table output unless --all is passed.
+func TestDiffCommand_HidesUnchangedByDefault(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFBefore())
+	newPath := writeHDFFixture(t, syntheticHDFAfter())
+
+	stdout, stderr, err := executeCommand("diff", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	// REQ-003 is unchanged (passed→passed) — should NOT appear in table output
+	if strings.Contains(stdout, "REQ-003") {
+		t.Errorf("unchanged REQ-003 should be hidden by default, got:\n%s", stdout)
+	}
+
+	// But changed requirements should appear
+	if !strings.Contains(stdout, "REQ-001") {
+		t.Errorf("expected REQ-001 (fixed) in output, got:\n%s", stdout)
+	}
+
+	// Summary should still show unchanged count
+	if !strings.Contains(stdout, "1 unchanged") {
+		t.Errorf("summary should include unchanged count, got:\n%s", stdout)
+	}
+}
+
+// TestDiffCommand_AllFlag verifies --all includes unchanged requirements.
+func TestDiffCommand_AllFlag(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFBefore())
+	newPath := writeHDFFixture(t, syntheticHDFAfter())
+
+	stdout, stderr, err := executeCommand("diff", "--all", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	// REQ-003 is unchanged — should appear with --all
+	if !strings.Contains(stdout, "REQ-003") {
+		t.Errorf("expected REQ-003 in --all output, got:\n%s", stdout)
+	}
+}
+
 // TestDiffCommand_JSONOutput verifies that --json produces valid JSON with the correct structure.
 func TestDiffCommand_JSONOutput(t *testing.T) {
 	oldPath := writeHDFFixture(t, syntheticHDFBefore())
@@ -721,8 +760,8 @@ func TestDiffCommand_SystemFlag(t *testing.T) {
 	}
 
 	// Should contain compliance info
-	if !strings.Contains(stdout, "Compliance:") {
-		t.Errorf("expected 'Compliance:' in output, got:\n%s", stdout)
+	if !strings.Contains(stdout, "Old Compliance") {
+		t.Errorf("expected 'Old Compliance' header in output, got:\n%s", stdout)
 	}
 }
 

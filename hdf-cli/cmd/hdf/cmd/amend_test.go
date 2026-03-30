@@ -179,8 +179,8 @@ func TestAmendVerifyCommand(t *testing.T) {
 
 		stdout, _, err := executeCommand("amend", "verify", amendmentsPath)
 		require.NoError(t, err)
-		assert.Contains(t, stdout, "Valid:           1")
-		assert.Contains(t, stdout, "All overrides are valid")
+		assert.Contains(t, stdout, "Valid:")
+		assert.Contains(t, stdout, "All amendments are valid")
 	})
 
 	t.Run("verify detects expired overrides", func(t *testing.T) {

@@ -574,7 +574,7 @@ func writeAmendmentsOutput(amendments map[string]interface{}, outputPath string,
 	if err := os.WriteFile(outputPath, output, 0o600); err != nil { // #nosec G703 -- CLI writes user path
 		return fmt.Errorf("failed to write amendments: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "Created %s with %d overrides (%s)\n", outputPath, count, amendType)
+	fmt.Fprintf(os.Stderr, "Created %s with %d amendments (%s)\n", outputPath, count, amendType)
 	return nil
 }
 

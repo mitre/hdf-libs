@@ -117,6 +117,7 @@ type diffFlags struct {
 	regressed        bool
 	newOnly          bool
 	absent           bool
+	all              bool
 	exitCode         bool
 	detailedExitCode bool
 	quiet            bool
@@ -187,6 +188,7 @@ Examples:
 	cmd.Flags().BoolVar(&flags.regressed, "regressed", false, "Show only regressions")
 	cmd.Flags().BoolVar(&flags.newOnly, "new", false, "Show only new requirements")
 	cmd.Flags().BoolVar(&flags.absent, "absent", false, "Show only absent requirements")
+	cmd.Flags().BoolVar(&flags.all, "all", false, "Include unchanged requirements/components in output")
 	cmd.Flags().BoolVar(&flags.exitCode, "exit-code", false, "Use POSIX diff exit codes: 0=identical, 1=differences, 2=error")
 	cmd.Flags().BoolVar(&flags.detailedExitCode, "detailed-exitcode", false,
 		"Use detailed exit codes: 0=identical, 10=fixes, 11=regressions, 12=mixed, 13=baseline, 14=drift")
@@ -302,23 +304,48 @@ func loadDiffInputsFromData(oldData, newData []byte, oldFile, newFile string) (h
 
 // renderDiffOutput writes the diff output in the requested format.
 func renderDiffOutput(filtered diffResult, flags *diffFlags, oldFile, newFile string) error {
+	// For table and markdown output, hide unchanged unless --all is set.
+	// JSON and --stat always include everything.
+	display := filtered
+	if !flags.all && !flags.nameOnly {
+		display = stripUnchanged(filtered)
+	}
+
 	switch {
 	case flags.nameOnly:
-		outputDiffNameOnly(filtered)
+		outputDiffNameOnly(filtered) // nameOnly already skips unchanged
 	case flags.stat:
-		outputDiffSummary(filtered.Summary)
+		outputDiffSummary(filtered.Summary) // stat uses full summary
 	case jsonOutput || flags.format == formatJSON:
-		if err := outputDiffJSON(filtered); err != nil {
+		if err := outputDiffJSON(filtered); err != nil { // JSON includes all
 			return err
 		}
 	case flags.format == "markdown":
-		outputDiffMarkdown(filtered, oldFile, newFile)
+		outputDiffMarkdown(display, oldFile, newFile)
 		outputComponentSummariesIfPresent(filtered.ComponentSummaries)
 	default:
-		outputDiffTable(filtered, oldFile, newFile)
+		outputDiffTable(display, oldFile, newFile)
 		outputComponentSummariesIfPresent(filtered.ComponentSummaries)
 	}
 	return nil
+}
+
+// stripUnchanged returns a copy of the result with unchanged requirements removed.
+// The summary is preserved from the original (full counts).
+func stripUnchanged(result diffResult) diffResult {
+	var changed []diffRequirement
+	for _, req := range result.Requirements {
+		if req.State != diffUnchanged {
+			changed = append(changed, req)
+		}
+	}
+	return diffResult{
+		FormatVersion:      result.FormatVersion,
+		ComparisonMode:     result.ComparisonMode,
+		Summary:            result.Summary, // keep full summary
+		Requirements:       changed,
+		ComponentSummaries: result.ComponentSummaries,
+	}
 }
 
 // outputComponentSummariesIfPresent prints component summaries when they exist.
@@ -590,35 +617,51 @@ func outputDiffJSON(result diffResult) error {
 }
 
 func outputDiffTable(result diffResult, oldFile, newFile string) {
-	fmt.Printf("HDF Comparison: %s → %s\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
-	fmt.Println()
-
-	for _, req := range result.Requirements {
-		prefix := statePrefix(req.State)
-		transition := formatTransition(req)
-		stateLabel := fmt.Sprintf("(%s)", req.State)
-
-		titleStr := ""
-		if req.Title != "" {
-			titleStr = fmt.Sprintf("  %-40s", sanitizeOutput(truncate(req.Title, 40)))
-		}
-
-		fmt.Printf("  %s %-10s%s %s  %s\n", prefix, sanitizeOutput(req.ID), titleStr, transition, stateLabel)
+	if !noHeaders {
+		fmt.Printf("HDF Comparison: %s → %s\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
+		fmt.Println()
 	}
 
-	fmt.Println()
-	outputDiffSummary(result.Summary)
+	tbl := NewTable(
+		Column{Header: "ID"},
+		Column{Header: "Title"},
+		Column{Header: "Old Status"},
+		Column{Header: "New Status"},
+		Column{Header: "State"},
+	)
+	for _, req := range result.Requirements {
+		oldStatus := req.OldStatus
+		newStatus := req.NewStatus
+		if oldStatus == "" {
+			oldStatus = "-"
+		}
+		if newStatus == "" {
+			newStatus = "-"
+		}
+		tbl.AddRow(
+			sanitizeOutput(req.ID),
+			sanitizeOutput(truncate(req.Title, 40)),
+			oldStatus,
+			newStatus,
+			string(req.State),
+		)
+	}
+	tbl.Render()
+
+	if !noHeaders {
+		fmt.Println()
+		outputDiffSummary(result.Summary)
+	}
 }
 
 func outputDiffMarkdown(result diffResult, oldFile, newFile string) {
 	fmt.Printf("## HDF Comparison: %s → %s\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
 	fmt.Println()
 
-	fmt.Println("| Status | ID | Title | Old Status | New Status | State |")
-	fmt.Println("|--------|-----|-------|------------|------------|-------|")
+	fmt.Println("| ID | Title | Old Status | New Status | State |")
+	fmt.Println("|----|-------|------------|------------|-------|")
 
 	for _, req := range result.Requirements {
-		prefix := statePrefix(req.State)
 		title := sanitizeOutput(truncate(req.Title, 40))
 		oldStatus := req.OldStatus
 		newStatus := req.NewStatus
@@ -628,8 +671,8 @@ func outputDiffMarkdown(result diffResult, oldFile, newFile string) {
 		if newStatus == "" {
 			newStatus = "-"
 		}
-		fmt.Printf("| %s | %s | %s | %s | %s | %s |\n",
-			prefix, sanitizeOutput(req.ID), title, oldStatus, newStatus, req.State)
+		fmt.Printf("| %s | %s | %s | %s | %s |\n",
+			sanitizeOutput(req.ID), title, oldStatus, newStatus, req.State)
 	}
 
 	fmt.Println()
@@ -646,34 +689,6 @@ func outputDiffSummary(summary diffSummary) {
 		fmt.Sprintf("%d updated", summary.Updated),
 	}
 	fmt.Printf("Summary: %s (%d total)\n", strings.Join(parts, ", "), summary.Total)
-}
-
-// statePrefix returns a symbol prefix for the diff state.
-func statePrefix(state diffState) string {
-	switch state {
-	case diffFixed:
-		return "+"
-	case diffRegressed:
-		return "-"
-	case diffNew:
-		return "+"
-	case diffAbsent:
-		return "-"
-	case diffUpdated:
-		return "~"
-	case diffUnchanged:
-		return " "
-	default:
-		return " "
-	}
-}
-
-// formatTransition returns a "old → new" string for the status transition.
-func formatTransition(req diffRequirement) string {
-	if req.OldStatus != "" && req.NewStatus != "" {
-		return fmt.Sprintf("%s → %s", req.OldStatus, req.NewStatus)
-	}
-	return ""
 }
 
 func outputDiffNameOnly(result diffResult) {
@@ -996,34 +1011,25 @@ func outputSbomJSON(result *sbom.DiffResult) error {
 
 // outputSbomTable renders the SBOM diff result as a human-readable table.
 func outputSbomTable(result *sbom.DiffResult, oldFile, newFile string) {
-	fmt.Printf("SBOM Comparison: %s → %s\n\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
-
-	for _, d := range result.PackageDiffs {
-		prefix := " "
-		switch d.State {
-		case stateAdded:
-			prefix = "+"
-		case stateRemoved:
-			prefix = "-"
-		case stateUpdated:
-			prefix = "~"
-		}
-
-		version := ""
-		switch d.State {
-		case stateUpdated:
-			version = fmt.Sprintf("%s → %s", d.OldVersion, d.NewVersion)
-		case stateAdded:
-			version = d.NewVersion
-		case stateRemoved:
-			version = d.OldVersion
-		}
-
-		fmt.Printf("  %s %-30s %-20s (%s)\n", prefix, sanitizeOutput(d.Name), version, d.State)
+	if !noHeaders {
+		fmt.Printf("SBOM Comparison: %s → %s\n\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
 	}
 
-	fmt.Printf("\nSummary: %d added, %d removed, %d updated, %d unchanged\n",
-		result.Added, result.Removed, result.Updated, result.Unchanged)
+	tbl := NewTable(
+		Column{Header: "Package"},
+		Column{Header: "Old Version"},
+		Column{Header: "New Version"},
+		Column{Header: "State"},
+	)
+	for _, d := range result.PackageDiffs {
+		tbl.AddRow(sanitizeOutput(d.Name), d.OldVersion, d.NewVersion, d.State)
+	}
+	tbl.Render()
+
+	if !noHeaders {
+		fmt.Printf("\nSummary: %d added, %d removed, %d updated, %d unchanged\n",
+			result.Added, result.Removed, result.Updated, result.Unchanged)
+	}
 }
 
 // --- System document diff (systemDrift mode) ---
@@ -1398,19 +1404,43 @@ func computeSystemDiffExitCode(summary diffSummary, flags *diffFlags) error {
 
 // renderSystemDiffOutput renders system diff output in the requested format.
 func renderSystemDiffOutput(result systemDiffResult, flags *diffFlags, oldFile, newFile string) error {
+	// For table and markdown output, hide unchanged unless --all is set.
+	display := result
+	if !flags.all && !flags.nameOnly {
+		display = stripUnchangedComponents(result)
+	}
+
 	switch {
 	case flags.nameOnly:
-		outputSystemDiffNameOnly(result)
+		outputSystemDiffNameOnly(result) // nameOnly already skips unchanged
 	case flags.stat:
 		outputSystemDiffSummary(result.Summary, result.Extensions)
 	case jsonOutput || flags.format == formatJSON:
-		return outputSystemDiffJSON(result)
+		return outputSystemDiffJSON(result) // JSON includes all
 	case flags.format == "markdown":
-		outputSystemDiffMarkdown(result, oldFile, newFile)
+		outputSystemDiffMarkdown(display, oldFile, newFile)
 	default:
-		outputSystemDiffTable(result, oldFile, newFile)
+		outputSystemDiffTable(display, oldFile, newFile)
 	}
 	return nil
+}
+
+// stripUnchangedComponents returns a copy with unchanged components removed.
+// The summary is preserved from the original (full counts).
+func stripUnchangedComponents(result systemDiffResult) systemDiffResult {
+	var changed []systemDiffComponent
+	for _, cd := range result.ComponentDiffs {
+		if cd.State != diffUnchanged {
+			changed = append(changed, cd)
+		}
+	}
+	return systemDiffResult{
+		FormatVersion:  result.FormatVersion,
+		ComparisonMode: result.ComparisonMode,
+		Summary:        result.Summary,
+		ComponentDiffs: changed,
+		Extensions:     result.Extensions,
+	}
 }
 
 func outputSystemDiffJSON(result systemDiffResult) error {
@@ -1423,25 +1453,36 @@ func outputSystemDiffJSON(result systemDiffResult) error {
 }
 
 func outputSystemDiffTable(result systemDiffResult, oldFile, newFile string) {
-	fmt.Printf("System Comparison: %s → %s\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
-	fmt.Println()
-
-	fmt.Println("Components:")
-	for _, cd := range result.ComponentDiffs {
-		prefix := statePrefix(cd.State)
-		stateLabel := fmt.Sprintf("(%s)", cd.State)
-		fmt.Printf("  %s %-30s %s\n", prefix, sanitizeOutput(cd.Name), stateLabel)
-
-		for _, fc := range cd.FieldChanges {
-			fmt.Printf("      %s %s\n", fc.Op, sanitizeOutput(fc.Path))
-		}
+	if !noHeaders {
+		fmt.Printf("System Comparison: %s → %s\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
+		fmt.Println()
+		fmt.Println("Components:")
 	}
+	tbl := NewTable(
+		Column{Header: "Component"},
+		Column{Header: "State"},
+		Column{Header: "Changes"},
+	)
+	for _, cd := range result.ComponentDiffs {
+		changesStr := ""
+		if len(cd.FieldChanges) > 0 {
+			fields := make([]string, 0, len(cd.FieldChanges))
+			for _, fc := range cd.FieldChanges {
+				fields = append(fields, fc.Op+" "+fc.Path)
+			}
+			changesStr = strings.Join(fields, ", ")
+		}
+		tbl.AddRow(sanitizeOutput(cd.Name), string(cd.State), changesStr)
+	}
+	tbl.Render()
 
 	// Show data flow changes as a detail section
 	outputDataFlowDetails(result.Extensions)
 
-	fmt.Println()
-	outputSystemDiffSummary(result.Summary, result.Extensions)
+	if !noHeaders {
+		fmt.Println()
+		outputSystemDiffSummary(result.Summary, result.Extensions)
+	}
 }
 
 // outputDataFlowDetails prints individual data flow changes when present.
@@ -1454,37 +1495,32 @@ func outputDataFlowDetails(extensions map[string]interface{}) {
 		return
 	}
 
-	fmt.Println()
-	fmt.Println("Data Flows:")
+	if !noHeaders {
+		fmt.Println()
+		fmt.Println("Data Flows:")
+	}
+	tbl := NewTable(
+		Column{Header: "From"},
+		Column{Header: "To"},
+		Column{Header: "Protocol"},
+		Column{Header: "State"},
+	)
 	for _, df := range dfChanges {
-		prefix := " "
-		switch df.State {
-		case stateAdded:
-			prefix = "+"
-		case stateRemoved:
-			prefix = "-"
-		case stateUpdated:
-			prefix = "~"
-		}
 		from, _ := df.Flow["from"].(string)
 		to, _ := df.Flow["to"].(string)
 		protocol, _ := df.Flow["protocol"].(string)
-		desc := from + " → " + to
-		if protocol != "" {
-			desc += " (" + protocol + ")"
-		}
-		fmt.Printf("  %s %-50s (%s)\n", prefix, sanitizeOutput(desc), df.State)
+		tbl.AddRow(sanitizeOutput(from), sanitizeOutput(to), protocol, df.State)
 	}
+	tbl.Render()
 }
 
 func outputSystemDiffMarkdown(result systemDiffResult, oldFile, newFile string) {
 	fmt.Printf("## System Comparison: %s → %s\n\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
 
-	fmt.Println("| Status | Component | State | Changes |")
-	fmt.Println("|--------|-----------|-------|---------|")
+	fmt.Println("| Component | State | Changes |")
+	fmt.Println("|-----------|-------|---------|")
 
 	for _, cd := range result.ComponentDiffs {
-		prefix := statePrefix(cd.State)
 		changesStr := "-"
 		if len(cd.FieldChanges) > 0 {
 			fields := make([]string, 0, len(cd.FieldChanges))
@@ -1493,8 +1529,8 @@ func outputSystemDiffMarkdown(result systemDiffResult, oldFile, newFile string) 
 			}
 			changesStr = strings.Join(fields, ", ")
 		}
-		fmt.Printf("| %s | %s | %s | %s |\n",
-			prefix, sanitizeOutput(cd.Name), cd.State, sanitizeOutput(changesStr))
+		fmt.Printf("| %s | %s | %s |\n",
+			sanitizeOutput(cd.Name), cd.State, sanitizeOutput(changesStr))
 	}
 
 	fmt.Println()
@@ -1565,20 +1601,38 @@ func stringVal(m map[string]interface{}, key string) string {
 
 // outputComponentSummaries prints component summaries in human-readable format.
 func outputComponentSummaries(summaries []componentSummary) {
+	tbl := NewTable(
+		Column{Header: "Component"},
+		Column{Header: "Baselines"},
+		Column{Header: "Fixed", Align: AlignRight},
+		Column{Header: "Regressed", Align: AlignRight},
+		Column{Header: "New", Align: AlignRight},
+		Column{Header: "Absent", Align: AlignRight},
+		Column{Header: "Unchanged", Align: AlignRight},
+		Column{Header: "Old Compliance", Align: AlignRight},
+		Column{Header: "New Compliance", Align: AlignRight},
+		Column{Header: "Delta", Align: AlignRight},
+	)
 	for _, cs := range summaries {
-		refs := strings.Join(cs.BaselineRefs, ", ")
-		fmt.Printf("Component: %s (%s)\n", sanitizeOutput(cs.Name), sanitizeOutput(refs))
-		fmt.Printf("  Fixed: %d  Regressed: %d  New: %d  Absent: %d  Unchanged: %d\n",
-			cs.Summary.Fixed, cs.Summary.Regressed, cs.Summary.New, cs.Summary.Absent, cs.Summary.Unchanged)
-
 		delta := cs.ComplianceDelta
-		deltaStr := "no change"
+		deltaStr := "0%"
 		if delta > 0 {
 			deltaStr = fmt.Sprintf("+%.0f%%", delta)
 		} else if delta < 0 {
 			deltaStr = fmt.Sprintf("%.0f%%", delta)
 		}
-		fmt.Printf("  Compliance: %.0f%% -> %.0f%% (%s)\n", cs.OldCompliance, cs.NewCompliance, deltaStr)
-		fmt.Println()
+		tbl.AddRow(
+			sanitizeOutput(cs.Name),
+			sanitizeOutput(strings.Join(cs.BaselineRefs, ", ")),
+			fmt.Sprintf("%d", cs.Summary.Fixed),
+			fmt.Sprintf("%d", cs.Summary.Regressed),
+			fmt.Sprintf("%d", cs.Summary.New),
+			fmt.Sprintf("%d", cs.Summary.Absent),
+			fmt.Sprintf("%d", cs.Summary.Unchanged),
+			fmt.Sprintf("%.0f%%", cs.OldCompliance),
+			fmt.Sprintf("%.0f%%", cs.NewCompliance),
+			deltaStr,
+		)
 	}
+	tbl.Render()
 }

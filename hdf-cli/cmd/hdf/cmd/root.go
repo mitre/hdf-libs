@@ -55,6 +55,7 @@ type GlobalFlags struct {
 	NoFollowSymlinks bool
 	SchemaDirFlag    string
 	ContinueOnError  bool
+	NoHeaders        bool
 }
 
 // Global flag variables (used by legacy code and helper functions).
@@ -65,6 +66,7 @@ var (
 	noFollowSymlinks bool
 	schemaDirFlag    string
 	continueOnError  bool
+	noHeaders        bool
 )
 
 // NewRootCmd creates a new root command with fresh state.
@@ -100,6 +102,7 @@ For more information: https://github.com/mitre/hdf-libs`,
 			noFollowSymlinks = gf.NoFollowSymlinks
 			schemaDirFlag = gf.SchemaDirFlag
 			continueOnError = gf.ContinueOnError
+			noHeaders = gf.NoHeaders
 
 			initConfig()
 		},
@@ -112,6 +115,7 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.PersistentFlags().BoolVar(&gf.NoFollowSymlinks, "no-follow-symlinks", false, "Refuse to read symlinked files")
 	cmd.PersistentFlags().StringVar(&gf.SchemaDirFlag, "schema-dir", "", "Load schemas from directory instead of embedded (for development)")
 	cmd.PersistentFlags().BoolVarP(&gf.ContinueOnError, "continue-on-error", "k", false, "Skip files that fail and report errors at the end")
+	cmd.PersistentFlags().BoolVar(&gf.NoHeaders, "no-headers", false, "Suppress column headers in table output")
 
 	// Add subcommands
 	cmd.AddCommand(NewValidateCmd())

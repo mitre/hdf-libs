@@ -474,10 +474,10 @@ func TestDiffCoverage_OutputSbomTable(t *testing.T) {
 	assert.Contains(t, output, "pkg-add")
 	assert.Contains(t, output, "pkg-rem")
 	assert.Contains(t, output, "pkg-upd")
-	// Check prefix symbols
-	assert.Contains(t, output, "+ pkg-add")
-	assert.Contains(t, output, "- pkg-rem")
-	assert.Contains(t, output, "~ pkg-upd")
+	// Check state labels
+	assert.Contains(t, output, "added")
+	assert.Contains(t, output, "removed")
+	assert.Contains(t, output, "updated")
 	// Updated should show version transition
 	assert.Contains(t, output, "1.0.0")
 	assert.Contains(t, output, "2.0.0")
@@ -725,7 +725,7 @@ func TestDiffCoverage_GroupByLabel_CLI(t *testing.T) {
 	allowExitCode(t, err, stderr)
 
 	assert.Contains(t, stdout, "production")
-	assert.Contains(t, stdout, "Compliance:")
+	assert.Contains(t, stdout, "Old Compliance")
 }
 
 // --- Quiet mode tests ---
@@ -780,7 +780,7 @@ func TestDiffCoverage_RenderDiffOutput_WithComponentSummaries(t *testing.T) {
 		n, _ := r.Read(buf)
 		output := string(buf[:n])
 		assert.Contains(t, output, "WebTier")
-		assert.Contains(t, output, "Compliance:")
+		assert.Contains(t, output, "Old Compliance")
 	})
 
 	t.Run("markdown format with component summaries", func(t *testing.T) {

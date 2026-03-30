@@ -75,7 +75,9 @@ func TestSystemInfoCommand(t *testing.T) { //nolint:dupl
 		assert.Contains(t, stdout, "Owner: web-team@agency.gov")
 		assert.Contains(t, stdout, "Redis cache layer")
 		assert.Contains(t, stdout, "Data Flows (1):")
-		assert.Contains(t, stdout, "web-tier-id → db-tier-id [JDBC]")
+		assert.Contains(t, stdout, "web-tier-id")
+		assert.Contains(t, stdout, "db-tier-id")
+		assert.Contains(t, stdout, "JDBC")
 	})
 
 	t.Run("displays system info in JSON format", func(t *testing.T) {

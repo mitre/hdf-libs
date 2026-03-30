@@ -362,11 +362,15 @@ func printControlsSummary(controls []controlInfo) {
 }
 
 func printControlsFlat(controls []controlInfo) {
+	tbl := NewTable(
+		Column{Header: "ID"},
+		Column{Header: "Status"},
+		Column{Header: "Title"},
+	)
 	for _, c := range controls {
-		statusSymbol := statusToSymbol(c.Status)
-		title := truncateTitle(c.Title, 60)
-		fmt.Printf("%s %-15s %s\n", statusSymbol, sanitizeOutput(c.ID), title)
+		tbl.AddRow(sanitizeOutput(c.ID), c.Status, truncateTitle(c.Title, 60))
 	}
+	tbl.Render()
 }
 
 func truncateTitle(title string, maxLen int) string {
@@ -469,19 +473,24 @@ func listComponents(results hdf.HdfResults) error {
 		return nil
 	}
 
-	fmt.Printf("Components: %d\n\n", len(components))
-	for _, t := range components {
-		details := ""
-		if t.FQDN != "" {
-			details = sanitizeOutput(t.FQDN)
-		} else if t.IP != "" {
-			details = sanitizeOutput(t.IP)
-		}
-		if details != "" {
-			details = fmt.Sprintf(" (%s)", details)
-		}
-		fmt.Printf("  [%s] %s%s\n", t.Type, sanitizeOutput(t.Name), details)
+	if !noHeaders {
+		fmt.Printf("Components: %d\n\n", len(components))
 	}
+	tbl := NewTable(
+		Column{Header: "Type"},
+		Column{Header: "Name"},
+		Column{Header: "FQDN / IP"},
+	)
+	for _, c := range components {
+		addr := ""
+		if c.FQDN != "" {
+			addr = sanitizeOutput(c.FQDN)
+		} else if c.IP != "" {
+			addr = sanitizeOutput(c.IP)
+		}
+		tbl.AddRow(c.Type, sanitizeOutput(c.Name), addr)
+	}
+	tbl.Render()
 
 	return nil
 }

@@ -205,20 +205,27 @@ func outputQueryResults(matches []queryResult) error {
 		return &exitCodeError{code: 1, message: "no matching requirements"}
 	}
 
-	fmt.Printf("Found %d matching requirement(s):\n\n", len(matches))
+	if !noHeaders {
+		fmt.Printf("Found %d matching requirement(s):\n\n", len(matches))
+	}
 
+	tbl := NewTable(
+		Column{Header: "ID"},
+		Column{Header: "Status"},
+		Column{Header: "Severity"},
+		Column{Header: "Title"},
+	)
 	for _, m := range matches {
-		symbol := statusToSymbol(m.Status)
-		severityLabel := severityToLabel(m.Severity)
 		title := sanitizeOutput(m.Title)
-		if len(title) > 55 {
+		if len(title) > 55 { //nolint:mnd // truncate long titles for table display
 			title = title[:52] + "..."
 		}
 		if title == "" {
 			title = "(no title)"
 		}
-		fmt.Printf("%s %-15s [%s] %s\n", symbol, sanitizeOutput(m.ID), severityLabel, title)
+		tbl.AddRow(sanitizeOutput(m.ID), m.Status, severityToLabel(m.Severity), title)
 	}
+	tbl.Render()
 
 	return nil
 }

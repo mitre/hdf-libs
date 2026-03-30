@@ -72,10 +72,10 @@ Examples:
 func newAmendListCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <amendments-file>",
-		Short: "Display overrides in an amendments file",
-		Long: `Parse an amendments file and display a table of overrides.
+		Short: "List amendments in an amendments file",
+		Long: `Parse an amendments file and display a table of amendments.
 
-Shows requirement IDs, override types, statuses, expiration dates, and reasons.
+Shows requirement IDs, amendment types, statuses, expiration dates, and reasons.
 
 Examples:
   hdf amend list waivers.json
@@ -89,7 +89,7 @@ func newAmendVerifyCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "verify <amendments-file> [results-file]",
 		Short: "Verify amendment validity, expiration, and chain integrity",
-		Long: `Check that all overrides in an amendments file have valid, non-expired dates.
+		Long: `Check that all amendments in an amendments file have valid, non-expired dates.
 
 If a results file is also provided, performs full chain verification:
 - Verifies previousChecksum matches the SHA-256 of the results document
@@ -158,32 +158,39 @@ func runAmendList(_ *cobra.Command, args []string) error {
 		return nil
 	}
 
-	fmt.Printf("Amendments: %s\n", name)
-	if systemRef != "" {
-		fmt.Printf("System: %s\n", systemRef)
+	if !noHeaders {
+		fmt.Printf("Amendments: %s\n", name)
+		if systemRef != "" {
+			fmt.Printf("System: %s\n", systemRef)
+		}
+		fmt.Println()
 	}
-	fmt.Println()
 
 	if len(overrides) == 0 {
-		fmt.Println("No overrides found.")
+		if !noHeaders {
+			fmt.Println("No amendments found.")
+		}
 		return nil
 	}
 
-	fmt.Printf("Overrides (%d):\n", len(overrides))
+	if !noHeaders {
+		fmt.Printf("Amendments (%d):\n", len(overrides))
+	}
+	tbl := NewTable(
+		Column{Header: "Requirement"},
+		Column{Header: "Type"},
+		Column{Header: "Status"},
+		Column{Header: "Expires"},
+		Column{Header: "Reason"},
+	)
 	for _, ov := range overrides {
 		expires := ""
 		if ov.ExpiresAt != nil {
-			// Truncate to date only for display.
-			expires = fmt.Sprintf("Expires: %s", truncateToDate(*ov.ExpiresAt))
+			expires = truncateToDate(*ov.ExpiresAt)
 		}
-		fmt.Printf("  %-8s %-12s %-14s %s   %s\n",
-			ov.RequirementID,
-			ov.Type,
-			ov.Status,
-			expires,
-			ov.Reason,
-		)
+		tbl.AddRow(ov.RequirementID, ov.Type, ov.Status, expires, ov.Reason)
 	}
+	tbl.Render()
 
 	return nil
 }
@@ -216,14 +223,14 @@ func runAmendVerify(_ *cobra.Command, args []string) error {
 		return nil
 	}
 
-	fmt.Printf("Total overrides: %d\n", result.TotalOverrides)
-	fmt.Printf("Valid:           %d\n", result.ValidOverrides)
+	fmt.Printf("Total amendments: %d\n", result.TotalOverrides)
+	fmt.Printf("Valid:            %d\n", result.ValidOverrides)
 	fmt.Printf("Expired:         %d\n", result.ExpiredCount)
 
 	if result.HasErrors {
-		fmt.Println("\nWarning: Some overrides are expired or invalid.")
+		fmt.Println("\nWarning: Some amendments are expired or invalid.")
 	} else {
-		fmt.Println("\nAll overrides are valid.")
+		fmt.Println("\nAll amendments are valid.")
 	}
 
 	return nil
