@@ -49,6 +49,66 @@ func countControlsByStatusSeverity(data []byte) (*StatusCounts, error) {
 	return counts, nil
 }
 
+// ControlIDMapping maps a control ID to its observed status and severity.
+type ControlIDMapping struct {
+	ID       string
+	Status   string // "passed", "failed", "skipped", "error", "no_impact"
+	Severity string // "critical", "high", "medium", "low", "none"
+}
+
+// mapControlIDs builds a list of control ID → status/severity mappings
+// from HDF results.
+func mapControlIDs(data []byte) ([]ControlIDMapping, error) {
+	var results hdf.HDFResults
+	if err := json.Unmarshal(data, &results); err != nil {
+		return nil, fmt.Errorf("failed to parse HDF results: %w", err)
+	}
+
+	var mappings []ControlIDMapping
+	for _, baseline := range results.Baselines {
+		for _, req := range baseline.Requirements {
+			status := overallStatus(req.Results)
+			sev := deriveSeverity(req.Impact, req.Severity)
+
+			statusName := statusToThresholdKey(status)
+			mappings = append(mappings, ControlIDMapping{
+				ID:       req.ID,
+				Status:   statusName,
+				Severity: sev,
+			})
+		}
+	}
+
+	return mappings, nil
+}
+
+// Threshold status key constants used in YAML output and validation.
+const (
+	thresholdPassed   = "passed"
+	thresholdFailed   = "failed"
+	thresholdSkipped  = "skipped"
+	thresholdError    = "error"
+	thresholdNoImpact = "no_impact"
+)
+
+// statusToThresholdKey converts a ResultStatus to the threshold YAML key name.
+func statusToThresholdKey(status hdf.ResultStatus) string {
+	switch status {
+	case hdf.Passed:
+		return thresholdPassed
+	case hdf.Failed:
+		return thresholdFailed
+	case hdf.NotReviewed:
+		return thresholdSkipped
+	case hdf.Error:
+		return thresholdError
+	case hdf.NotApplicable:
+		return thresholdNoImpact
+	default:
+		return thresholdSkipped
+	}
+}
+
 // overallStatus determines the aggregate status of a requirement from its
 // individual test results. Follows InSpec convention:
 //   - Any error → error

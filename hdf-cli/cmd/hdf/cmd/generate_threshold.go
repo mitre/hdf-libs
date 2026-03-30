@@ -8,10 +8,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ThresholdBound represents a min/max bound for a threshold value.
+// ThresholdBound represents a min/max bound for a threshold value,
+// with an optional list of expected control IDs.
 type ThresholdBound struct {
-	Min *int `yaml:"min,omitempty" json:"min,omitempty"`
-	Max *int `yaml:"max,omitempty" json:"max,omitempty"`
+	Min      *int     `yaml:"min,omitempty" json:"min,omitempty"`
+	Max      *int     `yaml:"max,omitempty" json:"max,omitempty"`
+	Controls []string `yaml:"controls,omitempty" json:"controls,omitempty"`
 }
 
 // ThresholdSeverity holds bounds for each severity level plus a total.
@@ -42,8 +44,9 @@ type ThresholdConfig struct {
 
 func newGenerateThresholdCmd() *cobra.Command {
 	var (
-		outputPath string
-		exact      bool
+		outputPath      string
+		exact           bool
+		includeControls bool
 	)
 
 	cmd := &cobra.Command{
@@ -59,7 +62,9 @@ By default, generates "at-least-as-good-as-current" thresholds:
   - passed counts get a minimum (more passes always acceptable)
   - failed counts get a maximum (fewer failures always acceptable)
 
-Use --exact to generate thresholds where all counts must match exactly.`,
+Use --exact to generate thresholds where all counts must match exactly.
+Use --include-controls to list specific control IDs under each status/severity,
+so the validator checks that each control has the expected status.`,
 		Example: `  # Generate threshold to stdout
   hdf generate threshold results.json
 
@@ -67,7 +72,10 @@ Use --exact to generate thresholds where all counts must match exactly.`,
   hdf generate threshold results.json -o threshold.yaml
 
   # Exact mode (all counts must match)
-  hdf generate threshold results.json --exact -o threshold.yaml`,
+  hdf generate threshold results.json --exact -o threshold.yaml
+
+  # Include control ID lists for per-control validation
+  hdf generate threshold results.json --include-controls -o threshold.yaml`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			data, err := readInputFile(args[0])
@@ -82,6 +90,14 @@ Use --exact to generate thresholds where all counts must match exactly.`,
 
 			compliance := calculateCompliance(counts)
 			config := buildThresholdConfig(counts, compliance, exact)
+
+			if includeControls {
+				mappings, mapErr := mapControlIDs(data)
+				if mapErr != nil {
+					return mapErr
+				}
+				addControlIDsToConfig(config, mappings)
+			}
 
 			out, err := yaml.Marshal(config)
 			if err != nil {
@@ -103,6 +119,7 @@ Use --exact to generate thresholds where all counts must match exactly.`,
 
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
 	cmd.Flags().BoolVar(&exact, "exact", false, "All counts must match exactly (sets both min and max)")
+	cmd.Flags().BoolVarP(&includeControls, "include-controls", "c", false, "Include control ID lists for per-control validation")
 
 	return cmd
 }
@@ -154,6 +171,78 @@ func buildSeverityThreshold(sc *SeverityCounts, exact, useMax bool) *ThresholdSe
 	}
 
 	return ts
+}
+
+// addControlIDsToConfig populates control ID lists in the threshold config
+// based on observed control → status/severity mappings.
+func addControlIDsToConfig(config *ThresholdConfig, mappings []ControlIDMapping) {
+	for _, m := range mappings {
+		var ts *ThresholdSeverity
+		switch m.Status {
+		case thresholdPassed:
+			if config.Passed == nil {
+				config.Passed = &ThresholdSeverity{}
+			}
+			ts = config.Passed
+		case thresholdFailed:
+			if config.Failed == nil {
+				config.Failed = &ThresholdSeverity{}
+			}
+			ts = config.Failed
+		case thresholdSkipped:
+			if config.Skipped == nil {
+				config.Skipped = &ThresholdSeverity{}
+			}
+			ts = config.Skipped
+		case thresholdError:
+			if config.Error == nil {
+				config.Error = &ThresholdSeverity{}
+			}
+			ts = config.Error
+		case thresholdNoImpact:
+			if config.NoImpact == nil {
+				config.NoImpact = &ThresholdSeverity{}
+			}
+			ts = config.NoImpact
+		default:
+			continue
+		}
+
+		bound := getSeverityBound(ts, m.Severity)
+		bound.Controls = append(bound.Controls, m.ID)
+	}
+}
+
+// getSeverityBound returns the ThresholdBound for a severity level,
+// creating it if nil.
+func getSeverityBound(ts *ThresholdSeverity, severity string) *ThresholdBound {
+	switch severity {
+	case "critical":
+		if ts.Critical == nil {
+			ts.Critical = &ThresholdBound{}
+		}
+		return ts.Critical
+	case "high":
+		if ts.High == nil {
+			ts.High = &ThresholdBound{}
+		}
+		return ts.High
+	case "medium":
+		if ts.Medium == nil {
+			ts.Medium = &ThresholdBound{}
+		}
+		return ts.Medium
+	case "low":
+		if ts.Low == nil {
+			ts.Low = &ThresholdBound{}
+		}
+		return ts.Low
+	default:
+		if ts.None == nil {
+			ts.None = &ThresholdBound{}
+		}
+		return ts.None
+	}
 }
 
 // makeBound creates a ThresholdBound from a count value.

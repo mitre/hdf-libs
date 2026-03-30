@@ -54,8 +54,14 @@ Designed for CI/CD compliance gates.`,
 
 			compliance := calculateCompliance(counts)
 
+			// Build control ID map for per-control validation
+			controlMap, mapErr := mapControlIDs(data)
+			if mapErr != nil {
+				return mapErr
+			}
+
 			// Validate all thresholds
-			violations := validateThresholds(&config, counts, compliance)
+			violations := validateThresholds(&config, counts, compliance, controlMap)
 			if len(violations) > 0 {
 				for _, v := range violations {
 					fmt.Fprintf(os.Stderr, "FAIL: %s\n", v)
@@ -81,8 +87,14 @@ Designed for CI/CD compliance gates.`,
 
 // validateThresholds checks all threshold bounds against observed counts.
 // Returns a list of human-readable violation messages.
-func validateThresholds(config *ThresholdConfig, counts *StatusCounts, compliance float64) []string {
+func validateThresholds(config *ThresholdConfig, counts *StatusCounts, compliance float64, controlMap []ControlIDMapping) []string {
 	var violations []string
+
+	// Build lookup: controlID → {status, severity}
+	actualControls := make(map[string]ControlIDMapping)
+	for _, m := range controlMap {
+		actualControls[m.ID] = m
+	}
 
 	// Compliance
 	if config.Compliance != nil {
@@ -97,34 +109,46 @@ func validateThresholds(config *ThresholdConfig, counts *StatusCounts, complianc
 	}
 
 	// Per-status checks
-	violations = append(violations, checkSeverityThreshold("passed", config.Passed, &counts.Passed)...)
-	violations = append(violations, checkSeverityThreshold("failed", config.Failed, &counts.Failed)...)
-	violations = append(violations, checkSeverityThreshold("skipped", config.Skipped, &counts.Skipped)...)
-	violations = append(violations, checkSeverityThreshold("error", config.Error, &counts.Error)...)
-	violations = append(violations, checkSeverityThreshold("no_impact", config.NoImpact, &counts.NoImpact)...)
+	violations = append(violations, checkSeverityThreshold("passed", config.Passed, &counts.Passed, actualControls)...)
+	violations = append(violations, checkSeverityThreshold("failed", config.Failed, &counts.Failed, actualControls)...)
+	violations = append(violations, checkSeverityThreshold("skipped", config.Skipped, &counts.Skipped, actualControls)...)
+	violations = append(violations, checkSeverityThreshold("error", config.Error, &counts.Error, actualControls)...)
+	violations = append(violations, checkSeverityThreshold("no_impact", config.NoImpact, &counts.NoImpact, actualControls)...)
 
 	return violations
 }
 
 // checkSeverityThreshold validates all severity bounds within a status category.
-func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual *SeverityCounts) []string {
+func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual *SeverityCounts, actualControls map[string]ControlIDMapping) []string {
 	if threshold == nil {
 		return nil
 	}
 
 	var violations []string
-	check := func(label string, bound *ThresholdBound, actual int) {
+	check := func(label string, bound *ThresholdBound, actualCount int) {
 		if bound == nil {
 			return
 		}
 		path := fmt.Sprintf("%s.%s", status, label)
-		if bound.Min != nil && actual < *bound.Min {
+		if bound.Min != nil && actualCount < *bound.Min {
 			violations = append(violations, fmt.Sprintf(
-				"%s: %d is below minimum %d", path, actual, *bound.Min))
+				"%s: %d is below minimum %d", path, actualCount, *bound.Min))
 		}
-		if bound.Max != nil && actual > *bound.Max {
+		if bound.Max != nil && actualCount > *bound.Max {
 			violations = append(violations, fmt.Sprintf(
-				"%s: %d exceeds maximum %d", path, actual, *bound.Max))
+				"%s: %d exceeds maximum %d", path, actualCount, *bound.Max))
+		}
+		// Check control IDs if specified
+		for _, expectedID := range bound.Controls {
+			actual, found := actualControls[expectedID]
+			if !found {
+				violations = append(violations, fmt.Sprintf(
+					"%s: expected control %s not found in results", path, expectedID))
+			} else if actual.Status != status || actual.Severity != label {
+				violations = append(violations, fmt.Sprintf(
+					"%s: control %s expected %s/%s but found %s/%s",
+					path, expectedID, status, label, actual.Status, actual.Severity))
+			}
 		}
 	}
 

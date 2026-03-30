@@ -214,6 +214,79 @@ func TestValidateThreshold_MissingTemplate(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestGenerateThreshold_IncludeControls(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	stdout, _, err := executeCommand("generate", "threshold", resultsPath, "--include-controls")
+	require.NoError(t, err)
+
+	// Should contain control ID lists
+	assert.Contains(t, stdout, "controls:")
+	assert.Contains(t, stdout, "SV-001")
+	assert.Contains(t, stdout, "SV-002")
+	assert.Contains(t, stdout, "SV-003")
+}
+
+func TestValidateThreshold_ControlIDPassing(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+
+	// Threshold expects SV-001 to be passed/high
+	threshold := `
+passed:
+  high:
+    controls:
+      - SV-001
+`
+	require.NoError(t, os.WriteFile(thresholdFile, []byte(threshold), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-T", thresholdFile)
+	assert.NoError(t, err)
+}
+
+func TestValidateThreshold_ControlIDFailing(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+
+	// Threshold expects SV-003 to be passed, but it's actually failed
+	threshold := `
+passed:
+  high:
+    controls:
+      - SV-003
+`
+	require.NoError(t, os.WriteFile(thresholdFile, []byte(threshold), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-T", thresholdFile)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "SV-003")
+}
+
+func TestValidateThreshold_RoundTrip(t *testing.T) {
+	// Generate a threshold from results, then validate the same results against it.
+	// This should always pass.
+	resultsPath := writeTestResults(t)
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+
+	_, _, err := executeCommand("generate", "threshold", resultsPath, "-o", thresholdFile)
+	require.NoError(t, err)
+
+	_, _, err = executeCommand("validate", "threshold", resultsPath, "-T", thresholdFile)
+	assert.NoError(t, err)
+}
+
+func TestValidateThreshold_RoundTripWithControls(t *testing.T) {
+	// Same round-trip but with control IDs included.
+	resultsPath := writeTestResults(t)
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+
+	_, _, err := executeCommand("generate", "threshold", resultsPath, "--include-controls", "-o", thresholdFile)
+	require.NoError(t, err)
+
+	_, _, err = executeCommand("validate", "threshold", resultsPath, "-T", thresholdFile)
+	assert.NoError(t, err)
+}
+
 func TestGenerateThreshold_MissingInput(t *testing.T) {
 	_, _, err := executeCommand("generate", "threshold")
 	assert.Error(t, err)
