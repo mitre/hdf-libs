@@ -10,6 +10,11 @@
     "assessments"
   ],
   "properties": {
+    "planId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this plan. Optional in casual use, expected in production documents. Auto-generated if omitted during creation."
+    },
     "name": {
       "type": "string",
       "description": "Human-readable plan name. Example: 'Portal Monthly Assessment'."

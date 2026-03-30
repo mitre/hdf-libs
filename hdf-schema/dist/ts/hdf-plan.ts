@@ -30,6 +30,11 @@ export interface HdfPlan {
      */
     name: string;
     /**
+     * Unique identifier for this plan. Optional in casual use, expected in production
+     * documents. Auto-generated if omitted during creation.
+     */
+    planId?: string;
+    /**
      * Optional scheduling configuration for recurring assessments.
      */
     schedule?: Schedule;

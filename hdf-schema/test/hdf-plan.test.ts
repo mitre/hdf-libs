@@ -27,7 +27,18 @@ describe('hdf-plan.schema.json', () => {
     expect(validate.errors).toBeNull();
   });
 
+  it('should accept a plan with planId', () => {
+    const withId = { ...minimal, planId: '550e8400-e29b-41d4-a716-446655440000' };
+    expect(validate(withId)).toBe(true);
+  });
+
+  it('should reject invalid planId format', () => {
+    const badId = { ...minimal, planId: 'not-a-uuid' };
+    expect(validate(badId)).toBe(false);
+  });
+
   const full = {
+    planId: '550e8400-e29b-41d4-a716-446655440000',
     name: 'Portal Monthly Assessment',
     type: 'automated',
     description: 'Monthly compliance scan of portal production',

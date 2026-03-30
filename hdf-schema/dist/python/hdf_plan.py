@@ -298,6 +298,10 @@ class HdfPlan:
     labels: Optional[Dict[str, str]] = None
     """Optional key-value labels for grouping and querying plans."""
 
+    plan_id: Optional[UUID] = None
+    """Unique identifier for this plan. Optional in casual use, expected in production
+    documents. Auto-generated if omitted during creation.
+    """
     schedule: Optional[Schedule] = None
     """Optional scheduling configuration for recurring assessments."""
 
@@ -319,11 +323,12 @@ class HdfPlan:
         generator = from_union([Generator.from_dict, from_none], obj.get("generator"))
         integrity = from_union([Integrity.from_dict, from_none], obj.get("integrity"))
         labels = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("labels"))
+        plan_id = from_union([lambda x: UUID(x), from_none], obj.get("planId"))
         schedule = from_union([Schedule.from_dict, from_none], obj.get("schedule"))
         system_ref = from_union([from_str, from_none], obj.get("systemRef"))
         type = from_union([PlanType, from_none], obj.get("type"))
         version = from_union([from_str, from_none], obj.get("version"))
-        return HdfPlan(assessments, name, description, generator, integrity, labels, schedule, system_ref, type, version)
+        return HdfPlan(assessments, name, description, generator, integrity, labels, plan_id, schedule, system_ref, type, version)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -337,6 +342,8 @@ class HdfPlan:
             result["integrity"] = from_union([lambda x: to_class(Integrity, x), from_none], self.integrity)
         if self.labels is not None:
             result["labels"] = from_union([lambda x: from_dict(from_str, x), from_none], self.labels)
+        if self.plan_id is not None:
+            result["planId"] = from_union([lambda x: str(x), from_none], self.plan_id)
         if self.schedule is not None:
             result["schedule"] = from_union([lambda x: to_class(Schedule, x), from_none], self.schedule)
         if self.system_ref is not None:

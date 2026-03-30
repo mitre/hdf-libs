@@ -23,6 +23,7 @@ Examples:
 
 	cmd.AddCommand(newPlanInfoCmd())
 	cmd.AddCommand(newPlanCreateCmd())
+	cmd.AddCommand(newPlanSetCmd())
 
 	return cmd
 }
@@ -50,6 +51,11 @@ func outputPlanInfoHuman(doc map[string]interface{}) error {
 	// Plan name
 	if name, ok := doc["name"].(string); ok {
 		fmt.Printf("Plan: %s\n", sanitizeOutput(name))
+	}
+
+	// Plan ID
+	if planID, ok := doc["planId"].(string); ok {
+		fmt.Printf("ID: %s\n", sanitizeOutput(planID))
 	}
 
 	// Type

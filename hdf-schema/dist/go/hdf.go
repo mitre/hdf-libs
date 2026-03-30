@@ -1453,6 +1453,9 @@ type HDFPlan struct {
 	Labels                                                                                      map[string]string `json:"labels,omitempty"`
 	// Human-readable plan name. Example: 'Portal Monthly Assessment'.                                            
 	Name                                                                                        string            `json:"name"`
+	// Unique identifier for this plan. Optional in casual use, expected in production                            
+	// documents. Auto-generated if omitted during creation.                                                      
+	PlanID                                                                                      *string           `json:"planId,omitempty"`
 	// Optional scheduling configuration for recurring assessments.                                               
 	Schedule                                                                                    *Schedule         `json:"schedule,omitempty"`
 	// URI to the hdf-system document this plan targets. Example: 'portal-prod.hdf-system.json'.                  
