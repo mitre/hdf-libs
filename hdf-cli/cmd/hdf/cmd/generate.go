@@ -8,11 +8,12 @@ import (
 func NewGenerateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate <subcommand>",
-		Short: "Generate security templates from HDF data",
-		Long: `Generate security templates and profile skeletons from HDF data.
+		Short: "Generate security templates from HDF or XCCDF data",
+		Long: `Generate security templates and profile skeletons from HDF Baseline
+JSON or XCCDF Benchmark XML.
 
 Available subcommands:
-  inspec-profile    Generate InSpec profile from HDF Baseline`,
+  inspec-profile    Generate InSpec profile from HDF Baseline or XCCDF Benchmark`,
 	}
 
 	cmd.AddCommand(newGenerateInSpecProfileCmd())

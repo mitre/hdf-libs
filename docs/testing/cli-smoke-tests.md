@@ -316,22 +316,29 @@ hdf-cli/hdf amend apply --results /tmp/smoke-results.json --amendments /tmp/smok
 
 ## 9. hdf generate (bead tnkj)
 
-**Story**: A developer generates an InSpec profile stub from a baseline.
+**Story**: A developer generates an InSpec profile stub from a baseline or XCCDF benchmark.
 
 ```bash
 # Check if baseline fixture exists
 ls hdf-schema/test/fixtures/minimal-baseline.json 2>/dev/null || echo "Need baseline fixture"
 
-# Generate InSpec profile (if baseline fixture available)
+# Generate InSpec profile from HDF Baseline JSON
 # hdf-cli/hdf generate inspec-profile $BASELINE /tmp/smoke-profile/
 # ls /tmp/smoke-profile/
+
+# Generate InSpec profile directly from XCCDF benchmark XML (auto-detected)
+# hdf-cli/hdf generate inspec-profile hdf-generators/test/fixtures/stig-rhel9-benchmark.xml /tmp/smoke-xccdf-profile/
+# ls /tmp/smoke-xccdf-profile/controls/
+
+# Generate with explicit --source-type
+# hdf-cli/hdf generate inspec-profile benchmark.xml /tmp/smoke-profile/ -s xccdf
 
 # Check help
 hdf-cli/hdf generate --help
 hdf-cli/hdf generate inspec-profile --help
 ```
 
-**Expected**: Profile directory with controls/ and inspec.yml.
+**Expected**: Profile directory with controls/ and inspec.yml. XCCDF input produces controls named after STIG rule versions (e.g., WN22-00-000010.rb).
 
 ---
 

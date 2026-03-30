@@ -21,7 +21,7 @@ func TestGenerateInSpecYml_MinimalBaseline(t *testing.T) {
 	baseline := makeBaseline("my-profile", []hdf.BaselineRequirement{makeRequirement("SV-001", 0.5)})
 	yml := GenerateInSpecYml(baseline, nil)
 	assert.Contains(t, yml, "name: my-profile")
-	assert.Contains(t, yml, "inspec_version: '~>6.0'")
+	assert.Contains(t, yml, "inspec_version: '>=6.0'")
 }
 
 func TestGenerateInSpecYml_CustomInSpecVersion(t *testing.T) {
@@ -93,7 +93,7 @@ func TestGenerateInSpecYml_WithDepends(t *testing.T) {
 	yml := GenerateInSpecYml(baseline, nil)
 	assert.Contains(t, yml, "depends:")
 	assert.Contains(t, yml, "name: base-profile")
-	assert.Contains(t, yml, "git: https://github.com/org/base.git")
+	assert.Contains(t, yml, "git: 'https://github.com/org/base.git'")
 	assert.Contains(t, yml, "branch: main")
 	assert.Contains(t, yml, "path: ../other")
 }

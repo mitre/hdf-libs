@@ -92,6 +92,12 @@ func formatTag(key string, value interface{}) string {
 			items[i] = fmt.Sprintf("'%s'", fmt.Sprint(item))
 		}
 		return fmt.Sprintf("tag %s: [%s]", key, strings.Join(items, ", "))
+	case []string:
+		items := make([]string, len(v))
+		for i, item := range v {
+			items[i] = fmt.Sprintf("'%s'", item)
+		}
+		return fmt.Sprintf("tag %s: [%s]", key, strings.Join(items, ", "))
 	case bool:
 		return fmt.Sprintf("tag %s: %t", key, v)
 	case string:
