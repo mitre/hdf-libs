@@ -104,6 +104,10 @@ func runLabelShow(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
+	if _, typeErr := requireDocumentType(data, []string{"results"}, "hdf label"); typeErr != nil {
+		return typeErr
+	}
+
 	infos, err := extractComponentLabels(data)
 	if err != nil {
 		return err

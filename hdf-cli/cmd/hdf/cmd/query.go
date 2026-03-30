@@ -122,6 +122,10 @@ func runQuery(_ *cobra.Command, args []string) error {
 		return err
 	}
 
+	if _, typeErr := requireDocumentType(data, []string{"results"}, "hdf query"); typeErr != nil {
+		return typeErr
+	}
+
 	results, err := parseHDFResults(data)
 	if err != nil {
 		return fmt.Errorf("failed to parse HDF file: %w", err)

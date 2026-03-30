@@ -144,6 +144,10 @@ func runAmendList(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read amendments file: %w", err)
 	}
 
+	if _, typeErr := requireDocumentType(data, []string{"amendments"}, "hdf amend list"); typeErr != nil {
+		return typeErr
+	}
+
 	name, systemRef, overrides, err := amend.ListOverrides(data)
 	if err != nil {
 		return err
@@ -201,6 +205,10 @@ func runAmendVerify(_ *cobra.Command, args []string) error {
 	amendData, err := os.ReadFile(amendPath) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read amendments file: %w", err)
+	}
+
+	if _, typeErr := requireDocumentType(amendData, []string{"amendments"}, "hdf amend verify"); typeErr != nil {
+		return typeErr
 	}
 
 	// If results file provided, do full chain verification

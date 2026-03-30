@@ -5,14 +5,18 @@ import (
 	"fmt"
 )
 
-// runDocInfo reads a JSON document, and either outputs it as JSON or calls the
-// provided humanOutput function for human-readable display. This eliminates
-// code duplication across system, plan, and evidence info commands.
-func runDocInfo(filename string, humanOutput func(map[string]interface{}) error) error {
+// runDocInfo reads a JSON document, validates its type against allowedTypes,
+// and either outputs it as JSON or calls the provided humanOutput function.
+// This eliminates code duplication across system, plan, and evidence info commands.
+func runDocInfo(filename, cmdName string, allowedTypes []string, humanOutput func(map[string]interface{}) error) error {
 	data, err := readInputFile(filename)
 	if err != nil {
 		printError(err.Error())
 		return err
+	}
+
+	if _, typeErr := requireDocumentType(data, allowedTypes, cmdName); typeErr != nil {
+		return typeErr
 	}
 
 	var doc map[string]interface{}

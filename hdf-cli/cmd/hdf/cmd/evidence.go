@@ -43,7 +43,7 @@ Examples:
   hdf evidence info q1-2026.hdf-evidence-package.json --json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runDocInfo(args[0], outputEvidenceInfoHuman)
+			return runDocInfo(args[0], "hdf evidence info", []string{"evidence-package"}, outputEvidenceInfoHuman)
 		},
 	}
 }

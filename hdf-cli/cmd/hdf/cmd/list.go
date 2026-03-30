@@ -80,7 +80,7 @@ func resolveDetailAlias(s string) string {
 		"c": "components", "component": "components",
 		"g": "groups", "group": "groups",
 		"a": "assessments", "assessment": "assessments",
-		"o": "overrides", "override": "overrides",
+		"o": "amendments", "override": "amendments", "overrides": "amendments", "amendment": "amendments",
 		"d": "dataFlows", "dataflow": "dataFlows", "dataflows": "dataFlows",
 		"p": "baselines", // legacy alias
 	}
@@ -96,8 +96,12 @@ func runList(_ *cobra.Command, filename, detail string) error {
 		return err
 	}
 
-	// Detect document type to dispatch correctly
-	docType := detectHDFDocumentType(data)
+	// Detect and validate document type
+	docType, typeErr := requireDocumentType(data, []string{"results", "system"}, "hdf list")
+	if typeErr != nil {
+		return typeErr
+	}
+
 	if docType == string(validators.TypeSystem) {
 		return runListSystem(data, detail)
 	}
@@ -119,8 +123,10 @@ func runList(_ *cobra.Command, filename, detail string) error {
 		return listProfiles(results)
 	case "components":
 		return listComponents(results)
+	case "amendments":
+		return listAppliedAmendments(results)
 	default:
-		return fmt.Errorf("unknown detail section: %s\nValid sections for results: requirements, baselines, components", detail)
+		return fmt.Errorf("unknown detail section: %s\nValid sections for results: requirements, baselines, components, amendments", detail)
 	}
 }
 
@@ -509,6 +515,66 @@ func runListBulk(cmd *cobra.Command, args []string, detail string) error {
 	return runBulk(files, "list", "listed", func(file string) error {
 		return runList(cmd, file, detail)
 	})
+}
+
+// listAppliedAmendments shows statusOverrides from within a results file.
+func listAppliedAmendments(results hdf.HdfResults) error {
+	type appliedAmendment struct {
+		RequirementID string `json:"requirementId"`
+		Baseline      string `json:"baseline"`
+		Type          string `json:"type"`
+		Status        string `json:"status"`
+		Reason        string `json:"reason"`
+		ExpiresAt     string `json:"expiresAt,omitempty"`
+	}
+
+	var amendments []appliedAmendment
+	for _, baseline := range results.Baselines {
+		for _, req := range baseline.Requirements {
+			for _, ov := range req.StatusOverrides {
+				amendments = append(amendments, appliedAmendment{
+					RequirementID: req.ID,
+					Baseline:      baseline.Name,
+					Type:          string(ov.Type),
+					Status:        string(ov.Status),
+					Reason:        ov.Reason,
+					ExpiresAt:     ov.ExpiresAt.Format("2006-01-02"),
+				})
+			}
+		}
+	}
+
+	if jsonOutput {
+		output, _ := json.MarshalIndent(amendments, "", "  ")
+		fmt.Println(string(output))
+		return nil
+	}
+
+	if len(amendments) == 0 {
+		fmt.Println("No amendments applied to this results file.")
+		return nil
+	}
+
+	if !noHeaders {
+		fmt.Printf("Applied Amendments (%d):\n\n", len(amendments))
+	}
+	tbl := NewTable(
+		Column{Header: "Requirement"},
+		Column{Header: "Baseline"},
+		Column{Header: "Type"},
+		Column{Header: "Status"},
+		Column{Header: "Expires"},
+		Column{Header: "Reason"},
+	)
+	for _, am := range amendments {
+		expires := ""
+		if am.ExpiresAt != "" && len(am.ExpiresAt) >= 10 { //nolint:mnd // date prefix length
+			expires = am.ExpiresAt[:10]
+		}
+		tbl.AddRow(am.RequirementID, am.Baseline, am.Type, am.Status, expires, am.Reason)
+	}
+	tbl.Render()
+	return nil
 }
 
 const noTitlePlaceholder = "(no title)"

@@ -41,7 +41,7 @@ Examples:
   hdf plan info quarterly-plan.hdf-plan.json --json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runDocInfo(args[0], outputPlanInfoHuman)
+			return runDocInfo(args[0], "hdf plan info", []string{"plan"}, outputPlanInfoHuman)
 		},
 	}
 }

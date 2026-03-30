@@ -49,7 +49,7 @@ Examples:
   hdf system info portal-prod.hdf-system.json --json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runDocInfo(args[0], outputSystemInfoHuman)
+			return runDocInfo(args[0], "hdf system info", []string{"system"}, outputSystemInfoHuman)
 		},
 	}
 }
