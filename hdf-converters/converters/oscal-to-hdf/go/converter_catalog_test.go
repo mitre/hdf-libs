@@ -38,9 +38,9 @@ func TestConvertCatalogToHDF_FullCatalog(t *testing.T) {
 	assert.Equal(t, "hdf-converters", baseline.Generator.Name)
 	assert.Equal(t, "1.0.0-test", baseline.Generator.Version)
 
-	// Checksum
-	assert.NotNil(t, baseline.Checksum)
-	assert.Equal(t, hdf.Sha256, baseline.Checksum.Algorithm)
+	// Integrity
+	assert.NotNil(t, baseline.Integrity)
+	assert.Equal(t, hdf.Sha256, *baseline.Integrity.Algorithm)
 
 	// Status
 	assert.NotNil(t, baseline.Status)

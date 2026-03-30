@@ -1309,9 +1309,9 @@
         }
       ],
       "status": "loaded",
-      "checksum": {
+      "integrity": {
         "algorithm": "sha256",
-        "value": "570c6a9e8a19093085ead8b98d88ba9dc6d3ae8a3dff855b7b0b9e68b39054c8"
+        "checksum": "570c6a9e8a19093085ead8b98d88ba9dc6d3ae8a3dff855b7b0b9e68b39054c8"
       },
       "statusMessage": "",
       "groups": [

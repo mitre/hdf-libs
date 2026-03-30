@@ -32,8 +32,8 @@ export function createMinimalBaseline(name, requirements, options = {}) {
   if (options.supports) {
     baseline.supports = options.supports;
   }
-  if (options.checksum) {
-    baseline.checksum = options.checksum;
+  if (options.integrity) {
+    baseline.integrity = options.integrity;
   }
   if (options.resultsChecksum) {
     baseline.resultsChecksum = options.resultsChecksum;

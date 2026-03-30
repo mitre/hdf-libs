@@ -18,11 +18,11 @@ func ConvertSSPToHDF(input []byte, converterVersion string) (*hdf.HDFSystem, err
 	}
 
 	ssp := doc.SystemSecurityPlan
-	checksum := shared.InputChecksum(input)
+	integrity := shared.InputIntegrity(input)
 
 	system := &hdf.HDFSystem{
-		Name:     sspSystemName(ssp),
-		Checksum: checksum,
+		Name:      sspSystemName(ssp),
+		Integrity: integrity,
 		Generator: &hdf.HDFSystemGenerator{
 			Name:    shared.Ptr("hdf-converters"),
 			Version: shared.Ptr(converterVersion),

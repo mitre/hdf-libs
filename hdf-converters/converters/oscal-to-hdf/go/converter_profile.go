@@ -77,15 +77,15 @@ func ConvertProfileToHDF(profileInput, catalogInput []byte, converterVersion str
 
 	// Compute checksum from the profile input (the profile is the authoritative
 	// document; the catalog is a dependency)
-	checksum := shared.InputChecksum(profileInput)
+	integrity := shared.InputIntegrity(profileInput)
 
 	baseline, err := catalogToBaseline(resolvedCatalog, profileInput, converterVersion)
 	if err != nil {
 		return nil, fmt.Errorf("oscal-profile: %w", err)
 	}
 
-	// Override the checksum to be based on the profile input
-	baseline.Checksum = checksum
+	// Override the integrity to be based on the profile input
+	baseline.Integrity = integrity
 
 	return baseline, nil
 }

@@ -38,9 +38,9 @@ func TestConvertProfileToHDF_ModerateBaseline(t *testing.T) {
 	assert.NotNil(t, baseline.Generator)
 	assert.Equal(t, "hdf-converters", baseline.Generator.Name)
 
-	// Checksum based on profile input (not catalog)
-	assert.NotNil(t, baseline.Checksum)
-	assert.Equal(t, hdf.Sha256, baseline.Checksum.Algorithm)
+	// Integrity based on profile input (not catalog)
+	assert.NotNil(t, baseline.Integrity)
+	assert.Equal(t, hdf.Sha256, *baseline.Integrity.Algorithm)
 }
 
 func TestConvertProfileToHDF_MatchesResolvedCatalog(t *testing.T) {

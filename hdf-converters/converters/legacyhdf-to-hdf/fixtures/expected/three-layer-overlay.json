@@ -11,9 +11,9 @@
       "supports": [],
       "inputs": [],
       "status": "loaded",
-      "checksum": {
+      "integrity": {
         "algorithm": "sha256",
-        "value": "fc0f6db0597cff55669b412aa860907e4eaf1f8fb9ffe549853dcbf8d6a0a4ca"
+        "checksum": "fc0f6db0597cff55669b412aa860907e4eaf1f8fb9ffe549853dcbf8d6a0a4ca"
       },
       "statusMessage": "",
       "groups": [

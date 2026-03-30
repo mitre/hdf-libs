@@ -21,7 +21,7 @@ func ConvertPOAMToHDF(input []byte, converterVersion string) (*hdf.HDFAmendments
 
 // poamToHDFAmendments converts a parsed PlanOfActionAndMilestones to HDFAmendments.
 func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, converterVersion string) (*hdf.HDFAmendments, error) {
-	checksum := shared.InputChecksum(rawInput)
+	integrity := shared.InputIntegrity(rawInput)
 	meta := ExtractMetadata(poam.Metadata)
 
 	// Build risk lookup map for efficient access
@@ -48,7 +48,7 @@ func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, conve
 	amendments := &hdf.HDFAmendments{
 		Name:      ToKebabCase(poam.Metadata.Title, "oscal-poam"),
 		Overrides: overrides,
-		Checksum:  checksum,
+		Integrity: integrity,
 		SystemRef: systemRef,
 		Version:   shared.Ptr(meta.Version),
 		AppliedBy: appliedBy,

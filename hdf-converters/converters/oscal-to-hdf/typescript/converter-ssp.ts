@@ -5,7 +5,7 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type { HdfSystem } from '@mitre/hdf-schema';
 import {
   AuthorizationStatus,
@@ -44,11 +44,11 @@ export async function convertOscalSspToHdf(input: string): Promise<string> {
   }
 
   const ssp = doc['system-security-plan'];
-  const checksum = await inputChecksum(input);
+  const integrity = await inputIntegrity(input);
 
   const system: HdfSystem = {
     name: sspSystemName(ssp),
-    checksum,
+    integrity,
     components: [],
     generator: {
       name: 'hdf-converters',

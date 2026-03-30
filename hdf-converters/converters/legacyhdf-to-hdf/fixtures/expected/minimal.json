@@ -5,9 +5,9 @@
       "version": "1.0.0",
       "supports": [],
       "inputs": [],
-      "checksum": {
+      "integrity": {
         "algorithm": "sha256",
-        "value": "abc123"
+        "checksum": "abc123"
       },
       "groups": [],
       "requirements": [

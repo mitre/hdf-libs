@@ -1,10 +1,6 @@
 {
   "baselines": [
     {
-      "checksum": {
-        "algorithm": "sha256",
-        "value": "d4ecb3e201285a383a4aa6af8d9028e8311cb1975af2b380f098a21c895246ff"
-      },
       "groups": [
         {
           "id": "controls/V-72417.rb",
@@ -43,6 +39,10 @@
           ]
         }
       ],
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "d4ecb3e201285a383a4aa6af8d9028e8311cb1975af2b380f098a21c895246ff"
+      },
       "requirements": [
         {
           "descriptions": [
@@ -437,5 +437,5 @@
   "statistics": {
     "duration": 10.681128104
   },
-  "timestamp": "2026-03-27T15:49:02.976286-04:00"
+  "timestamp": "2026-03-30T10:37:41.083764-04:00"
 }

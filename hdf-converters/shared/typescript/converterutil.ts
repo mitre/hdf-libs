@@ -7,7 +7,7 @@
  */
 
 import { sha256 } from '@mitre/hdf-utilities';
-import type { Checksum } from '@mitre/hdf-schema';
+import type { Checksum, Integrity } from '@mitre/hdf-schema';
 import { HashAlgorithm } from '@mitre/hdf-schema';
 import { getCweNistControl } from '@mitre/hdf-mappings';
 
@@ -25,6 +25,20 @@ export async function inputChecksum(input: string): Promise<Checksum> {
     algorithm: HashAlgorithm.Sha256,
     value: await sha256(input),
   };
+}
+
+/**
+ * Compute an Integrity object (for root-level document integrity) from raw input.
+ *
+ * Returns an Integrity with algorithm and checksum fields, suitable for
+ * HdfBaseline.integrity, HdfSystem.integrity, HdfPlan.integrity, etc.
+ *
+ * @param input - Raw input string (JSON, XML, etc.)
+ * @returns Integrity object with SHA-256 algorithm and checksum
+ */
+export async function inputIntegrity(input: string): Promise<Integrity> {
+  const checksum = await inputChecksum(input);
+  return { algorithm: checksum.algorithm, checksum: checksum.value };
 }
 
 /**

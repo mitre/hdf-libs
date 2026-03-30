@@ -468,7 +468,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(baseline.supports).toEqual([{ platform: 'ubuntu' }]);
       expect(baseline.inputs).toEqual([{ name: 'attr1', options: {} }]);
       expect(baseline.status).toBe('loaded');
-      expect(baseline.checksum).toEqual({ algorithm: 'sha256', value: 'abc123' });
+      expect(baseline.integrity).toEqual({ algorithm: 'sha256', checksum: 'abc123' });
       expect(baseline.parentBaseline).toBe('parent-profile');
       expect(baseline.statusMessage).toBe('Status message');
       expect(baseline.skipMessage).toBe('Skip message');
@@ -638,11 +638,11 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(withNist.length).toBeGreaterThan(0);
     });
 
-    it('should preserve sha256 as checksum', () => {
+    it('should preserve sha256 as integrity', () => {
       const v2 = convertV1ToV2(v1);
-      expect(v2.baselines[0].checksum).toEqual({
+      expect(v2.baselines[0].integrity).toEqual({
         algorithm: 'sha256',
-        value: expect.stringMatching(/^[a-f0-9]{64}$/),
+        checksum: expect.stringMatching(/^[a-f0-9]{64}$/),
       });
     });
   });

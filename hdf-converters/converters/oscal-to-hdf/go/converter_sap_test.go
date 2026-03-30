@@ -55,9 +55,9 @@ func TestConvertAssessmentPlanToHDF_FedRAMPFixture(t *testing.T) {
 	assert.Equal(t, "hdf-converters", *plan.Generator.Name)
 	assert.Equal(t, "1.0.0-test", *plan.Generator.Version)
 
-	// Checksum
-	assert.NotNil(t, plan.Checksum)
-	assert.Equal(t, hdf.Sha256, plan.Checksum.Algorithm)
+	// Integrity
+	assert.NotNil(t, plan.Integrity)
+	assert.Equal(t, hdf.Sha256, *plan.Integrity.Algorithm)
 }
 
 func TestConvertAssessmentPlanToHDF_PlanNameFromMetadata(t *testing.T) {

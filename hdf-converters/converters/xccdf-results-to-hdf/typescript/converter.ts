@@ -1,5 +1,5 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
-import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, inputIntegrity, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   HdfBaseline,
@@ -413,7 +413,7 @@ async function convertBenchmarkToBaselineJson(
   benchmark: BenchmarkElement,
   rawInput: string
 ): Promise<string> {
-  const checksum: Checksum = await inputChecksum(rawInput);
+  const integrity = await inputIntegrity(rawInput);
 
   const requirements: BaselineRequirement[] = [];
   const groups: RequirementGroup[] = [];
@@ -452,7 +452,7 @@ async function convertBenchmarkToBaselineJson(
     version: extractVersion(benchmark.version),
     status: 'loaded',
     summary: extractText(benchmark.description),
-    checksum,
+    integrity,
     requirements,
     groups,
     generator: { name: 'hdf-converters', version: CONVERTER_VERSION },

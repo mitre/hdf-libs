@@ -21,7 +21,7 @@ func ConvertAssessmentPlanToHDF(input []byte, converterVersion string) (*hdf.HDF
 
 // assessmentPlanToHDFPlan converts a parsed AssessmentPlan to HDFPlan.
 func assessmentPlanToHDFPlan(ap *AssessmentPlan, rawInput []byte, converterVersion string) (*hdf.HDFPlan, error) {
-	checksum := shared.InputChecksum(rawInput)
+	integrity := shared.InputIntegrity(rawInput)
 	meta := ExtractMetadata(ap.Metadata)
 
 	// Build assessments from reviewed-controls
@@ -43,7 +43,7 @@ func assessmentPlanToHDFPlan(ap *AssessmentPlan, rawInput []byte, converterVersi
 	plan := &hdf.HDFPlan{
 		Name:        ToKebabCase(ap.Metadata.Title, "oscal-assessment-plan"),
 		Assessments: assessments,
-		Checksum:    checksum,
+		Integrity:   integrity,
 		SystemRef:   systemRef,
 		Version:     shared.Ptr(meta.Version),
 		Type:        planType,

@@ -228,9 +228,9 @@ func TestConvert_Minimal_Checksum(t *testing.T) {
 	result, err := ConvertIonChannelToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.Baselines[0].Checksum)
-	assert.Equal(t, hdf.Sha256, result.Baselines[0].Checksum.Algorithm)
-	assert.NotEmpty(t, result.Baselines[0].Checksum.Value)
+	require.NotNil(t, result.Baselines[0].Integrity)
+	assert.Equal(t, hdf.Sha256, *result.Baselines[0].Integrity.Algorithm)
+	assert.NotEmpty(t, *result.Baselines[0].Integrity.Checksum)
 }
 
 // ---- Edge cases fixture ----

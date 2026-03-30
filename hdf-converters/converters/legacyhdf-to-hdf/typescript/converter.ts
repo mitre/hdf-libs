@@ -466,11 +466,11 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
   if (v1Profile.attributes !== undefined) v2Baseline.inputs = v1Profile.attributes;
   if (v1Profile.status !== undefined) v2Baseline.status = v1Profile.status;
 
-  // Transform sha256 to checksum object
+  // Transform sha256 to integrity object
   if (v1Profile.sha256) {
-    v2Baseline.checksum = {
+    v2Baseline.integrity = {
       algorithm: 'sha256',
-      value: v1Profile.sha256,
+      checksum: v1Profile.sha256,
     };
   }
 

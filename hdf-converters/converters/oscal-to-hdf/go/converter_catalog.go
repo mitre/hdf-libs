@@ -21,7 +21,7 @@ func ConvertCatalogToHDF(input []byte, converterVersion string) (*hdf.HDFBaselin
 // This is the shared logic used by both the catalog converter and the profile
 // resolver (which builds a filtered catalog first, then calls this).
 func catalogToBaseline(catalog *Catalog, rawInput []byte, converterVersion string) (*hdf.HDFBaseline, error) {
-	checksum := shared.InputChecksum(rawInput)
+	integrity := shared.InputIntegrity(rawInput)
 	meta := ExtractMetadata(catalog.Metadata)
 
 	var requirements []hdf.BaselineRequirement
@@ -76,7 +76,7 @@ func catalogToBaseline(catalog *Catalog, rawInput []byte, converterVersion strin
 		Title:        shared.Ptr(meta.Title),
 		Version:      shared.Ptr(meta.Version),
 		Status:       &status,
-		Checksum:     checksum,
+		Integrity:    integrity,
 		Requirements: requirements,
 		Groups:       groups,
 		Generator: &hdf.Generator{

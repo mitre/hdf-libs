@@ -5,7 +5,7 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfPlan,
   Assessment,
@@ -49,7 +49,7 @@ export async function convertOscalSapToHdf(input: string): Promise<string> {
   }
 
   const ap = doc['assessment-plan'];
-  const checksum = await inputChecksum(input);
+  const integrity = await inputIntegrity(input);
   const meta = extractMetadata(ap.metadata);
 
   // Build assessments from reviewed-controls
@@ -67,7 +67,7 @@ export async function convertOscalSapToHdf(input: string): Promise<string> {
   const plan: HdfPlan = {
     name: toKebabCase(ap.metadata.title, 'oscal-assessment-plan'),
     assessments,
-    checksum,
+    integrity,
     systemRef,
     version: meta.version,
     type: planType,

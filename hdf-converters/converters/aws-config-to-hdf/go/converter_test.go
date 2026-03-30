@@ -416,8 +416,8 @@ func TestConvertAWSConfigToHDF_ChecksumIsSet(t *testing.T) {
 	input := []byte(`{"ConfigRules": []}`)
 	result, err := ConvertAWSConfigToHDF(input, converterVersion)
 	require.NoError(t, err)
-	require.NotNil(t, result.Baselines[0].Checksum)
-	assert.NotEmpty(t, result.Baselines[0].Checksum.Value)
+	require.NotNil(t, result.Baselines[0].Integrity)
+	assert.NotEmpty(t, *result.Baselines[0].Integrity.Checksum)
 }
 
 func TestSnapshots(t *testing.T) {

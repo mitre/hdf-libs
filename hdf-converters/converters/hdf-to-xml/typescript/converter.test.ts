@@ -42,7 +42,7 @@ describe('hdf-to-xml Converter', () => {
           name: 'Empty Baseline',
           version: '1.0.0',
           title: 'Test',
-          checksum: { algorithm: 'sha256', value: 'abc' },
+          integrity: { algorithm: 'sha256', checksum: 'abc' },
           requirements: []
         }],
         components: [],
@@ -80,7 +80,7 @@ describe('hdf-to-xml Converter', () => {
           {
             name: 'Baseline 1',
             version: '1.0.0',
-            checksum: { algorithm: 'sha256', value: 'abc' },
+            integrity: { algorithm: 'sha256', checksum: 'abc' },
             requirements: [{
               id: 'REQ-001',
               title: 'Test Requirement',
@@ -109,7 +109,7 @@ describe('hdf-to-xml Converter', () => {
       const input = JSON.stringify({
         baselines: [{
           name: 'Test & < > " \'',
-          checksum: { algorithm: 'sha256', value: 'abc' },
+          integrity: { algorithm: 'sha256', checksum: 'abc' },
           requirements: [{
             id: 'REQ-001',
             title: 'Description with <tags> & special chars',
@@ -134,7 +134,7 @@ describe('hdf-to-xml Converter', () => {
       const input = JSON.stringify({
         baselines: [{
           name: 'MinBaseline',
-          checksum: { algorithm: 'sha256', value: 'abc' },
+          integrity: { algorithm: 'sha256', checksum: 'abc' },
           requirements: [{
             id: 'REQ-001',
             descriptions: [{ label: 'default', data: 'Data' }],
@@ -163,7 +163,7 @@ describe('hdf-to-xml Converter', () => {
       const input = JSON.stringify({
         baselines: [{
           name: 'B1',
-          checksum: { algorithm: 'sha256', value: 'abc' },
+          integrity: { algorithm: 'sha256', checksum: 'abc' },
           requirements: [{
             id: 'REQ-001',
             descriptions: [],
@@ -177,10 +177,10 @@ describe('hdf-to-xml Converter', () => {
       expect(result).toContain('REQ-001');
     });
 
-    it('should handle baselines with no checksum', () => {
+    it('should handle baselines with no integrity', () => {
       const input = JSON.stringify({
         baselines: [{
-          name: 'NoChecksum',
+          name: 'NoIntegrity',
           requirements: [{
             id: 'REQ-001',
             title: 'Test',
@@ -192,8 +192,8 @@ describe('hdf-to-xml Converter', () => {
         }],
       });
       const result = convertHdfToXml(input);
-      expect(result).toContain('NoChecksum');
-      expect(result).not.toContain('checksum');
+      expect(result).toContain('NoIntegrity');
+      expect(result).not.toContain('integrity');
     });
 
     it('should handle no components', () => {

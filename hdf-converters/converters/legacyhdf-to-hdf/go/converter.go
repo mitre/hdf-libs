@@ -318,11 +318,12 @@ func convertProfile(v1 V1Profile) hdf.EvaluatedBaseline {
 		ParentBaseline: v1.ParentProfile,
 	}
 
-	// Transform sha256 to checksum object
+	// Transform sha256 to integrity object
 	if v1.SHA256 != nil {
-		v2.Checksum = &hdf.Checksum{
-			Algorithm: hdf.Sha256,
-			Value:     *v1.SHA256,
+		alg := hdf.Sha256
+		v2.Integrity = &hdf.Integrity{
+			Algorithm: &alg,
+			Checksum:  v1.SHA256,
 		}
 	}
 

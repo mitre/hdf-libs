@@ -17,7 +17,7 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   Oscal,
   Catalog,
@@ -101,13 +101,10 @@ export async function convertOscalProfileToHdf(
   resolvedCatalog.metadata = profile.metadata;
   resolvedCatalog.uuid = profile.uuid;
 
-  // Compute checksum from the profile input
-  const checksum = await inputChecksum(profileInput);
-
   const baseline = await catalogToBaseline(resolvedCatalog, profileInput);
 
-  // Override the checksum to be based on the profile input
-  baseline.checksum = checksum;
+  // Override the integrity to be based on the profile input
+  baseline.integrity = await inputIntegrity(profileInput);
 
   return JSON.stringify(baseline, null, 2);
 }

@@ -23,7 +23,7 @@ func ConvertComponentDefinitionToHDF(input []byte, converterVersion string) (*hd
 		return nil, fmt.Errorf("oscal-component-definition: document contains no components")
 	}
 
-	checksum := shared.InputChecksum(input)
+	integrity := shared.InputIntegrity(input)
 	meta := ExtractMetadata(compDef.Metadata)
 
 	// Use the first component to build the baseline
@@ -51,7 +51,7 @@ func ConvertComponentDefinitionToHDF(input []byte, converterVersion string) (*hd
 		Title:        shared.Ptr(meta.Title),
 		Version:      shared.Ptr(meta.Version),
 		Status:       &status,
-		Checksum:     checksum,
+		Integrity:    integrity,
 		Requirements: requirements,
 		Generator: &hdf.Generator{
 			Name:    "hdf-converters",

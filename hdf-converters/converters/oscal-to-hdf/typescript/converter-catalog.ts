@@ -5,7 +5,7 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type { HdfBaseline, BaselineRequirement } from '@mitre/hdf-schema';
 import type { Description, RequirementGroup } from '@mitre/hdf-schema';
 import type { Oscal, Catalog, Control } from './types.js';
@@ -49,7 +49,7 @@ export async function catalogToBaseline(
   catalog: Catalog,
   rawInput: string,
 ): Promise<HdfBaseline> {
-  const checksum = await inputChecksum(rawInput);
+  const integrity = await inputIntegrity(rawInput);
   const meta = extractMetadata(catalog.metadata);
 
   const requirements: BaselineRequirement[] = [];
@@ -96,7 +96,7 @@ export async function catalogToBaseline(
     title: meta.title,
     version: meta.version,
     status: 'loaded',
-    checksum,
+    integrity,
     requirements,
     groups,
     generator: {

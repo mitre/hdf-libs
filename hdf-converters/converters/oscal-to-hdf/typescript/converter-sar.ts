@@ -5,7 +5,7 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -133,7 +133,7 @@ async function resultToEvaluatedBaseline(
 
   const baseline = createMinimalBaseline(name, requirements, {
     resultsChecksum: checksum,
-    checksum,
+    integrity: await inputIntegrity(rawInput),
     status: 'loaded',
     title: result.title,
   }) as EvaluatedBaseline;

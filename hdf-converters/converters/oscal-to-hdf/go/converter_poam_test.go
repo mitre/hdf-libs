@@ -58,9 +58,9 @@ func TestConvertPOAMToHDF_FedRAMPFixture(t *testing.T) {
 	assert.Equal(t, "hdf-converters", *amendments.Generator.Name)
 	assert.Equal(t, "1.0.0-test", *amendments.Generator.Version)
 
-	// Checksum
-	assert.NotNil(t, amendments.Checksum)
-	assert.Equal(t, hdf.Sha256, amendments.Checksum.Algorithm)
+	// Integrity
+	assert.NotNil(t, amendments.Integrity)
+	assert.Equal(t, hdf.Sha256, *amendments.Integrity.Algorithm)
 }
 
 func TestConvertPOAMToHDF_AmendmentsNameFromMetadata(t *testing.T) {

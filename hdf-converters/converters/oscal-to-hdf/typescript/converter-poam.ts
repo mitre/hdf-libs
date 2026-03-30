@@ -5,7 +5,7 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfAmendments,
   StandaloneOverride,
@@ -56,7 +56,7 @@ export async function convertOscalPoamToHdf(input: string): Promise<string> {
   }
 
   const poam = doc['plan-of-action-and-milestones'];
-  const checksum = await inputChecksum(input);
+  const integrity = await inputIntegrity(input);
   const meta = extractMetadata(poam.metadata);
 
   // Build risk lookup map
@@ -77,7 +77,7 @@ export async function convertOscalPoamToHdf(input: string): Promise<string> {
   const amendments: HdfAmendments = {
     name: toKebabCase(poam.metadata.title, 'oscal-poam'),
     overrides,
-    checksum,
+    integrity,
     systemRef,
     version: meta.version,
     appliedBy,

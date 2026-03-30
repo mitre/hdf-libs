@@ -267,7 +267,7 @@ export async function convertIonchannelToHdf(input: string): Promise<string> {
     {
       title: `Ion Channel Analysis of ${analysis.source}`,
       summary: analysis.summary,
-      checksum: resultsChecksum,
+      integrity: { algorithm: resultsChecksum.algorithm, checksum: resultsChecksum.value },
       status: 'loaded',
     },
   ) as EvaluatedBaseline;

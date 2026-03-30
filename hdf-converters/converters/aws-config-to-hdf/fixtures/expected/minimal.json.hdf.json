@@ -1,9 +1,9 @@
 {
   "baselines": [
     {
-      "checksum": {
+      "integrity": {
         "algorithm": "sha256",
-        "value": "c8f8953253ae08be2bdf89e75b2d3fc6af1361b5028f4d3ec6b937a6b5b65219"
+        "checksum": "c8f8953253ae08be2bdf89e75b2d3fc6af1361b5028f4d3ec6b937a6b5b65219"
       },
       "requirements": [
         {
@@ -72,5 +72,5 @@
     "name": "aws-config-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:48:58.247214Z"
+  "timestamp": "2026-03-30T14:41:25.209257Z"
 }

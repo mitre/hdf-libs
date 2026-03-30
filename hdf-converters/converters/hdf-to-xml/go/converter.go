@@ -54,14 +54,14 @@ type XMLBaseline struct {
 	Name         string           `xml:"name"`
 	Version      *string          `xml:"version,omitempty"`
 	Title        *string          `xml:"title,omitempty"`
-	Checksum     XMLChecksum      `xml:"checksum"`
+	Integrity    XMLIntegrity     `xml:"integrity"`
 	Requirements *XMLRequirements `xml:"requirements,omitempty"`
 }
 
-// XMLChecksum represents a checksum
-type XMLChecksum struct {
+// XMLIntegrity represents an integrity block
+type XMLIntegrity struct {
 	Algorithm string `xml:"algorithm"`
-	Value     string `xml:"value"`
+	Checksum  string `xml:"checksum"`
 }
 
 // XMLRequirements wraps requirement array
@@ -137,15 +137,20 @@ func transformToXMLStructure(hdf *hdf.HDFResults) *XMLHDFResults {
 	if len(hdf.Baselines) > 0 {
 		result.Baselines.Baseline = make([]XMLBaseline, len(hdf.Baselines))
 		for i, baseline := range hdf.Baselines {
-			result.Baselines.Baseline[i] = XMLBaseline{
+			xmlBaseline := XMLBaseline{
 				Name:    baseline.Name,
 				Version: baseline.Version,
 				Title:   baseline.Title,
-				Checksum: XMLChecksum{
-					Algorithm: string(baseline.Checksum.Algorithm),
-					Value:     baseline.Checksum.Value,
-				},
 			}
+			if baseline.Integrity != nil {
+				if baseline.Integrity.Algorithm != nil {
+					xmlBaseline.Integrity.Algorithm = string(*baseline.Integrity.Algorithm)
+				}
+				if baseline.Integrity.Checksum != nil {
+					xmlBaseline.Integrity.Checksum = *baseline.Integrity.Checksum
+				}
+			}
+			result.Baselines.Baseline[i] = xmlBaseline
 
 			// Transform requirements
 			if len(baseline.Requirements) > 0 {

@@ -74,6 +74,7 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 // requirement.
 func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput []byte) hdf.EvaluatedBaseline {
 	checksum := shared.InputChecksum(rawInput)
+	integrity := shared.InputIntegrity(rawInput)
 
 	// Build lookup maps for observations and risks
 	obsMap := buildObservationMap(result.Observations)
@@ -118,7 +119,7 @@ func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput 
 		Name:            name,
 		Title:           shared.Ptr(result.Title),
 		Status:          &status,
-		Checksum:        checksum,
+		Integrity:       integrity,
 		ResultsChecksum: checksum,
 		Requirements:    requirements,
 	}

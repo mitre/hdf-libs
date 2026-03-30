@@ -5,7 +5,7 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type { HdfBaseline, BaselineRequirement } from '@mitre/hdf-schema';
 import type { Description } from '@mitre/hdf-schema';
 import type { Oscal, ImplementedRequirementElement, ComponentDefinitionComponent, ComponentDefinition } from './types.js';
@@ -37,7 +37,7 @@ export async function convertOscalComponentToHdf(input: string): Promise<string>
     throw new Error('oscal-component-definition: document contains no components');
   }
 
-  const checksum = await inputChecksum(input);
+  const integrity = await inputIntegrity(input);
   const meta = extractMetadata(compDef.metadata);
 
   // Use the first component to build the baseline
@@ -55,7 +55,7 @@ export async function convertOscalComponentToHdf(input: string): Promise<string>
     title: meta.title,
     version: meta.version,
     status: 'loaded',
-    checksum,
+    integrity,
     requirements,
     generator: {
       name: 'hdf-converters',

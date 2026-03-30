@@ -253,7 +253,7 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		}
 	}
 
-	checksum := shared.InputChecksum(input)
+	integrity := shared.InputIntegrity(input)
 	baselineTitle := "Ion Channel Analysis of " + analysis.Source
 
 	baseline := hdf.EvaluatedBaseline{
@@ -265,11 +265,8 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		Supports:     []hdf.SupportedPlatform{},
 		Groups:       []hdf.RequirementGroup{},
 		Requirements: requirements,
-		Checksum: &hdf.Checksum{
-			Algorithm: hdf.Sha256,
-			Value:     checksum.Value,
-		},
-		Status: shared.Ptr("loaded"),
+		Integrity:    integrity,
+		Status:       shared.Ptr("loaded"),
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{

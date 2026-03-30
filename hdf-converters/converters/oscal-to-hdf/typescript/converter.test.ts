@@ -98,7 +98,7 @@ describe('convertOscalCatalogToHdf', () => {
     expect(baseline.status).toBe('loaded');
 
     expect(baseline.generator?.name).toBe('hdf-converters');
-    expect(baseline.checksum?.algorithm).toBe('sha256');
+    expect(baseline.integrity?.algorithm).toBe('sha256');
   });
 
   it('should produce correct groups', async () => {
@@ -269,7 +269,7 @@ describe('convertOscalComponentToHdf', () => {
     expect(baseline.name).toBeTruthy();
     expect(baseline.status).toBe('loaded');
     expect(baseline.generator?.name).toBe('hdf-converters');
-    expect(baseline.checksum?.algorithm).toBe('sha256');
+    expect(baseline.integrity?.algorithm).toBe('sha256');
     expect(baseline.requirements.length).toBeGreaterThan(0);
 
     // Requirements should have NIST-notation IDs
@@ -298,7 +298,7 @@ describe('convertOscalSspToHdf', () => {
     const system = JSON.parse(output) as HdfSystem;
 
     expect(system.name).toBeTruthy();
-    expect(system.checksum?.algorithm).toBe('sha256');
+    expect(system.integrity?.algorithm).toBe('sha256');
     expect(system.generator?.name).toBe('hdf-converters');
     expect(system.components).toBeDefined();
   });
@@ -330,7 +330,7 @@ describe('convertOscalSapToHdf', () => {
     const plan = JSON.parse(output) as HdfPlan;
 
     expect(plan.name).toBeTruthy();
-    expect(plan.checksum?.algorithm).toBe('sha256');
+    expect(plan.integrity?.algorithm).toBe('sha256');
     expect(plan.generator?.name).toBe('hdf-converters');
     expect(plan.assessments).toBeDefined();
     expect(plan.assessments.length).toBeGreaterThan(0);
@@ -355,7 +355,7 @@ describe('convertOscalPoamToHdf', () => {
     const amendments = JSON.parse(output) as HdfAmendments;
 
     expect(amendments.name).toBeTruthy();
-    expect(amendments.checksum?.algorithm).toBe('sha256');
+    expect(amendments.integrity?.algorithm).toBe('sha256');
     expect(amendments.generator?.name).toBe('hdf-converters');
     expect(amendments.overrides).toBeDefined();
     expect(amendments.overrides.length).toBeGreaterThan(0);
@@ -459,11 +459,11 @@ describe('convertOscalSarToHdf', () => {
     expect(roundtrip.generator?.name).toBe(results.generator?.name);
   });
 
-  it('should include checksums on baselines', async () => {
+  it('should include integrity on baselines', async () => {
     const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
     const results = JSON.parse(output) as HdfResults;
 
-    expect(results.baselines[0]!.checksum?.algorithm).toBe('sha256');
-    expect(results.baselines[0]!.checksum?.value).toMatch(/^[a-f0-9]{64}$/);
+    expect(results.baselines[0]!.integrity?.algorithm).toBe('sha256');
+    expect(results.baselines[0]!.integrity?.checksum).toMatch(/^[a-f0-9]{64}$/);
   });
 });

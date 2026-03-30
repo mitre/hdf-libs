@@ -63,9 +63,9 @@ func TestConvertComponentDefinitionToHDF_Fixture(t *testing.T) {
 	assert.Equal(t, "hdf-converters", baseline.Generator.Name)
 	assert.Equal(t, "1.0.0-test", baseline.Generator.Version)
 
-	// Checksum
-	assert.NotNil(t, baseline.Checksum)
-	assert.Equal(t, hdf.Sha256, baseline.Checksum.Algorithm)
+	// Integrity
+	assert.NotNil(t, baseline.Integrity)
+	assert.Equal(t, hdf.Sha256, *baseline.Integrity.Algorithm)
 
 	// Requirements: fixture has 2 control-implementations, each with 1 implemented-requirement
 	// Both reference ac-2.3 but from different sources

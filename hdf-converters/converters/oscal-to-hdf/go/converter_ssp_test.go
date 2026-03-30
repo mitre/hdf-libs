@@ -50,9 +50,9 @@ func TestConvertSSPToHDF_Fixture(t *testing.T) {
 	assert.NotNil(t, system.Version)
 	assert.Equal(t, "1.2", *system.Version)
 
-	// Checksum
-	assert.NotNil(t, system.Checksum)
-	assert.Equal(t, hdf.Sha256, system.Checksum.Algorithm)
+	// Integrity
+	assert.NotNil(t, system.Integrity)
+	assert.Equal(t, hdf.Sha256, *system.Integrity.Algorithm)
 
 	// Generator
 	assert.NotNil(t, system.Generator)

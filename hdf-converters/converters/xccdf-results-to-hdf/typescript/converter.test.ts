@@ -682,10 +682,10 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
       expect(baseline.generator?.version).toBe('1.0.0');
     });
 
-    it('should include checksum', async () => {
+    it('should include integrity', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
-      expect(baseline.checksum?.algorithm).toBe('sha256');
-      expect(baseline.checksum?.value).toMatch(/^[a-f0-9]{64}$/);
+      expect(baseline.integrity?.algorithm).toBe('sha256');
+      expect(baseline.integrity?.checksum).toMatch(/^[a-f0-9]{64}$/);
     });
 
     it('should set severity field', async () => {

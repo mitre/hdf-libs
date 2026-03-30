@@ -184,9 +184,9 @@ func TestConvertAssessmentResultsToHDF_ChecksumSet(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotEmpty(t, results.Baselines)
-	assert.NotNil(t, results.Baselines[0].Checksum)
-	assert.Equal(t, hdf.Sha256, results.Baselines[0].Checksum.Algorithm)
-	assert.NotEmpty(t, results.Baselines[0].Checksum.Value)
+	assert.NotNil(t, results.Baselines[0].Integrity)
+	assert.Equal(t, hdf.Sha256, *results.Baselines[0].Integrity.Algorithm)
+	assert.NotEmpty(t, *results.Baselines[0].Integrity.Checksum)
 }
 
 func TestConvertAssessmentResultsToHDF_RoundTripJSON(t *testing.T) {

@@ -468,7 +468,7 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 // ---------------------------------------------------------------------------
 
 func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVersion string) (*hdf.HDFBaseline, error) {
-	checksum := shared.InputChecksum(input)
+	integrity := shared.InputIntegrity(input)
 
 	var requirements []hdf.BaselineRequirement
 	var groups []hdf.RequirementGroup
@@ -506,7 +506,7 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 		Version:      shared.Ptr(benchmark.Version),
 		Status:       &status,
 		Summary:      shared.Ptr(shared.StripHTML(benchmark.Description)),
-		Checksum:     checksum,
+		Integrity:    integrity,
 		Requirements: requirements,
 		Groups:       groups,
 		Generator: &hdf.Generator{

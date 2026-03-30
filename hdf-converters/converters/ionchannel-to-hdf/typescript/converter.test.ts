@@ -136,10 +136,10 @@ describe('ionchannel to HDF converter', async () => {
       }
     });
 
-    it('should include a sha256 checksum', async () => {
+    it('should include sha256 integrity', async () => {
       const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.baselines[0]!.checksum?.algorithm).toBe('sha256');
-      expect(hdf.baselines[0]!.checksum?.value).toBeTruthy();
+      expect(hdf.baselines[0]!.integrity?.algorithm).toBe('sha256');
+      expect(hdf.baselines[0]!.integrity?.checksum).toBeTruthy();
     });
   });
 

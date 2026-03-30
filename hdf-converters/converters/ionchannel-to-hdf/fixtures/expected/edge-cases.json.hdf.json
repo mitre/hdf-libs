@@ -1,9 +1,9 @@
 {
   "baselines": [
     {
-      "checksum": {
+      "integrity": {
         "algorithm": "sha256",
-        "value": "a495f3f296614c75bcc73be49f2a3b5184156022c2be61d108a40c0962fe1513"
+        "checksum": "a495f3f296614c75bcc73be49f2a3b5184156022c2be61d108a40c0962fe1513"
       },
       "requirements": [
         {

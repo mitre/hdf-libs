@@ -46,10 +46,10 @@ function transformHdfToXmlObject(hdf: HdfResults): Record<string, unknown> {
         name: wrap(baseline.name),
         ...(baseline.version && { version: wrap(baseline.version) }),
         ...(baseline.title && { title: wrap(baseline.title) }),
-        ...(baseline.checksum && {
-          checksum: {
-            algorithm: wrap(baseline.checksum.algorithm),
-            value: wrap(baseline.checksum.value)
+        ...(baseline.integrity && {
+          integrity: {
+            ...(baseline.integrity.algorithm && { algorithm: wrap(baseline.integrity.algorithm) }),
+            ...(baseline.integrity.checksum && { checksum: wrap(baseline.integrity.checksum) })
           }
         }),
         ...(baseline.requirements && baseline.requirements.length > 0 && {

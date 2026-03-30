@@ -8,6 +8,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
+  Integrity,
   Description,
   SourceLocation,
   ResultStatus,
@@ -24,7 +25,7 @@ export function createMinimalBaseline(
     attributes?: Array<Record<string, unknown>>;
     groups?: RequirementGroup[];
     supports?: SupportedPlatform[];
-    checksum?: Checksum;
+    integrity?: Integrity;
     resultsChecksum?: Checksum;
     originalChecksum?: Checksum;
     status?: string;

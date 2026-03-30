@@ -3,10 +3,10 @@
     <baseline>
       <name>Minimal Baseline</name>
       <version>1.0.0</version>
-      <checksum>
+      <integrity>
         <algorithm>sha256</algorithm>
-        <value>abc123</value>
-      </checksum>
+        <checksum>abc123</checksum>
+      </integrity>
       <requirements>
         <requirement>
           <id>REQ-001</id>

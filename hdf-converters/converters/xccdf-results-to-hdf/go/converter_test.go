@@ -821,9 +821,11 @@ func TestConvertXccdfBenchmarkToHDF_Checksum(t *testing.T) {
 	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.Checksum)
-	assert.Equal(t, hdf.Sha256, result.Checksum.Algorithm)
-	assert.Len(t, result.Checksum.Value, 64)
+	require.NotNil(t, result.Integrity)
+	require.NotNil(t, result.Integrity.Algorithm)
+	assert.Equal(t, hdf.Sha256, *result.Integrity.Algorithm)
+	require.NotNil(t, result.Integrity.Checksum)
+	assert.Len(t, *result.Integrity.Checksum, 64)
 }
 
 func TestConvertXccdfBenchmarkToHDF_ErrorOnResults(t *testing.T) {

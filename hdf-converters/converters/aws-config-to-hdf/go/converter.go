@@ -70,7 +70,7 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		return nil, fmt.Errorf("empty input")
 	}
 
-	checksum := shared.InputChecksum(input)
+	integrity := shared.InputIntegrity(input)
 
 	var data ConfigRulesFile
 	if err := json.Unmarshal(input, &data); err != nil {
@@ -80,7 +80,7 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		return nil, fmt.Errorf("invalid AWS Config export: ConfigRules field is required")
 	}
 
-	baseline := buildBaseline(data.ConfigRules, checksum)
+	baseline := buildBaseline(data.ConfigRules, integrity)
 	now := time.Now().UTC()
 
 	// Extract account/region from first rule's ARN for target labels
@@ -113,7 +113,7 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 }
 
 // buildBaseline creates one EvaluatedBaseline from all ConfigRules.
-func buildBaseline(rules []ConfigRule, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
+func buildBaseline(rules []ConfigRule, integrity *hdf.Integrity) hdf.EvaluatedBaseline {
 	limitedRules, truncatedRules := shared.LimitSlice(rules, 0)
 	if truncatedRules {
 		log.Printf("WARNING: Input truncated at %d ConfigRule items (original: %d)", len(limitedRules), len(rules))
@@ -128,7 +128,7 @@ func buildBaseline(rules []ConfigRule, checksum *hdf.Checksum) hdf.EvaluatedBase
 		Title:        shared.Ptr("AWS Config Compliance Results"),
 		Version:      shared.Ptr("1.0.0"),
 		Maintainer:   shared.Ptr("Amazon Web Services"),
-		Checksum:     checksum,
+		Integrity:    integrity,
 		Requirements: requirements,
 	}
 }

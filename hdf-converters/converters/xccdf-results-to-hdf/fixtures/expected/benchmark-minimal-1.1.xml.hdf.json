@@ -1,8 +1,4 @@
 {
-  "checksum": {
-    "algorithm": "sha256",
-    "value": "7b0f8843229f2bcfe062b1d60ef86dd677a0fe361c367f5cdb0297b70bba090b"
-  },
   "generator": {
     "name": "hdf-converters",
     "version": "0.1.0"
@@ -30,6 +26,10 @@
       "title": "SRG-OS-000480-GPOS-00227"
     }
   ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "7b0f8843229f2bcfe062b1d60ef86dd677a0fe361c367f5cdb0297b70bba090b"
+  },
   "name": "ms-windows-server-2022-stig",
   "requirements": [
     {

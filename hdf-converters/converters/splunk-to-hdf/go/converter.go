@@ -285,9 +285,10 @@ func convertProfileToBaseline(
 	}
 
 	if profile.SHA256 != "" {
-		baseline.Checksum = &hdf.Checksum{
-			Algorithm: hdf.Sha256,
-			Value:     profile.SHA256,
+		alg := hdf.Sha256
+		baseline.Integrity = &hdf.Integrity{
+			Algorithm: &alg,
+			Checksum:  &profile.SHA256,
 		}
 	}
 
