@@ -23,11 +23,11 @@ export function createAjvWithPrimitives(): Ajv2020 {
     'runner.schema.json',
     'statistics.schema.json',
     'result.schema.json',
+    'amendments.schema.json',   // before extensions (extensions.$ref → amendments Override_Type)
     'extensions.schema.json',
     'parameter.schema.json',
     'comparison.schema.json',
     'system.schema.json',
-    'amendments.schema.json',
     'component.schema.json',
     'data-flow.schema.json',
   ];

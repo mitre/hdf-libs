@@ -59,16 +59,16 @@ function createValidator(): Ajv {
 
   // Add all primitive schemas so they can be referenced
   ajv.addSchema(commonSchema);
-  ajv.addSchema(extensionsSchema);
   ajv.addSchema(platformSchema);
   ajv.addSchema(resultSchema);
   ajv.addSchema(runnerSchema);
   ajv.addSchema(statisticsSchema);
   ajv.addSchema(targetSchema);
   ajv.addSchema(parameterSchema);
+  ajv.addSchema(amendmentsSchema);   // before extensions (extensions $refs amendments Override_Type)
+  ajv.addSchema(extensionsSchema);
   ajv.addSchema(systemSchema);
   ajv.addSchema(planSchema);
-  ajv.addSchema(amendmentsSchema);
   ajv.addSchema(comparisonSchema);
   ajv.addSchema(componentSchema);
   ajv.addSchema(dataFlowSchema);

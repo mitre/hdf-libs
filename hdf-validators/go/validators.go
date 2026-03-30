@@ -130,23 +130,14 @@ func loadSchema(filename string) (*gojsonschema.Schema, error) {
 	sl.Validate = false
 
 	// Extract and register embedded schemas from the bundled document.
-	// Bundled schemas appear as top-level keys matching their $id URI
-	// (e.g., "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v2.0.0").
+	// Bundled schemas appear either as top-level keys or as $defs entries,
+	// keyed by their $id URI (e.g., "https://mitre.github.io/hdf-libs/schemas/primitives/...").
 	var doc map[string]interface{}
 	if jsonErr := json.Unmarshal(data, &doc); jsonErr == nil {
-		for key, val := range doc {
-			if !strings.HasPrefix(key, "https://") {
-				continue
-			}
-			subSchema, ok := val.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			subBytes, marshalErr := json.Marshal(subSchema)
-			if marshalErr != nil {
-				continue
-			}
-			_ = sl.AddSchemas(gojsonschema.NewBytesLoader(subBytes))
+		registerEmbeddedSchemas(sl, doc)
+		// Also check $defs for bundled sub-schemas
+		if defs, ok := doc["$defs"].(map[string]interface{}); ok {
+			registerEmbeddedSchemas(sl, defs)
 		}
 	}
 
@@ -156,6 +147,25 @@ func loadSchema(filename string) (*gojsonschema.Schema, error) {
 	}
 
 	return schema, nil
+}
+
+// registerEmbeddedSchemas scans a map for URI-keyed sub-schemas and registers them
+// with the schema loader so $ref can resolve them.
+func registerEmbeddedSchemas(sl *gojsonschema.SchemaLoader, entries map[string]interface{}) {
+	for key, val := range entries {
+		if !strings.HasPrefix(key, "https://") {
+			continue
+		}
+		subSchema, ok := val.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		subBytes, marshalErr := json.Marshal(subSchema)
+		if marshalErr != nil {
+			continue
+		}
+		_ = sl.AddSchemas(gojsonschema.NewBytesLoader(subBytes))
+	}
 }
 
 // getSchema returns the compiled schema for the given type.
