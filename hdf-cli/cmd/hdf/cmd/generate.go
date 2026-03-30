@@ -13,10 +13,12 @@ func NewGenerateCmd() *cobra.Command {
 JSON or XCCDF Benchmark XML.
 
 Available subcommands:
-  inspec-profile    Generate InSpec profile from HDF Baseline or XCCDF Benchmark`,
+  inspec-profile    Generate InSpec profile from HDF Baseline or XCCDF Benchmark
+  threshold         Generate compliance threshold template from HDF results`,
 	}
 
 	cmd.AddCommand(newGenerateInSpecProfileCmd())
+	cmd.AddCommand(newGenerateThresholdCmd())
 
 	return cmd
 }

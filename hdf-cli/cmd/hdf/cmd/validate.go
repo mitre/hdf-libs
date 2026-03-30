@@ -60,6 +60,8 @@ Examples:
 	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "", "Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package")
 	cmd.Flags().BoolVarP(&localQuiet, "quiet", "q", false, "Suppress output on success (exit code only)")
 
+	cmd.AddCommand(newValidateThresholdCmd())
+
 	return cmd
 }
 
