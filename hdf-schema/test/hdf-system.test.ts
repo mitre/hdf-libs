@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import commonSchema from '../src/schemas/primitives/common.schema.json';
+import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
 import systemSchema from '../src/schemas/primitives/system.schema.json';
 import componentSchema from '../src/schemas/primitives/component.schema.json';
 import dataFlowSchema from '../src/schemas/primitives/data-flow.schema.json';
@@ -12,6 +13,7 @@ describe('hdf-system.schema.json', () => {
   addFormats(ajv);
 
   ajv.addSchema(commonSchema);
+  ajv.addSchema(extensionsSchema);
   ajv.addSchema(systemSchema);
   ajv.addSchema(componentSchema);
   ajv.addSchema(dataFlowSchema);
@@ -43,7 +45,7 @@ describe('hdf-system.schema.json', () => {
     version: '2.0.0',
     labels: { environment: 'production', agency: 'DOD' },
     generator: { name: 'hdf-cli', version: '0.1.0' },
-    checksum: { algorithm: 'sha256', value: 'abc123def456' },
+    integrity: { algorithm: 'sha256', checksum: 'abc123def456' },
     components: [
       {
         name: 'WebTier',
@@ -185,10 +187,10 @@ describe('hdf-system.schema.json', () => {
     expect(validate(doc)).toBe(false);
   });
 
-  // -- Checksum --
+  // -- Integrity --
 
-  it('should accept document with checksum', () => {
-    const doc = { ...minimal, checksum: { algorithm: 'sha256', value: 'abc' } };
+  it('should accept document with integrity', () => {
+    const doc = { ...minimal, integrity: { algorithm: 'sha256', checksum: 'abc' } };
     expect(validate(doc)).toBe(true);
   });
 
@@ -537,6 +539,7 @@ describe('hdf-system.schema.json — controlDesignations array', () => {
   const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
   addFormats(ajv);
   ajv.addSchema(commonSchema);
+  ajv.addSchema(extensionsSchema);
   ajv.addSchema(systemSchema);
   ajv.addSchema(componentSchema);
   ajv.addSchema(dataFlowSchema);

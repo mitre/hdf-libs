@@ -38,30 +38,28 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate.errors).not.toBeNull();
     });
 
-    it('should accept checksum with sha256 algorithm', () => {
+    it('should accept integrity with sha256 algorithm', () => {
       const doc = createMinimalBaselineDoc({
-        checksum: { algorithm: 'sha256', value: 'abc123def456' }
-      });
-      delete (doc as Record<string, unknown>).sha256;
-      expect(validate(doc)).toBe(true);
-    });
-
-    it('should accept checksum with sha512 algorithm', () => {
-      const doc = createMinimalBaselineDoc({
-        checksum: { algorithm: 'sha512', value: 'longer-sha512-hash-value' }
+        integrity: { algorithm: 'sha256', checksum: 'abc123def456' }
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept checksum with sha384 algorithm', () => {
+    it('should accept integrity with sha512 algorithm', () => {
       const doc = createMinimalBaselineDoc({
-        checksum: { algorithm: 'sha384', value: 'sha384-hash-value' }
+        integrity: { algorithm: 'sha512', checksum: 'longer-sha512-hash-value' }
       });
-      delete (doc as Record<string, unknown>).sha256;
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept document without checksum', () => {
+    it('should accept integrity with sha384 algorithm', () => {
+      const doc = createMinimalBaselineDoc({
+        integrity: { algorithm: 'sha384', checksum: 'sha384-hash-value' }
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept document without integrity', () => {
       const doc = {
         name: 'test-baseline',
         requirements: [
@@ -76,11 +74,11 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should reject checksum with invalid algorithm', () => {
+    it('should reject integrity with invalid algorithm', () => {
       const doc = {
         name: 'test-baseline',
         requirements: [],
-        checksum: { algorithm: 'md5', value: 'bad-algorithm' }
+        integrity: { algorithm: 'md5', checksum: 'bad-algorithm' }
       };
       expect(validate(doc)).toBe(false);
     });

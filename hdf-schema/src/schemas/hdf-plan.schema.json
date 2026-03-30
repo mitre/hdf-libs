@@ -46,9 +46,9 @@
       },
       "description": "Optional key-value labels for grouping and querying plans."
     },
-    "checksum": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
-      "description": "Cryptographic checksum for integrity verification."
+    "integrity": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
+      "description": "Cryptographic integrity information for verifying this plan document has not been tampered with."
     },
     "version": {
       "type": "string",

@@ -5,9 +5,9 @@
       "title": "Test Baseline",
       "version": "1.0.0",
       "inputs": [],
-      "checksum": {
+      "integrity": {
         "algorithm": "sha256",
-        "value": "abc123"
+        "checksum": "abc123"
       },
       "depends": [],
       "groups": [

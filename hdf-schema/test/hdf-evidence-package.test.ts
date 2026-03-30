@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import commonSchema from '../src/schemas/primitives/common.schema.json';
+import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
 import hdfEvidenceSchema from '../src/schemas/hdf-evidence-package.schema.json';
 
 describe('hdf-evidence-package.schema.json', () => {
   const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
   addFormats(ajv);
   ajv.addSchema(commonSchema);
+  ajv.addSchema(extensionsSchema);
   const validate = ajv.compile(hdfEvidenceSchema);
 
   const minimalContent = { type: 'hdf-results', uri: 'scan.json' };
@@ -27,7 +29,7 @@ describe('hdf-evidence-package.schema.json', () => {
       preparedAt: '2026-03-31T12:00:00Z',
       version: '1.0.0',
       labels: { quarter: 'Q1-2026' },
-      checksum: { algorithm: 'sha256', value: 'abc123' },
+      integrity: { algorithm: 'sha256', checksum: 'abc123' },
       generator: { name: 'hdf-cli', version: '0.1.0' },
       signature: {
         type: 'Ed25519Signature2020',

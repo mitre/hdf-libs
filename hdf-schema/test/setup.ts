@@ -86,7 +86,7 @@ export function createMinimalBaselineDoc(overrides: object = {}): object {
         ],
       }
     ],
-    checksum: { algorithm: 'sha256', value: 'abc123def456' },
+    integrity: { algorithm: 'sha256', checksum: 'abc123def456' },
     ...overrides,
   };
 }
@@ -97,7 +97,7 @@ export function createMinimalBaselineDoc(overrides: object = {}): object {
 export function createMinimalEvaluatedBaseline(overrides: object = {}): object {
   return {
     name: 'test-baseline',
-    checksum: { algorithm: 'sha256', value: 'abc123' },
+    integrity: { algorithm: 'sha256', checksum: 'abc123' },
     requirements: [
       {
         id: 'SV-238196',

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import commonSchema from '../src/schemas/primitives/common.schema.json';
+import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
 import systemSchema from '../src/schemas/primitives/system.schema.json';
 import planSchema from '../src/schemas/primitives/plan.schema.json';
 import hdfPlanSchema from '../src/schemas/hdf-plan.schema.json';
@@ -11,6 +12,7 @@ describe('hdf-plan.schema.json', () => {
   addFormats(ajv);
 
   ajv.addSchema(commonSchema);
+  ajv.addSchema(extensionsSchema);
   ajv.addSchema(systemSchema);
   ajv.addSchema(planSchema);
   const validate = ajv.compile(hdfPlanSchema);
@@ -33,7 +35,7 @@ describe('hdf-plan.schema.json', () => {
     version: '1.0.0',
     labels: { environment: 'production', cadence: 'monthly' },
     generator: { name: 'hdf-cli', version: '0.1.0' },
-    checksum: { algorithm: 'sha256', value: 'abc123' },
+    integrity: { algorithm: 'sha256', checksum: 'abc123' },
     assessments: [
       {
         baselineRef: 'RHEL9-STIG',

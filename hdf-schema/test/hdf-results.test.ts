@@ -220,26 +220,26 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate baseline with sha512 checksum', () => {
+    it('should validate baseline with sha512 integrity', () => {
       const baseline = {
         name: 'test-baseline',
         requirements: [createMinimalRequirement()],
-        checksum: { algorithm: 'sha512', value: 'longer-sha512-hash-value' },
+        integrity: { algorithm: 'sha512', checksum: 'longer-sha512-hash-value' },
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate baseline with sha384 checksum', () => {
+    it('should validate baseline with sha384 integrity', () => {
       const doc = createMinimalResultsDoc({
         baselines: [createMinimalEvaluatedBaseline({
-          checksum: { algorithm: 'sha384', value: 'sha384-value' }
+          integrity: { algorithm: 'sha384', checksum: 'sha384-value' }
         })],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept baseline without checksum', () => {
+    it('should accept baseline without integrity', () => {
       const baseline = {
         name: 'test-baseline',
         requirements: [createMinimalRequirement()],
@@ -252,7 +252,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const baseline = {
         name: 'test-baseline',
         requirements: [createMinimalRequirement()],
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
       expect(validate(doc)).toBe(true);
@@ -262,7 +262,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const baseline = {
         name: 'test-baseline',
         requirements: [createMinimalRequirement()],
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
       expect(validate(doc)).toBe(true);
@@ -272,7 +272,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const baseline = {
         name: 'test-baseline',
         requirements: [createMinimalRequirement()],
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
       expect(validate(doc)).toBe(true);
@@ -282,7 +282,7 @@ describe('hdf-results.schema.json (refactored)', () => {
       const baseline = {
         name: 'test-baseline',
         requirements: [createMinimalRequirement()],
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
         supports: [{ platformFamily: 'redhat', platformName: 'centos' }],
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });

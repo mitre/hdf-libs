@@ -27,6 +27,19 @@ func InputChecksum(input []byte) *hdf.Checksum {
 	}
 }
 
+// InputIntegrity computes the SHA-256 checksum of raw input bytes and returns
+// it as an hdf.Integrity. Used for root-level integrity fields on document
+// types (HDFBaseline, HDFSystem, HDFPlan, HDFAmendments, HDFEvidencePackage).
+func InputIntegrity(input []byte) *hdf.Integrity {
+	hash := sha256.Sum256(input)
+	alg := hdf.Sha256
+	val := hex.EncodeToString(hash[:])
+	return &hdf.Integrity{
+		Algorithm: &alg,
+		Checksum:  &val,
+	}
+}
+
 // Ptr returns a pointer to the given value. Replaces per-converter stringPtr,
 // floatPtr, and ptr[T] helpers.
 func Ptr[T any](v T) *T { return &v }

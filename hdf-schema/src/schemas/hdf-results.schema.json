@@ -102,9 +102,9 @@
           "type": "string",
           "description": "The description - should be more detailed than the summary."
         },
-        "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
-          "description": "Cryptographic checksum for baseline integrity verification."
+        "integrity": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
+          "description": "Cryptographic integrity information for verifying this baseline has not been tampered with."
         },
         "originalChecksum": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",

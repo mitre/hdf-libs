@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import commonSchema from '../src/schemas/primitives/common.schema.json';
-import resultSchema from '../src/schemas/primitives/result.schema.json';
 import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
+import resultSchema from '../src/schemas/primitives/result.schema.json';
 import amendmentsSchema from '../src/schemas/primitives/amendments.schema.json';
 import hdfAmendmentsSchema from '../src/schemas/hdf-amendments.schema.json';
 
@@ -46,7 +46,7 @@ describe('hdf-amendments.schema.json', () => {
       approvedBy: { type: 'email', identifier: 'ao@agency.gov' },
       version: '1.0.0',
       labels: { quarter: 'Q1-2026', system: 'Portal' },
-      checksum: { algorithm: 'sha256', value: 'abc123' },
+      integrity: { algorithm: 'sha256', checksum: 'abc123' },
       generator: { name: 'hdf-cli', version: '0.1.0' },
       signature: {
         type: 'Ed25519Signature2020',
