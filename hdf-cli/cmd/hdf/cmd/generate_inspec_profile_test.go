@@ -180,9 +180,9 @@ func TestGenerateInSpecProfile_XccdfBenchmarkInput(t *testing.T) {
 	assert.Contains(t, yml, "Microsoft Windows Server 2022")
 
 	// Verify control files generated from XCCDF rules
-	ctrl, err := os.ReadFile(filepath.Join(outputDir, "controls", "WN22-00-000010.rb"))
+	ctrl, err := os.ReadFile(filepath.Join(outputDir, "controls", "SV-254238.rb"))
 	require.NoError(t, err)
-	assert.Contains(t, string(ctrl), "control 'WN22-00-000010' do")
+	assert.Contains(t, string(ctrl), "control 'SV-254238' do")
 }
 
 func TestGenerateInSpecProfile_XccdfFullSTIG(t *testing.T) {
@@ -206,10 +206,10 @@ func TestGenerateInSpecProfile_XccdfFullSTIG(t *testing.T) {
 	assert.Contains(t, yml, "Red Hat Enterprise Linux 9")
 
 	// Spot-check a known RHEL9 STIG control
-	ctrl, err := os.ReadFile(filepath.Join(outputDir, "controls", "RHEL-09-211010.rb"))
+	ctrl, err := os.ReadFile(filepath.Join(outputDir, "controls", "SV-257777.rb"))
 	require.NoError(t, err)
 	content := string(ctrl)
-	assert.Contains(t, content, "control 'RHEL-09-211010' do")
+	assert.Contains(t, content, "control 'SV-257777' do")
 	assert.Contains(t, content, "impact")
 	assert.Contains(t, content, "tag nist:")
 
@@ -233,7 +233,7 @@ func TestGenerateInSpecProfile_XccdfAutoDetect(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should have generated control files
-	_, err = os.Stat(filepath.Join(outputDir, "controls", "WN22-00-000010.rb"))
+	_, err = os.Stat(filepath.Join(outputDir, "controls", "SV-254238.rb"))
 	assert.NoError(t, err)
 }
 
@@ -249,7 +249,7 @@ func TestGenerateInSpecProfile_ExplicitSourceTypeXccdf(t *testing.T) {
 	_, _, err := executeCommand("generate", "inspec-profile", fixturePath, outputDir, "--source-type", "xccdf")
 	require.NoError(t, err)
 
-	_, err = os.Stat(filepath.Join(outputDir, "controls", "WN22-00-000010.rb"))
+	_, err = os.Stat(filepath.Join(outputDir, "controls", "SV-254238.rb"))
 	assert.NoError(t, err)
 }
 

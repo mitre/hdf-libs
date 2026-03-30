@@ -214,19 +214,19 @@ func TestConvertXccdfResultsToHDF_StigSeverityToImpact(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 
-	// RHEL-07-010030: medium -> 0.5
-	medReq := findRequirementByID(reqs, "RHEL-07-010030")
-	require.NotNil(t, medReq, "Should find RHEL-07-010030")
+	// SV-204393: medium -> 0.5
+	medReq := findRequirementByID(reqs, "SV-204393")
+	require.NotNil(t, medReq, "Should find SV-204393")
 	assert.Equal(t, 0.5, medReq.Impact, "medium severity should map to 0.5")
 
-	// RHEL-07-010290: high -> 0.7
-	highReq := findRequirementByID(reqs, "RHEL-07-010290")
-	require.NotNil(t, highReq, "Should find RHEL-07-010290")
+	// SV-204424: high -> 0.7
+	highReq := findRequirementByID(reqs, "SV-204424")
+	require.NotNil(t, highReq, "Should find SV-204424")
 	assert.Equal(t, 0.7, highReq.Impact, "high severity should map to 0.7")
 
-	// RHEL-07-020200: low -> 0.3
-	lowReq := findRequirementByID(reqs, "RHEL-07-020200")
-	require.NotNil(t, lowReq, "Should find RHEL-07-020200")
+	// SV-204452: low -> 0.3
+	lowReq := findRequirementByID(reqs, "SV-204452")
+	require.NotNil(t, lowReq, "Should find SV-204452")
 	assert.Equal(t, 0.3, lowReq.Impact, "low severity should map to 0.3")
 }
 
@@ -237,13 +237,13 @@ func TestConvertXccdfResultsToHDF_StigStatusMapping(t *testing.T) {
 
 	reqs := result.Baselines[0].Requirements
 
-	// RHEL-07-010030: fail
-	failReq := findRequirementByID(reqs, "RHEL-07-010030")
+	// SV-204393: fail
+	failReq := findRequirementByID(reqs, "SV-204393")
 	require.NotNil(t, failReq)
 	assert.Equal(t, hdf.Failed, failReq.Results[0].Status)
 
-	// RHEL-07-010118: pass
-	passReq := findRequirementByID(reqs, "RHEL-07-010118")
+	// SV-204405: pass
+	passReq := findRequirementByID(reqs, "SV-204405")
 	require.NotNil(t, passReq)
 	assert.Equal(t, hdf.Passed, passReq.Results[0].Status)
 }
@@ -254,8 +254,8 @@ func TestConvertXccdfResultsToHDF_StigCCIToNIST(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirementByID(reqs, "RHEL-07-010030")
-	require.NotNil(t, req, "Should find RHEL-07-010030")
+	req := findRequirementByID(reqs, "SV-204393")
+	require.NotNil(t, req, "Should find SV-204393")
 
 	// Should have cci tag
 	cciTag, ok := req.Tags["cci"]
@@ -313,7 +313,7 @@ func TestConvertXccdfResultsToHDF_StigDescriptions(t *testing.T) {
 	require.NoError(t, err)
 
 	reqs := result.Baselines[0].Requirements
-	req := findRequirementByID(reqs, "RHEL-07-010030")
+	req := findRequirementByID(reqs, "SV-204393")
 	require.NotNil(t, req)
 
 	// Should have at least "default" and "fix" descriptions
@@ -337,11 +337,11 @@ func TestConvertXccdfResultsToHDF_StigRuleVersionAsID(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 	// All STIG rules should use version text as ID
 	expectedIDs := []string{
-		"RHEL-07-010030",
-		"RHEL-07-010060",
-		"RHEL-07-010118",
-		"RHEL-07-010290",
-		"RHEL-07-020200",
+		"SV-204393",
+		"SV-204396",
+		"SV-204405",
+		"SV-204424",
+		"SV-204452",
 	}
 	for _, expectedID := range expectedIDs {
 		req := findRequirementByID(reqs, expectedID)
@@ -694,9 +694,9 @@ func TestConvertXccdfBenchmarkToHDF_RequirementIDs(t *testing.T) {
 	}
 
 	// IDs should use Rule <version> text (STIG IDs)
-	assert.Contains(t, ids, "WN22-00-000010")
-	assert.Contains(t, ids, "WN22-00-000020")
-	assert.Contains(t, ids, "WN22-00-000030")
+	assert.Contains(t, ids, "SV-254238")
+	assert.Contains(t, ids, "SV-254239")
+	assert.Contains(t, ids, "SV-254240")
 }
 
 func TestConvertXccdfBenchmarkToHDF_SeverityMapping(t *testing.T) {
@@ -710,9 +710,9 @@ func TestConvertXccdfBenchmarkToHDF_SeverityMapping(t *testing.T) {
 	}
 
 	// WN22-00-000010: medium -> 0.5
-	assert.Equal(t, 0.5, reqMap["WN22-00-000010"].Impact)
+	assert.Equal(t, 0.5, reqMap["SV-254238"].Impact)
 	// WN22-00-000030: high -> 0.7
-	assert.Equal(t, 0.7, reqMap["WN22-00-000030"].Impact)
+	assert.Equal(t, 0.7, reqMap["SV-254240"].Impact)
 }
 
 func TestConvertXccdfBenchmarkToHDF_Descriptions(t *testing.T) {
@@ -720,7 +720,7 @@ func TestConvertXccdfBenchmarkToHDF_Descriptions(t *testing.T) {
 	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
 
-	req := findBaselineRequirement(result.Requirements, "WN22-00-000010")
+	req := findBaselineRequirement(result.Requirements, "SV-254238")
 	require.NotNil(t, req)
 
 	// Should have default, check, and fix descriptions
@@ -743,7 +743,7 @@ func TestConvertXccdfBenchmarkToHDF_CCITags(t *testing.T) {
 	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
 
-	req := findBaselineRequirement(result.Requirements, "WN22-00-000010")
+	req := findBaselineRequirement(result.Requirements, "SV-254238")
 	require.NotNil(t, req)
 
 	cciTag, ok := req.Tags["cci"]
@@ -764,7 +764,7 @@ func TestConvertXccdfBenchmarkToHDF_MultipleCCIs(t *testing.T) {
 	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
 
-	req := findBaselineRequirement(result.Requirements, "WN22-00-000020")
+	req := findBaselineRequirement(result.Requirements, "SV-254239")
 	require.NotNil(t, req)
 
 	cciTag, ok := req.Tags["cci"]
@@ -782,7 +782,7 @@ func TestConvertXccdfBenchmarkToHDF_STIGTags(t *testing.T) {
 	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
 
-	req := findBaselineRequirement(result.Requirements, "WN22-00-000010")
+	req := findBaselineRequirement(result.Requirements, "SV-254238")
 	require.NotNil(t, req)
 
 	assert.Equal(t, "SV-254238r991589_rule", req.Tags["rid"])
@@ -803,7 +803,7 @@ func TestConvertXccdfBenchmarkToHDF_Groups(t *testing.T) {
 	assert.Equal(t, "V-254238", result.Groups[0].ID)
 	require.NotNil(t, result.Groups[0].Title)
 	assert.Equal(t, "SRG-OS-000480-GPOS-00227", *result.Groups[0].Title)
-	assert.Equal(t, []string{"WN22-00-000010"}, result.Groups[0].Requirements)
+	assert.Equal(t, []string{"SV-254238"}, result.Groups[0].Requirements)
 }
 
 func TestConvertXccdfBenchmarkToHDF_Generator(t *testing.T) {
@@ -858,12 +858,12 @@ func TestConvertXccdfBenchmarkToHDF_Severity(t *testing.T) {
 	result, err := ConvertXccdfBenchmarkToHDF(input, converterVersion)
 	require.NoError(t, err)
 
-	req := findBaselineRequirement(result.Requirements, "WN22-00-000010")
+	req := findBaselineRequirement(result.Requirements, "SV-254238")
 	require.NotNil(t, req)
 	require.NotNil(t, req.Severity)
 	assert.Equal(t, hdf.Medium, *req.Severity)
 
-	highReq := findBaselineRequirement(result.Requirements, "WN22-00-000030")
+	highReq := findBaselineRequirement(result.Requirements, "SV-254240")
 	require.NotNil(t, highReq)
 	require.NotNil(t, highReq.Severity)
 	assert.Equal(t, hdf.SeverityHigh, *highReq.Severity)
@@ -942,7 +942,7 @@ func TestConvertXccdfBenchmarkToHDF_FullWin2022STIG(t *testing.T) {
 	assert.Contains(t, *result.Title, "Windows Server 2022")
 
 	// Spot-check first requirement
-	req := findBaselineRequirement(result.Requirements, "WN22-00-000010")
+	req := findBaselineRequirement(result.Requirements, "SV-254238")
 	require.NotNil(t, req)
 	assert.Equal(t, 0.5, req.Impact)
 
@@ -978,6 +978,28 @@ func findBaselineRequirement(requirements []hdf.BaselineRequirement, id string) 
 		}
 	}
 	return nil
+}
+
+// --- extractRuleID tests ---
+
+func TestExtractRuleID(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"standard STIG rule ID", "SV-254238r991589_rule", "SV-254238"},
+		{"qualified XCCDF rule ID", "xccdf_mil.disa.stig_rule_SV-204393r603261_rule", "SV-204393"},
+		{"lowercase sv prefix", "sv-12345r67_rule", "SV-12345"},
+		{"no revision suffix", "SV-12345", "SV-12345"},
+		{"non-SV rule ID passthrough", "xccdf_moc.elpmaxe.www_rule_1", "xccdf_moc.elpmaxe.www_rule_1"},
+		{"empty string", "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, extractRuleID(tt.input))
+		})
+	}
 }
 
 func TestSnapshots(t *testing.T) {

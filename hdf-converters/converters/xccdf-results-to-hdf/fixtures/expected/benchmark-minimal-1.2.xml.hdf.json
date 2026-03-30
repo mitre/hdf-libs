@@ -7,21 +7,21 @@
     {
       "id": "V-254238",
       "requirements": [
-        "WN22-00-000010"
+        "SV-254238"
       ],
       "title": "SRG-OS-000480-GPOS-00227"
     },
     {
       "id": "V-254239",
       "requirements": [
-        "WN22-00-000020"
+        "SV-254239"
       ],
       "title": "SRG-OS-000076-GPOS-00044"
     },
     {
       "id": "V-254240",
       "requirements": [
-        "WN22-00-000030"
+        "SV-254240"
       ],
       "title": "SRG-OS-000480-GPOS-00227"
     }
@@ -47,7 +47,7 @@
           "label": "fix"
         }
       ],
-      "id": "WN22-00-000010",
+      "id": "SV-254238",
       "impact": 0.5,
       "severity": "medium",
       "tags": {
@@ -83,7 +83,7 @@
           "label": "fix"
         }
       ],
-      "id": "WN22-00-000020",
+      "id": "SV-254239",
       "impact": 0.5,
       "severity": "medium",
       "tags": {
@@ -120,7 +120,7 @@
           "label": "fix"
         }
       ],
-      "id": "WN22-00-000030",
+      "id": "SV-254240",
       "impact": 0.7,
       "severity": "high",
       "tags": {

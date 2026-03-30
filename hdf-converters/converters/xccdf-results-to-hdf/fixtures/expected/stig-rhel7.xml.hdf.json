@@ -14,7 +14,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-07-010030",
+          "id": "SV-204393",
           "impact": 0.5,
           "results": [
             {
@@ -45,7 +45,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-07-010060",
+          "id": "SV-204396",
           "impact": 0.5,
           "results": [
             {
@@ -76,7 +76,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-07-010118",
+          "id": "SV-204405",
           "impact": 0.5,
           "results": [
             {
@@ -107,7 +107,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-07-010290",
+          "id": "SV-204424",
           "impact": 0.7,
           "results": [
             {
@@ -138,7 +138,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-07-020200",
+          "id": "SV-204452",
           "impact": 0.3,
           "results": [
             {

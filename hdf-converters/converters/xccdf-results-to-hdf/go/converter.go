@@ -521,9 +521,9 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 // convertRuleToBaselineRequirement converts a single XCCDF Rule into an HDF
 // BaselineRequirement for benchmark-to-baseline conversion.
 func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequirement {
-	id := rule.Version
+	id := extractRuleID(rule.ID)
 	if id == "" {
-		id = rule.ID
+		id = rule.Version
 	}
 
 	severity := strings.ToLower(rule.Severity)
@@ -625,6 +625,37 @@ func buildBaselineTags(rule *Rule, group *Group) map[string]interface{} {
 // "ms-windows-server-2022-stig".
 func kebabCase(s string) string {
 	return strings.ToLower(strings.ReplaceAll(s, "_", "-"))
+}
+
+// extractRuleID extracts the vulnerability ID from an XCCDF Rule ID.
+// Handles two formats:
+//   - Bare: "SV-254238r991589_rule" → "SV-254238"
+//   - Qualified: "xccdf_mil.disa.stig_rule_SV-204393r603261_rule" → "SV-204393"
+//
+// The revision suffix (e.g. "r991589_rule") is stripped by splitting on the
+// first lowercase 'r' after the SV- digits. Non-SV IDs are returned unchanged.
+func extractRuleID(ruleID string) string {
+	if ruleID == "" {
+		return ""
+	}
+
+	// Check for embedded SV- in qualified XCCDF IDs (e.g. "xccdf_..._SV-12345r...")
+	svIdx := strings.Index(strings.ToUpper(ruleID), "SV-")
+	if svIdx < 0 {
+		return ruleID
+	}
+
+	// Extract from "SV-" onward
+	svPart := "SV-" + ruleID[svIdx+3:]
+
+	// Strip revision suffix: split on first lowercase 'r' after digits
+	digits := svPart[3:] // everything after "SV-"
+	for i, ch := range digits {
+		if ch == 'r' && i > 0 {
+			return "SV-" + digits[:i]
+		}
+	}
+	return svPart
 }
 
 // ---------------------------------------------------------------------------
@@ -880,11 +911,12 @@ func convertRuleResult(rr *RuleResult, rule *Rule) hdf.EvaluatedRequirement {
 	}
 }
 
-// determineID returns the requirement ID. Prefers the Rule version text
-// (e.g. "RHEL-07-010030"), falling back to the rule-result idref.
+// determineID returns the requirement ID. Prefers the Rule ID extracted
+// as a vulnerability ID (e.g. "SV-254238" from "SV-254238r991589_rule"),
+// falling back to the rule-result idref.
 func determineID(rr *RuleResult, rule *Rule) string {
-	if rule != nil && rule.Version != "" {
-		return rule.Version
+	if rule != nil && rule.ID != "" {
+		return extractRuleID(rule.ID)
 	}
 	return rr.IDRef
 }

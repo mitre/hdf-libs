@@ -14,7 +14,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010000",
+          "id": "SV-230221",
           "impact": 0.7,
           "results": [
             {
@@ -45,7 +45,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010020",
+          "id": "SV-230223",
           "impact": 0.7,
           "results": [
             {
@@ -76,7 +76,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010110",
+          "id": "SV-230231",
           "impact": 0.5,
           "results": [
             {
@@ -107,7 +107,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010120",
+          "id": "SV-230232",
           "impact": 0.5,
           "results": [
             {
@@ -138,7 +138,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010130",
+          "id": "SV-230233",
           "impact": 0.5,
           "results": [
             {
@@ -169,7 +169,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010140",
+          "id": "SV-230234",
           "impact": 0.7,
           "results": [
             {
@@ -200,7 +200,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010150",
+          "id": "SV-230235",
           "impact": 0.7,
           "results": [
             {
@@ -231,7 +231,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010151",
+          "id": "SV-230236",
           "impact": 0.5,
           "results": [
             {
@@ -262,7 +262,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010160",
+          "id": "SV-230237",
           "impact": 0.5,
           "results": [
             {
@@ -293,7 +293,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010161",
+          "id": "SV-230238",
           "impact": 0.5,
           "results": [
             {
@@ -324,7 +324,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010162",
+          "id": "SV-230239",
           "impact": 0.5,
           "results": [
             {
@@ -355,7 +355,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010171",
+          "id": "SV-230241",
           "impact": 0.3,
           "results": [
             {
@@ -386,7 +386,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010200",
+          "id": "SV-230244",
           "impact": 0.5,
           "results": [
             {
@@ -417,7 +417,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010210",
+          "id": "SV-230245",
           "impact": 0.5,
           "results": [
             {
@@ -449,7 +449,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010220",
+          "id": "SV-230246",
           "impact": 0.5,
           "results": [
             {
@@ -481,7 +481,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010230",
+          "id": "SV-230247",
           "impact": 0.5,
           "results": [
             {
@@ -513,7 +513,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010240",
+          "id": "SV-230248",
           "impact": 0.5,
           "results": [
             {
@@ -545,7 +545,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010250",
+          "id": "SV-230249",
           "impact": 0.5,
           "results": [
             {
@@ -577,7 +577,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010260",
+          "id": "SV-230250",
           "impact": 0.5,
           "results": [
             {
@@ -609,7 +609,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010292",
+          "id": "SV-230253",
           "impact": 0.3,
           "results": [
             {
@@ -640,7 +640,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010294",
+          "id": "SV-230255",
           "impact": 0.5,
           "results": [
             {
@@ -671,7 +671,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010300",
+          "id": "SV-230257",
           "impact": 0.5,
           "results": [
             {
@@ -702,7 +702,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010310",
+          "id": "SV-230258",
           "impact": 0.5,
           "results": [
             {
@@ -733,7 +733,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010320",
+          "id": "SV-230259",
           "impact": 0.5,
           "results": [
             {
@@ -764,7 +764,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010370",
+          "id": "SV-230264",
           "impact": 0.7,
           "results": [
             {
@@ -794,7 +794,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010371",
+          "id": "SV-230265",
           "impact": 0.7,
           "results": [
             {
@@ -824,7 +824,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010372",
+          "id": "SV-230266",
           "impact": 0.5,
           "results": [
             {
@@ -854,7 +854,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010373",
+          "id": "SV-230267",
           "impact": 0.5,
           "results": [
             {
@@ -884,7 +884,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010374",
+          "id": "SV-230268",
           "impact": 0.5,
           "results": [
             {
@@ -914,7 +914,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010375",
+          "id": "SV-230269",
           "impact": 0.3,
           "results": [
             {
@@ -945,7 +945,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010376",
+          "id": "SV-230270",
           "impact": 0.3,
           "results": [
             {
@@ -976,7 +976,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010380",
+          "id": "SV-230271",
           "impact": 0.5,
           "results": [
             {
@@ -1006,7 +1006,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010381",
+          "id": "SV-230272",
           "impact": 0.5,
           "results": [
             {
@@ -1036,7 +1036,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010390",
+          "id": "SV-230273",
           "impact": 0.5,
           "results": [
             {
@@ -1066,7 +1066,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010440",
+          "id": "SV-230281",
           "impact": 0.3,
           "results": [
             {
@@ -1096,7 +1096,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010450",
+          "id": "SV-230282",
           "impact": 0.5,
           "results": [
             {
@@ -1126,7 +1126,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010460",
+          "id": "SV-230283",
           "impact": 0.7,
           "results": [
             {
@@ -1157,7 +1157,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010470",
+          "id": "SV-230284",
           "impact": 0.7,
           "results": [
             {
@@ -1188,7 +1188,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010480",
+          "id": "SV-230286",
           "impact": 0.5,
           "results": [
             {
@@ -1219,7 +1219,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010490",
+          "id": "SV-230287",
           "impact": 0.5,
           "results": [
             {
@@ -1250,7 +1250,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010500",
+          "id": "SV-230288",
           "impact": 0.5,
           "results": [
             {
@@ -1281,7 +1281,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010510",
+          "id": "SV-230289",
           "impact": 0.5,
           "results": [
             {
@@ -1312,7 +1312,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010520",
+          "id": "SV-230290",
           "impact": 0.5,
           "results": [
             {
@@ -1343,7 +1343,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010521",
+          "id": "SV-230291",
           "impact": 0.5,
           "results": [
             {
@@ -1374,7 +1374,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010540",
+          "id": "SV-230292",
           "impact": 0.3,
           "results": [
             {
@@ -1405,7 +1405,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010541",
+          "id": "SV-230293",
           "impact": 0.3,
           "results": [
             {
@@ -1436,7 +1436,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010542",
+          "id": "SV-230294",
           "impact": 0.3,
           "results": [
             {
@@ -1467,7 +1467,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010543",
+          "id": "SV-230295",
           "impact": 0.5,
           "results": [
             {
@@ -1498,7 +1498,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010550",
+          "id": "SV-230296",
           "impact": 0.5,
           "results": [
             {
@@ -1530,7 +1530,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010560",
+          "id": "SV-230297",
           "impact": 0.5,
           "results": [
             {
@@ -1561,7 +1561,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010561",
+          "id": "SV-230298",
           "impact": 0.5,
           "results": [
             {
@@ -1592,7 +1592,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010571",
+          "id": "SV-230300",
           "impact": 0.5,
           "results": [
             {
@@ -1623,7 +1623,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010580",
+          "id": "SV-230301",
           "impact": 0.5,
           "results": [
             {
@@ -1654,7 +1654,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010630",
+          "id": "SV-230306",
           "impact": 0.5,
           "results": [
             {
@@ -1685,7 +1685,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010640",
+          "id": "SV-230307",
           "impact": 0.5,
           "results": [
             {
@@ -1716,7 +1716,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010650",
+          "id": "SV-230308",
           "impact": 0.5,
           "results": [
             {
@@ -1747,7 +1747,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010671",
+          "id": "SV-230311",
           "impact": 0.5,
           "results": [
             {
@@ -1778,7 +1778,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010673",
+          "id": "SV-230313",
           "impact": 0.5,
           "results": [
             {
@@ -1809,7 +1809,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010674",
+          "id": "SV-230314",
           "impact": 0.5,
           "results": [
             {
@@ -1840,7 +1840,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010675",
+          "id": "SV-230315",
           "impact": 0.5,
           "results": [
             {
@@ -1871,7 +1871,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010760",
+          "id": "SV-230324",
           "impact": 0.5,
           "results": [
             {
@@ -1902,7 +1902,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010830",
+          "id": "SV-230330",
           "impact": 0.5,
           "results": [
             {
@@ -1933,7 +1933,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020010",
+          "id": "SV-230332",
           "impact": 0.5,
           "results": [
             {
@@ -1964,7 +1964,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020011",
+          "id": "SV-230333",
           "impact": 0.5,
           "results": [
             {
@@ -1995,7 +1995,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020012",
+          "id": "SV-230334",
           "impact": 0.5,
           "results": [
             {
@@ -2026,7 +2026,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020013",
+          "id": "SV-230335",
           "impact": 0.5,
           "results": [
             {
@@ -2057,7 +2057,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020014",
+          "id": "SV-230336",
           "impact": 0.5,
           "results": [
             {
@@ -2088,7 +2088,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020015",
+          "id": "SV-230337",
           "impact": 0.5,
           "results": [
             {
@@ -2119,7 +2119,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020018",
+          "id": "SV-230340",
           "impact": 0.5,
           "results": [
             {
@@ -2150,7 +2150,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020019",
+          "id": "SV-230341",
           "impact": 0.5,
           "results": [
             {
@@ -2181,7 +2181,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020020",
+          "id": "SV-230342",
           "impact": 0.5,
           "results": [
             {
@@ -2212,7 +2212,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020021",
+          "id": "SV-230343",
           "impact": 0.5,
           "results": [
             {
@@ -2243,7 +2243,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020022",
+          "id": "SV-230344",
           "impact": 0.5,
           "results": [
             {
@@ -2274,7 +2274,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020023",
+          "id": "SV-230345",
           "impact": 0.5,
           "results": [
             {
@@ -2305,7 +2305,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020024",
+          "id": "SV-230346",
           "impact": 0.3,
           "results": [
             {
@@ -2336,7 +2336,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020040",
+          "id": "SV-230348",
           "impact": 0.5,
           "results": [
             {
@@ -2367,7 +2367,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020041",
+          "id": "SV-230349",
           "impact": 0.5,
           "results": [
             {
@@ -2398,7 +2398,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020042",
+          "id": "SV-230350",
           "impact": 0.3,
           "results": [
             {
@@ -2429,7 +2429,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020100",
+          "id": "SV-230356",
           "impact": 0.5,
           "results": [
             {
@@ -2460,7 +2460,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020110",
+          "id": "SV-230357",
           "impact": 0.5,
           "results": [
             {
@@ -2491,7 +2491,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020120",
+          "id": "SV-230358",
           "impact": 0.5,
           "results": [
             {
@@ -2522,7 +2522,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020130",
+          "id": "SV-230359",
           "impact": 0.5,
           "results": [
             {
@@ -2553,7 +2553,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020140",
+          "id": "SV-230360",
           "impact": 0.5,
           "results": [
             {
@@ -2584,7 +2584,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020150",
+          "id": "SV-230361",
           "impact": 0.5,
           "results": [
             {
@@ -2615,7 +2615,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020160",
+          "id": "SV-230362",
           "impact": 0.5,
           "results": [
             {
@@ -2646,7 +2646,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020170",
+          "id": "SV-230363",
           "impact": 0.5,
           "results": [
             {
@@ -2677,7 +2677,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020180",
+          "id": "SV-230364",
           "impact": 0.5,
           "results": [
             {
@@ -2708,7 +2708,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020190",
+          "id": "SV-230365",
           "impact": 0.5,
           "results": [
             {
@@ -2739,7 +2739,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020200",
+          "id": "SV-230366",
           "impact": 0.5,
           "results": [
             {
@@ -2770,7 +2770,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020210",
+          "id": "SV-230367",
           "impact": 0.5,
           "results": [
             {
@@ -2801,7 +2801,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020220",
+          "id": "SV-230368",
           "impact": 0.5,
           "results": [
             {
@@ -2832,7 +2832,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020230",
+          "id": "SV-230369",
           "impact": 0.5,
           "results": [
             {
@@ -2863,7 +2863,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020231",
+          "id": "SV-230370",
           "impact": 0.5,
           "results": [
             {
@@ -2894,7 +2894,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020260",
+          "id": "SV-230373",
           "impact": 0.5,
           "results": [
             {
@@ -2925,7 +2925,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020280",
+          "id": "SV-230375",
           "impact": 0.5,
           "results": [
             {
@@ -2956,7 +2956,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020300",
+          "id": "SV-230377",
           "impact": 0.5,
           "results": [
             {
@@ -2987,7 +2987,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020310",
+          "id": "SV-230378",
           "impact": 0.5,
           "results": [
             {
@@ -3018,7 +3018,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020330",
+          "id": "SV-230380",
           "impact": 0.7,
           "results": [
             {
@@ -3049,7 +3049,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020350",
+          "id": "SV-230382",
           "impact": 0.5,
           "results": [
             {
@@ -3080,7 +3080,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-020351",
+          "id": "SV-230383",
           "impact": 0.5,
           "results": [
             {
@@ -3111,7 +3111,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030000",
+          "id": "SV-230386",
           "impact": 0.5,
           "results": [
             {
@@ -3141,7 +3141,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030020",
+          "id": "SV-230388",
           "impact": 0.5,
           "results": [
             {
@@ -3172,7 +3172,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030040",
+          "id": "SV-230390",
           "impact": 0.5,
           "results": [
             {
@@ -3203,7 +3203,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030050",
+          "id": "SV-230391",
           "impact": 0.5,
           "results": [
             {
@@ -3234,7 +3234,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030060",
+          "id": "SV-230392",
           "impact": 0.5,
           "results": [
             {
@@ -3265,7 +3265,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030061",
+          "id": "SV-230393",
           "impact": 0.5,
           "results": [
             {
@@ -3296,7 +3296,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030062",
+          "id": "SV-230394",
           "impact": 0.5,
           "results": [
             {
@@ -3326,7 +3326,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030063",
+          "id": "SV-230395",
           "impact": 0.3,
           "results": [
             {
@@ -3357,7 +3357,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030070",
+          "id": "SV-230396",
           "impact": 0.5,
           "results": [
             {
@@ -3388,7 +3388,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030080",
+          "id": "SV-230397",
           "impact": 0.5,
           "results": [
             {
@@ -3419,7 +3419,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030090",
+          "id": "SV-230398",
           "impact": 0.5,
           "results": [
             {
@@ -3450,7 +3450,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030100",
+          "id": "SV-230399",
           "impact": 0.5,
           "results": [
             {
@@ -3481,7 +3481,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030110",
+          "id": "SV-230400",
           "impact": 0.5,
           "results": [
             {
@@ -3512,7 +3512,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030120",
+          "id": "SV-230401",
           "impact": 0.5,
           "results": [
             {
@@ -3543,7 +3543,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030121",
+          "id": "SV-230402",
           "impact": 0.5,
           "results": [
             {
@@ -3574,7 +3574,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030122",
+          "id": "SV-230403",
           "impact": 0.5,
           "results": [
             {
@@ -3605,7 +3605,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030130",
+          "id": "SV-230404",
           "impact": 0.5,
           "results": [
             {
@@ -3636,7 +3636,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030140",
+          "id": "SV-230405",
           "impact": 0.5,
           "results": [
             {
@@ -3667,7 +3667,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030150",
+          "id": "SV-230406",
           "impact": 0.5,
           "results": [
             {
@@ -3698,7 +3698,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030160",
+          "id": "SV-230407",
           "impact": 0.5,
           "results": [
             {
@@ -3729,7 +3729,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030170",
+          "id": "SV-230408",
           "impact": 0.5,
           "results": [
             {
@@ -3760,7 +3760,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030171",
+          "id": "SV-230409",
           "impact": 0.5,
           "results": [
             {
@@ -3791,7 +3791,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030172",
+          "id": "SV-230410",
           "impact": 0.5,
           "results": [
             {
@@ -3822,7 +3822,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030180",
+          "id": "SV-230411",
           "impact": 0.5,
           "results": [
             {
@@ -3853,7 +3853,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030190",
+          "id": "SV-230412",
           "impact": 0.5,
           "results": [
             {
@@ -3884,7 +3884,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030200",
+          "id": "SV-230413",
           "impact": 0.5,
           "results": [
             {
@@ -3915,7 +3915,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030210",
+          "id": "SV-230414",
           "impact": 0.5,
           "results": [
             {
@@ -3946,7 +3946,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030220",
+          "id": "SV-230415",
           "impact": 0.5,
           "results": [
             {
@@ -3977,7 +3977,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030230",
+          "id": "SV-230416",
           "impact": 0.5,
           "results": [
             {
@@ -4008,7 +4008,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030240",
+          "id": "SV-230417",
           "impact": 0.5,
           "results": [
             {
@@ -4039,7 +4039,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030250",
+          "id": "SV-230418",
           "impact": 0.5,
           "results": [
             {
@@ -4070,7 +4070,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030260",
+          "id": "SV-230419",
           "impact": 0.5,
           "results": [
             {
@@ -4101,7 +4101,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030270",
+          "id": "SV-230420",
           "impact": 0.5,
           "results": [
             {
@@ -4132,7 +4132,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030280",
+          "id": "SV-230421",
           "impact": 0.5,
           "results": [
             {
@@ -4163,7 +4163,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030290",
+          "id": "SV-230422",
           "impact": 0.5,
           "results": [
             {
@@ -4194,7 +4194,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030300",
+          "id": "SV-230423",
           "impact": 0.5,
           "results": [
             {
@@ -4225,7 +4225,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030301",
+          "id": "SV-230424",
           "impact": 0.5,
           "results": [
             {
@@ -4256,7 +4256,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030302",
+          "id": "SV-230425",
           "impact": 0.5,
           "results": [
             {
@@ -4287,7 +4287,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030310",
+          "id": "SV-230426",
           "impact": 0.5,
           "results": [
             {
@@ -4318,7 +4318,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030311",
+          "id": "SV-230427",
           "impact": 0.5,
           "results": [
             {
@@ -4349,7 +4349,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030312",
+          "id": "SV-230428",
           "impact": 0.5,
           "results": [
             {
@@ -4380,7 +4380,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030313",
+          "id": "SV-230429",
           "impact": 0.5,
           "results": [
             {
@@ -4411,7 +4411,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030314",
+          "id": "SV-230430",
           "impact": 0.5,
           "results": [
             {
@@ -4442,7 +4442,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030315",
+          "id": "SV-230431",
           "impact": 0.5,
           "results": [
             {
@@ -4473,7 +4473,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030316",
+          "id": "SV-230432",
           "impact": 0.5,
           "results": [
             {
@@ -4504,7 +4504,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030317",
+          "id": "SV-230433",
           "impact": 0.5,
           "results": [
             {
@@ -4535,7 +4535,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030320",
+          "id": "SV-230434",
           "impact": 0.5,
           "results": [
             {
@@ -4566,7 +4566,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030330",
+          "id": "SV-230435",
           "impact": 0.5,
           "results": [
             {
@@ -4597,7 +4597,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030340",
+          "id": "SV-230436",
           "impact": 0.5,
           "results": [
             {
@@ -4628,7 +4628,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030350",
+          "id": "SV-230437",
           "impact": 0.5,
           "results": [
             {
@@ -4659,7 +4659,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030360",
+          "id": "SV-230438",
           "impact": 0.5,
           "results": [
             {
@@ -4690,7 +4690,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030361",
+          "id": "SV-230439",
           "impact": 0.5,
           "results": [
             {
@@ -4721,7 +4721,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030362",
+          "id": "SV-230440",
           "impact": 0.5,
           "results": [
             {
@@ -4752,7 +4752,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030363",
+          "id": "SV-230441",
           "impact": 0.5,
           "results": [
             {
@@ -4783,7 +4783,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030364",
+          "id": "SV-230442",
           "impact": 0.5,
           "results": [
             {
@@ -4814,7 +4814,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030365",
+          "id": "SV-230443",
           "impact": 0.5,
           "results": [
             {
@@ -4845,7 +4845,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030370",
+          "id": "SV-230444",
           "impact": 0.5,
           "results": [
             {
@@ -4876,7 +4876,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030380",
+          "id": "SV-230445",
           "impact": 0.5,
           "results": [
             {
@@ -4907,7 +4907,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030390",
+          "id": "SV-230446",
           "impact": 0.5,
           "results": [
             {
@@ -4938,7 +4938,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030400",
+          "id": "SV-230447",
           "impact": 0.5,
           "results": [
             {
@@ -4969,7 +4969,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030410",
+          "id": "SV-230448",
           "impact": 0.5,
           "results": [
             {
@@ -5000,7 +5000,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030420",
+          "id": "SV-230449",
           "impact": 0.5,
           "results": [
             {
@@ -5031,7 +5031,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030430",
+          "id": "SV-230450",
           "impact": 0.5,
           "results": [
             {
@@ -5062,7 +5062,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030440",
+          "id": "SV-230451",
           "impact": 0.5,
           "results": [
             {
@@ -5093,7 +5093,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030450",
+          "id": "SV-230452",
           "impact": 0.5,
           "results": [
             {
@@ -5124,7 +5124,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030460",
+          "id": "SV-230453",
           "impact": 0.5,
           "results": [
             {
@@ -5155,7 +5155,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030470",
+          "id": "SV-230454",
           "impact": 0.5,
           "results": [
             {
@@ -5186,7 +5186,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030480",
+          "id": "SV-230455",
           "impact": 0.5,
           "results": [
             {
@@ -5217,7 +5217,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030490",
+          "id": "SV-230456",
           "impact": 0.5,
           "results": [
             {
@@ -5248,7 +5248,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030500",
+          "id": "SV-230457",
           "impact": 0.5,
           "results": [
             {
@@ -5279,7 +5279,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030510",
+          "id": "SV-230458",
           "impact": 0.5,
           "results": [
             {
@@ -5310,7 +5310,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030520",
+          "id": "SV-230459",
           "impact": 0.5,
           "results": [
             {
@@ -5341,7 +5341,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030530",
+          "id": "SV-230460",
           "impact": 0.5,
           "results": [
             {
@@ -5372,7 +5372,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030540",
+          "id": "SV-230461",
           "impact": 0.5,
           "results": [
             {
@@ -5403,7 +5403,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030550",
+          "id": "SV-230462",
           "impact": 0.5,
           "results": [
             {
@@ -5434,7 +5434,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030560",
+          "id": "SV-230463",
           "impact": 0.5,
           "results": [
             {
@@ -5465,7 +5465,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030570",
+          "id": "SV-230464",
           "impact": 0.5,
           "results": [
             {
@@ -5496,7 +5496,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030580",
+          "id": "SV-230465",
           "impact": 0.5,
           "results": [
             {
@@ -5527,7 +5527,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030600",
+          "id": "SV-230467",
           "impact": 0.5,
           "results": [
             {
@@ -5558,7 +5558,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030610",
+          "id": "SV-230471",
           "impact": 0.5,
           "results": [
             {
@@ -5589,7 +5589,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030620",
+          "id": "SV-230472",
           "impact": 0.5,
           "results": [
             {
@@ -5620,7 +5620,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030630",
+          "id": "SV-230473",
           "impact": 0.5,
           "results": [
             {
@@ -5651,7 +5651,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030640",
+          "id": "SV-230474",
           "impact": 0.5,
           "results": [
             {
@@ -5682,7 +5682,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030670",
+          "id": "SV-230477",
           "impact": 0.5,
           "results": [
             {
@@ -5713,7 +5713,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030680",
+          "id": "SV-230478",
           "impact": 0.5,
           "results": [
             {
@@ -5744,7 +5744,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030700",
+          "id": "SV-230480",
           "impact": 0.5,
           "results": [
             {
@@ -5774,7 +5774,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030730",
+          "id": "SV-230483",
           "impact": 0.5,
           "results": [
             {
@@ -5804,7 +5804,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030741",
+          "id": "SV-230485",
           "impact": 0.3,
           "results": [
             {
@@ -5836,7 +5836,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-030742",
+          "id": "SV-230486",
           "impact": 0.3,
           "results": [
             {
@@ -5868,7 +5868,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040000",
+          "id": "SV-230487",
           "impact": 0.7,
           "results": [
             {
@@ -5900,7 +5900,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040001",
+          "id": "SV-230488",
           "impact": 0.5,
           "results": [
             {
@@ -5932,7 +5932,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040002",
+          "id": "SV-230489",
           "impact": 0.5,
           "results": [
             {
@@ -5964,7 +5964,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040010",
+          "id": "SV-230492",
           "impact": 0.7,
           "results": [
             {
@@ -5996,7 +5996,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040021",
+          "id": "SV-230494",
           "impact": 0.3,
           "results": [
             {
@@ -6028,7 +6028,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040022",
+          "id": "SV-230495",
           "impact": 0.3,
           "results": [
             {
@@ -6060,7 +6060,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040023",
+          "id": "SV-230496",
           "impact": 0.3,
           "results": [
             {
@@ -6092,7 +6092,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040024",
+          "id": "SV-230497",
           "impact": 0.3,
           "results": [
             {
@@ -6124,7 +6124,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040025",
+          "id": "SV-230498",
           "impact": 0.3,
           "results": [
             {
@@ -6156,7 +6156,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040026",
+          "id": "SV-230499",
           "impact": 0.3,
           "results": [
             {
@@ -6188,7 +6188,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040080",
+          "id": "SV-230503",
           "impact": 0.5,
           "results": [
             {
@@ -6219,7 +6219,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040111",
+          "id": "SV-230507",
           "impact": 0.5,
           "results": [
             {
@@ -6250,7 +6250,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040120",
+          "id": "SV-230508",
           "impact": 0.5,
           "results": [
             {
@@ -6280,7 +6280,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040121",
+          "id": "SV-230509",
           "impact": 0.5,
           "results": [
             {
@@ -6310,7 +6310,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040122",
+          "id": "SV-230510",
           "impact": 0.5,
           "results": [
             {
@@ -6340,7 +6340,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040123",
+          "id": "SV-230511",
           "impact": 0.5,
           "results": [
             {
@@ -6370,7 +6370,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040124",
+          "id": "SV-230512",
           "impact": 0.5,
           "results": [
             {
@@ -6400,7 +6400,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040125",
+          "id": "SV-230513",
           "impact": 0.5,
           "results": [
             {
@@ -6430,7 +6430,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040126",
+          "id": "SV-230514",
           "impact": 0.5,
           "results": [
             {
@@ -6460,7 +6460,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040127",
+          "id": "SV-230515",
           "impact": 0.5,
           "results": [
             {
@@ -6490,7 +6490,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040128",
+          "id": "SV-230516",
           "impact": 0.5,
           "results": [
             {
@@ -6520,7 +6520,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040129",
+          "id": "SV-230517",
           "impact": 0.5,
           "results": [
             {
@@ -6550,7 +6550,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040130",
+          "id": "SV-230518",
           "impact": 0.5,
           "results": [
             {
@@ -6580,7 +6580,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040131",
+          "id": "SV-230519",
           "impact": 0.5,
           "results": [
             {
@@ -6610,7 +6610,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040132",
+          "id": "SV-230520",
           "impact": 0.5,
           "results": [
             {
@@ -6640,7 +6640,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040133",
+          "id": "SV-230521",
           "impact": 0.5,
           "results": [
             {
@@ -6670,7 +6670,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040134",
+          "id": "SV-230522",
           "impact": 0.5,
           "results": [
             {
@@ -6700,7 +6700,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040160",
+          "id": "SV-230526",
           "impact": 0.5,
           "results": [
             {
@@ -6730,7 +6730,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040161",
+          "id": "SV-230527",
           "impact": 0.5,
           "results": [
             {
@@ -6761,7 +6761,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040172",
+          "id": "SV-230531",
           "impact": 0.7,
           "results": [
             {
@@ -6792,7 +6792,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040190",
+          "id": "SV-230533",
           "impact": 0.7,
           "results": [
             {
@@ -6823,7 +6823,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040200",
+          "id": "SV-230534",
           "impact": 0.7,
           "results": [
             {
@@ -6854,7 +6854,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040210",
+          "id": "SV-230535",
           "impact": 0.5,
           "results": [
             {
@@ -6885,7 +6885,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040220",
+          "id": "SV-230536",
           "impact": 0.5,
           "results": [
             {
@@ -6916,7 +6916,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040230",
+          "id": "SV-230537",
           "impact": 0.5,
           "results": [
             {
@@ -6947,7 +6947,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040240",
+          "id": "SV-230538",
           "impact": 0.5,
           "results": [
             {
@@ -6978,7 +6978,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040250",
+          "id": "SV-230539",
           "impact": 0.5,
           "results": [
             {
@@ -7009,7 +7009,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040260",
+          "id": "SV-230540",
           "impact": 0.5,
           "results": [
             {
@@ -7040,7 +7040,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040261",
+          "id": "SV-230541",
           "impact": 0.5,
           "results": [
             {
@@ -7071,7 +7071,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040262",
+          "id": "SV-230542",
           "impact": 0.5,
           "results": [
             {
@@ -7102,7 +7102,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040270",
+          "id": "SV-230543",
           "impact": 0.5,
           "results": [
             {
@@ -7133,7 +7133,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040280",
+          "id": "SV-230544",
           "impact": 0.5,
           "results": [
             {
@@ -7164,7 +7164,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040281",
+          "id": "SV-230545",
           "impact": 0.5,
           "results": [
             {
@@ -7195,7 +7195,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040282",
+          "id": "SV-230546",
           "impact": 0.5,
           "results": [
             {
@@ -7226,7 +7226,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040283",
+          "id": "SV-230547",
           "impact": 0.5,
           "results": [
             {
@@ -7257,7 +7257,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040284",
+          "id": "SV-230548",
           "impact": 0.5,
           "results": [
             {
@@ -7288,7 +7288,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040285",
+          "id": "SV-230549",
           "impact": 0.5,
           "results": [
             {
@@ -7319,7 +7319,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040290",
+          "id": "SV-230550",
           "impact": 0.5,
           "results": [
             {
@@ -7350,7 +7350,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040340",
+          "id": "SV-230555",
           "impact": 0.5,
           "results": [
             {
@@ -7381,7 +7381,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040341",
+          "id": "SV-230556",
           "impact": 0.5,
           "results": [
             {
@@ -7412,7 +7412,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040350",
+          "id": "SV-230557",
           "impact": 0.5,
           "results": [
             {
@@ -7443,7 +7443,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040360",
+          "id": "SV-230558",
           "impact": 0.7,
           "results": [
             {
@@ -7474,7 +7474,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040370",
+          "id": "SV-230559",
           "impact": 0.5,
           "results": [
             {
@@ -7506,7 +7506,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040380",
+          "id": "SV-230560",
           "impact": 0.5,
           "results": [
             {
@@ -7537,7 +7537,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-040390",
+          "id": "SV-230561",
           "impact": 0.5,
           "results": [
             {
@@ -7568,7 +7568,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010163",
+          "id": "SV-237640",
           "impact": 0.5,
           "results": [
             {
@@ -7599,7 +7599,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010382",
+          "id": "SV-237641",
           "impact": 0.5,
           "results": [
             {
@@ -7630,7 +7630,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010383",
+          "id": "SV-237642",
           "impact": 0.5,
           "results": [
             {
@@ -7660,7 +7660,7 @@
               "label": "fix"
             }
           ],
-          "id": "RHEL-08-010384",
+          "id": "SV-237643",
           "impact": 0.5,
           "results": [
             {
