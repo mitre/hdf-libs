@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/mitre/hdf-cli/pkg/amend"
 	"github.com/stretchr/testify/assert"
@@ -289,6 +290,153 @@ func TestAmendVerifyCommand(t *testing.T) {
 		_, _, err := executeCommand("amend", "verify", "/nonexistent/amendments.json")
 		require.Error(t, err)
 	})
+}
+
+func TestExtractAllRequirements(t *testing.T) {
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(testResults), &doc))
+
+	reqs := extractAllRequirements(doc)
+	require.Len(t, reqs, 1)
+	assert.Equal(t, "AC-1", reqs[0].ID)
+	assert.Equal(t, "Access Control Policy", reqs[0].Title)
+	assert.Equal(t, "test-baseline", reqs[0].Baseline)
+	assert.Equal(t, "failed", reqs[0].Status)
+}
+
+func TestBuildAmendmentsFromOverrides(t *testing.T) {
+	overrides := []amendOverride{
+		{RequirementID: "AC-1", AmendType: "waiver", Reason: "Risk accepted", ExpiresAt: "2026-12-31", Approver: "issm@acme.com"},
+		{RequirementID: "AC-2", AmendType: "waiver", Reason: "Risk accepted", ExpiresAt: "2026-12-31", Approver: "issm@acme.com"},
+	}
+	doc := buildAmendmentsFromOverrides(overrides)
+
+	rawOverrides, ok := doc["overrides"].([]map[string]interface{})
+	require.True(t, ok)
+	assert.Len(t, rawOverrides, 2)
+
+	first := rawOverrides[0]
+	assert.Equal(t, "waiver", first["type"])
+	assert.Equal(t, "AC-1", first["requirementId"])
+	assert.Equal(t, "passed", first["status"])
+	assert.Equal(t, "Risk accepted", first["reason"])
+	assert.Contains(t, doc["name"].(string), "waiver")
+
+	// Approver with @ should be email type
+	appliedBy, _ := first["appliedBy"].(map[string]interface{})
+	assert.Equal(t, "email", appliedBy["type"])
+}
+
+func TestParseExpiryInput(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		wantErr bool
+	}{
+		{"absolute date", "2027-06-15", false},
+		{"30 days", "30d", false},
+		{"3 months", "3m", false},
+		{"1 year", "1y", false},
+		{"6 months", "6m", false},
+		{"invalid format", "abc", true},
+		{"empty", "", true},
+		{"zero days", "0d", true},
+		{"negative", "-1m", true},
+		{"bad unit", "5x", true},
+		{"past date", "2020-01-01", false}, // parseExpiryInput accepts it; validation rejects
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := parseExpiryInput(tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				// Result should be YYYY-MM-DD format
+				_, parseErr := time.Parse("2006-01-02", result)
+				assert.NoError(t, parseErr, "result should be valid date: %s", result)
+			}
+		})
+	}
+}
+
+func TestValidateExpiryInput_RejectsPastDate(t *testing.T) {
+	err := validateExpiryInput("2020-01-01")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "future")
+}
+
+func TestValidateExpiryInput_AcceptsFutureDate(t *testing.T) {
+	err := validateExpiryInput("1y")
+	assert.NoError(t, err)
+}
+
+func TestAmendTypeToStatus(t *testing.T) {
+	tests := []struct {
+		amendType string
+		want      string
+	}{
+		{"waiver", "passed"},
+		{"attestation", "passed"},
+		{"exception", "notApplicable"},
+		{"inherited", "notApplicable"},
+		{"poam", "failed"},
+		{"unknown", "notReviewed"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.amendType, func(t *testing.T) {
+			assert.Equal(t, tt.want, amendTypeToStatus(tt.amendType))
+		})
+	}
+}
+
+func TestDetermineRequirementStatus(t *testing.T) {
+	tests := []struct {
+		name    string
+		results []interface{}
+		want    string
+	}{
+		{"no results", nil, "notReviewed"},
+		{"single passed", []interface{}{map[string]interface{}{"status": "passed"}}, "passed"},
+		{"single failed", []interface{}{map[string]interface{}{"status": "failed"}}, "failed"},
+		{"mixed worst wins", []interface{}{
+			map[string]interface{}{"status": "passed"},
+			map[string]interface{}{"status": "failed"},
+		}, "failed"},
+		{"error is worst", []interface{}{
+			map[string]interface{}{"status": "failed"},
+			map[string]interface{}{"status": "error"},
+		}, "error"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := map[string]interface{}{"results": tt.results}
+			assert.Equal(t, tt.want, determineRequirementStatus(req))
+		})
+	}
+}
+
+func TestIdentityType(t *testing.T) {
+	assert.Equal(t, "email", identityType("admin@example.com"))
+	assert.Equal(t, "simple", identityType("Platform Team"))
+}
+
+func TestAmendCreateCmd_AcceptsNoArgs(t *testing.T) {
+	// Verify the command definition accepts zero args (standalone mode).
+	// We can't run the full TUI in tests, but we can verify the command
+	// doesn't reject zero arguments at the cobra level.
+	cmd := NewRootCmd()
+	// Find the amend create subcommand
+	amendCmd, _, _ := cmd.Find([]string{"amend", "create"})
+	require.NotNil(t, amendCmd)
+
+	// The args validator should accept 0 args
+	err := amendCmd.Args(amendCmd, []string{})
+	assert.NoError(t, err, "amend create should accept zero arguments for standalone mode")
+
+	// And still accept 1 arg
+	err = amendCmd.Args(amendCmd, []string{"results.json"})
+	assert.NoError(t, err, "amend create should accept one argument for results mode")
 }
 
 func TestTruncateToDate(t *testing.T) {

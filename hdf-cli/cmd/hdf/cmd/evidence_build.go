@@ -182,7 +182,7 @@ func computeCompleteness(sysDoc map[string]interface{}, resultsPath string) map[
 			results, _ := r["results"].([]interface{})
 			if len(results) > 0 {
 				first, _ := results[0].(map[string]interface{})
-				if status, ok := first["status"].(string); ok && status == "passed" {
+				if status, ok := first["status"].(string); ok && status == StatusPassed {
 					passedReqs++
 				}
 			}

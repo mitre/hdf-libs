@@ -178,10 +178,7 @@ func runSystemSet(inputPath, outputPath, owner, description, name, systemID stri
 		doc["systemId"] = systemID
 	}
 	if owner != "" {
-		ownerType := "simple"
-		if strings.Contains(owner, "@") {
-			ownerType = "email"
-		}
+		ownerType := identityType(owner)
 		doc["owner"] = map[string]interface{}{
 			"type":       ownerType,
 			"identifier": owner,

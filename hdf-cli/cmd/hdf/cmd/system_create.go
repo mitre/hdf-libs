@@ -332,10 +332,7 @@ func writeSystemDoc(systemName string, components []map[string]interface{}, outp
 	}
 
 	if opts.ownerEmail != "" {
-		ownerType := "simple"
-		if strings.Contains(opts.ownerEmail, "@") {
-			ownerType = "email"
-		}
+		ownerType := identityType(opts.ownerEmail)
 		sysDoc["owner"] = map[string]interface{}{
 			"type":       ownerType,
 			"identifier": opts.ownerEmail,
