@@ -610,6 +610,10 @@ class HdfAmendments:
     overrides: List[StandaloneOverride]
     """The set of amendments (waivers, attestations, exceptions, POA&Ms)."""
 
+    amendment_id: Optional[UUID] = None
+    """Unique identifier for this amendments document. Useful for cross-referencing when
+    multiple amendment documents target the same results.
+    """
     applied_by: Optional[Identity] = None
     """Default identity of who created this amendments document. Individual overrides may
     specify their own appliedBy.
@@ -644,6 +648,7 @@ class HdfAmendments:
         assert isinstance(obj, dict)
         name = from_str(obj.get("name"))
         overrides = from_list(StandaloneOverride.from_dict, obj.get("overrides"))
+        amendment_id = from_union([lambda x: UUID(x), from_none], obj.get("amendmentId"))
         applied_by = from_union([Identity.from_dict, from_none], obj.get("appliedBy"))
         approved_by = from_union([Identity.from_dict, from_none], obj.get("approvedBy"))
         description = from_union([from_str, from_none], obj.get("description"))
@@ -653,12 +658,14 @@ class HdfAmendments:
         signature = from_union([Signature.from_dict, from_none], obj.get("signature"))
         system_ref = from_union([from_str, from_none], obj.get("systemRef"))
         version = from_union([from_str, from_none], obj.get("version"))
-        return HdfAmendments(name, overrides, applied_by, approved_by, description, generator, integrity, labels, signature, system_ref, version)
+        return HdfAmendments(name, overrides, amendment_id, applied_by, approved_by, description, generator, integrity, labels, signature, system_ref, version)
 
     def to_dict(self) -> dict:
         result: dict = {}
         result["name"] = from_str(self.name)
         result["overrides"] = from_list(lambda x: to_class(StandaloneOverride, x), self.overrides)
+        if self.amendment_id is not None:
+            result["amendmentId"] = from_union([lambda x: str(x), from_none], self.amendment_id)
         if self.applied_by is not None:
             result["appliedBy"] = from_union([lambda x: to_class(Identity, x), from_none], self.applied_by)
         if self.approved_by is not None:

@@ -4,6 +4,11 @@
  */
 export interface HdfAmendments {
     /**
+     * Unique identifier for this amendments document. Useful for cross-referencing when
+     * multiple amendment documents target the same results.
+     */
+    amendmentId?: string;
+    /**
      * Default identity of who created this amendments document. Individual overrides may
      * specify their own appliedBy.
      */

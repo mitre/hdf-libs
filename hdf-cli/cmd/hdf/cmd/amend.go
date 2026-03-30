@@ -29,6 +29,7 @@ Examples:
 	cmd.AddCommand(newAmendApplyCmd())
 	cmd.AddCommand(newAmendListCmd())
 	cmd.AddCommand(newAmendVerifyCmd())
+	cmd.AddCommand(newAmendSetCmd())
 
 	return cmd
 }

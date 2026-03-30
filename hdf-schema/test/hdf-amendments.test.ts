@@ -37,8 +37,19 @@ describe('hdf-amendments.schema.json', () => {
     expect(validate.errors).toBeNull();
   });
 
+  it('should accept amendmentId UUID', () => {
+    const withId = { ...minimal, amendmentId: '550e8400-e29b-41d4-a716-446655440000' };
+    expect(validate(withId)).toBe(true);
+  });
+
+  it('should reject invalid amendmentId format', () => {
+    const badId = { ...minimal, amendmentId: 'not-a-uuid' };
+    expect(validate(badId)).toBe(false);
+  });
+
   it('should validate a fully specified document', () => {
     const full = {
+      amendmentId: '550e8400-e29b-41d4-a716-446655440000',
       name: 'Portal Q1 2026 Waivers',
       description: 'Quarterly waiver review for portal production',
       systemRef: 'portal-prod.hdf-system.json',

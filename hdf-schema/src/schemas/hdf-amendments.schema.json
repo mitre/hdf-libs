@@ -10,6 +10,11 @@
     "overrides"
   ],
   "properties": {
+    "amendmentId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this amendments document. Useful for cross-referencing when multiple amendment documents target the same results."
+    },
     "name": {
       "type": "string",
       "description": "Human-readable name for this amendments document. Example: 'Portal Q1 2026 Waivers'."

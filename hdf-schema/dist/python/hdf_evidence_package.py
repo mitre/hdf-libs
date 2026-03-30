@@ -511,6 +511,10 @@ class HdfEvidencePackage:
     labels: Optional[Dict[str, str]] = None
     """Optional key-value labels for grouping and querying evidence packages."""
 
+    package_id: Optional[UUID] = None
+    """Unique identifier for this evidence package. Optional in casual use, expected in
+    production ATO submissions. Auto-generated if omitted during creation.
+    """
     prepared_at: Optional[datetime] = None
     """When this evidence package was prepared. ISO 8601 format."""
 
@@ -536,12 +540,13 @@ class HdfEvidencePackage:
         generator = from_union([Generator.from_dict, from_none], obj.get("generator"))
         integrity = from_union([Integrity.from_dict, from_none], obj.get("integrity"))
         labels = from_union([lambda x: from_dict(from_str, x), from_none], obj.get("labels"))
+        package_id = from_union([lambda x: UUID(x), from_none], obj.get("packageId"))
         prepared_at = from_union([from_datetime, from_none], obj.get("preparedAt"))
         prepared_by = from_union([Identity.from_dict, from_none], obj.get("preparedBy"))
         signature = from_union([Signature.from_dict, from_none], obj.get("signature"))
         system_ref = from_union([from_str, from_none], obj.get("systemRef"))
         version = from_union([from_str, from_none], obj.get("version"))
-        return HdfEvidencePackage(contents, name, completeness_check, description, generator, integrity, labels, prepared_at, prepared_by, signature, system_ref, version)
+        return HdfEvidencePackage(contents, name, completeness_check, description, generator, integrity, labels, package_id, prepared_at, prepared_by, signature, system_ref, version)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -557,6 +562,8 @@ class HdfEvidencePackage:
             result["integrity"] = from_union([lambda x: to_class(Integrity, x), from_none], self.integrity)
         if self.labels is not None:
             result["labels"] = from_union([lambda x: from_dict(from_str, x), from_none], self.labels)
+        if self.package_id is not None:
+            result["packageId"] = from_union([lambda x: str(x), from_none], self.package_id)
         if self.prepared_at is not None:
             result["preparedAt"] = from_union([lambda x: x.isoformat(), from_none], self.prepared_at)
         if self.prepared_by is not None:

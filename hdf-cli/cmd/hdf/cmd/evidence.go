@@ -25,6 +25,7 @@ Examples:
 	cmd.AddCommand(newEvidenceBuildCmd())
 	cmd.AddCommand(newEvidenceVerifyCmd())
 	cmd.AddCommand(newEvidenceExportCmd())
+	cmd.AddCommand(newEvidenceSetCmd())
 
 	return cmd
 }

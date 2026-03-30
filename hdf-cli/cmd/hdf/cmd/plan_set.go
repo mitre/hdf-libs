@@ -1,9 +1,8 @@
+//nolint:dupl
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -39,7 +38,13 @@ Examples:
 			if name == "" && description == "" && planID == "" && systemRef == "" && planVersion == "" && len(unsetFields) == 0 {
 				return fmt.Errorf("at least one field flag is required (--name, --description, --plan-id, --system-ref, --version, --unset)")
 			}
-			return runPlanSet(args[0], outputPath, name, description, planID, systemRef, planVersion, unsetFields)
+			return runGenericDocSet(args[0], outputPath, unsetFields, requiredPlanFields, map[string]string{
+				"name":        name,
+				"description": description,
+				"planId":      planID,
+				"systemRef":   systemRef,
+				"version":     planVersion,
+			})
 		},
 	}
 
@@ -58,57 +63,4 @@ Examples:
 var requiredPlanFields = map[string]bool{
 	"name":        true,
 	"assessments": true,
-}
-
-func runPlanSet(inputPath, outputPath, name, description, planID, systemRef, planVersion string, unsetFields []string) error {
-	data, err := os.ReadFile(inputPath) //nolint:gosec // CLI reads user-provided file path
-	if err != nil {
-		return fmt.Errorf("failed to read plan document: %w", err)
-	}
-
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return fmt.Errorf("failed to parse plan document: %w", err)
-	}
-
-	if name != "" {
-		doc["name"] = name
-	}
-	if description != "" {
-		doc["description"] = description
-	}
-	if planID != "" {
-		doc["planId"] = planID
-	}
-	if systemRef != "" {
-		doc["systemRef"] = systemRef
-	}
-	if planVersion != "" {
-		doc["version"] = planVersion
-	}
-
-	// Process --unset flags (after sets, so --unset wins if both specified)
-	for _, field := range unsetFields {
-		if requiredPlanFields[field] {
-			return fmt.Errorf("cannot unset required field %q", field)
-		}
-		delete(doc, field)
-	}
-
-	output, err := json.MarshalIndent(doc, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to serialize plan document: %w", err)
-	}
-
-	target := inputPath
-	if outputPath != "" {
-		target = outputPath
-	}
-
-	if err := os.WriteFile(target, output, 0o600); err != nil {
-		return fmt.Errorf("failed to write plan document: %w", err)
-	}
-
-	fmt.Fprintf(os.Stderr, "Updated %s\n", target)
-	return nil
 }

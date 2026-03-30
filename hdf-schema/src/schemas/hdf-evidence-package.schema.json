@@ -10,6 +10,11 @@
     "contents"
   ],
   "properties": {
+    "packageId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this evidence package. Optional in casual use, expected in production ATO submissions. Auto-generated if omitted during creation."
+    },
     "name": {
       "type": "string",
       "description": "Human-readable name for this evidence package. Example: 'Enterprise Portal ATO Evidence - Q1 2026'."

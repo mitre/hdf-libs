@@ -20,8 +20,19 @@ describe('hdf-evidence-package.schema.json', () => {
     expect(validate.errors).toBeNull();
   });
 
+  it('should accept packageId UUID', () => {
+    const withId = { ...minimal, packageId: '550e8400-e29b-41d4-a716-446655440000' };
+    expect(validate(withId)).toBe(true);
+  });
+
+  it('should reject invalid packageId format', () => {
+    const badId = { ...minimal, packageId: 'not-a-uuid' };
+    expect(validate(badId)).toBe(false);
+  });
+
   it('should validate a fully specified evidence package', () => {
     const full = {
+      packageId: '550e8400-e29b-41d4-a716-446655440000',
       name: 'Enterprise Portal ATO Evidence - Q1 2026',
       description: 'Quarterly ATO evidence bundle',
       systemRef: 'portal-prod.hdf-system.json',

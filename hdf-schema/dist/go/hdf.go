@@ -1526,6 +1526,9 @@ type Schedule struct {
 // Waivers, attestations, exceptions, and POA&Ms that modify requirement compliance status.
 // Amendments are standalone documents that can be applied to results via merge operations.
 type HDFAmendments struct {
+	// Unique identifier for this amendments document. Useful for cross-referencing when                              
+	// multiple amendment documents target the same results.                                                          
+	AmendmentID                                                                               *string                 `json:"amendmentId,omitempty"`
 	// Default identity of who created this amendments document. Individual overrides may                             
 	// specify their own appliedBy.                                                                                   
 	AppliedBy                                                                                 *Identity               `json:"appliedBy,omitempty"`
@@ -1622,6 +1625,9 @@ type HDFEvidencePackage struct {
 	// Human-readable name for this evidence package. Example: 'Enterprise Portal ATO Evidence -                             
 	// Q1 2026'.                                                                                                             
 	Name                                                                                        string                       `json:"name"`
+	// Unique identifier for this evidence package. Optional in casual use, expected in                                      
+	// production ATO submissions. Auto-generated if omitted during creation.                                                
+	PackageID                                                                                   *string                      `json:"packageId,omitempty"`
 	// When this evidence package was prepared. ISO 8601 format.                                                             
 	PreparedAt                                                                                  *time.Time                   `json:"preparedAt,omitempty"`
 	// Identity of who prepared this evidence package.                                                                       
