@@ -287,6 +287,45 @@ func TestValidateThreshold_RoundTripWithControls(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestValidateThreshold_InlinePassing(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath,
+		"-I", "{compliance.min: 50}, {passed.total.min: 1}, {failed.total.max: 5}")
+	assert.NoError(t, err)
+}
+
+func TestValidateThreshold_InlineFailing(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	// Require 90% compliance but we only have ~66%
+	_, _, err := executeCommand("validate", "threshold", resultsPath,
+		"-I", "{compliance.min: 90}")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "compliance")
+}
+
+func TestValidateThreshold_InlineZeroFail(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	// Zero-fail policy for high severity
+	_, _, err := executeCommand("validate", "threshold", resultsPath,
+		"-I", "{failed.high.max: 0}")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed.high")
+}
+
+func TestValidateThreshold_InlineAndTemplateMutuallyExclusive(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+	require.NoError(t, os.WriteFile(thresholdFile, []byte("compliance:\n  min: 50\n"), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath,
+		"-T", thresholdFile, "-I", "{compliance.min: 50}")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "mutually exclusive")
+}
+
 func TestGenerateThreshold_MissingInput(t *testing.T) {
 	_, _, err := executeCommand("generate", "threshold")
 	assert.Error(t, err)

@@ -3,30 +3,42 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
 
 func newValidateThresholdCmd() *cobra.Command {
-	var templateFile string
+	var (
+		templateFile   string
+		templateInline string
+	)
 
 	cmd := &cobra.Command{
 		Use:   "threshold <results.json>",
 		Short: "Validate HDF results against compliance thresholds",
 		Long: `Validate that an HDF results file meets compliance thresholds
-defined in a YAML threshold template.
+defined in a YAML threshold template or an inline specification.
 
 Exit code 0 if all thresholds pass, exit code 1 on any violation.
 Use with 'hdf generate threshold' to create threshold templates.
 
 Designed for CI/CD compliance gates.`,
-		Example: `  hdf validate threshold results.json -T threshold.yaml
-  hdf validate threshold results.json -T threshold.yaml --json`,
+		Example: `  # From YAML template
+  hdf validate threshold results.json -T threshold.yaml
+
+  # Inline (for CI one-liners)
+  hdf validate threshold results.json -I "{compliance.min: 80}, {failed.total.max: 0}"
+  hdf validate threshold results.json -I "{passed.high.min: 20}, {failed.critical.max: 0}"`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			if templateFile == "" {
-				return fmt.Errorf("--template (-T) is required")
+			if templateFile == "" && templateInline == "" {
+				return fmt.Errorf("either --template (-T) or --inline (-I) is required")
+			}
+			if templateFile != "" && templateInline != "" {
+				return fmt.Errorf("--template (-T) and --inline (-I) are mutually exclusive")
 			}
 
 			// Read results
@@ -35,15 +47,22 @@ Designed for CI/CD compliance gates.`,
 				return err
 			}
 
-			// Read threshold template
-			templateData, err := os.ReadFile(templateFile) //nolint:gosec // user-provided path
-			if err != nil {
-				return fmt.Errorf("failed to read threshold template: %w", err)
-			}
-
+			// Parse threshold config from file or inline
 			var config ThresholdConfig
-			if err := yaml.Unmarshal(templateData, &config); err != nil {
-				return fmt.Errorf("failed to parse threshold YAML: %w", err)
+			if templateFile != "" {
+				templateData, readErr := os.ReadFile(templateFile) //nolint:gosec // user-provided path
+				if readErr != nil {
+					return fmt.Errorf("failed to read threshold template: %w", readErr)
+				}
+				if unmarshalErr := yaml.Unmarshal(templateData, &config); unmarshalErr != nil {
+					return fmt.Errorf("failed to parse threshold YAML: %w", unmarshalErr)
+				}
+			} else {
+				parsed, parseErr := parseInlineThreshold(templateInline)
+				if parseErr != nil {
+					return parseErr
+				}
+				config = *parsed
 			}
 
 			// Count controls
@@ -80,9 +99,137 @@ Designed for CI/CD compliance gates.`,
 		},
 	}
 
-	cmd.Flags().StringVarP(&templateFile, "template", "T", "", "Threshold YAML template file (required)")
+	cmd.Flags().StringVarP(&templateFile, "template", "T", "", "Threshold YAML template file")
+	cmd.Flags().StringVarP(&templateInline, "inline", "I", "", `Inline threshold (e.g. "{compliance.min: 80}, {failed.total.max: 0}")`)
 
 	return cmd
+}
+
+// parseInlineThreshold parses SAF CLI-compatible inline threshold format:
+// "{compliance.min: 80}, {passed.total.min: 50}, {failed.critical.max: 0}"
+//
+// Each item is a dotted path and a numeric value. The path is split into
+// segments and used to populate the ThresholdConfig struct.
+func parseInlineThreshold(inline string) (*ThresholdConfig, error) {
+	config := &ThresholdConfig{}
+
+	// Split on commas, strip braces and whitespace
+	parts := strings.Split(inline, ",")
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		part = strings.Trim(part, "{}")
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		// Split on first colon
+		colonIdx := strings.Index(part, ":")
+		if colonIdx < 0 {
+			return nil, fmt.Errorf("invalid inline threshold entry %q: expected 'key: value'", part)
+		}
+		key := strings.TrimSpace(part[:colonIdx])
+		valStr := strings.TrimSpace(part[colonIdx+1:])
+
+		segments := strings.Split(key, ".")
+		if len(segments) < 2 {
+			return nil, fmt.Errorf("invalid threshold path %q: need at least two segments (e.g. 'compliance.min')", key)
+		}
+
+		val, err := strconv.ParseFloat(valStr, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid threshold value %q for key %q: %w", valStr, key, err)
+		}
+
+		if err := setThresholdValue(config, segments, val); err != nil {
+			return nil, err
+		}
+	}
+
+	return config, nil
+}
+
+// setThresholdValue sets a single value in the ThresholdConfig based on a
+// dotted path like ["compliance", "min"] or ["failed", "high", "max"].
+func setThresholdValue(config *ThresholdConfig, segments []string, val float64) error {
+	intVal := int(val)
+
+	switch segments[0] {
+	case "compliance":
+		if config.Compliance == nil {
+			config.Compliance = &ComplianceBound{}
+		}
+		switch segments[1] {
+		case "min":
+			config.Compliance.Min = &val
+		case "max":
+			config.Compliance.Max = &val
+		default:
+			return fmt.Errorf("unknown compliance field %q", segments[1])
+		}
+		return nil
+
+	case thresholdPassed, thresholdFailed, thresholdSkipped, thresholdError, thresholdNoImpact:
+		ts := getOrCreateStatusSeverity(config, segments[0])
+		if len(segments) < 3 {
+			return fmt.Errorf("threshold path %q needs three segments (e.g. 'passed.high.min')", strings.Join(segments, "."))
+		}
+		var bound *ThresholdBound
+		if segments[1] == "total" {
+			if ts.Total == nil {
+				ts.Total = &ThresholdBound{}
+			}
+			bound = ts.Total
+		} else {
+			bound = getSeverityBound(ts, segments[1])
+		}
+		switch segments[2] {
+		case "min":
+			bound.Min = &intVal
+		case "max":
+			bound.Max = &intVal
+		default:
+			return fmt.Errorf("unknown bound type %q (expected 'min' or 'max')", segments[2])
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("unknown threshold category %q", segments[0])
+	}
+}
+
+// getOrCreateStatusSeverity returns the ThresholdSeverity for a status,
+// creating it on the config if nil.
+func getOrCreateStatusSeverity(config *ThresholdConfig, status string) *ThresholdSeverity {
+	switch status {
+	case thresholdPassed:
+		if config.Passed == nil {
+			config.Passed = &ThresholdSeverity{}
+		}
+		return config.Passed
+	case thresholdFailed:
+		if config.Failed == nil {
+			config.Failed = &ThresholdSeverity{}
+		}
+		return config.Failed
+	case thresholdSkipped:
+		if config.Skipped == nil {
+			config.Skipped = &ThresholdSeverity{}
+		}
+		return config.Skipped
+	case thresholdError:
+		if config.Error == nil {
+			config.Error = &ThresholdSeverity{}
+		}
+		return config.Error
+	case thresholdNoImpact:
+		if config.NoImpact == nil {
+			config.NoImpact = &ThresholdSeverity{}
+		}
+		return config.NoImpact
+	default:
+		return &ThresholdSeverity{}
+	}
 }
 
 // validateThresholds checks all threshold bounds against observed counts.
@@ -109,11 +256,11 @@ func validateThresholds(config *ThresholdConfig, counts *StatusCounts, complianc
 	}
 
 	// Per-status checks
-	violations = append(violations, checkSeverityThreshold("passed", config.Passed, &counts.Passed, actualControls)...)
-	violations = append(violations, checkSeverityThreshold("failed", config.Failed, &counts.Failed, actualControls)...)
-	violations = append(violations, checkSeverityThreshold("skipped", config.Skipped, &counts.Skipped, actualControls)...)
-	violations = append(violations, checkSeverityThreshold("error", config.Error, &counts.Error, actualControls)...)
-	violations = append(violations, checkSeverityThreshold("no_impact", config.NoImpact, &counts.NoImpact, actualControls)...)
+	violations = append(violations, checkSeverityThreshold(thresholdPassed, config.Passed, &counts.Passed, actualControls)...)
+	violations = append(violations, checkSeverityThreshold(thresholdFailed, config.Failed, &counts.Failed, actualControls)...)
+	violations = append(violations, checkSeverityThreshold(thresholdSkipped, config.Skipped, &counts.Skipped, actualControls)...)
+	violations = append(violations, checkSeverityThreshold(thresholdError, config.Error, &counts.Error, actualControls)...)
+	violations = append(violations, checkSeverityThreshold(thresholdNoImpact, config.NoImpact, &counts.NoImpact, actualControls)...)
 
 	return violations
 }
