@@ -93,7 +93,7 @@ Designed for CI/CD compliance gates.`,
 			}
 
 			if !quiet {
-				fmt.Fprintf(os.Stderr, "All thresholds passed (compliance: %.2f%%)\n", compliance)
+				fmt.Fprintf(os.Stderr, "All thresholds passed\n")
 			}
 			return nil
 		},
