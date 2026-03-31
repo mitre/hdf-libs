@@ -133,7 +133,6 @@ func runPlanCreateFromSystem(systemFile, planID, outputPath string) error {
 	plan := map[string]interface{}{
 		"planId":      planID,
 		"name":        planName,
-		"type":        "automated",
 		"systemRef":   systemFile,
 		"assessments": assessments,
 		"generator": map[string]interface{}{

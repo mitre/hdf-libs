@@ -36,7 +36,7 @@ func TestPlanCreate(t *testing.T) {
 	require.NoError(t, json.Unmarshal(data, &plan))
 
 	assert.Contains(t, plan["name"], "portal-prod")
-	assert.Equal(t, "automated", plan["type"])
+	assert.Nil(t, plan["type"]) // type is optional, not assumed
 	assert.Equal(t, sysFile, plan["systemRef"])
 	// planId should be auto-generated
 	sysCreatePlanID, ok := plan["planId"].(string)
