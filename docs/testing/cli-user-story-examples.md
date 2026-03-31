@@ -24,34 +24,24 @@ BASELINE=hdf-schema/test/fixtures/minimal-baseline.json
 # Auto-detect format and convert
 hdf convert $RESULTS -o /tmp/example-hdf-results.json
 
-# Verify output has components (not targets)
-python3 -c "import json; d=json.load(open('/tmp/example-hdf-results.json')); print('components:', len(d.get('components', []))); print('baselines:', len(d.get('baselines', [])))"
+# Validate the output
+hdf validate /tmp/example-hdf-results.json
 
 # Convert with explicit format
 hdf convert --from cyclonedx $RESULTS -o /tmp/example-hdf-explicit.json
 
 # Stamp a componentId during conversion
 hdf convert $RESULTS -o /tmp/example-hdf-stamped.json --component-id "aaaaaaaa-1111-2222-3333-444444444444"
-python3 -c "import json; d=json.load(open('/tmp/example-hdf-stamped.json')); print('componentId:', d['components'][0].get('componentId'))"
 
 # Apply labels during conversion
 hdf convert $RESULTS -o /tmp/example-hdf-labeled.json --labels "env=prod,system=Portal"
-python3 -c "import json; d=json.load(open('/tmp/example-hdf-labeled.json')); print('labels:', d['components'][0].get('labels'))"
 
-# Verify embedded SBOM in CycloneDX output
-python3 -c "
-import json; d=json.load(open('/tmp/example-hdf-results.json'))
-c = d['components'][0]
-print('name:', c.get('name'))
-print('version:', c.get('version'))
-print('sbomFormat:', c.get('sbomFormat'))
-sbom = c.get('sbom', {})
-print('sbom packages:', len(sbom.get('components', [])) if sbom else 0)
-"
+# Verify the output with hdf list
+hdf list /tmp/example-hdf-labeled.json --detail components
 
 # Convert Nessus (XML format)
 hdf convert $NESSUS -o /tmp/example-hdf-nessus.json
-python3 -c "import json; d=json.load(open('/tmp/example-hdf-nessus.json')); print('components:', len(d.get('components', [])))"
+hdf validate /tmp/example-hdf-nessus.json
 ```
 
 **Expected**: Each conversion produces valid HDF with `components[]` (not `targets[]`), embedded SBOM for CycloneDX, and labels/componentId when flags are used.
@@ -181,10 +171,7 @@ hdf system create --from /tmp/example-hdf-results.json --name "Dropwizard Prod" 
   --owner "platform-team@agency.gov" --description "Production Dropwizard" \
   -o /tmp/example-hdf-system.json
 
-# Verify systemId was auto-generated
-python3 -c "import json; d=json.load(open('/tmp/example-hdf-system.json')); print('systemId:', d.get('systemId')); print('owner:', d.get('owner'))"
-
-# View system info
+# View system info (shows auto-generated systemId, owner, components)
 hdf system info /tmp/example-hdf-system.json
 
 # Update owner
