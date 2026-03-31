@@ -422,24 +422,23 @@ EOF
 hdf-cli/hdf validate --type results /tmp/smoke-postgres-results.json
 
 # --- Step 4: Build the evidence package (auto-computes checksums) ---
+# --results is repeatable and supports globs
 hdf-cli/hdf evidence build \
   --system /tmp/smoke-system.json \
   --results /tmp/smoke-rhel9-results.json \
+  --results /tmp/smoke-postgres-results.json \
   -o /tmp/smoke-evidence.json
-# Note: evidence build currently accepts one --results flag.
-# For multiple results, add the second manually or use evidence set.
+# Or with a glob:
+# hdf-cli/hdf evidence build --system /tmp/smoke-system.json --results "/tmp/smoke-*-results.json" -o /tmp/smoke-evidence.json
 
-# Add the second results file and the plan reference
-# (or build the evidence package manually with all files)
+# Link the evidence package to the plan
+hdf-cli/hdf evidence set /tmp/smoke-evidence.json --plan-ref smoke-plan.json
 
 # --- Step 5: Verify checksums only ---
 hdf-cli/hdf evidence verify /tmp/smoke-evidence.json --checksums-only
 # Expected: all checksums match
 
 # --- Step 6: Verify completeness against the plan ---
-# First, set the planRef so verify can check completeness
-hdf-cli/hdf evidence set /tmp/smoke-evidence.json --plan-ref smoke-plan.json
-
 hdf-cli/hdf evidence verify /tmp/smoke-evidence.json
 # Default mode: checks that every baseline in the plan (RHEL9-STIG,
 # PostgreSQL-STIG) has a corresponding results document in the package.
@@ -455,7 +454,7 @@ hdf-cli/hdf validate --type evidence-package /tmp/smoke-evidence.json
 **Expected**:
 - Each document validates against its schema at creation time.
 - Plan has 2 assessments derived from system components.
-- Evidence build computes real SHA-256 checksums for referenced files.
+- Evidence build: accepts multiple `--results` flags and globs, computes real SHA-256 checksums.
 - `evidence verify --checksums-only`: all checksums match.
 - `evidence verify` (default): completeness check — reports if any planned baselines lack results.
 - `evidence set --plan-ref`: links the evidence package to the assessment plan.
