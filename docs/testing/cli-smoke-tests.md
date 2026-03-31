@@ -381,7 +381,7 @@ hdf-cli/hdf validate --type plan /tmp/smoke-plan.json
 # Check evidence help
 hdf-cli/hdf evidence --help
 
-# Create a minimal evidence package
+# Create a minimal evidence package manually
 cat > /tmp/smoke-evidence.json << 'EOF'
 {
   "name": "Q1 2026 ATO Package",
@@ -396,10 +396,98 @@ cat > /tmp/smoke-evidence.json << 'EOF'
 }
 EOF
 
+# Validate the evidence package
 hdf-cli/hdf validate --type evidence-package /tmp/smoke-evidence.json
+
+# View evidence package info
+hdf-cli/hdf evidence info /tmp/smoke-evidence.json
+
+# Build an evidence package from local files (auto-computes checksums)
+# hdf-cli/hdf evidence build --system portal-prod.hdf-system.json --results scan.json -o built-evidence.json
+
+# Set metadata on an evidence package
+hdf-cli/hdf evidence set /tmp/smoke-evidence.json --package-id "550e8400-e29b-41d4-a716-446655440000"
+hdf-cli/hdf evidence set /tmp/smoke-evidence.json --name "Q2 2026 ATO Package"
+hdf-cli/hdf evidence set /tmp/smoke-evidence.json --description "Quarterly ATO evidence bundle"
+
+# Verify evidence package integrity (checks checksums of referenced files)
+# hdf-cli/hdf evidence verify /tmp/smoke-evidence.json
+
+# Export evidence package contents to a directory
+# hdf-cli/hdf evidence export /tmp/smoke-evidence.json -o /tmp/evidence-export/
 ```
 
-**Expected**: Evidence package validates with componentRef on content entries.
+**Expected**:
+- Validate: evidence package passes schema validation.
+- Info: displays package name, system ref, contents list.
+- Set: updates fields in place; packageId is a UUID.
+- Build: creates evidence package with auto-computed checksums for referenced files.
+- Verify: confirms referenced file checksums match.
+- Export: extracts referenced files to output directory.
+
+---
+
+## 11a. hdf plan
+
+**Story**: A security engineer creates and manages assessment plans.
+
+```bash
+# Create a plan from a system document
+# hdf-cli/hdf plan create portal-prod.hdf-system.json -o plan.json
+
+# Create a standalone plan (no system document required)
+hdf-cli/hdf plan create --name "RHEL9 Assessment" --baseline RHEL9-STIG -o /tmp/smoke-plan.json
+
+# View plan info
+hdf-cli/hdf plan info /tmp/smoke-plan.json
+
+# Update plan metadata
+hdf-cli/hdf plan set /tmp/smoke-plan.json --description "Monthly compliance scan"
+hdf-cli/hdf plan set /tmp/smoke-plan.json --system-ref portal-prod.hdf-system.json
+hdf-cli/hdf plan set /tmp/smoke-plan.json --version "1.0.0"
+
+# Verify plan validates
+hdf-cli/hdf validate --type plan /tmp/smoke-plan.json
+```
+
+**Expected**:
+- Create: generates plan with auto-generated planId UUID, one assessment entry.
+- Info: displays plan name, planId, assessments.
+- Set: updates fields in place.
+- Validate: plan passes schema validation.
+
+---
+
+## 11b. hdf generate/validate threshold
+
+**Story**: A CI pipeline enforces compliance regression detection.
+
+```bash
+# Generate a threshold from HDF results
+hdf-cli/hdf generate threshold hdf-schema/test/fixtures/minimal-v2.json -o /tmp/smoke-threshold.yaml
+
+# View the generated threshold
+cat /tmp/smoke-threshold.yaml
+
+# Validate the same results against the threshold (should pass)
+hdf-cli/hdf validate threshold hdf-schema/test/fixtures/minimal-v2.json -T /tmp/smoke-threshold.yaml
+
+# Generate with control IDs included
+hdf-cli/hdf generate threshold hdf-schema/test/fixtures/minimal-v2.json --include-controls
+
+# Inline threshold validation (CI one-liner)
+hdf-cli/hdf validate threshold hdf-schema/test/fixtures/minimal-v2.json -I "{compliance.min: 40}"
+
+# Inline threshold that should fail (compliance too high)
+hdf-cli/hdf validate threshold hdf-schema/test/fixtures/minimal-v2.json -I "{compliance.min: 90}" || echo "Expected failure"
+```
+
+**Expected**:
+- Generate: produces YAML with compliance, passed, failed sections.
+- Validate with -T: exit 0 when results meet threshold.
+- --include-controls: adds control ID lists under each status/severity.
+- Inline -I: parses `{key: value}` format, exit 0 on pass, exit 1 on fail.
+- Round-trip: generate → validate against same file always passes.
 
 ---
 
