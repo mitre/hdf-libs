@@ -1628,6 +1628,10 @@ type HDFEvidencePackage struct {
 	// Unique identifier for this evidence package. Optional in casual use, expected in                                      
 	// production ATO submissions. Auto-generated if omitted during creation.                                                
 	PackageID                                                                                   *string                      `json:"packageId,omitempty"`
+	// URI to the hdf-plan document that drove this assessment. Used for completeness                                        
+	// verification — every baseline in the plan should have a corresponding results document in                             
+	// this package.                                                                                                         
+	PlanRef                                                                                     *string                      `json:"planRef,omitempty"`
 	// When this evidence package was prepared. ISO 8601 format.                                                             
 	PreparedAt                                                                                  *time.Time                   `json:"preparedAt,omitempty"`
 	// Identity of who prepared this evidence package.                                                                       

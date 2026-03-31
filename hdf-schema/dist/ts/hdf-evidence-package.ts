@@ -40,6 +40,12 @@ export interface HdfEvidencePackage {
      */
     packageId?: string;
     /**
+     * URI to the hdf-plan document that drove this assessment. Used for completeness
+     * verification — every baseline in the plan should have a corresponding results document in
+     * this package.
+     */
+    planRef?: string;
+    /**
      * When this evidence package was prepared. ISO 8601 format.
      */
     preparedAt?: Date;

@@ -28,6 +28,11 @@
       "format": "uri-reference",
       "description": "URI to the hdf-system document this evidence package covers."
     },
+    "planRef": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "URI to the hdf-plan document that drove this assessment. Used for completeness verification — every baseline in the plan should have a corresponding results document in this package."
+    },
     "preparedBy": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
       "description": "Identity of who prepared this evidence package."

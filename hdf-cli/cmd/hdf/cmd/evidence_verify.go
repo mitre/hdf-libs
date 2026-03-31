@@ -12,24 +12,34 @@ import (
 )
 
 func newEvidenceVerifyCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "verify <package-file>",
-		Short: "Verify checksums of documents in an evidence package",
-		Long: `Verify integrity of an HDF evidence package by checking SHA-256 checksums
-of all referenced documents.
+	var checksumsOnly bool
 
-For each content reference with a checksum, reads the referenced file and
-verifies the checksum matches. Reports results and exits with code 1 if
-any checksum mismatches are found.
+	cmd := &cobra.Command{
+		Use:   "verify <package-file>",
+		Short: "Verify an evidence package against its assessment plan",
+		Long: `Verify an HDF evidence package. By default, checks completeness:
+every baseline in the referenced plan must have a corresponding results
+document in the evidence package.
+
+Use --checksums-only to skip completeness checking and only verify
+SHA-256 checksums of referenced files.
+
+If the evidence package has no planRef, falls back to checksum
+verification with a warning.
 
 Examples:
   hdf evidence verify package.json
+  hdf evidence verify package.json --checksums-only
   hdf evidence verify package.json --json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runEvidenceVerify(args[0])
+			return runEvidenceVerify(args[0], checksumsOnly)
 		},
 	}
+
+	cmd.Flags().BoolVar(&checksumsOnly, "checksums-only", false, "Only verify file checksums, skip completeness checking")
+
+	return cmd
 }
 
 // Verification status constants.
@@ -57,8 +67,8 @@ type verifyCounts struct {
 	errors   int
 }
 
-func runEvidenceVerify(pkgPath string) error {
-	data, err := os.ReadFile(pkgPath) // #nosec G304 -- CLI reads user-provided path
+func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
+	data, err := os.ReadFile(pkgPath) //nolint:gosec // CLI reads user-provided path
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
 	}
@@ -71,13 +81,115 @@ func runEvidenceVerify(pkgPath string) error {
 	pkgDir := filepath.Dir(pkgPath)
 	contents, _ := doc["contents"].([]interface{})
 
+	// Always verify checksums
 	results, counts := verifyContents(contents, pkgDir)
-
 	renderVerifyOutput(doc, results, counts)
 
 	if counts.mismatch > 0 || counts.errors > 0 {
 		return fmt.Errorf("%d checksum mismatches, %d errors", counts.mismatch, counts.errors)
 	}
+
+	// Completeness checking (default behavior unless --checksums-only)
+	if checksumsOnly {
+		return nil
+	}
+
+	planRef, hasPlanRef := doc["planRef"].(string)
+	if !hasPlanRef || planRef == "" {
+		fmt.Fprintf(os.Stderr, "Note: no planRef in evidence package — skipping completeness check\n")
+		return nil
+	}
+
+	return verifyCompleteness(pkgDir, planRef, contents)
+}
+
+// verifyCompleteness checks that every baseline in the plan has a
+// corresponding results document in the evidence package.
+func verifyCompleteness(pkgDir, planRef string, contents []interface{}) error {
+	// Load the plan
+	planPath := filepath.Join(pkgDir, planRef)
+	planData, err := os.ReadFile(planPath) //nolint:gosec // resolves relative to package
+	if err != nil {
+		return fmt.Errorf("failed to read plan %s: %w", planRef, err)
+	}
+
+	var plan map[string]interface{}
+	if err := json.Unmarshal(planData, &plan); err != nil {
+		return fmt.Errorf("failed to parse plan %s: %w", planRef, err)
+	}
+
+	// Extract planned baselines
+	assessments, _ := plan["assessments"].([]interface{})
+	plannedBaselines := make(map[string]bool)
+	for _, aRaw := range assessments {
+		a, ok := aRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if ref, ok := a["baselineRef"].(string); ok {
+			plannedBaselines[ref] = false // false = not yet covered
+		}
+	}
+
+	// Load each results document in the package and extract baseline names
+	for _, cRaw := range contents {
+		entry, ok := cRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		docType, _ := entry["type"].(string)
+		if docType != "hdf-results" {
+			continue
+		}
+		uri, _ := entry["uri"].(string)
+		if uri == "" {
+			continue
+		}
+
+		resultsPath := filepath.Join(pkgDir, uri)
+		resultsData, readErr := os.ReadFile(resultsPath) //nolint:gosec // resolves relative to package
+		if readErr != nil {
+			continue // checksum verification already reported this
+		}
+
+		var results map[string]interface{}
+		if json.Unmarshal(resultsData, &results) != nil {
+			continue
+		}
+
+		baselines, _ := results["baselines"].([]interface{})
+		for _, bRaw := range baselines {
+			b, ok := bRaw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			name, _ := b["name"].(string)
+			if _, planned := plannedBaselines[name]; planned {
+				plannedBaselines[name] = true
+			}
+		}
+	}
+
+	// Report missing baselines
+	var missing []string
+	for baseline, covered := range plannedBaselines {
+		if !covered {
+			missing = append(missing, baseline)
+		}
+	}
+
+	if len(missing) > 0 {
+		fmt.Fprintf(os.Stderr, "\nCompleteness check FAILED:\n")
+		for _, m := range missing {
+			fmt.Fprintf(os.Stderr, "  Missing results for baseline: %s\n", m)
+		}
+		return &exitCodeError{
+			code:    1,
+			message: fmt.Sprintf("evidence package incomplete: missing results for %s", missing[0]),
+		}
+	}
+
+	fmt.Fprintf(os.Stderr, "Completeness check passed: all %d planned baselines have results\n", len(plannedBaselines))
 	return nil
 }
 
@@ -123,7 +235,7 @@ func verifyContentEntry(entry map[string]interface{}, uri, docType, pkgDir strin
 	}
 
 	filePath := filepath.Join(pkgDir, uri)
-	fileData, err := os.ReadFile(filePath) // #nosec G304 -- resolves relative to package
+	fileData, err := os.ReadFile(filePath) //nolint:gosec // resolves relative to package
 	if err != nil {
 		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifyError, Error: err.Error()}
 	}

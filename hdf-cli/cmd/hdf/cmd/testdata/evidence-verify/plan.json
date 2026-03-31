@@ -1,0 +1,19 @@
+{
+  "assessments": [
+    {
+      "baselineRef": "RHEL9-STIG"
+    },
+    {
+      "baselineRef": "PostgreSQL-STIG"
+    }
+  ],
+  "createdAt": "2026-03-31T02:19:54Z",
+  "generator": {
+    "name": "hdf-cli",
+    "version": "dev"
+  },
+  "name": "portal-prod-assessment-plan",
+  "planId": "4737569f-8bb5-49b1-8e3a-3586a88d092e",
+  "systemRef": "/tmp/evidence-fixtures/system.json",
+  "type": "automated"
+}

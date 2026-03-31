@@ -30,11 +30,17 @@ describe('hdf-evidence-package.schema.json', () => {
     expect(validate(badId)).toBe(false);
   });
 
+  it('should accept planRef', () => {
+    const withPlan = { ...minimal, planRef: 'quarterly-plan.hdf-plan.json' };
+    expect(validate(withPlan)).toBe(true);
+  });
+
   it('should validate a fully specified evidence package', () => {
     const full = {
       packageId: '550e8400-e29b-41d4-a716-446655440000',
       name: 'Enterprise Portal ATO Evidence - Q1 2026',
       description: 'Quarterly ATO evidence bundle',
+      planRef: 'quarterly-plan.hdf-plan.json',
       systemRef: 'portal-prod.hdf-system.json',
       preparedBy: { type: 'email', identifier: 'compliance@agency.gov' },
       preparedAt: '2026-03-31T12:00:00Z',

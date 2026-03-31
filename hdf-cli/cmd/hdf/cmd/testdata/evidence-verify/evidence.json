@@ -1,0 +1,39 @@
+{
+  "name": "Portal Prod Q1 Evidence",
+  "systemRef": "system.json",
+  "planRef": "plan.json",
+  "contents": [
+    {
+      "type": "hdf-system",
+      "uri": "system.json",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "f25bcb45fcb364b927a3023e4fc3cae91f4ed98b3325234fe70e1360dde61255"
+      }
+    },
+    {
+      "type": "hdf-plan",
+      "uri": "plan.json",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "17748ce73adc8db8e8c96d40f5b9ed9fbb6aab5b1fe56c669fbc99728644e07d"
+      }
+    },
+    {
+      "type": "hdf-results",
+      "uri": "rhel9-results.json",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "6d8e309f4f15a5b67bb52ef2079ea532d2bb3f0fcb6f869cf829ec5e3631d737"
+      }
+    },
+    {
+      "type": "hdf-results",
+      "uri": "postgres-results.json",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "a7325dd1f666e1f9923d2638a801e720bdab543fba8cd2a3bbd3d8ba09a730af"
+      }
+    }
+  ]
+}
