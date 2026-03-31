@@ -15,7 +15,7 @@ import (
 func newEvidenceBuildCmd() *cobra.Command {
 	var (
 		systemPath     string
-		resultsPath    string
+		resultsPaths   []string
 		amendmentsPath string
 		comparisonPath string
 		outputPath     string
@@ -30,16 +30,28 @@ Computes SHA-256 checksums for each document and populates a
 completeness check (baselines assessed, components covered,
 compliance percentage).
 
+The --results flag is repeatable and supports file globs.
+
 Examples:
   hdf evidence build --system portal.json --results scan.json
+  hdf evidence build --system portal.json --results rhel9.json --results postgres.json
+  hdf evidence build --system portal.json --results "/tmp/scans/*.json"
   hdf evidence build --system portal.json --results scan.json --amendments waivers.json -o package.json`,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return runEvidenceBuild(systemPath, resultsPath, amendmentsPath, comparisonPath, outputPath)
+			// Expand globs in results paths
+			expanded, err := expandGlobs(resultsPaths)
+			if err != nil {
+				return fmt.Errorf("failed to expand results paths: %w", err)
+			}
+			if len(expanded) == 0 {
+				return fmt.Errorf("no results files found")
+			}
+			return runEvidenceBuild(systemPath, expanded, amendmentsPath, comparisonPath, outputPath)
 		},
 	}
 
 	cmd.Flags().StringVar(&systemPath, "system", "", "System document (required)")
-	cmd.Flags().StringVar(&resultsPath, "results", "", "Results document (required)")
+	cmd.Flags().StringArrayVar(&resultsPaths, "results", nil, "Results document(s) (repeatable, supports globs)")
 	cmd.Flags().StringVar(&amendmentsPath, "amendments", "", "Amendments document (optional)")
 	cmd.Flags().StringVar(&comparisonPath, "comparison", "", "Comparison document (optional)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
@@ -50,8 +62,8 @@ Examples:
 	return cmd
 }
 
-func runEvidenceBuild(systemPath, resultsPath, amendmentsPath, comparisonPath, outputPath string) error {
-	contents := make([]map[string]interface{}, 0, 4)
+func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, comparisonPath, outputPath string) error {
+	contents := make([]map[string]interface{}, 0, len(resultsPaths)+3)
 
 	// Add system
 	entry, err := buildContentEntry("hdf-system", systemPath)
@@ -61,11 +73,13 @@ func runEvidenceBuild(systemPath, resultsPath, amendmentsPath, comparisonPath, o
 	contents = append(contents, entry)
 
 	// Add results
-	entry, err = buildContentEntry("hdf-results", resultsPath)
-	if err != nil {
-		return err
+	for _, rp := range resultsPaths {
+		entry, err = buildContentEntry("hdf-results", rp)
+		if err != nil {
+			return err
+		}
+		contents = append(contents, entry)
 	}
-	contents = append(contents, entry)
 
 	// Optional: amendments
 	if amendmentsPath != "" {
@@ -98,7 +112,7 @@ func runEvidenceBuild(systemPath, resultsPath, amendmentsPath, comparisonPath, o
 	}
 
 	// Compute completeness check from results
-	completeness := computeCompleteness(sysDoc, resultsPath)
+	completeness := computeCompleteness(sysDoc, resultsPaths[0])
 
 	pkg := map[string]interface{}{
 		"name":              sysName + "-evidence-package",
