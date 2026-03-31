@@ -375,55 +375,91 @@ hdf-cli/hdf validate --type plan /tmp/smoke-plan.json
 
 ## 11. hdf evidence (bead 5fhb)
 
-**Story**: A compliance officer assembles an evidence package for audit.
+**Story**: A compliance officer builds the full document chain (system → plan → results → evidence) and verifies completeness.
 
 ```bash
-# Check evidence help
-hdf-cli/hdf evidence --help
-
-# Create a minimal evidence package manually
-cat > /tmp/smoke-evidence.json << 'EOF'
+# --- Step 1: Create a system document ---
+cat > /tmp/smoke-system.json << 'EOF'
 {
-  "name": "Q1 2026 ATO Package",
-  "systemRef": "portal-prod.hdf-system.json",
-  "preparedBy": {"type": "email", "identifier": "compliance@agency.gov"},
-  "preparedAt": "2026-03-31T12:00:00Z",
-  "contents": [
-    {"type": "hdf-system", "uri": "portal-prod.hdf-system.json"},
-    {"type": "hdf-results", "uri": "scan.json", "componentRef": "aaaaaaaa-1111-2222-3333-444444444444"},
-    {"type": "sbom", "uri": "webtier.cdx.json", "componentRef": "aaaaaaaa-1111-2222-3333-444444444444"}
+  "systemId": "aaaaaaaa-1111-2222-3333-444444444444",
+  "name": "Portal Prod",
+  "components": [
+    {"name": "WebTier", "type": "application", "baselineRefs": ["RHEL9-STIG"]},
+    {"name": "DatabaseTier", "type": "application", "baselineRefs": ["PostgreSQL-STIG"]}
   ]
 }
 EOF
+hdf-cli/hdf validate --type system /tmp/smoke-system.json
 
-# Validate the evidence package
-hdf-cli/hdf validate --type evidence-package /tmp/smoke-evidence.json
+# --- Step 2: Create an assessment plan from the system ---
+hdf-cli/hdf plan create /tmp/smoke-system.json -o /tmp/smoke-plan.json
+hdf-cli/hdf validate --type plan /tmp/smoke-plan.json
+# Plan should have 2 assessments: RHEL9-STIG, PostgreSQL-STIG
 
-# View evidence package info
+# --- Step 3: Create results for each baseline ---
+cat > /tmp/smoke-rhel9-results.json << 'EOF'
+{
+  "baselines": [{"name": "RHEL9-STIG", "requirements": [
+    {"id": "SV-257777", "title": "Vendor support", "descriptions": [{"label": "default", "data": "check"}],
+     "impact": 0.7, "tags": {}, "results": [{"status": "passed", "codeDesc": "check", "startTime": "2026-03-30T00:00:00Z"}]}
+  ], "supports": [], "groups": []}],
+  "platform": {"name": "rhel9", "release": "9.2"},
+  "statistics": {"duration": 12.5}, "version": "2.0.0"
+}
+EOF
+hdf-cli/hdf validate --type results /tmp/smoke-rhel9-results.json
+
+cat > /tmp/smoke-postgres-results.json << 'EOF'
+{
+  "baselines": [{"name": "PostgreSQL-STIG", "requirements": [
+    {"id": "SV-233512", "title": "Access control", "descriptions": [{"label": "default", "data": "check"}],
+     "impact": 0.5, "tags": {}, "results": [{"status": "passed", "codeDesc": "check", "startTime": "2026-03-30T00:00:00Z"}]}
+  ], "supports": [], "groups": []}],
+  "platform": {"name": "postgresql", "release": "15.4"},
+  "statistics": {"duration": 8.2}, "version": "2.0.0"
+}
+EOF
+hdf-cli/hdf validate --type results /tmp/smoke-postgres-results.json
+
+# --- Step 4: Build the evidence package (auto-computes checksums) ---
+hdf-cli/hdf evidence build \
+  --system /tmp/smoke-system.json \
+  --results /tmp/smoke-rhel9-results.json \
+  -o /tmp/smoke-evidence.json
+# Note: evidence build currently accepts one --results flag.
+# For multiple results, add the second manually or use evidence set.
+
+# Add the second results file and the plan reference
+# (or build the evidence package manually with all files)
+
+# --- Step 5: Verify checksums only ---
+hdf-cli/hdf evidence verify /tmp/smoke-evidence.json --checksums-only
+# Expected: all checksums match
+
+# --- Step 6: Verify completeness against the plan ---
+# First, set the planRef so verify can check completeness
+hdf-cli/hdf evidence set /tmp/smoke-evidence.json --plan-ref smoke-plan.json
+
+hdf-cli/hdf evidence verify /tmp/smoke-evidence.json
+# Default mode: checks that every baseline in the plan (RHEL9-STIG,
+# PostgreSQL-STIG) has a corresponding results document in the package.
+# Will report missing baselines if any are absent.
+
+# --- Other evidence commands ---
 hdf-cli/hdf evidence info /tmp/smoke-evidence.json
-
-# Build an evidence package from local files (auto-computes checksums)
-# hdf-cli/hdf evidence build --system portal-prod.hdf-system.json --results scan.json -o built-evidence.json
-
-# Set metadata on an evidence package
 hdf-cli/hdf evidence set /tmp/smoke-evidence.json --package-id "550e8400-e29b-41d4-a716-446655440000"
-hdf-cli/hdf evidence set /tmp/smoke-evidence.json --name "Q2 2026 ATO Package"
 hdf-cli/hdf evidence set /tmp/smoke-evidence.json --description "Quarterly ATO evidence bundle"
-
-# Verify evidence package integrity (checks checksums of referenced files)
-# hdf-cli/hdf evidence verify /tmp/smoke-evidence.json
-
-# Export evidence package contents to a directory
-# hdf-cli/hdf evidence export /tmp/smoke-evidence.json -o /tmp/evidence-export/
+hdf-cli/hdf validate --type evidence-package /tmp/smoke-evidence.json
 ```
 
 **Expected**:
-- Validate: evidence package passes schema validation.
-- Info: displays package name, system ref, contents list.
-- Set: updates fields in place; packageId is a UUID.
-- Build: creates evidence package with auto-computed checksums for referenced files.
-- Verify: confirms referenced file checksums match.
-- Export: extracts referenced files to output directory.
+- Each document validates against its schema at creation time.
+- Plan has 2 assessments derived from system components.
+- Evidence build computes real SHA-256 checksums for referenced files.
+- `evidence verify --checksums-only`: all checksums match.
+- `evidence verify` (default): completeness check — reports if any planned baselines lack results.
+- `evidence set --plan-ref`: links the evidence package to the assessment plan.
+- `evidence info`: displays package name, planRef, systemRef, contents list.
 
 ---
 
