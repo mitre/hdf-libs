@@ -36,15 +36,20 @@ Examples:
   hdf evidence build --system portal.json --results scan.json
   hdf evidence build --system portal.json --results rhel9.json --results postgres.json
   hdf evidence build --system portal.json --results "/tmp/scans/*.json"
+  hdf evidence build --system portal.json /tmp/scans/*.json
   hdf evidence build --system portal.json --results scan.json --amendments waivers.json -o package.json`,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			// Expand globs in results paths
-			expanded, err := expandGlobs(resultsPaths)
+		Args: cobra.ArbitraryArgs,
+		RunE: func(_ *cobra.Command, args []string) error {
+			// Combine --results flags and positional args as results files
+			allResults := make([]string, 0, len(resultsPaths)+len(args))
+			allResults = append(allResults, resultsPaths...)
+			allResults = append(allResults, args...)
+			expanded, err := expandGlobs(allResults)
 			if err != nil {
 				return fmt.Errorf("failed to expand results paths: %w", err)
 			}
 			if len(expanded) == 0 {
-				return fmt.Errorf("no results files found")
+				return fmt.Errorf("no results files provided; use --results or pass files as arguments")
 			}
 			return runEvidenceBuild(systemPath, expanded, amendmentsPath, comparisonPath, outputPath)
 		},
@@ -57,7 +62,6 @@ Examples:
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
 
 	_ = cmd.MarkFlagRequired("system")
-	_ = cmd.MarkFlagRequired("results")
 
 	return cmd
 }
@@ -111,8 +115,8 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 		sysName = "unnamed-system"
 	}
 
-	// Compute completeness check from results
-	completeness := computeCompleteness(sysDoc, resultsPaths[0])
+	// Compute completeness check from all results
+	completeness := computeCompleteness(sysDoc, resultsPaths)
 
 	pkg := map[string]interface{}{
 		"name":              sysName + "-evidence-package",
@@ -156,48 +160,49 @@ func buildContentEntry(docType, filePath string) (map[string]interface{}, error)
 	}, nil
 }
 
-func computeCompleteness(sysDoc map[string]interface{}, resultsPath string) map[string]interface{} {
+func computeCompleteness(sysDoc map[string]interface{}, resultsPaths []string) map[string]interface{} { //nolint:gocognit // nested JSON traversal
 	cc := map[string]interface{}{
 		"allBaselinesAssessed": false,
 		"allComponentsCovered": false,
 		"compliancePercent":    0.0,
 	}
 
-	// Read results to compute compliance
-	resultsData, err := os.ReadFile(resultsPath) // #nosec G304 -- CLI reads user-provided path
-	if err != nil {
-		return cc
-	}
-	var resultsDoc map[string]interface{}
-	if err := json.Unmarshal(resultsData, &resultsDoc); err != nil {
-		return cc
-	}
-
-	// Count pass/total across all baselines
-	baselines, _ := resultsDoc["baselines"].([]interface{})
 	baselineNames := make(map[string]bool)
 	totalReqs := 0
 	passedReqs := 0
-	for _, bRaw := range baselines {
-		b, ok := bRaw.(map[string]interface{})
-		if !ok {
+
+	for _, resultsPath := range resultsPaths {
+		resultsData, err := os.ReadFile(resultsPath) //nolint:gosec // CLI reads user-provided path
+		if err != nil {
 			continue
 		}
-		if name, ok := b["name"].(string); ok {
-			baselineNames[name] = true
+		var resultsDoc map[string]interface{}
+		if json.Unmarshal(resultsData, &resultsDoc) != nil {
+			continue
 		}
-		reqs, _ := b["requirements"].([]interface{})
-		for _, rRaw := range reqs {
-			r, ok := rRaw.(map[string]interface{})
+
+		baselines, _ := resultsDoc["baselines"].([]interface{})
+		for _, bRaw := range baselines {
+			b, ok := bRaw.(map[string]interface{})
 			if !ok {
 				continue
 			}
-			totalReqs++
-			results, _ := r["results"].([]interface{})
-			if len(results) > 0 {
-				first, _ := results[0].(map[string]interface{})
-				if status, ok := first["status"].(string); ok && status == StatusPassed {
-					passedReqs++
+			if name, ok := b["name"].(string); ok {
+				baselineNames[name] = true
+			}
+			reqs, _ := b["requirements"].([]interface{})
+			for _, rRaw := range reqs {
+				r, ok := rRaw.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				totalReqs++
+				results, _ := r["results"].([]interface{})
+				if len(results) > 0 {
+					first, _ := results[0].(map[string]interface{})
+					if status, ok := first["status"].(string); ok && status == StatusPassed {
+						passedReqs++
+					}
 				}
 			}
 		}
@@ -210,7 +215,7 @@ func computeCompleteness(sysDoc map[string]interface{}, resultsPath string) map[
 	// Check if all system component baselines are assessed
 	components, _ := sysDoc["components"].([]interface{})
 	allCovered := len(components) > 0
-	allAssessed := true
+	allAssessed := len(baselineNames) > 0
 	for _, cRaw := range components {
 		c, ok := cRaw.(map[string]interface{})
 		if !ok {

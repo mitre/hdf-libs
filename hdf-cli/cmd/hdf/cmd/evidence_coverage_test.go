@@ -241,7 +241,7 @@ func TestComputeCompleteness(t *testing.T) {
 			},
 		}
 
-		cc := computeCompleteness(sysDoc, resultsPath)
+		cc := computeCompleteness(sysDoc, []string{resultsPath})
 		assert.Equal(t, 75.0, cc["compliancePercent"])
 		assert.Equal(t, true, cc["allBaselinesAssessed"])
 		assert.Equal(t, true, cc["allComponentsCovered"])
@@ -249,7 +249,7 @@ func TestComputeCompleteness(t *testing.T) {
 
 	t.Run("returns defaults when results file missing", func(t *testing.T) {
 		sysDoc := map[string]interface{}{}
-		cc := computeCompleteness(sysDoc, "/nonexistent/results.json")
+		cc := computeCompleteness(sysDoc, []string{"/nonexistent/results.json"})
 		assert.Equal(t, false, cc["allBaselinesAssessed"])
 		assert.Equal(t, false, cc["allComponentsCovered"])
 		assert.Equal(t, 0.0, cc["compliancePercent"])
@@ -261,7 +261,7 @@ func TestComputeCompleteness(t *testing.T) {
 		require.NoError(t, os.WriteFile(resultsPath, []byte("not json"), 0o600))
 
 		sysDoc := map[string]interface{}{}
-		cc := computeCompleteness(sysDoc, resultsPath)
+		cc := computeCompleteness(sysDoc, []string{resultsPath})
 		assert.Equal(t, 0.0, cc["compliancePercent"])
 	})
 
@@ -278,7 +278,7 @@ func TestComputeCompleteness(t *testing.T) {
 				},
 			},
 		}
-		cc := computeCompleteness(sysDoc, resultsPath)
+		cc := computeCompleteness(sysDoc, []string{resultsPath})
 		assert.Equal(t, 0.0, cc["compliancePercent"])
 		assert.Equal(t, true, cc["allBaselinesAssessed"])
 	})
@@ -296,7 +296,7 @@ func TestComputeCompleteness(t *testing.T) {
 				},
 			},
 		}
-		cc := computeCompleteness(sysDoc, resultsPath)
+		cc := computeCompleteness(sysDoc, []string{resultsPath})
 		assert.Equal(t, false, cc["allBaselinesAssessed"])
 		assert.Equal(t, false, cc["allComponentsCovered"])
 	})
@@ -308,7 +308,7 @@ func TestComputeCompleteness(t *testing.T) {
 		require.NoError(t, os.WriteFile(resultsPath, []byte(resultsDoc), 0o600))
 
 		sysDoc := map[string]interface{}{}
-		cc := computeCompleteness(sysDoc, resultsPath)
+		cc := computeCompleteness(sysDoc, []string{resultsPath})
 		assert.Equal(t, false, cc["allComponentsCovered"])
 	})
 
@@ -319,7 +319,7 @@ func TestComputeCompleteness(t *testing.T) {
 		require.NoError(t, os.WriteFile(resultsPath, []byte(resultsDoc), 0o600))
 
 		sysDoc := map[string]interface{}{}
-		cc := computeCompleteness(sysDoc, resultsPath)
+		cc := computeCompleteness(sysDoc, []string{resultsPath})
 		assert.Equal(t, 0.0, cc["compliancePercent"])
 	})
 
@@ -330,7 +330,7 @@ func TestComputeCompleteness(t *testing.T) {
 		require.NoError(t, os.WriteFile(resultsPath, []byte(resultsDoc), 0o600))
 
 		sysDoc := map[string]interface{}{}
-		cc := computeCompleteness(sysDoc, resultsPath)
+		cc := computeCompleteness(sysDoc, []string{resultsPath})
 		assert.Equal(t, 0.0, cc["compliancePercent"])
 	})
 
@@ -341,7 +341,7 @@ func TestComputeCompleteness(t *testing.T) {
 		require.NoError(t, os.WriteFile(resultsPath, []byte(resultsDoc), 0o600))
 
 		sysDoc := map[string]interface{}{}
-		cc := computeCompleteness(sysDoc, resultsPath)
+		cc := computeCompleteness(sysDoc, []string{resultsPath})
 		assert.Equal(t, 0.0, cc["compliancePercent"])
 	})
 
@@ -354,7 +354,7 @@ func TestComputeCompleteness(t *testing.T) {
 		sysDoc := map[string]interface{}{
 			"components": []interface{}{"not-a-map"},
 		}
-		cc := computeCompleteness(sysDoc, resultsPath)
+		cc := computeCompleteness(sysDoc, []string{resultsPath})
 		// Should not panic
 		assert.NotNil(t, cc)
 	})
@@ -372,7 +372,7 @@ func TestComputeCompleteness(t *testing.T) {
 				},
 			},
 		}
-		cc := computeCompleteness(sysDoc, resultsPath)
+		cc := computeCompleteness(sysDoc, []string{resultsPath})
 		assert.NotNil(t, cc)
 	})
 }
