@@ -903,6 +903,34 @@
           },
           "description": "Core requirement fields shared between baseline requirements and evaluated requirements. Contains the fundamental requirement definition without assessment results.",
           "title": "Requirement Core"
+        },
+        "Severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "informational"
+          ],
+          "description": "Severity rating for a requirement. Typically derived from the numeric impact score.",
+          "title": "Severity"
+        },
+        "Cloud_Provider": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "aws",
+            "azure",
+            "gcp",
+            "oci",
+            "other",
+            null
+          ],
+          "description": "Cloud service provider identifier.",
+          "title": "Cloud Provider"
         }
       }
     },

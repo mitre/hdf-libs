@@ -185,14 +185,7 @@
           "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
         },
         "severity": {
-          "type": "string",
-          "enum": [
-            "critical",
-            "high",
-            "medium",
-            "low",
-            "informational"
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Severity",
           "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
         },
         "sourceLocation": {
@@ -622,15 +615,7 @@
                   "const": "cloudAccount"
                 },
                 "provider": {
-                  "type": "string",
-                  "enum": [
-                    "aws",
-                    "azure",
-                    "gcp",
-                    "oci",
-                    "other",
-                    null
-                  ],
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Cloud_Provider",
                   "description": "Cloud provider."
                 },
                 "accountId": {
@@ -659,15 +644,7 @@
                   "const": "cloudResource"
                 },
                 "provider": {
-                  "type": "string",
-                  "enum": [
-                    "aws",
-                    "azure",
-                    "gcp",
-                    "oci",
-                    "other",
-                    null
-                  ],
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Cloud_Provider",
                   "description": "Cloud provider."
                 },
                 "resourceType": {
@@ -1535,6 +1512,34 @@
           },
           "description": "Core requirement fields shared between baseline requirements and evaluated requirements. Contains the fundamental requirement definition without assessment results.",
           "title": "Requirement Core"
+        },
+        "Severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "informational"
+          ],
+          "description": "Severity rating for a requirement. Typically derived from the numeric impact score.",
+          "title": "Severity"
+        },
+        "Cloud_Provider": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "aws",
+            "azure",
+            "gcp",
+            "oci",
+            "other",
+            null
+          ],
+          "description": "Cloud service provider identifier.",
+          "title": "Cloud Provider"
         }
       }
     },

@@ -36,17 +36,14 @@ export var Type;
     Type["System"] = "system";
     Type["Username"] = "username";
 })(Type || (Type = {}));
-/**
- * Cloud provider.
- */
-export var Provider;
-(function (Provider) {
-    Provider["Aws"] = "aws";
-    Provider["Azure"] = "azure";
-    Provider["Gcp"] = "gcp";
-    Provider["Oci"] = "oci";
-    Provider["Other"] = "other";
-})(Provider || (Provider = {}));
+export var CloudProvider;
+(function (CloudProvider) {
+    CloudProvider["Aws"] = "aws";
+    CloudProvider["Azure"] = "azure";
+    CloudProvider["Gcp"] = "gcp";
+    CloudProvider["Oci"] = "oci";
+    CloudProvider["Other"] = "other";
+})(CloudProvider || (CloudProvider = {}));
 /**
  * Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present.
  */

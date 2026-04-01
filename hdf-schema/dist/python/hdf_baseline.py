@@ -358,6 +358,8 @@ class Reference:
 class Severity(Enum):
     """Explicit severity rating. Typically derived from impact score but provided explicitly for
     clarity.
+    
+    Severity rating for a requirement. Typically derived from the numeric impact score.
     """
     CRITICAL = "critical"
     HIGH = "high"

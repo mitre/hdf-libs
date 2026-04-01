@@ -787,7 +787,7 @@ export interface Component {
     /**
      * Cloud provider.
      */
-    provider?: Provider;
+    provider?: CloudProvider | null;
     /**
      * Cloud region, if applicable.
      *
@@ -925,10 +925,7 @@ export declare enum Type {
     System = "system",
     Username = "username"
 }
-/**
- * Cloud provider.
- */
-export declare enum Provider {
+export declare enum CloudProvider {
     Aws = "aws",
     Azure = "azure",
     Gcp = "gcp",

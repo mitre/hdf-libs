@@ -80,14 +80,7 @@
           "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
         },
         "severity": {
-          "type": "string",
-          "enum": [
-            "critical",
-            "high",
-            "medium",
-            "low",
-            "informational"
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Severity",
           "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
         }
       },

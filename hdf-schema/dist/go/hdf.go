@@ -752,7 +752,7 @@ type Component struct {
 	// Cloud account identifier.                                                                                  
 	AccountID                                                                                   *string           `json:"accountId,omitempty"`
 	// Cloud provider.                                                                                            
-	Provider                                                                                    *Provider         `json:"provider,omitempty"`
+	Provider *CloudProvider `json:"provider,omitempty"`
 	// Cloud region, if applicable.                                                                               
 	//                                                                                                            
 	// Cloud region where the resource resides.                                                                   
@@ -1810,6 +1810,8 @@ const (
 
 // Explicit severity rating. Typically derived from impact score but provided explicitly for
 // clarity.
+//
+// Severity rating for a requirement. Typically derived from the numeric impact score.
 type Severity string
 
 const (
@@ -1838,15 +1840,14 @@ const (
 	Poam               OverrideType = "poam"
 )
 
-// Cloud provider.
-type Provider string
+type CloudProvider string
 
 const (
-	Aws           Provider = "aws"
-	Azure         Provider = "azure"
-	Gcp           Provider = "gcp"
-	Oci           Provider = "oci"
-	ProviderOther Provider = "other"
+	Aws                CloudProvider = "aws"
+	Azure              CloudProvider = "azure"
+	CloudProviderOther CloudProvider = "other"
+	Gcp                CloudProvider = "gcp"
+	Oci                CloudProvider = "oci"
 )
 
 // Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present.

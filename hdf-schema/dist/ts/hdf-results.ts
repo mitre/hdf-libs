@@ -874,6 +874,8 @@ export interface RequirementResult {
 /**
  * Explicit severity rating. Typically derived from impact score but provided explicitly for
  * clarity.
+ *
+ * Severity rating for a requirement. Typically derived from the numeric impact score.
  */
 export enum Severity {
     Critical = "critical",
@@ -1163,7 +1165,7 @@ export interface Component {
     /**
      * Cloud provider.
      */
-    provider?: Provider;
+    provider?: CloudProvider | null;
     /**
      * Cloud region, if applicable.
      *
@@ -1264,10 +1266,7 @@ export interface InputOverride {
     [property: string]: any;
 }
 
-/**
- * Cloud provider.
- */
-export enum Provider {
+export enum CloudProvider {
     Aws = "aws",
     Azure = "azure",
     Gcp = "gcp",

@@ -266,15 +266,7 @@
               "const": "cloudAccount"
             },
             "provider": {
-              "type": "string",
-              "enum": [
-                "aws",
-                "azure",
-                "gcp",
-                "oci",
-                "other",
-                null
-              ],
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Cloud_Provider",
               "description": "Cloud provider."
             },
             "accountId": {
@@ -303,15 +295,7 @@
               "const": "cloudResource"
             },
             "provider": {
-              "type": "string",
-              "enum": [
-                "aws",
-                "azure",
-                "gcp",
-                "oci",
-                "other",
-                null
-              ],
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Cloud_Provider",
               "description": "Cloud provider."
             },
             "resourceType": {

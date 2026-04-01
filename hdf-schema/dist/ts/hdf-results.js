@@ -110,6 +110,8 @@ export var PoamType;
 /**
  * Explicit severity rating. Typically derived from impact score but provided explicitly for
  * clarity.
+ *
+ * Severity rating for a requirement. Typically derived from the numeric impact score.
  */
 export var Severity;
 (function (Severity) {
@@ -135,17 +137,14 @@ export var OverrideType;
     OverrideType["Poam"] = "poam";
     OverrideType["Waiver"] = "waiver";
 })(OverrideType || (OverrideType = {}));
-/**
- * Cloud provider.
- */
-export var Provider;
-(function (Provider) {
-    Provider["Aws"] = "aws";
-    Provider["Azure"] = "azure";
-    Provider["Gcp"] = "gcp";
-    Provider["Oci"] = "oci";
-    Provider["Other"] = "other";
-})(Provider || (Provider = {}));
+export var CloudProvider;
+(function (CloudProvider) {
+    CloudProvider["Aws"] = "aws";
+    CloudProvider["Azure"] = "azure";
+    CloudProvider["Gcp"] = "gcp";
+    CloudProvider["Oci"] = "oci";
+    CloudProvider["Other"] = "other";
+})(CloudProvider || (CloudProvider = {}));
 /**
  * Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present.
  */

@@ -873,9 +873,7 @@ class InputOverride:
         return result
 
 
-class Provider(Enum):
-    """Cloud provider."""
-
+class CloudProvider(Enum):
     AWS = "aws"
     AZURE = "azure"
     GCP = "gcp"
@@ -1043,7 +1041,7 @@ class Component:
     account_id: Optional[str] = None
     """Cloud account identifier."""
 
-    provider: Optional[Provider] = None
+    provider: Optional[CloudProvider] = None
     """Cloud provider."""
 
     region: Optional[str] = None
@@ -1132,7 +1130,7 @@ class Component:
         platform_type = from_union([from_str, from_none], obj.get("platformType"))
         version = from_union([from_str, from_none], obj.get("version"))
         account_id = from_union([from_str, from_none], obj.get("accountId"))
-        provider = from_union([Provider, from_none], obj.get("provider"))
+        provider = from_union([from_none, CloudProvider], obj.get("provider"))
         region = from_union([from_str, from_none], obj.get("region"))
         arn = from_union([from_str, from_none], obj.get("arn"))
         resource_id = from_union([from_str, from_none], obj.get("resourceId"))
@@ -1214,7 +1212,7 @@ class Component:
         if self.account_id is not None:
             result["accountId"] = from_union([from_str, from_none], self.account_id)
         if self.provider is not None:
-            result["provider"] = from_union([lambda x: to_enum(Provider, x), from_none], self.provider)
+            result["provider"] = from_union([from_none, lambda x: to_enum(CloudProvider, x)], self.provider)
         if self.region is not None:
             result["region"] = from_union([from_str, from_none], self.region)
         if self.arn is not None:

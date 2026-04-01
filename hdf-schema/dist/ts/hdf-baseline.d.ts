@@ -327,6 +327,8 @@ export interface Reference {
 /**
  * Explicit severity rating. Typically derived from impact score but provided explicitly for
  * clarity.
+ *
+ * Severity rating for a requirement. Typically derived from the numeric impact score.
  */
 export declare enum Severity {
     Critical = "critical",
