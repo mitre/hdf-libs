@@ -1,0 +1,49 @@
+version: 2
+
+project_name: hdf
+
+builds:
+  - id: hdf
+    dir: .
+    main: ./cmd/hdf
+    binary: hdf
+    ldflags:
+      - -s -w
+      - -X github.com/mitre/hdf-cli/cmd/hdf/cmd.version={{.Version}}
+      - -X github.com/mitre/hdf-cli/cmd/hdf/cmd.commit={{.ShortCommit}}
+      - -X github.com/mitre/hdf-cli/cmd/hdf/cmd.date={{.Date}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - src: ../LICENSE
+        dst: LICENSE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  disable: true
+
+release:
+  disable: true
