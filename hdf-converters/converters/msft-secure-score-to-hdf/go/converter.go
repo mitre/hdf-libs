@@ -289,8 +289,8 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "msft-secure-score-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Microsoft Secure Score",
-		DataSourceFormat: "JSON",
+		ToolName:         "Microsoft Secure Score",
+		ToolFormat:       "JSON",
 		Baselines:        baselines,
 		Components: []hdf.Component{
 			{
@@ -300,7 +300,6 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 				Labels: map[string]string{
 					"account":  tenantID,
 					"provider": "azure",
-					"service":  "secure-score",
 				},
 			},
 		},

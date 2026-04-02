@@ -210,8 +210,8 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "neuvector-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "NeuVector",
-		DataSourceFormat: "JSON",
+		ToolName:   "NeuVector",
+		ToolFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{

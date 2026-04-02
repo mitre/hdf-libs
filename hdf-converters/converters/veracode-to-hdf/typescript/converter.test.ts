@@ -56,8 +56,8 @@ describe('Veracode to HDF converter', () => {
     const input = loadFixture('veracode.xml');
     const output: HdfResults = JSON.parse(await convert(input));
 
-    expect(output.dataSource).toBeDefined();
-    expect(output.dataSource!.name).toBe('Veracode');
+    expect(output.tool).toBeDefined();
+    expect(output.tool!.name).toBe('Veracode');
   });
 
   it('should produce CWE-based controls from severity categories', async () => {

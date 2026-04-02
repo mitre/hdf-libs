@@ -39,18 +39,11 @@
     {
       "fqdn": "rh-hony",
       "ipAddress": "127.0.0.1",
-      "labels": {
-        "service": "xccdf"
-      },
       "macAddress": "00:2B:67:04:65:C0",
       "name": "rh-hony",
       "type": "host"
     }
   ],
-  "dataSource": {
-    "format": "ARF",
-    "name": "ARF"
-  },
   "generator": {
     "name": "hdf-converters",
     "version": "0.1.0"
@@ -58,5 +51,9 @@
   "statistics": {
     "duration": 0
   },
-  "timestamp": "2021-11-30T13:51:50+01:00"
+  "timestamp": "2021-11-30T13:51:50+01:00",
+  "tool": {
+    "format": "ARF",
+    "name": "ARF"
+  }
 }

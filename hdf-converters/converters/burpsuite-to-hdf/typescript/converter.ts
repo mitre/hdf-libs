@@ -18,7 +18,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
-  DataSource,
+  Tool,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -172,12 +172,12 @@ export async function convertBurpsuiteToHdf(input: string): Promise<string> {
     },
   ) as EvaluatedBaseline;
 
-  const dataSource: DataSource = {
+  const tool: Tool = {
     name: 'BurpSuite',
     format: 'XML',
   };
   if (burpVersion) {
-    dataSource.version = burpVersion;
+    tool.version = burpVersion;
   }
 
   const hdf: HdfResults = {
@@ -186,14 +186,13 @@ export async function convertBurpsuiteToHdf(input: string): Promise<string> {
       {
         name: targetName,
         type: Copyright.Application,
-        labels: { service: 'burpsuite' },
       },
     ],
     generator: {
       name: 'burpsuite-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
   };
 
   if (exportTime) {

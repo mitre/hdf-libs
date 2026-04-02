@@ -9,7 +9,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
+  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -257,7 +257,7 @@ export async function convertScoutsuiteToHdf(input: string): Promise<string> {
 
   const targetName = `${report.last_run.ruleset_name} ruleset:${report.provider_name}:${report.account_id}`;
 
-  const dataSource: DataSource = {
+  const tool: Tool = {
     name: 'ScoutSuite',
     format: 'JSON',
     version: report.last_run.version,
@@ -269,14 +269,13 @@ export async function convertScoutsuiteToHdf(input: string): Promise<string> {
       name: 'scoutsuite-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
     components: [{
       name: targetName,
       type: Copyright.CloudAccount,
       labels: {
         account: report.account_id,
         provider: report.provider_code ?? report.provider_name,
-        service: 'scoutsuite',
       },
     }],
     timestamp: report.last_run.time ? new Date(report.last_run.time) : new Date(),

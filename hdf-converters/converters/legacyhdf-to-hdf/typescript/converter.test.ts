@@ -27,9 +27,9 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         name: 'ubuntu',
         release: '20.04',
       });
-      expect(v2.dataSource?.name).toBe('Heimdall Data Format v1');
-      expect(v2.dataSource?.version).toBeUndefined();
-      expect(v2.dataSource?.format).toBeUndefined();
+      expect(v2.tool?.name).toBe('Heimdall Data Format v1');
+      expect(v2.tool?.version).toBeUndefined();
+      expect(v2.tool?.format).toBeUndefined();
     });
 
     it('should rename profiles to baselines', () => {
@@ -67,9 +67,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         id: 'server-123',
         name: 'redhat',
         release: '8.5',
-        labels: {
-          service: 'inspec',
-        },
+        labels: {},
       });
     });
 
@@ -175,9 +173,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         type: 'host',
         id: 'test-system',
         name: 'test-system',
-        labels: {
-          service: 'inspec',
-        },
+        labels: {},
       });
       expect(v2.components![0]).not.toHaveProperty('release');
     });

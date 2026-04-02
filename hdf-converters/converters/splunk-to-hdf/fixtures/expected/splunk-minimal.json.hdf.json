@@ -81,17 +81,11 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "splunk"
-      },
       "name": "centos",
       "type": "host",
       "osVersion": "7.6.1810"
     }
   ],
-  "dataSource": {
-    "name": "Splunk"
-  },
   "generator": {
     "name": "splunk-to-hdf",
     "version": "0.1.0"
@@ -99,5 +93,8 @@
   "statistics": {
     "duration": 10.681128104
   },
-  "timestamp": "2026-03-30T10:37:41.08453-04:00"
+  "timestamp": "2026-04-01T21:14:12.76197-04:00",
+  "tool": {
+    "name": "Splunk"
+  }
 }

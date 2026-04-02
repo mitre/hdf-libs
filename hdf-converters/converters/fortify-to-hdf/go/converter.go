@@ -87,11 +87,11 @@ func ConvertFortifyToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "fortify-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Fortify",
-		DataSourceFormat: "FVDL",
+		ToolName:   "Fortify",
+		ToolFormat: "FVDL",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
-			{Name: targetName, Type: hdf.Repository, Labels: map[string]string{"service": "fortify"}},
+			{Name: targetName, Type: hdf.Repository},
 		},
 		Timestamp: &timestamp,
 	}), nil

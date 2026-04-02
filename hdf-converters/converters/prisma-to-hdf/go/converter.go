@@ -275,7 +275,6 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		targets[i] = hdf.Component{
 			Name:   hostname,
 			Type:   hdf.Host,
-			Labels: map[string]string{"service": "prisma"},
 		}
 	}
 
@@ -284,8 +283,8 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "prisma-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Prisma Cloud",
-		DataSourceFormat: "CSV",
+		ToolName:         "Prisma Cloud",
+		ToolFormat:       "CSV",
 		Baselines:        baselines,
 		Components:          targets,
 		Timestamp:        &now,

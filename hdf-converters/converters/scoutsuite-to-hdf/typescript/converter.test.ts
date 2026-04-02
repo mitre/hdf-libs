@@ -69,10 +69,10 @@ describe('ScoutSuite to HDF Converter', () => {
       expect(gen.version).toBe('1.0.0');
     });
 
-    it('should set dataSource correctly', async () => {
+    it('should set tool correctly', async () => {
       const input = loadFixture('input/scoutsuite_sample.js');
       const out = parseOutput(await convertScoutsuiteToHdf(input));
-      const ds = out.dataSource as Record<string, unknown>;
+      const ds = out.tool as Record<string, unknown>;
       expect(ds.name).toBe('ScoutSuite');
       expect(ds.format).toBe('JSON');
       expect(ds.version).toBe('5.10.2');

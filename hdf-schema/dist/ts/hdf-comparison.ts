@@ -574,10 +574,6 @@ export interface Source {
      */
     components?: Component[];
     /**
-     * The tool or service that produced the source data.
-     */
-    dataSource?: DataSource;
-    /**
      * Human-readable label for this source. Example: 'Before remediation scan'.
      */
     label: string;
@@ -589,6 +585,10 @@ export interface Source {
      * The role of this source in the comparison.
      */
     role: SourceRole;
+    /**
+     * The security tool that produced the assessment data in this source.
+     */
+    tool?: Tool;
     /**
      * URI pointing to the source document.
      */
@@ -975,30 +975,6 @@ export enum Description {
 }
 
 /**
- * The tool or service that produced the source data.
- *
- * The tool or service that produced the security data represented in this HDF file.
- */
-export interface DataSource {
-    /**
-     * The file format, if it is a recognized named format shared by multiple tools. Examples:
-     * 'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the
-     * format (Nessus XML, gosec JSON).
-     */
-    format?: string;
-    /**
-     * The name of the tool or service that produced the data, if known. Examples: 'gosec',
-     * 'Semgrep', 'OpenSCAP', 'AWS Config'. Omit if the tool cannot be identified.
-     */
-    name?: string;
-    /**
-     * Version of the source tool, if available in the tool's output. Example: '5.22.3'.
-     */
-    version?: string;
-    [property: string]: any;
-}
-
-/**
  * The original format of the source document before conversion to HDF.
  */
 export enum OriginalFormat {
@@ -1020,6 +996,31 @@ export enum SourceRole {
     Old = "old",
     Reference = "reference",
     System = "system",
+}
+
+/**
+ * The security tool that produced the assessment data in this source.
+ *
+ * The security tool that produced the assessment data represented in this HDF file. Aligns
+ * with SARIF, OSCAL, and CycloneDX terminology.
+ */
+export interface Tool {
+    /**
+     * The file format, if it is a recognized named format shared by multiple tools. Examples:
+     * 'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the
+     * format (Nessus XML, gosec JSON).
+     */
+    format?: string;
+    /**
+     * The name of the security tool that produced the data. Examples: 'gosec', 'Semgrep',
+     * 'OpenSCAP', 'AWS Config', 'Nessus'. Omit if the tool cannot be identified.
+     */
+    name?: string;
+    /**
+     * Version of the source tool, if available in the tool's output. Example: '5.22.3'.
+     */
+    version?: string;
+    [property: string]: any;
 }
 
 /**

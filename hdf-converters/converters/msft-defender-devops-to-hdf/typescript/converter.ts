@@ -76,8 +76,8 @@ export async function convertMsftDefenderDevopsToHdf(input: string): Promise<str
   if (result.generator) {
     result.generator.name = 'msft-defender-devops-to-hdf';
   }
-  if (result.dataSource) {
-    result.dataSource.name = 'Microsoft Defender for DevOps';
+  if (result.tool) {
+    result.tool.name = 'Microsoft Defender for DevOps';
   }
 
   return JSON.stringify(result, null, 2);
@@ -100,7 +100,7 @@ function extractEnrichments(raw: MsdoSarif): {
           name: repoNameFromURI(vcp.repositoryUri),
           type: Copyright.Repository,
           url: vcp.repositoryUri,
-          labels: { service: 'defender-devops' },
+          labels: {},
         };
         if (vcp.branch) {
           target.branch = vcp.branch;

@@ -393,7 +393,7 @@ async function convertBenchmarkResultsToHdf(
   const hdf: HdfResults = {
     baselines: [baseline],
     generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
-    dataSource: { name: 'XCCDF Results', format: 'XML' },
+    tool: { name: 'XCCDF Results', format: 'XML' },
     components,
     timestamp,
   };
@@ -648,7 +648,7 @@ async function convertArfCollection(
   const hdf: HdfResults = {
     baselines,
     generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
-    dataSource: { name: 'ARF', format: 'ARF' },
+    tool: { name: 'ARF', format: 'ARF' },
     components,
     timestamp: firstTimestamp ?? new Date(),
   };
@@ -822,7 +822,7 @@ function buildTargets(testResult: TestResultElement): Component[] {
   const target: Component = {
     name: targetName,
     type: Copyright.Host,
-        labels: { service: 'xccdf' },
+        labels: {},
   };
 
   if (addresses.length > 0) {

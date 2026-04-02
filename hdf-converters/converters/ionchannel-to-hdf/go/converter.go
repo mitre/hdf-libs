@@ -272,8 +272,8 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "ionchannel-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Ion Channel",
-		DataSourceFormat: "JSON",
+		ToolName:   "Ion Channel",
+		ToolFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 	}), nil
 }

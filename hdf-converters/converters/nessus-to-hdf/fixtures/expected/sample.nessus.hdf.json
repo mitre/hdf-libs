@@ -5047,9 +5047,6 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "nessus"
-      },
       "name": "10.0.0.3",
       "type": "host",
       "ipAddress": "10.0.0.3",
@@ -5057,9 +5054,6 @@
       "osVersion": "linux"
     },
     {
-      "labels": {
-        "service": "nessus"
-      },
       "name": "10.0.0.2",
       "type": "host",
       "ipAddress": "10.0.0.2",
@@ -5067,9 +5061,6 @@
       "osVersion": "linux"
     },
     {
-      "labels": {
-        "service": "nessus"
-      },
       "name": "10.0.0.1",
       "type": "host",
       "ipAddress": "10.0.0.1",
@@ -5077,9 +5068,6 @@
       "osVersion": "linux"
     }
   ],
-  "dataSource": {
-    "name": "Nessus"
-  },
   "generator": {
     "name": "nessus-to-hdf",
     "version": "0.1.0"
@@ -5087,5 +5075,8 @@
   "statistics": {
     "duration": 1277
   },
-  "timestamp": "2022-03-22T14:54:47Z"
+  "timestamp": "2022-03-22T14:54:47Z",
+  "tool": {
+    "name": "Nessus"
+  }
 }

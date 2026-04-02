@@ -98,14 +98,13 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			"account":  accountID,
 			"region":   region,
 			"provider": "aws",
-			"service":  "config",
 		},
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "aws-config-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "AWS Config",
+		ToolName:         "AWS Config",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:          []hdf.Component{target},
 		Timestamp:        &now,

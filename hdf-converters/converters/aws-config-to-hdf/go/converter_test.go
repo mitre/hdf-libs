@@ -48,7 +48,7 @@ func TestConvertAWSConfigToHDF_Minimal(t *testing.T) {
 	assert.NotEmpty(t, nistSlice)
 }
 
-func TestConvertAWSConfigToHDF_DataSource(t *testing.T) {
+func TestConvertAWSConfigToHDF_Tool(t *testing.T) {
 	inputPath := filepath.Join(shared.GetConvertersDir(), "aws-config-to-hdf", "fixtures", "input", "minimal.json")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
@@ -56,11 +56,11 @@ func TestConvertAWSConfigToHDF_DataSource(t *testing.T) {
 	result, err := ConvertAWSConfigToHDF(inputData, converterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "AWS Config", *result.DataSource.Name)
-	assert.Nil(t, result.DataSource.Version)
-	assert.Nil(t, result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "AWS Config", *result.Tool.Name)
+	assert.Nil(t, result.Tool.Version)
+	assert.Nil(t, result.Tool.Format)
 }
 
 func TestConvertAWSConfigToHDF_MultiRule(t *testing.T) {

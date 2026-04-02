@@ -17,7 +17,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
+  Tool,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -255,10 +255,10 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
 
   for (const [hostname, hostRecords] of hostGroups) {
     baselines.push(buildBaseline(hostname, hostRecords, resultsChecksum));
-    components.push({ name: hostname, type: Copyright.Host, labels: { service: 'prisma' } });
+    components.push({ name: hostname, type: Copyright.Host });
   }
 
-  const dataSource: DataSource = { name: 'Prisma Cloud', format: 'CSV' };
+  const tool: Tool = { name: 'Prisma Cloud', format: 'CSV' };
 
   const hdf: HdfResults = {
     baselines,
@@ -266,7 +266,7 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
       name: 'prisma-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
     components,
     timestamp: new Date(),
   };

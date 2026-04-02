@@ -71,10 +71,10 @@ describe('prisma to HDF converter', () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource to Prisma Cloud / CSV', async () => {
+    it('should set tool to Prisma Cloud / CSV', async () => {
       const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('Prisma Cloud');
-      expect(hdf.dataSource?.format).toBe('CSV');
+      expect(hdf.tool?.name).toBe('Prisma Cloud');
+      expect(hdf.tool?.format).toBe('CSV');
     });
   });
 

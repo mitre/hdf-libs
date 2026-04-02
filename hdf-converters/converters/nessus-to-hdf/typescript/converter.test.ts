@@ -29,9 +29,9 @@ describe('Nessus to HDF Converter', async () => {
       expect(result.baselines).toBeDefined();
       expect(result.statistics).toBeDefined();
       expect(result.components).toBeDefined();
-      expect(result.dataSource?.name).toBe('Nessus');
-      expect(result.dataSource?.version).toBeUndefined();
-      expect(result.dataSource?.format).toBeUndefined();
+      expect(result.tool?.name).toBe('Nessus');
+      expect(result.tool?.version).toBeUndefined();
+      expect(result.tool?.format).toBeUndefined();
     });
 
     it('should create one baseline per report with correct metadata', async () => {

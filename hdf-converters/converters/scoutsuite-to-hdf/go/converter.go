@@ -287,9 +287,9 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:     "scoutsuite-to-hdf",
 		ConverterVersion:  converterVersion,
-		DataSourceName:    "ScoutSuite",
-		DataSourceFormat:  "JSON",
-		DataSourceVersion: report.LastRun.Version,
+		ToolName:          "ScoutSuite",
+		ToolFormat:        "JSON",
+		ToolVersion:       report.LastRun.Version,
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{
@@ -298,7 +298,6 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 				Labels: map[string]string{
 					"account":  report.AccountID,
 					"provider": report.ProviderCode,
-					"service":  "scoutsuite",
 				},
 			},
 		},

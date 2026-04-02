@@ -148,8 +148,7 @@
   "components": [
     {
       "labels": {
-        "provider": "azure",
-        "service": "defender-endpoint"
+        "provider": "azure"
       },
       "name": "workstation01.corp.contoso.com",
       "type": "host",
@@ -158,8 +157,7 @@
     },
     {
       "labels": {
-        "provider": "azure",
-        "service": "defender-endpoint"
+        "provider": "azure"
       },
       "name": "server02.corp.contoso.com",
       "type": "host",
@@ -168,8 +166,7 @@
     },
     {
       "labels": {
-        "provider": "azure",
-        "service": "defender-endpoint"
+        "provider": "azure"
       },
       "name": "laptop03.corp.contoso.com",
       "type": "host",
@@ -178,8 +175,7 @@
     },
     {
       "labels": {
-        "provider": "azure",
-        "service": "defender-endpoint"
+        "provider": "azure"
       },
       "name": "workstation04.corp.contoso.com",
       "type": "host",
@@ -187,12 +183,12 @@
       "osName": "Windows10"
     }
   ],
-  "dataSource": {
-    "name": "Microsoft Defender for Endpoint"
-  },
   "generator": {
     "name": "msft-defender-endpoint-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:49:01.297258Z"
+  "timestamp": "2026-04-02T01:14:10.995501Z",
+  "tool": {
+    "name": "Microsoft Defender for Endpoint"
+  }
 }

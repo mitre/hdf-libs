@@ -9,7 +9,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
+  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -317,7 +317,7 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
     resultsChecksum,
   }) as EvaluatedBaseline;
 
-  const dataSource: DataSource = { name: 'CycloneDX', format: 'JSON' };
+  const tool: Tool = { name: 'CycloneDX', format: 'JSON' };
 
   const targetName = bom.metadata?.component?.name ?? '';
 
@@ -327,8 +327,8 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
       name: 'cyclonedx-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
-    components: [{ name: targetName, type: Copyright.Application, labels: { service: 'cyclonedx' } }],
+    tool,
+    components: [{ name: targetName, type: Copyright.Application }],
     timestamp: new Date(),
   };
 

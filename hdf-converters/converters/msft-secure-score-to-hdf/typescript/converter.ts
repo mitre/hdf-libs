@@ -8,7 +8,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
+  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -278,7 +278,7 @@ export async function convertMsftSecureScoreToHdf(input: string): Promise<string
     ) as EvaluatedBaseline;
   });
 
-  const dataSource: DataSource = {
+  const tool: Tool = {
     name: 'Microsoft Secure Score',
     format: 'JSON',
   };
@@ -289,11 +289,11 @@ export async function convertMsftSecureScoreToHdf(input: string): Promise<string
       name: 'msft-secure-score-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
     components: [{
       name: `Azure Tenant: ${tenantId}`,
       type: Copyright.CloudAccount,
-      labels: { account: tenantId, provider: 'azure', service: 'secure-score' },
+      labels: { account: tenantId, provider: 'azure' },
     }],
     timestamp: new Date(),
   };

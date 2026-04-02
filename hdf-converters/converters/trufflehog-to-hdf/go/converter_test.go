@@ -235,18 +235,18 @@ func TestConvertTrufflehogToHDF_NDJSONDescription(t *testing.T) {
 	assert.Contains(t, postgres.Descriptions[0].Data, "Postgres")
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertTrufflehogToHDF_DataSource(t *testing.T) {
+func TestConvertTrufflehogToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertTrufflehogToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "TruffleHog", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "TruffleHog", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- No target for filesystem sources ----

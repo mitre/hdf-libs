@@ -193,20 +193,17 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "dbprotect"
-      },
       "name": "CONDS181",
       "type": "host"
     }
   ],
-  "dataSource": {
-    "format": "XML",
-    "name": "DBProtect"
-  },
   "generator": {
     "name": "dbprotect-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:48:58.658721Z"
+  "timestamp": "2026-04-02T01:14:08.454705Z",
+  "tool": {
+    "format": "XML",
+    "name": "DBProtect"
+  }
 }

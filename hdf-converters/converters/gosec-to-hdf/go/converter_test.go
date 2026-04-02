@@ -39,17 +39,17 @@ func TestConvertGosecToHDF_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-func TestConvertGosecToHDF_DataSource(t *testing.T) {
+func TestConvertGosecToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "gosec", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Version)
-	assert.Equal(t, "dev", *result.DataSource.Version)
-	assert.Nil(t, result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "gosec", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Version)
+	assert.Equal(t, "dev", *result.Tool.Version)
+	assert.Nil(t, result.Tool.Format)
 }
 
 func TestConvertGosecToHDF_BaselineCount(t *testing.T) {

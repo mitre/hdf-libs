@@ -39,7 +39,7 @@ Assessment findings from running security checks against target systems.
 
 ### Top-Level Fields
 
-A Results document is the primary output of HDF converters. It captures what was scanned (components), what was checked (baselines with requirements), and what happened (results with pass/fail status). The `dataSource` identifies the original security tool; `generator` identifies the converter that produced the HDF file. Cross-document links (`systemRef`, `planRef`) connect results to the broader assessment context.
+A Results document is the primary output of HDF converters. It captures what was scanned (components), what was checked (baselines with requirements), and what happened (results with pass/fail status). The `tool` field identifies the original security tool; `generator` identifies the converter that produced the HDF file. Cross-document links (`systemRef`, `planRef`) connect results to the broader assessment context.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -47,7 +47,7 @@ A Results document is the primary output of HDF converters. It captures what was
 | components | Component[] | no | System components assessed |
 | statistics | Statistics | no | Duration, result counts |
 | timestamp | date-time | no | When assessment ran |
-| dataSource | DataSource | no | Tool that produced scan data (`{name, version, format}`) |
+| tool | Tool | no | Security tool that produced scan data (`{name, version, format}`) |
 | generator | Generator | no | Tool that produced this HDF file |
 | runner | Runner | no | Execution environment (distinct from components) |
 | integrity | Integrity | no | Cryptographic integrity metadata |

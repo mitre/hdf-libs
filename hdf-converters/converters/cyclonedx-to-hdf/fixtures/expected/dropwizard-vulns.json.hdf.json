@@ -2664,9 +2664,6 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "cyclonedx"
-      },
       "name": "test 9",
       "sbom": {
         "bomFormat": "CycloneDX",
@@ -15256,13 +15253,13 @@
       "version": "SNAPSHOT"
     }
   ],
-  "dataSource": {
-    "format": "JSON",
-    "name": "CycloneDX"
-  },
   "generator": {
     "name": "cyclonedx-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:48:58.924001Z"
+  "timestamp": "2026-04-02T01:14:08.173661Z",
+  "tool": {
+    "format": "JSON",
+    "name": "CycloneDX"
+  }
 }

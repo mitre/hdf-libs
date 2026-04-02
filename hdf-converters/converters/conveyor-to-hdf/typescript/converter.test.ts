@@ -60,17 +60,17 @@ describe('conveyor to HDF converter', async () => {
     });
   });
 
-  describe('generator and dataSource', async () => {
+  describe('generator and tool', async () => {
     it('should set generator name and version', async () => {
       const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
       expect(hdf.generator?.name).toBe('conveyor-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource name to "Conveyor" and format to "JSON"', async () => {
+    it('should set tool name to "Conveyor" and format to "JSON"', async () => {
       const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('Conveyor');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('Conveyor');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 

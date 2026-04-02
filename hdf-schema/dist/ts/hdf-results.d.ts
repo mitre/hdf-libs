@@ -13,10 +13,6 @@ export interface HdfResults {
      */
     components?: Component[];
     /**
-     * The tool or service that produced the security data in this file.
-     */
-    dataSource?: DataSource;
-    /**
      * Reserved for tool-specific data not defined in the HDF standard. Use this to preserve
      * original tool output, auxiliary data, or custom metadata.
      */
@@ -63,6 +59,10 @@ export interface HdfResults {
      * When this assessment was executed.
      */
     timestamp?: Date;
+    /**
+     * The security tool that produced the assessment data in this file.
+     */
+    tool?: Tool;
     [property: string]: any;
 }
 /**
@@ -1284,29 +1284,6 @@ export declare enum Copyright {
     Repository = "repository"
 }
 /**
- * The tool or service that produced the security data in this file.
- *
- * The tool or service that produced the security data represented in this HDF file.
- */
-export interface DataSource {
-    /**
-     * The file format, if it is a recognized named format shared by multiple tools. Examples:
-     * 'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the
-     * format (Nessus XML, gosec JSON).
-     */
-    format?: string;
-    /**
-     * The name of the tool or service that produced the data, if known. Examples: 'gosec',
-     * 'Semgrep', 'OpenSCAP', 'AWS Config'. Omit if the tool cannot be identified.
-     */
-    name?: string;
-    /**
-     * Version of the source tool, if available in the tool's output. Example: '5.22.3'.
-     */
-    version?: string;
-    [property: string]: any;
-}
-/**
  * Information about the tool that generated this file.
  *
  * Information about the tool that generated this HDF file.
@@ -1452,5 +1429,29 @@ export interface StatisticBlock {
      * The total count. Example: the total number of requirements in a given category for a run.
      */
     total: number;
+    [property: string]: any;
+}
+/**
+ * The security tool that produced the assessment data in this file.
+ *
+ * The security tool that produced the assessment data represented in this HDF file. Aligns
+ * with SARIF, OSCAL, and CycloneDX terminology.
+ */
+export interface Tool {
+    /**
+     * The file format, if it is a recognized named format shared by multiple tools. Examples:
+     * 'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the
+     * format (Nessus XML, gosec JSON).
+     */
+    format?: string;
+    /**
+     * The name of the security tool that produced the data. Examples: 'gosec', 'Semgrep',
+     * 'OpenSCAP', 'AWS Config', 'Nessus'. Omit if the tool cannot be identified.
+     */
+    name?: string;
+    /**
+     * Version of the source tool, if available in the tool's output. Example: '5.22.3'.
+     */
+    version?: string;
     [property: string]: any;
 }

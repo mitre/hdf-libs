@@ -2,7 +2,7 @@ import {
   type Checksum,
   createMinimalBaseline,
   Copyright,
-  type DataSource,
+  type Tool,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
@@ -304,18 +304,18 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
     summary: `Scanner: ${scannerName}${scannerVersion ? ` v${scannerVersion}` : ''}`,
   }) as EvaluatedBaseline;
 
-  const dataSource: DataSource = {
+  const tool: Tool = {
     name: scannerName,
     format: 'JSON',
   };
   if (scannerVersion) {
-    dataSource.version = scannerVersion;
+    tool.version = scannerVersion;
   }
 
   // Build components based on scan type
   const components: Component[] = [];
   const targetType = scanTypeToTargetType(scanType);
-  components.push({name: scannerName, type: targetType, labels: { service: 'gitlab' }});
+  components.push({name: scannerName, type: targetType});
 
   const hdf: HdfResults = {
     baselines: [baseline],
@@ -324,7 +324,7 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
       name: 'gitlab-to-hdf',
       version: 'unknown',
     },
-    dataSource,
+    tool,
   };
 
   if (report.scan?.end_time) {

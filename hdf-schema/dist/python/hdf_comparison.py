@@ -1248,43 +1248,6 @@ class Component:
         return result
 
 
-@dataclass
-class DataSource:
-    """The tool or service that produced the source data.
-    
-    The tool or service that produced the security data represented in this HDF file.
-    """
-    format: Optional[str] = None
-    """The file format, if it is a recognized named format shared by multiple tools. Examples:
-    'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the
-    format (Nessus XML, gosec JSON).
-    """
-    name: Optional[str] = None
-    """The name of the tool or service that produced the data, if known. Examples: 'gosec',
-    'Semgrep', 'OpenSCAP', 'AWS Config'. Omit if the tool cannot be identified.
-    """
-    version: Optional[str] = None
-    """Version of the source tool, if available in the tool's output. Example: '5.22.3'."""
-
-    @staticmethod
-    def from_dict(obj: Any) -> 'DataSource':
-        assert isinstance(obj, dict)
-        format = from_union([from_str, from_none], obj.get("format"))
-        name = from_union([from_str, from_none], obj.get("name"))
-        version = from_union([from_str, from_none], obj.get("version"))
-        return DataSource(format, name, version)
-
-    def to_dict(self) -> dict:
-        result: dict = {}
-        if self.format is not None:
-            result["format"] = from_union([from_str, from_none], self.format)
-        if self.name is not None:
-            result["name"] = from_union([from_str, from_none], self.name)
-        if self.version is not None:
-            result["version"] = from_union([from_str, from_none], self.version)
-        return result
-
-
 class OriginalFormat(Enum):
     """The original format of the source document before conversion to HDF."""
 
@@ -1305,6 +1268,44 @@ class SourceRole(Enum):
     OLD = "old"
     REFERENCE = "reference"
     SYSTEM = "system"
+
+
+@dataclass
+class Tool:
+    """The security tool that produced the assessment data in this source.
+    
+    The security tool that produced the assessment data represented in this HDF file. Aligns
+    with SARIF, OSCAL, and CycloneDX terminology.
+    """
+    format: Optional[str] = None
+    """The file format, if it is a recognized named format shared by multiple tools. Examples:
+    'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the
+    format (Nessus XML, gosec JSON).
+    """
+    name: Optional[str] = None
+    """The name of the security tool that produced the data. Examples: 'gosec', 'Semgrep',
+    'OpenSCAP', 'AWS Config', 'Nessus'. Omit if the tool cannot be identified.
+    """
+    version: Optional[str] = None
+    """Version of the source tool, if available in the tool's output. Example: '5.22.3'."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'Tool':
+        assert isinstance(obj, dict)
+        format = from_union([from_str, from_none], obj.get("format"))
+        name = from_union([from_str, from_none], obj.get("name"))
+        version = from_union([from_str, from_none], obj.get("version"))
+        return Tool(format, name, version)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.format is not None:
+            result["format"] = from_union([from_str, from_none], self.format)
+        if self.name is not None:
+            result["name"] = from_union([from_str, from_none], self.name)
+        if self.version is not None:
+            result["version"] = from_union([from_str, from_none], self.version)
+        return result
 
 
 @dataclass
@@ -1329,11 +1330,11 @@ class Source:
     components: Optional[List[Component]] = None
     """The components assessed in this source."""
 
-    data_source: Optional[DataSource] = None
-    """The tool or service that produced the source data."""
-
     original_format: Optional[OriginalFormat] = None
     """The original format of the source document before conversion to HDF."""
+
+    tool: Optional[Tool] = None
+    """The security tool that produced the assessment data in this source."""
 
     uri: Optional[str] = None
     """URI pointing to the source document."""
@@ -1347,10 +1348,10 @@ class Source:
         baseline_ref = from_union([BaselineRef.from_dict, from_none], obj.get("baselineRef"))
         checksum = from_union([Checksum.from_dict, from_none], obj.get("checksum"))
         components = from_union([lambda x: from_list(Component.from_dict, x), from_none], obj.get("components"))
-        data_source = from_union([DataSource.from_dict, from_none], obj.get("dataSource"))
         original_format = from_union([OriginalFormat, from_none], obj.get("originalFormat"))
+        tool = from_union([Tool.from_dict, from_none], obj.get("tool"))
         uri = from_union([from_str, from_none], obj.get("uri"))
-        return Source(label, role, assessment_timestamp, baseline_ref, checksum, components, data_source, original_format, uri)
+        return Source(label, role, assessment_timestamp, baseline_ref, checksum, components, original_format, tool, uri)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -1364,10 +1365,10 @@ class Source:
             result["checksum"] = from_union([lambda x: to_class(Checksum, x), from_none], self.checksum)
         if self.components is not None:
             result["components"] = from_union([lambda x: from_list(lambda x: to_class(Component, x), x), from_none], self.components)
-        if self.data_source is not None:
-            result["dataSource"] = from_union([lambda x: to_class(DataSource, x), from_none], self.data_source)
         if self.original_format is not None:
             result["originalFormat"] = from_union([lambda x: to_enum(OriginalFormat, x), from_none], self.original_format)
+        if self.tool is not None:
+            result["tool"] = from_union([lambda x: to_class(Tool, x), from_none], self.tool)
         if self.uri is not None:
             result["uri"] = from_union([from_str, from_none], self.uri)
         return result

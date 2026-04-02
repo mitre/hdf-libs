@@ -11,7 +11,7 @@ overrides:
   rollup@>=4.0.0 <4.59.0: 4.59.0
   esbuild@<0.25.0: 0.25.0
   underscore@<1.13.8: 1.13.8
-  lodash@>=4.0.0 <4.17.23: 4.17.23
+  lodash@>=4.0.0 <4.18.0: 4.18.1
   ajv@>=6.0.0 <6.14.0: 6.14.0
   ajv@>=8.0.0 <8.18.0: 8.18.0
   qs@<6.14.2: 6.14.2
@@ -1940,8 +1940,8 @@ packages:
   lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
 
-  lodash@4.17.23:
-    resolution: {integrity: sha512-LgVTMpQtIopCi79SJeDiP0TfWi5CNEc/L/aRdTh3yIvmZXTnheWpKjSZhnvMl8iXbC1tFg9gdHHDMLoV7CnG+w==}
+  lodash@4.18.1:
+    resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
 
   log-update@6.1.0:
     resolution: {integrity: sha512-9ie8ItPR6tjY5uYJh8K/Zrv/RMZ5VOlOWvtZdEHYSTFKZfIBPQa9tOAEeAWhd+AnIneLJ22w5fjOYtoutpWq5w==}
@@ -4420,7 +4420,7 @@ snapshots:
 
   lodash.merge@4.6.2: {}
 
-  lodash@4.17.23: {}
+  lodash@4.18.1: {}
 
   log-update@6.1.0:
     dependencies:
@@ -4659,7 +4659,7 @@ snapshots:
       cross-fetch: 4.1.0
       is-url: 1.2.4
       js-base64: 3.7.8
-      lodash: 4.17.23
+      lodash: 4.18.1
       pako: 1.0.11
       pluralize: 8.0.0
       readable-stream: 4.5.2

@@ -586,50 +586,50 @@ func TestBuildHDFResults_MinimalFields(t *testing.T) {
 	assert.Equal(t, "test-to-hdf", result.Generator.Name)
 	assert.Equal(t, "1.0.0", result.Generator.Version)
 	assert.Equal(t, &now, result.Timestamp)
-	assert.Nil(t, result.DataSource)
+	assert.Nil(t, result.Tool)
 	assert.Nil(t, result.Components)
 	assert.Nil(t, result.Statistics)
 }
 
-func TestBuildHDFResults_WithDataSourceName(t *testing.T) {
+func TestBuildHDFResults_WithToolName(t *testing.T) {
 	result := BuildHDFResults(HDFResultsOptions{
 		GeneratorName:    "grype-to-hdf",
 		ConverterVersion: "1.0.0",
-		DataSourceName:   "Grype",
+		ToolName:   "Grype",
 		Baselines:        []hdf.EvaluatedBaseline{},
 	})
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Grype", *result.DataSource.Name)
-	assert.Nil(t, result.DataSource.Version)
-	assert.Nil(t, result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Grype", *result.Tool.Name)
+	assert.Nil(t, result.Tool.Version)
+	assert.Nil(t, result.Tool.Format)
 }
 
-func TestBuildHDFResults_WithAllDataSourceFields(t *testing.T) {
+func TestBuildHDFResults_WithAllToolFields(t *testing.T) {
 	result := BuildHDFResults(HDFResultsOptions{
 		GeneratorName:     "sarif-to-hdf",
 		ConverterVersion:  "1.0.0",
-		DataSourceName:    "Semgrep",
-		DataSourceVersion: "1.5.0",
-		DataSourceFormat:  "SARIF",
+		ToolName:    "Semgrep",
+		ToolVersion: "1.5.0",
+		ToolFormat:  "SARIF",
 		Baselines:         []hdf.EvaluatedBaseline{},
 	})
 
-	require.NotNil(t, result.DataSource)
-	assert.Equal(t, "Semgrep", *result.DataSource.Name)
-	assert.Equal(t, "1.5.0", *result.DataSource.Version)
-	assert.Equal(t, "SARIF", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	assert.Equal(t, "Semgrep", *result.Tool.Name)
+	assert.Equal(t, "1.5.0", *result.Tool.Version)
+	assert.Equal(t, "SARIF", *result.Tool.Format)
 }
 
-func TestBuildHDFResults_EmptyDataSourceStringsOmitted(t *testing.T) {
+func TestBuildHDFResults_EmptyToolStringsOmitted(t *testing.T) {
 	result := BuildHDFResults(HDFResultsOptions{
 		GeneratorName:    "test-to-hdf",
 		ConverterVersion: "1.0.0",
 		Baselines:        []hdf.EvaluatedBaseline{},
 	})
 
-	assert.Nil(t, result.DataSource)
+	assert.Nil(t, result.Tool)
 }
 
 func TestBuildHDFResults_WithTargetsAndStatistics(t *testing.T) {
@@ -649,19 +649,19 @@ func TestBuildHDFResults_WithTargetsAndStatistics(t *testing.T) {
 	assert.Equal(t, stats, result.Statistics)
 }
 
-func TestBuildHDFResults_DataSourcePartialFields(t *testing.T) {
+func TestBuildHDFResults_ToolPartialFields(t *testing.T) {
 	// Only format set, no name/version
 	result := BuildHDFResults(HDFResultsOptions{
 		GeneratorName:    "test-to-hdf",
 		ConverterVersion: "1.0.0",
-		DataSourceFormat: "XML",
+		ToolFormat: "XML",
 		Baselines:        []hdf.EvaluatedBaseline{},
 	})
 
-	require.NotNil(t, result.DataSource)
-	assert.Nil(t, result.DataSource.Name)
-	assert.Nil(t, result.DataSource.Version)
-	assert.Equal(t, "XML", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	assert.Nil(t, result.Tool.Name)
+	assert.Nil(t, result.Tool.Version)
+	assert.Equal(t, "XML", *result.Tool.Format)
 }
 
 func TestExtractXMLRootElement(t *testing.T) {

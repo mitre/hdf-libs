@@ -88,13 +88,13 @@ func ConvertMsftDefenderDevopsToHDF(input []byte, converterVersion string) (*hdf
 	// 3. Apply enrichments
 	applyEnrichments(result, targets, runEnrichments)
 
-	// 4. Override generator name and data source
+	// 4. Override generator name and tool
 	if result.Generator != nil {
 		result.Generator.Name = "msft-defender-devops-to-hdf"
 	}
-	if result.DataSource != nil {
+	if result.Tool != nil {
 		name := "Microsoft Defender for DevOps"
-		result.DataSource.Name = &name
+		result.Tool.Name = &name
 	}
 
 	return result, nil
@@ -112,10 +112,9 @@ func extractEnrichments(raw msdoSarif) ([]hdf.Component, []runEnrichment) {
 			if vcp.RepositoryURI != "" && !seenRepos[vcp.RepositoryURI] {
 				seenRepos[vcp.RepositoryURI] = true
 				target := hdf.Component{
-					Name:   repoNameFromURI(vcp.RepositoryURI),
-					Type:   hdf.Repository,
-					URL:    shared.Ptr(vcp.RepositoryURI),
-					Labels: map[string]string{"service": "defender-devops"},
+					Name: repoNameFromURI(vcp.RepositoryURI),
+					Type: hdf.Repository,
+					URL:  shared.Ptr(vcp.RepositoryURI),
 				}
 				if vcp.Branch != "" {
 					target.Branch = shared.Ptr(vcp.Branch)

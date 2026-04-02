@@ -56,10 +56,10 @@ describe('jfrog-xray to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource name to "JFrog Xray" and format to "JSON"', async () => {
+    it('should set tool name to "JFrog Xray" and format to "JSON"', async () => {
       const hdf = JSON.parse(await convertJfrogXrayToHdf(loadFixture('jfrog_xray_sample.json'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('JFrog Xray');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('JFrog Xray');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 

@@ -36,7 +36,7 @@ describe('msft-defender-endpoint to HDF converter', async () => {
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('msft-defender-endpoint-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
-      expect(hdf.dataSource?.name).toBe('Microsoft Defender for Endpoint');
+      expect(hdf.tool?.name).toBe('Microsoft Defender for Endpoint');
       expect(hdf.baselines).toHaveLength(1);
     });
 

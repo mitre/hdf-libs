@@ -236,9 +236,6 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "nessus"
-      },
       "name": "rhel7-server.example.com",
       "type": "host",
       "fqdn": "rhel7-server.example.com",
@@ -246,9 +243,6 @@
       "osName": "Red Hat Enterprise Linux Server 7.9"
     }
   ],
-  "dataSource": {
-    "name": "Nessus"
-  },
   "generator": {
     "name": "nessus-to-hdf",
     "version": "0.1.0"
@@ -256,5 +250,8 @@
   "statistics": {
     "duration": 930
   },
-  "timestamp": "2024-01-29T10:00:00Z"
+  "timestamp": "2024-01-29T10:00:00Z",
+  "tool": {
+    "name": "Nessus"
+  }
 }

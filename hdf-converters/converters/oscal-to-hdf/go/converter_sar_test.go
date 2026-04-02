@@ -59,9 +59,9 @@ func TestConvertAssessmentResultsToHDF_FedRAMPFixture(t *testing.T) {
 	assert.Equal(t, "oscal-assessment-results-to-hdf", results.Generator.Name)
 	assert.Equal(t, "1.0.0-test", results.Generator.Version)
 
-	// DataSource
-	assert.NotNil(t, results.DataSource)
-	assert.Equal(t, "OSCAL Assessment Results", *results.DataSource.Name)
+	// Tool
+	assert.NotNil(t, results.Tool)
+	assert.Equal(t, "OSCAL Assessment Results", *results.Tool.Name)
 
 	// PlanRef from import-ap
 	assert.NotNil(t, results.PlanRef, "planRef should be set from import-ap")

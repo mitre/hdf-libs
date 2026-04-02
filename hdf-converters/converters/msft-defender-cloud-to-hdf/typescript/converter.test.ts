@@ -42,8 +42,8 @@ describe('Microsoft Defender for Cloud to HDF converter', async () => {
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('msft-defender-cloud-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
-      expect(hdf.dataSource?.name).toBe('Microsoft Defender for Cloud');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('Microsoft Defender for Cloud');
+      expect(hdf.tool?.format).toBe('JSON');
       expect(hdf.baselines).toHaveLength(1);
     });
 

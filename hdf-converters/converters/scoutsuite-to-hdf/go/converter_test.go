@@ -83,15 +83,15 @@ func TestConvertScoutsuiteToHDF_Generator(t *testing.T) {
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 }
 
-func TestConvertScoutsuiteToHDF_DataSource(t *testing.T) {
+func TestConvertScoutsuiteToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/scoutsuite_sample.js")
 	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	assert.Equal(t, "ScoutSuite", *result.DataSource.Name)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
-	assert.Equal(t, "5.10.2", *result.DataSource.Version)
+	require.NotNil(t, result.Tool)
+	assert.Equal(t, "ScoutSuite", *result.Tool.Name)
+	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Equal(t, "5.10.2", *result.Tool.Version)
 }
 
 func TestConvertScoutsuiteToHDF_BaselineName(t *testing.T) {

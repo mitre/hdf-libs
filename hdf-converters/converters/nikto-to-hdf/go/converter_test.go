@@ -41,14 +41,14 @@ func TestConvertNiktoToHDF_Generator(t *testing.T) {
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 }
 
-func TestConvertNiktoToHDF_DataSource(t *testing.T) {
+func TestConvertNiktoToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertNiktoToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	assert.Equal(t, "Nikto", *result.DataSource.Name)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	assert.Equal(t, "Nikto", *result.Tool.Name)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 func TestConvertNiktoToHDF_BaselineName(t *testing.T) {

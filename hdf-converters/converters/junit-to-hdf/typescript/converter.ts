@@ -92,12 +92,9 @@ export async function convertJunitToHdf(input: string): Promise<string> {
     components: [{
       type: Copyright.Application,
       name,
-      labels: {
-        service: 'junit',
-      },
     }],
     generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
-    dataSource: { name: 'JUnit XML', format: 'XML' },
+    tool: { name: 'JUnit XML', format: 'XML' },
     timestamp: new Date(),
   };
 

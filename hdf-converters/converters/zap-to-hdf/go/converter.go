@@ -310,16 +310,14 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 	var targets []hdf.Component
 	if siteName != "" {
 		targets = append(targets, hdf.Component{
-			Name:   targetName,
-			Type:   hdf.CopyrightApplication,
-			URL:    &siteName,
-			Labels: map[string]string{"service": "zap"},
+			Name: targetName,
+			Type: hdf.CopyrightApplication,
+			URL:  &siteName,
 		})
 	} else if targetName != "Unknown Host" {
 		targets = append(targets, hdf.Component{
-			Name:   targetName,
-			Type:   hdf.CopyrightApplication,
-			Labels: map[string]string{"service": "zap"},
+			Name: targetName,
+			Type: hdf.CopyrightApplication,
 		})
 	}
 
@@ -335,9 +333,9 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:     "zap-to-hdf",
 		ConverterVersion:  converterVersion,
-		DataSourceName:    "OWASP ZAP",
-		DataSourceVersion: zapData.Version,
-		DataSourceFormat:  "JSON",
+		ToolName:          "OWASP ZAP",
+		ToolVersion:       zapData.Version,
+		ToolFormat:        "JSON",
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
 		Components:           targets,
 		Timestamp:         timestamp,

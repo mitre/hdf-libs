@@ -28,9 +28,9 @@ describe('Grype Converter', async () => {
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.generator.name).toBe('grype');
       expect(hdf.generator.version).toBe('0.79.3');
-      expect(hdf.dataSource?.name).toBe('Grype');
-      expect(hdf.dataSource?.version).toBe('0.79.3');
-      expect(hdf.dataSource?.format).toBeUndefined();
+      expect(hdf.tool?.name).toBe('Grype');
+      expect(hdf.tool?.version).toBe('0.79.3');
+      expect(hdf.tool?.format).toBeUndefined();
       // Timestamp from real Grype output: "2024-08-29T13:47:41.623667-04:00"
       expect(hdf.timestamp).toBeDefined();
     });

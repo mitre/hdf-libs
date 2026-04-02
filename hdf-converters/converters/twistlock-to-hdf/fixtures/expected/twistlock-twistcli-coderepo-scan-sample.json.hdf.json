@@ -145,13 +145,13 @@
       "type": "containerImage"
     }
   ],
-  "dataSource": {
-    "format": "JSON",
-    "name": "Twistlock"
-  },
   "generator": {
     "name": "twistlock-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:49:03.245733Z"
+  "timestamp": "2026-04-02T01:14:13.037395Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Twistlock"
+  }
 }

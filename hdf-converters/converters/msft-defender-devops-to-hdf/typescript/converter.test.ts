@@ -163,7 +163,7 @@ describe('msft-defender-devops-to-hdf', () => {
       const input = loadFixture('input/minimal.sarif');
       const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
 
-      expect(result.dataSource?.name).toBe('Microsoft Defender for DevOps');
+      expect(result.tool?.name).toBe('Microsoft Defender for DevOps');
     });
   });
 

@@ -7693,17 +7693,10 @@
   "components": [
     {
       "ipAddress": "127.0.0.1",
-      "labels": {
-        "service": "xccdf"
-      },
       "name": "localhost",
       "type": "host"
     }
   ],
-  "dataSource": {
-    "format": "XCCDF",
-    "name": "XCCDF"
-  },
   "generator": {
     "name": "hdf-converters",
     "version": "0.1.0"
@@ -7711,5 +7704,9 @@
   "statistics": {
     "duration": 5
   },
-  "timestamp": "2021-11-12T11:37:26-05:00"
+  "timestamp": "2021-11-12T11:37:26-05:00",
+  "tool": {
+    "format": "XCCDF",
+    "name": "XCCDF"
+  }
 }

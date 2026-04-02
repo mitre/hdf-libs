@@ -12,7 +12,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
+  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -208,7 +208,7 @@ export async function convertSnykToHdf(input: string): Promise<string> {
     targetName = parsed.projectName ?? parsed.path ?? '';
   }
 
-  const dataSource: DataSource = { name: 'Snyk', format: 'JSON' };
+  const tool: Tool = { name: 'Snyk', format: 'JSON' };
 
   const hdf: HdfResults = {
     baselines,
@@ -216,8 +216,8 @@ export async function convertSnykToHdf(input: string): Promise<string> {
       name: 'snyk-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
-    components: [{ name: targetName, type: Copyright.Application, labels: { service: 'snyk' } }],
+    tool,
+    components: [{ name: targetName, type: Copyright.Application }],
     timestamp: new Date(),
   };
 

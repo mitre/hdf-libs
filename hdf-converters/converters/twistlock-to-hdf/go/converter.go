@@ -230,8 +230,8 @@ func ConvertTwistlockToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "twistlock-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Twistlock",
-		DataSourceFormat: "JSON",
+		ToolName:   "Twistlock",
+		ToolFormat: "JSON",
 		Baselines:        baselines,
 		Components: []hdf.Component{
 			{

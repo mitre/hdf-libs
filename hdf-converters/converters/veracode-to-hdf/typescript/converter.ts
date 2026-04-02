@@ -19,7 +19,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
+  Tool,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -422,7 +422,7 @@ export async function convertVeracodeToHdf(input: string): Promise<string> {
   }) as EvaluatedBaseline;
 
   const targetName = attr(report, 'app_name') || 'Veracode Application';
-  const dataSource: DataSource = { name: 'Veracode', format: 'XML' };
+  const tool: Tool = { name: 'Veracode', format: 'XML' };
 
   const timestamp = parseVeracodeTimestamp(firstBuildDate);
 
@@ -432,8 +432,8 @@ export async function convertVeracodeToHdf(input: string): Promise<string> {
       name: 'veracode-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
-    components: [{ name: targetName, type: Copyright.Application, labels: { service: 'veracode' } }],
+    tool,
+    components: [{ name: targetName, type: Copyright.Application }],
     timestamp,
   };
 

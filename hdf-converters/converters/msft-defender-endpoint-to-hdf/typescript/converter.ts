@@ -173,7 +173,7 @@ function extractDeviceTarget(alert: MdeAlert): Component {
         const target: Component = {
           name: ev.deviceDnsName,
           type: Copyright.Host,
-          labels: { provider: 'azure', service: 'defender-endpoint' },
+          labels: { provider: 'azure' },
         };
         if (ev.deviceDnsName) {
           target.fqdn = ev.deviceDnsName;
@@ -190,7 +190,7 @@ function extractDeviceTarget(alert: MdeAlert): Component {
     name: alert.tenantId ?? 'unknown',
     type: Copyright.CloudAccount,
     accountId: alert.tenantId,
-    labels: { account: alert.tenantId ?? '', provider: 'azure', service: 'defender-endpoint' },
+    labels: { account: alert.tenantId ?? '', provider: 'azure' },
   };
 }
 
@@ -300,7 +300,7 @@ export async function convertMsftDefenderEndpointToHdf(input: string): Promise<s
       name: 'msft-defender-endpoint-to-hdf',
       version: '1.0.0',
     },
-    dataSource: { name: 'Microsoft Defender for Endpoint' },
+    tool: { name: 'Microsoft Defender for Endpoint' },
     components,
     timestamp: new Date(),
   };

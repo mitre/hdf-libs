@@ -199,7 +199,7 @@ export interface HDFV2Results {
   statistics: unknown;
   components?: unknown[];
   generator?: unknown;
-  dataSource?: { name?: string; version?: string; format?: string };
+  tool?: { name?: string; version?: string; format?: string };
   timestamp?: string;
   id?: string;
   integrity?: unknown;
@@ -553,9 +553,7 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
         id: v1Data.platform.target_id || v1Data.platform.name,
         name: v1Data.platform.name,
         ...(v1Data.platform.release && { release: v1Data.platform.release }),
-        labels: {
-          service: 'inspec',
-        },
+        labels: {},
       },
     ];
   }
@@ -565,7 +563,7 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
     v2.generator = v1Data.generator;
   }
 
-  v2.dataSource = { name: 'Heimdall Data Format v1' };
+  v2.tool = { name: 'Heimdall Data Format v1' };
 
   if (v1Data.timestamp) {
     v2.timestamp = v1Data.timestamp;

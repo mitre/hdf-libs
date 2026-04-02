@@ -1975,21 +1975,20 @@
     {
       "labels": {
         "account": "12345678-1234-1234-1234-1234567890abcd",
-        "provider": "azure",
-        "service": "secure-score"
+        "provider": "azure"
       },
       "name": "Azure Tenant: 12345678-1234-1234-1234-1234567890abcd",
       "type": "cloudAccount",
       "provider": "azure"
     }
   ],
-  "dataSource": {
-    "format": "JSON",
-    "name": "Microsoft Secure Score"
-  },
   "generator": {
     "name": "msft-secure-score-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:49:01.444476Z"
+  "timestamp": "2026-04-02T01:14:11.146459Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Microsoft Secure Score"
+  }
 }

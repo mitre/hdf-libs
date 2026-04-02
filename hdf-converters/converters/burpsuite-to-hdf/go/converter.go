@@ -177,15 +177,14 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:     "burpsuite-to-hdf",
 		ConverterVersion:  converterVersion,
-		DataSourceName:    "BurpSuite",
-		DataSourceVersion: burpData.BurpVersion,
-		DataSourceFormat:  "XML",
+		ToolName:          "BurpSuite",
+		ToolVersion:       burpData.BurpVersion,
+		ToolFormat:        "XML",
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{
-				Name:   targetName,
-				Type:   hdf.CopyrightApplication,
-				Labels: map[string]string{"service": "burpsuite"},
+				Name: targetName,
+				Type: hdf.CopyrightApplication,
 			},
 		},
 		Timestamp: timestamp,

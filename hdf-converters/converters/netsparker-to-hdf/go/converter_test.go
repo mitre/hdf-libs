@@ -109,18 +109,18 @@ func TestConvertNetsparker_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertNetsparker_DataSource(t *testing.T) {
+func TestConvertNetsparker_Tool(t *testing.T) {
 	input := loadFixture(t, "input/sample-netsparker-invicti.xml")
 	result, err := ConvertNetsparkerToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Contains(t, *result.DataSource.Name, "Invicti")
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "XML", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Contains(t, *result.Tool.Name, "Invicti")
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "XML", *result.Tool.Format)
 }
 
 // ---- Target ----
@@ -392,10 +392,10 @@ func TestConvertNetsparker_NetsparkerRootElement(t *testing.T) {
 	result, err := ConvertNetsparkerToHDF([]byte(netsparkerXML), testVersion)
 	require.NoError(t, err)
 
-	// Data source name should be "Netsparker" for netsparker-enterprise root
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Netsparker", *result.DataSource.Name)
+	// Tool name should be "Netsparker" for netsparker-enterprise root
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Netsparker", *result.Tool.Name)
 }
 
 func TestConvertNetsparkerToHDF_EntityExpansion(t *testing.T) {

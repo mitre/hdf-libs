@@ -372,7 +372,7 @@ func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 		Statistics: &hdf.Statistics{
 			Duration: v1.Statistics.Duration,
 		},
-		DataSource: &hdf.DataSource{Name: &toolName},
+		Tool: &hdf.Tool{Name: &toolName},
 	}
 
 	// Convert profiles to baselines
@@ -389,9 +389,6 @@ func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 	target := hdf.Component{
 		Type: hdf.Host,
 		Name: v1.Platform.Name,
-		Labels: map[string]string{
-			"service": "inspec",
-		},
 	}
 	if v1.Platform.TargetID != nil {
 		target.OSName = &v1.Platform.Name // Use platform name as OS name

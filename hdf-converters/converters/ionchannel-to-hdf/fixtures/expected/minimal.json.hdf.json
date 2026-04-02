@@ -117,12 +117,12 @@
       "version": ""
     }
   ],
-  "dataSource": {
-    "format": "JSON",
-    "name": "Ion Channel"
-  },
   "generator": {
     "name": "ionchannel-to-hdf",
     "version": "0.1.0"
+  },
+  "tool": {
+    "format": "JSON",
+    "name": "Ion Channel"
   }
 }

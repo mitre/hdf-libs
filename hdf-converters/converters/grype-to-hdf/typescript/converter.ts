@@ -2,7 +2,7 @@ import {
   type Checksum,
   Copyright,
   createMinimalBaseline,
-  type DataSource,
+  type Tool,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
@@ -355,9 +355,9 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
     resultsChecksum,
   }) as EvaluatedBaseline;
 
-  const dataSource: DataSource = { name: 'Grype' };
+  const tool: Tool = { name: 'Grype' };
   if (grypeData.descriptor?.version) {
-    dataSource.version = grypeData.descriptor.version;
+    tool.version = grypeData.descriptor.version;
   }
 
   // Build HDF results
@@ -366,15 +366,12 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
     components: [{
       type: Copyright.Artifact,
       name: targetName,
-      labels: {
-        service: 'grype',
-      },
     }],
     generator: {
       name: grypeData.descriptor?.name || 'grype',
       version: grypeData.descriptor?.version || 'unknown',
     },
-    dataSource,
+    tool,
     timestamp: grypeData.descriptor?.timestamp ? new Date(grypeData.descriptor.timestamp) : new Date(),
   };
 

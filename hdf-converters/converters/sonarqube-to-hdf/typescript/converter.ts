@@ -9,7 +9,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
-  DataSource,
+  Tool,
 } from '@mitre/hdf-schema';
 import {
   Copyright,
@@ -196,15 +196,12 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
     baselines.push(baseline);
   }
 
-  const dataSource: DataSource = { name: 'SonarQube' };
+  const tool: Tool = { name: 'SonarQube' };
 
   // Build components from project keys
   const components = Array.from(issuesByProject.keys()).map(projectKey => ({
     type: Copyright.Application,
     name: projectKey,
-    labels: {
-      service: 'sonarqube',
-    },
   }));
 
   // Build HDF
@@ -216,7 +213,7 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
       name: 'sonarqube-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
   };
 
   return JSON.stringify(hdf, null, 2);

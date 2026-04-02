@@ -240,21 +240,20 @@
     {
       "labels": {
         "account": "916481805664",
-        "provider": "aws",
-        "service": "scoutsuite"
+        "provider": "aws"
       },
       "name": "default ruleset:Amazon Web Services:916481805664",
       "type": "cloudAccount"
     }
   ],
-  "dataSource": {
-    "format": "JSON",
-    "name": "ScoutSuite",
-    "version": "5.10.2"
-  },
   "generator": {
     "name": "scoutsuite-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2021-02-19T19:16:10Z"
+  "timestamp": "2021-02-19T19:16:10Z",
+  "tool": {
+    "format": "JSON",
+    "name": "ScoutSuite",
+    "version": "5.10.2"
+  }
 }

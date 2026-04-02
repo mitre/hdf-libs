@@ -59,10 +59,10 @@ describe('neuvector to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource name to "NeuVector" and format to "JSON"', async () => {
+    it('should set tool name to "NeuVector" and format to "JSON"', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('NeuVector');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('NeuVector');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 

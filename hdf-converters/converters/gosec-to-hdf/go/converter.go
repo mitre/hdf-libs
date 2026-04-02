@@ -234,8 +234,8 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:     "gosec-to-hdf",
 		ConverterVersion:  converterVersion,
-		DataSourceName:    "gosec",
-		DataSourceVersion: report.GosecVersion,
+		ToolName:    "gosec",
+		ToolVersion: report.GosecVersion,
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
 		Timestamp:         &now,
 	}), nil

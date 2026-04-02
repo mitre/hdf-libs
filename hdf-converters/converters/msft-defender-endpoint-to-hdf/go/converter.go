@@ -125,7 +125,7 @@ func extractDeviceTarget(alert mdeAlert) hdf.Component {
 			target := hdf.Component{
 				Name:   deviceName,
 				Type:   hdf.Host,
-				Labels: map[string]string{"provider": "azure", "service": "defender-endpoint"},
+				Labels: map[string]string{"provider": "azure"},
 			}
 			if deviceName != "" {
 				target.FQDN = shared.Ptr(deviceName)
@@ -141,7 +141,7 @@ func extractDeviceTarget(alert mdeAlert) hdf.Component {
 		Name:      alert.TenantID,
 		Type:      hdf.CloudAccount,
 		AccountID: shared.Ptr(alert.TenantID),
-		Labels:    map[string]string{"account": alert.TenantID, "provider": "azure", "service": "defender-endpoint"},
+		Labels:    map[string]string{"account": alert.TenantID, "provider": "azure"},
 	}
 }
 
@@ -260,7 +260,7 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "msft-defender-endpoint-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Microsoft Defender for Endpoint",
+		ToolName:         "Microsoft Defender for Endpoint",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:          targets,
 		Timestamp:        &now,

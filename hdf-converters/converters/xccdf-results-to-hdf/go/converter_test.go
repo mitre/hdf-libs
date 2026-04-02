@@ -349,7 +349,7 @@ func TestConvertXccdfResultsToHDF_StigRuleVersionAsID(t *testing.T) {
 	}
 }
 
-// --- Generator and DataSource tests ---
+// --- Generator and Tool tests ---
 
 func TestConvertXccdfResultsToHDF_Generator(t *testing.T) {
 	input := loadFixture(t, "minimal.xml")
@@ -361,16 +361,16 @@ func TestConvertXccdfResultsToHDF_Generator(t *testing.T) {
 	assert.Equal(t, converterVersion, result.Generator.Version)
 }
 
-func TestConvertXccdfResultsToHDF_DataSource(t *testing.T) {
+func TestConvertXccdfResultsToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "minimal.xml")
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "XCCDF", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "XCCDF", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "XCCDF", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "XCCDF", *result.Tool.Format)
 }
 
 func TestConvertXccdfResultsToHDF_ResultsChecksum(t *testing.T) {
@@ -570,16 +570,16 @@ func TestConvertARF_BaselineName(t *testing.T) {
 	assert.Equal(t, "Test Benchmark", result.Baselines[0].Name)
 }
 
-func TestConvertARF_DataSource(t *testing.T) {
+func TestConvertARF_Tool(t *testing.T) {
 	input := loadFixture(t, "arf-minimal.xml")
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "ARF", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "ARF", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "ARF", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "ARF", *result.Tool.Format)
 }
 
 func TestConvertARF_ResultsChecksum(t *testing.T) {

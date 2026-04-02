@@ -9,7 +9,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
+  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -238,7 +238,7 @@ export async function convertDeptrackToHdf(input: string): Promise<string> {
 
   const targetName = parsed.project?.name ?? parsed.project?.uuid ?? '';
 
-  const dataSource: DataSource = { name: 'Dependency-Track', format: 'JSON' };
+  const tool: Tool = { name: 'Dependency-Track', format: 'JSON' };
 
   const hdf: HdfResults = {
     baselines: [baseline],
@@ -246,8 +246,8 @@ export async function convertDeptrackToHdf(input: string): Promise<string> {
       name: 'deptrack-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
-    components: [{ name: targetName, type: Copyright.Application, labels: { service: 'dependency-track' } }],
+    tool,
+    components: [{ name: targetName, type: Copyright.Application }],
     timestamp: new Date(),
   };
 

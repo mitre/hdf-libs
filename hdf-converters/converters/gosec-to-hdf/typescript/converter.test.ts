@@ -34,9 +34,9 @@ describe('gosec to HDF converter', async () => {
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('gosec-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
-      expect(hdf.dataSource?.name).toBe('gosec');
-      expect(hdf.dataSource?.version).toBe('dev');
-      expect(hdf.dataSource?.format).toBeUndefined();
+      expect(hdf.tool?.name).toBe('gosec');
+      expect(hdf.tool?.version).toBe('dev');
+      expect(hdf.tool?.format).toBeUndefined();
       expect(hdf.baselines).toHaveLength(1);
     });
 
@@ -247,8 +247,8 @@ describe('gosec to HDF converter', async () => {
       const hdf = JSON.parse(await convertGosecToHdf(input)) as HdfResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.message).toContain('false positive');
-      // No GosecVersion → no version on dataSource
-      expect(hdf.dataSource?.version).toBeUndefined();
+      // No GosecVersion → no version on tool
+      expect(hdf.tool?.version).toBeUndefined();
     });
 
     it('should handle empty suppressions list', async () => {

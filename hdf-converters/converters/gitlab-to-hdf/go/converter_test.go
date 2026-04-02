@@ -121,14 +121,14 @@ func TestConvertGitlabToHDF_MinimalSAST_Checksum(t *testing.T) {
 	assert.Len(t, checksum.Value, 64)
 }
 
-func TestConvertGitlabToHDF_MinimalSAST_DataSource(t *testing.T) {
+func TestConvertGitlabToHDF_MinimalSAST_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal-sast.json")
 	result, err := ConvertGitlabToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	assert.Equal(t, "Semgrep", *result.DataSource.Name)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
-	assert.Equal(t, "1.34.0", *result.DataSource.Version)
+	assert.Equal(t, "Semgrep", *result.Tool.Name)
+	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Equal(t, "1.34.0", *result.Tool.Version)
 }
 
 func TestConvertGitlabToHDF_MinimalSAST_Timestamp(t *testing.T) {

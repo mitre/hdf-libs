@@ -255,13 +255,13 @@
       "type": "containerImage"
     }
   ],
-  "dataSource": {
-    "format": "JSON",
-    "name": "NeuVector"
-  },
   "generator": {
     "name": "neuvector-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:49:01.868269Z"
+  "timestamp": "2026-04-02T01:14:11.578337Z",
+  "tool": {
+    "format": "JSON",
+    "name": "NeuVector"
+  }
 }

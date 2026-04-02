@@ -452,8 +452,8 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "hdf-converters",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "XCCDF",
-		DataSourceFormat: "XCCDF",
+		ToolName:         "XCCDF",
+		ToolFormat:       "XCCDF",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:          []hdf.Component{target},
 		Timestamp:        &startTime,
@@ -776,8 +776,8 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "hdf-converters",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "ARF",
-		DataSourceFormat: "ARF",
+		ToolName:         "ARF",
+		ToolFormat:       "ARF",
 		Baselines:        baselines,
 		Components:          targets,
 		Timestamp:        &firstTimestamp,
@@ -1076,7 +1076,6 @@ func buildTarget(tr *TestResult) hdf.Component {
 	target := hdf.Component{
 		Name:   tr.Target,
 		Type:   hdf.Host,
-		Labels: map[string]string{"service": "xccdf"},
 	}
 
 	// Use the first target-address as the IP address

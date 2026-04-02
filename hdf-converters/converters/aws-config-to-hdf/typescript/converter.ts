@@ -12,7 +12,7 @@ import {
   type RequirementResult,
   type Checksum,
   type Description,
-  type DataSource,
+  type Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -191,7 +191,7 @@ export async function convertAwsConfigToHdf(input: string): Promise<string> {
     maintainer: 'Amazon Web Services',
   } as EvaluatedBaseline;
 
-  const dataSource: DataSource = { name: 'AWS Config' };
+  const tool: Tool = { name: 'AWS Config' };
 
   // Extract account/region from the first rule's ARN for target labels
   const firstArn = limitedRules[0]?.ConfigRuleArn ?? '';
@@ -207,14 +207,13 @@ export async function convertAwsConfigToHdf(input: string): Promise<string> {
         account: accountId,
         region,
         provider: 'aws',
-        service: 'config',
       },
     }],
     generator: {
       name: 'aws-config-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
     timestamp: new Date(),
   };
 

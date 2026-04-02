@@ -48,8 +48,7 @@
   "components": [
     {
       "labels": {
-        "provider": "azure",
-        "service": "defender-endpoint"
+        "provider": "azure"
       },
       "name": "temp123.middleeast.corp.microsoft.com",
       "type": "host",
@@ -57,12 +56,12 @@
       "osName": "Windows10"
     }
   ],
-  "dataSource": {
-    "name": "Microsoft Defender for Endpoint"
-  },
   "generator": {
     "name": "msft-defender-endpoint-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:49:01.297042Z"
+  "timestamp": "2026-04-02T01:14:10.995277Z",
+  "tool": {
+    "name": "Microsoft Defender for Endpoint"
+  }
 }

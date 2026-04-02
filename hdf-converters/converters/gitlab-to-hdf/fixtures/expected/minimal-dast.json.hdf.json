@@ -47,21 +47,18 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "gitlab"
-      },
       "name": "ZAProxy",
       "type": "application"
     }
   ],
-  "dataSource": {
-    "format": "JSON",
-    "name": "ZAProxy",
-    "version": "2.14.0"
-  },
   "generator": {
     "name": "gitlab-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2024-02-20T14:15:00Z"
+  "timestamp": "2024-02-20T14:15:00Z",
+  "tool": {
+    "format": "JSON",
+    "name": "ZAProxy",
+    "version": "2.14.0"
+  }
 }

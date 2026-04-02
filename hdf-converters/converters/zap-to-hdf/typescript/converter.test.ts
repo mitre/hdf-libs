@@ -109,16 +109,16 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.dataSource?.name).toBe('OWASP ZAP');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('OWASP ZAP');
+      expect(hdf.tool?.format).toBe('JSON');
     });
 
-    it('should set dataSource version from @version', async () => {
+    it('should set tool version from @version', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.dataSource?.version).toBe('2.7.0');
+      expect(hdf.tool?.version).toBe('2.7.0');
     });
   });
 
@@ -412,7 +412,7 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.dataSource?.version).toBe('2.7.0');
+      expect(hdf.tool?.version).toBe('2.7.0');
     });
   });
 });

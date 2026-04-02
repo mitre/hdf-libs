@@ -102,18 +102,18 @@ func TestConvertCycloneDX_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertCycloneDX_DataSource(t *testing.T) {
+func TestConvertCycloneDX_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal-vulns.json")
 	result, err := ConvertCycloneDXToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "CycloneDX", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "CycloneDX", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- Impact from CVSS score ----

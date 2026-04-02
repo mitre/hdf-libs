@@ -9,7 +9,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
+  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -327,7 +327,7 @@ export async function convertConveyorToHdf(input: string): Promise<string> {
     }
   }
 
-  const dataSource: DataSource = { name: 'Conveyor', format: 'JSON' };
+  const tool: Tool = { name: 'Conveyor', format: 'JSON' };
 
   const hdf: HdfResults = {
     baselines,
@@ -335,8 +335,8 @@ export async function convertConveyorToHdf(input: string): Promise<string> {
       name: 'conveyor-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
-    components: [{ name: targetName, type: Copyright.Application, labels: { service: 'conveyor' } }],
+    tool,
+    components: [{ name: targetName, type: Copyright.Application }],
     timestamp: new Date(),
   };
 

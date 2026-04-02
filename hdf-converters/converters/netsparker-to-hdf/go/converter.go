@@ -371,14 +371,13 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "netsparker-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   toolName,
-		DataSourceFormat: "XML",
+		ToolName:         toolName,
+		ToolFormat:       "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{
 				Name:   targetName,
 				Type:   hdf.CopyrightApplication,
-				Labels: map[string]string{"service": "netsparker"},
 			},
 		},
 	}), nil

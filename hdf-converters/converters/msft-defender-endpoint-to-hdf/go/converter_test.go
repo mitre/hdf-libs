@@ -156,16 +156,16 @@ func TestConvert_GeneratorName(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- Data source ----
+// ---- Tool ----
 
-func TestConvert_DataSource(t *testing.T) {
+func TestConvert_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Microsoft Defender for Endpoint", *result.DataSource.Name)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Microsoft Defender for Endpoint", *result.Tool.Name)
 }
 
 // ---- Target: Host from device evidence ----

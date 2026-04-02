@@ -389,7 +389,7 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	// Build targets
 	targetType := scanTypeToTargetType(scanType)
 	targets := []hdf.Component{
-		{Name: scannerName, Type: targetType, Labels: map[string]string{"service": "gitlab"}},
+		{Name: scannerName, Type: targetType},
 	}
 
 	// Compute timestamp before building results
@@ -404,9 +404,9 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:     "gitlab-to-hdf",
 		ConverterVersion:  converterVersion,
-		DataSourceName:    scannerName,
-		DataSourceVersion: scannerVersion,
-		DataSourceFormat:  "JSON",
+		ToolName:    scannerName,
+		ToolVersion: scannerVersion,
+		ToolFormat:  "JSON",
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
 		Components:           targets,
 		Timestamp:         timestamp,

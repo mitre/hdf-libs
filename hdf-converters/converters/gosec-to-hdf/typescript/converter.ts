@@ -9,7 +9,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
-  DataSource,
+  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -194,9 +194,9 @@ export async function convertGosecToHdf(input: string): Promise<string> {
     { resultsChecksum }
   ) as EvaluatedBaseline;
 
-  const dataSource: DataSource = { name: 'gosec' };
+  const tool: Tool = { name: 'gosec' };
   if (report.GosecVersion) {
-    dataSource.version = report.GosecVersion;
+    tool.version = report.GosecVersion;
   }
 
   const hdf: HdfResults = {
@@ -205,7 +205,7 @@ export async function convertGosecToHdf(input: string): Promise<string> {
       name: 'gosec-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
     timestamp: new Date(),
   };
 

@@ -78,7 +78,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.generator).toBeDefined();
-      expect(hdf.dataSource).toBeDefined();
+      expect(hdf.tool).toBeDefined();
       expect(hdf.timestamp).toBeTruthy();
     });
 
@@ -177,10 +177,10 @@ describe('xccdf-results-to-hdf converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource fields', async () => {
+    it('should set tool fields', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      expect(hdf.dataSource?.name).toBe('XCCDF Results');
-      expect(hdf.dataSource?.format).toBe('XML');
+      expect(hdf.tool?.name).toBe('XCCDF Results');
+      expect(hdf.tool?.format).toBe('XML');
     });
 
     it('should set timestamp from TestResult start-time', async () => {
@@ -477,7 +477,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.generator).toBeDefined();
-      expect(hdf.dataSource).toBeDefined();
+      expect(hdf.tool).toBeDefined();
       expect(hdf.components).toBeDefined();
       expect(hdf.components).toHaveLength(1);
     });
@@ -519,10 +519,10 @@ describe('xccdf-results-to-hdf converter', async () => {
       expect(hdf.components![0]!.macAddress).not.toBe('');
     });
 
-    it('should set dataSource name to ARF', async () => {
+    it('should set tool name to ARF', async () => {
       const hdf = await parseHdf('arf-minimal.xml');
-      expect(hdf.dataSource?.name).toBe('ARF');
-      expect(hdf.dataSource?.format).toBe('ARF');
+      expect(hdf.tool?.name).toBe('ARF');
+      expect(hdf.tool?.format).toBe('ARF');
     });
 
     it('should skip OVAL reports and only produce baselines from XCCDF', async () => {

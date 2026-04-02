@@ -18,7 +18,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
-  DataSource,
+  Tool,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -325,7 +325,7 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
     },
   ) as EvaluatedBaseline;
 
-  const dataSource: DataSource = {
+  const tool: Tool = {
     name: toolName,
     format: 'XML',
   };
@@ -338,14 +338,13 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
       {
         name: targetName,
         type: Copyright.Application,
-        labels: { service: 'netsparker' },
       },
     ],
     generator: {
       name: 'netsparker-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
   };
 
   return JSON.stringify(hdf, null, 2);

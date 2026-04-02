@@ -2,7 +2,7 @@ import {
   type Checksum,
   createMinimalBaseline,
   Copyright,
-  type DataSource,
+  type Tool,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
@@ -172,7 +172,7 @@ export async function convertZapToHdf(input: string): Promise<string> {
     const hdf: HdfResults = {
       baselines: [baseline],
       generator: {name: 'zap-to-hdf', version: 'unknown'},
-      dataSource: {name: 'OWASP ZAP', format: 'JSON'},
+      tool: {name: 'OWASP ZAP', format: 'JSON'},
     };
     return JSON.stringify(hdf, null, 2);
   }
@@ -190,7 +190,7 @@ export async function convertZapToHdf(input: string): Promise<string> {
     const hdf: HdfResults = {
       baselines: [baseline],
       generator: {name: 'zap-to-hdf', version: 'unknown'},
-      dataSource: {name: 'OWASP ZAP', format: 'JSON'},
+      tool: {name: 'OWASP ZAP', format: 'JSON'},
     };
     if (zapData['@generated']) {
       hdf.timestamp = new Date(zapData['@generated']);
@@ -292,20 +292,20 @@ export async function convertZapToHdf(input: string): Promise<string> {
     summary: `ZAP Version ${zapData['@version'] ?? 'unknown'}`,
   }) as EvaluatedBaseline;
 
-  const dataSource: DataSource = {
+  const tool: Tool = {
     name: 'OWASP ZAP',
     format: 'JSON',
   };
   if (zapData['@version']) {
-    dataSource.version = zapData['@version'];
+    tool.version = zapData['@version'];
   }
 
   // Build components — ZAP is a DAST tool scanning web applications
   const components: Array<{name: string; type: Copyright; url?: string; labels?: Record<string, string>}> = [];
   if (site['@name']) {
-    components.push({name: targetName, type: Copyright.Application, url: site['@name'], labels: { service: 'zap' }});
+    components.push({name: targetName, type: Copyright.Application, url: site['@name']});
   } else if (targetName !== 'Unknown Host') {
-    components.push({name: targetName, type: Copyright.Application, labels: { service: 'zap' }});
+    components.push({name: targetName, type: Copyright.Application});
   }
 
   const hdf: HdfResults = {
@@ -315,7 +315,7 @@ export async function convertZapToHdf(input: string): Promise<string> {
       name: 'zap-to-hdf',
       version: 'unknown',
     },
-    dataSource,
+    tool,
   };
 
   if (zapData['@generated']) {

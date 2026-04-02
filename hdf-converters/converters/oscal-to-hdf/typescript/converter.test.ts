@@ -397,7 +397,7 @@ describe('convertOscalSarToHdf', () => {
     expect(results.baselines.length).toBeGreaterThan(0);
 
     expect(results.generator?.name).toBe('oscal-assessment-results-to-hdf');
-    expect(results.dataSource?.name).toBe('OSCAL Assessment Results');
+    expect(results.tool?.name).toBe('OSCAL Assessment Results');
     expect(results.planRef).toBeTruthy();
   });
 

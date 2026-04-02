@@ -54,10 +54,10 @@ describe('dbprotect to HDF converter', () => {
       expect(checksum?.value).toMatch(/^[a-f0-9]{64}$/);
     });
 
-    it('should set dataSource name to "DBProtect" and format to "XML"', async () => {
+    it('should set tool name to "DBProtect" and format to "XML"', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('DBProtect');
-      expect(hdf.dataSource?.format).toBe('XML');
+      expect(hdf.tool?.name).toBe('DBProtect');
+      expect(hdf.tool?.format).toBe('XML');
     });
 
     it('should have 6 unique requirements from 8 rows', async () => {

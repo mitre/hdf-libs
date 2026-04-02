@@ -56,7 +56,7 @@ func TestConvertV1ToV2_Minimal(t *testing.T) {
 	assert.Equal(t, hdf.Host, v2.Components[0].Type)
 }
 
-func TestConvertV1ToV2_DataSource(t *testing.T) {
+func TestConvertV1ToV2_Tool(t *testing.T) {
 	inputPath := filepath.Join(getFixturesDir(), "input", "minimal.json")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
@@ -67,11 +67,11 @@ func TestConvertV1ToV2_DataSource(t *testing.T) {
 
 	v2 := ConvertV1ToV2(&v1)
 
-	require.NotNil(t, v2.DataSource)
-	require.NotNil(t, v2.DataSource.Name)
-	assert.Equal(t, "Heimdall Data Format v1", *v2.DataSource.Name)
-	assert.Nil(t, v2.DataSource.Version)
-	assert.Nil(t, v2.DataSource.Format)
+	require.NotNil(t, v2.Tool)
+	require.NotNil(t, v2.Tool.Name)
+	assert.Equal(t, "Heimdall Data Format v1", *v2.Tool.Name)
+	assert.Nil(t, v2.Tool.Version)
+	assert.Nil(t, v2.Tool.Format)
 }
 
 func TestConvertV1ToV2_ContainerScan(t *testing.T) {

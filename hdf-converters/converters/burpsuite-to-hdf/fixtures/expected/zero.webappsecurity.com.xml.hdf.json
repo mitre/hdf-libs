@@ -755,21 +755,18 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "burpsuite"
-      },
       "name": "http://zero.webappsecurity.com",
       "type": "application"
     }
   ],
-  "dataSource": {
-    "format": "XML",
-    "name": "BurpSuite",
-    "version": "2020.1"
-  },
   "generator": {
     "name": "burpsuite-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2020-02-27T09:28:17-05:00"
+  "timestamp": "2020-02-27T09:28:17-05:00",
+  "tool": {
+    "format": "XML",
+    "name": "BurpSuite",
+    "version": "2020.1"
+  }
 }

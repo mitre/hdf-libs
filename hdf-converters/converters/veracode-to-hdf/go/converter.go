@@ -349,11 +349,11 @@ func ConvertVeracodeToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "veracode-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Veracode",
-		DataSourceFormat: "XML",
+		ToolName:         "Veracode",
+		ToolFormat:       "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
-			{Name: targetName, Type: hdf.CopyrightApplication, Labels: map[string]string{"service": "veracode"}},
+			{Name: targetName, Type: hdf.CopyrightApplication},
 		},
 		Timestamp: timestamp,
 	}), nil

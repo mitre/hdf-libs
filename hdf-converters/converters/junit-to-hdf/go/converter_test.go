@@ -42,15 +42,15 @@ func TestConvertJUnitToHDF_SurefireFailing(t *testing.T) {
 	assert.Len(t, result.Baselines, 1)
 }
 
-func TestConvertJUnitToHDF_DataSource(t *testing.T) {
+func TestConvertJUnitToHDF_Tool(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-failing.xml"), converterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "JUnit XML", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "XML", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "JUnit XML", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "XML", *result.Tool.Format)
 }
 
 func TestConverterContract(t *testing.T) {

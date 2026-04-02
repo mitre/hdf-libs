@@ -4,7 +4,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize } from '../../../shared/typescript/converterutil.js';
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, DataSource, Description } from '@mitre/hdf-schema';
+import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Tool, Description } from '@mitre/hdf-schema';
 import { ResultStatus, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 // --- SARIF 2.1.0 type definitions ---
@@ -164,14 +164,14 @@ export async function convertSarifToHdf(input: string): Promise<string> {
     throw new Error('Invalid SARIF structure: missing or invalid runs field');
   }
 
-  const dataSource: DataSource = { format: 'SARIF' };
+  const tool: Tool = { format: 'SARIF' };
   const firstDriver = sarif.runs[0]?.tool?.driver;
   if (firstDriver) {
     if (firstDriver.name) {
-      dataSource.name = firstDriver.name;
+      tool.name = firstDriver.name;
     }
     if (firstDriver.version) {
-      dataSource.version = firstDriver.version;
+      tool.version = firstDriver.version;
     }
   }
 
@@ -191,7 +191,7 @@ export async function convertSarifToHdf(input: string): Promise<string> {
       name: 'sarif-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
   };
 
   return JSON.stringify(hdf, null, 2);

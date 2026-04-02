@@ -148,7 +148,6 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 				Labels: map[string]string{
 					"account":  subscriptionID,
 					"provider": "azure",
-					"service":  "defender-cloud",
 				},
 			},
 		}
@@ -158,8 +157,8 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "msft-defender-cloud-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Microsoft Defender for Cloud",
-		DataSourceFormat: "JSON",
+		ToolName:   "Microsoft Defender for Cloud",
+		ToolFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:          targets,
 		Timestamp:        &now,

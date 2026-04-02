@@ -1790,43 +1790,6 @@ class Component:
 
 
 @dataclass
-class DataSource:
-    """The tool or service that produced the security data in this file.
-    
-    The tool or service that produced the security data represented in this HDF file.
-    """
-    format: Optional[str] = None
-    """The file format, if it is a recognized named format shared by multiple tools. Examples:
-    'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the
-    format (Nessus XML, gosec JSON).
-    """
-    name: Optional[str] = None
-    """The name of the tool or service that produced the data, if known. Examples: 'gosec',
-    'Semgrep', 'OpenSCAP', 'AWS Config'. Omit if the tool cannot be identified.
-    """
-    version: Optional[str] = None
-    """Version of the source tool, if available in the tool's output. Example: '5.22.3'."""
-
-    @staticmethod
-    def from_dict(obj: Any) -> 'DataSource':
-        assert isinstance(obj, dict)
-        format = from_union([from_str, from_none], obj.get("format"))
-        name = from_union([from_str, from_none], obj.get("name"))
-        version = from_union([from_str, from_none], obj.get("version"))
-        return DataSource(format, name, version)
-
-    def to_dict(self) -> dict:
-        result: dict = {}
-        if self.format is not None:
-            result["format"] = from_union([from_str, from_none], self.format)
-        if self.name is not None:
-            result["name"] = from_union([from_str, from_none], self.name)
-        if self.version is not None:
-            result["version"] = from_union([from_str, from_none], self.version)
-        return result
-
-
-@dataclass
 class Generator:
     """Information about the tool that generated this file.
     
@@ -2057,6 +2020,44 @@ class Statistics:
 
 
 @dataclass
+class Tool:
+    """The security tool that produced the assessment data in this file.
+    
+    The security tool that produced the assessment data represented in this HDF file. Aligns
+    with SARIF, OSCAL, and CycloneDX terminology.
+    """
+    format: Optional[str] = None
+    """The file format, if it is a recognized named format shared by multiple tools. Examples:
+    'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the
+    format (Nessus XML, gosec JSON).
+    """
+    name: Optional[str] = None
+    """The name of the security tool that produced the data. Examples: 'gosec', 'Semgrep',
+    'OpenSCAP', 'AWS Config', 'Nessus'. Omit if the tool cannot be identified.
+    """
+    version: Optional[str] = None
+    """Version of the source tool, if available in the tool's output. Example: '5.22.3'."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'Tool':
+        assert isinstance(obj, dict)
+        format = from_union([from_str, from_none], obj.get("format"))
+        name = from_union([from_str, from_none], obj.get("name"))
+        version = from_union([from_str, from_none], obj.get("version"))
+        return Tool(format, name, version)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.format is not None:
+            result["format"] = from_union([from_str, from_none], self.format)
+        if self.name is not None:
+            result["name"] = from_union([from_str, from_none], self.name)
+        if self.version is not None:
+            result["version"] = from_union([from_str, from_none], self.version)
+        return result
+
+
+@dataclass
 class HdfResults:
     """The top level value containing all assessment results."""
 
@@ -2068,9 +2069,6 @@ class HdfResults:
     container, cloud resource, application, etc.) with optional identity, SBOM, and external
     references.
     """
-    data_source: Optional[DataSource] = None
-    """The tool or service that produced the security data in this file."""
-
     extensions: Optional[Dict[str, Any]] = None
     """Reserved for tool-specific data not defined in the HDF standard. Use this to preserve
     original tool output, auxiliary data, or custom metadata.
@@ -2106,12 +2104,14 @@ class HdfResults:
     timestamp: Optional[datetime] = None
     """When this assessment was executed."""
 
+    tool: Optional[Tool] = None
+    """The security tool that produced the assessment data in this file."""
+
     @staticmethod
     def from_dict(obj: Any) -> 'HdfResults':
         assert isinstance(obj, dict)
         baselines = from_list(EvaluatedBaseline.from_dict, obj.get("baselines"))
         components = from_union([lambda x: from_list(Component.from_dict, x), from_none], obj.get("components"))
-        data_source = from_union([DataSource.from_dict, from_none], obj.get("dataSource"))
         extensions = from_union([lambda x: from_dict(lambda x: x, x), from_none], obj.get("extensions"))
         generator = from_union([Generator.from_dict, from_none], obj.get("generator"))
         id = from_union([lambda x: UUID(x), from_none], obj.get("id"))
@@ -2122,15 +2122,14 @@ class HdfResults:
         statistics = from_union([Statistics.from_dict, from_none], obj.get("statistics"))
         system_ref = from_union([from_str, from_none], obj.get("systemRef"))
         timestamp = from_union([from_datetime, from_none], obj.get("timestamp"))
-        return HdfResults(baselines, components, data_source, extensions, generator, id, integrity, plan_ref, remediation, runner, statistics, system_ref, timestamp)
+        tool = from_union([Tool.from_dict, from_none], obj.get("tool"))
+        return HdfResults(baselines, components, extensions, generator, id, integrity, plan_ref, remediation, runner, statistics, system_ref, timestamp, tool)
 
     def to_dict(self) -> dict:
         result: dict = {}
         result["baselines"] = from_list(lambda x: to_class(EvaluatedBaseline, x), self.baselines)
         if self.components is not None:
             result["components"] = from_union([lambda x: from_list(lambda x: to_class(Component, x), x), from_none], self.components)
-        if self.data_source is not None:
-            result["dataSource"] = from_union([lambda x: to_class(DataSource, x), from_none], self.data_source)
         if self.extensions is not None:
             result["extensions"] = from_union([lambda x: from_dict(lambda x: x, x), from_none], self.extensions)
         if self.generator is not None:
@@ -2151,6 +2150,8 @@ class HdfResults:
             result["systemRef"] = from_union([from_str, from_none], self.system_ref)
         if self.timestamp is not None:
             result["timestamp"] = from_union([lambda x: x.isoformat(), from_none], self.timestamp)
+        if self.tool is not None:
+            result["tool"] = from_union([lambda x: to_class(Tool, x), from_none], self.tool)
         return result
 
 

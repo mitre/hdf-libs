@@ -79,10 +79,10 @@ describe('BurpSuite to HDF Converter', () => {
       expect(gen.version).toBe('1.0.0');
     });
 
-    it('should set dataSource correctly', async () => {
+    it('should set tool correctly', async () => {
       const xml = loadFixture('input/zero.webappsecurity.com.xml');
       const out = parseOutput(await convertBurpsuiteToHdf(xml));
-      const ds = out.dataSource as Record<string, unknown>;
+      const ds = out.tool as Record<string, unknown>;
       expect(ds.name).toBe('BurpSuite');
       expect(ds.format).toBe('XML');
       expect(ds.version).toBe('2020.1');
@@ -366,7 +366,7 @@ describe('BurpSuite to HDF Converter', () => {
   </issue>
 </issues>`;
       const out = parseOutput(await convertBurpsuiteToHdf(xml));
-      const ds = out.dataSource as Record<string, unknown>;
+      const ds = out.tool as Record<string, unknown>;
       // No version field when burpVersion is empty
       expect(ds.version).toBeUndefined();
     });

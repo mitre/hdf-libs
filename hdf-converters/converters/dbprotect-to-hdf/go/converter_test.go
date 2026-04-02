@@ -57,10 +57,10 @@ func TestConvertDbprotect_CheckResults_BasicStructure(t *testing.T) {
 	// Should have one baseline
 	require.Len(t, result.Baselines, 1)
 
-	// Should have data source
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "DBProtect", *result.DataSource.Name)
+	// Should have tool
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "DBProtect", *result.Tool.Name)
 }
 
 func TestConvertDbprotect_CheckResults_BaselineName(t *testing.T) {

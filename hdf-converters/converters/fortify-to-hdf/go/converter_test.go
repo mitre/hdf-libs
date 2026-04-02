@@ -85,17 +85,17 @@ func TestConvertFortifyToHDF_BaselineMetadata(t *testing.T) {
 	assert.Len(t, baseline.ResultsChecksum.Value, 64, "SHA-256 hash should be 64 hex chars")
 }
 
-func TestConvertFortifyToHDF_DataSource(t *testing.T) {
+func TestConvertFortifyToHDF_Tool(t *testing.T) {
 	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
 
 	result, err := ConvertFortifyToHDF(inputData, converterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Fortify", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "FVDL", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Fortify", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "FVDL", *result.Tool.Format)
 }
 
 func TestConvertFortifyToHDF_RequirementFields(t *testing.T) {

@@ -9,7 +9,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
+  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -240,7 +240,7 @@ export async function convertTwistlockToHdf(input: string): Promise<string> {
   // Use the first result's name or repository as target name
   const targetName = results[0]!.name ?? results[0]!.repository ?? '';
 
-  const dataSource: DataSource = { name: 'Twistlock', format: 'JSON' };
+  const tool: Tool = { name: 'Twistlock', format: 'JSON' };
 
   const hdf: HdfResults = {
     baselines,
@@ -248,7 +248,7 @@ export async function convertTwistlockToHdf(input: string): Promise<string> {
       name: 'twistlock-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
     components: [{
       name: targetName,
       type: Copyright.ContainerImage,

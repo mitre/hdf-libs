@@ -82,15 +82,15 @@ func TestConvertZapToHDF_Generator(t *testing.T) {
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 }
 
-func TestConvertZapToHDF_DataSource(t *testing.T) {
+func TestConvertZapToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	assert.Equal(t, "OWASP ZAP", *result.DataSource.Name)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
-	assert.Equal(t, "2.7.0", *result.DataSource.Version)
+	require.NotNil(t, result.Tool)
+	assert.Equal(t, "OWASP ZAP", *result.Tool.Name)
+	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Equal(t, "2.7.0", *result.Tool.Version)
 }
 
 func TestConvertZapToHDF_BaselineName(t *testing.T) {
@@ -486,13 +486,13 @@ func TestConvertZapToHDF_Webgoat_Timestamp(t *testing.T) {
 	assert.Equal(t, 6, result.Timestamp.Day())
 }
 
-func TestConvertZapToHDF_Webgoat_DataSourceVersion(t *testing.T) {
+func TestConvertZapToHDF_Webgoat_ToolVersion(t *testing.T) {
 	input := loadFixture(t, "input/webgoat.json")
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	assert.Equal(t, "2.7.0", *result.DataSource.Version)
+	require.NotNil(t, result.Tool)
+	assert.Equal(t, "2.7.0", *result.Tool.Version)
 }
 
 func TestSnapshots(t *testing.T) {

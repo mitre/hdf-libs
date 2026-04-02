@@ -58,19 +58,18 @@
       "labels": {
         "account": "123456789012",
         "provider": "aws",
-        "region": "us-east-1",
-        "service": "config"
+        "region": "us-east-1"
       },
       "name": "AWS Account 123456789012",
       "type": "cloudAccount"
     }
   ],
-  "dataSource": {
-    "name": "AWS Config"
-  },
   "generator": {
     "name": "aws-config-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-30T14:41:25.209257Z"
+  "timestamp": "2026-04-02T01:14:07.877512Z",
+  "tool": {
+    "name": "AWS Config"
+  }
 }

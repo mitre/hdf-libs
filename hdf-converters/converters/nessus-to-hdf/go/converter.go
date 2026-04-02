@@ -71,7 +71,7 @@ func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResu
 	result := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "nessus-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Nessus",
+		ToolName:         "Nessus",
 		Baselines:        baselines,
 		Components:          targets,
 		Statistics: &hdf.Statistics{
@@ -440,7 +440,6 @@ func convertReportHostToTarget(host *ReportHost) hdf.Component {
 		IPAddress: ipAddress,
 		OSName:    osName,
 		OSVersion: osVersion,
-		Labels:    map[string]string{"service": "nessus"},
 	}
 }
 

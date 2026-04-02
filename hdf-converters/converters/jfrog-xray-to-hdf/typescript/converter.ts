@@ -9,7 +9,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
+  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -231,7 +231,7 @@ export async function convertJfrogXrayToHdf(input: string): Promise<string> {
     { resultsChecksum }
   ) as EvaluatedBaseline;
 
-  const dataSource: DataSource = { name: 'JFrog Xray', format: 'JSON' };
+  const tool: Tool = { name: 'JFrog Xray', format: 'JSON' };
 
   const hdf: HdfResults = {
     baselines: [baseline],
@@ -239,8 +239,8 @@ export async function convertJfrogXrayToHdf(input: string): Promise<string> {
       name: 'jfrog-xray-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
-    components: [{ name: 'JFrog Xray Scan', type: Copyright.Application, labels: { service: 'jfrog-xray' } }],
+    tool,
+    components: [{ name: 'JFrog Xray Scan', type: Copyright.Application }],
     timestamp: new Date(),
   };
 

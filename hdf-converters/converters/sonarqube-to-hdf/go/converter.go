@@ -174,9 +174,6 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		targets = append(targets, hdf.Component{
 			Name: projectKey,
 			Type: hdf.CopyrightApplication,
-			Labels: map[string]string{
-				"service": "sonarqube",
-			},
 		})
 	}
 
@@ -186,8 +183,8 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:     "sonarqube-to-hdf",
 		ConverterVersion:  converterVersion,
-		DataSourceName:    "SonarQube",
-		DataSourceVersion: sonarData.ServerVersion,
+		ToolName:          "SonarQube",
+		ToolVersion:       sonarData.ServerVersion,
 		Baselines:         baselines,
 		Components:           targets,
 		Timestamp:         &timestamp,

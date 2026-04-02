@@ -115,21 +115,18 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "gitlab"
-      },
       "name": "Semgrep",
       "type": "repository"
     }
   ],
-  "dataSource": {
-    "format": "JSON",
-    "name": "Semgrep",
-    "version": "1.34.0"
-  },
   "generator": {
     "name": "gitlab-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2024-03-10T08:05:00Z"
+  "timestamp": "2024-03-10T08:05:00Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Semgrep",
+    "version": "1.34.0"
+  }
 }

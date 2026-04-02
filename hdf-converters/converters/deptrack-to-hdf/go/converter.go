@@ -240,11 +240,11 @@ func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "deptrack-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Dependency-Track",
-		DataSourceFormat: "JSON",
+		ToolName:   "Dependency-Track",
+		ToolFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
-			{Name: targetName, Type: hdf.CopyrightApplication, Labels: map[string]string{"service": "dependency-track"}},
+			{Name: targetName, Type: hdf.CopyrightApplication},
 		},
 		Timestamp: &now,
 	}), nil

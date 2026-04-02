@@ -104,20 +104,17 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "dbprotect"
-      },
       "name": "HOST1",
       "type": "host"
     }
   ],
-  "dataSource": {
-    "format": "XML",
-    "name": "DBProtect"
-  },
   "generator": {
     "name": "dbprotect-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:48:58.659196Z"
+  "timestamp": "2026-04-02T01:14:08.455063Z",
+  "tool": {
+    "format": "XML",
+    "name": "DBProtect"
+  }
 }

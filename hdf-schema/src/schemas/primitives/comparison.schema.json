@@ -177,9 +177,9 @@
           "format": "date-time",
           "description": "When the source assessment was performed. ISO 8601 format."
         },
-        "dataSource": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/DataSource",
-          "description": "The tool or service that produced the source data."
+        "tool": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Tool",
+          "description": "The security tool that produced the assessment data in this source."
         },
         "components": {
           "type": "array",

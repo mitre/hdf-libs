@@ -102,8 +102,8 @@ describe('twistlock to HDF converter', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
       ) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('Twistlock');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('Twistlock');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 

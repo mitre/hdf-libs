@@ -19,9 +19,9 @@ describe('SARIF Converter', async () => {
       const input = loadFixture('input', 'sarif_input.sarif');
       const result = JSON.parse(await convertSarifToHdf(input));
 
-      expect(result.dataSource?.format).toBe('SARIF');
-      expect(result.dataSource?.name).toBe('Flawfinder');
-      expect(result.dataSource?.version).toBe('2.0.15');
+      expect(result.tool?.format).toBe('SARIF');
+      expect(result.tool?.name).toBe('Flawfinder');
+      expect(result.tool?.version).toBe('2.0.15');
       expect(result.baselines).toHaveLength(1);
       expect(result.baselines[0].name).toBe('Flawfinder');
       expect(result.baselines[0].version).toBe('2.1.0');

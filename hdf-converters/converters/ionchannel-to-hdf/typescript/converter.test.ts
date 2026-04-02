@@ -53,8 +53,8 @@ describe('ionchannel to HDF converter', async () => {
 
     it('should include data source info', async () => {
       const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('Ion Channel');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('Ion Channel');
+      expect(hdf.tool?.format).toBe('JSON');
     });
 
     it('should flatten 2 top-level + 1 sub-dependency into 3 requirements', async () => {

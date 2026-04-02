@@ -200,9 +200,9 @@ describe('GitLab to HDF converter', () => {
       const output = await convertGitlabToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.dataSource?.name).toBe('Semgrep');
-      expect(hdf.dataSource?.format).toBe('JSON');
-      expect(hdf.dataSource?.version).toBe('1.34.0');
+      expect(hdf.tool?.name).toBe('Semgrep');
+      expect(hdf.tool?.format).toBe('JSON');
+      expect(hdf.tool?.version).toBe('1.34.0');
     });
   });
 
@@ -376,7 +376,7 @@ describe('GitLab to HDF converter', () => {
       expect(hdf.components[0].type).toBe('containerImage');
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('Image: nginx');
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('libssl@1.0');
-      expect(hdf.dataSource.version).toBe('0.1');
+      expect(hdf.tool.version).toBe('0.1');
     });
 
     it('should handle dependency_scanning scan type', async () => {

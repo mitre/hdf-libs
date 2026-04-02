@@ -20207,12 +20207,10 @@
       "id": "centos",
       "name": "centos",
       "release": "7.9.2009",
-      "labels": {
-        "service": "inspec"
-      }
+      "labels": {}
     }
   ],
-  "dataSource": {
+  "tool": {
     "name": "Heimdall Data Format v1"
   }
 }

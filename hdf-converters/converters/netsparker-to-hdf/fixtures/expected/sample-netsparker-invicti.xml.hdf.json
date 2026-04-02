@@ -118,19 +118,16 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "netsparker"
-      },
       "name": "https://foo.bar/",
       "type": "application"
     }
   ],
-  "dataSource": {
-    "format": "XML",
-    "name": "Invicti"
-  },
   "generator": {
     "name": "netsparker-to-hdf",
     "version": "0.1.0"
+  },
+  "tool": {
+    "format": "XML",
+    "name": "Invicti"
   }
 }

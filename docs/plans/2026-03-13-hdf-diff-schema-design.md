@@ -68,7 +68,7 @@ hdf-schema/src/schemas/
 └── primitives/
     ├── comparison.schema.json       ← NEW ($defs for RequirementDiff, Source, etc.)
     ├── common.schema.json           ← existing ($ref for Checksum, Identity)
-    ├── extensions.schema.json       ← existing ($ref for Generator, DataSource, Integrity)
+    ├── extensions.schema.json       ← existing ($ref for Generator, Tool, Integrity)
     ├── target.schema.json           ← existing ($ref for Target in Source metadata)
     ├── result.schema.json           ← existing ($ref for ResultStatus enum)
     └── ...
@@ -84,7 +84,7 @@ hdf-comparison.schema.json
   │     │     └── state: $ref #/$defs/RequirementState
   │     ├── $defs/Source
   │     │     ├── checksum: $ref primitives/common.schema.json#/$defs/Checksum
-  │     │     ├── dataSource: $ref primitives/extensions.schema.json#/$defs/DataSource
+  │     │     ├── tool: $ref primitives/extensions.schema.json#/$defs/Tool
   │     │     └── targets: $ref primitives/target.schema.json#/$defs/Target
   │     ├── $defs/ComparisonSummary
   │     ├── $defs/FieldChange
@@ -136,7 +136,7 @@ interface Source {
   /** When the source assessment was performed */
   assessmentTimestamp?: string;
   /** Scanner/tool that produced the source */
-  dataSource?: DataSource;
+  tool?: Tool;
   /** Target system(s) assessed */
   targets?: Target[];
   /** Baseline name and version from the source */
@@ -459,8 +459,8 @@ Same system scanned by different tools. Results correlated by CCI/NIST mapping.
 {
   "comparisonMode": "multiSource",
   "sources": [
-    { "role": "old", "label": "InSpec STIG scan", "dataSource": {"name": "InSpec"} },
-    { "role": "new", "label": "OpenSCAP scan", "dataSource": {"name": "OpenSCAP"} }
+    { "role": "old", "label": "InSpec STIG scan", "tool": {"name": "InSpec"} },
+    { "role": "new", "label": "OpenSCAP scan", "tool": {"name": "OpenSCAP"} }
   ],
   "matching": {
     "primaryStrategy": "cciMatch",

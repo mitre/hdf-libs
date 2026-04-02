@@ -2,7 +2,7 @@ import {
   type Checksum,
   Copyright,
   createMinimalBaseline,
-  type DataSource,
+  type Tool,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
@@ -142,7 +142,7 @@ export async function convertNiktoToHdf(input: string): Promise<string> {
     summary: niktoData.banner || '',
   }) as EvaluatedBaseline;
 
-  const dataSource: DataSource = {
+  const tool: Tool = {
     name: 'Nikto',
     format: 'JSON',
   };
@@ -152,15 +152,12 @@ export async function convertNiktoToHdf(input: string): Promise<string> {
     components: [{
       type: Copyright.Application,
       name: targetName,
-      labels: {
-        service: 'nikto',
-      },
     }],
     generator: {
       name: 'nikto-to-hdf',
       version: 'unknown',
     },
-    dataSource,
+    tool,
   };
 
   return JSON.stringify(hdf, null, 2);

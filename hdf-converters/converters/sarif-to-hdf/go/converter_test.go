@@ -62,20 +62,20 @@ func TestConvertSarifToHDF_SarifInput(t *testing.T) {
 	assert.Contains(t, ff1014.Results[0].CodeDesc, "test/test-patched.c")
 }
 
-func TestConvertSarifToHDF_DataSource(t *testing.T) {
+func TestConvertSarifToHDF_Tool(t *testing.T) {
 	inputData, err := os.ReadFile(fixturePath("sarif_input.sarif"))
 	require.NoError(t, err)
 
 	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "SARIF", *result.DataSource.Format)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Flawfinder", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Version)
-	assert.Equal(t, "2.0.15", *result.DataSource.Version)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "SARIF", *result.Tool.Format)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Flawfinder", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Version)
+	assert.Equal(t, "2.0.15", *result.Tool.Version)
 }
 
 func TestConvertSarifToHDF_EmptyResults(t *testing.T) {

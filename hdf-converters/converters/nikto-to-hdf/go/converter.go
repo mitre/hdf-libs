@@ -156,16 +156,13 @@ func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	target := hdf.Component{
 		Name: targetName,
 		Type: hdf.CopyrightApplication,
-		Labels: map[string]string{
-			"service": "nikto",
-		},
 	}
 
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "nikto-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Nikto",
-		DataSourceFormat: "JSON",
+		ToolName:         "Nikto",
+		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:          []hdf.Component{target},
 	})

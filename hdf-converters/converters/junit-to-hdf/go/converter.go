@@ -88,16 +88,13 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	target := hdf.Component{
 		Name: name,
 		Type: hdf.CopyrightApplication,
-		Labels: map[string]string{
-			"service": "junit",
-		},
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "hdf-converters",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "JUnit XML",
-		DataSourceFormat: "XML",
+		ToolName:   "JUnit XML",
+		ToolFormat: "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:          []hdf.Component{target},
 		Timestamp:        &now,

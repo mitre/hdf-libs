@@ -77,14 +77,14 @@ func TestConvert_Minimal_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-func TestConvert_Minimal_DataSource(t *testing.T) {
+func TestConvert_Minimal_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertIonChannelToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Ion Channel", *result.DataSource.Name)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Ion Channel", *result.Tool.Name)
 }
 
 func TestConvert_Minimal_RequirementCount(t *testing.T) {

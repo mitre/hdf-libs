@@ -132,13 +132,13 @@
       "name": "gosec Scan"
     }
   ],
-  "dataSource": {
-    "name": "gosec",
-    "version": "dev"
-  },
   "generator": {
     "name": "gosec-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:48:59.370383Z"
+  "timestamp": "2026-04-02T01:14:09.026601Z",
+  "tool": {
+    "name": "gosec",
+    "version": "dev"
+  }
 }

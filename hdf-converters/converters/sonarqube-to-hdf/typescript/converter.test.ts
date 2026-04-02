@@ -32,9 +32,9 @@ describe('SonarQube to HDF Converter', async () => {
       expect(hdf.baselines.length).toBeGreaterThan(0);
       expect(hdf.generator?.name).toBe('sonarqube-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
-      expect(hdf.dataSource?.name).toBe('SonarQube');
-      expect(hdf.dataSource?.version).toBeUndefined();
-      expect(hdf.dataSource?.format).toBeUndefined();
+      expect(hdf.tool?.name).toBe('SonarQube');
+      expect(hdf.tool?.version).toBeUndefined();
+      expect(hdf.tool?.format).toBeUndefined();
     });
 
     it('should create baselines per project', async () => {

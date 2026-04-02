@@ -54,12 +54,10 @@
       "id": "test-system",
       "name": "test-system",
       "release": "1.0",
-      "labels": {
-        "service": "inspec"
-      }
+      "labels": {}
     }
   ],
-  "dataSource": {
+  "tool": {
     "name": "Heimdall Data Format v1"
   }
 }

@@ -280,22 +280,22 @@ func ParseTimestamp(s string) time.Time {
 }
 
 // HDFResultsOptions configures the fields for building an HDFResults struct.
-// GeneratorName and ConverterVersion are required. DataSource fields are only
+// GeneratorName and ConverterVersion are required. Tool fields are only
 // included when at least one is non-empty.
 type HDFResultsOptions struct {
-	GeneratorName     string
-	ConverterVersion  string
-	DataSourceName    string
-	DataSourceVersion string
-	DataSourceFormat  string
-	Baselines         []hdf.EvaluatedBaseline
-	Components        []hdf.Component
-	Timestamp         *time.Time
-	Statistics        *hdf.Statistics
+	GeneratorName    string
+	ConverterVersion string
+	ToolName         string
+	ToolVersion      string
+	ToolFormat       string
+	Baselines        []hdf.EvaluatedBaseline
+	Components       []hdf.Component
+	Timestamp        *time.Time
+	Statistics       *hdf.Statistics
 }
 
 // BuildHDFResults assembles an HDFResults struct from the given options.
-// Eliminates the repeated boilerplate of constructing Generator, DataSource
+// Eliminates the repeated boilerplate of constructing Generator, Tool
 // (with pointer fields), and assembling the top-level struct in every converter.
 func BuildHDFResults(opts HDFResultsOptions) *hdf.HDFResults {
 	result := &hdf.HDFResults{
@@ -309,18 +309,18 @@ func BuildHDFResults(opts HDFResultsOptions) *hdf.HDFResults {
 		Statistics: opts.Statistics,
 	}
 
-	if opts.DataSourceName != "" || opts.DataSourceVersion != "" || opts.DataSourceFormat != "" {
-		ds := &hdf.DataSource{}
-		if opts.DataSourceName != "" {
-			ds.Name = &opts.DataSourceName
+	if opts.ToolName != "" || opts.ToolVersion != "" || opts.ToolFormat != "" {
+		t := &hdf.Tool{}
+		if opts.ToolName != "" {
+			t.Name = &opts.ToolName
 		}
-		if opts.DataSourceVersion != "" {
-			ds.Version = &opts.DataSourceVersion
+		if opts.ToolVersion != "" {
+			t.Version = &opts.ToolVersion
 		}
-		if opts.DataSourceFormat != "" {
-			ds.Format = &opts.DataSourceFormat
+		if opts.ToolFormat != "" {
+			t.Format = &opts.ToolFormat
 		}
-		result.DataSource = ds
+		result.Tool = t
 	}
 
 	return result

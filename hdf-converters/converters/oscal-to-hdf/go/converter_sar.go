@@ -57,8 +57,8 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 	result := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "oscal-assessment-results-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "OSCAL Assessment Results",
-		DataSourceFormat: "OSCAL",
+		ToolName:   "OSCAL Assessment Results",
+		ToolFormat: "OSCAL",
 		Baselines:        baselines,
 		Timestamp:        timestamp,
 	})

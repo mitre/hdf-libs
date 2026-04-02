@@ -186,20 +186,17 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "fortify"
-      },
       "name": "/root/webgoat",
       "type": "repository"
     }
   ],
-  "dataSource": {
-    "format": "FVDL",
-    "name": "Fortify"
-  },
   "generator": {
     "name": "fortify-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2019-10-02T23:00:39Z"
+  "timestamp": "2019-10-02T23:00:39Z",
+  "tool": {
+    "format": "FVDL",
+    "name": "Fortify"
+  }
 }

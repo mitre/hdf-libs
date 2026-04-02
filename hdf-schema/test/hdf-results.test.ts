@@ -60,42 +60,42 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept dataSource with name and version', () => {
+    it('should accept tool with name and version', () => {
       const doc = createMinimalResultsDoc({
-        dataSource: { name: 'gosec', version: '2.18.0' },
+        tool: { name: 'gosec', version: '2.18.0' },
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept dataSource with name only', () => {
+    it('should accept tool with name only', () => {
       const doc = createMinimalResultsDoc({
-        dataSource: { name: 'AWS Config' },
+        tool: { name: 'AWS Config' },
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept dataSource with name, version, and format', () => {
+    it('should accept tool with name, version, and format', () => {
       const doc = createMinimalResultsDoc({
-        dataSource: { name: 'Semgrep', version: '1.45.0', format: 'SARIF' },
+        tool: { name: 'Semgrep', version: '1.45.0', format: 'SARIF' },
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept dataSource with format only (tool unknown)', () => {
+    it('should accept tool with format only (tool unknown)', () => {
       const doc = createMinimalResultsDoc({
-        dataSource: { format: 'SARIF' },
+        tool: { format: 'SARIF' },
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept dataSource as empty object (all fields optional)', () => {
+    it('should accept tool as empty object (all fields optional)', () => {
       const doc = createMinimalResultsDoc({
-        dataSource: {},
+        tool: {},
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept document with dataSource omitted entirely', () => {
+    it('should accept document with tool omitted entirely', () => {
       const doc = createMinimalResultsDoc();
       expect(validate(doc)).toBe(true);
     });

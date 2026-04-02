@@ -326,8 +326,7 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	now := time.Now().UTC()
 
 	comp := hdf.Component{
-		Type:   hdf.CopyrightApplication,
-		Labels: map[string]string{"service": "cyclonedx"},
+		Type: hdf.CopyrightApplication,
 	}
 	if bom.Metadata != nil && bom.Metadata.Component != nil {
 		comp.Name = bom.Metadata.Component.Name
@@ -347,8 +346,8 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "cyclonedx-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "CycloneDX",
-		DataSourceFormat: "JSON",
+		ToolName:   "CycloneDX",
+		ToolFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       []hdf.Component{comp},
 		Timestamp:        &now,

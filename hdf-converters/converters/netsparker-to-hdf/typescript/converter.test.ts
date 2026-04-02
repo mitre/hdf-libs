@@ -83,13 +83,13 @@ describe('Netsparker to HDF converter', () => {
     expect(hdf.generator?.name).toBe('netsparker-to-hdf');
   });
 
-  // ---- DataSource ----
+  // ---- Tool ----
 
-  it('should set data source name to Invicti for invicti-enterprise root', async () => {
+  it('should set tool name to Invicti for invicti-enterprise root', async () => {
     const input = loadFixture('input/sample-netsparker-invicti.xml');
     const hdf = parseResult(await convertNetsparkerToHdf(input));
-    expect(hdf.dataSource?.name).toContain('Invicti');
-    expect(hdf.dataSource?.format).toBe('XML');
+    expect(hdf.tool?.name).toContain('Invicti');
+    expect(hdf.tool?.format).toBe('XML');
   });
 
   // ---- Target ----
@@ -262,7 +262,7 @@ describe('Netsparker to HDF converter', () => {
 </netsparker-enterprise>`;
 
     const hdf = parseResult(await convertNetsparkerToHdf(xml));
-    expect(hdf.dataSource?.name).toBe('Netsparker');
+    expect(hdf.tool?.name).toBe('Netsparker');
   });
 
   // ---- Edge cases: missing optional fields ----

@@ -40,7 +40,7 @@ func TestConvertNessusToHDF_Sample(t *testing.T) {
 	shared.WriteOutput(t, "nessus-to-hdf", "sample.json", result)
 }
 
-func TestConvertNessusToHDF_DataSource(t *testing.T) {
+func TestConvertNessusToHDF_Tool(t *testing.T) {
 	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
@@ -48,11 +48,11 @@ func TestConvertNessusToHDF_DataSource(t *testing.T) {
 	result, err := ConvertNessusToHDF(inputData, converterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Nessus", *result.DataSource.Name)
-	assert.Nil(t, result.DataSource.Version)
-	assert.Nil(t, result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Nessus", *result.Tool.Name)
+	assert.Nil(t, result.Tool.Version)
+	assert.Nil(t, result.Tool.Format)
 }
 
 func TestConvertNessusToHDF_Compliance(t *testing.T) {

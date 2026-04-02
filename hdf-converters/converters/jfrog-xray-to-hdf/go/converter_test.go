@@ -95,18 +95,18 @@ func TestConvertJfrogXray_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertJfrogXray_DataSource(t *testing.T) {
+func TestConvertJfrogXray_Tool(t *testing.T) {
 	input := loadFixture(t, "input/jfrog_xray_sample.json")
 	result, err := ConvertJfrogXrayToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "JFrog Xray", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "JFrog Xray", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- Target ----

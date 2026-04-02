@@ -33,10 +33,10 @@ func TestConvertVeracodeToHDF_Sample(t *testing.T) {
 	assert.Equal(t, "veracode-to-hdf", result.Generator.Name)
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 
-	// Verify data source
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Veracode", *result.DataSource.Name)
+	// Verify tool
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Veracode", *result.Tool.Name)
 
 	// Should have exactly 1 baseline
 	require.Len(t, result.Baselines, 1, "Should have 1 baseline")

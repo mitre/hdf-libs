@@ -5750,17 +5750,10 @@
   "components": [
     {
       "ipAddress": "127.0.0.1",
-      "labels": {
-        "service": "xccdf"
-      },
       "name": "LOCKDOWN",
       "type": "host"
     }
   ],
-  "dataSource": {
-    "format": "XCCDF",
-    "name": "XCCDF"
-  },
   "generator": {
     "name": "hdf-converters",
     "version": "0.1.0"
@@ -5768,5 +5761,9 @@
   "statistics": {
     "duration": 470
   },
-  "timestamp": "2021-04-29T14:16:20Z"
+  "timestamp": "2021-04-29T14:16:20Z",
+  "tool": {
+    "format": "XCCDF",
+    "name": "XCCDF"
+  }
 }

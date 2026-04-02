@@ -2626,20 +2626,17 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "veracode"
-      },
       "name": "jenkinspipe",
       "type": "application"
     }
   ],
-  "dataSource": {
-    "format": "XML",
-    "name": "Veracode"
-  },
   "generator": {
     "name": "veracode-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2021-12-29T22:16:36Z"
+  "timestamp": "2021-12-29T22:16:36Z",
+  "tool": {
+    "format": "XML",
+    "name": "Veracode"
+  }
 }

@@ -85,20 +85,17 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "trufflehog"
-      },
       "name": "https://github.com/trufflesecurity/test_keys",
       "type": "repository"
     }
   ],
-  "dataSource": {
-    "format": "JSON",
-    "name": "TruffleHog"
-  },
   "generator": {
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:49:03.107226Z"
+  "timestamp": "2026-04-02T01:14:12.891805Z",
+  "tool": {
+    "format": "JSON",
+    "name": "TruffleHog"
+  }
 }

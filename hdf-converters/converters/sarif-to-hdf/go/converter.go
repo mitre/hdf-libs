@@ -232,20 +232,20 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 		baselines = append(baselines, baseline)
 	}
 
-	dataSourceName := ""
-	dataSourceVersion := ""
+	toolName := ""
+	toolVersion := ""
 	if len(sarif.Runs) > 0 && sarif.Runs[0].Tool != nil && sarif.Runs[0].Tool.Driver != nil {
 		driver := sarif.Runs[0].Tool.Driver
-		dataSourceName = driver.Name
-		dataSourceVersion = driver.Version
+		toolName = driver.Name
+		toolVersion = driver.Version
 	}
 
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:     "sarif-to-hdf",
-		ConverterVersion:  converterVersion,
-		DataSourceName:    dataSourceName,
-		DataSourceVersion: dataSourceVersion,
-		DataSourceFormat:  "SARIF",
+		GeneratorName:    "sarif-to-hdf",
+		ConverterVersion: converterVersion,
+		ToolName:         toolName,
+		ToolVersion:      toolVersion,
+		ToolFormat:       "SARIF",
 		Baselines:         baselines,
 		Components:           []hdf.Component{},
 		Timestamp:         &timestamp,

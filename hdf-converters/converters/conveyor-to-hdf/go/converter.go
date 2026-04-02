@@ -324,11 +324,11 @@ func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "conveyor-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Conveyor",
-		DataSourceFormat: "JSON",
+		ToolName:   "Conveyor",
+		ToolFormat: "JSON",
 		Baselines:        baselines,
 		Components: []hdf.Component{
-			{Name: targetName, Type: hdf.CopyrightApplication, Labels: map[string]string{"service": "conveyor"}},
+			{Name: targetName, Type: hdf.CopyrightApplication},
 		},
 		Timestamp: &now,
 	}), nil

@@ -142,18 +142,18 @@ func TestConvertConveyor_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertConveyor_DataSource(t *testing.T) {
+func TestConvertConveyor_Tool(t *testing.T) {
 	input := loadFixture(t, "input/sample-results.json")
 	result, err := ConvertConveyorToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Conveyor", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Conveyor", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- Target ----

@@ -275,7 +275,7 @@ export async function convertIonchannelToHdf(input: string): Promise<string> {
   const hdf: HdfResults = {
     baselines: [baseline],
     generator: { name: 'ionchannel-to-hdf', version: '1.0.0' },
-    dataSource: { name: 'Ion Channel', format: 'JSON' },
+    tool: { name: 'Ion Channel', format: 'JSON' },
     timestamp: new Date(),
   };
 

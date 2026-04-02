@@ -9,7 +9,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
+  Tool,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -239,7 +239,7 @@ export async function convertDbprotectToHdf(input: string): Promise<string> {
     summary,
   }) as EvaluatedBaseline;
 
-  const dataSource: DataSource = { name: 'DBProtect', format: 'XML' };
+  const tool: Tool = { name: 'DBProtect', format: 'XML' };
 
   const hdf: HdfResults = {
     baselines: [baseline],
@@ -247,8 +247,8 @@ export async function convertDbprotectToHdf(input: string): Promise<string> {
       name: 'dbprotect-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
-    components: [{ name: targetName, type: Copyright.Host, labels: { service: 'dbprotect' } }],
+    tool,
+    components: [{ name: targetName, type: Copyright.Host }],
     timestamp: new Date(),
   };
 

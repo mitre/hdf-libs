@@ -56,24 +56,24 @@ func TestConvertGrypeToHDF(t *testing.T) {
 	}
 }
 
-func TestConvertGrypeToHDF_DataSource(t *testing.T) {
+func TestConvertGrypeToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
 	result, err := ConvertGrypeToHDF(input, testConverterVersion)
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
 
-	if result.DataSource == nil {
-		t.Fatal("Expected DataSource to be set")
+	if result.Tool == nil {
+		t.Fatal("Expected Tool to be set")
 	}
-	if result.DataSource.Name == nil || *result.DataSource.Name != "Grype" {
-		t.Errorf("Expected DataSource.Name to be 'Grype', got %v", result.DataSource.Name)
+	if result.Tool.Name == nil || *result.Tool.Name != "Grype" {
+		t.Errorf("Expected Tool.Name to be 'Grype', got %v", result.Tool.Name)
 	}
-	if result.DataSource.Version == nil || *result.DataSource.Version != "0.79.3" {
-		t.Errorf("Expected DataSource.Version to be '0.79.3', got %v", result.DataSource.Version)
+	if result.Tool.Version == nil || *result.Tool.Version != "0.79.3" {
+		t.Errorf("Expected Tool.Version to be '0.79.3', got %v", result.Tool.Version)
 	}
-	if result.DataSource.Format != nil {
-		t.Errorf("Expected DataSource.Format to be nil, got %v", *result.DataSource.Format)
+	if result.Tool.Format != nil {
+		t.Errorf("Expected Tool.Format to be nil, got %v", *result.Tool.Format)
 	}
 }
 

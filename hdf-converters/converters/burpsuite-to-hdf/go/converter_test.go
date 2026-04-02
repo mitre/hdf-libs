@@ -73,15 +73,15 @@ func TestConvertBurpsuiteToHDF_Generator(t *testing.T) {
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 }
 
-func TestConvertBurpsuiteToHDF_DataSource(t *testing.T) {
+func TestConvertBurpsuiteToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/zero.webappsecurity.com.xml")
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	assert.Equal(t, "BurpSuite", *result.DataSource.Name)
-	assert.Equal(t, "XML", *result.DataSource.Format)
-	assert.Equal(t, "2020.1", *result.DataSource.Version)
+	require.NotNil(t, result.Tool)
+	assert.Equal(t, "BurpSuite", *result.Tool.Name)
+	assert.Equal(t, "XML", *result.Tool.Format)
+	assert.Equal(t, "2020.1", *result.Tool.Version)
 }
 
 func TestConvertBurpsuiteToHDF_BaselineName(t *testing.T) {

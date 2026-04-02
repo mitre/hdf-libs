@@ -224,7 +224,7 @@
       "title": "Initial (2021) Assessment"
     }
   ],
-  "dataSource": {
+  "tool": {
     "format": "OSCAL",
     "name": "OSCAL Assessment Results"
   },

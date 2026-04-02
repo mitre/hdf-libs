@@ -78,8 +78,8 @@ describe('Nikto Converter', async () => {
       const output = await convertNiktoToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.dataSource?.name).toBe('Nikto');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('Nikto');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 

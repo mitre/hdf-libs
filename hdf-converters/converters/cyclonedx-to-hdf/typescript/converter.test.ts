@@ -79,8 +79,8 @@ describe('cyclonedx to HDF converter', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
       ) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('CycloneDX');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('CycloneDX');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 

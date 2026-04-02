@@ -283,20 +283,17 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "snyk"
-      },
       "name": "goof",
       "type": "application"
     }
   ],
-  "dataSource": {
-    "format": "JSON",
-    "name": "Snyk"
-  },
   "generator": {
     "name": "snyk-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:49:02.755392Z"
+  "timestamp": "2026-04-02T01:14:12.53076Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Snyk"
+  }
 }

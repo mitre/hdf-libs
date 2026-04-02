@@ -3084,125 +3084,77 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-1.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-2.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-3.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-4.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-5.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-6.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-7.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-8.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-9.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "localhost",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-10.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-11.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-12.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-13.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-14.somewhere.cloud",
       "type": "host"
     },
     {
-      "labels": {
-        "service": "prisma"
-      },
       "name": "my-fake-host-15.somewhere.cloud",
       "type": "host"
     }
   ],
-  "dataSource": {
-    "format": "CSV",
-    "name": "Prisma Cloud"
-  },
   "generator": {
     "name": "prisma-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:49:02.266774Z"
+  "timestamp": "2026-04-02T01:14:12.00874Z",
+  "tool": {
+    "format": "CSV",
+    "name": "Prisma Cloud"
+  }
 }

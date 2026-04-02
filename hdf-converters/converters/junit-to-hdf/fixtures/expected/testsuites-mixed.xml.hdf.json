@@ -135,20 +135,17 @@
   ],
   "components": [
     {
-      "labels": {
-        "service": "junit"
-      },
       "name": "JUnit Test Results",
       "type": "application"
     }
   ],
-  "dataSource": {
-    "format": "XML",
-    "name": "JUnit XML"
-  },
   "generator": {
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "timestamp": "2026-03-27T19:49:00.739775Z"
+  "timestamp": "2026-04-02T01:14:10.435983Z",
+  "tool": {
+    "format": "XML",
+    "name": "JUnit XML"
+  }
 }

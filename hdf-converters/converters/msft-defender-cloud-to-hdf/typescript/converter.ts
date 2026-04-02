@@ -6,7 +6,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
-  DataSource,
+  Tool,
   Component,
 } from '@mitre/hdf-schema';
 import {
@@ -217,7 +217,7 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
     { resultsChecksum },
   ) as EvaluatedBaseline;
 
-  const dataSource: DataSource = {
+  const tool: Tool = {
     name: 'Microsoft Defender for Cloud',
     format: 'JSON',
   };
@@ -232,7 +232,7 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
         type: Copyright.CloudAccount,
         accountId: subscriptionID,
         provider: 'azure' as Component['provider'],
-        labels: { account: subscriptionID, provider: 'azure', service: 'defender-cloud' },
+        labels: { account: subscriptionID, provider: 'azure' },
       });
     }
   }
@@ -243,7 +243,7 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
       name: 'msft-defender-cloud-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
     components,
     timestamp: new Date(),
   };

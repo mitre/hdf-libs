@@ -10,7 +10,7 @@ import type {
   Description,
   Reference,
   Checksum,
-  DataSource,
+  Tool,
 } from '@mitre/hdf-schema';
 import { ResultStatus, Copyright as TargetType, createMinimalBaseline } from '@mitre/hdf-schema';
 import { version as converterVersion } from '@mitre/hdf-converters/package.json';
@@ -133,7 +133,7 @@ export async function convertNessusToHdf(nessusXml: string): Promise<HdfResults>
     components.push(target);
   });
 
-  const dataSource: DataSource = { name: 'Nessus' };
+  const tool: Tool = { name: 'Nessus' };
 
   const result: HdfResults = {
     baselines,
@@ -145,7 +145,7 @@ export async function convertNessusToHdf(nessusXml: string): Promise<HdfResults>
       name: 'hdf-converters',
       version: converterVersion,
     },
-    dataSource,
+    tool,
     timestamp: startTime,
   };
 
@@ -441,7 +441,7 @@ function convertReportHostToTarget(host: ReportHost): Component {
     target.fqdn = hostProps['host-fqdn'];
   }
 
-  target.labels = { service: 'nessus' };
+  target.labels = {};
 
   return target;
 }

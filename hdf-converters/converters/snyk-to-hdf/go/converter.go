@@ -200,11 +200,11 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "snyk-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Snyk",
-		DataSourceFormat: "JSON",
+		ToolName:         "Snyk",
+		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
-			{Name: targetName, Type: hdf.CopyrightApplication, Labels: map[string]string{"service": "snyk"}},
+			{Name: targetName, Type: hdf.CopyrightApplication},
 		},
 		Timestamp: &now,
 	}), nil
@@ -225,8 +225,8 @@ func convertMultiProject(reports []SnykReport, checksum *hdf.Checksum, converter
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "snyk-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Snyk",
-		DataSourceFormat: "JSON",
+		ToolName:         "Snyk",
+		ToolFormat:       "JSON",
 		Baselines:        baselines,
 		Timestamp:        &now,
 	}), nil

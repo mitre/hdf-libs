@@ -39,9 +39,9 @@
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
       "description": "Information about the tool that generated this file."
     },
-    "dataSource": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/DataSource",
-      "description": "The tool or service that produced the security data in this file."
+    "tool": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Tool",
+      "description": "The security tool that produced the assessment data in this file."
     },
     "integrity": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",

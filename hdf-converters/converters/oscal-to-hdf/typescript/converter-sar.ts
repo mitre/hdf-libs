@@ -83,7 +83,7 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
       name: 'oscal-assessment-results-to-hdf',
       version: '1.0.0',
     },
-    dataSource: {
+    tool: {
       name: 'OSCAL Assessment Results',
       format: 'OSCAL',
     },

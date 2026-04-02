@@ -34,9 +34,9 @@ describe('AWS Config to HDF converter', async () => {
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('aws-config-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
-      expect(hdf.dataSource?.name).toBe('AWS Config');
-      expect(hdf.dataSource?.version).toBeUndefined();
-      expect(hdf.dataSource?.format).toBeUndefined();
+      expect(hdf.tool?.name).toBe('AWS Config');
+      expect(hdf.tool?.version).toBeUndefined();
+      expect(hdf.tool?.format).toBeUndefined();
       expect(hdf.baselines).toHaveLength(1);
     });
 

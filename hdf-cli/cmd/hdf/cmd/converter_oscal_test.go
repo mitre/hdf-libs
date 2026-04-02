@@ -209,7 +209,7 @@ func TestConvertOSCALAssessmentResults(t *testing.T) {
 	assert.NotEmpty(t, results.Baselines[0].Requirements)
 	assert.NotNil(t, results.Generator)
 	assert.Equal(t, "oscal-assessment-results-to-hdf", results.Generator.Name)
-	assert.NotNil(t, results.DataSource)
+	assert.NotNil(t, results.Tool)
 }
 
 func TestConvertOSCALAssessmentResults_SARAlias(t *testing.T) {

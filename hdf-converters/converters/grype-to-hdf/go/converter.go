@@ -384,17 +384,14 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	target := hdf.Component{
 		Name: targetName,
 		Type: hdf.Artifact,
-		Labels: map[string]string{
-			"service": "grype",
-		},
 	}
 
 	// Build HDF results
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:     "grype-to-hdf",
 		ConverterVersion:  converterVersion,
-		DataSourceName:    "Grype",
-		DataSourceVersion: grypeData.Descriptor.Version,
+		ToolName:    "Grype",
+		ToolVersion: grypeData.Descriptor.Version,
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
 		Components:           []hdf.Component{target},
 		Timestamp:         timestamp,

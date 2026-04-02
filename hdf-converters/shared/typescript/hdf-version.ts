@@ -106,7 +106,7 @@ function upgradeV1ToV2(input: string): string {
       type: 'host',
       name: v1.platform.name,
       ...(v1.platform.release ? { osVersion: v1.platform.release } : {}),
-      labels: { service: 'inspec' },
+      labels: {},
     });
   }
 

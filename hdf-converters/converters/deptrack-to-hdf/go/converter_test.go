@@ -99,18 +99,18 @@ func TestConvertDeptrack_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertDeptrack_DataSource(t *testing.T) {
+func TestConvertDeptrack_Tool(t *testing.T) {
 	input := loadFixture(t, "input/fpf-default.json")
 	result, err := ConvertDeptrackToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Dependency-Track", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Dependency-Track", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- Target ----

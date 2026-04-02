@@ -108,8 +108,6 @@ type HDFResults struct {
 	// container, cloud resource, application, etc.) with optional identity, SBOM, and external                       
 	// references.                                                                                                    
 	Components                                                                                 []Component            `json:"components,omitempty"`
-	// The tool or service that produced the security data in this file.                                              
-	DataSource                                                                                 *DataSource            `json:"dataSource,omitempty"`
 	// Reserved for tool-specific data not defined in the HDF standard. Use this to preserve                          
 	// original tool output, auxiliary data, or custom metadata.                                                      
 	Extensions                                                                                 map[string]interface{} `json:"extensions,omitempty"`
@@ -135,6 +133,8 @@ type HDFResults struct {
 	SystemRef                                                                                  *string                `json:"systemRef,omitempty"`
 	// When this assessment was executed.                                                                             
 	Timestamp                                                                                  *time.Time             `json:"timestamp,omitempty"`
+	// The security tool that produced the assessment data in this file.                                              
+	Tool                                                                                       *Tool                  `json:"tool,omitempty"`
 }
 
 // Information on a baseline that was evaluated, including any findings.
@@ -807,23 +807,6 @@ type InputOverride struct {
 	Value interface{} `json:"value,omitempty"`
 }
 
-// The tool or service that produced the security data in this file.
-//
-// The tool or service that produced the security data represented in this HDF file.
-//
-// The tool or service that produced the source data.
-type DataSource struct {
-	// The file format, if it is a recognized named format shared by multiple tools. Examples:         
-	// 'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the        
-	// format (Nessus XML, gosec JSON).                                                                
-	Format                                                                                     *string `json:"format,omitempty"`
-	// The name of the tool or service that produced the data, if known. Examples: 'gosec',            
-	// 'Semgrep', 'OpenSCAP', 'AWS Config'. Omit if the tool cannot be identified.                     
-	Name                                                                                       *string `json:"name,omitempty"`
-	// Version of the source tool, if available in the tool's output. Example: '5.22.3'.               
-	Version                                                                                    *string `json:"version,omitempty"`
-}
-
 // Information about the tool that generated this file.
 //
 // Information about the tool that generated this HDF file.
@@ -927,6 +910,24 @@ type StatisticHash struct {
 type StatisticBlock struct {
 	// The total count. Example: the total number of requirements in a given category for a run.      
 	Total                                                                                       int64 `json:"total"`
+}
+
+// The security tool that produced the assessment data in this file.
+//
+// The security tool that produced the assessment data represented in this HDF file. Aligns
+// with SARIF, OSCAL, and CycloneDX terminology.
+//
+// The security tool that produced the assessment data in this source.
+type Tool struct {
+	// The file format, if it is a recognized named format shared by multiple tools. Examples:         
+	// 'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the        
+	// format (Nessus XML, gosec JSON).                                                                
+	Format                                                                                     *string `json:"format,omitempty"`
+	// The name of the security tool that produced the data. Examples: 'gosec', 'Semgrep',             
+	// 'OpenSCAP', 'AWS Config', 'Nessus'. Omit if the tool cannot be identified.                      
+	Name                                                                                       *string `json:"name,omitempty"`
+	// Version of the source tool, if available in the tool's output. Example: '5.22.3'.               
+	Version                                                                                    *string `json:"version,omitempty"`
 }
 
 // Information on the set of requirements that can be assessed, including baseline metadata
@@ -1208,14 +1209,14 @@ type Source struct {
 	Checksum                                                                    *Checksum       `json:"checksum,omitempty"`
 	// The components assessed in this source.                                                  
 	Components                                                                  []Component     `json:"components,omitempty"`
-	// The tool or service that produced the source data.                                       
-	DataSource                                                                  *DataSource     `json:"dataSource,omitempty"`
 	// Human-readable label for this source. Example: 'Before remediation scan'.                
 	Label                                                                       string          `json:"label"`
 	// The original format of the source document before conversion to HDF.                     
 	OriginalFormat                                                              *OriginalFormat `json:"originalFormat,omitempty"`
 	// The role of this source in the comparison.                                               
 	Role                                                                        SourceRole      `json:"role"`
+	// The security tool that produced the assessment data in this source.                      
+	Tool                                                                        *Tool           `json:"tool,omitempty"`
 	// URI pointing to the source document.                                                     
 	URI                                                                         *string         `json:"uri,omitempty"`
 }

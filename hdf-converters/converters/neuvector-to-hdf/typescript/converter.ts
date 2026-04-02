@@ -9,7 +9,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
+  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -237,7 +237,7 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
     }
   ) as EvaluatedBaseline;
 
-  const dataSource: DataSource = { name: 'NeuVector', format: 'JSON' };
+  const tool: Tool = { name: 'NeuVector', format: 'JSON' };
 
   const hdf: HdfResults = {
     baselines: [baseline],
@@ -245,7 +245,7 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
       name: 'neuvector-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
     components: [
       {
         name: targetNameFromReport(scan.report),

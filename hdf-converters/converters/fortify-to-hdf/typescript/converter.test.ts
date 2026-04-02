@@ -60,10 +60,10 @@ describe('Fortify to HDF Converter', () => {
       expect(gen.version).toBe('1.0.0');
     });
 
-    it('should set dataSource correctly', async () => {
+    it('should set tool correctly', async () => {
       const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
       const out = parseOutput(await convertFortifyToHdf(fvdl));
-      const ds = out.dataSource as Record<string, unknown>;
+      const ds = out.tool as Record<string, unknown>;
       expect(ds.name).toBe('Fortify');
       expect(ds.format).toBe('FVDL');
     });
