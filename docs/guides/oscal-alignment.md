@@ -72,7 +72,7 @@ Key field correspondences:
 - OSCAL `system-characteristics.security-impact-level` (confidentiality, integrity, availability) maps to HDF `categorizationLevel` using the FIPS 199 high-water mark
 - OSCAL `system-characteristics.status.state` maps to HDF `authorizationStatus` (`operational` maps to `authorized`, `under-development` to `pendingAuthorization`, `disposition` to `revoked`)
 - OSCAL `system-characteristics.authorization-boundary.description` maps to HDF `boundaryDescription`
-- OSCAL `system-implementation.components[]` map to HDF `components[]`, with `type` mapped from OSCAL values (`software`/`this-system` to `application`, `hardware` to `compute`, etc.)
+- OSCAL `system-implementation.components[]` map to HDF `components[]`, with `type` mapped from OSCAL values (`software`/`this-system`/`service` to `application`, `hardware` to `host`, `storage` to `artifact`, etc.)
 - OSCAL `control-implementation.implemented-requirements[].by-components[]` are used to populate `baselineRefs` on each component
 
 ### Assessment Plan (SAP) to Plan

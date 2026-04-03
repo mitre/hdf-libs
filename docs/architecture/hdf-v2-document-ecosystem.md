@@ -1,12 +1,11 @@
 # HDF v2 Document Type Ecosystem
 
 > **Status:** This is the HDF v2 **design specification**. Implementation is tracked
-> in beads epic `hdf-libs-15kg`. As of 2026-03-15, three schemas exist (hdf-baseline,
-> hdf-results, hdf-comparison). The remaining four (hdf-system, hdf-plan, hdf-amendments,
-> hdf-evidence-package) and the Phase 0 foundation work (typed inputs, labels, rename,
-> cross-references) are planned but not yet implemented. Examples in this document show
-> the **target v2 state** — fields like `inputs`, `labels`, `systemRef`, and `sbomRef`
-> do not yet exist in the current schemas.
+> in beads epic `hdf-libs-15kg`. As of 2026-04-02, all 7 schemas exist (hdf-baseline,
+> hdf-results, hdf-comparison, hdf-system, hdf-plan, hdf-amendments, hdf-evidence-package)
+> and all Phase 0–4 work is complete (typed inputs, labels, rename, cross-references,
+> all document type schemas with full type generation for TS/Go/Python). Phase 5
+> (ecosystem integration) is in progress.
 
 ## Overview
 
@@ -64,7 +63,7 @@ into independent, linkable documents.
 hdf-baseline ←──── hdf-plan (which baselines to run)
      │                │
      ▼                ▼
-hdf-system ◄───── hdf-plan (which components/targets to scan)
+hdf-system ◄───── hdf-plan (which components to scan)
      │                │
      ▼                ▼
 hdf-results ◄──── hdf-plan (provenance: what config produced these results)
@@ -79,9 +78,9 @@ hdf-results ◄──── hdf-plan (provenance: what config produced these res
 | Document | References | Referenced By |
 |----------|-----------|---------------|
 | hdf-baseline | Framework mappings (CCI, NIST), typed inputs | hdf-system, hdf-plan, hdf-results |
-| hdf-system | hdf-baseline (component→baseline mapping), targets (via label selectors) | hdf-plan, hdf-results, hdf-comparison, hdf-evidence |
-| hdf-plan | hdf-baseline (which baselines), hdf-system (which targets), resolved inputs | hdf-results (provenance) |
-| hdf-results | hdf-baseline (evaluated), targets (with labels), systemRef, planRef | hdf-comparison, hdf-amendments, hdf-evidence |
+| hdf-system | hdf-baseline (component→baseline mapping), components (via label selectors) | hdf-plan, hdf-results, hdf-comparison, hdf-evidence |
+| hdf-plan | hdf-baseline (which baselines), hdf-system (which components), resolved inputs | hdf-results (provenance) |
+| hdf-results | hdf-baseline (evaluated), components (with labels), systemRef, planRef | hdf-comparison, hdf-amendments, hdf-evidence |
 | hdf-comparison | Any two HDF docs of same type (source checksums), systemRef (boundary context) | hdf-evidence |
 | hdf-amendments | hdf-baseline (requirements), hdf-system, Identity, Signature | hdf-results (merge), hdf-evidence |
 | hdf-evidence | All other types (bundled by reference + checksum) | Auditors, authorization officials |
@@ -205,14 +204,14 @@ baseline defaults + system overrides into final scanner parameters.
 
 ### Phase 4: EXECUTE — hdf-results
 
-The scanner produces results with labels on targets and typed inputs on baselines.
+The scanner produces results with labels on components and typed inputs on baselines.
 
 ```json
 {
   "timestamp": "2026-03-14T02:00:00Z",
   "systemRef": "portal-prod.hdf-system.json",
   "planRef": "portal-monthly-scan.hdf-plan.json",
-  "targets": [
+  "components": [
     {
       "type": "host",
       "name": "web-server-01",
@@ -445,7 +444,7 @@ A hierarchy forces one grouping dimension. Labels support unlimited dimensions s
 
 ### How Labels Work
 
-Targets and baselines carry optional `labels: Record<string, string>`:
+Components and baselines carry optional `labels: Record<string, string>`:
 
 ```json
 {
@@ -481,7 +480,7 @@ hdf diff --group-by labels.team scan1.json scan2.json
 
 ### System Components Use Label Selectors
 
-Components in hdf-system match targets by label values, not by name:
+Components in hdf-system match assessed components by label values, not by name:
 
 ```json
 {
@@ -638,7 +637,7 @@ hdf
 ├── validate <file>               # Validate any HDF document against its schema
 ├── info <file>                   # Display summary of any HDF document
 ├── stats <results-file>          # Assessment statistics
-├── list <type> <file>            # List controls, profiles, targets
+├── list <type> <file>            # List requirements, baselines, components
 ├── query <results-file>          # Search/filter controls
 ├── convert <from> to <to>        # Convert between formats (30+ converters)
 │
@@ -687,7 +686,7 @@ How Heimdall consumes each document type:
 
 ```
 Heimdall Dashboard
-├── System View                   # Load hdf-system → see components, targets, baselines
+├── System View                   # Load hdf-system → see components, baselines
 │   ├── Component compliance %    # Aggregate results by labels.component
 │   ├── Authorization status      # From hdf-system
 │   └── Drill down to controls    # From hdf-results
@@ -727,11 +726,11 @@ All other enrichment is additive and optional (progressive enrichment):
 | Converter | Enrichment it can populate |
 |-----------|--------------------------|
 | All | (none required beyond the rename) |
-| aws-config | `labels.account`, `labels.region`, `labels.service` |
+| aws-config | `labels.account`, `labels.region` |
 | nessus | `labels.hostgroup`, `labels.network` |
 | k8s-bench | `labels.cluster`, `labels.namespace` |
 | InSpec | Typed `inputs` (already has data in inspec.yml) |
-| grype/trivy | `labels.image`, `labels.registry`, `target.sbomRef` |
+| grype/trivy | `labels.image`, `labels.registry`, `component.sbomRef` |
 | OSCAL AR import | `systemRef` (from OSCAL import-ssp) |
 
 ### OSCAL Converters (Multi-Document)
@@ -763,20 +762,21 @@ hdf-schema/src/schemas/
 ├── hdf-baseline.schema.json           (exists)
 ├── hdf-results.schema.json            (exists)
 ├── hdf-comparison.schema.json         (exists)
-├── hdf-system.schema.json             (new)
-├── hdf-plan.schema.json               (new)
-├── hdf-amendments.schema.json        (new)
-├── hdf-evidence-package.schema.json   (new)
+├── hdf-system.schema.json             (exists)
+├── hdf-plan.schema.json               (exists)
+├── hdf-amendments.schema.json         (exists)
+├── hdf-evidence-package.schema.json   (exists)
 └── primitives/
     ├── common.schema.json             (exists — Identity, Checksum, Signature, Evidence)
     ├── result.schema.json             (exists — ResultStatus, RequirementResult)
-    ├── target.schema.json             (exists — 11 target types, adding labels)
+    ├── component.schema.json          (exists — 11 component types with labels)
+    ├── data-flow.schema.json          (exists — Data_Flow, Direction)
     ├── extensions.schema.json         (exists — StatusOverride, POAM, Generator)
     ├── comparison.schema.json         (exists — RequirementDiff, Source)
-    ├── system.schema.json             (new — System, Component, AuthorizationStatus)
-    ├── plan.schema.json               (new — Assessment, Schedule)
-    ├── amendments.schema.json         (new — Override types with signature support)
-    ├── parameter.schema.json          (new — Input/Parameter type definitions)
+    ├── system.schema.json             (exists — System, AuthorizationStatus)
+    ├── plan.schema.json               (exists — Assessment, Schedule)
+    ├── amendments.schema.json         (exists — Override types with signature support)
+    ├── parameter.schema.json          (exists — Input/Parameter type definitions)
     ├── platform.schema.json           (exists)
     ├── runner.schema.json             (exists)
     └── statistics.schema.json         (exists)
@@ -789,11 +789,11 @@ Existing primitives reused across document types:
 - **Checksum** — SHA-256/384/512 integrity verification
 - **Signature** — digital signatures (JWK, PEM, Ed25519, PKCS#11)
 - **Evidence** — supporting artifacts (screenshots, logs, URLs)
-- **Target** — assessed entities (11 polymorphic types)
+- **Component** — assessed entities (11 polymorphic types)
 
 New primitives for v2:
 - **Input** — typed parameter definition (name, type, value, operator, constraints)
-- **Labels** — key-value metadata on targets and baselines
+- **Labels** — key-value metadata on components and baselines
 
 ---
 
@@ -803,7 +803,7 @@ New primitives for v2:
    context lives in separate document types (hdf-system, hdf-amendments), not
    embedded in results.
 
-2. **Labels over hierarchies** — Targets and baselines carry key-value labels for
+2. **Labels over hierarchies** — Components and baselines carry key-value labels for
    flexible grouping. No fixed hierarchy imposed. Follows Kubernetes/AWS tagging patterns.
 
 3. **Separate document types** — Following OSCAL's pattern of SSP vs AR, each concern
@@ -827,7 +827,7 @@ New primitives for v2:
 
 ### hdf-results.schema.json
 - Rename `attributes` to `inputs` on Evaluated_Baseline (normalize legacy InSpec naming)
-- Add optional `labels: Record<string, string>` to Target via target.schema.json
+- Add optional `labels: Record<string, string>` to Component via component.schema.json
 - Add optional `labels: Record<string, string>` to Evaluated_Baseline
 - Add optional `systemRef: string` (URI to hdf-system document)
 - Add optional `planRef: string` (URI to hdf-plan document)
@@ -837,8 +837,8 @@ New primitives for v2:
 - Add optional `labels: Record<string, string>`
 - Use typed Input primitive for `inputs[]` (was unstructured `object`)
 
-### primitives/target.schema.json
-- Add optional `labels` to Base_Target
+### primitives/component.schema.json
+- Add optional `labels` to Base_Component
 
 ### primitives/common.schema.json
 - Add Input type definition (or new parameter.schema.json)
@@ -868,7 +868,7 @@ New primitives for v2:
 | hdf-baseline | 50–200 KB | 5–20 KB | 250–800 requirements × ~200B metadata each |
 | hdf-results | 300–800 KB | 25–65 KB | 250–800 requirements × ~1 KB each (with results) |
 | hdf-comparison | 600–1500 KB | 50–120 KB | Full before/after snapshots for all requirements |
-| hdf-system | 5–20 KB | 1–3 KB | Components, interconnections, boundary definition |
+| hdf-system | 5–20 KB | 1–3 KB | Components, dataFlows, boundary definition |
 | hdf-plan | 3–10 KB | 0.5–2 KB | Assessment config, schedule, resolved inputs |
 | hdf-amendments | 2–50 KB | 0.5–5 KB | Depends on number of overrides + embedded evidence |
 | hdf-evidence-package | 1–5 KB | 0.3–1 KB | Metadata only (references with checksums, no embedded content) |
@@ -952,7 +952,7 @@ context adds value when present but never blocks core functionality when absent.
 
 | Enrichment Layer | When Present | When Absent |
 |-----------------|-------------|-------------|
-| Labels on targets | Group by system/component/team/region | Flat list of targets |
+| Labels on components | Group by system/component/team/region | Flat list of components |
 | systemRef on results | Provenance chain to system architecture | Results stand alone |
 | planRef on results | Audit trail of scan configuration | Results stand alone |
 | Typed inputs on baselines | Machine-readable expected values | Unstructured attributes |
@@ -976,7 +976,7 @@ your SBOM scanner on the remaining 2").
 - **Policy documents** — prose, belongs in GRC platforms (Archer, ServiceNow GRC)
 - **Remediation playbooks** — Ansible/Terraform have their own formats; `remediation.uri` is sufficient
 - **SBOM** — defer to CycloneDX/SPDX. HDF references SBOMs by URI (from hdf-system
-  components and optionally from hdf-results targets) but does not define its own SBOM
+  components and optionally from hdf-results components) but does not define its own SBOM
   format. Package-level data enters HDF through `tags.purl` on vulnerability findings
   (populated by SCA converters like Grype/Trivy) and through `sbomRef` fields pointing
   to external SBOM documents. See "Progressive Enrichment" — SBOM references are always

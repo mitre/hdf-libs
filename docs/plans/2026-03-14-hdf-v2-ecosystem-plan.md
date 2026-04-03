@@ -31,10 +31,10 @@ lifecycle diagrams, example JSON, CLI command tree, Heimdall integration, and de
 | Phase | Card | Status | Notes |
 |-------|------|--------|-------|
 | 0.1 Typed inputs | hdf-libs-hlvt | ✅ COMPLETE | parameter.schema.json — Input, Input_Type, Comparison_Operator, Input_Constraints. 26 tests. |
-| 0.2 Labels | hdf-libs-pdf7 | ✅ COMPLETE | labels: Record<string, string> on Base_Target + Baseline_Metadata. 16 tests. |
+| 0.2 Labels | hdf-libs-pdf7 | ✅ COMPLETE | labels: Record<string, string> on Base_Component + Baseline_Metadata. 16 tests. |
 | 0.3 Rename attributes→inputs | hdf-libs-fjfe | ✅ COMPLETE | hdf-results uses `inputs[]` consistently. |
 | 0.4 Cross-references | hdf-libs-5ef5 | ✅ COMPLETE | systemRef + planRef added to hdf-results. |
-| 1 hdf-system | hdf-libs-b4lj | ✅ COMPLETE | system.schema.json + hdf-system.schema.json — Component, InputOverride, Interconnection, TargetSelector, 3 enums. 34 tests. |
+| 1 hdf-system | hdf-libs-b4lj | ✅ COMPLETE | system.schema.json + hdf-system.schema.json — Component, InputOverride, Data_Flow, TargetSelector, 3 enums. 34 tests. |
 | 2 hdf-plan | hdf-libs-5sgt | ✅ COMPLETE | plan.schema.json + hdf-plan.schema.json — Assessment, Schedule, RunnerConfig, PlanType enum. 24 tests. |
 | 3 hdf-amendments | hdf-libs-3qm7 | ✅ COMPLETE | amendments.schema.json + hdf-amendments.schema.json — StandaloneOverride, OverrideType enum (waiver/attestation/exception/poam). 26 tests. |
 | 4 hdf-evidence-package | hdf-libs-3cjk | ✅ COMPLETE | hdf-evidence-package.schema.json — ContentReference, CompletenessCheck, SBOMCoverage, ContentType enum. 24 tests. |
@@ -91,7 +91,7 @@ Implementation:
 3. Add to type generation pipeline (TS/Go/Python)
 4. Reference from hdf-baseline `inputs[]` and hdf-results `inputs[]`
 
-### 0.2 Add labels to targets and baselines
+### 0.2 Add labels to components and baselines
 
 **Card:** `hdf-libs-pdf7`
 
@@ -100,7 +100,7 @@ Implementation:
 and label selector pattern used by hdf-system components.
 
 Add `labels: Record<string, string>` to:
-- `Base_Target` in `primitives/target.schema.json`
+- `Base_Component` in `primitives/component.schema.json`
 - `Baseline_Metadata` in `primitives/common.schema.json`
 
 Implementation:
@@ -151,11 +151,11 @@ selectors and input overrides. See "Labels" section for targetSelector design.
 $defs:
 - `Authorization_Status` enum — authorized, denied, pending, revoked, conditionallyAuthorized, underReview
 - `Categorization_Level` enum — low, moderate, high (FIPS 199)
-- `Component_Type` enum — application, database, network, infrastructure, service, policy, operatingSystem, container, cloudService, other
-- `System` — name (required), identifier, identifierScheme, description, authorizationStatus, authorizationDate, categorizationLevel, boundaryDescription, components[], targetRefs[], interconnections[], extensions
-- `Component` — name (required), type (required), description, targetSelector (label-based matching), baselineRefs[], inputOverrides[], sbomRef (optional URI to CycloneDX/SPDX), sbomFormat (optional: "cyclonedx" | "spdx"), extensions
+- Component types come from the `Copyright` type — host, containerImage, containerInstance, containerPlatform, cloudAccount, cloudResource, repository, application, artifact, network, database
+- `System` — name (required), identifier, identifierScheme, description, authorizationStatus, authorizationDate, categorizationLevel, boundaryDescription, components[], dataFlows[], controlDesignations[], extensions
+- `Component` — name (required), type (from Copyright enum), description, componentId (UUID), targetSelector (label-based matching), baselineRefs[], inputOverrides[], sbomRef (optional URI to CycloneDX/SPDX), sbomFormat (optional: "cyclonedx" | "spdx"), extensions
 - `InputOverride` — baselineRef, inputName, value, justification, approvedBy (Identity), approvedAt
-- `Interconnection` — name, direction (inbound/outbound/bidirectional), description, systemRef
+- `Data_Flow` — from (UUID), to (UUID or external endpoint), protocol, port, direction (inbound/outbound/bidirectional), description
 
 **Key design point:** Components use `targetSelector` (label-based matching like Kubernetes)
 not hardcoded target name lists. This means adding a new server with the right labels
@@ -169,7 +169,7 @@ Top-level document. Required: `name`. Optional: everything else.
 ### 1.3 Tests
 
 30+ validation tests: minimal valid document, required fields, enum validation,
-component structure, input overrides, interconnections, label selectors.
+component structure, input overrides, dataFlows, label selectors.
 
 ### 1.4 Type generation
 
@@ -178,7 +178,7 @@ Both TS and Go types must be generated — dual implementation from day one.
 
 ### 1.5 CLI: hdf system commands (TS + Go)
 
-- `hdf system info <file>` — display system architecture (components, targets, baselines)
+- `hdf system info <file>` — display system architecture (components, baselines)
 - `hdf system validate <file>` — validate against schema
 
 ### 1.6 Integration with hdf-diff
@@ -212,7 +212,7 @@ The plan resolves the input chain:
 ### 2.2 Design hdf-plan.schema.json
 
 Top-level: name (required), type, systemRef, assessments[] (required), schedule.
-References hdf-baseline (which baselines to run), hdf-system (which targets to scan).
+References hdf-baseline (which baselines to run), hdf-system (which components to scan).
 
 ### 2.3 Tests
 
@@ -332,7 +332,7 @@ Zero breaking changes — labels are additive and optional.
 
 | Converter | Labels | Source of data |
 |-----------|--------|---------------|
-| aws-config | labels.account, labels.region, labels.service | AWS resource ARN |
+| aws-config | labels.account, labels.region | AWS resource ARN |
 | nessus | labels.hostgroup, labels.network | Nessus host properties |
 | InSpec | typed inputs on baselines | inspec.yml inputs section |
 | k8s-bench | labels.cluster, labels.namespace | K8s metadata |

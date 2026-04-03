@@ -461,7 +461,7 @@ Impact is a float 0.0 to 1.0. Conventional mapping to severity:
 { "name": "sarif-to-hdf", "version": "1.0.0" }
 ```
 
-### DataSource
+### Tool
 ```json
 { "name": "Nessus", "version": "10.8.1", "format": "XML" }
 ```

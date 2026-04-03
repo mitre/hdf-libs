@@ -38,12 +38,12 @@ hdf convert --from oscal-profile --catalog catalog-800-53-rev5.json profile-mode
 hdf convert --from oscal-poam poam-fedramp.json -o poam.json
 ```
 
-## 5. OSCAL SSP → HDF Baseline
+## 5. OSCAL SSP → HDF System
 
-"I have an OSCAL SSP and want to extract the control implementation as a baseline."
+"I have an OSCAL SSP and want to extract the system architecture as an HDF system document."
 
 ```bash
-hdf convert --from oscal-ssp ssp-fedramp.json -o ssp-baseline.json
+hdf convert --from oscal-ssp ssp-fedramp.json -o ssp-system.json
 ```
 
 ## 6. OSCAL Component Definition → HDF Baseline
@@ -103,9 +103,9 @@ hdf convert --from oscal-sar --to hdf@1 sar-fedramp.json -o legacy-sar.json
 | `oscal-catalog` | `hdf` | Produces HDF Baseline |
 | `oscal-profile` | `hdf` | Requires `--catalog` flag |
 | `oscal-component-definition` | `hdf` | Produces HDF Baseline |
-| `oscal-ssp` | `hdf` | Produces HDF Baseline |
-| `oscal-assessment-plan` | `hdf` | Produces HDF Baseline |
+| `oscal-ssp` | `hdf` | Produces HDF System |
+| `oscal-assessment-plan` | `hdf` | Produces HDF Plan |
 | `oscal-assessment-results` / `oscal-sar` | `hdf` | Produces HDF Results |
-| `oscal-poam` | `hdf` | Produces HDF Results |
+| `oscal-poam` | `hdf` | Produces HDF Amendments |
 | `hdf` | `oscal-sar` | Export HDF Results as OSCAL SAR |
 | `hdf-amendments` | `oscal-poam` | Export amendments as OSCAL POA&M |

@@ -1,4 +1,4 @@
-name: Deploy Schemas
+name: Deploy Schema Site
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'hdf-schema/src/schemas/**'
+      - 'site/**'
 
 permissions:
   pages: write
@@ -17,7 +18,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy schemas to GitHub Pages
+    name: Build and deploy schema site
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -31,46 +32,14 @@ jobs:
       - name: Build schemas
         run: cd hdf-schema && pnpm build:schemas
 
-      - name: Prepare Pages directory
-        run: |
-          mkdir -p _site/schemas
-          # Copy bundled schemas (these are the fully resolved versions)
-          cp hdf-schema/dist/schemas/*.schema.json _site/schemas/
-
-          # Create versioned directories matching $id URLs
-          for schema in _site/schemas/*.schema.json; do
-            basename=$(basename "$schema" .schema.json)
-            # Extract version from the schema's $id field
-            version=$(python3 -c "import json; print(json.load(open('$schema'))['\$id'].split('/')[-1])")
-            mkdir -p "_site/schemas/$basename/$version"
-            cp "$schema" "_site/schemas/$basename/$version/index.json"
-          done
-
-          # Create index page (auto-generated from deployed schemas)
-          python3 -c "
-          import json, glob, os
-          schemas = sorted(glob.glob('_site/schemas/*.schema.json'))
-          links = []
-          for s in schemas:
-              name = os.path.basename(s).replace('.schema.json', '')
-              version = json.load(open(s))['\$id'].split('/')[-1]
-              links.append(f'<li><a href=\"schemas/{name}/{version}/\">{name} {version}</a></li>')
-          print(f'''<!DOCTYPE html>
-          <html>
-          <head><title>HDF Schemas</title></head>
-          <body>
-          <h1>Heimdall Data Format (HDF) Schemas</h1>
-          <ul>{chr(10).join(links)}</ul>
-          <p><a href=\"https://github.com/mitre/hdf-libs\">Source on GitHub</a></p>
-          </body>
-          </html>''')
-          " > _site/index.html
+      - name: Generate docs and build VitePress site
+        run: cd site && pnpm generate && pnpm exec vitepress build
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: site/.vitepress/dist
 
       - id: deployment
         uses: actions/deploy-pages@v4

@@ -17,7 +17,7 @@ For full architecture details, see [hdf-v2-document-ecosystem.md](../architectur
 | `profiles[]` | `baselines[]` | Terminology alignment -- "baseline" is tool-agnostic, "profile" is InSpec-specific |
 | `controls[]` | `requirements[]` | Broader scope: security requirements, not just InSpec controls |
 | `attributes[]` | `inputs[]` | InSpec v4/v5 rename; now typed with `Input` primitive |
-| `platform` (object) | `targets[]` (array) | Polymorphic, supports multiple targets of different types |
+| `platform` (object) | `components[]` (array) | Polymorphic, supports multiple components of different types |
 | `code_desc` | `codeDesc` | camelCase normalization |
 | `source_location` | `sourceLocation` | camelCase normalization |
 | `start_time` | `startTime` | camelCase normalization; values normalized to ISO 8601 |
@@ -50,7 +50,7 @@ v2:
 
 The `baselines` array is the only required top-level field in hdf-results.
 
-### platform to targets
+### platform to components
 
 v1 has a single `platform` object:
 ```json
@@ -59,10 +59,10 @@ v1 has a single `platform` object:
 }
 ```
 
-v2 has an array of polymorphic `targets`, each with a `type` discriminator:
+v2 has an array of polymorphic `components`, each with a `type` discriminator:
 ```json
 {
-  "targets": [
+  "components": [
     {
       "type": "host",
       "name": "web-server-01",
@@ -74,7 +74,7 @@ v2 has an array of polymorphic `targets`, each with a `type` discriminator:
 }
 ```
 
-Supported target types: `host`, `containerImage`, `containerInstance`, `containerPlatform`, `cloudAccount`, `cloudResource`, `repository`, `application`, `artifact`, `network`, `database`.
+Supported component types: `host`, `containerImage`, `containerInstance`, `containerPlatform`, `cloudAccount`, `cloudResource`, `repository`, `application`, `artifact`, `network`, `database`.
 
 ### attributes to inputs (typed)
 
@@ -153,11 +153,11 @@ v2 adds an explicit `severity` field on requirements: `critical`, `high`, `mediu
 
 These fields and concepts are new in v2 and have no v1 equivalent:
 
-- **Labels** -- `Record<string, string>` on targets and baselines for flexible grouping by system, component, environment, region, team, or custom dimensions.
+- **Labels** -- `Record<string, string>` on components and baselines for flexible grouping by system, component, environment, region, team, or custom dimensions.
 - **Typed inputs** -- `Input` primitive with type, operator, and constraints. Bridges governance requirements to scanner automation.
 - **systemRef / planRef** -- URI references linking results to hdf-system and hdf-plan documents, establishing provenance.
-- **Multiple target types** -- 11 polymorphic target types (host, container, cloud account, cloud resource, repository, application, artifact, network, database).
-- **hdf-system documents** -- Describe system architecture, authorization boundaries, components with label-based target selectors, input overrides, and SBOM references.
+- **Multiple component types** -- 11 polymorphic component types (host, container, cloud account, cloud resource, repository, application, artifact, network, database).
+- **hdf-system documents** -- Describe system architecture, authorization boundaries, components with label-based selectors, input overrides, and SBOM references.
 - **hdf-plan documents** -- Assessment plans with resolved inputs, target selectors, runner configuration, and schedules.
 - **hdf-amendments documents** -- Standalone signed waivers, attestations, exceptions, and POA&Ms that merge into results.
 - **hdf-evidence-package documents** -- Audit-ready bundles referencing all other document types with completeness checks and integrity verification.
@@ -202,7 +202,7 @@ The Go converter performs a comprehensive transformation:
 - `sha256` to `checksum` object
 - snake_case to camelCase on all fields
 - `"skipped"` to `"notReviewed"`
-- `platform` to a `targets[]` array with a single `host` target
+- `platform` to a `components[]` array with a single `host` component
 - Computes `effectiveStatus` and `severity` for every requirement
 - Flattens overlay/wrapper baselines to eliminate duplicate controls
 
@@ -250,13 +250,13 @@ v2 inputs use a top-level `value` field:
 { "name": "x", "type": "Numeric", "value": 3 }
 ```
 
-### platform is an object, targets is an array
+### platform is an object, components is an array
 
-v1 `platform` is a single object. v2 `targets` is an array of objects, each with a required `type` discriminator. If you are constructing v2 output from v1 data, wrap the platform in an array and set `type: "host"`:
+v1 `platform` is a single object. v2 `components` is an array of objects, each with a required `type` discriminator. If you are constructing v2 output from v1 data, wrap the platform in an array and set `type: "host"`:
 
 ```json
 {
-  "targets": [
+  "components": [
     { "type": "host", "name": "ubuntu" }
   ]
 }

@@ -45,6 +45,10 @@ test-output/
 *.log
 hdf-cli/hdf
 
+# VitePress schema site — generated at build time
+site/schemas/*.md
+site/public/schemas/
+
 # Claude Code — track commands and project rules, but not local machine settings
 .claude/settings.local.json
 

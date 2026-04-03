@@ -1,12 +1,12 @@
 # Well-Known Label Keys Reference
 
-Labels are optional `Record<string, string>` metadata on **targets** and **baselines** in HDF v2. They enable flexible grouping, filtering, and system-level organization without imposing a fixed hierarchy.
+Labels are optional `Record<string, string>` metadata on **components** and **baselines** in HDF v2. They enable flexible grouping, filtering, and system-level organization without imposing a fixed hierarchy.
 
 For full design rationale, see [hdf-v2-document-ecosystem.md](../architecture/hdf-v2-document-ecosystem.md), section "Labels -- Flexible Grouping Without Hierarchy."
 
 ## What Labels Are
 
-Every target in `hdf-results` and every baseline can carry a `labels` object -- a flat map of string keys to string values:
+Every component in `hdf-results` and every baseline can carry a `labels` object -- a flat map of string keys to string values:
 
 ```json
 {
@@ -22,7 +22,7 @@ Every target in `hdf-results` and every baseline can carry a `labels` object -- 
 }
 ```
 
-Labels are defined in `Base_Target` within `primitives/target.schema.json` and in `Baseline_Metadata` within `primitives/common.schema.json`. The schema accepts any string keys and string values -- it does not enforce specific keys.
+Labels are defined in `Base_Component` within `primitives/component.schema.json` and in `Baseline_Metadata` within `primitives/common.schema.json`. The schema accepts any string keys and string values -- it does not enforce specific keys.
 
 ## Well-Known Keys
 
@@ -30,7 +30,7 @@ Five keys have conventional meaning across the HDF ecosystem. Tools, converters,
 
 ### `system`
 
-The authorization boundary or ATO system this target belongs to.
+The authorization boundary or ATO system this component belongs to.
 
 - **Expected values:** System name matching an hdf-system document's `name` field.
 - **Example:** `"ACME-WebPortal"`, `"Enterprise Portal Production"`
@@ -54,7 +54,7 @@ The deployment environment.
 
 ### `region`
 
-Geographic or cloud region where the target resides.
+Geographic or cloud region where the component resides.
 
 - **Expected values:** Cloud region identifiers or geographic labels.
 - **Example:** `"us-east-1"`, `"us-gov-west-1"`, `"eu-west-1"`
@@ -62,7 +62,7 @@ Geographic or cloud region where the target resides.
 
 ### `team`
 
-The team responsible for the target.
+The team responsible for the component.
 
 - **Expected values:** Team names from your organization.
 - **Example:** `"platform-engineering"`, `"security-ops"`
@@ -70,7 +70,7 @@ The team responsible for the target.
 
 ## Target Selectors in hdf-system
 
-Components in an hdf-system document match targets by label values using `Target_Selector`. A `Target_Selector` is an object where all specified key-value pairs must match (AND logic):
+Components in an hdf-system document match assessed components by label values using `Target_Selector`. A `Target_Selector` is an object where all specified key-value pairs must match (AND logic):
 
 ```json
 {
@@ -81,7 +81,7 @@ Components in an hdf-system document match targets by label values using `Target
 }
 ```
 
-This means any target with `labels.component = "WebTier"` is automatically included in the WebTier component. Adding a new server with the right labels requires no system document update.
+This means any component with `labels.component = "WebTier"` is automatically included in the WebTier system component. Adding a new server with the right labels requires no system document update.
 
 `Target_Selector` is defined in `primitives/system.schema.json` as an object with `additionalProperties: { type: "string" }`.
 
@@ -91,19 +91,17 @@ Several converters automatically extract labels from source tool metadata during
 
 | Converter | Labels populated | Source of data |
 |---|---|---|
-| `aws-config` | `labels.account`, `labels.region`, `labels.service` | AWS resource ARN |
+| `aws-config` | `labels.account`, `labels.region` | AWS resource ARN |
 | `nessus` | `labels.hostgroup`, `labels.network` | Nessus host properties |
 | `grype` / `trivy` | `labels.image`, `labels.registry` | Container image reference |
 | `oscal-sar` | Populates `systemRef` (not labels directly) | OSCAL `import-ap` href |
-| `legacyhdf` | `labels.service = "inspec"` | Hardcoded (InSpec origin) |
-
 All other converters produce results without labels. Labels can be added after conversion using the CLI.
 
 ## Applying Labels via CLI
 
 ### During conversion
 
-The `--labels` flag on `hdf convert` applies labels to all targets in the output:
+The `--labels` flag on `hdf convert` applies labels to all components in the output:
 
 ```bash
 hdf convert nessus to hdf scan.nessus results.json \
@@ -126,7 +124,7 @@ Use `hdf label show` to inspect labels:
 
 ```bash
 hdf label show results.json
-# Target: web-server-01 [host]
+# Component: web-server-01 [host]
 #   component = WebTier
 #   environment = production
 #   system = Portal
@@ -171,7 +169,7 @@ hdf label set results.json component=WebTier
 
 ```bash
 hdf label show results.json
-# Target: 10.0.1.50 [host]
+# Component: 10.0.1.50 [host]
 #   component = WebTier
 #   environment = production
 #   region = us-gov-west-1
@@ -195,7 +193,7 @@ Given an hdf-system document with:
 }
 ```
 
-The target with `labels.component = "WebTier"` is automatically matched to the WebTier component. The system-aware diff uses this to produce per-component compliance percentages:
+The component with `labels.component = "WebTier"` is automatically matched to the WebTier system component. The system-aware diff uses this to produce per-component compliance percentages:
 
 ```bash
 hdf diff --system portal-prod.hdf-system.json feb-scan.json mar-scan.json

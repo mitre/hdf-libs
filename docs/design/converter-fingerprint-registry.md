@@ -77,7 +77,7 @@ the most specific match wins.
 
 ### D5: Go registry in new sub-package
 
-The existing `shared/go/` package is named `package testing` (shadows stdlib).
+The existing `shared/go/` package is named `package shared`.
 New registry goes in `hdf-converters/registry/` (clean package name, cleaner
 import path).
 
@@ -90,7 +90,7 @@ hdf-converters/
       registry.ts           <-- ConverterFingerprint type + register/get/detect
       register-all.ts        <-- imports all fingerprints, ensures registration
       xml-utils.ts           <-- shared XML utilities (extractXmlRootElement)
-  registry/                  <-- Go registry package (avoids package testing)
+  registry/                  <-- Go registry package (clean import path)
     registry.go
     fingerprint.go
     register_all.go
@@ -296,7 +296,7 @@ Add `"sideEffects": false` — our registration is explicit, not side-effect bas
 | conveyor | `findings[]` + `pipeline` | — | results |
 | nikto | `vulnerabilities[]` + `host`/`port` | `vulnerabilities[]` (0.85) | results |
 | zap | `site[]` + `@version`/`@generated` | `site[]` (0.85) | results |
-| hdf-v2 (passthrough) | `baselines[]` + `targets[]` | `baselines[]` (0.8) | results |
+| hdf-v2 (passthrough) | `baselines[]` + `components[]` | `baselines[]` (0.8) | results |
 | hdf-v1 (legacy) | delegates to `isHDFV1()` | — | results |
 
 **SARIF confidence: 0.9** (not 1.0). Tool-specific SARIF wrappers return 0.95.
@@ -376,7 +376,7 @@ type ConverterFingerprint struct {
 ```
 
 Each Go converter calls `registry.Register()` in `init()`.
-New Go registry package avoids the `package testing` naming conflict.
+New Go registry package provides a clean import path separate from `package shared`.
 
 CLI integration: `hdf convert auto to hdf input.json` calls `registry.Detect()`.
 Existing `FormatPair` registry is unchanged — `auto` is a new source format
