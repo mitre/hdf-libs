@@ -153,6 +153,16 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 	filePath := args[0]
 	labelPairs := args[1:]
 
+	componentID, _ := cmd.Flags().GetString("component-id")
+	generateCID, _ := cmd.Flags().GetBool("generate-component-id")
+
+	if len(labelPairs) == 0 && componentID == "" && !generateCID {
+		return fmt.Errorf("no labels or component-id flags provided; nothing to set\n" +
+			"Usage: hdf label set <file> key=value [key=value...]\n" +
+			"  or:  hdf label set <file> --component-id <uuid>\n" +
+			"  or:  hdf label set <file> --generate-component-id")
+	}
+
 	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
@@ -173,8 +183,6 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 	}
 
 	// Apply --component-id or --generate-component-id
-	componentID, _ := cmd.Flags().GetString("component-id")
-	generateCID, _ := cmd.Flags().GetBool("generate-component-id")
 	if componentID != "" || generateCID {
 		result, err = applyComponentIDs(result, componentID, generateCID)
 		if err != nil {

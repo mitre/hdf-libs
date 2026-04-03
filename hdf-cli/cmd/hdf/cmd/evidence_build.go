@@ -120,7 +120,7 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 
 	pkg := map[string]interface{}{
 		"name":              sysName + "-evidence-package",
-		"systemRef":         systemPath,
+		"systemRef":         filepath.Base(systemPath),
 		"preparedAt":        time.Now().UTC().Format(time.RFC3339),
 		"contents":          contents,
 		"completenessCheck": completeness,

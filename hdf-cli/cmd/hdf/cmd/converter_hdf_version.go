@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/mitre/hdf-converters/shared/go/hdfversion"
 )
@@ -56,7 +57,9 @@ func (c *hdfVersionConverter) Convert(input []byte) ([]byte, error) {
 	}
 
 	// Lossy transform warning for downgrades
-	if fromVer > toVer {
+	fromNum, _ := strconv.Atoi(fromVer)
+	toNum, _ := strconv.Atoi(toVer)
+	if fromNum > toNum {
 		fmt.Fprintln(os.Stderr, "Warning: HDF version downgrade is a lossy conversion. Some fields have no equivalent in the target version.")
 	}
 
