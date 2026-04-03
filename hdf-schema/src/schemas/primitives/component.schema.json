@@ -207,6 +207,21 @@
           }
         }
       ],
+      "examples": [
+        {
+          "type": "host",
+          "name": "web-server-prod-01",
+          "componentId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+          "fqdn": "web01.prod.example.com",
+          "ipAddress": "10.0.1.50",
+          "osName": "Ubuntu",
+          "osVersion": "22.04 LTS",
+          "externalIds": {
+            "cmdb": "ASSET-12345",
+            "aws": "i-0abc123def456789"
+          }
+        }
+      ],
       "description": "A physical or virtual server, workstation, or network device.",
       "title": "Host Component"
     },
@@ -318,6 +333,16 @@
               "description": "Cloud region, if applicable."
             }
           }
+        }
+      ],
+      "examples": [
+        {
+          "type": "cloudAccount",
+          "name": "Production AWS Account",
+          "componentId": "f1e2d3c4-b5a6-4978-8069-1a2b3c4d5e6f",
+          "provider": "aws",
+          "accountId": "123456789012",
+          "region": "us-east-1"
         }
       ],
       "description": "A cloud provider account (AWS account, Azure subscription, GCP project).",

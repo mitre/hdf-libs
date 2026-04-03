@@ -67,6 +67,31 @@
           "description": "The stacktrace/backtrace of the exception if one occurred."
         }
       },
+      "examples": [
+        {
+          "status": "passed",
+          "codeDesc": "File /etc/ssh/sshd_config content is expected to match /Protocol\\s+2/",
+          "startTime": "2025-06-15T10:30:00Z",
+          "runTime": 0.015
+        },
+        {
+          "status": "failed",
+          "codeDesc": "Service 'telnet' is expected not to be enabled",
+          "startTime": "2025-06-15T10:30:01Z",
+          "runTime": 0.008,
+          "message": "expected that 'Service telnet' is not enabled"
+        },
+        {
+          "status": "error",
+          "codeDesc": "File /etc/audit/auditd.conf content is expected to include 'max_log_file'",
+          "startTime": "2025-06-15T10:30:02Z",
+          "exception": "Errno::ENOENT",
+          "backtrace": [
+            "/opt/inspec/lib/resources/file.rb:42:in 'read'",
+            "/opt/inspec/lib/resources/file.rb:15:in 'content'"
+          ]
+        }
+      ],
       "description": "A test within a requirement and its results and findings such as how long it took to run.",
       "title": "Requirement Result"
     },
@@ -87,6 +112,20 @@
           "description": "The text of the description."
         }
       },
+      "examples": [
+        {
+          "label": "default",
+          "data": "Verify the SSH daemon is configured to only use FIPS-validated key exchange algorithms."
+        },
+        {
+          "label": "check",
+          "data": "Run 'sshd -T | grep kexalgorithms' and verify only FIPS-compliant algorithms are listed."
+        },
+        {
+          "label": "fix",
+          "data": "Add 'KexAlgorithms ecdh-sha2-nistp256,ecdh-sha2-nistp384' to /etc/ssh/sshd_config and restart sshd."
+        }
+      ],
       "description": "A labeled description for a requirement, such as fix text or check instructions.",
       "title": "Requirement Description"
     }

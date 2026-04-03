@@ -71,6 +71,77 @@
       "description": "Reserved for tool-specific data not defined in the HDF standard. Use this to preserve original tool output, auxiliary data, or custom metadata."
     }
   },
+  "examples": [
+    {
+      "baselines": [
+        {
+          "name": "web-server-hardening",
+          "title": "Web Server Security Baseline",
+          "version": "1.0.0",
+          "summary": "Security hardening checks for Apache HTTP Server",
+          "requirements": [
+            {
+              "id": "SV-100001",
+              "title": "Web server must use TLS 1.2 or higher",
+              "impact": 0.7,
+              "tags": {
+                "nist": ["SC-8", "SC-23"]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "The web server must be configured to use TLS 1.2 or higher for all encrypted connections."
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "SSL configuration is expected to include TLSv1.2",
+                  "startTime": "2025-06-15T14:30:00Z",
+                  "runTime": 0.042
+                }
+              ]
+            },
+            {
+              "id": "SV-100002",
+              "title": "Web server must have X-Frame-Options header set",
+              "impact": 0.5,
+              "tags": {
+                "nist": ["SA-11", "RA-5"]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "The anti-clickjacking X-Frame-Options header must be present on all responses."
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "codeDesc": "HTTP response headers are expected to include X-Frame-Options",
+                  "startTime": "2025-06-15T14:30:01Z",
+                  "message": "X-Frame-Options header not found in response"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "type": "application",
+          "name": "Apache HTTP Server 2.4"
+        }
+      ],
+      "generator": {
+        "name": "nikto-to-hdf",
+        "version": "1.0.0"
+      },
+      "tool": {
+        "name": "Nikto"
+      }
+    }
+  ],
   "description": "The top level value containing all assessment results.",
   "title": "HDF Results",
   "$defs": {
