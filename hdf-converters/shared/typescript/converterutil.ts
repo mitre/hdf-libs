@@ -7,7 +7,7 @@
  */
 
 import { sha256 } from '@mitre/hdf-utilities';
-import type { Checksum, Component, EvaluatedBaseline, HdfResults, Integrity, Statistics, Tool } from '@mitre/hdf-schema';
+import type { Checksum, Component, EvaluatedBaseline, HdfResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { HashAlgorithm } from '@mitre/hdf-schema';
 import { getCweNistControl } from '@mitre/hdf-mappings';
 
