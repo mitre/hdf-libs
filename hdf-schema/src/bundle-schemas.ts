@@ -2,7 +2,7 @@ import { registerSchema } from '@hyperjump/json-schema/draft-2020-12';
 import { bundle } from '@hyperjump/json-schema/bundle';
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -90,7 +90,7 @@ export async function bundleSchemas(): Promise<void> {
 
 // Run if called directly
 /* c8 ignore start */
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   bundleSchemas().catch((err) => {
     console.error('Bundle failed:', err);
     process.exit(1);

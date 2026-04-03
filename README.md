@@ -122,6 +122,29 @@ brew install gitleaks  # or download from GitHub releases
 git lfs fetch --all && git lfs checkout
 ```
 
+**Windows (native):**
+
+```powershell
+# Node.js and Go — use winget or download installers from nodejs.org / go.dev
+winget install OpenJS.NodeJS.LTS
+winget install GoLang.Go
+
+# pnpm
+corepack enable && corepack prepare pnpm@9.14.2 --activate
+
+# Go tools (restart your terminal after installing Go)
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+go install github.com/securego/gosec/v2/cmd/gosec@latest
+go install golang.org/x/vuln/cmd/govulncheck@latest
+
+# gitleaks and git-lfs
+winget install Gitleaks.Gitleaks
+winget install GitHub.GitLFS
+git lfs fetch --all && git lfs checkout
+```
+
+Ensure `%USERPROFILE%\go\bin` is on your PATH (the Go installer usually adds this, but `go install` binaries land here).
+
 After installing golangci-lint, ensure `$HOME/go/bin` is on your PATH. Add the following to your shell profile (`.zshrc`, `.bashrc`, etc.):
 
 ```bash

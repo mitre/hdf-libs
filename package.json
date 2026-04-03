@@ -19,7 +19,7 @@
     "test:ts": "pnpm -r run test:ts",
     "test:go": "pnpm -r run test:go",
     "test:coverage": "pnpm -r run test:coverage",
-    "security": "pnpm run security:ts; pnpm run security:go",
+    "security": "pnpm run security:ts && pnpm run security:go",
     "security:ts": "echo '── prod deps (fail on moderate+) ──' && pnpm audit --prod --audit-level=moderate && echo '── dev deps (fail on high+) ──' && pnpm audit --dev --audit-level=high",
     "security:go": "pnpm --filter hdf-cli run security:vuln",
     "lint": "pnpm -r run lint",

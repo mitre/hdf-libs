@@ -41,6 +41,16 @@ func executeCommand(args ...string) (stdout, stderr string, err error) {
 	os.Stdout = wOut
 	os.Stderr = wErr
 
+	// Drain pipes concurrently to avoid deadlock when command output
+	// exceeds the OS pipe buffer (4KB on Windows).
+	var bufOut, bufErr bytes.Buffer
+	done := make(chan struct{})
+	go func() {
+		_, _ = bufOut.ReadFrom(rOut)
+		_, _ = bufErr.ReadFrom(rErr)
+		close(done)
+	}()
+
 	// Set args and execute
 	cmd.SetArgs(args)
 	execErr := cmd.Execute()
@@ -50,15 +60,12 @@ func executeCommand(args ...string) (stdout, stderr string, err error) {
 		_, _ = fmt.Fprintf(wErr, "Error: %v\n", execErr)
 	}
 
-	// Restore and read output
+	// Close write ends and wait for readers to finish
 	_ = wOut.Close()
 	_ = wErr.Close()
 	os.Stdout = oldStdout
 	os.Stderr = oldStderr
-
-	var bufOut, bufErr bytes.Buffer
-	_, _ = bufOut.ReadFrom(rOut)
-	_, _ = bufErr.ReadFrom(rErr)
+	<-done
 
 	return bufOut.String(), bufErr.String(), execErr
 }

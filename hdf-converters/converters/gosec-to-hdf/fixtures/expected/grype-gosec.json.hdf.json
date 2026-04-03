@@ -136,7 +136,7 @@
     "name": "gosec-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-02T01:14:09.026601Z",
+  "timestamp": "2026-04-03T17:17:53.0939064Z",
   "tool": {
     "name": "gosec",
     "version": "dev"

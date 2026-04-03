@@ -87,7 +87,7 @@ function showDetailedDiff(error: AssertionErrorLike): void {
 }
 
 // CLI Usage
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === (await import('url')).pathToFileURL(process.argv[1] ?? '').href) {
   const [,, file1, file2, ...optionArgs] = process.argv;
 
   if (!file1 || !file2) {

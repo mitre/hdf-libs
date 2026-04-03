@@ -322,7 +322,7 @@ func TestBulkOutputPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, bulkOutputPath(tt.dir, tt.input, tt.toFmt))
+			assert.Equal(t, tt.expected, filepath.ToSlash(bulkOutputPath(tt.dir, tt.input, tt.toFmt)))
 		})
 	}
 }

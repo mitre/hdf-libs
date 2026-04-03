@@ -3,7 +3,7 @@
  */
 import { writeFileSync, copyFileSync, existsSync, rmSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -210,6 +210,6 @@ export * from './helpers.js';
 
 // Run if called directly
 /* v8 ignore next 3 -- CLI entry point, not testable in vitest */
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   createIndex();
 }

@@ -1,6 +1,6 @@
 import { mkdirSync, existsSync, writeFileSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import {
   quicktype,
   InputData,
@@ -333,7 +333,7 @@ export async function generateTypes(): Promise<void> {
 
 // Run if called directly
 /* c8 ignore start */
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   generateTypes().catch((err) => {
     console.error('Type generation failed:', err);
     process.exit(1);

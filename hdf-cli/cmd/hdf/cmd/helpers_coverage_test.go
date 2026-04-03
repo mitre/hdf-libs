@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -240,6 +241,9 @@ func TestReadFromFile_ExceedsSizeLimit(t *testing.T) {
 }
 
 func TestReadFromFile_PermissionDenied(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping permission test on Windows (NTFS ACLs ignore Unix mode bits)")
+	}
 	if os.Getuid() == 0 {
 		t.Skip("skipping permission test when running as root")
 	}
