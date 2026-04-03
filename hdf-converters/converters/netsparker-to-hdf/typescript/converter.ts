@@ -11,14 +11,13 @@ import {
   limitArray,
   stripHTML,
   validateInputSize,
+  buildHdfResults,
 } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
-  Tool,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -325,14 +324,13 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
     },
   ) as EvaluatedBaseline;
 
-  const tool: Tool = {
-    name: toolName,
-    format: 'XML',
-  };
-
   const targetName = target.url ?? 'Unknown';
 
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'netsparker-to-hdf',
+    converterVersion: '1.0.0',
+    toolName,
+    toolFormat: 'XML',
     baselines: [baseline],
     components: [
       {
@@ -340,12 +338,5 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
         type: Copyright.Application,
       },
     ],
-    generator: {
-      name: 'netsparker-to-hdf',
-      version: '1.0.0',
-    },
-    tool,
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

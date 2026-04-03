@@ -2,14 +2,12 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { inputChecksum, limitArray, validateInputSize, mapCWEToNIST, DEFAULT_REMEDIATION_NIST_TAGS } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize, mapCWEToNIST, DEFAULT_REMEDIATION_NIST_TAGS, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
-  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -194,20 +192,12 @@ export async function convertGosecToHdf(input: string): Promise<string> {
     { resultsChecksum }
   ) as EvaluatedBaseline;
 
-  const tool: Tool = { name: 'gosec' };
-  if (report.GosecVersion) {
-    tool.version = report.GosecVersion;
-  }
-
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'gosec-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'gosec',
+    toolVersion: report.GosecVersion || undefined,
     baselines: [baseline],
-    generator: {
-      name: 'gosec-to-hdf',
-      version: '1.0.0',
-    },
-    tool,
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

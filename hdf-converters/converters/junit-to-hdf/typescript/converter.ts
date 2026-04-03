@@ -1,7 +1,6 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
-import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
@@ -87,18 +86,18 @@ export async function convertJunitToHdf(input: string): Promise<string> {
     resultsChecksum,
   }) as EvaluatedBaseline;
 
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'hdf-converters',
+    converterVersion: CONVERTER_VERSION,
+    toolName: 'JUnit XML',
+    toolFormat: 'XML',
     baselines: [baseline],
     components: [{
       type: Copyright.Application,
       name,
     }],
-    generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
-    tool: { name: 'JUnit XML', format: 'XML' },
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }
 
 function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string } {

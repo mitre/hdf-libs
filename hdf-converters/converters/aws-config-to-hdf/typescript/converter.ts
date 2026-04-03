@@ -3,16 +3,14 @@ import {
   getAwsConfigNistControlByIdentifier,
   getAwsConfigNistControlByName,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import {
   Copyright,
-  type HdfResults,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
   type Checksum,
   type Description,
-  type Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -191,14 +189,15 @@ export async function convertAwsConfigToHdf(input: string): Promise<string> {
     maintainer: 'Amazon Web Services',
   } as EvaluatedBaseline;
 
-  const tool: Tool = { name: 'AWS Config' };
-
   // Extract account/region from the first rule's ARN for target labels
   const firstArn = limitedRules[0]?.ConfigRuleArn ?? '';
   const accountId = getAccountId(firstArn);
   const region = getRegion(firstArn);
 
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'aws-config-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'AWS Config',
     baselines: [baseline],
     components: [{
       type: Copyright.CloudAccount,
@@ -209,13 +208,6 @@ export async function convertAwsConfigToHdf(input: string): Promise<string> {
         provider: 'aws',
       },
     }],
-    generator: {
-      name: 'aws-config-to-hdf',
-      version: '1.0.0',
-    },
-    tool,
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

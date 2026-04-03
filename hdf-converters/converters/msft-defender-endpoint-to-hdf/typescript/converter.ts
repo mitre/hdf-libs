@@ -1,7 +1,6 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
@@ -294,16 +293,12 @@ export async function convertMsftDefenderEndpointToHdf(input: string): Promise<s
     { resultsChecksum },
   ) as EvaluatedBaseline;
 
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'msft-defender-endpoint-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'Microsoft Defender for Endpoint',
     baselines: [baseline],
-    generator: {
-      name: 'msft-defender-endpoint-to-hdf',
-      version: '1.0.0',
-    },
-    tool: { name: 'Microsoft Defender for Endpoint' },
     components,
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

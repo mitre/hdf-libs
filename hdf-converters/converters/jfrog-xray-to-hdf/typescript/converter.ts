@@ -3,13 +3,11 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -231,18 +229,13 @@ export async function convertJfrogXrayToHdf(input: string): Promise<string> {
     { resultsChecksum }
   ) as EvaluatedBaseline;
 
-  const tool: Tool = { name: 'JFrog Xray', format: 'JSON' };
-
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'jfrog-xray-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'JFrog Xray',
+    toolFormat: 'JSON',
     baselines: [baseline],
-    generator: {
-      name: 'jfrog-xray-to-hdf',
-      version: '1.0.0',
-    },
-    tool,
     components: [{ name: 'JFrog Xray Scan', type: Copyright.Application }],
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

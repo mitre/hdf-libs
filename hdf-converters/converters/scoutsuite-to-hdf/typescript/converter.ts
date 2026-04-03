@@ -3,13 +3,11 @@ import {
   getScoutsuiteNistControl,
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, buildNistCciTags, limitArrayWithWarning, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, buildNistCciTags, limitArrayWithWarning, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -257,19 +255,13 @@ export async function convertScoutsuiteToHdf(input: string): Promise<string> {
 
   const targetName = `${report.last_run.ruleset_name} ruleset:${report.provider_name}:${report.account_id}`;
 
-  const tool: Tool = {
-    name: 'ScoutSuite',
-    format: 'JSON',
-    version: report.last_run.version,
-  };
-
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'scoutsuite-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'ScoutSuite',
+    toolFormat: 'JSON',
+    toolVersion: report.last_run.version,
     baselines: [baseline],
-    generator: {
-      name: 'scoutsuite-to-hdf',
-      version: '1.0.0',
-    },
-    tool,
     components: [{
       name: targetName,
       type: Copyright.CloudAccount,
@@ -279,7 +271,5 @@ export async function convertScoutsuiteToHdf(input: string): Promise<string> {
       },
     }],
     timestamp: report.last_run.time ? new Date(report.last_run.time) : new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

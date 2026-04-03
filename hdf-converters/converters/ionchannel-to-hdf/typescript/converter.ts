@@ -1,6 +1,5 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
@@ -20,6 +19,7 @@ import {
   inputChecksum,
   buildNistCciTags,
   validateInputSize,
+  buildHdfResults,
 } from '../../../shared/typescript/converterutil.js';
 
 // ---- Input types ----
@@ -272,12 +272,12 @@ export async function convertIonchannelToHdf(input: string): Promise<string> {
     },
   ) as EvaluatedBaseline;
 
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'ionchannel-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'Ion Channel',
+    toolFormat: 'JSON',
     baselines: [baseline],
-    generator: { name: 'ionchannel-to-hdf', version: '1.0.0' },
-    tool: { name: 'Ion Channel', format: 'JSON' },
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

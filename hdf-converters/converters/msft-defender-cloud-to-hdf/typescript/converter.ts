@@ -1,12 +1,10 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
-  Tool,
   Component,
 } from '@mitre/hdf-schema';
 import {
@@ -217,11 +215,6 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
     { resultsChecksum },
   ) as EvaluatedBaseline;
 
-  const tool: Tool = {
-    name: 'Microsoft Defender for Cloud',
-    format: 'JSON',
-  };
-
   // Build target from subscription ID
   const components: Component[] = [];
   if (limitedAssessments.length > 0) {
@@ -237,16 +230,13 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
     }
   }
 
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'msft-defender-cloud-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'Microsoft Defender for Cloud',
+    toolFormat: 'JSON',
     baselines: [baseline],
-    generator: {
-      name: 'msft-defender-cloud-to-hdf',
-      version: '1.0.0',
-    },
-    tool,
     components,
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

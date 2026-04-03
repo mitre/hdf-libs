@@ -3,13 +3,11 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -317,20 +315,15 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
     resultsChecksum,
   }) as EvaluatedBaseline;
 
-  const tool: Tool = { name: 'CycloneDX', format: 'JSON' };
-
   const targetName = bom.metadata?.component?.name ?? '';
 
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'cyclonedx-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'CycloneDX',
+    toolFormat: 'JSON',
     baselines: [baseline],
-    generator: {
-      name: 'cyclonedx-to-hdf',
-      version: '1.0.0',
-    },
-    tool,
     components: [{ name: targetName, type: Copyright.Application }],
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

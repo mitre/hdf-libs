@@ -6,13 +6,11 @@ import {
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  Tool,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -208,18 +206,13 @@ export async function convertSnykToHdf(input: string): Promise<string> {
     targetName = parsed.projectName ?? parsed.path ?? '';
   }
 
-  const tool: Tool = { name: 'Snyk', format: 'JSON' };
-
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'snyk-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'Snyk',
+    toolFormat: 'JSON',
     baselines,
-    generator: {
-      name: 'snyk-to-hdf',
-      version: '1.0.0',
-    },
-    tool,
     components: [{ name: targetName, type: Copyright.Application }],
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

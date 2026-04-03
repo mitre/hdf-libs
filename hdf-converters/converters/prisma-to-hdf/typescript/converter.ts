@@ -11,13 +11,12 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, buildNistCciTags, limitArrayWithWarning, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, buildNistCciTags, limitArrayWithWarning, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  Tool,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -258,18 +257,13 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
     components.push({ name: hostname, type: Copyright.Host });
   }
 
-  const tool: Tool = { name: 'Prisma Cloud', format: 'CSV' };
-
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'prisma-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'Prisma Cloud',
+    toolFormat: 'CSV',
     baselines,
-    generator: {
-      name: 'prisma-to-hdf',
-      version: '1.0.0',
-    },
-    tool,
     components,
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

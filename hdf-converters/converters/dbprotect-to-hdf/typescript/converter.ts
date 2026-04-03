@@ -3,13 +3,11 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, buildNistCciTags, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, buildNistCciTags, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  Tool,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -239,18 +237,13 @@ export async function convertDbprotectToHdf(input: string): Promise<string> {
     summary,
   }) as EvaluatedBaseline;
 
-  const tool: Tool = { name: 'DBProtect', format: 'XML' };
-
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'dbprotect-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'DBProtect',
+    toolFormat: 'XML',
     baselines: [baseline],
-    generator: {
-      name: 'dbprotect-to-hdf',
-      version: '1.0.0',
-    },
-    tool,
     components: [{ name: targetName, type: Copyright.Host }],
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }
