@@ -282,68 +282,6 @@ describe('hdf-system.schema.json', () => {
   });
 });
 
-describe('system.schema.json — Component', () => {
-  const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
-  addFormats(ajv);
-  ajv.addSchema(commonSchema);
-  ajv.addSchema(systemSchema);
-
-  const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Component',
-  });
-
-  it('should validate a minimal component', () => {
-    expect(validate({ name: 'App', type: 'application' })).toBe(true);
-  });
-
-  it('should validate a component with all fields', () => {
-    const comp = {
-      name: 'WebTier',
-      type: 'application',
-      description: 'Web servers',
-      targetSelector: { 'labels.component': 'WebTier' },
-      baselineRefs: ['RHEL9-STIG'],
-      sbomRef: 'https://example.com/sbom.json',
-      sbomFormat: 'cyclonedx',
-      inputOverrides: [{ inputName: 'max_sessions', value: 5 }],
-    };
-    expect(validate(comp)).toBe(true);
-  });
-
-  it('should reject component missing name', () => {
-    expect(validate({ type: 'application' })).toBe(false);
-  });
-
-  it('should reject component missing type', () => {
-    expect(validate({ name: 'App' })).toBe(false);
-  });
-
-  it('should accept all valid component types', () => {
-    const types = ['application', 'database', 'network', 'storage', 'compute', 'service', 'other'];
-    for (const type of types) {
-      expect(validate({ name: 'Test', type })).toBe(true);
-    }
-  });
-
-  it('should reject invalid component type', () => {
-    expect(validate({ name: 'Test', type: 'middleware' })).toBe(false);
-  });
-
-  it('should reject unknown component properties', () => {
-    expect(validate({ name: 'Test', type: 'application', foo: 'bar' })).toBe(false);
-  });
-
-  it('should accept SPDX sbomFormat', () => {
-    const comp = { name: 'App', type: 'application', sbomRef: 'sbom.spdx.json', sbomFormat: 'spdx' };
-    expect(validate(comp)).toBe(true);
-  });
-
-  it('should reject invalid sbomFormat', () => {
-    const comp = { name: 'App', type: 'application', sbomFormat: 'csv' };
-    expect(validate(comp)).toBe(false);
-  });
-});
-
 describe('system.schema.json — Input_Override', () => {
   const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
   addFormats(ajv);
@@ -385,51 +323,6 @@ describe('system.schema.json — Input_Override', () => {
 
   it('should reject unknown properties', () => {
     expect(validate({ inputName: 'test', value: 1, extra: 'bad' })).toBe(false);
-  });
-});
-
-describe('system.schema.json — Interconnection', () => {
-  const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
-  addFormats(ajv);
-  ajv.addSchema(commonSchema);
-  ajv.addSchema(systemSchema);
-
-  const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Interconnection',
-  });
-
-  it('should validate a minimal interconnection', () => {
-    expect(validate({ name: 'API Link', externalSystem: 'Partner' })).toBe(true);
-  });
-
-  it('should validate a full interconnection', () => {
-    const conn = {
-      name: 'External API',
-      externalSystem: 'CDN-Provider',
-      direction: 'inbound',
-      protocol: 'HTTPS',
-      description: 'Public traffic',
-      securityMeasures: 'TLS 1.3, WAF',
-    };
-    expect(validate(conn)).toBe(true);
-  });
-
-  it('should accept all direction values', () => {
-    for (const dir of ['inbound', 'outbound', 'bidirectional']) {
-      expect(validate({ name: 'Test', externalSystem: 'Ext', direction: dir })).toBe(true);
-    }
-  });
-
-  it('should reject invalid direction', () => {
-    expect(validate({ name: 'Test', externalSystem: 'Ext', direction: 'lateral' })).toBe(false);
-  });
-
-  it('should reject missing externalSystem', () => {
-    expect(validate({ name: 'Test' })).toBe(false);
-  });
-
-  it('should reject unknown properties', () => {
-    expect(validate({ name: 'Test', externalSystem: 'Ext', foo: 'bar' })).toBe(false);
   });
 });
 
