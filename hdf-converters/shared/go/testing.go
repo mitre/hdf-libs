@@ -1,6 +1,6 @@
-// Package testing provides differential testing utilities for Go converters.
+// Package shared provides shared utilities and differential testing for Go converters.
 // Uses same fixtures as TypeScript tests.
-package testing
+package shared
 
 import (
 	"encoding/json"

@@ -1,5 +1,5 @@
 // Package testing provides shared utilities for Go converters.
-package testing
+package shared
 
 import (
 	"bytes"
