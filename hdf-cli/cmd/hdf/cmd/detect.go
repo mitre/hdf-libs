@@ -62,7 +62,7 @@ func requireDocumentType(data []byte, allowed []string, cmdName string) (string,
 	}
 
 	return actual, fmt.Errorf(
-		"%s requires %s document, but this is %s%s",
+		"%s requires %s, but this is %s%s",
 		cmdName, formatAllowed(allowed), articleFor(actual), hint,
 	)
 }

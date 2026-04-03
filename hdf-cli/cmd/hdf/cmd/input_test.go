@@ -117,3 +117,68 @@ func TestGetMaxFileSize(t *testing.T) {
 		t.Errorf("getMaxFileSize() = %d, want %d", actual, expected)
 	}
 }
+
+// ── safePath tests ──────────────────────────────────────────────────────
+
+func TestSafePath_ValidRelative(t *testing.T) {
+	result, err := safePath("/base/dir", "subdir/file.json")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != "/base/dir/subdir/file.json" {
+		t.Errorf("got %q, want %q", result, "/base/dir/subdir/file.json")
+	}
+}
+
+func TestSafePath_ValidBasename(t *testing.T) {
+	result, err := safePath("/base/dir", "file.json")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != "/base/dir/file.json" {
+		t.Errorf("got %q, want %q", result, "/base/dir/file.json")
+	}
+}
+
+func TestSafePath_TraversalBlocked(t *testing.T) {
+	_, err := safePath("/base/dir", "../outside.json")
+	if err == nil {
+		t.Fatal("expected error for ../ traversal")
+	}
+}
+
+func TestSafePath_DeepTraversalBlocked(t *testing.T) {
+	_, err := safePath("/base/dir", "subdir/../../outside.json")
+	if err == nil {
+		t.Fatal("expected error for deep traversal")
+	}
+}
+
+func TestSafePath_AbsolutePathContained(t *testing.T) {
+	// Go's filepath.Join strips leading / from second arg,
+	// so "/etc/passwd" becomes "base/dir/etc/passwd" — contained within base
+	result, err := safePath("/base/dir", "/etc/passwd")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != "/base/dir/etc/passwd" {
+		t.Errorf("got %q, want %q", result, "/base/dir/etc/passwd")
+	}
+}
+
+func TestSafePath_EmptyPathBlocked(t *testing.T) {
+	_, err := safePath("/base/dir", "")
+	if err == nil {
+		t.Fatal("expected error for empty path")
+	}
+}
+
+func TestSafePath_DotResolvesToBase(t *testing.T) {
+	result, err := safePath("/base/dir", ".")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != "/base/dir" {
+		t.Errorf("got %q, want %q", result, "/base/dir")
+	}
+}

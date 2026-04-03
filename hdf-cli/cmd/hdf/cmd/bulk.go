@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 )
 
 // BulkResult holds the outcome of processing a single file in a multi-file operation.
@@ -169,6 +170,8 @@ type capturedOutput struct {
 }
 
 // captureOutput runs fn while capturing both stdout and stderr.
+// Reads pipes concurrently to avoid deadlock when fn() output exceeds
+// the OS pipe buffer (~64KB).
 func captureOutput(fn func() error) (capturedOutput, error) {
 	oldStdout := os.Stdout
 	oldStderr := os.Stderr
@@ -177,6 +180,13 @@ func captureOutput(fn func() error) (capturedOutput, error) {
 	os.Stdout = outW
 	os.Stderr = errW
 
+	// Read pipes concurrently to prevent deadlock
+	var outBuf, errBuf bytes.Buffer
+	var wg sync.WaitGroup
+	wg.Add(2) //nolint:mnd // reading stdout + stderr
+	go func() { defer wg.Done(); _, _ = outBuf.ReadFrom(outR) }()
+	go func() { defer wg.Done(); _, _ = errBuf.ReadFrom(errR) }()
+
 	fnErr := fn()
 
 	_ = outW.Close()
@@ -184,9 +194,7 @@ func captureOutput(fn func() error) (capturedOutput, error) {
 	os.Stdout = oldStdout
 	os.Stderr = oldStderr
 
-	var outBuf, errBuf bytes.Buffer
-	_, _ = outBuf.ReadFrom(outR)
-	_, _ = errBuf.ReadFrom(errR)
+	wg.Wait()
 	return capturedOutput{stdout: outBuf.String(), stderr: errBuf.String()}, fnErr
 }
 

@@ -84,9 +84,13 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 			continue // Skip non-convertible types
 		}
 
-		// Read the referenced document
-		refPath := filepath.Join(pkgDir, uri)
-		refData, readErr := os.ReadFile(refPath) // #nosec G304 -- resolves relative to package
+		// Read the referenced document (validate path stays within package directory)
+		refPath, pathErr := safePath(pkgDir, uri)
+		if pathErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", uri, pathErr)
+			continue
+		}
+		refData, readErr := os.ReadFile(refPath) //nolint:gosec // validated by safePath
 		if readErr != nil {
 			fmt.Fprintf(os.Stderr, "Warning: could not read %s: %v\n", uri, readErr)
 			continue
