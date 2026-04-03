@@ -105,7 +105,7 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 
 // verifyCompleteness checks that every baseline in the plan has a
 // corresponding results document in the evidence package.
-func verifyCompleteness(pkgDir, planRef string, contents []interface{}) error {
+func verifyCompleteness(pkgDir, planRef string, contents []interface{}) error { //nolint:gocyclo // complexity from path validation error handling
 	// Load the plan (validate path stays within package directory)
 	planPath, err := safePath(pkgDir, planRef)
 	if err != nil {
