@@ -2,6 +2,7 @@ package generators
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	hdf "github.com/mitre/hdf-schema"
@@ -150,8 +151,16 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 	if len(baseline.Inputs) > 0 {
 		lines = append(lines, "inputs:")
 		for _, input := range baseline.Inputs {
-			for k, v := range input {
-				lines = append(lines, fmt.Sprintf("- %s: %s", k, formatYamlValue(v)))
+			val := ""
+			if input.Value != nil {
+				val = fmt.Sprintf("%v", input.Value)
+			}
+			lines = append(lines, fmt.Sprintf("- name: %s", yamlScalar(input.Name)))
+			if val != "" {
+				lines = append(lines, fmt.Sprintf("  value: %s", yamlScalar(val)))
+			}
+			if input.Description != nil {
+				lines = append(lines, fmt.Sprintf("  description: %s", yamlScalar(*input.Description)))
 			}
 		}
 	}
@@ -177,7 +186,13 @@ func GenerateInSpecProfile(baseline hdf.HDFBaseline, opts *GeneratorOptions) InS
 		controls["controls/controls.rb"] = strings.Join(stubs, "\n")
 	} else {
 		for _, req := range baseline.Requirements {
-			filename := fmt.Sprintf("controls/%s.rb", req.ID)
+			// Sanitize ID for use as filename — strip path separators and
+			// reject traversal attempts to prevent writing outside output dir.
+			safeID := filepath.Base(strings.ReplaceAll(req.ID, "..", ""))
+			if safeID == "." || safeID == "" {
+				safeID = "unknown"
+			}
+			filename := fmt.Sprintf("controls/%s.rb", safeID)
 			controls[filename] = GenerateControlStub(req)
 		}
 	}

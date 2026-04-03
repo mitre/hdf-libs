@@ -148,6 +148,49 @@ func TestConvertHDFToXML(t *testing.T) {
 		assert.Contains(t, resultStr, "&gt;")
 	})
 
+	t.Run("should handle nil statistics without panic", func(t *testing.T) {
+		// Regression: hdf.Statistics is *Statistics. If the input JSON omits
+		// the statistics block entirely, Statistics is nil and accessing
+		// Statistics.Duration caused a nil pointer dereference.
+		input := []byte(`{
+			"baselines": [{
+				"name": "No Stats Baseline",
+				"checksum": { "algorithm": "sha256", "value": "abc" },
+				"requirements": []
+			}],
+			"components": []
+		}`)
+
+		result, err := ConvertHDFToXML(input)
+		require.NoError(t, err)
+
+		resultStr := string(result)
+		assert.Contains(t, resultStr, "<HdfResults>")
+		assert.Contains(t, resultStr, "<name>No Stats Baseline</name>")
+		// statistics element should be absent
+		assert.NotContains(t, resultStr, "<statistics>")
+	})
+
+	t.Run("should handle empty statistics object without panic", func(t *testing.T) {
+		// statistics present but Duration is nil (omitted)
+		input := []byte(`{
+			"baselines": [{
+				"name": "Empty Stats Baseline",
+				"checksum": { "algorithm": "sha256", "value": "abc" },
+				"requirements": []
+			}],
+			"statistics": {}
+		}`)
+
+		result, err := ConvertHDFToXML(input)
+		require.NoError(t, err)
+
+		resultStr := string(result)
+		assert.Contains(t, resultStr, "<HdfResults>")
+		// No duration means no statistics element in output
+		assert.NotContains(t, resultStr, "<statistics>")
+	})
+
 	t.Run("should produce valid XML", func(t *testing.T) {
 		input := []byte(`{
 			"baselines": [{

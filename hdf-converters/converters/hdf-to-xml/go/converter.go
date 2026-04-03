@@ -180,7 +180,7 @@ func transformToXMLStructure(hdf *hdf.HDFResults) *XMLHDFResults {
 	}
 
 	// Transform statistics
-	if hdf.Statistics.Duration != nil {
+	if hdf.Statistics != nil && hdf.Statistics.Duration != nil {
 		result.Statistics = &XMLStatistics{
 			Duration: hdf.Statistics.Duration,
 		}

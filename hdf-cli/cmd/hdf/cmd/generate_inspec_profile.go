@@ -171,7 +171,10 @@ func writeInSpecProfile(profile generators.InSpecProfile, outputDir string) erro
 	sort.Strings(filenames)
 
 	for _, name := range filenames {
-		controlPath := filepath.Join(outputDir, name)
+		controlPath, pathErr := safePath(outputDir, name)
+		if pathErr != nil {
+			return fmt.Errorf("unsafe control path %q: %w", name, pathErr)
+		}
 		controlDir := filepath.Dir(controlPath)
 		if err := os.MkdirAll(controlDir, 0o750); err != nil { //nolint:gosec // profile dirs need group read
 			return fmt.Errorf("failed to create directory %s: %w", controlDir, err)

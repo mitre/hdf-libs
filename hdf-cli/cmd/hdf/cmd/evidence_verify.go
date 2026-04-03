@@ -106,9 +106,12 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 // verifyCompleteness checks that every baseline in the plan has a
 // corresponding results document in the evidence package.
 func verifyCompleteness(pkgDir, planRef string, contents []interface{}) error {
-	// Load the plan
-	planPath := filepath.Join(pkgDir, planRef)
-	planData, err := os.ReadFile(planPath) //nolint:gosec // resolves relative to package
+	// Load the plan (validate path stays within package directory)
+	planPath, err := safePath(pkgDir, planRef)
+	if err != nil {
+		return fmt.Errorf("invalid plan reference: %w", err)
+	}
+	planData, err := os.ReadFile(planPath) //nolint:gosec // validated by safePath
 	if err != nil {
 		return fmt.Errorf("failed to read plan %s: %w", planRef, err)
 	}
@@ -146,8 +149,11 @@ func verifyCompleteness(pkgDir, planRef string, contents []interface{}) error {
 			continue
 		}
 
-		resultsPath := filepath.Join(pkgDir, uri)
-		resultsData, readErr := os.ReadFile(resultsPath) //nolint:gosec // resolves relative to package
+		resultsPath, pathErr := safePath(pkgDir, uri)
+		if pathErr != nil {
+			return fmt.Errorf("invalid results URI %q: %w", uri, pathErr)
+		}
+		resultsData, readErr := os.ReadFile(resultsPath) //nolint:gosec // validated by safePath
 		if readErr != nil {
 			continue // checksum verification already reported this
 		}
@@ -234,8 +240,11 @@ func verifyContentEntry(entry map[string]interface{}, uri, docType, pkgDir strin
 		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifySkipped}
 	}
 
-	filePath := filepath.Join(pkgDir, uri)
-	fileData, err := os.ReadFile(filePath) //nolint:gosec // resolves relative to package
+	filePath, pathErr := safePath(pkgDir, uri)
+	if pathErr != nil {
+		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifyError, Error: pathErr.Error()}
+	}
+	fileData, err := os.ReadFile(filePath) //nolint:gosec // validated by safePath
 	if err != nil {
 		return evidenceVerifyResult{URI: uri, Type: docType, Status: verifyError, Error: err.Error()}
 	}
