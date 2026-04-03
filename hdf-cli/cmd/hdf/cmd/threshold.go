@@ -156,24 +156,18 @@ func overallStatus(results []hdf.RequirementResult) hdf.ResultStatus {
 }
 
 // deriveSeverity determines the severity string from impact and optional
-// explicit severity. Matches the impact-to-severity mapping used throughout
-// the HDF ecosystem.
+// explicit severity. Delegates to impactToSeverity (query.go) for the
+// impact-based mapping, with an override when explicit severity is provided.
+// Maps "informational" to "none" for SAF CLI threshold YAML compatibility.
 func deriveSeverity(impact float64, severity *hdf.Severity) string {
 	if severity != nil {
 		return string(*severity)
 	}
-	switch {
-	case impact == 0.0:
+	sev := impactToSeverity(impact)
+	if sev == SeverityInformational {
 		return "none"
-	case impact < 0.4:
-		return string(hdf.SeverityLow)
-	case impact < 0.7:
-		return string(hdf.Medium)
-	case impact < 0.9:
-		return string(hdf.SeverityHigh)
-	default:
-		return string(hdf.Critical)
 	}
+	return sev
 }
 
 // addCount increments the appropriate severity bucket for the given status.
