@@ -190,3 +190,27 @@ jobs:
           files: release-assets/*
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
+
+      - name: Create Go module version tags
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+
+          # Each Go module needs a tag with its subdirectory prefix
+          # so the Go module proxy can discover the correct version.
+          GO_MODULES=(
+            "hdf-converters"
+            "hdf-schema/dist/go"
+            "hdf-mappings/go"
+            "hdf-validators/go"
+            "hdf-parsers/go"
+            "hdf-generators/go"
+            "hdf-cli"
+          )
+
+          for mod in "${GO_MODULES[@]}"; do
+            TAG="${mod}/${VERSION}"
+            echo "Creating tag: ${TAG}"
+            git tag "${TAG}"
+          done
+
+          git push origin --tags
