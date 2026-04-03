@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -318,11 +317,4 @@ func TestDetectConverter_VersionPassthrough(t *testing.T) {
 	result := DetectConverter([]byte(sarifInput))
 	require.NotNil(t, result)
 	assert.Equal(t, "2.1.0", result.Version)
-}
-
-// helper to parse JSON for testing
-func parseJSON(data []byte) any {
-	var v any
-	_ = json.Unmarshal(data, &v)
-	return v
 }

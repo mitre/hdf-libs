@@ -87,7 +87,7 @@ func TestConvertHDFToXML(t *testing.T) {
 	t.Run("should throw error for missing baselines field", func(t *testing.T) {
 		_, err := ConvertHDFToXML([]byte(`{"foo": "bar"}`))
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Invalid HDF structure: missing baselines field")
+		assert.Contains(t, err.Error(), "invalid HDF structure: missing baselines field")
 	})
 
 	t.Run("should handle multiple baselines and components", func(t *testing.T) {

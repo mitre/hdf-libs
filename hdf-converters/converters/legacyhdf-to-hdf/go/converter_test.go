@@ -731,8 +731,6 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 	})
 }
 
-func strPtr(s string) *string { return &s }
-
 // ── Severity from tags.severity ──────────────────
 
 func TestSeverityFromTagsSeverity(t *testing.T) {

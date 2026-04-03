@@ -137,7 +137,7 @@ func buildMessage(f TrufflehogFinding) *string {
 	if f.VerificationError != "" {
 		msg["VerificationError"] = f.VerificationError
 	}
-	if f.ExtraData != nil && len(f.ExtraData) > 0 {
+	if len(f.ExtraData) > 0 {
 		msg["ExtraData"] = f.ExtraData
 	}
 	data, err := json.Marshal(msg)

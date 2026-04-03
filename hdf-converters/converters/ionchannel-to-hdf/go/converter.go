@@ -209,7 +209,7 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	}
 
 	if analysis.ScanSummaries == nil {
-		return nil, fmt.Errorf("Ion Channel scan_summaries is missing")
+		return nil, fmt.Errorf("ion channel: scan_summaries is missing")
 	}
 
 	// Extract dependencies from the dependency scan summary

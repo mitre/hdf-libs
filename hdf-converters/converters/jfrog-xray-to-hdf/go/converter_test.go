@@ -20,15 +20,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 func findDescription(descs []hdf.Description, label string) *hdf.Description {
 	for i := range descs {
 		if descs[i].Label == label {

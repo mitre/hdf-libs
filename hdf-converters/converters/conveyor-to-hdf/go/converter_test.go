@@ -43,14 +43,6 @@ func containsStr(s, substr string) bool {
 	return false
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
 
 // ---- Input validation ----
 

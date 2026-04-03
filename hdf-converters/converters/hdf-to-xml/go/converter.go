@@ -26,7 +26,7 @@ func ConvertHDFToXML(input []byte) ([]byte, error) {
 
 	// Validate structure
 	if hdfData.Baselines == nil {
-		return nil, fmt.Errorf("Invalid HDF structure: missing baselines field")
+		return nil, fmt.Errorf("invalid HDF structure: missing baselines field")
 	}
 
 	// Transform to XML structure
@@ -224,7 +224,7 @@ func transformRequirement(req hdf.EvaluatedRequirement) XMLRequirement {
 	}
 
 	// Transform tags - extract NIST and CCI as arrays
-	if req.Tags != nil && len(req.Tags) > 0 {
+	if len(req.Tags) > 0 {
 		xmlReq.Tags = &XMLTags{}
 
 		// Extract NIST controls
