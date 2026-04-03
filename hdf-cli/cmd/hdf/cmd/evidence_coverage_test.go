@@ -45,7 +45,7 @@ func TestEvidenceBuildBasic(t *testing.T) {
 
 		assert.Equal(t, "test-system-evidence-package", pkg["name"])
 		assert.NotEmpty(t, pkg["preparedAt"])
-		assert.Equal(t, systemPath, pkg["systemRef"])
+		assert.Equal(t, filepath.Base(systemPath), pkg["systemRef"])
 
 		contents, ok := pkg["contents"].([]interface{})
 		require.True(t, ok)
