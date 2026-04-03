@@ -3,7 +3,6 @@ package zap_to_hdf
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -171,6 +170,13 @@ func selectSite(sites []ZapSite) *ZapSite {
 // ConvertZapToHDF converts OWASP ZAP JSON to HDF Results.
 // If the input is detected as SARIF, it delegates to the SARIF converter.
 func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("zap: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "zap", 0); err != nil {
+		return nil, fmt.Errorf("zap: %w", err)
+	}
+
 	// SARIF routing — delegate to the shared SARIF converter
 	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
 		return sarif.ConvertSarifToHDF(input, converterVersion)
@@ -199,10 +205,7 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 		// Deduplicate pluginids
 		pluginIDCount := make(map[string]int)
 
-		limitedAlerts, truncatedAlerts := shared.LimitSlice(site.Alerts, 0)
-		if truncatedAlerts {
-			log.Printf("WARNING: Input truncated at %d alert items (original: %d)", len(limitedAlerts), len(site.Alerts))
-		}
+		limitedAlerts := shared.LimitSliceWithWarning(site.Alerts, 0, "alert")
 
 		zeroTime := time.Time{}
 
@@ -243,10 +246,7 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 			// Build results from instances
 			var results []hdf.RequirementResult
 			if len(alert.Instances) > 0 {
-				limitedInstances, instTruncated := shared.LimitSlice(alert.Instances, 0)
-				if instTruncated {
-					log.Printf("WARNING: Instances truncated at %d for alert %s", len(limitedInstances), alert.PluginID)
-				}
+				limitedInstances := shared.LimitSliceWithWarning(alert.Instances, 0, "instance")
 				for _, inst := range limitedInstances {
 					result := hdf.RequirementResult{
 						Status:    hdf.Failed,

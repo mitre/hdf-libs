@@ -3,7 +3,6 @@ package snyk
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -123,10 +122,7 @@ func buildRequirement(vulnID string, vulns []SnykVuln) hdf.EvaluatedRequirement 
 
 // convertSingleProject converts a single Snyk project report to an HDF baseline.
 func convertSingleProject(report SnykReport, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
-	limitedVulns, truncatedVulns := shared.LimitSlice(report.Vulnerabilities, 0)
-	if truncatedVulns {
-		log.Printf("WARNING: Input truncated at %d vulnerability items (original: %d)", len(limitedVulns), len(report.Vulnerabilities))
-	}
+	limitedVulns := shared.LimitSliceWithWarning(report.Vulnerabilities, 0, "vulnerability")
 	order, groups := groupByID(limitedVulns)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, vulnID := range order {
@@ -156,6 +152,9 @@ func convertSingleProject(report SnykReport, checksum *hdf.Checksum) hdf.Evaluat
 func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("snyk: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "snyk", 0); err != nil {
+		return nil, fmt.Errorf("snyk: %w", err)
 	}
 
 	// Detect format: if SARIF, delegate to the shared SARIF converter
@@ -211,10 +210,7 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 }
 
 func convertMultiProject(reports []SnykReport, checksum *hdf.Checksum, converterVersion string) (*hdf.HDFResults, error) {
-	limitedReports, truncatedReports := shared.LimitSlice(reports, 0)
-	if truncatedReports {
-		log.Printf("WARNING: Input truncated at %d project items (original: %d)", len(limitedReports), len(reports))
-	}
+	limitedReports := shared.LimitSliceWithWarning(reports, 0, "project")
 	baselines := make([]hdf.EvaluatedBaseline, len(limitedReports))
 	for i, report := range limitedReports {
 		baselines[i] = convertSingleProject(report, checksum)

@@ -1,6 +1,7 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { buildCsv } from '@mitre/hdf-utilities';
 import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, Component, Description } from '@mitre/hdf-schema';
+import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 /**
  * Row structure for CSV export
@@ -28,6 +29,7 @@ interface CsvRow {
  * @returns CSV string with sanitized output
  */
 export function convertHdfToCsv(input: string): string {
+  validateInputSize(input, 'hdf-to-csv');
   const hdf = parseJSON<HdfResults>(input);
 
   if (!hdf || typeof hdf !== 'object' || !('baselines' in hdf)) {

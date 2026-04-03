@@ -3,7 +3,6 @@ package gosec
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -201,6 +200,9 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	if len(input) == 0 {
 		return nil, fmt.Errorf("gosec: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "gosec", 0); err != nil {
+		return nil, fmt.Errorf("gosec: %w", err)
+	}
 
 	// Detect format: if SARIF, delegate to the shared SARIF converter
 	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
@@ -214,10 +216,7 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 	checksum := shared.InputChecksum(input)
 
-	limitedIssues, truncatedIssues := shared.LimitSlice(report.Issues, 0)
-	if truncatedIssues {
-		log.Printf("WARNING: Input truncated at %d issue items (original: %d)", len(limitedIssues), len(report.Issues))
-	}
+	limitedIssues := shared.LimitSliceWithWarning(report.Issues, 0, "issue")
 	order, groups := groupByRuleID(limitedIssues)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, ruleID := range order {

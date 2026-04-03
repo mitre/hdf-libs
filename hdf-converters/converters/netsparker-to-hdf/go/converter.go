@@ -3,7 +3,6 @@ package netsparker
 import (
 	"encoding/xml"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"time"
@@ -339,10 +338,7 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	}
 
 	vulns := netsparkerData.Vulnerabilities.Vulnerability
-	limitedVulns, truncated := shared.LimitSlice(vulns, 0)
-	if truncated {
-		log.Printf("WARNING: Input truncated at %d vulnerability items (original: %d)", len(limitedVulns), len(vulns))
-	}
+	limitedVulns := shared.LimitSliceWithWarning(vulns, 0, "vulnerability")
 
 	// Build one requirement per vulnerability
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedVulns))

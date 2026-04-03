@@ -31,7 +31,7 @@ func catalogToBaseline(catalog *Catalog, rawInput []byte, converterVersion strin
 		group := &catalog.Groups[i]
 		var reqIDs []string
 
-		limitedControls, _ := shared.LimitSlice(group.Controls, 0)
+		limitedControls := shared.LimitSliceWithWarning(group.Controls, 0, "control")
 		for j := range limitedControls {
 			ctrl := &limitedControls[j]
 			req := controlToBaselineRequirement(ctrl)

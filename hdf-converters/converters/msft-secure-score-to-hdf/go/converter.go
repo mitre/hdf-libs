@@ -231,6 +231,9 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 	if len(input) == 0 {
 		return nil, fmt.Errorf("msft-secure-score: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "msft-secure-score", 0); err != nil {
+		return nil, fmt.Errorf("msft-secure-score: %w", err)
+	}
 
 	var combined CombinedResponse
 	if err := json.Unmarshal(input, &combined); err != nil {

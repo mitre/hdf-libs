@@ -71,6 +71,9 @@ func ConvertMsftDefenderDevopsToHDF(input []byte, converterVersion string) (*hdf
 	if len(input) == 0 {
 		return nil, fmt.Errorf("msft-defender-devops: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "msft-defender-devops", 0); err != nil {
+		return nil, fmt.Errorf("msft-defender-devops: %w", err)
+	}
 
 	// 1. Parse raw SARIF to extract MSDO-specific fields
 	var raw msdoSarif

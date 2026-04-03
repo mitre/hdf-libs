@@ -32,7 +32,7 @@ func ConvertComponentDefinitionToHDF(input []byte, converterVersion string) (*hd
 	var requirements []hdf.BaselineRequirement
 
 	for _, ci := range comp.ControlImplementations {
-		limitedIR, _ := shared.LimitSlice(ci.ImplementedRequirements, 0)
+		limitedIR := shared.LimitSliceWithWarning(ci.ImplementedRequirements, 0, "implemented requirement")
 		for _, ir := range limitedIR {
 			req := implementedRequirementToBaselineRequirement(&ir)
 			requirements = append(requirements, req)

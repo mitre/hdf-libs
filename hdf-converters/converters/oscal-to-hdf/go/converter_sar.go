@@ -88,7 +88,7 @@ func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput 
 	controlOrder := make([]string, 0)
 	controlMap := make(map[string]*controlFindings)
 
-	limitedFindings, _ := shared.LimitSlice(result.Findings, 0)
+	limitedFindings := shared.LimitSliceWithWarning(result.Findings, 0, "finding")
 	for i := range limitedFindings {
 		f := &limitedFindings[i]
 		controlID := extractControlIDFromFinding(f)

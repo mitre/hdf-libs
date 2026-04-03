@@ -96,6 +96,9 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 	if len(input) == 0 {
 		return nil, fmt.Errorf("msft-defender-cloud: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "msft-defender-cloud", 0); err != nil {
+		return nil, fmt.Errorf("msft-defender-cloud: %w", err)
+	}
 
 	var raw defenderCloudInput
 	if err := json.Unmarshal(input, &raw); err != nil {

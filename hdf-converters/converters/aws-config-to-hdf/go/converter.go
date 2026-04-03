@@ -4,7 +4,6 @@ package awsconfig
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -69,6 +68,9 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "aws-config", 0); err != nil {
+		return nil, fmt.Errorf("aws-config: %w", err)
+	}
 
 	integrity := shared.InputIntegrity(input)
 
@@ -113,10 +115,7 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 // buildBaseline creates one EvaluatedBaseline from all ConfigRules.
 func buildBaseline(rules []ConfigRule, integrity *hdf.Integrity) hdf.EvaluatedBaseline {
-	limitedRules, truncatedRules := shared.LimitSlice(rules, 0)
-	if truncatedRules {
-		log.Printf("WARNING: Input truncated at %d ConfigRule items (original: %d)", len(limitedRules), len(rules))
-	}
+	limitedRules := shared.LimitSliceWithWarning(rules, 0, "rule")
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(limitedRules))
 	for _, rule := range limitedRules {
 		requirements = append(requirements, buildRequirement(rule))

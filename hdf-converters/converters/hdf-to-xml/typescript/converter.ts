@@ -1,5 +1,6 @@
 import { parseJSON, buildXml } from '@mitre/hdf-utilities';
 import type { HdfResults, EvaluatedRequirement, Description, RequirementResult } from '@mitre/hdf-schema';
+import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 /**
  * Convert HDF JSON to XML format
@@ -7,6 +8,7 @@ import type { HdfResults, EvaluatedRequirement, Description, RequirementResult }
  * @returns XML string with proper HDF structure
  */
 export function convertHdfToXml(input: string): string {
+  validateInputSize(input, 'hdf-to-xml');
   const hdf = parseJSON<HdfResults>(input);
 
   if (!hdf || typeof hdf !== 'object' || !('baselines' in hdf)) {

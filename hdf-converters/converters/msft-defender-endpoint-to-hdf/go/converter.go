@@ -3,7 +3,6 @@ package msftdefenderendpoint
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -216,6 +215,9 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 	if len(input) == 0 {
 		return nil, fmt.Errorf("msft-defender-endpoint: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "msft-defender-endpoint", 0); err != nil {
+		return nil, fmt.Errorf("msft-defender-endpoint: %w", err)
+	}
 
 	var response mdeAlertResponse
 	if err := json.Unmarshal(input, &response); err != nil {
@@ -228,10 +230,7 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 
 	checksum := shared.InputChecksum(input)
 
-	limitedAlerts, truncated := shared.LimitSlice(response.Value, 0)
-	if truncated {
-		log.Printf("WARNING: Input truncated at %d alert items (original: %d)", len(limitedAlerts), len(response.Value))
-	}
+	limitedAlerts := shared.LimitSliceWithWarning(response.Value, 0, "alert")
 
 	// Build requirements preserving insertion order
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedAlerts))

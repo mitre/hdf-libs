@@ -3,7 +3,6 @@ package gitlab_to_hdf
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -275,6 +274,9 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "gitlab", 0); err != nil {
+		return nil, fmt.Errorf("gitlab: %w", err)
+	}
 
 	resultsChecksum := shared.InputChecksum(input)
 
@@ -301,10 +303,7 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		startTime = report.Scan.StartTime
 	}
 
-	limitedVulns, truncated := shared.LimitSlice(report.Vulnerabilities, 0)
-	if truncated {
-		log.Printf("WARNING: Input truncated at %d vulnerabilities (original: %d)", len(limitedVulns), len(report.Vulnerabilities))
-	}
+	limitedVulns := shared.LimitSliceWithWarning(report.Vulnerabilities, 0, "vulnerability")
 
 	var requirements []hdf.EvaluatedRequirement
 

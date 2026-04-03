@@ -255,6 +255,9 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	if len(input) == 0 {
 		return nil, fmt.Errorf("prisma: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "prisma", 0); err != nil {
+		return nil, fmt.Errorf("prisma: %w", err)
+	}
 
 	records, err := parseCSV(input)
 	if err != nil {

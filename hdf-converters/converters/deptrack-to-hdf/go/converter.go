@@ -198,6 +198,9 @@ func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	if len(input) == 0 {
 		return nil, fmt.Errorf("deptrack: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "deptrack", 0); err != nil {
+		return nil, fmt.Errorf("deptrack: %w", err)
+	}
 
 	var report DeptrackReport
 	if err := json.Unmarshal(input, &report); err != nil {

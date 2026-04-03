@@ -28,7 +28,7 @@ func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, conve
 	riskMap := buildRiskMap(poam.Risks)
 
 	// Convert poam-items to StandaloneOverrides
-	limitedPOAMItems, _ := shared.LimitSlice(poam.POAMItems, 0)
+	limitedPOAMItems := shared.LimitSliceWithWarning(poam.POAMItems, 0, "POA&M item")
 	overrides := make([]hdf.StandaloneOverride, 0, len(limitedPOAMItems))
 	for i := range limitedPOAMItems {
 		override := poamItemToOverride(&limitedPOAMItems[i], riskMap, poam)

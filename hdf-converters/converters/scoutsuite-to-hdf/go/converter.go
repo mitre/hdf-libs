@@ -227,6 +227,9 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	if len(input) == 0 {
 		return nil, fmt.Errorf("scoutsuite: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "scoutsuite", 0); err != nil {
+		return nil, fmt.Errorf("scoutsuite: %w", err)
+	}
 
 	// Strip JS variable prefix if present
 	jsonStr := stripJSPrefix(string(input))
@@ -241,11 +244,7 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	// Collapse all service findings into a flat list
 	order, findings := collapseFindings(&report)
 
-	limitedOrder, truncated := shared.LimitSlice(order, 0)
-	if truncated {
-		// Only process up to the limit
-		order = limitedOrder
-	}
+	order = shared.LimitSliceWithWarning(order, 0, "finding")
 
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, ruleID := range order {

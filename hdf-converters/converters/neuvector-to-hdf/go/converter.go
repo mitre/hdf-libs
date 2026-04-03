@@ -171,6 +171,9 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	if len(input) == 0 {
 		return nil, fmt.Errorf("neuvector: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "neuvector", 0); err != nil {
+		return nil, fmt.Errorf("neuvector: %w", err)
+	}
 
 	var scan NeuVectorScan
 	if err := json.Unmarshal(input, &scan); err != nil {

@@ -284,6 +284,9 @@ func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	if len(input) == 0 {
 		return nil, fmt.Errorf("conveyor: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "conveyor", 0); err != nil {
+		return nil, fmt.Errorf("conveyor: %w", err)
+	}
 
 	var data ConveyorData
 	if err := json.Unmarshal(input, &data); err != nil {

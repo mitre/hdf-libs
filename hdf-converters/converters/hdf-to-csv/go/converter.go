@@ -7,11 +7,19 @@ import (
 	"fmt"
 	"strings"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
 // ConvertHDFToCSV converts HDF JSON to CSV format
 func ConvertHDFToCSV(input []byte) ([]byte, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("hdf-to-csv: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "hdf-to-csv", 0); err != nil {
+		return nil, fmt.Errorf("hdf-to-csv: %w", err)
+	}
+
 	// Parse HDF JSON
 	var hdfData hdf.HDFResults
 	if err := json.Unmarshal(input, &hdfData); err != nil {

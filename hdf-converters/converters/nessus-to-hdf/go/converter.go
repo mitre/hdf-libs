@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -48,10 +47,7 @@ func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResu
 	version := extractVersion(&nessus)
 	reportHosts := nessus.Report.ReportHosts
 
-	limitedHosts, truncatedHosts := shared.LimitSlice(reportHosts, 0)
-	if truncatedHosts {
-		log.Printf("WARNING: Input truncated at %d ReportHost items (original: %d)", len(limitedHosts), len(reportHosts))
-	}
+	limitedHosts := shared.LimitSliceWithWarning(reportHosts, 0, "host")
 
 	// Calculate timing from first and last host
 	startTime, duration := calculateTiming(limitedHosts)
@@ -138,10 +134,7 @@ func getHostPropertyValue(host *ReportHost, name string) string {
 func convertReportHostToBaseline(host *ReportHost, policyName, version string, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
 	var requirements []hdf.EvaluatedRequirement
 
-	limitedItems, truncatedItems := shared.LimitSlice(host.ReportItems, 0)
-	if truncatedItems {
-		log.Printf("WARNING: Input truncated at %d ReportItem items (original: %d)", len(limitedItems), len(host.ReportItems))
-	}
+	limitedItems := shared.LimitSliceWithWarning(host.ReportItems, 0, "report item")
 	for _, item := range limitedItems {
 		req := convertReportItemToRequirement(&item, host)
 		requirements = append(requirements, req)

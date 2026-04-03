@@ -3,7 +3,6 @@ package sarif
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -196,6 +195,13 @@ var sarifAliases = map[string]float64{
 // the input's "version" field. SARIF 2.0 input is normalized to 2.1 structure
 // before processing.
 func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("sarif: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "sarif", 0); err != nil {
+		return nil, fmt.Errorf("sarif: %w", err)
+	}
+
 	resultsChecksum := shared.InputChecksum(input)
 
 	// Determine effective input version from parameter or input
@@ -221,10 +227,7 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 
 	timestamp := time.Now()
 
-	limitedRuns, truncatedRuns := shared.LimitSlice(sarif.Runs, 0)
-	if truncatedRuns {
-		log.Printf("WARNING: Input truncated at %d run items (original: %d)", len(limitedRuns), len(sarif.Runs))
-	}
+	limitedRuns := shared.LimitSliceWithWarning(sarif.Runs, 0, "run")
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(limitedRuns))
 
 	for _, run := range limitedRuns {
@@ -353,10 +356,7 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 		rule    *ReportingDescriptor
 		results []SarifResult
 	}
-	limitedResults, truncatedResults := shared.LimitSlice(run.Results, 0)
-	if truncatedResults {
-		log.Printf("WARNING: Input truncated at %d result items (original: %d)", len(limitedResults), len(run.Results))
-	}
+	limitedResults := shared.LimitSliceWithWarning(run.Results, 0, "result")
 	groupOrder := []string{}
 	groupMap := make(map[string]*resultGroup)
 	for _, result := range limitedResults {

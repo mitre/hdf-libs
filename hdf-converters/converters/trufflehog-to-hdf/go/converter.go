@@ -272,6 +272,9 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	if len(input) == 0 {
 		return nil, fmt.Errorf("trufflehog: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "trufflehog", 0); err != nil {
+		return nil, fmt.Errorf("trufflehog: %w", err)
+	}
 
 	findings, err := parseFindings(input)
 	if err != nil {

@@ -199,6 +199,9 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "ionchannel", 0); err != nil {
+		return nil, fmt.Errorf("ionchannel: %w", err)
+	}
 
 	var analysis IonChannelAnalysis
 	if err := json.Unmarshal(input, &analysis); err != nil {

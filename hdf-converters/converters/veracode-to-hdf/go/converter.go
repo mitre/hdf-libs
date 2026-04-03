@@ -12,7 +12,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -420,10 +419,7 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 	// Collect all flaws from all CWEs under this category
 	var results []hdf.RequirementResult
 	for _, c := range cat.CWEs {
-		limited, truncated := shared.LimitSlice(c.StaticFlaws.Flaws, 0)
-		if truncated {
-			log.Printf("WARNING: Input truncated at %d flaw items", len(limited))
-		}
+		limited := shared.LimitSliceWithWarning(c.StaticFlaws.Flaws, 0, "flaw")
 		for _, flaw := range limited {
 			result := buildFlawResult(flaw, firstBuildDate)
 			results = append(results, result)

@@ -3,7 +3,6 @@ package cyclonedx_to_hdf
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -186,6 +185,9 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	if len(input) == 0 {
 		return nil, fmt.Errorf("cyclonedx: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "cyclonedx", 0); err != nil {
+		return nil, fmt.Errorf("cyclonedx: %w", err)
+	}
 
 	var bom CycloneDXBom
 	if err := json.Unmarshal(input, &bom); err != nil {
@@ -217,10 +219,7 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		}
 	}
 
-	limitedVulns, truncatedVulns := shared.LimitSlice(bom.Vulnerabilities, 0)
-	if truncatedVulns {
-		log.Printf("WARNING: Input truncated at %d vulnerability items (original: %d)", len(limitedVulns), len(bom.Vulnerabilities))
-	}
+	limitedVulns := shared.LimitSliceWithWarning(bom.Vulnerabilities, 0, "vulnerability")
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(limitedVulns))
 
 	for _, vuln := range limitedVulns {

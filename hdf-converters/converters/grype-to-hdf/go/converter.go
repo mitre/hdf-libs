@@ -3,7 +3,6 @@ package grype_to_hdf
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -325,6 +324,13 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 
 // ConvertGrypeToHDF converts Grype JSON to HDF
 func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("grype: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "grype", 0); err != nil {
+		return nil, fmt.Errorf("grype: %w", err)
+	}
+
 	// Calculate checksum of input data
 	resultsChecksum := shared.InputChecksum(input)
 
@@ -338,19 +344,13 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	requirements := []hdf.EvaluatedRequirement{}
 
 	// Process regular matches
-	limitedMatches, truncatedMatches := shared.LimitSlice(grypeData.Matches, 0)
-	if truncatedMatches {
-		log.Printf("WARNING: Input truncated at %d match items (original: %d)", len(limitedMatches), len(grypeData.Matches))
-	}
+	limitedMatches := shared.LimitSliceWithWarning(grypeData.Matches, 0, "match")
 	for _, match := range limitedMatches {
 		requirements = append(requirements, convertMatchToRequirement(match, false))
 	}
 
 	// Process ignored matches
-	limitedIgnored, truncatedIgnored := shared.LimitSlice(grypeData.IgnoredMatches, 0)
-	if truncatedIgnored {
-		log.Printf("WARNING: Input truncated at %d ignoredMatch items (original: %d)", len(limitedIgnored), len(grypeData.IgnoredMatches))
-	}
+	limitedIgnored := shared.LimitSliceWithWarning(grypeData.IgnoredMatches, 0, "ignored match")
 	for _, match := range limitedIgnored {
 		requirements = append(requirements, convertMatchToRequirement(match, true))
 	}

@@ -11,6 +11,7 @@
 
 import { flattenOverlays } from '@mitre/hdf-parsers';
 import type { HdfResults } from '@mitre/hdf-schema';
+import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
 
@@ -540,6 +541,7 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
  * ```
  */
 export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
+  validateInputSize(JSON.stringify(v1Data), 'legacyhdf-to-hdf');
   const v2: HDFV2Results = {
     baselines: (v1Data.profiles || []).map(convertProfile),
     statistics: v1Data.statistics || {},

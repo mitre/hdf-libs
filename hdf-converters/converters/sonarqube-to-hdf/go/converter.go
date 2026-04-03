@@ -3,7 +3,6 @@ package sonarqube
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"time"
@@ -127,6 +126,13 @@ const sonarTimestampFormat = "2006-01-02T15:04:05-0700"
 
 // ConvertSonarqubeToHDF converts SonarQube issues JSON to HDF format
 func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("sonarqube: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "sonarqube", 0); err != nil {
+		return nil, fmt.Errorf("sonarqube: %w", err)
+	}
+
 	// Calculate checksum of source scan data
 	resultsChecksum := shared.InputChecksum(input)
 
@@ -151,10 +157,7 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}
 
 	// Group issues by project
-	limitedIssues, truncatedIssues := shared.LimitSlice(sonarData.Issues, 0)
-	if truncatedIssues {
-		log.Printf("WARNING: Input truncated at %d issue items (original: %d)", len(limitedIssues), len(sonarData.Issues))
-	}
+	limitedIssues := shared.LimitSliceWithWarning(sonarData.Issues, 0, "issue")
 	issuesByProject := make(map[string][]Issue)
 	for _, issue := range limitedIssues {
 		projectKey := issue.Project

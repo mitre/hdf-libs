@@ -105,6 +105,13 @@ type SplunkSourceLocation struct {
 // into HDF Results format. The input is a JSON array of Splunk events that
 // were originally decomposed from HDF data for Splunk storage.
 func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("splunk: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "splunk", 0); err != nil {
+		return nil, fmt.Errorf("splunk: %w", err)
+	}
+
 	resultsChecksum := shared.InputChecksum(input)
 
 	var rawEvents []json.RawMessage
