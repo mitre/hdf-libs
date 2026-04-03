@@ -2,6 +2,7 @@ import {readFileSync} from 'fs';
 import {join} from 'path';
 import {describe, expect, it} from 'vitest';
 import {convertNiktoToHdf} from './converter';
+import {runConverterContractTests} from '../../../shared/typescript/converter-contract.js';
 import {parseJSON} from '@mitre/hdf-utilities';
 import type {HdfResults} from '@mitre/hdf-schema';
 
@@ -11,16 +12,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'nikto-to-hdf',
+  convertFn: convertNiktoToHdf,
+  minimalFixture: 'minimal.json',
+});
+
 describe('Nikto Converter', async () => {
   describe('validation', () => {
-    it('should throw error for empty input', async () => {
-      await expect(convertNiktoToHdf('')).rejects.toThrow();
-    });
-
-    it('should throw error for invalid JSON', async () => {
-      await expect(convertNiktoToHdf('not valid json')).rejects.toThrow();
-    });
-
     it('should handle missing vulnerabilities array', async () => {
       const input = JSON.stringify({host: 'example.com', port: '80'});
       const output = await convertNiktoToHdf(input);
@@ -79,8 +78,8 @@ describe('Nikto Converter', async () => {
       const output = await convertNiktoToHdf(input);
       const hdf = parseJSON<HdfResults>(output);
 
-      expect(hdf.dataSource?.name).toBe('Nikto');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('Nikto');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 

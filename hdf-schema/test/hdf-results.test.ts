@@ -60,42 +60,42 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept dataSource with name and version', () => {
+    it('should accept tool with name and version', () => {
       const doc = createMinimalResultsDoc({
-        dataSource: { name: 'gosec', version: '2.18.0' },
+        tool: { name: 'gosec', version: '2.18.0' },
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept dataSource with name only', () => {
+    it('should accept tool with name only', () => {
       const doc = createMinimalResultsDoc({
-        dataSource: { name: 'AWS Config' },
+        tool: { name: 'AWS Config' },
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept dataSource with name, version, and format', () => {
+    it('should accept tool with name, version, and format', () => {
       const doc = createMinimalResultsDoc({
-        dataSource: { name: 'Semgrep', version: '1.45.0', format: 'SARIF' },
+        tool: { name: 'Semgrep', version: '1.45.0', format: 'SARIF' },
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept dataSource with format only (tool unknown)', () => {
+    it('should accept tool with format only (tool unknown)', () => {
       const doc = createMinimalResultsDoc({
-        dataSource: { format: 'SARIF' },
+        tool: { format: 'SARIF' },
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept dataSource as empty object (all fields optional)', () => {
+    it('should accept tool as empty object (all fields optional)', () => {
       const doc = createMinimalResultsDoc({
-        dataSource: {},
+        tool: {},
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept document with dataSource omitted entirely', () => {
+    it('should accept document with tool omitted entirely', () => {
       const doc = createMinimalResultsDoc();
       expect(validate(doc)).toBe(true);
     });
@@ -169,35 +169,35 @@ describe('hdf-results.schema.json (refactored)', () => {
     });
   });
 
-  describe('targets array (new field)', () => {
-    it('should accept empty targets array', () => {
-      expect(validate(createMinimalResultsDoc({ targets: [] }))).toBe(true);
+  describe('components array (new field)', () => {
+    it('should accept empty components array', () => {
+      expect(validate(createMinimalResultsDoc({ components: [] }))).toBe(true);
     });
 
-    it('should accept host target', () => {
+    it('should accept host component', () => {
       const doc = createMinimalResultsDoc({
-        targets: [{ type: 'host', name: 'web-server-01', fqdn: 'web-server-01.example.com' }],
+        components: [{ type: 'host', name: 'web-server-01', fqdn: 'web-server-01.example.com' }],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept container_image target', () => {
+    it('should accept container_image component', () => {
       const doc = createMinimalResultsDoc({
-        targets: [{ type: 'containerImage', name: 'nginx:latest', imageId: 'sha256:abc123' }],
+        components: [{ type: 'containerImage', name: 'nginx:latest', imageId: 'sha256:abc123' }],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept cloud_account target', () => {
+    it('should accept cloud_account component', () => {
       const doc = createMinimalResultsDoc({
-        targets: [{ type: 'cloudAccount', name: 'prod-aws', provider: 'aws', accountId: '123456789012' }],
+        components: [{ type: 'cloudAccount', name: 'prod-aws', provider: 'aws', accountId: '123456789012' }],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept multiple targets of different types', () => {
+    it('should accept multiple components of different types', () => {
       const doc = createMinimalResultsDoc({
-        targets: [
+        components: [
           { type: 'host', name: 'server-01' },
           { type: 'containerImage', name: 'app:v1', imageId: 'sha256:xyz' },
           { type: 'database', name: 'prod-db', engine: 'postgresql' },
@@ -220,29 +220,29 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate baseline with sha512 checksum', () => {
+    it('should validate baseline with sha512 integrity', () => {
       const baseline = {
         name: 'test-baseline',
-        requirements: [],
-        checksum: { algorithm: 'sha512', value: 'longer-sha512-hash-value' },
+        requirements: [createMinimalRequirement()],
+        integrity: { algorithm: 'sha512', checksum: 'longer-sha512-hash-value' },
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should validate baseline with sha384 checksum', () => {
+    it('should validate baseline with sha384 integrity', () => {
       const doc = createMinimalResultsDoc({
         baselines: [createMinimalEvaluatedBaseline({
-          checksum: { algorithm: 'sha384', value: 'sha384-value' }
+          integrity: { algorithm: 'sha384', checksum: 'sha384-value' }
         })],
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept baseline without checksum', () => {
+    it('should accept baseline without integrity', () => {
       const baseline = {
         name: 'test-baseline',
-        requirements: [],
+        requirements: [createMinimalRequirement()],
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
       expect(validate(doc)).toBe(true);
@@ -251,8 +251,8 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should accept baseline without supports field', () => {
       const baseline = {
         name: 'test-baseline',
-        requirements: [],
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        requirements: [createMinimalRequirement()],
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
       expect(validate(doc)).toBe(true);
@@ -261,8 +261,8 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should accept baseline without attributes field', () => {
       const baseline = {
         name: 'test-baseline',
-        requirements: [],
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        requirements: [createMinimalRequirement()],
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
       expect(validate(doc)).toBe(true);
@@ -271,8 +271,8 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should accept baseline without groups field', () => {
       const baseline = {
         name: 'test-baseline',
-        requirements: [],
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        requirements: [createMinimalRequirement()],
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });
       expect(validate(doc)).toBe(true);
@@ -281,8 +281,8 @@ describe('hdf-results.schema.json (refactored)', () => {
     it('should accept baseline with supports field when provided', () => {
       const baseline = {
         name: 'test-baseline',
-        requirements: [],
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        requirements: [createMinimalRequirement()],
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
         supports: [{ platformFamily: 'redhat', platformName: 'centos' }],
       };
       const doc = createMinimalResultsDoc({ baselines: [baseline] });

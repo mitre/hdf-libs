@@ -1109,13 +1109,13 @@ describe('XCCDF branch coverage', () => {
   it('should handle missing target element', async () => {
     const xml = makeXccdfResultsXml({ hasTarget: false });
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.targets).toHaveLength(0);
+    expect(hdf.components).toHaveLength(0);
   });
 
   it('should handle target with address', async () => {
     const xml = makeXccdfResultsXml({ hasTargetAddress: true });
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.targets![0]!.ipAddress).toBe('10.0.0.1');
+    expect(hdf.components![0]!.ipAddress).toBe('10.0.0.1');
   });
 
   it('should handle missing start-time', async () => {
@@ -3320,7 +3320,7 @@ describe('XCCDF extractCheckContent branch coverage', () => {
         </reports>
       </asset-report-collection>`;
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.targets).toHaveLength(0);
+    expect(hdf.components).toHaveLength(0);
   });
 
   it('should handle benchmark top-level rule with no id (skipped) — L440', async () => {
@@ -4069,7 +4069,7 @@ describe('XCCDF second-pass branch coverage', () => {
         </reports>
       </asset-report-collection>`;
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.targets[0]!.fqdn).toBe('test.com');
+    expect(hdf.components[0]!.fqdn).toBe('test.com');
   });
 
   it('should handle buildRuleIndex with groups having no Rule — L743', async () => {

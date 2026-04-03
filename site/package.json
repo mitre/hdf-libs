@@ -1,0 +1,14 @@
+{
+  "name": "@mitre/hdf-schema-site",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "generate": "node generate-schema-docs.mjs",
+    "dev": "pnpm generate && vitepress dev",
+    "build": "pnpm generate && vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  }
+}

@@ -11,7 +11,7 @@ func TestParseResults_Valid(t *testing.T) {
 		validJSON := []byte(`{
 			"baselines": [{
 				"name": "Test Baseline",
-				"checksum": { "algorithm": "sha256", "value": "abc123" },
+				"integrity": { "algorithm": "sha256", "checksum": "abc123" },
 				"requirements": [{
 					"id": "REQ-001",
 					"descriptions": [{ "label": "default", "data": "Test description" }],
@@ -24,7 +24,7 @@ func TestParseResults_Valid(t *testing.T) {
 					}]
 				}]
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -42,7 +42,7 @@ func TestParseResults_Valid(t *testing.T) {
 			"baselines": [
 				{
 					"name": "Baseline 1",
-					"checksum": { "algorithm": "sha256", "value": "hash1" },
+					"integrity": { "algorithm": "sha256", "checksum": "hash1" },
 					"requirements": [{
 						"id": "REQ-001",
 						"descriptions": [{ "label": "default", "data": "Desc 1" }],
@@ -58,7 +58,7 @@ func TestParseResults_Valid(t *testing.T) {
 				},
 				{
 					"name": "Baseline 2",
-					"checksum": { "algorithm": "sha512", "value": "hash2" },
+					"integrity": { "algorithm": "sha512", "checksum": "hash2" },
 					"requirements": [{
 						"id": "REQ-002",
 						"descriptions": [{ "label": "default", "data": "Desc 2" }],
@@ -72,7 +72,7 @@ func TestParseResults_Valid(t *testing.T) {
 					}]
 				}
 			],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -98,7 +98,7 @@ func TestParseResults_Invalid(t *testing.T) {
 
 	t.Run("should reject results missing baselines field", func(t *testing.T) {
 		invalidJSON := []byte(`{
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -112,10 +112,10 @@ func TestParseResults_Invalid(t *testing.T) {
 	t.Run("should reject results with invalid baseline structure", func(t *testing.T) {
 		invalidJSON := []byte(`{
 			"baselines": [{
-				"checksum": { "algorithm": "sha256", "value": "test" },
+				"integrity": { "algorithm": "sha256", "checksum": "test" },
 				"requirements": []
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -129,7 +129,7 @@ func TestParseResults_Invalid(t *testing.T) {
 		invalidJSON := []byte(`{
 			"baselines": [{
 				"name": "Test",
-				"checksum": { "algorithm": "sha256", "value": "test" },
+				"integrity": { "algorithm": "sha256", "checksum": "test" },
 				"requirements": [{
 					"id": "REQ-001",
 					"impact": 0.5,
@@ -137,7 +137,7 @@ func TestParseResults_Invalid(t *testing.T) {
 					"results": []
 				}]
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -168,7 +168,7 @@ func TestParseBaseline_Valid(t *testing.T) {
 			"name": "Security Baseline",
 			"title": "Test Baseline",
 			"version": "1.0.0",
-			"checksum": { "algorithm": "sha256", "value": "def456" },
+			"integrity": { "algorithm": "sha256", "checksum": "def456" },
 			"requirements": [{
 				"id": "REQ-001",
 				"title": "Access Control",
@@ -190,7 +190,7 @@ func TestParseBaseline_Valid(t *testing.T) {
 		validJSON := []byte(`{
 			"name": "Multi-Req Baseline",
 			"version": "2.0.0",
-			"checksum": { "algorithm": "sha512", "value": "hash" },
+			"integrity": { "algorithm": "sha512", "checksum": "hash" },
 			"requirements": [
 				{
 					"id": "REQ-001",
@@ -220,7 +220,7 @@ func TestParseBaseline_Invalid(t *testing.T) {
 	t.Run("should reject baseline missing name", func(t *testing.T) {
 		invalidJSON := []byte(`{
 			"version": "1.0.0",
-			"checksum": { "algorithm": "sha256", "value": "test" },
+			"integrity": { "algorithm": "sha256", "checksum": "test" },
 			"requirements": []
 		}`)
 
@@ -233,7 +233,7 @@ func TestParseBaseline_Invalid(t *testing.T) {
 	t.Run("should reject baseline with empty requirements array", func(t *testing.T) {
 		invalidJSON := []byte(`{
 			"name": "Test Baseline",
-			"checksum": { "algorithm": "sha256", "value": "test" },
+			"integrity": { "algorithm": "sha256", "checksum": "test" },
 			"requirements": []
 		}`)
 
@@ -249,10 +249,16 @@ func TestParse_AutoDetection(t *testing.T) {
 		resultsJSON := []byte(`{
 			"baselines": [{
 				"name": "Test",
-				"checksum": { "algorithm": "sha256", "value": "test" },
-				"requirements": []
+				"integrity": { "algorithm": "sha256", "checksum": "test" },
+				"requirements": [{
+					"id": "REQ-001",
+					"descriptions": [{ "label": "default", "data": "Test" }],
+					"impact": 0.5,
+					"tags": {},
+					"results": [{ "status": "passed", "codeDesc": "OK", "startTime": "2025-01-01T00:00:00Z" }]
+				}]
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -267,7 +273,7 @@ func TestParse_AutoDetection(t *testing.T) {
 		baselineJSON := []byte(`{
 			"name": "Test Baseline",
 			"version": "1.0.0",
-			"checksum": { "algorithm": "sha256", "value": "test" },
+			"integrity": { "algorithm": "sha256", "checksum": "test" },
 			"requirements": [{
 				"id": "REQ-001",
 				"title": "Test",
@@ -311,7 +317,7 @@ func TestErrorMessages(t *testing.T) {
 			"baselines": [{
 				"name": "Test"
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 

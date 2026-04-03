@@ -1,0 +1,176 @@
+{
+  "_provenance": "Constructed from Microsoft Graph Security API v2 documentation (security/alerts_v2). Alert structure and evidence types match official docs at learn.microsoft.com/en-us/graph/api/resources/security-alert. Not real tool output — replace with actual MDE export when available.",
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#security/alerts_v2",
+  "value": [
+    {
+      "id": "da637472900382838869_1364969609",
+      "incidentId": "1126093",
+      "status": "new",
+      "severity": "high",
+      "classification": null,
+      "determination": null,
+      "serviceSource": "microsoftDefenderForEndpoint",
+      "detectionSource": "WindowsDefenderAtp",
+      "category": "Execution",
+      "title": "Suspicious process executed",
+      "description": "A suspicious process was detected executing on the host. This may indicate malware activity or unauthorized code execution.",
+      "alertWebUrl": "https://security.microsoft.com/alerts/da637472900382838869_1364969609",
+      "createdDateTime": "2021-01-26T20:33:57.7220239Z",
+      "firstActivityDateTime": "2021-01-26T20:31:32.9562661Z",
+      "lastActivityDateTime": "2021-01-26T20:31:33.0577322Z",
+      "lastUpdateDateTime": "2021-01-26T20:33:59.2Z",
+      "resolvedDateTime": null,
+      "assignedTo": null,
+      "tenantId": "a839b112-1253-6432-9bf6-94542403f21c",
+      "actorDisplayName": null,
+      "threatDisplayName": null,
+      "threatFamilyName": null,
+      "mitreTechniques": ["T1059", "T1059.001"],
+      "recommendedActions": "Isolate the affected machine immediately. Collect forensic artifacts for analysis.",
+      "comments": [],
+      "evidence": [
+        {
+          "@odata.type": "#microsoft.graph.security.deviceEvidence",
+          "deviceDnsName": "workstation01.corp.contoso.com",
+          "osPlatform": "Windows11",
+          "mdeDeviceId": "222e6dd8c833c8a052ea231ec1b19adaf497b625",
+          "healthStatus": "active",
+          "onboardingStatus": "onboarded",
+          "rbacGroupName": "Engineering"
+        },
+        {
+          "@odata.type": "#microsoft.graph.security.processEvidence",
+          "processId": 4512,
+          "processCommandLine": "powershell.exe -encodedCommand JABjAGwAaQBlAG4AdA...",
+          "imageFile": {
+            "fileName": "powershell.exe",
+            "filePath": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+            "sha256": "b5b5c5d5e5f5a5b5c5d5e5f5a5b5c5d5e5f5a5b5c5d5e5f5a5b5c5d5e5f5a5b5"
+          },
+          "detectionStatus": "detected"
+        }
+      ]
+    },
+    {
+      "id": "da637472900382838870_9876543210",
+      "incidentId": "1126094",
+      "status": "inProgress",
+      "severity": "medium",
+      "classification": null,
+      "determination": null,
+      "serviceSource": "microsoftDefenderForEndpoint",
+      "detectionSource": "WindowsDefenderAtp",
+      "category": "LateralMovement",
+      "title": "Suspicious remote WMI execution",
+      "description": "A remote WMI execution was detected, which may indicate lateral movement by an attacker.",
+      "alertWebUrl": "https://security.microsoft.com/alerts/da637472900382838870_9876543210",
+      "createdDateTime": "2021-01-27T10:15:00.0000000Z",
+      "firstActivityDateTime": "2021-01-27T10:14:00.0000000Z",
+      "lastActivityDateTime": "2021-01-27T10:14:30.0000000Z",
+      "lastUpdateDateTime": "2021-01-27T10:16:00.0000000Z",
+      "resolvedDateTime": null,
+      "assignedTo": "analyst@contoso.com",
+      "tenantId": "a839b112-1253-6432-9bf6-94542403f21c",
+      "actorDisplayName": null,
+      "threatDisplayName": null,
+      "threatFamilyName": null,
+      "mitreTechniques": ["T1047"],
+      "recommendedActions": "Verify the legitimacy of the WMI execution. Check the source and destination hosts for compromise indicators.",
+      "comments": [],
+      "evidence": [
+        {
+          "@odata.type": "#microsoft.graph.security.deviceEvidence",
+          "deviceDnsName": "server02.corp.contoso.com",
+          "osPlatform": "WindowsServer2019",
+          "mdeDeviceId": "333e6dd8c833c8a052ea231ec1b19adaf497b625",
+          "healthStatus": "active",
+          "onboardingStatus": "onboarded",
+          "rbacGroupName": "Servers"
+        }
+      ]
+    },
+    {
+      "id": "da637472900382838871_1111111111",
+      "incidentId": "1126095",
+      "status": "resolved",
+      "severity": "informational",
+      "classification": "falsePositive",
+      "determination": "notMalicious",
+      "serviceSource": "microsoftDefenderForEndpoint",
+      "detectionSource": "WindowsDefenderAtp",
+      "category": "DefenseEvasion",
+      "title": "Unusual network connection established",
+      "description": "An unusual outbound network connection was detected from the host. Investigation determined this was legitimate traffic.",
+      "alertWebUrl": "https://security.microsoft.com/alerts/da637472900382838871_1111111111",
+      "createdDateTime": "2021-01-28T08:00:00.0000000Z",
+      "firstActivityDateTime": "2021-01-28T07:58:00.0000000Z",
+      "lastActivityDateTime": "2021-01-28T07:59:00.0000000Z",
+      "lastUpdateDateTime": "2021-01-28T12:00:00.0000000Z",
+      "resolvedDateTime": "2021-01-28T12:00:00.0000000Z",
+      "assignedTo": "analyst@contoso.com",
+      "tenantId": "a839b112-1253-6432-9bf6-94542403f21c",
+      "actorDisplayName": null,
+      "threatDisplayName": null,
+      "threatFamilyName": null,
+      "mitreTechniques": [],
+      "recommendedActions": "No action required. Alert resolved as false positive.",
+      "comments": [],
+      "evidence": [
+        {
+          "@odata.type": "#microsoft.graph.security.deviceEvidence",
+          "deviceDnsName": "laptop03.corp.contoso.com",
+          "osPlatform": "Windows10",
+          "mdeDeviceId": "444e6dd8c833c8a052ea231ec1b19adaf497b625",
+          "healthStatus": "active",
+          "onboardingStatus": "onboarded",
+          "rbacGroupName": "Users"
+        }
+      ]
+    },
+    {
+      "id": "da637472900382838872_2222222222",
+      "incidentId": "1126096",
+      "status": "resolved",
+      "severity": "medium",
+      "classification": "truePositive",
+      "determination": "malware",
+      "serviceSource": "microsoftDefenderForEndpoint",
+      "detectionSource": "WindowsDefenderAv",
+      "category": "Malware",
+      "title": "Malware detected and quarantined",
+      "description": "Known malware was detected on the endpoint and automatically quarantined by Windows Defender Antivirus.",
+      "alertWebUrl": "https://security.microsoft.com/alerts/da637472900382838872_2222222222",
+      "createdDateTime": "2021-01-29T14:00:00.0000000Z",
+      "firstActivityDateTime": "2021-01-29T13:55:00.0000000Z",
+      "lastActivityDateTime": "2021-01-29T13:56:00.0000000Z",
+      "lastUpdateDateTime": "2021-01-29T14:30:00.0000000Z",
+      "resolvedDateTime": "2021-01-29T14:30:00.0000000Z",
+      "assignedTo": "analyst@contoso.com",
+      "tenantId": "a839b112-1253-6432-9bf6-94542403f21c",
+      "actorDisplayName": null,
+      "threatDisplayName": "Trojan:Win32/Emotet",
+      "threatFamilyName": "Emotet",
+      "mitreTechniques": ["T1566", "T1566.001"],
+      "recommendedActions": "Verify quarantine was successful. Scan other machines on the network for related indicators of compromise.",
+      "comments": [],
+      "evidence": [
+        {
+          "@odata.type": "#microsoft.graph.security.deviceEvidence",
+          "deviceDnsName": "workstation04.corp.contoso.com",
+          "osPlatform": "Windows10",
+          "mdeDeviceId": "555e6dd8c833c8a052ea231ec1b19adaf497b625",
+          "healthStatus": "active",
+          "onboardingStatus": "onboarded",
+          "rbacGroupName": "Finance"
+        },
+        {
+          "@odata.type": "#microsoft.graph.security.fileEvidence",
+          "fileName": "invoice.doc",
+          "filePath": "C:\\Users\\jdoe\\Downloads",
+          "sha256": "d4d4e4f4a4b4c4d4e4f4a4b4c4d4e4f4a4b4c4d4e4f4a4b4c4d4e4f4a4b4c4d4",
+          "detectionStatus": "detected"
+        }
+      ]
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertConveyorToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,16 +13,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'conveyor-to-hdf',
+  convertFn: convertConveyorToHdf,
+  minimalFixture: 'sample-results.json',
+});
+
 describe('conveyor to HDF converter', async () => {
   describe('input validation', async () => {
-    it('should throw on empty input', async () => {
-      await expect(convertConveyorToHdf('')).rejects.toThrow();
-    });
-
-    it('should throw on invalid JSON', async () => {
-      await expect(convertConveyorToHdf('not json')).rejects.toThrow();
-    });
-
     it('should throw when api_response is missing', async () => {
       await expect(convertConveyorToHdf('{"api_error_message": ""}')).rejects.toThrow();
     });
@@ -61,25 +60,25 @@ describe('conveyor to HDF converter', async () => {
     });
   });
 
-  describe('generator and dataSource', async () => {
+  describe('generator and tool', async () => {
     it('should set generator name and version', async () => {
       const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
       expect(hdf.generator?.name).toBe('conveyor-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource name to "Conveyor" and format to "JSON"', async () => {
+    it('should set tool name to "Conveyor" and format to "JSON"', async () => {
       const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('Conveyor');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('Conveyor');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 
   describe('target', async () => {
     it('should set target type to Application', async () => {
       const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.type).toBe('application');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.type).toBe('application');
     });
   });
 
@@ -295,7 +294,7 @@ describe('conveyor to HDF converter', async () => {
         },
       });
       const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
-      expect(hdf.targets![0]!.name).toBe('Custom Target');
+      expect(hdf.components![0]!.name).toBe('Custom Target');
     });
 
     it('should use default target name when params has no description', async () => {
@@ -312,7 +311,7 @@ describe('conveyor to HDF converter', async () => {
         },
       });
       const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
-      expect(hdf.targets![0]!.name).toBe('Conveyor Scan');
+      expect(hdf.components![0]!.name).toBe('Conveyor Scan');
     });
 
     it('should handle negative score → impact 0.0', async () => {

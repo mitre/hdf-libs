@@ -31,15 +31,13 @@
     "inputs": {
       "type": "array",
       "items": {
-        "type": "object",
-        "additionalProperties": true,
-        "description": "An input or attribute used in the run."
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v2.0.0#/$defs/Input"
       },
       "description": "The input(s) or attribute(s) to be used in the run."
     },
-    "checksum": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
-      "description": "Cryptographic checksum for baseline integrity verification."
+    "integrity": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
+      "description": "Cryptographic integrity information for verifying this baseline has not been tampered with."
     },
     "remediation": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation",
@@ -57,6 +55,72 @@
       "description": "The tool that generated this file."
     }
   },
+  "examples": [
+    {
+      "name": "ubuntu-2204-stig-baseline",
+      "title": "Canonical Ubuntu 22.04 LTS STIG Baseline",
+      "version": "1.2.0",
+      "maintainer": "DISA STIG Team",
+      "license": "Apache-2.0",
+      "summary": "Security Technical Implementation Guide for Ubuntu 22.04 LTS",
+      "supports": [
+        {
+          "platformName": "ubuntu",
+          "platformFamily": "debian",
+          "release": "22.04"
+        }
+      ],
+      "requirements": [
+        {
+          "id": "SV-260476",
+          "title": "Ubuntu 22.04 LTS must enforce password complexity",
+          "impact": 0.5,
+          "tags": {
+            "nist": ["IA-5"],
+            "severity": "medium",
+            "gtitle": "SRG-OS-000069-GPOS-00037"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Use of a complex password helps to increase the time and resources required to compromise the password."
+            },
+            {
+              "label": "check",
+              "data": "Verify the value of 'minlen' in /etc/security/pwquality.conf is 15 or more."
+            },
+            {
+              "label": "fix",
+              "data": "Configure Ubuntu 22.04 LTS to enforce a minimum 15-character password length by adding 'minlen = 15' to /etc/security/pwquality.conf."
+            }
+          ]
+        },
+        {
+          "id": "SV-260477",
+          "title": "Ubuntu 22.04 LTS must configure audit logging",
+          "impact": 0.7,
+          "tags": {
+            "nist": ["AU-3", "AU-12"],
+            "severity": "high",
+            "gtitle": "SRG-OS-000037-GPOS-00015"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Without establishing what type of events occurred, it would be difficult to establish, correlate, and investigate security incidents."
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "id": "controls/SV-260476.rb",
+          "title": "Password Configuration",
+          "requirements": ["SV-260476"]
+        }
+      ]
+    }
+  ],
   "description": "Information on the set of requirements that can be assessed, including baseline metadata and requirement definitions.",
   "title": "HDF Baseline",
   "$defs": {
@@ -80,14 +144,7 @@
           "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
         },
         "severity": {
-          "type": "string",
-          "enum": [
-            "critical",
-            "high",
-            "medium",
-            "low",
-            "informational"
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Severity",
           "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
         }
       },

@@ -1,0 +1,209 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Task : Audit; Check Category : Improper Access Controls",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Schema name=DatabaseMailUserRole;Database=msdb;Owner name=DatabaseMailUserRole",
+              "startTime": "2021-02-18T15:57:00Z",
+              "status": "notReviewed"
+            },
+            {
+              "codeDesc": "Schema name=db_accessadmin;Database=AppDetective;Owner name=db_accessadmin",
+              "startTime": "2021-02-18T15:57:00Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "2986",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Schema ownership"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Task : Audit; Check Category : Misconfigurations",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Key=##MS_ServiceMasterKey##;Database=master;Algorithm=AES_256",
+              "startTime": "2021-02-18T15:57:00Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "2903",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Symmetric encryption keys"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Task : Audit; Check Category : Misconfigurations",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Check \"Browser Service enabled\" execution failed since we are unable to get the required data:\nUser credentials cannot be used for local connections ",
+              "startTime": "2021-02-18T15:57:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "2841",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Browser Service enabled"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Task : Audit; Check Category : Improper Access Controls",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Key=MS_SQLEnableSystemAssemblyLoadingKey;Private key encryption type=NO_PRIVATE_KEY;Database containing key=master",
+              "startTime": "2021-02-18T15:57:00Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Owner of the key=sa;Is SYSADMIN=Yes;Key=MS_SQLEnableSystemAssemblyLoadingKey;Database containing key=master",
+              "startTime": "2021-02-18T15:57:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "2801",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Protection of DBMS asymmetric encryption keys"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Task : Audit; Check Category : Improper Access Controls",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "None",
+              "startTime": "2021-02-18T15:57:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "2942",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Permission to configure Server Audit to audit at the server level"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Task : Audit; Check Category : Misconfigurations",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Microsoft Analysis Services (OLAP) has not been found.",
+              "startTime": "2021-02-18T15:57:00Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "2976",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "SQL Server Usage and Error Reporting Auditing"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "65aeadc64024beee0d5392d598f1b70314332353911111f3ff82dc05c27e5b40"
+      },
+      "name": "DBProtect Scan",
+      "summary": "Organization : TEST ORGANIZATION (Local DBP server)\nAsset : CONDS181\nAsset Type : Microsoft SQL Server\nIP Address, Port, Instance : 10.0.10.204, 1433, MSSQLSERVER",
+      "title": "Heimdal Test scan report generation",
+      "version": "DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)"
+    }
+  ],
+  "components": [
+    {
+      "name": "CONDS181",
+      "type": "host"
+    }
+  ],
+  "generator": {
+    "name": "dbprotect-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:51.7461608Z",
+  "tool": {
+    "format": "XML",
+    "name": "DBProtect"
+  }
+}

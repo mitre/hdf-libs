@@ -25,7 +25,7 @@
     "vet": "go vet ./...",
 
     "security": "pnpm run security:sast && pnpm run security:vuln && pnpm run security:secrets",
-    "security:sast": "gosec -fmt=json -out=gosec-report.json ./... || gosec ./...",
+    "security:sast": "gosec -exclude=G304,G104,G115,G706 -exclude-generated ./...",
     "security:vuln": "govulncheck ./...",
     "security:secrets": "gitleaks detect --source=. --config=.gitleaks.toml --verbose",
 

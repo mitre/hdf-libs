@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -114,6 +115,11 @@ func TestFetchSonarqubeCmd_Success(t *testing.T) {
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/server/version" {
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = fmt.Fprint(w, "10.8.1")
+			return
+		}
 		assert.Equal(t, "/api/issues/search", r.URL.Path)
 		assert.Contains(t, r.Header.Get("Authorization"), "Bearer tok")
 		writeSonarIssuesPage(w, []sonarqubeconv.Issue{issue}, 1)

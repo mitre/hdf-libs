@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	hdf "github.com/mitre/hdf-schema"
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,25 +42,24 @@ func TestConvertJUnitToHDF_SurefireFailing(t *testing.T) {
 	assert.Len(t, result.Baselines, 1)
 }
 
-func TestConvertJUnitToHDF_DataSource(t *testing.T) {
+func TestConvertJUnitToHDF_Tool(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-failing.xml"), converterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "JUnit XML", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "XML", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "JUnit XML", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "XML", *result.Tool.Format)
 }
 
-func TestConvertJUnitToHDF_InvalidInput(t *testing.T) {
-	_, err := ConvertJUnitToHDF([]byte("not xml"), converterVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertJUnitToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertJUnitToHDF([]byte(""), converterVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "junit-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertJUnitToHDF(input, converterVersion) },
+		MinimalFixture: "surefire-error.xml",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 func TestConvertJUnitToHDF_InvalidXML(t *testing.T) {
@@ -455,4 +454,10 @@ func TestConvertJUnitToHDF_EntityExpansion(t *testing.T) {
 	_, err := ConvertJUnitToHDF(input, converterVersion)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "junit-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertJUnitToHDF(input, "0.1.0")
+	})
 }

@@ -9,11 +9,11 @@
       "license": "Apache-2.0",
       "copyright_email": ".",
       "supports": [],
-      "attributes": [],
+      "inputs": [],
       "status": "loaded",
-      "checksum": {
+      "integrity": {
         "algorithm": "sha256",
-        "value": "fc0f6db0597cff55669b412aa860907e4eaf1f8fb9ffe549853dcbf8d6a0a4ca"
+        "checksum": "fc0f6db0597cff55669b412aa860907e4eaf1f8fb9ffe549853dcbf8d6a0a4ca"
       },
       "statusMessage": "",
       "groups": [
@@ -1559,7 +1559,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "This control consistently takes a long time to run and has been disabled\n    using the disable_slow_controls attribute.",
-              "runTime": 0.000014285,
+              "runTime": 1.4285e-05,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -1618,7 +1618,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "This control consistently takes a long to run and has been disabled\n    using the disable_slow_controls attribute.",
-              "runTime": 0.000008675,
+              "runTime": 8.675e-06,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -1682,7 +1682,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The GNOME desktop is not installed",
-              "runTime": 0.000007091,
+              "runTime": 7.091e-06,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -1746,7 +1746,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GNOME installed",
-              "runTime": 0.000005985,
+              "runTime": 5.985e-06,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -1882,7 +1882,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GNOME installed",
-              "runTime": 0.000006798,
+              "runTime": 6.798e-06,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -1941,7 +1941,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GNOME installed",
-              "runTime": 0.000004607,
+              "runTime": 4.607e-06,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -2069,7 +2069,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GNOME installed",
-              "runTime": 0.000008448,
+              "runTime": 8.448e-06,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -2128,7 +2128,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GNOME installed",
-              "runTime": 0.000007923,
+              "runTime": 7.923e-06,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -3088,7 +3088,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "This is Not Applicable for the project since we have an approved risk-based decision on 10/1/2021 allowing reuse of old passwords",
-              "runTime": 0.000010459,
+              "runTime": 1.0459e-05,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -4054,7 +4054,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GDM installed",
-              "runTime": 0.000012677,
+              "runTime": 1.2677e-05,
               "startTime": "2022-03-06T22:05:49+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -4113,7 +4113,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GDM installed",
-              "runTime": 0.000007698,
+              "runTime": 7.698e-06,
               "startTime": "2022-03-06T22:05:49+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -4288,7 +4288,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "System running version of RHEL that is equal to or newer than 7.2",
-              "runTime": 0.000008234,
+              "runTime": 8.234e-06,
               "startTime": "2022-03-06T22:05:49+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -4347,7 +4347,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "System running BIOS",
-              "runTime": 0.000007806,
+              "runTime": 7.806e-06,
               "startTime": "2022-03-06T22:05:49+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -7489,7 +7489,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "This control consistently takes a long to run and has been disabled\n  using the disable_slow_controls attribute.",
-              "runTime": 0.000008098,
+              "runTime": 8.098e-06,
               "startTime": "2022-03-06T22:06:04+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -9127,7 +9127,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "File '/etc/audisp/audisp-remote.conf' cannot be found. This test cannot be checked in a automated fashion and you must check it manually",
-              "runTime": 0.000014542,
+              "runTime": 1.4542e-05,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -9190,7 +9190,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "Parse Config File /etc/audisp/audisp-remote.conf",
-              "runTime": 0.000012562,
+              "runTime": 1.2562e-05,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/audisp/audisp-remote.conf\"]",
@@ -9249,7 +9249,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "Parse Config File /etc/audisp/audisp-remote.conf",
-              "runTime": 0.000006069,
+              "runTime": 6.069e-06,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/audisp/audisp-remote.conf\"]",
@@ -9259,7 +9259,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "Parse Config File /etc/audisp/audisp-remote.conf",
-              "runTime": 0.00000989,
+              "runTime": 9.89e-06,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/audisp/audisp-remote.conf\"]",
@@ -14881,7 +14881,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "LDAP not enabled",
-              "runTime": 0.000010836,
+              "runTime": 1.0836e-05,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -14940,7 +14940,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "LDAP not enabled",
-              "runTime": 0.000034353,
+              "runTime": 3.4353e-05,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -14999,7 +14999,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "LDAP not enabled",
-              "runTime": 0.00000823,
+              "runTime": 8.23e-06,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -15349,7 +15349,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The release is 7.9.2009",
-              "runTime": 0.00001005,
+              "runTime": 1.005e-05,
               "startTime": "2022-03-06T22:06:07+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -15654,7 +15654,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The release is 7.9.2009",
-              "runTime": 0.000009681,
+              "runTime": 9.681e-06,
               "startTime": "2022-03-06T22:06:07+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -17341,7 +17341,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The TFTP package is not installed",
-              "runTime": 0.000012685,
+              "runTime": 1.2685e-05,
               "startTime": "2022-03-06T22:06:09+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -17571,7 +17571,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The `snmpd.conf` does not exist",
-              "runTime": 0.000007803,
+              "runTime": 7.803e-06,
               "startTime": "2022-03-06T22:06:09+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -17687,7 +17687,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have libreswan installed or the ipsec.service isn't running",
-              "runTime": 0.000011027,
+              "runTime": 1.1027e-05,
               "startTime": "2022-03-06T22:06:09+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -17998,7 +17998,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The SSSD Package is not installed on the system",
-              "runTime": 0.000009471,
+              "runTime": 9.471e-06,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -18124,7 +18124,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The GNOME desktop is not installed",
-              "runTime": 0.000007159,
+              "runTime": 7.159e-06,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -18183,7 +18183,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The GNOME desktop is not installed",
-              "runTime": 0.000007752,
+              "runTime": 7.752e-06,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -18372,7 +18372,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "Parse Config File /etc/audisp/audisp-remote.conf",
-              "runTime": 0.000008056,
+              "runTime": 8.056e-06,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/audisp/audisp-remote.conf\"]",
@@ -18846,7 +18846,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The GNOME desktop is not installed",
-              "runTime": 0.000013842,
+              "runTime": 1.3842e-05,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -18856,7 +18856,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The pcsc-lite package is not installed",
-              "runTime": 0.000010141,
+              "runTime": 1.0141e-05,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -18866,7 +18866,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The esc package is not installed",
-              "runTime": 0.000009305,
+              "runTime": 9.305e-06,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -19060,10 +19060,10 @@
           "id": "V-78995",
           "impact": 0,
           "title": "The Red Hat Enterprise Linux operating system must prevent a user from\noverriding the screensaver lock-enabled setting for the graphical user\ninterface.",
-          "desc": "A session lock is a temporary action taken when a user stops work and\nmoves away from the immediate physical vicinity of the information system but\ndoes not want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user’s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.",
+          "desc": "A session lock is a temporary action taken when a user stops work and\nmoves away from the immediate physical vicinity of the information system but\ndoes not want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user\u2019s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.",
           "descriptions": [
             {
-              "data": "A session lock is a temporary action taken when a user stops work and\nmoves away from the immediate physical vicinity of the information system but\ndoes not want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user’s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.",
+              "data": "A session lock is a temporary action taken when a user stops work and\nmoves away from the immediate physical vicinity of the information system but\ndoes not want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user\u2019s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.",
               "label": "default"
             },
             {
@@ -19094,7 +19094,7 @@
               "AC-11 a"
             ]
           },
-          "code": "control \"V-78995\" do\n  title \"The Red Hat Enterprise Linux operating system must prevent a user from\noverriding the screensaver lock-enabled setting for the graphical user\ninterface.\"\n  desc  \"A session lock is a temporary action taken when a user stops work and\nmoves away from the immediate physical vicinity of the information system but\ndoes not want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user’s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.\n\n  \"\n  desc  \"rationale\", \"\"\n  desc  \"check\", \"\n    Verify the operating system prevents a user from overriding the screensaver\nlock-enabled setting for the graphical user interface.\n\n    Note: If the system does not have GNOME installed, this requirement is Not\nApplicable. The screen program must be installed to lock sessions on the\nconsole.\n\n    Determine which profile the system database is using with the following\ncommand:\n    # grep system-db /etc/dconf/profile/user\n\n    system-db:local\n\n    Check for the lock-enabled setting with the following command:\n\n    Note: The example below is using the database \\\"local\\\" for the system, so\nthe path is \\\"/etc/dconf/db/local.d\\\". This path must be modified if a database\nother than \\\"local\\\" is being used.\n\n    # grep -i lock-enabled /etc/dconf/db/local.d/locks/*\n\n    /org/gnome/desktop/screensaver/lock-enabled\n\n    If the command does not return a result, this is a finding.\n\n  \"\n  desc  \"fix\", \"\n    Configure the operating system to prevent a user from overriding a\nscreensaver lock after a 15-minute period of inactivity for graphical user\ninterfaces.\n\n    Create a database to contain the system-wide screensaver settings (if it\ndoes not already exist) with the following command:\n\n    Note: The example below is using the database \\\"local\\\" for the system, so\nif the system is using another database in \\\"/etc/dconf/profile/user\\\", the\nfile should be created under the appropriate subdirectory.\n\n    # touch /etc/dconf/db/local.d/locks/session\n\n    Add the setting to lock the screensaver lock-enabled setting:\n\n    /org/gnome/desktop/screensaver/lock-enabled\n\n  \"\n  impact 0.5\n  tag severity: nil\n  tag gtitle: \"SRG-OS-000029-GPOS-00010\"\n  tag gid: \"V-78995\"\n  tag rid: \"SV-93701r3_rule\"\n  tag stig_id: \"RHEL-07-010062\"\n  tag fix_id: \"F-85745r1_fix\"\n  tag cci: [\"CCI-000057\"]\n  tag nist: [\"AC-11 a\"]\n\n  if package('gnome-desktop3').installed?\n    describe command(\"gsettings writable org.gnome.desktop.screensaver lock-enabled\") do\n      its('stdout.strip') { should cmp 'false' }\n    end\n  else\n    impact 0.0\n    describe \"The GNOME desktop is not installed\" do\n      skip \"The GNOME desktop is not installed, this control is Not Applicable.\"\n    end\n  end  \nend\n",
+          "code": "control \"V-78995\" do\n  title \"The Red Hat Enterprise Linux operating system must prevent a user from\noverriding the screensaver lock-enabled setting for the graphical user\ninterface.\"\n  desc  \"A session lock is a temporary action taken when a user stops work and\nmoves away from the immediate physical vicinity of the information system but\ndoes not want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user\u2019s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.\n\n  \"\n  desc  \"rationale\", \"\"\n  desc  \"check\", \"\n    Verify the operating system prevents a user from overriding the screensaver\nlock-enabled setting for the graphical user interface.\n\n    Note: If the system does not have GNOME installed, this requirement is Not\nApplicable. The screen program must be installed to lock sessions on the\nconsole.\n\n    Determine which profile the system database is using with the following\ncommand:\n    # grep system-db /etc/dconf/profile/user\n\n    system-db:local\n\n    Check for the lock-enabled setting with the following command:\n\n    Note: The example below is using the database \\\"local\\\" for the system, so\nthe path is \\\"/etc/dconf/db/local.d\\\". This path must be modified if a database\nother than \\\"local\\\" is being used.\n\n    # grep -i lock-enabled /etc/dconf/db/local.d/locks/*\n\n    /org/gnome/desktop/screensaver/lock-enabled\n\n    If the command does not return a result, this is a finding.\n\n  \"\n  desc  \"fix\", \"\n    Configure the operating system to prevent a user from overriding a\nscreensaver lock after a 15-minute period of inactivity for graphical user\ninterfaces.\n\n    Create a database to contain the system-wide screensaver settings (if it\ndoes not already exist) with the following command:\n\n    Note: The example below is using the database \\\"local\\\" for the system, so\nif the system is using another database in \\\"/etc/dconf/profile/user\\\", the\nfile should be created under the appropriate subdirectory.\n\n    # touch /etc/dconf/db/local.d/locks/session\n\n    Add the setting to lock the screensaver lock-enabled setting:\n\n    /org/gnome/desktop/screensaver/lock-enabled\n\n  \"\n  impact 0.5\n  tag severity: nil\n  tag gtitle: \"SRG-OS-000029-GPOS-00010\"\n  tag gid: \"V-78995\"\n  tag rid: \"SV-93701r3_rule\"\n  tag stig_id: \"RHEL-07-010062\"\n  tag fix_id: \"F-85745r1_fix\"\n  tag cci: [\"CCI-000057\"]\n  tag nist: [\"AC-11 a\"]\n\n  if package('gnome-desktop3').installed?\n    describe command(\"gsettings writable org.gnome.desktop.screensaver lock-enabled\") do\n      its('stdout.strip') { should cmp 'false' }\n    end\n  else\n    impact 0.0\n    describe \"The GNOME desktop is not installed\" do\n      skip \"The GNOME desktop is not installed, this control is Not Applicable.\"\n    end\n  end  \nend\n",
           "sourceLocation": {
             "line": 2,
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-78995.rb"
@@ -19104,7 +19104,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The GNOME desktop is not installed",
-              "runTime": 0.000092067,
+              "runTime": 9.2067e-05,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -19163,7 +19163,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The GNOME desktop is not installed",
-              "runTime": 0.000009117,
+              "runTime": 9.117e-06,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -19457,7 +19457,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "Parse Config File /boot/grub2/user.cfg",
-              "runTime": 0.000011909,
+              "runTime": 1.1909e-05,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/boot/grub2/user.cfg\"]",
@@ -19524,7 +19524,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "System running BIOS",
-              "runTime": 0.000010374,
+              "runTime": 1.0374e-05,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -19759,7 +19759,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "File '/etc/audisp/plugins.d/au-remote.conf' cannot be found. This test cannot be checked in a automated fashion and you must check it manually",
-              "runTime": 0.000015853,
+              "runTime": 1.5853e-05,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -19822,7 +19822,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "File '/etc/audisp/plugins.d/au-remote.conf' cannot be found. This test cannot be checked in a automated fashion and you must check it manually",
-              "runTime": 0.000009621,
+              "runTime": 9.621e-06,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -20084,7 +20084,7 @@
               "label": "rationale"
             },
             {
-              "data": "Ask the SA or ISSO if a host-based intrusion detection application is\nloaded on the system. Per OPORD 16-0080, the preferred intrusion detection\nsystem is McAfee HBSS available through the U.S. Cyber Command (USCYBERCOM).\n\n    If another host-based intrusion detection application is in use, such as\nSELinux, this must be documented and approved by the local Authorizing Official.\n\n    Procedure:\n    Examine the system to determine if the Host Intrusion Prevention System\n(HIPS) is installed:\n\n    # rpm -qa | grep MFEhiplsm\n\n    Verify that the McAfee HIPS module is active on the system:\n\n    # ps -ef | grep -i “hipclient”\n\n    If the MFEhiplsm package is not installed, check for another intrusion\ndetection system:\n\n    # find / -name <daemon name>\n\n    Where <daemon name> is the name of the primary application daemon to\ndetermine if the application is loaded on the system.\n\n    Determine if the application is active on the system:\n\n    # ps -ef | grep -i <daemon name>\n\n    If the MFEhiplsm package is not installed and an alternate host-based\nintrusion detection application has not been documented for use, this is a\nfinding.\n\n    If no host-based intrusion detection system is installed and running on the\nsystem, this is a finding.",
+              "data": "Ask the SA or ISSO if a host-based intrusion detection application is\nloaded on the system. Per OPORD 16-0080, the preferred intrusion detection\nsystem is McAfee HBSS available through the U.S. Cyber Command (USCYBERCOM).\n\n    If another host-based intrusion detection application is in use, such as\nSELinux, this must be documented and approved by the local Authorizing Official.\n\n    Procedure:\n    Examine the system to determine if the Host Intrusion Prevention System\n(HIPS) is installed:\n\n    # rpm -qa | grep MFEhiplsm\n\n    Verify that the McAfee HIPS module is active on the system:\n\n    # ps -ef | grep -i \u201chipclient\u201d\n\n    If the MFEhiplsm package is not installed, check for another intrusion\ndetection system:\n\n    # find / -name <daemon name>\n\n    Where <daemon name> is the name of the primary application daemon to\ndetermine if the application is loaded on the system.\n\n    Determine if the application is active on the system:\n\n    # ps -ef | grep -i <daemon name>\n\n    If the MFEhiplsm package is not installed and an alternate host-based\nintrusion detection application has not been documented for use, this is a\nfinding.\n\n    If no host-based intrusion detection system is installed and running on the\nsystem, this is a finding.",
               "label": "check"
             },
             {
@@ -20107,7 +20107,7 @@
               "SI-4 (5)"
             ]
           },
-          "code": "control \"V-92255\" do\n  title \"The Red Hat Enterprise Linux operating system must have a host-based\nintrusion detection tool installed.\"\n  desc  \"Adding host-based intrusion detection tools can provide the capability\nto automatically take actions in response to malicious behavior, which can\nprovide additional agility in reacting to network threats. These tools also\noften include a reporting capability to provide network awareness of the\nsystem, which may not otherwise exist in an organization's systems management\nregime.\"\n  desc  \"rationale\", \"\"\n  desc  \"check\", \"\n    Ask the SA or ISSO if a host-based intrusion detection application is\nloaded on the system. Per OPORD 16-0080, the preferred intrusion detection\nsystem is McAfee HBSS available through the U.S. Cyber Command (USCYBERCOM).\n\n    If another host-based intrusion detection application is in use, such as\nSELinux, this must be documented and approved by the local Authorizing Official.\n\n    Procedure:\n    Examine the system to determine if the Host Intrusion Prevention System\n(HIPS) is installed:\n\n    # rpm -qa | grep MFEhiplsm\n\n    Verify that the McAfee HIPS module is active on the system:\n\n    # ps -ef | grep -i “hipclient”\n\n    If the MFEhiplsm package is not installed, check for another intrusion\ndetection system:\n\n    # find / -name <daemon name>\n\n    Where <daemon name> is the name of the primary application daemon to\ndetermine if the application is loaded on the system.\n\n    Determine if the application is active on the system:\n\n    # ps -ef | grep -i <daemon name>\n\n    If the MFEhiplsm package is not installed and an alternate host-based\nintrusion detection application has not been documented for use, this is a\nfinding.\n\n    If no host-based intrusion detection system is installed and running on the\nsystem, this is a finding.\n  \"\n  desc  \"fix\", \"\n    Install and enable the latest McAfee HIPS package, available from\nUSCYBERCOM.\n\n    Note: If the system does not support the McAfee HIPS package, install and\nenable a supported intrusion detection system application and document its use\nwith the Authorizing Official.\n  \"\n  impact 0.5\n  tag severity: nil\n  tag gtitle: \"SRG-OS-000196\"\n  tag gid: \"V-92255\"\n  tag rid: \"SV-102357r1_rule\"\n  tag stig_id: \"RHEL-07-020019\"\n  tag fix_id: \"F-98477r1_fix\"\n  tag cci: [\"CCI-001263\"]\n  tag nist: [\"SI-4 (5)\"]\n\n  custom_hips = input('custom_hips')\n\n  if ! custom_hips\n    describe package('MFEhiplsm') do\n      it { should be_installed }\n    end\n    describe processes(/hipclient/) do\n      it { should exist }\n    end\n  else\n    # Special case for SELinux\n    sel_mode = command('getenforce').stdout.strip\n    custom_hips_daemon = input('custom_hips_daemon')\n    max_daemon_processes = input('max_daemon_processes')\n\n    describe.one do\n      describe \"SELinux mode\" do\n        subject { sel_mode }\n        it { should cmp 'Enforcing' }\n      end\n      describe processes(/#{custom_hips_daemon}/) do\n        it { should exist }\n        its('count') { should be < max_daemon_processes }\n      end\n    end\n  end\nend\n",
+          "code": "control \"V-92255\" do\n  title \"The Red Hat Enterprise Linux operating system must have a host-based\nintrusion detection tool installed.\"\n  desc  \"Adding host-based intrusion detection tools can provide the capability\nto automatically take actions in response to malicious behavior, which can\nprovide additional agility in reacting to network threats. These tools also\noften include a reporting capability to provide network awareness of the\nsystem, which may not otherwise exist in an organization's systems management\nregime.\"\n  desc  \"rationale\", \"\"\n  desc  \"check\", \"\n    Ask the SA or ISSO if a host-based intrusion detection application is\nloaded on the system. Per OPORD 16-0080, the preferred intrusion detection\nsystem is McAfee HBSS available through the U.S. Cyber Command (USCYBERCOM).\n\n    If another host-based intrusion detection application is in use, such as\nSELinux, this must be documented and approved by the local Authorizing Official.\n\n    Procedure:\n    Examine the system to determine if the Host Intrusion Prevention System\n(HIPS) is installed:\n\n    # rpm -qa | grep MFEhiplsm\n\n    Verify that the McAfee HIPS module is active on the system:\n\n    # ps -ef | grep -i \u201chipclient\u201d\n\n    If the MFEhiplsm package is not installed, check for another intrusion\ndetection system:\n\n    # find / -name <daemon name>\n\n    Where <daemon name> is the name of the primary application daemon to\ndetermine if the application is loaded on the system.\n\n    Determine if the application is active on the system:\n\n    # ps -ef | grep -i <daemon name>\n\n    If the MFEhiplsm package is not installed and an alternate host-based\nintrusion detection application has not been documented for use, this is a\nfinding.\n\n    If no host-based intrusion detection system is installed and running on the\nsystem, this is a finding.\n  \"\n  desc  \"fix\", \"\n    Install and enable the latest McAfee HIPS package, available from\nUSCYBERCOM.\n\n    Note: If the system does not support the McAfee HIPS package, install and\nenable a supported intrusion detection system application and document its use\nwith the Authorizing Official.\n  \"\n  impact 0.5\n  tag severity: nil\n  tag gtitle: \"SRG-OS-000196\"\n  tag gid: \"V-92255\"\n  tag rid: \"SV-102357r1_rule\"\n  tag stig_id: \"RHEL-07-020019\"\n  tag fix_id: \"F-98477r1_fix\"\n  tag cci: [\"CCI-001263\"]\n  tag nist: [\"SI-4 (5)\"]\n\n  custom_hips = input('custom_hips')\n\n  if ! custom_hips\n    describe package('MFEhiplsm') do\n      it { should be_installed }\n    end\n    describe processes(/hipclient/) do\n      it { should exist }\n    end\n  else\n    # Special case for SELinux\n    sel_mode = command('getenforce').stdout.strip\n    custom_hips_daemon = input('custom_hips_daemon')\n    max_daemon_processes = input('max_daemon_processes')\n\n    describe.one do\n      describe \"SELinux mode\" do\n        subject { sel_mode }\n        it { should cmp 'Enforcing' }\n      end\n      describe processes(/#{custom_hips_daemon}/) do\n        it { should exist }\n        its('count') { should be < max_daemon_processes }\n      end\n    end\n  end\nend\n",
           "sourceLocation": {
             "line": 2,
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-92255.rb"
@@ -20184,7 +20184,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GNOME installed",
-              "runTime": 0.00001088,
+              "runTime": 1.088e-05,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -20201,15 +20201,16 @@
   "statistics": {
     "duration": 22.029998957
   },
-  "targets": [
+  "components": [
     {
       "type": "host",
       "id": "centos",
       "name": "centos",
-      "release": "7.9.2009"
+      "release": "7.9.2009",
+      "labels": {}
     }
   ],
-  "dataSource": {
+  "tool": {
     "name": "Heimdall Data Format v1"
   }
 }

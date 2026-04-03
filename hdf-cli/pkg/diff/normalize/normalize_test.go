@@ -602,42 +602,42 @@ func TestNormalizeSupports_NonMapEntry(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Coverage: normalizeAttributes — with valid attrs, non-map items
+// Coverage: normalizeInputs — with valid attrs, non-map items
 // ---------------------------------------------------------------------------
 
-func TestNormalizeAttributes_WithValidAttrs(t *testing.T) {
+func TestNormalizeInputs_WithValidAttrs(t *testing.T) {
 	profile := map[string]any{
 		"attributes": []any{
 			map[string]any{"name": "attr1", "options": map[string]any{"type": "string"}},
 			map[string]any{"name": "attr2"},
 		},
 	}
-	attrs := normalizeAttributes(profile)
+	attrs := normalizeInputs(profile)
 	require.Len(t, attrs, 2)
 	assert.Equal(t, "attr1", attrs[0]["name"])
 	assert.Equal(t, "attr2", attrs[1]["name"])
 }
 
-func TestNormalizeAttributes_NoAttrsKey(t *testing.T) {
+func TestNormalizeInputs_NoAttrsKey(t *testing.T) {
 	profile := map[string]any{}
-	attrs := normalizeAttributes(profile)
+	attrs := normalizeInputs(profile)
 	assert.Len(t, attrs, 0)
 }
 
-func TestNormalizeAttributes_AttrsNotArray(t *testing.T) {
+func TestNormalizeInputs_AttrsNotArray(t *testing.T) {
 	profile := map[string]any{"attributes": "nope"}
-	attrs := normalizeAttributes(profile)
+	attrs := normalizeInputs(profile)
 	assert.Len(t, attrs, 0)
 }
 
-func TestNormalizeAttributes_NonMapEntry(t *testing.T) {
+func TestNormalizeInputs_NonMapEntry(t *testing.T) {
 	profile := map[string]any{
 		"attributes": []any{
 			"not-a-map",
 			map[string]any{"name": "real-attr"},
 		},
 	}
-	attrs := normalizeAttributes(profile)
+	attrs := normalizeInputs(profile)
 	assert.Len(t, attrs, 1)
 }
 

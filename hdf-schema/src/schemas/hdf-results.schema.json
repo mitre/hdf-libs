@@ -17,12 +17,12 @@
       "format": "date-time",
       "description": "When this assessment was executed."
     },
-    "targets": {
+    "components": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Target"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0#/$defs/Component"
       },
-      "description": "The target systems that were assessed. Supports multiple targets of different types."
+      "description": "The components that were assessed. Each component describes a system element (host, container, cloud resource, application, etc.) with optional identity, SBOM, and external references."
     },
     "baselines": {
       "type": "array",
@@ -39,9 +39,9 @@
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
       "description": "Information about the tool that generated this file."
     },
-    "dataSource": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/DataSource",
-      "description": "The tool or service that produced the security data in this file."
+    "tool": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Tool",
+      "description": "The security tool that produced the assessment data in this file."
     },
     "integrity": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
@@ -55,12 +55,93 @@
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation",
       "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for fixing failing requirements found in this assessment."
     },
+    "systemRef": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "Reference to an hdf-system document describing the system under assessment. May be a relative path, absolute URI, or fragment identifier."
+    },
+    "planRef": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "Reference to an hdf-plan document describing the assessment plan that produced these results. May be a relative path, absolute URI, or fragment identifier."
+    },
     "extensions": {
       "type": "object",
       "additionalProperties": true,
       "description": "Reserved for tool-specific data not defined in the HDF standard. Use this to preserve original tool output, auxiliary data, or custom metadata."
     }
   },
+  "examples": [
+    {
+      "baselines": [
+        {
+          "name": "web-server-hardening",
+          "title": "Web Server Security Baseline",
+          "version": "1.0.0",
+          "summary": "Security hardening checks for Apache HTTP Server",
+          "requirements": [
+            {
+              "id": "SV-100001",
+              "title": "Web server must use TLS 1.2 or higher",
+              "impact": 0.7,
+              "tags": {
+                "nist": ["SC-8", "SC-23"]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "The web server must be configured to use TLS 1.2 or higher for all encrypted connections."
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "SSL configuration is expected to include TLSv1.2",
+                  "startTime": "2025-06-15T14:30:00Z",
+                  "runTime": 0.042
+                }
+              ]
+            },
+            {
+              "id": "SV-100002",
+              "title": "Web server must have X-Frame-Options header set",
+              "impact": 0.5,
+              "tags": {
+                "nist": ["SA-11", "RA-5"]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "The anti-clickjacking X-Frame-Options header must be present on all responses."
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "codeDesc": "HTTP response headers are expected to include X-Frame-Options",
+                  "startTime": "2025-06-15T14:30:01Z",
+                  "message": "X-Frame-Options header not found in response"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "type": "application",
+          "name": "Apache HTTP Server 2.4"
+        }
+      ],
+      "generator": {
+        "name": "nikto-to-hdf",
+        "version": "1.0.0"
+      },
+      "tool": {
+        "name": "Nikto"
+      }
+    }
+  ],
   "description": "The top level value containing all assessment results.",
   "title": "HDF Results",
   "$defs": {
@@ -92,9 +173,9 @@
           "type": "string",
           "description": "The description - should be more detailed than the summary."
         },
-        "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
-          "description": "Cryptographic checksum for baseline integrity verification."
+        "integrity": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
+          "description": "Cryptographic integrity information for verifying this baseline has not been tampered with."
         },
         "originalChecksum": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
@@ -113,7 +194,8 @@
           "items": {
             "$ref": "#/$defs/Evaluated_Requirement"
           },
-          "description": "The set of requirements including any findings."
+          "minItems": 1,
+          "description": "The set of requirements including any findings. A baseline must have at least one requirement."
         },
         "groups": {
           "type": "array",
@@ -122,14 +204,12 @@
           },
           "description": "A set of descriptions for the requirement groups."
         },
-        "attributes": {
+        "inputs": {
           "type": "array",
           "items": {
-            "type": "object",
-            "additionalProperties": true,
-            "description": "An input or attribute used in the run."
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v2.0.0#/$defs/Input"
           },
-          "description": "The input(s) or attribute(s) used in the run."
+          "description": "Typed inputs used to parameterize this baseline at execution time. See the Input primitive for the full schema."
         },
         "extensions": {
           "type": "object",
@@ -176,14 +256,7 @@
           "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
         },
         "severity": {
-          "type": "string",
-          "enum": [
-            "critical",
-            "high",
-            "medium",
-            "low",
-            "informational"
-          ],
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Severity",
           "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
         },
         "sourceLocation": {

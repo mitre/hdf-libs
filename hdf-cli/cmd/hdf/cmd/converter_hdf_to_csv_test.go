@@ -47,7 +47,7 @@ func TestHDFToCSVConverter_Convert_EmptyBaselines(t *testing.T) {
 
 	input := []byte(`{
 		"baselines": [],
-		"targets": [],
+		"components": [],
 		"statistics": { "duration": 0 }
 	}`)
 

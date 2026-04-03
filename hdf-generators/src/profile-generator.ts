@@ -26,9 +26,10 @@ export function generateInSpecProfile(
     const stubs = baseline.requirements.map((req) => generateControlStub(req));
     controls.set('controls/controls.rb', stubs.join('\n'));
   } else {
-    // One file per control
+    // One file per control — sanitize ID for safe filenames
     for (const req of baseline.requirements) {
-      const filename = `controls/${req.id}.rb`;
+      const safeId = req.id.replace(/\.\./g, '').replace(/[/\\]/g, '') || 'unknown';
+      const filename = `controls/${safeId}.rb`;
       controls.set(filename, generateControlStub(req));
     }
   }

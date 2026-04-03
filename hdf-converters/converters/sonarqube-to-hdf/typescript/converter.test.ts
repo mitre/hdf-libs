@@ -3,9 +3,16 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { convertSonarqubeToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+runConverterContractTests({
+  converterName: 'sonarqube-to-hdf',
+  convertFn: convertSonarqubeToHdf,
+  minimalFixture: 'minimal.json',
+});
 
 describe('SonarQube to HDF Converter', async () => {
   describe('convertSonarqubeToHdf', async () => {
@@ -25,9 +32,9 @@ describe('SonarQube to HDF Converter', async () => {
       expect(hdf.baselines.length).toBeGreaterThan(0);
       expect(hdf.generator?.name).toBe('sonarqube-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
-      expect(hdf.dataSource?.name).toBe('SonarQube');
-      expect(hdf.dataSource?.version).toBeUndefined();
-      expect(hdf.dataSource?.format).toBeUndefined();
+      expect(hdf.tool?.name).toBe('SonarQube');
+      expect(hdf.tool?.version).toBeUndefined();
+      expect(hdf.tool?.format).toBeUndefined();
     });
 
     it('should create baselines per project', async () => {
@@ -171,10 +178,6 @@ describe('SonarQube to HDF Converter', async () => {
       expect(reqWithLocation).toBeDefined();
       expect(reqWithLocation!.sourceLocation?.ref).toBeTruthy();
       expect(reqWithLocation!.sourceLocation?.line).toBeGreaterThan(0);
-    });
-
-    it('should throw error for invalid JSON', async () => {
-      await expect(convertSonarqubeToHdf('not valid json')).rejects.toThrow();
     });
 
     it('should throw error for missing issues field', async () => {

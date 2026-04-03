@@ -1,0 +1,80 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_moc.elpmaxe.www_rule_1",
+              "startTime": "2012-12-10T13:47:29Z",
+              "status": "failed"
+            }
+          ],
+          "id": "xccdf_moc.elpmaxe.www_rule_1",
+          "impact": 0.5,
+          "tags": {
+            "nist": []
+          },
+          "title": "xccdf_moc.elpmaxe.www_rule_1"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_moc.elpmaxe.www_rule_2",
+              "startTime": "2012-12-10T13:47:29Z",
+              "status": "passed"
+            }
+          ],
+          "id": "xccdf_moc.elpmaxe.www_rule_2",
+          "impact": 0.5,
+          "tags": {
+            "nist": []
+          },
+          "title": "xccdf_moc.elpmaxe.www_rule_2"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "38e72324eefab5554d711afb0eec6bd9c502066d6bdebc09be73f3ebcf1ef4c2"
+      },
+      "name": "xccdf_moc.elpmaxe.www_benchmark_test",
+      "status": "loaded",
+      "summary": "",
+      "title": "xccdf_moc.elpmaxe.www_benchmark_test",
+      "version": "1.0"
+    }
+  ],
+  "dataSource": {
+    "format": "XCCDF",
+    "name": "XCCDF"
+  },
+  "generator": {
+    "name": "hdf-converters",
+    "version": "dev"
+  },
+  "statistics": {
+    "duration": 0
+  },
+  "components": [
+    {
+      "labels": {
+        "service": "xccdf"
+      },
+      "name": "Test Target",
+      "type": "host"
+    }
+  ],
+  "timestamp": "2012-12-10T13:47:29Z"
+}

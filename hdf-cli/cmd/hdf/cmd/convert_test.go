@@ -11,42 +11,60 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestParseFormatVersion(t *testing.T) {
+	tests := []struct {
+		input       string
+		wantFormat  string
+		wantVersion string
+	}{
+		{"sarif", "sarif", ""},
+		{"sarif@2.0", "sarif", "2.0"},
+		{"hdf@1", "hdf", "1"},
+		{"hdf@2", "hdf", "2"},
+		{"@sec", "@sec", ""},      // single @ at start — no split (idx <= 0)
+		{"@sec@v1", "@sec", "v1"}, // split on last @
+		{"", "", ""},              // empty string
+		{"cyclonedx@1.5", "cyclonedx", "1.5"},
+		{"format@", "format", ""}, // trailing @ with empty version
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			format, version := parseFormatVersion(tt.input)
+			assert.Equal(t, tt.wantFormat, format, "format mismatch")
+			assert.Equal(t, tt.wantVersion, version, "version mismatch")
+		})
+	}
+}
+
 func TestConvertCommand_ArgValidation(t *testing.T) {
 	// Note: Cobra's Args validation errors are returned but not printed
 	// when SilenceErrors is true, so we only check wantErr, not wantErrMsg
 	runCLITests(t, []cliTest{
 		{name: "no args", args: []string{"convert"}, wantErr: true},
-		{name: "one arg", args: []string{"convert", "legacyhdf"}, wantErr: true},
-		{name: "two args", args: []string{"convert", "legacyhdf", "to"}, wantErr: true},
-		{name: "three args", args: []string{"convert", "legacyhdf", "to", "hdf"}, wantErr: true},
-		{name: "missing to keyword", args: []string{"convert", "legacyhdf", "hdf", "input.json"}, wantErr: true},
-		{name: "wrong to keyword", args: []string{"convert", "legacyhdf", "into", "hdf", "input.json"}, wantErr: true},
-		{name: "too many args", args: []string{"convert", "legacyhdf", "to", "hdf", "in.json", "out.json", "extra"}, wantErr: true},
+		{name: "too many positional args", args: []string{"convert", "file1.json", "file2.json"}, wantErr: true},
 	})
 }
 
 func TestConvertCommand_UnsupportedFormats(t *testing.T) {
 	fixture := legacyhdfFixturePath(t, "input/minimal.json")
 
-	// Note: Unsupported format errors come from Args validation, which
-	// doesn't print to stderr when SilenceErrors is true
 	runCLITests(t, []cliTest{
-		{name: "unknown source format", args: []string{"convert", "unknown", "to", "hdf", fixture}, wantErr: true},
-		{name: "unknown dest format", args: []string{"convert", "legacyhdf", "to", "unknown", fixture}, wantErr: true},
-		{name: "both unknown", args: []string{"convert", "foo", "to", "bar", fixture}, wantErr: true},
+		{name: "unknown source format", args: []string{"convert", "--from", "unknown", "--to", "hdf", fixture}, wantErr: true},
+		{name: "unknown dest format", args: []string{"convert", "--from", "legacyhdf", "--to", "unknown", fixture}, wantErr: true},
+		{name: "both unknown", args: []string{"convert", "--from", "foo", "--to", "bar", fixture}, wantErr: true},
 	})
 }
 
 func TestConvertCommand_FileNotFound(t *testing.T) {
 	runCLITests(t, []cliTest{
-		{name: "nonexistent file", args: []string{"convert", "legacyhdf", "to", "hdf", "nonexistent.json"}, wantErr: true, wantErrMsg: "not found"},
+		{name: "nonexistent file", args: []string{"convert", "--from", "legacyhdf", "--to", "hdf", "nonexistent.json"}, wantErr: true, wantErrMsg: "not found"},
 	})
 }
 
 func TestConvertCommand_BasicConversion(t *testing.T) {
 	fixture := legacyhdfFixturePath(t, "input/minimal.json")
 
-	stdout, stderr, err := executeCommand("convert", "legacyhdf", "to", "hdf", fixture)
+	stdout, stderr, err := executeCommand("convert", "--from", "legacyhdf", "--to", "hdf", fixture)
 	if err != nil {
 		t.Errorf("convert command failed: %v (stderr: %s)", err, stderr)
 		return
@@ -62,7 +80,7 @@ func TestConvertCommand_BasicConversion(t *testing.T) {
 	if _, ok := result["baselines"]; !ok {
 		t.Error("output missing 'baselines' field")
 	}
-	if _, ok := result["targets"]; !ok {
+	if _, ok := result["components"]; !ok {
 		t.Error("output missing 'targets' field")
 	}
 }
@@ -82,7 +100,7 @@ func TestConvertCommand_CaseInsensitive(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			stdout, _, err := executeCommand("convert", tt.source, "to", tt.dest, fixture)
+			stdout, _, err := executeCommand("convert", "--from", tt.source, "--to", tt.dest, fixture)
 			if err != nil {
 				t.Errorf("convert %s to %s failed: %v", tt.source, tt.dest, err)
 				return
@@ -101,7 +119,7 @@ func TestConvertCommand_OutputToFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	outputPath := filepath.Join(tmpDir, "output.json")
 
-	_, stderr, err := executeCommand("convert", "legacyhdf", "to", "hdf", fixture, outputPath)
+	_, stderr, err := executeCommand("convert", "--from", "legacyhdf", "--to", "hdf", fixture, "-o", outputPath)
 	if err != nil {
 		t.Errorf("convert command failed: %v (stderr: %s)", err, stderr)
 		return
@@ -134,7 +152,7 @@ func TestConvertCommand_InvalidInput(t *testing.T) {
 		t.Fatalf("failed to create invalid file: %v", err)
 	}
 
-	_, _, err := executeCommand("convert", "legacyhdf", "to", "hdf", invalidFile)
+	_, _, err := executeCommand("convert", "--from", "legacyhdf", "--to", "hdf", invalidFile)
 	if err == nil {
 		t.Error("expected error for invalid input, got nil")
 	}
@@ -198,7 +216,7 @@ func TestConvertCommand_ErrorMessages(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, stderr, err := executeCommand("convert", tt.src, "to", tt.dst, fixture)
+			_, stderr, err := executeCommand("convert", "--from", tt.src, "--to", tt.dst, fixture)
 			if err == nil {
 				t.Fatalf("expected error for %s->%s, got nil", tt.src, tt.dst)
 			}
@@ -213,7 +231,7 @@ func TestConvertCommand_OverwriteProtection(t *testing.T) {
 	fixture := legacyhdfFixturePath(t, "input/minimal.json")
 
 	t.Run("same input and output path returns error", func(t *testing.T) {
-		_, stderr, err := executeCommand("convert", "legacyhdf", "to", "hdf", fixture, fixture)
+		_, stderr, err := executeCommand("convert", "--from", "legacyhdf", "--to", "hdf", fixture, "-o", fixture)
 		require.Error(t, err, "expected error when output path matches input path")
 		assert.Contains(t, stderr, "would overwrite input file")
 		assert.Contains(t, stderr, "--force")
@@ -229,7 +247,7 @@ func TestConvertCommand_OverwriteProtection(t *testing.T) {
 
 		// Use the absolute path as input and construct a relative-looking equivalent
 		// by using the same absolute path (filepath.Abs normalizes both)
-		_, _, err = executeCommand("convert", "legacyhdf", "to", "hdf", tmpFile, tmpFile)
+		_, _, err = executeCommand("convert", "--from", "legacyhdf", "--to", "hdf", tmpFile, "-o", tmpFile)
 		require.Error(t, err, "expected error when output path resolves to same file as input")
 	})
 
@@ -240,7 +258,7 @@ func TestConvertCommand_OverwriteProtection(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, os.WriteFile(tmpFile, data, 0o600))
 
-		_, _, err = executeCommand("convert", "legacyhdf", "to", "hdf", "--force", tmpFile, tmpFile)
+		_, _, err = executeCommand("convert", "--from", "legacyhdf", "--to", "hdf", "--force", tmpFile, "-o", tmpFile)
 		require.NoError(t, err, "expected --force to allow overwriting input file")
 	})
 
@@ -248,7 +266,7 @@ func TestConvertCommand_OverwriteProtection(t *testing.T) {
 		tmpDir := t.TempDir()
 		outputPath := filepath.Join(tmpDir, "output.json")
 
-		_, _, err := executeCommand("convert", "legacyhdf", "to", "hdf", fixture, outputPath)
+		_, _, err := executeCommand("convert", "--from", "legacyhdf", "--to", "hdf", fixture, "-o", outputPath)
 		require.NoError(t, err, "expected different paths to work normally")
 
 		// Verify output was written
@@ -258,7 +276,7 @@ func TestConvertCommand_OverwriteProtection(t *testing.T) {
 
 	t.Run("stdout output skips overwrite check", func(t *testing.T) {
 		// No output path (stdout) should not trigger overwrite check
-		_, _, err := executeCommand("convert", "legacyhdf", "to", "hdf", fixture)
+		_, _, err := executeCommand("convert", "--from", "legacyhdf", "--to", "hdf", fixture)
 		require.NoError(t, err, "stdout output should not trigger overwrite check")
 	})
 }

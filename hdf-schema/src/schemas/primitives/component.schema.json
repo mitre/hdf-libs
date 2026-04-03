@@ -1,0 +1,518 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0",
+  "title": "HDF Component Primitives",
+  "description": "First-class system component with identity, polymorphic type, SBOM embedding, and system-binding properties. Components are the successor to Targets, adding stable identity (componentId), external system cross-references, and software inventory.",
+  "$defs": {
+    "Base_Component": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "type",
+        "name"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Component type discriminator. Same values as Target types."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name for this component."
+        },
+        "componentId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Stable UUID (RFC 4122) for this component. Required in hdf-system documents, optional in hdf-results. Enables cross-document correlation, diffing, and data flow references."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of this component's role or purpose."
+        },
+        "owner": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+          "description": "Team or individual responsible for this component. Enables per-component ownership when different teams manage different parts of a system."
+        },
+        "externalIds": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Map of external identifier scheme to value. Well-known schemes: aws (instance ID), azure (resource ID), cmdb (asset ID), emass (system ID), cve (CVE ID). Custom schemes are allowed."
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
+        },
+        "sbom": {
+          "description": "Embedded CycloneDX or SPDX SBOM document representing this component's software inventory. The sbomFormat field determines which format constraints apply.",
+          "$comment": "Validated conditionally: CycloneDX requires bomFormat='CycloneDX' + specVersion; SPDX requires spdxVersion + SPDXID. Full SBOM schema validation is a tool-level concern."
+        },
+        "sbomRef": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "URI reference to an external CycloneDX or SPDX SBOM document for this component. May be a relative path, absolute URI, or fragment identifier."
+        },
+        "sbomFormat": {
+          "type": "string",
+          "enum": [
+            "cyclonedx",
+            "spdx"
+          ],
+          "description": "Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present."
+        },
+        "baselineRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Names of baselines that apply to this component."
+        },
+        "inputOverrides": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Input_Override"
+          },
+          "description": "System-specific overrides for baseline input values."
+        },
+        "targetSelector": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Target_Selector",
+          "description": "Label selector to match targets belonging to this component during migration. Targets with matching labels are automatically included."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "allOf": [
+              {
+                "properties": { "sbomFormat": { "const": "cyclonedx" } },
+                "required": ["sbomFormat"]
+              },
+              {
+                "properties": { "sbom": { "type": "object" } },
+                "required": ["sbom"]
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "sbom": {
+                "type": "object",
+                "required": ["bomFormat", "specVersion"],
+                "properties": {
+                  "bomFormat": {
+                    "type": "string",
+                    "const": "CycloneDX",
+                    "description": "Must be 'CycloneDX' for CycloneDX SBOM documents."
+                  },
+                  "specVersion": {
+                    "type": "string",
+                    "description": "CycloneDX specification version (e.g., '1.4', '1.5', '1.6')."
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "allOf": [
+              {
+                "properties": { "sbomFormat": { "const": "spdx" } },
+                "required": ["sbomFormat"]
+              },
+              {
+                "properties": { "sbom": { "type": "object" } },
+                "required": ["sbom"]
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "sbom": {
+                "type": "object",
+                "required": ["spdxVersion", "SPDXID"],
+                "properties": {
+                  "spdxVersion": {
+                    "type": "string",
+                    "description": "SPDX specification version (e.g., 'SPDX-2.3')."
+                  },
+                  "SPDXID": {
+                    "type": "string",
+                    "description": "SPDX document identifier (e.g., 'SPDXRef-DOCUMENT')."
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ],
+      "description": "Base properties shared by all component types. Extends the Target concept with stable identity, external references, and SBOM embedding.",
+      "title": "Base Component"
+    },
+    "Component": {
+      "description": "A system component. Uses discriminated union pattern with 'type' field as discriminator. Superset of Target with identity, external IDs, and SBOM support.",
+      "title": "Component",
+      "oneOf": [
+        { "$ref": "#/$defs/Host_Component" },
+        { "$ref": "#/$defs/Container_Image_Component" },
+        { "$ref": "#/$defs/Container_Instance_Component" },
+        { "$ref": "#/$defs/Container_Platform_Component" },
+        { "$ref": "#/$defs/Cloud_Account_Component" },
+        { "$ref": "#/$defs/Cloud_Resource_Component" },
+        { "$ref": "#/$defs/Repository_Component" },
+        { "$ref": "#/$defs/Application_Component" },
+        { "$ref": "#/$defs/Artifact_Component" },
+        { "$ref": "#/$defs/Network_Component" },
+        { "$ref": "#/$defs/Database_Component" }
+      ]
+    },
+    "Host_Component": {
+      "allOf": [
+        { "$ref": "#/$defs/Base_Component" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "host" },
+            "fqdn": {
+              "type": "string",
+              "format": "hostname",
+              "description": "Fully qualified domain name."
+            },
+            "ipAddress": {
+              "anyOf": [
+                { "type": "string", "format": "ipv4" },
+                { "type": "string", "format": "ipv6" }
+              ],
+              "description": "IP address of the host."
+            },
+            "macAddress": {
+              "type": "string",
+              "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
+              "description": "MAC address in colon-separated hexadecimal format."
+            },
+            "osName": {
+              "type": "string",
+              "description": "Operating system name."
+            },
+            "osVersion": {
+              "type": "string",
+              "description": "Operating system version."
+            }
+          }
+        }
+      ],
+      "examples": [
+        {
+          "type": "host",
+          "name": "web-server-prod-01",
+          "componentId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+          "fqdn": "web01.prod.example.com",
+          "ipAddress": "10.0.1.50",
+          "osName": "Ubuntu",
+          "osVersion": "22.04 LTS",
+          "externalIds": {
+            "cmdb": "ASSET-12345",
+            "aws": "i-0abc123def456789"
+          }
+        }
+      ],
+      "description": "A physical or virtual server, workstation, or network device.",
+      "title": "Host Component"
+    },
+    "Container_Image_Component": {
+      "allOf": [
+        { "$ref": "#/$defs/Base_Component" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "containerImage" },
+            "imageId": {
+              "type": "string",
+              "description": "Container image ID."
+            },
+            "registry": {
+              "type": "string",
+              "description": "Container registry. Example: 'docker.io'."
+            },
+            "repository": {
+              "type": "string",
+              "description": "Repository name. Example: 'library/nginx'."
+            },
+            "tag": {
+              "type": "string",
+              "description": "Image tag. Example: '1.25'."
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^(sha256:[a-f0-9]{64}|sha512:[a-f0-9]{128}|blake3:[a-f0-9]{64})$",
+              "description": "Image digest for immutable reference."
+            }
+          }
+        }
+      ],
+      "description": "A static container image (not running).",
+      "title": "Container Image Component"
+    },
+    "Container_Instance_Component": {
+      "allOf": [
+        { "$ref": "#/$defs/Base_Component" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "containerInstance" },
+            "containerId": {
+              "type": "string",
+              "description": "Running container ID."
+            },
+            "image": {
+              "type": "string",
+              "description": "Image the container was started from."
+            },
+            "runtime": {
+              "type": "string",
+              "description": "Container runtime. Example: 'docker', 'containerd', 'cri-o'."
+            }
+          }
+        }
+      ],
+      "description": "A running container instance.",
+      "title": "Container Instance Component"
+    },
+    "Container_Platform_Component": {
+      "allOf": [
+        { "$ref": "#/$defs/Base_Component" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "containerPlatform" },
+            "platformType": {
+              "type": "string",
+              "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
+            },
+            "clusterName": {
+              "type": "string",
+              "description": "Cluster name."
+            },
+            "namespace": {
+              "type": "string",
+              "description": "Namespace within the cluster, if applicable."
+            },
+            "version": {
+              "type": "string",
+              "description": "Platform version."
+            }
+          }
+        }
+      ],
+      "description": "A container orchestration platform (Kubernetes, OpenShift, ECS, etc.).",
+      "title": "Container Platform Component"
+    },
+    "Cloud_Account_Component": {
+      "allOf": [
+        { "$ref": "#/$defs/Base_Component" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "cloudAccount" },
+            "provider": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Cloud_Provider",
+              "description": "Cloud provider."
+            },
+            "accountId": {
+              "type": "string",
+              "description": "Cloud account identifier."
+            },
+            "region": {
+              "type": "string",
+              "description": "Cloud region, if applicable."
+            }
+          }
+        }
+      ],
+      "examples": [
+        {
+          "type": "cloudAccount",
+          "name": "Production AWS Account",
+          "componentId": "f1e2d3c4-b5a6-4978-8069-1a2b3c4d5e6f",
+          "provider": "aws",
+          "accountId": "123456789012",
+          "region": "us-east-1"
+        }
+      ],
+      "description": "A cloud provider account (AWS account, Azure subscription, GCP project).",
+      "title": "Cloud Account Component"
+    },
+    "Cloud_Resource_Component": {
+      "allOf": [
+        { "$ref": "#/$defs/Base_Component" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "cloudResource" },
+            "provider": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Cloud_Provider",
+              "description": "Cloud provider."
+            },
+            "resourceType": {
+              "type": "string",
+              "description": "Type of cloud resource. Example: 'ec2:instance', 's3:bucket'."
+            },
+            "resourceId": {
+              "type": "string",
+              "description": "Provider-specific resource identifier."
+            },
+            "arn": {
+              "type": "string",
+              "description": "Amazon Resource Name (AWS only)."
+            },
+            "region": {
+              "type": "string",
+              "description": "Cloud region where the resource resides."
+            }
+          }
+        }
+      ],
+      "description": "A specific cloud resource (EC2 instance, S3 bucket, Azure VM, etc.).",
+      "title": "Cloud Resource Component"
+    },
+    "Repository_Component": {
+      "allOf": [
+        { "$ref": "#/$defs/Base_Component" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "repository" },
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Repository URL."
+            },
+            "branch": {
+              "type": "string",
+              "description": "Branch that was scanned."
+            },
+            "commit": {
+              "type": "string",
+              "description": "Commit SHA that was scanned."
+            }
+          }
+        }
+      ],
+      "description": "A code repository (for SAST tools).",
+      "title": "Repository Component"
+    },
+    "Application_Component": {
+      "allOf": [
+        { "$ref": "#/$defs/Base_Component" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "application" },
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Application URL (for DAST tools)."
+            },
+            "version": {
+              "type": "string",
+              "description": "Application version."
+            },
+            "environment": {
+              "type": "string",
+              "description": "Environment. Example: 'production', 'staging', 'development'."
+            }
+          }
+        }
+      ],
+      "description": "A running application or API (for DAST tools).",
+      "title": "Application Component"
+    },
+    "Artifact_Component": {
+      "allOf": [
+        { "$ref": "#/$defs/Base_Component" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "artifact" },
+            "packageManager": {
+              "type": "string",
+              "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
+            },
+            "packageName": {
+              "type": "string",
+              "description": "Package name."
+            },
+            "version": {
+              "type": "string",
+              "description": "Package version."
+            },
+            "checksum": {
+              "type": "string",
+              "description": "Package checksum for verification."
+            }
+          }
+        }
+      ],
+      "description": "A software artifact or dependency (for SCA tools).",
+      "title": "Artifact Component"
+    },
+    "Network_Component": {
+      "allOf": [
+        { "$ref": "#/$defs/Base_Component" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "network" },
+            "cidr": {
+              "type": "string",
+              "description": "Network CIDR block."
+            },
+            "gateway": {
+              "type": "string",
+              "description": "Network gateway address."
+            }
+          }
+        }
+      ],
+      "description": "A network segment or network device.",
+      "title": "Network Component"
+    },
+    "Database_Component": {
+      "allOf": [
+        { "$ref": "#/$defs/Base_Component" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "database" },
+            "engine": {
+              "type": "string",
+              "description": "Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'."
+            },
+            "version": {
+              "type": "string",
+              "description": "Database version."
+            },
+            "host": {
+              "type": "string",
+              "description": "Database host."
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "description": "Database port."
+            }
+          }
+        }
+      ],
+      "description": "A database instance.",
+      "title": "Database Component"
+    }
+  }
+}

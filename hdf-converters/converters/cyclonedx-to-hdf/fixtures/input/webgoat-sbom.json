@@ -1,0 +1,1293 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:5dce36bd-1e45-46de-a25b-da0be6a063a2",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-03-26T14:53:13Z",
+    "tools": {
+      "components": [
+        {
+          "group": "@cyclonedx",
+          "name": "cdxgen",
+          "version": "12.1.3",
+          "purl": "pkg:npm/%40cyclonedx/cdxgen@12.1.3",
+          "type": "application",
+          "bom-ref": "pkg:npm/@cyclonedx/cdxgen@12.1.3",
+          "publisher": "OWASP Foundation",
+          "authors": [
+            {
+              "name": "OWASP Foundation"
+            }
+          ]
+        }
+      ]
+    },
+    "authors": [
+      {
+        "name": "OWASP Foundation"
+      }
+    ],
+    "lifecycles": [
+      {
+        "phase": "build"
+      }
+    ],
+    "component": {
+      "group": "",
+      "name": "WebGoat",
+      "version": "latest",
+      "type": "application",
+      "bom-ref": "pkg:maven/WebGoat@latest",
+      "purl": "pkg:maven/WebGoat@latest"
+    },
+    "properties": [
+      {
+        "name": "cdx:bom:componentTypes",
+        "value": "github\\nmaven\\nnpm"
+      },
+      {
+        "name": "cdx:bom:componentNamespaces",
+        "value": "actions\\ndevops-infra\\ndocker\\nio.takari\\npre-commit\\npre-commit-ci\\nsoftprops"
+      },
+      {
+        "name": "cdx:bom:componentSrcFiles",
+        "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml\\n/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml\\n/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/welcome.yml\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-1.10.2.min.js\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-ui-1.10.4.custom.min.js\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-2.1.4.min.js\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-ui.min.js\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery.min.js\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/modernizr.min.js\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/plugins/nanoScroller/jquery.nanoscroller.min.js\\njar-deps-sC3pEc/maven-wrapper.jar\\nmaven-wrapper.jar"
+      }
+    ]
+  },
+  "components": [
+    {
+      "group": "",
+      "name": "nanoscrollerjs",
+      "version": "0.7.6",
+      "scope": "optional",
+      "purl": "pkg:npm/nanoscrollerjs@0.7.6",
+      "type": "library",
+      "bom-ref": "pkg:npm/nanoscrollerjs@0.7.6",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/plugins/nanoScroller/jquery.nanoscroller.min.js"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.25,
+            "methods": [
+              {
+                "technique": "filename",
+                "confidence": 0.25,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/plugins/nanoScroller/jquery.nanoscroller.min.js"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/plugins/nanoScroller/jquery.nanoscroller.min.js"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "modernizr",
+      "version": "3.6.0",
+      "scope": "optional",
+      "purl": "pkg:npm/modernizr@3.6.0",
+      "type": "library",
+      "bom-ref": "pkg:npm/modernizr@3.6.0",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/modernizr.min.js"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.25,
+            "methods": [
+              {
+                "technique": "filename",
+                "confidence": 0.25,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/modernizr.min.js"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/modernizr.min.js"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "jquery",
+      "version": "3.4.1",
+      "scope": "required",
+      "purl": "pkg:npm/jquery@3.4.1",
+      "type": "library",
+      "bom-ref": "pkg:npm/jquery@3.4.1",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery.min.js"
+        },
+        {
+          "name": "ImportedModules",
+          "value": "jquery"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.25,
+            "methods": [
+              {
+                "technique": "filename",
+                "confidence": 0.25,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery.min.js"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery.min.js"
+          }
+        ],
+        "occurrences": [
+          {
+            "location": "src/main/resources/webgoat/static/js/libs/backbone-min.js#1"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "jquery-ui",
+      "version": "1.12.1",
+      "scope": "optional",
+      "purl": "pkg:npm/jquery-ui@1.12.1",
+      "type": "library",
+      "bom-ref": "pkg:npm/jquery-ui@1.12.1",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-ui.min.js"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.25,
+            "methods": [
+              {
+                "technique": "filename",
+                "confidence": 0.25,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-ui.min.js"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-ui.min.js"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "jquery",
+      "version": "2.1.4",
+      "scope": "required",
+      "purl": "pkg:npm/jquery@2.1.4",
+      "type": "library",
+      "bom-ref": "pkg:npm/jquery@2.1.4",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-2.1.4.min.js"
+        },
+        {
+          "name": "ImportedModules",
+          "value": "jquery"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.25,
+            "methods": [
+              {
+                "technique": "filename",
+                "confidence": 0.25,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-2.1.4.min.js"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-2.1.4.min.js"
+          }
+        ],
+        "occurrences": [
+          {
+            "location": "src/main/resources/webgoat/static/js/libs/backbone-min.js#1"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "jquery-ui",
+      "version": "1.10.4",
+      "scope": "optional",
+      "purl": "pkg:npm/jquery-ui@1.10.4",
+      "type": "library",
+      "bom-ref": "pkg:npm/jquery-ui@1.10.4",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-ui-1.10.4.custom.min.js"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.25,
+            "methods": [
+              {
+                "technique": "filename",
+                "confidence": 0.25,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-ui-1.10.4.custom.min.js"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-ui-1.10.4.custom.min.js"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "jquery",
+      "version": "1.10.2",
+      "scope": "required",
+      "purl": "pkg:npm/jquery@1.10.2",
+      "type": "library",
+      "bom-ref": "pkg:npm/jquery@1.10.2",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-1.10.2.min.js"
+        },
+        {
+          "name": "ImportedModules",
+          "value": "jquery"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.25,
+            "methods": [
+              {
+                "technique": "filename",
+                "confidence": 0.25,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-1.10.2.min.js"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-1.10.2.min.js"
+          }
+        ],
+        "occurrences": [
+          {
+            "location": "src/main/resources/webgoat/static/js/libs/backbone-min.js#1"
+          }
+        ]
+      }
+    },
+    {
+      "group": "actions",
+      "name": "first-interaction",
+      "version": "v3.1.0",
+      "purl": "pkg:github/actions/first-interaction@v3.1.0",
+      "type": "application",
+      "bom-ref": "pkg:github/actions/first-interaction@v3.1.0",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/welcome.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Welcome"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "greeting"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "actions/first-interaction@v3.1.0"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:actions:isOfficial",
+          "value": "true"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "issues"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/welcome.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/welcome.yml"
+          }
+        ]
+      },
+      "tags": [
+        "official-action",
+        "pinning-tag",
+        "trusted-source"
+      ]
+    },
+    {
+      "group": "actions",
+      "name": "checkout",
+      "version": "v4",
+      "purl": "pkg:github/actions/checkout@v4",
+      "type": "application",
+      "bom-ref": "pkg:github/actions/checkout@v4",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Release Pipeline"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "actions/checkout@v4"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:github:job:environment",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:job:hasWritePermissions",
+          "value": "true"
+        },
+        {
+          "name": "cdx:actions:isOfficial",
+          "value": "true"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "push"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          }
+        ]
+      },
+      "tags": [
+        "official-action",
+        "pinning-tag",
+        "trusted-source"
+      ]
+    },
+    {
+      "group": "softprops",
+      "name": "action-gh-release",
+      "version": "v1",
+      "purl": "pkg:github/softprops/action-gh-release@v1",
+      "type": "application",
+      "bom-ref": "pkg:github/softprops/action-gh-release@v1",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Release Pipeline"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "softprops/action-gh-release@v1"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:github:step:name",
+          "value": "Create release"
+        },
+        {
+          "name": "cdx:github:job:environment",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:job:hasWritePermissions",
+          "value": "true"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "push"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          }
+        ]
+      },
+      "tags": [
+        "pinning-tag"
+      ]
+    },
+    {
+      "group": "docker",
+      "name": "setup-qemu-action",
+      "version": "v3.6.0",
+      "purl": "pkg:github/docker/setup-qemu-action@v3.6.0",
+      "type": "application",
+      "bom-ref": "pkg:github/docker/setup-qemu-action@v3.6.0",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Release Pipeline"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "docker/setup-qemu-action@v3.6.0"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:github:step:name",
+          "value": "Set up QEMU"
+        },
+        {
+          "name": "cdx:github:job:environment",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:job:hasWritePermissions",
+          "value": "true"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "push"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          }
+        ]
+      },
+      "tags": [
+        "pinning-tag"
+      ]
+    },
+    {
+      "group": "docker",
+      "name": "setup-buildx-action",
+      "version": "v3",
+      "purl": "pkg:github/docker/setup-buildx-action@v3",
+      "type": "application",
+      "bom-ref": "pkg:github/docker/setup-buildx-action@v3",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Release Pipeline"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "docker/setup-buildx-action@v3"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:github:step:name",
+          "value": "Set up Docker Buildx"
+        },
+        {
+          "name": "cdx:github:job:environment",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:job:hasWritePermissions",
+          "value": "true"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "push"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          }
+        ]
+      },
+      "tags": [
+        "pinning-tag"
+      ]
+    },
+    {
+      "group": "docker",
+      "name": "login-action",
+      "version": "v3.6.0",
+      "purl": "pkg:github/docker/login-action@v3.6.0",
+      "type": "application",
+      "bom-ref": "pkg:github/docker/login-action@v3.6.0",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Release Pipeline"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "docker/login-action@v3.6.0"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:github:step:name",
+          "value": "Login to dockerhub"
+        },
+        {
+          "name": "cdx:github:job:environment",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:job:hasWritePermissions",
+          "value": "true"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "push"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          }
+        ]
+      },
+      "tags": [
+        "pinning-tag"
+      ]
+    },
+    {
+      "group": "docker",
+      "name": "build-push-action",
+      "version": "v6.18.0",
+      "purl": "pkg:github/docker/build-push-action@v6.18.0",
+      "type": "application",
+      "bom-ref": "pkg:github/docker/build-push-action@v6.18.0",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Release Pipeline"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "docker/build-push-action@v6.18.0"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:github:step:name",
+          "value": "Build and push WebGoat"
+        },
+        {
+          "name": "cdx:github:job:environment",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:job:hasWritePermissions",
+          "value": "true"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "push"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          }
+        ]
+      },
+      "tags": [
+        "pinning-tag"
+      ]
+    },
+    {
+      "group": "devops-infra",
+      "name": "action-commit-push",
+      "version": "v0.11.4",
+      "purl": "pkg:github/devops-infra/action-commit-push@v0.11.4",
+      "type": "application",
+      "bom-ref": "pkg:github/devops-infra/action-commit-push@v0.11.4",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Release Pipeline"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "new_version"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "devops-infra/action-commit-push@v0.11.4"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:github:step:name",
+          "value": "Push the changes to new branch"
+        },
+        {
+          "name": "cdx:github:job:needs",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "push"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          }
+        ]
+      },
+      "tags": [
+        "pinning-tag"
+      ]
+    },
+    {
+      "group": "devops-infra",
+      "name": "action-pull-request",
+      "version": "v1.0.2",
+      "purl": "pkg:github/devops-infra/action-pull-request@v1.0.2",
+      "type": "application",
+      "bom-ref": "pkg:github/devops-infra/action-pull-request@v1.0.2",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Release Pipeline"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "new_version"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "devops-infra/action-pull-request@v1.0.2"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:github:step:name",
+          "value": "Create PR"
+        },
+        {
+          "name": "cdx:github:job:needs",
+          "value": "release"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "push"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          }
+        ]
+      },
+      "tags": [
+        "pinning-tag"
+      ]
+    },
+    {
+      "group": "actions",
+      "name": "checkout",
+      "version": "v4.1.6",
+      "purl": "pkg:github/actions/checkout@v4.1.6",
+      "type": "application",
+      "bom-ref": "pkg:github/actions/checkout@v4.1.6",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Main / Pull requests build"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "pre-commit"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "actions/checkout@v4.1.6"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:github:step:name",
+          "value": "Checkout git repository"
+        },
+        {
+          "name": "cdx:actions:isOfficial",
+          "value": "true"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "pull_request,push"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+          }
+        ]
+      },
+      "tags": [
+        "official-action",
+        "pinning-tag",
+        "trusted-source"
+      ]
+    },
+    {
+      "group": "actions",
+      "name": "setup-python",
+      "version": "v6",
+      "purl": "pkg:github/actions/setup-python@v6",
+      "type": "application",
+      "bom-ref": "pkg:github/actions/setup-python@v6",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Main / Pull requests build"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "pre-commit"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "actions/setup-python@v6"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:github:step:name",
+          "value": "Setup python"
+        },
+        {
+          "name": "cdx:actions:isOfficial",
+          "value": "true"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "pull_request,push"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+          }
+        ]
+      },
+      "tags": [
+        "official-action",
+        "pinning-tag",
+        "trusted-source"
+      ]
+    },
+    {
+      "group": "pre-commit",
+      "name": "action",
+      "version": "v3.0.1",
+      "purl": "pkg:github/pre-commit/action@v3.0.1",
+      "type": "application",
+      "bom-ref": "pkg:github/pre-commit/action@v3.0.1",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Main / Pull requests build"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "pre-commit"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "pre-commit/action@v3.0.1"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:github:step:name",
+          "value": "Pre-commit checks"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "pull_request,push"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+          }
+        ]
+      },
+      "tags": [
+        "pinning-tag"
+      ]
+    },
+    {
+      "group": "pre-commit-ci",
+      "name": "lite-action",
+      "version": "v1.1.0",
+      "purl": "pkg:github/pre-commit-ci/lite-action@v1.1.0",
+      "type": "application",
+      "bom-ref": "pkg:github/pre-commit-ci/lite-action@v1.1.0",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+        },
+        {
+          "name": "cdx:github:workflow:name",
+          "value": "Main / Pull requests build"
+        },
+        {
+          "name": "cdx:github:job:name",
+          "value": "pre-commit"
+        },
+        {
+          "name": "cdx:github:job:runner",
+          "value": "ubuntu-latest"
+        },
+        {
+          "name": "cdx:github:action:uses",
+          "value": "pre-commit-ci/lite-action@v1.1.0"
+        },
+        {
+          "name": "cdx:github:action:versionPinningType",
+          "value": "tag"
+        },
+        {
+          "name": "cdx:github:action:isShaPinned",
+          "value": "false"
+        },
+        {
+          "name": "cdx:github:step:name",
+          "value": "pre-commit-c-lite"
+        },
+        {
+          "name": "cdx:github:step:condition",
+          "value": "always()"
+        },
+        {
+          "name": "cdx:github:workflow:triggers",
+          "value": "pull_request,push"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.6,
+            "methods": [
+              {
+                "technique": "source-code-analysis",
+                "confidence": 0.6,
+                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+              }
+            ],
+            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+          }
+        ]
+      },
+      "tags": [
+        "pinning-tag"
+      ]
+    },
+    {
+      "group": "io.takari",
+      "name": "maven-wrapper",
+      "version": "0.5.6",
+      "purl": "pkg:maven/io.takari/maven-wrapper@0.5.6?type=jar",
+      "type": "library",
+      "bom-ref": "pkg:maven/io.takari/maven-wrapper@0.5.6?type=jar",
+      "properties": [
+        {
+          "name": "SrcFile",
+          "value": "jar-deps-sC3pEc/maven-wrapper.jar"
+        },
+        {
+          "name": "Namespaces",
+          "value": "org.apache.maven.wrapper.BootstrapMainStarter\norg.apache.maven.wrapper.DefaultDownloader$1\norg.apache.maven.wrapper.DefaultDownloader$SystemPropertiesProxyAuthenticator\norg.apache.maven.wrapper.DefaultDownloader\norg.apache.maven.wrapper.Downloader\norg.apache.maven.wrapper.Installer\norg.apache.maven.wrapper.Logger\norg.apache.maven.wrapper.MavenWrapperMain\norg.apache.maven.wrapper.PathAssembler$LocalDistribution\norg.apache.maven.wrapper.PathAssembler\norg.apache.maven.wrapper.SystemPropertiesHandler\norg.apache.maven.wrapper.WrapperConfiguration\norg.apache.maven.wrapper.WrapperExecutor\norg.apache.maven.wrapper.cli.AbstractCommandLineConverter\norg.apache.maven.wrapper.cli.AbstractPropertiesCommandLineConverter\norg.apache.maven.wrapper.cli.CommandLineArgumentException\norg.apache.maven.wrapper.cli.CommandLineConverter\norg.apache.maven.wrapper.cli.CommandLineOption\norg.apache.maven.wrapper.cli.CommandLineParser$AfterFirstSubCommand\norg.apache.maven.wrapper.cli.CommandLineParser$AfterOptions\norg.apache.maven.wrapper.cli.CommandLineParser$BeforeFirstSubCommand\norg.apache.maven.wrapper.cli.CommandLineParser$CaseInsensitiveStringComparator\norg.apache.maven.wrapper.cli.CommandLineParser$KnownOptionParserState\norg.apache.maven.wrapper.cli.CommandLineParser$MissingOptionArgState\norg.apache.maven.wrapper.cli.CommandLineParser$OptionAwareParserState\norg.apache.maven.wrapper.cli.CommandLineParser$OptionComparator\norg.apache.maven.wrapper.cli.CommandLineParser$OptionParserState\norg.apache.maven.wrapper.cli.CommandLineParser$OptionString\norg.apache.maven.wrapper.cli.CommandLineParser$OptionStringComparator\norg.apache.maven.wrapper.cli.CommandLineParser$ParserState\norg.apache.maven.wrapper.cli.CommandLineParser$UnknownOptionParserState\norg.apache.maven.wrapper.cli.CommandLineParser\norg.apache.maven.wrapper.cli.ParsedCommandLine\norg.apache.maven.wrapper.cli.ParsedCommandLineOption\norg.apache.maven.wrapper.cli.ProjectPropertiesCommandLineConverter\norg.apache.maven.wrapper.cli.SystemPropertiesCommandLineConverter"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 0.5,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 0.5,
+                "value": "maven-wrapper.jar"
+              }
+            ],
+            "concludedValue": "maven-wrapper.jar"
+          }
+        ]
+      }
+    }
+  ],
+  "services": [],
+  "dependencies": [
+    {
+      "ref": "pkg:maven/WebGoat@latest",
+      "dependsOn": []
+    }
+  ],
+  "annotations": [
+    {
+      "bom-ref": "metadata-annotations",
+      "subjects": [
+        "pkg:maven/WebGoat@latest"
+      ],
+      "annotator": {
+        "component": {
+          "group": "@cyclonedx",
+          "name": "cdxgen",
+          "version": "12.1.3",
+          "purl": "pkg:npm/%40cyclonedx/cdxgen@12.1.3",
+          "type": "application",
+          "bom-ref": "pkg:npm/@cyclonedx/cdxgen@12.1.3",
+          "publisher": "OWASP Foundation",
+          "authors": [
+            {
+              "name": "OWASP Foundation"
+            }
+          ]
+        }
+      },
+      "timestamp": "2026-03-26T14:53:13Z",
+      "text": "This Software Bill-of-Materials (SBOM) including GitHub Actions document was created on Thursday, March 26, 2026 with cdxgen. The data was captured during the build lifecycle phase. The document describes an application named 'WebGoat'. This SBOM contains 13 GitHub Action references across 3 workflow(s) and 4 job(s). The workflows are: Welcome, Release Pipeline, and Main / Pull requests build. Jobs are deployed to release environment(s). Version pinning breakdown: 13 tag-pinned. 4 official action(s) are from trusted sources. Security strengths: 13 action(s) are pinned to version tags and 4 action(s) are official GitHub Actions from github.com org. Overall, the workflow demonstrates good version pinning practices. 3 package type(s) and 7 purl namespaces are described in the document under components."
+    }
+  ]
+}

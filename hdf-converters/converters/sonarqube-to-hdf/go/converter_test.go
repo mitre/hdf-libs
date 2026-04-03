@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	hdf "github.com/mitre/hdf-schema"
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,15 +37,15 @@ func TestConvertSonarqubeToHDF_Structure(t *testing.T) {
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 }
 
-func TestConvertSonarqubeToHDF_DataSource(t *testing.T) {
+func TestConvertSonarqubeToHDF_Tool(t *testing.T) {
 	result, err := ConvertSonarqubeToHDF(loadMinimalFixture(t), testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "SonarQube", *result.DataSource.Name)
-	assert.Nil(t, result.DataSource.Version)
-	assert.Nil(t, result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "SonarQube", *result.Tool.Name)
+	assert.Nil(t, result.Tool.Version)
+	assert.Nil(t, result.Tool.Format)
 }
 
 func TestConvertSonarqubeToHDF_OneBaselinePerProject(t *testing.T) {
@@ -265,10 +265,12 @@ func TestExtractTags_KeyValueParsing(t *testing.T) {
 	assert.Len(t, allTags["category"], 2)
 }
 
-func TestConvertSonarqubeToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertSonarqubeToHDF([]byte("not valid json"), testConverterVersion)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid SonarQube JSON")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "sonarqube-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertSonarqubeToHDF(input, testConverterVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestConvertSonarqubeToHDF_MissingIssuesField(t *testing.T) {
@@ -583,6 +585,12 @@ func TestExtractDescription_FallsBackToDescriptionSections(t *testing.T) {
 		result := extractDescription(rule, true)
 		assert.Contains(t, result, "HTML description")
 		assert.NotContains(t, result, "Section description")
+	})
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "sonarqube-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertSonarqubeToHDF(input, "0.1.0")
 	})
 }
 

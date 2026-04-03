@@ -1,5 +1,5 @@
 // Package testing provides shared utilities for Go converters.
-package testing
+package shared
 
 import (
 	"bytes"
@@ -24,6 +24,19 @@ func InputChecksum(input []byte) *hdf.Checksum {
 	return &hdf.Checksum{
 		Algorithm: hdf.Sha256,
 		Value:     hex.EncodeToString(hash[:]),
+	}
+}
+
+// InputIntegrity computes the SHA-256 checksum of raw input bytes and returns
+// it as an hdf.Integrity. Used for root-level integrity fields on document
+// types (HDFBaseline, HDFSystem, HDFPlan, HDFAmendments, HDFEvidencePackage).
+func InputIntegrity(input []byte) *hdf.Integrity {
+	hash := sha256.Sum256(input)
+	alg := hdf.Sha256
+	val := hex.EncodeToString(hash[:])
+	return &hdf.Integrity{
+		Algorithm: &alg,
+		Checksum:  &val,
 	}
 }
 
@@ -267,22 +280,22 @@ func ParseTimestamp(s string) time.Time {
 }
 
 // HDFResultsOptions configures the fields for building an HDFResults struct.
-// GeneratorName and ConverterVersion are required. DataSource fields are only
+// GeneratorName and ConverterVersion are required. Tool fields are only
 // included when at least one is non-empty.
 type HDFResultsOptions struct {
-	GeneratorName     string
-	ConverterVersion  string
-	DataSourceName    string
-	DataSourceVersion string
-	DataSourceFormat  string
-	Baselines         []hdf.EvaluatedBaseline
-	Targets           []hdf.Target
-	Timestamp         *time.Time
-	Statistics        *hdf.Statistics
+	GeneratorName    string
+	ConverterVersion string
+	ToolName         string
+	ToolVersion      string
+	ToolFormat       string
+	Baselines        []hdf.EvaluatedBaseline
+	Components       []hdf.Component
+	Timestamp        *time.Time
+	Statistics       *hdf.Statistics
 }
 
 // BuildHDFResults assembles an HDFResults struct from the given options.
-// Eliminates the repeated boilerplate of constructing Generator, DataSource
+// Eliminates the repeated boilerplate of constructing Generator, Tool
 // (with pointer fields), and assembling the top-level struct in every converter.
 func BuildHDFResults(opts HDFResultsOptions) *hdf.HDFResults {
 	result := &hdf.HDFResults{
@@ -291,26 +304,43 @@ func BuildHDFResults(opts HDFResultsOptions) *hdf.HDFResults {
 			Name:    opts.GeneratorName,
 			Version: opts.ConverterVersion,
 		},
-		Targets:    opts.Targets,
+		Components: opts.Components,
 		Timestamp:  opts.Timestamp,
 		Statistics: opts.Statistics,
 	}
 
-	if opts.DataSourceName != "" || opts.DataSourceVersion != "" || opts.DataSourceFormat != "" {
-		ds := &hdf.DataSource{}
-		if opts.DataSourceName != "" {
-			ds.Name = &opts.DataSourceName
+	if opts.ToolName != "" || opts.ToolVersion != "" || opts.ToolFormat != "" {
+		t := &hdf.Tool{}
+		if opts.ToolName != "" {
+			t.Name = &opts.ToolName
 		}
-		if opts.DataSourceVersion != "" {
-			ds.Version = &opts.DataSourceVersion
+		if opts.ToolVersion != "" {
+			t.Version = &opts.ToolVersion
 		}
-		if opts.DataSourceFormat != "" {
-			ds.Format = &opts.DataSourceFormat
+		if opts.ToolFormat != "" {
+			t.Format = &opts.ToolFormat
 		}
-		result.DataSource = ds
+		result.Tool = t
 	}
 
 	return result
+}
+
+// DefaultMaxJSONSize is the maximum allowed JSON input size (50 MB).
+// This provides defense against memory exhaustion when converters are used
+// as libraries outside the CLI (which has its own 50 MB input limit).
+const DefaultMaxJSONSize = 50 * 1024 * 1024
+
+// ValidateJSONSize checks that JSON input doesn't exceed the maximum allowed size.
+// If maxSize <= 0, DefaultMaxJSONSize is used.
+func ValidateJSONSize(input []byte, converterName string, maxSize int) error {
+	if maxSize <= 0 {
+		maxSize = DefaultMaxJSONSize
+	}
+	if len(input) > maxSize {
+		return fmt.Errorf("%s: input exceeds maximum allowed size of %d bytes (%d bytes provided)", converterName, maxSize, len(input))
+	}
+	return nil
 }
 
 // DefaultMaxXMLSize is the maximum allowed XML input size (50 MB).
@@ -357,4 +387,63 @@ func ValidateXMLInput(input []byte, maxSize int) error {
 		return fmt.Errorf("XML input contains entity declarations which are not supported (potential entity expansion attack)")
 	}
 	return nil
+}
+
+// xmlRootElementRe matches an opening XML element tag, optionally namespace-prefixed.
+// Captures the local name (group 1).
+var xmlRootElementRe = regexp.MustCompile(`^<(?:[a-zA-Z_][\w.\-]*:)?([a-zA-Z_][\w.\-]*)`)
+
+// ExtractXMLRootElement extracts the root element local name from an XML string.
+// It skips XML processing instructions (<?...?>), comments (<!--...-->),
+// and DOCTYPE declarations (<!DOCTYPE ... [...]>), and strips namespace prefixes.
+// Returns "" if no element is found.
+func ExtractXMLRootElement(input string) string {
+	s := input
+	for {
+		s = strings.TrimLeft(s, " \t\n\r")
+		if len(s) == 0 {
+			return ""
+		}
+		switch {
+		case strings.HasPrefix(s, "<?"):
+			end := strings.Index(s, "?>")
+			if end == -1 {
+				return ""
+			}
+			s = s[end+2:]
+		case strings.HasPrefix(s, "<!--"):
+			end := strings.Index(s, "-->")
+			if end == -1 {
+				return ""
+			}
+			s = s[end+3:]
+		case strings.HasPrefix(s, "<!DOCTYPE") || strings.HasPrefix(s, "<!doctype"):
+			bracket := strings.Index(s, "[")
+			gt := strings.Index(s, ">")
+			if gt == -1 {
+				return ""
+			}
+			if bracket != -1 && bracket < gt {
+				endSubset := strings.Index(s, "]>")
+				if endSubset == -1 {
+					return ""
+				}
+				s = s[endSubset+2:]
+			} else {
+				s = s[gt+1:]
+			}
+		case strings.HasPrefix(s, "<!"):
+			end := strings.Index(s, ">")
+			if end == -1 {
+				return ""
+			}
+			s = s[end+1:]
+		default:
+			m := xmlRootElementRe.FindStringSubmatch(s)
+			if m == nil {
+				return ""
+			}
+			return m[1]
+		}
+	}
 }

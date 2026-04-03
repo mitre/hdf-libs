@@ -1,5 +1,9 @@
 # HDF-Diff Schema & Library Implementation Plan
 
+> **COMPLETED** — This plan has been fully implemented. The hdf-comparison schema,
+> hdf-diff TS library (380+ tests, 100% coverage), and hdf-diff Go library (500+ tests)
+> are all complete. Retained for historical reference.
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Design and implement `hdf-diff` as a formal HDF document type with its own JSON schema — the industry's first standardized format for structured security assessment comparison.
@@ -68,8 +72,8 @@ hdf-schema/src/schemas/
 └── primitives/
     ├── comparison.schema.json       ← NEW ($defs for RequirementDiff, Source, etc.)
     ├── common.schema.json           ← existing ($ref for Checksum, Identity)
-    ├── extensions.schema.json       ← existing ($ref for Generator, DataSource, Integrity)
-    ├── target.schema.json           ← existing ($ref for Target in Source metadata)
+    ├── extensions.schema.json       ← existing ($ref for Generator, Tool, Integrity)
+    ├── component.schema.json        ← existing ($ref for Component in Source metadata)
     ├── result.schema.json           ← existing ($ref for ResultStatus enum)
     └── ...
 ```
@@ -84,8 +88,8 @@ hdf-comparison.schema.json
   │     │     └── state: $ref #/$defs/RequirementState
   │     ├── $defs/Source
   │     │     ├── checksum: $ref primitives/common.schema.json#/$defs/Checksum
-  │     │     ├── dataSource: $ref primitives/extensions.schema.json#/$defs/DataSource
-  │     │     └── targets: $ref primitives/target.schema.json#/$defs/Target
+  │     │     ├── tool: $ref primitives/extensions.schema.json#/$defs/Tool
+  │     │     └── components: $ref primitives/component.schema.json#/$defs/Component
   │     ├── $defs/ComparisonSummary
   │     ├── $defs/FieldChange
   │     ├── $defs/MatchingConfig
@@ -136,9 +140,9 @@ interface Source {
   /** When the source assessment was performed */
   assessmentTimestamp?: string;
   /** Scanner/tool that produced the source */
-  dataSource?: DataSource;
-  /** Target system(s) assessed */
-  targets?: Target[];
+  tool?: Tool;
+  /** Components assessed */
+  components?: Component[];
   /** Baseline name and version from the source */
   baselineRef?: { name: string; version?: string };
 }
@@ -443,8 +447,8 @@ Multiple systems against the same baseline. One reference, N systems.
   "comparisonMode": "fleet",
   "sources": [
     { "role": "reference", "label": "Golden image" },
-    { "role": "system", "label": "web-server-01", "targets": [{"type": "host", "name": "web-01"}] },
-    { "role": "system", "label": "web-server-02", "targets": [{"type": "host", "name": "web-02"}] }
+    { "role": "system", "label": "web-server-01", "components": [{"type": "host", "name": "web-01"}] },
+    { "role": "system", "label": "web-server-02", "components": [{"type": "host", "name": "web-02"}] }
   ]
 }
 ```
@@ -459,8 +463,8 @@ Same system scanned by different tools. Results correlated by CCI/NIST mapping.
 {
   "comparisonMode": "multiSource",
   "sources": [
-    { "role": "old", "label": "InSpec STIG scan", "dataSource": {"name": "InSpec"} },
-    { "role": "new", "label": "OpenSCAP scan", "dataSource": {"name": "OpenSCAP"} }
+    { "role": "old", "label": "InSpec STIG scan", "tool": {"name": "InSpec"} },
+    { "role": "new", "label": "OpenSCAP scan", "tool": {"name": "OpenSCAP"} }
   ],
   "matching": {
     "primaryStrategy": "cciMatch",

@@ -15,7 +15,7 @@ import type {
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
-  DataSource,
+  Tool,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -341,17 +341,17 @@ export async function convertFortifyToHdf(input: string): Promise<string> {
     },
   ) as EvaluatedBaseline;
 
-  // Target name from SourceBasePath
+  // Component name from SourceBasePath
   const targetName = fvdl.Build?.SourceBasePath ?? fvdl.Build?.BuildID ?? 'Unknown';
 
-  const dataSource: DataSource = {
+  const tool: Tool = {
     name: 'Fortify',
     format: 'FVDL',
   };
 
   const hdfResult: HdfResults = {
     baselines: [baseline],
-    targets: [
+    components: [
       {
         name: targetName,
         type: Copyright.Repository,
@@ -361,7 +361,7 @@ export async function convertFortifyToHdf(input: string): Promise<string> {
       name: 'fortify-to-hdf',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
   };
 
   // Set timestamp from CreatedTS

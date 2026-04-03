@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertAwsConfigToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,16 +13,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'aws-config-to-hdf',
+  convertFn: convertAwsConfigToHdf,
+  minimalFixture: 'minimal.json',
+});
+
 describe('AWS Config to HDF converter', async () => {
   describe('convertAwsConfigToHdf', async () => {
-    it('should throw on invalid JSON', async () => {
-      await expect(convertAwsConfigToHdf('not json')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertAwsConfigToHdf('')).rejects.toThrow();
-    });
-
     it('should throw when ConfigRules field is missing', async () => {
       await expect(convertAwsConfigToHdf(JSON.stringify({ other: 'field' }))).rejects.toThrow(
         'ConfigRules field is required'
@@ -35,9 +34,9 @@ describe('AWS Config to HDF converter', async () => {
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('aws-config-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
-      expect(hdf.dataSource?.name).toBe('AWS Config');
-      expect(hdf.dataSource?.version).toBeUndefined();
-      expect(hdf.dataSource?.format).toBeUndefined();
+      expect(hdf.tool?.name).toBe('AWS Config');
+      expect(hdf.tool?.version).toBeUndefined();
+      expect(hdf.tool?.format).toBeUndefined();
       expect(hdf.baselines).toHaveLength(1);
     });
 

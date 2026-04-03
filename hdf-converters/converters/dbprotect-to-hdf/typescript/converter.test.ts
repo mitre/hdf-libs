@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertDbprotectToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,17 +13,13 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'dbprotect-to-hdf',
+  convertFn: convertDbprotectToHdf,
+  minimalFixture: 'sample-check-results.xml',
+});
+
 describe('dbprotect to HDF converter', () => {
-  describe('input validation', () => {
-    it('should throw on invalid XML', async () => {
-      await expect(convertDbprotectToHdf('not valid xml')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertDbprotectToHdf('')).rejects.toThrow();
-    });
-  });
-
   describe('check results details', () => {
     it('should produce valid HDF from check results fixture', async () => {
       const output = await convertDbprotectToHdf(loadFixture('sample-check-results.xml'));
@@ -57,10 +54,10 @@ describe('dbprotect to HDF converter', () => {
       expect(checksum?.value).toMatch(/^[a-f0-9]{64}$/);
     });
 
-    it('should set dataSource name to "DBProtect" and format to "XML"', async () => {
+    it('should set tool name to "DBProtect" and format to "XML"', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('DBProtect');
-      expect(hdf.dataSource?.format).toBe('XML');
+      expect(hdf.tool?.name).toBe('DBProtect');
+      expect(hdf.tool?.format).toBe('XML');
     });
 
     it('should have 6 unique requirements from 8 rows', async () => {
@@ -184,14 +181,14 @@ describe('dbprotect to HDF converter', () => {
   describe('target', () => {
     it('should set target name from Asset column', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets!.length).toBeGreaterThan(0);
-      expect(hdf.targets![0]!.name).toBe('CONDS181');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components!.length).toBeGreaterThan(0);
+      expect(hdf.components![0]!.name).toBe('CONDS181');
     });
 
     it('should set target type to Host', async () => {
       const hdf = JSON.parse(await convertDbprotectToHdf(loadFixture('sample-check-results.xml'))) as HdfResults;
-      expect(hdf.targets![0]!.type).toBe('host');
+      expect(hdf.components![0]!.type).toBe('host');
     });
   });
 

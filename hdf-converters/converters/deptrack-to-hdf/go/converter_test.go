@@ -40,14 +40,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertDeptrack_InvalidJSON(t *testing.T) {
-	_, err := ConvertDeptrackToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertDeptrack_EmptyInput(t *testing.T) {
-	_, err := ConvertDeptrackToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "deptrack-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertDeptrackToHDF(input, testVersion) },
+		MinimalFixture: "fpf-default.json",
+	})
 }
 
 // ---- Default fixture: baseline structure ----
@@ -101,18 +99,18 @@ func TestConvertDeptrack_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertDeptrack_DataSource(t *testing.T) {
+func TestConvertDeptrack_Tool(t *testing.T) {
 	input := loadFixture(t, "input/fpf-default.json")
 	result, err := ConvertDeptrackToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Dependency-Track", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Dependency-Track", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- Target ----
@@ -122,9 +120,9 @@ func TestConvertDeptrack_Target(t *testing.T) {
 	result, err := ConvertDeptrackToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, "Acme Example", result.Targets[0].Name)
-	assert.Equal(t, hdf.Application, result.Targets[0].Type)
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, "Acme Example", result.Components[0].Name)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
 }
 
 // ---- Severity → Impact mapping ----
@@ -268,7 +266,7 @@ func TestConvertDeptrack_NoVulnerabilities(t *testing.T) {
 
 	require.Len(t, result.Baselines, 1)
 	assert.Len(t, result.Baselines[0].Requirements, 0)
-	assert.Equal(t, "laravel", result.Targets[0].Name)
+	assert.Equal(t, "laravel", result.Components[0].Name)
 }
 
 // ---- Timestamp ----
@@ -323,4 +321,10 @@ func TestGetImpact(t *testing.T) {
 			assert.InDelta(t, tc.expected, getImpact(tc.severity), 0.001)
 		})
 	}
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "deptrack-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertDeptrackToHDF(input, "0.1.0")
+	})
 }

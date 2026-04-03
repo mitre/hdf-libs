@@ -19,17 +19,17 @@ import (
 
 // prismaRecord represents a single row from the Prisma Cloud CSV export.
 type prismaRecord struct {
-	Hostname         string
-	Distro           string
-	CVEID            string
-	ComplianceID     string
-	Type             string
-	Severity         string
-	Packages         string
-	Description      string
-	Cause            string
-	FixStatus        string
-	Published        string
+	Hostname          string
+	Distro            string
+	CVEID             string
+	ComplianceID      string
+	Type              string
+	Severity          string
+	Packages          string
+	Description       string
+	Cause             string
+	FixStatus         string
+	Published         string
 	VulnerabilityLink string
 }
 
@@ -255,6 +255,9 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	if len(input) == 0 {
 		return nil, fmt.Errorf("prisma: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "prisma", 0); err != nil {
+		return nil, fmt.Errorf("prisma: %w", err)
+	}
 
 	records, err := parseCSV(input)
 	if err != nil {
@@ -269,12 +272,12 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	hostOrder, hostGroups := groupByHostname(records)
 
 	baselines := make([]hdf.EvaluatedBaseline, len(hostOrder))
-	targets := make([]hdf.Target, len(hostOrder))
+	targets := make([]hdf.Component, len(hostOrder))
 	for i, hostname := range hostOrder {
 		baselines[i] = buildBaseline(hostname, hostGroups[hostname], checksum)
-		targets[i] = hdf.Target{
-			Name: hostname,
-			Type: hdf.Host,
+		targets[i] = hdf.Component{
+			Name:   hostname,
+			Type:   hdf.Host,
 		}
 	}
 
@@ -283,10 +286,10 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "prisma-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Prisma Cloud",
-		DataSourceFormat: "CSV",
+		ToolName:         "Prisma Cloud",
+		ToolFormat:       "CSV",
 		Baselines:        baselines,
-		Targets:          targets,
+		Components:          targets,
 		Timestamp:        &now,
 	}), nil
 }

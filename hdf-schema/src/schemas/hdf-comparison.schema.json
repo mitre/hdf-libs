@@ -59,6 +59,25 @@
       },
       "description": "Detailed comparison of individual requirements between sources."
     },
+    "componentDiffs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v1.0.0#/$defs/Component_Diff"
+      },
+      "description": "Comparison of components between two system documents. Used in systemDrift mode."
+    },
+    "packageDiffs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v1.0.0#/$defs/Package_Diff"
+      },
+      "description": "Comparison of packages between two SBOMs. Used in systemDrift mode for SBOM comparison."
+    },
+    "systemRef": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "URI identifying the system being compared in systemDrift mode."
+    },
     "drift": {
       "type": "array",
       "items": {

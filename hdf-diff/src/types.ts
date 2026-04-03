@@ -134,6 +134,23 @@ export interface ComparisonSummary {
 }
 
 /**
+ * The diff for a single component across two system documents.
+ * Used in systemDrift comparison mode.
+ */
+export interface ComponentDiff {
+  /** Component name */
+  name: string;
+  /** Classification of the change: new, absent, unchanged, or updated */
+  state: 'new' | 'absent' | 'unchanged' | 'updated';
+  /** Component snapshot from the old system (null when state = 'new') */
+  before: Record<string, unknown> | null;
+  /** Component snapshot from the new system (null when state = 'absent') */
+  after: Record<string, unknown> | null;
+  /** Field-level diffs between old and new component */
+  fieldChanges: FieldChange[];
+}
+
+/**
  * The diff for a single baseline across two evaluations.
  */
 export interface BaselineDiff {
@@ -182,7 +199,7 @@ export interface HdfComparison {
   /** Schema version for the comparison format */
   formatVersion: '1.0.0';
   /** The mode of comparison */
-  comparisonMode: 'temporal' | 'baseline' | 'fleet' | 'multiSource';
+  comparisonMode: 'temporal' | 'baseline' | 'fleet' | 'multiSource' | 'baselineEvolution' | 'systemDrift';
   /** When the comparison was generated */
   timestamp?: string;
   /** Source documents used in the comparison */
@@ -195,6 +212,12 @@ export interface HdfComparison {
   baselineDiffs: BaselineDiff[];
   /** Per-requirement diffs, sorted by id */
   requirementDiffs: RequirementDiff[];
+  /** Per-component diffs (systemDrift mode only) */
+  componentDiffs?: ComponentDiff[];
+  /** Per-package diffs from embedded SBOM comparison (systemDrift mode only) */
+  packageDiffs?: import('./sbom.js').PackageDiff[];
+  /** URI identifying the system being compared (systemDrift mode only) */
+  systemRef?: string;
   /** Requirements that drifted from a golden baseline (future use) */
   drift?: RequirementDiff[];
   /** Annotations keyed by requirement ID */

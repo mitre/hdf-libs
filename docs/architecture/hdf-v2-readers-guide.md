@@ -90,7 +90,7 @@ InSpec executes the baseline against a server, producing an hdf-results document
 {
   "timestamp": "2026-03-14T02:00:00Z",
   "systemRef": "portal-prod.hdf-system.json",
-  "targets": [
+  "components": [
     {
       "type": "host",
       "name": "web-server-01",
@@ -207,7 +207,7 @@ security improvements pass while blocking regressions.
 ```
 
 Key design points:
-- **Label selectors** (`targetSelector`) match targets by labels, not by name.
+- **Label selectors** (`targetSelector`) match components by labels, not by name.
   Adding a new web server with `labels.component: "WebTier"` automatically includes
   it — no system doc update needed.
 - **sbomRef** points to an external CycloneDX SBOM. This is optional (progressive
@@ -541,7 +541,7 @@ the governance provenance.
 hdf-baseline ←──── hdf-plan (which baselines to run)
      │                │
      ▼                ▼
-hdf-system ◄───── hdf-plan (which components/targets to scan)
+hdf-system ◄───── hdf-plan (which components to scan)
      │                │
      ▼                ▼
 hdf-results ◄──── hdf-plan (provenance: what config produced these results)
@@ -566,7 +566,7 @@ Not every organization has every piece. HDF works at every level of maturity:
 | Level | What you have | What works |
 |-------|-------------|------------|
 | 0 | Bare converter output | Scan results, basic compliance % |
-| 1 | + Labels on targets | Group by system/component/team/region |
+| 1 | + Labels on components | Group by system/component/team/region |
 | 2 | + systemRef / planRef | Provenance chain — "this scan came from this plan" |
 | 3 | + Typed inputs | Governance tracing — "why is the threshold 5?" |
 | 4 | + sbomRef | Software supply chain — "what packages does this run?" |
@@ -671,26 +671,31 @@ not competing schemas:
 
 ## Implementation Status
 
-> As of 2026-03-15. See `docs/plans/2026-03-14-hdf-v2-ecosystem-plan.md` for the
+> As of 2026-04-02. See `docs/plans/2026-03-14-hdf-v2-ecosystem-plan.md` for the
 > full implementation plan with beads card references.
 
 | What | Status |
 |------|--------|
-| hdf-baseline schema | Exists |
-| hdf-results schema | Exists |
-| hdf-comparison schema | Exists |
+| hdf-baseline schema | Complete |
+| hdf-results schema | Complete |
+| hdf-comparison schema | Complete |
+| hdf-system schema | Complete |
+| hdf-plan schema | Complete |
+| hdf-amendments schema | Complete |
+| hdf-evidence-package schema | Complete |
+| Phase 0: typed inputs, labels, rename, refs | Complete |
+| Phase 1: hdf-system | Complete |
+| Phase 2: hdf-plan | Complete |
+| Phase 3: hdf-amendments | Complete |
+| Phase 4: hdf-evidence-package | Complete |
 | hdf-diff TS library | Complete (380 tests, 100% coverage) |
 | hdf-diff Go library | Complete (500+ tests, 98.4% coverage) |
 | `hdf diff` CLI command | Complete (exit codes 0/1/2 + 10-14) |
-| Phase 0: typed inputs, labels, rename, refs | Not started (next) |
-| Phase 1: hdf-system | Not started (blocked on Phase 0) |
-| Phase 2: hdf-plan | Not started (blocked on Phase 1) |
-| Phase 3: hdf-amendments | Not started (blocked on Phase 0) |
-| Phase 4: hdf-evidence-package | Not started (blocked on 1+2+3) |
-| Phase 5: ecosystem integration | Not started (incremental) |
-| System-level comparison | Not started (blocked on Phase 1) |
-| Baseline comparison | Not started (blocked on Phase 0) |
-| SBOM comparison | Not started (blocked on Phase 1) |
+| Validators + CLI for all 7 types | Complete |
+| Phase 5: ecosystem integration | In progress |
+| System-level comparison | Ready (unblocked) |
+| Baseline comparison | Ready (unblocked) |
+| SBOM comparison | Ready (unblocked) |
 
 ---
 

@@ -1,16 +1,15 @@
 import {
   type Checksum,
+  Copyright,
   createMinimalBaseline,
-  type DataSource,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
-  type HdfResults,
   ResultStatus,
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, limitArray, validateInputSize} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
 
 // Input types for Grype JSON
 
@@ -354,21 +353,17 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
     resultsChecksum,
   }) as EvaluatedBaseline;
 
-  const dataSource: DataSource = { name: 'Grype' };
-  if (grypeData.descriptor?.version) {
-    dataSource.version = grypeData.descriptor.version;
-  }
-
   // Build HDF results
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: grypeData.descriptor?.name || 'grype',
+    converterVersion: grypeData.descriptor?.version || 'unknown',
+    toolName: 'Grype',
+    toolVersion: grypeData.descriptor?.version,
     baselines: [baseline],
-    generator: {
-      name: grypeData.descriptor?.name || 'grype',
-      version: grypeData.descriptor?.version || 'unknown',
-    },
-    dataSource,
+    components: [{
+      type: Copyright.Artifact,
+      name: targetName,
+    }],
     timestamp: grypeData.descriptor?.timestamp ? new Date(grypeData.descriptor.timestamp) : new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

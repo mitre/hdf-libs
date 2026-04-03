@@ -35,15 +35,12 @@ func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedR
 
 // --- Validation tests ---
 
-func TestConvertZapToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertZapToHDF([]byte("not valid json"), testConverterVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid ZAP JSON")
-}
-
-func TestConvertZapToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertZapToHDF([]byte(""), testConverterVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "zap-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertZapToHDF(input, testConverterVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestConvertZapToHDF_MissingSiteArray(t *testing.T) {
@@ -85,15 +82,15 @@ func TestConvertZapToHDF_Generator(t *testing.T) {
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 }
 
-func TestConvertZapToHDF_DataSource(t *testing.T) {
+func TestConvertZapToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	assert.Equal(t, "OWASP ZAP", *result.DataSource.Name)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
-	assert.Equal(t, "2.7.0", *result.DataSource.Version)
+	require.NotNil(t, result.Tool)
+	assert.Equal(t, "OWASP ZAP", *result.Tool.Name)
+	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Equal(t, "2.7.0", *result.Tool.Version)
 }
 
 func TestConvertZapToHDF_BaselineName(t *testing.T) {
@@ -150,11 +147,11 @@ func TestConvertZapToHDF_Target(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	assert.Equal(t, "example.com", result.Targets[0].Name)
-	assert.Equal(t, hdf.Application, result.Targets[0].Type)
-	require.NotNil(t, result.Targets[0].URL)
-	assert.Equal(t, "https://example.com", *result.Targets[0].URL)
+	require.Len(t, result.Components, 1)
+	assert.Equal(t, "example.com", result.Components[0].Name)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
+	require.NotNil(t, result.Components[0].URL)
+	assert.Equal(t, "https://example.com", *result.Components[0].URL)
 }
 
 func TestConvertZapToHDF_NoTargetForUnknownHost(t *testing.T) {
@@ -162,7 +159,7 @@ func TestConvertZapToHDF_NoTargetForUnknownHost(t *testing.T) {
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	assert.Empty(t, result.Targets)
+	assert.Empty(t, result.Components)
 }
 
 // --- Impact mapping ---
@@ -429,8 +426,8 @@ func TestConvertZapToHDF_Webgoat_SelectsSiteWithMostAlerts(t *testing.T) {
 
 	// Baseline.Name is the fixed scan label; the host goes into Targets
 	assert.Equal(t, "OWASP ZAP Scan", result.Baselines[0].Name)
-	require.Len(t, result.Targets, 1)
-	assert.Equal(t, "mymac.com", result.Targets[0].Name)
+	require.Len(t, result.Components, 1)
+	assert.Equal(t, "mymac.com", result.Components[0].Name)
 }
 
 func TestConvertZapToHDF_Webgoat_RequirementCount(t *testing.T) {
@@ -489,11 +486,17 @@ func TestConvertZapToHDF_Webgoat_Timestamp(t *testing.T) {
 	assert.Equal(t, 6, result.Timestamp.Day())
 }
 
-func TestConvertZapToHDF_Webgoat_DataSourceVersion(t *testing.T) {
+func TestConvertZapToHDF_Webgoat_ToolVersion(t *testing.T) {
 	input := loadFixture(t, "input/webgoat.json")
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	assert.Equal(t, "2.7.0", *result.DataSource.Version)
+	require.NotNil(t, result.Tool)
+	assert.Equal(t, "2.7.0", *result.Tool.Version)
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "zap-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertZapToHDF(input, "0.1.0")
+	})
 }

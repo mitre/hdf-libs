@@ -22,14 +22,12 @@ func loadFixture(t *testing.T, name string) []byte {
 
 // ---- ConvertGosecToHDF top-level ----
 
-func TestConvertGosecToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertGosecToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertGosecToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertGosecToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "gosec-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertGosecToHDF(input, testVersion) },
+		MinimalFixture: "ethereum.json",
+	})
 }
 
 func TestConvertGosecToHDF_Generator(t *testing.T) {
@@ -41,17 +39,17 @@ func TestConvertGosecToHDF_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-func TestConvertGosecToHDF_DataSource(t *testing.T) {
+func TestConvertGosecToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/ethereum.json")
 	result, err := ConvertGosecToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "gosec", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Version)
-	assert.Equal(t, "dev", *result.DataSource.Version)
-	assert.Nil(t, result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "gosec", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Version)
+	assert.Equal(t, "dev", *result.Tool.Version)
+	assert.Nil(t, result.Tool.Format)
 }
 
 func TestConvertGosecToHDF_BaselineCount(t *testing.T) {
@@ -588,4 +586,10 @@ func TestConvertGosecToHDF_NativeJSONNotRoutedToSARIF(t *testing.T) {
 
 	// Native output uses "gosec Scan" baseline name (not tool driver name)
 	assert.Equal(t, "gosec Scan", result.Baselines[0].Name)
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "gosec-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertGosecToHDF(input, "0.1.0")
+	})
 }

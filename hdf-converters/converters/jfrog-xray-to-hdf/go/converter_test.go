@@ -20,15 +20,6 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
-
 func findDescription(descs []hdf.Description, label string) *hdf.Description {
 	for i := range descs {
 		if descs[i].Label == label {
@@ -40,14 +31,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertJfrogXray_InvalidJSON(t *testing.T) {
-	_, err := ConvertJfrogXrayToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertJfrogXray_EmptyInput(t *testing.T) {
-	_, err := ConvertJfrogXrayToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "jfrog-xray-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertJfrogXrayToHDF(input, testVersion) },
+		MinimalFixture: "jfrog_xray_sample.json",
+	})
 }
 
 // ---- Baseline structure ----
@@ -97,18 +86,18 @@ func TestConvertJfrogXray_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertJfrogXray_DataSource(t *testing.T) {
+func TestConvertJfrogXray_Tool(t *testing.T) {
 	input := loadFixture(t, "input/jfrog_xray_sample.json")
 	result, err := ConvertJfrogXrayToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "JFrog Xray", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "JFrog Xray", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- Target ----
@@ -118,9 +107,9 @@ func TestConvertJfrogXray_Target(t *testing.T) {
 	result, err := ConvertJfrogXrayToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, "JFrog Xray Scan", result.Targets[0].Name)
-	assert.Equal(t, hdf.Application, result.Targets[0].Type)
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, "JFrog Xray Scan", result.Components[0].Name)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
 }
 
 // ---- Severity → Impact mapping ----
@@ -327,4 +316,10 @@ func TestGetImpact(t *testing.T) {
 			assert.InDelta(t, tc.expected, getImpact(tc.severity), 0.001)
 		})
 	}
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "jfrog-xray-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertJfrogXrayToHDF(input, "0.1.0")
+	})
 }

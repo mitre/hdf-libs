@@ -1,0 +1,125 @@
+{
+  "id": "edge-case-id-001",
+  "analysis_id": "analysis-edge-001",
+  "team_id": "team-edge-001",
+  "project_id": "project-edge-001",
+  "name": "python-mixed-project",
+  "text": "",
+  "type": "git",
+  "source": "https://github.com/example-org/python-mixed.git",
+  "branch": "develop",
+  "description": "Python project with edge case dependencies",
+  "risk": "medium",
+  "summary": "Some dependencies have issues",
+  "passed": false,
+  "ruleset_id": "ruleset-002",
+  "ruleset_name": "strict",
+  "status": "finished",
+  "created_at": "2024-02-20T14:00:00Z",
+  "updated_at": "2024-02-20T14:05:00Z",
+  "duration": 8000,
+  "trigger_hash": "def789ghi012",
+  "trigger_text": "fix: update deps",
+  "trigger_author": "admin@example.com",
+  "trigger": "source_commit",
+  "public": false,
+  "scan_summaries": [
+    {
+      "id": "scan-edge-001",
+      "team_id": "team-edge-001",
+      "project_id": "project-edge-001",
+      "analysis_id": "analysis-edge-001",
+      "summary": "Dependency scan with edge cases",
+      "results": {
+        "type": "dependency",
+        "data": {
+          "dependencies": [
+            {
+              "latest_version": "n/a",
+              "org": "n/a",
+              "name": "-e",
+              "type": "pypi",
+              "package": "egg",
+              "version": "n/a",
+              "scope": "runtime",
+              "requirement": "n/a",
+              "file": "requirements.txt",
+              "outdated_version": {
+                "major_behind": 0,
+                "minor_behind": 0,
+                "patch_behind": 0
+              },
+              "dependencies": []
+            },
+            {
+              "latest_version": "3.1.0",
+              "org": "n/a",
+              "name": "requests",
+              "type": "pypi",
+              "package": "pypi",
+              "version": "2.31.0",
+              "scope": "runtime",
+              "requirement": "n/a",
+              "file": "requirements.txt",
+              "outdated_version": {
+                "major_behind": 1,
+                "minor_behind": 0,
+                "patch_behind": 0
+              },
+              "dependencies": []
+            },
+            {
+              "latest_version": "1.0.0",
+              "org": "example-corp",
+              "name": "internal-lib",
+              "type": "pypi",
+              "package": "pypi",
+              "version": "n/a",
+              "scope": "runtime",
+              "requirement": ">=0.5.0",
+              "file": "requirements.txt",
+              "outdated_version": {
+                "major_behind": 0,
+                "minor_behind": 0,
+                "patch_behind": 0
+              },
+              "dependencies": []
+            }
+          ],
+          "meta": {
+            "first_degree_count": 3,
+            "no_version_count": 1,
+            "total_unique_count": 3,
+            "update_available_count": 1
+          }
+        }
+      },
+      "created_at": "2024-02-20T14:00:00Z",
+      "updated_at": "2024-02-20T14:05:00Z",
+      "duration": 3000,
+      "name": "dependency",
+      "description": "Dependency analysis"
+    },
+    {
+      "id": "scan-edge-002",
+      "team_id": "team-edge-001",
+      "project_id": "project-edge-001",
+      "analysis_id": "analysis-edge-001",
+      "summary": "Community scan completed",
+      "results": {
+        "type": "community",
+        "data": {
+          "committers": 5,
+          "name": "python-mixed",
+          "url": "https://github.com/example-org/python-mixed",
+          "stars": 42
+        }
+      },
+      "created_at": "2024-02-20T14:00:00Z",
+      "updated_at": "2024-02-20T14:05:00Z",
+      "duration": 1000,
+      "name": "community",
+      "description": "Community analysis"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertXccdfResultsToHdf, convertXccdfBenchmarkToHdf, convertXccdfToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults, HdfBaseline, BaselineRequirement, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
 
@@ -39,20 +40,18 @@ function findBaselineReq(
 // Fixtures sourced from real OpenSCAP / DISA STIG scan output
 // ---------------------------------------------------------------------------
 
+runConverterContractTests({
+  converterName: 'xccdf-results-to-hdf',
+  convertFn: convertXccdfResultsToHdf,
+  minimalFixture: 'minimal.xml',
+});
+
 describe('xccdf-results-to-hdf converter', async () => {
   // --- Input validation ---
 
   describe('input validation', () => {
-    it('should throw on empty input', async () => {
-      await expect(convertXccdfResultsToHdf('')).rejects.toThrow('Empty input');
-    });
-
     it('should throw on whitespace-only input', async () => {
       await expect(convertXccdfResultsToHdf('   ')).rejects.toThrow('Empty input');
-    });
-
-    it('should throw on invalid XML', async () => {
-      await expect(convertXccdfResultsToHdf('not xml at all')).rejects.toThrow();
     });
 
     it('should throw on non-XCCDF XML', async () => {
@@ -79,7 +78,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.generator).toBeDefined();
-      expect(hdf.dataSource).toBeDefined();
+      expect(hdf.tool).toBeDefined();
       expect(hdf.timestamp).toBeTruthy();
     });
 
@@ -118,9 +117,9 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should set target name from TestResult target', async () => {
       const hdf = await parseHdf('minimal.xml');
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets).toHaveLength(1);
-      expect(hdf.targets![0]!.name).toBe('Test Target');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components).toHaveLength(1);
+      expect(hdf.components![0]!.name).toBe('Test Target');
     });
 
     it('should set timestamp from TestResult start-time', async () => {
@@ -157,12 +156,12 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should set target name to localhost.localdomain', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      expect(hdf.targets![0]!.name).toBe('localhost.localdomain');
+      expect(hdf.components![0]!.name).toBe('localhost.localdomain');
     });
 
     it('should set target ipAddress to first target-address', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      expect(hdf.targets![0]!.ipAddress).toBe('127.0.0.1');
+      expect(hdf.components![0]!.ipAddress).toBe('127.0.0.1');
     });
 
     it('should include sha256 results checksum', async () => {
@@ -178,10 +177,10 @@ describe('xccdf-results-to-hdf converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource fields', async () => {
+    it('should set tool fields', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      expect(hdf.dataSource?.name).toBe('XCCDF Results');
-      expect(hdf.dataSource?.format).toBe('XML');
+      expect(hdf.tool?.name).toBe('XCCDF Results');
+      expect(hdf.tool?.format).toBe('XML');
     });
 
     it('should set timestamp from TestResult start-time', async () => {
@@ -478,9 +477,9 @@ describe('xccdf-results-to-hdf converter', async () => {
 
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.generator).toBeDefined();
-      expect(hdf.dataSource).toBeDefined();
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets).toHaveLength(1);
+      expect(hdf.tool).toBeDefined();
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components).toHaveLength(1);
     });
 
     it('should produce 1 requirement from 1 ARF rule-result', async () => {
@@ -501,29 +500,29 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should set target name from TestResult target element', async () => {
       const hdf = await parseHdf('arf-minimal.xml');
-      expect(hdf.targets![0]!.name).toBe('rh-hony');
+      expect(hdf.components![0]!.name).toBe('rh-hony');
     });
 
     it('should set target IP from TestResult target-address', async () => {
       const hdf = await parseHdf('arf-minimal.xml');
-      expect(hdf.targets![0]!.ipAddress).toBe('127.0.0.1');
+      expect(hdf.components![0]!.ipAddress).toBe('127.0.0.1');
     });
 
     it('should enrich target with ARF asset FQDN', async () => {
       const hdf = await parseHdf('arf-minimal.xml');
-      expect(hdf.targets![0]!.fqdn).toBe('rh-hony');
+      expect(hdf.components![0]!.fqdn).toBe('rh-hony');
     });
 
     it('should enrich target with ARF asset MAC address', async () => {
       const hdf = await parseHdf('arf-minimal.xml');
-      expect(hdf.targets![0]!.macAddress).toBeDefined();
-      expect(hdf.targets![0]!.macAddress).not.toBe('');
+      expect(hdf.components![0]!.macAddress).toBeDefined();
+      expect(hdf.components![0]!.macAddress).not.toBe('');
     });
 
-    it('should set dataSource name to ARF', async () => {
+    it('should set tool name to ARF', async () => {
       const hdf = await parseHdf('arf-minimal.xml');
-      expect(hdf.dataSource?.name).toBe('ARF');
-      expect(hdf.dataSource?.format).toBe('ARF');
+      expect(hdf.tool?.name).toBe('ARF');
+      expect(hdf.tool?.format).toBe('ARF');
     });
 
     it('should skip OVAL reports and only produce baselines from XCCDF', async () => {
@@ -683,10 +682,10 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
       expect(baseline.generator?.version).toBe('1.0.0');
     });
 
-    it('should include checksum', async () => {
+    it('should include integrity', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
-      expect(baseline.checksum?.algorithm).toBe('sha256');
-      expect(baseline.checksum?.value).toMatch(/^[a-f0-9]{64}$/);
+      expect(baseline.integrity?.algorithm).toBe('sha256');
+      expect(baseline.integrity?.checksum).toMatch(/^[a-f0-9]{64}$/);
     });
 
     it('should set severity field', async () => {
@@ -774,7 +773,7 @@ describe('convertXccdfToHdf auto-detect', async () => {
     // Unknown status → notReviewed
     expect(hdf.baselines[0]!.requirements[2]!.results[0]!.status).toBe('notReviewed');
     // No target when no target element
-    expect(hdf.targets).toHaveLength(0);
+    expect(hdf.components).toHaveLength(0);
   });
 
   it('should handle XCCDF results with target and timing', async () => {
@@ -791,9 +790,9 @@ describe('convertXccdfToHdf auto-detect', async () => {
   </TestResult>
 </Benchmark>`;
     const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
-    expect(hdf.targets).toHaveLength(1);
-    expect(hdf.targets![0]!.name).toBe('myhost');
-    expect(hdf.targets![0]!.ipAddress).toBe('10.0.0.1');
+    expect(hdf.components).toHaveLength(1);
+    expect(hdf.components![0]!.name).toBe('myhost');
+    expect(hdf.components![0]!.ipAddress).toBe('10.0.0.1');
     expect(hdf.statistics?.duration).toBe(60);
     expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notApplicable');
   });

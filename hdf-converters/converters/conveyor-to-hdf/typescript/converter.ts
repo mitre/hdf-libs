@@ -3,13 +3,11 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, buildNistCciTags, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, buildNistCciTags, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -327,18 +325,13 @@ export async function convertConveyorToHdf(input: string): Promise<string> {
     }
   }
 
-  const dataSource: DataSource = { name: 'Conveyor', format: 'JSON' };
-
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'conveyor-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'Conveyor',
+    toolFormat: 'JSON',
     baselines,
-    generator: {
-      name: 'conveyor-to-hdf',
-      version: '1.0.0',
-    },
-    dataSource,
-    targets: [{ name: targetName, type: Copyright.Application }],
+    components: [{ name: targetName, type: Copyright.Application }],
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

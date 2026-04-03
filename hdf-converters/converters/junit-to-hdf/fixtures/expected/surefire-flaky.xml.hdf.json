@@ -1,0 +1,76 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: testFlaky in org.acme.FlakyTest",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "org.acme.FlakyTest :: testFlaky",
+              "runTime": 0.034,
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "org.acme.FlakyTest.testFlaky",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "title": "testFlaky"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: testStable in org.acme.FlakyTest",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "org.acme.FlakyTest :: testStable",
+              "runTime": 0.001,
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "org.acme.FlakyTest.testStable",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "title": "testStable"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "e709b82fb7e34c3f7d995a9626ccba249061439b74cfacc21536ce84e703c1c6"
+      },
+      "name": "org.acme.FlakyTest"
+    }
+  ],
+  "components": [
+    {
+      "name": "org.acme.FlakyTest",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "hdf-converters",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:57.1453365Z",
+  "tool": {
+    "format": "XML",
+    "name": "JUnit XML"
+  }
+}

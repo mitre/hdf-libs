@@ -51,25 +51,25 @@ type ControlScore struct {
 
 // ProfileResponse wraps the MS Graph secureScoreControlProfiles response.
 type ProfileResponse struct {
-	ODataContext  string                    `json:"@odata.context"`
-	ODataNextLink string                   `json:"@odata.nextLink"`
+	ODataContext  string                      `json:"@odata.context"`
+	ODataNextLink string                      `json:"@odata.nextLink"`
 	Value         []SecureScoreControlProfile `json:"value"`
 }
 
 // SecureScoreControlProfile represents a control profile with remediation details.
 type SecureScoreControlProfile struct {
-	ID                 string      `json:"id"`
-	AzureTenantID      string      `json:"azureTenantId"`
-	ControlCategory    string      `json:"controlCategory"`
-	Title              string      `json:"title"`
-	MaxScore           float64     `json:"maxScore"`
-	Rank               interface{} `json:"rank"`
-	Remediation        string      `json:"remediation"`
-	RemediationImpact  string      `json:"remediationImpact"`
-	Service            string      `json:"service"`
-	Threats            interface{} `json:"threats"`
-	Tier               string      `json:"tier"`
-	UserImpact         string      `json:"userImpact"`
+	ID                string      `json:"id"`
+	AzureTenantID     string      `json:"azureTenantId"`
+	ControlCategory   string      `json:"controlCategory"`
+	Title             string      `json:"title"`
+	MaxScore          float64     `json:"maxScore"`
+	Rank              interface{} `json:"rank"`
+	Remediation       string      `json:"remediation"`
+	RemediationImpact string      `json:"remediationImpact"`
+	Service           string      `json:"service"`
+	Threats           interface{} `json:"threats"`
+	Tier              string      `json:"tier"`
+	UserImpact        string      `json:"userImpact"`
 }
 
 // getProfiles returns all profiles matching a given control name.
@@ -231,6 +231,9 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 	if len(input) == 0 {
 		return nil, fmt.Errorf("msft-secure-score: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "msft-secure-score", 0); err != nil {
+		return nil, fmt.Errorf("msft-secure-score: %w", err)
+	}
 
 	var combined CombinedResponse
 	if err := json.Unmarshal(input, &combined); err != nil {
@@ -289,14 +292,18 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "msft-secure-score-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Microsoft Secure Score",
-		DataSourceFormat: "JSON",
+		ToolName:         "Microsoft Secure Score",
+		ToolFormat:       "JSON",
 		Baselines:        baselines,
-		Targets: []hdf.Target{
+		Components: []hdf.Component{
 			{
 				Name:     targetName,
 				Type:     hdf.CloudAccount,
 				Provider: &provider,
+				Labels: map[string]string{
+					"account":  tenantID,
+					"provider": "azure",
+				},
 			},
 		},
 		Timestamp: &now,

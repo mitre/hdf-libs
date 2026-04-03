@@ -17,13 +17,13 @@ import (
 
 // ScoutSuiteReport is the top-level ScoutSuite JSON output structure.
 type ScoutSuiteReport struct {
-	AccountID    string                       `json:"account_id"`
-	Environment  string                       `json:"environment"`
-	LastRun      LastRun                      `json:"last_run"`
-	Partition    string                       `json:"partition"`
-	ProviderCode string                      `json:"provider_code"`
-	ProviderName string                      `json:"provider_name"`
-	Services     map[string]json.RawMessage   `json:"services"`
+	AccountID    string                     `json:"account_id"`
+	Environment  string                     `json:"environment"`
+	LastRun      LastRun                    `json:"last_run"`
+	Partition    string                     `json:"partition"`
+	ProviderCode string                     `json:"provider_code"`
+	ProviderName string                     `json:"provider_name"`
+	Services     map[string]json.RawMessage `json:"services"`
 }
 
 // LastRun holds metadata about the ScoutSuite run.
@@ -41,18 +41,18 @@ type ServiceData struct {
 
 // Finding represents a single ScoutSuite finding/rule result.
 type Finding struct {
-	CheckedItems  int               `json:"checked_items"`
-	Compliance    json.RawMessage   `json:"compliance"`
-	Description   string            `json:"description"`
-	FlaggedItems  int               `json:"flagged_items"`
-	IDSuffix      string            `json:"id_suffix"`
-	Items         []string          `json:"items"`
-	Level         string            `json:"level"`
-	Path          string            `json:"path"`
-	Rationale     string            `json:"rationale"`
-	References    []string          `json:"references"`
-	Remediation   *string           `json:"remediation"`
-	Service       string            `json:"service"`
+	CheckedItems int             `json:"checked_items"`
+	Compliance   json.RawMessage `json:"compliance"`
+	Description  string          `json:"description"`
+	FlaggedItems int             `json:"flagged_items"`
+	IDSuffix     string          `json:"id_suffix"`
+	Items        []string        `json:"items"`
+	Level        string          `json:"level"`
+	Path         string          `json:"path"`
+	Rationale    string          `json:"rationale"`
+	References   []string        `json:"references"`
+	Remediation  *string         `json:"remediation"`
+	Service      string          `json:"service"`
 }
 
 // ComplianceItem represents a compliance reference in a finding.
@@ -227,6 +227,9 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	if len(input) == 0 {
 		return nil, fmt.Errorf("scoutsuite: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "scoutsuite", 0); err != nil {
+		return nil, fmt.Errorf("scoutsuite: %w", err)
+	}
 
 	// Strip JS variable prefix if present
 	jsonStr := stripJSPrefix(string(input))
@@ -241,11 +244,7 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	// Collapse all service findings into a flat list
 	order, findings := collapseFindings(&report)
 
-	limitedOrder, truncated := shared.LimitSlice(order, 0)
-	if truncated {
-		// Only process up to the limit
-		order = limitedOrder
-	}
+	order = shared.LimitSliceWithWarning(order, 0, "finding")
 
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, ruleID := range order {
@@ -287,12 +286,19 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:     "scoutsuite-to-hdf",
 		ConverterVersion:  converterVersion,
-		DataSourceName:    "ScoutSuite",
-		DataSourceFormat:  "JSON",
-		DataSourceVersion: report.LastRun.Version,
+		ToolName:          "ScoutSuite",
+		ToolFormat:        "JSON",
+		ToolVersion:       report.LastRun.Version,
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
-			{Name: targetName, Type: hdf.CloudAccount},
+		Components: []hdf.Component{
+			{
+				Name: targetName,
+				Type: hdf.CloudAccount,
+				Labels: map[string]string{
+					"account":  report.AccountID,
+					"provider": report.ProviderCode,
+				},
+			},
 		},
 		Timestamp: timestamp,
 	}), nil

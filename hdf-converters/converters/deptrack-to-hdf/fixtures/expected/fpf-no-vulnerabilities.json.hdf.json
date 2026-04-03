@@ -1,0 +1,28 @@
+{
+  "baselines": [
+    {
+      "requirements": [],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "671f7a19a5e44f865c126fb32190c18f75ab2f5bcac083d3c8184bcc25dae27e"
+      },
+      "name": "Dependency-Track Scan",
+      "title": "Dependency-Track: laravel 1.0"
+    }
+  ],
+  "components": [
+    {
+      "name": "laravel",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "deptrack-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:51.8080122Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Dependency-Track"
+  }
+}

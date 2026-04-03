@@ -1,0 +1,62 @@
+{
+  "_provenance": "Constructed from Microsoft Graph Security API v2 documentation (security/alerts_v2). Alert structure and evidence types match official docs at learn.microsoft.com/en-us/graph/api/resources/security-alert. Not real tool output — replace with actual MDE export when available.",
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#security/alerts_v2",
+  "value": [
+    {
+      "id": "da637472900382838869_1364969609",
+      "incidentId": "1126093",
+      "status": "new",
+      "severity": "low",
+      "classification": null,
+      "determination": null,
+      "serviceSource": "microsoftDefenderForEndpoint",
+      "detectionSource": "WindowsDefenderAtp",
+      "category": "Execution",
+      "title": "Low-reputation arbitrary code executed by signed executable",
+      "description": "Binaries signed by Microsoft can be used to run low-reputation arbitrary code. This technique is used by attackers to move laterally or execute malicious code while evading detection.",
+      "alertWebUrl": "https://security.microsoft.com/alerts/da637472900382838869_1364969609",
+      "createdDateTime": "2021-01-26T20:33:57.7220239Z",
+      "firstActivityDateTime": "2021-01-26T20:31:32.9562661Z",
+      "lastActivityDateTime": "2021-01-26T20:31:33.0577322Z",
+      "lastUpdateDateTime": "2021-01-26T20:33:59.2Z",
+      "resolvedDateTime": null,
+      "assignedTo": null,
+      "tenantId": "a839b112-1253-6432-9bf6-94542403f21c",
+      "actorDisplayName": null,
+      "threatDisplayName": null,
+      "threatFamilyName": null,
+      "mitreTechniques": ["T1064", "T1085", "T1220"],
+      "recommendedActions": "Collect artifacts and determine scope. Update antivirus signatures and run a full scan. Isolate the machine from the network.",
+      "comments": [],
+      "evidence": [
+        {
+          "@odata.type": "#microsoft.graph.security.deviceEvidence",
+          "deviceDnsName": "temp123.middleeast.corp.microsoft.com",
+          "osPlatform": "Windows10",
+          "mdeDeviceId": "111e6dd8c833c8a052ea231ec1b19adaf497b625",
+          "healthStatus": "active",
+          "onboardingStatus": "onboarded",
+          "rbacGroupName": "A"
+        },
+        {
+          "@odata.type": "#microsoft.graph.security.processEvidence",
+          "processId": 3276,
+          "processCommandLine": "rundll32.exe c:\\temp\\suspicious.dll,RepeatAfterMe",
+          "imageFile": {
+            "fileName": "rundll32.exe",
+            "filePath": "C:\\Windows\\SysWOW64",
+            "sha256": "a4752c71d81dc6d6f25baeab1f54980a4aa0e2cba3bfb909ea97f5b3a5c3c2c2"
+          },
+          "detectionStatus": "detected",
+          "parentProcess": {
+            "processId": 8420,
+            "imageFile": {
+              "fileName": "rundll32.exe",
+              "filePath": "C:\\Windows\\System32"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

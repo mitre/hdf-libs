@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { convertVeracodeToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -17,6 +19,12 @@ async function convert(input: string): Promise<string> {
   return mod.convertVeracodeToHdf(input);
 }
 
+runConverterContractTests({
+  converterName: 'veracode-to-hdf',
+  convertFn: convertVeracodeToHdf,
+  minimalFixture: 'veracode.xml',
+});
+
 describe('Veracode to HDF converter', () => {
   it('should convert sample Veracode XML to valid HDF', async () => {
     const input = loadFixture('veracode.xml');
@@ -25,8 +33,8 @@ describe('Veracode to HDF converter', () => {
 
     expect(output.baselines).toBeDefined();
     expect(output.baselines.length).toBe(1);
-    expect(output.targets).toBeDefined();
-    expect(output.targets!.length).toBe(1);
+    expect(output.components).toBeDefined();
+    expect(output.components!.length).toBe(1);
     expect(output.generator).toBeDefined();
   });
 
@@ -41,15 +49,15 @@ describe('Veracode to HDF converter', () => {
     const input = loadFixture('veracode.xml');
     const output: HdfResults = JSON.parse(await convert(input));
 
-    expect(output.targets![0]!.type).toBe('application');
+    expect(output.components![0]!.type).toBe('application');
   });
 
   it('should set data source name to Veracode', async () => {
     const input = loadFixture('veracode.xml');
     const output: HdfResults = JSON.parse(await convert(input));
 
-    expect(output.dataSource).toBeDefined();
-    expect(output.dataSource!.name).toBe('Veracode');
+    expect(output.tool).toBeDefined();
+    expect(output.tool!.name).toBe('Veracode');
   });
 
   it('should produce CWE-based controls from severity categories', async () => {
@@ -153,14 +161,6 @@ describe('Veracode to HDF converter', () => {
     expect(baseline.resultsChecksum).toBeDefined();
     expect(baseline.resultsChecksum!.algorithm).toBe('sha256');
     expect(baseline.resultsChecksum!.value).toBeTruthy();
-  });
-
-  it('should reject empty input', async () => {
-    await expect(convert('')).rejects.toThrow();
-  });
-
-  it('should reject invalid XML', async () => {
-    await expect(convert('not valid xml')).rejects.toThrow();
   });
 
   it('should reject summary reports', async () => {

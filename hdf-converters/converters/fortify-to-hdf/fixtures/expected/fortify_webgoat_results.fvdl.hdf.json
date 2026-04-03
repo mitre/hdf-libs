@@ -1,0 +1,202 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Path manipulation errors occur when the following two conditions are met: 1. An attacker is able to specify a path used in an operation on the file system. 2. By specifying the resource, the attacker gains a capability that would not otherwise be permitted. For example, the program may give the attacker the ability to overwrite the specified file or run with a configuration controlled by the attacker. In this case, the attacker may specify the value that enters the program at in at line , and this value is used to access a file system resource at in at line . Even though the data in this case is a number, it is unvalidated and thus still considered malicious, hence the vulnerability is still reported but with reduced priority values. Example 1: The following code uses input from an HTTP request to create a file name. The programmer has not considered the possibility that an attacker could provide a file name such as \" ../../tomcat/conf/server.xml \", which causes the application to delete one of its own configuration files. String rName = request.getParameter(\"reportName\"); File rFile = new File(\"/usr/local/apfr/reports/\" + rName); ... rFile.delete(); Example 2: The following code uses input from a configuration file to determine which file to open and echo back to the user. If the program runs with adequate privileges and malicious users can change the configuration file, they can use the program to read any file on the system that ends with the extension .txt . fis = new FileInputStream(cfg.getProperty(\"sub\")+\".txt\"); amt = fis.read(arr); out.println(arr); Some think that in the mobile world, classic vulnerabilities, such as path manipulation, do not make sense -- why would the user attack themself? However, keep in mind that the essence of mobile platforms is applications that are downloaded from various sources and run alongside each other on the same device. The likelihood of running a piece of malware next to a banking application is high, which necessitates expanding the attack surface of mobile applications to include inter-process communication. Example 3: The following code adapts Example 1 to the Android platform. ... String rName = this.getIntent().getExtras().getString(\"reportName\"); File rFile = getBaseContext().getFileStreamPath(rName); ... rFile.delete(); ...",
+              "label": "default"
+            },
+            {
+              "data": "The best way to prevent path manipulation is with a level of indirection: create a list of legitimate resource names that a user is allowed to specify, and only allow the user to select from the list. With this approach the input provided by the user is never used directly to specify the resource name. In some situations this approach is impractical because the set of legitimate resource names is too large or too hard to keep track of. Programmers often resort to blacklisting in these situations. Blacklisting selectively rejects or escapes potentially dangerous characters before using the input. However, any such list of unsafe characters is likely to be incomplete and will almost certainly become out of date. A better approach is to create a whitelist of characters that are allowed to appear in the resource name and accept input composed exclusively of characters in the approved set.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Path: webgoat-lessons/challenge/src/main/java/org/owasp/webgoat/challenges/challenge7/MD5.java\nStartLine: 52, EndLine: 58\nCode:\n} else {\n            for (String element : args) {\n                try {\n                    System.out.println(MD5.getHashString(new File(element)) + \" \" + element);\n                } catch (IOException x) {\n                    System.err.println(x.getMessage());\n                }",
+              "startTime": "2019-10-02T23:00:39Z",
+              "status": "failed"
+            }
+          ],
+          "id": "823FE039-A7FE-4AAD-B976-9EC53FFE4A59",
+          "impact": 0.6,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "nist": [
+              "SI-10"
+            ]
+          },
+          "title": "Attackers are able to control the file system path argument to at line , which allows them to access or modify otherwise protected files. Allowing user input to control paths used in file system operations could enable an attacker to access or modify otherwise protected system resources."
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Just about every serious attack on a software system begins with the violation of a programmer's assumptions. After the attack, the programmer's assumptions seem flimsy and poorly founded, but before an attack many programmers would defend their assumptions well past the end of their lunch break. Two dubious assumptions that are easy to spot in code are \"this method call can never fail\" and \"it doesn't matter if this call fails\". When a programmer ignores an exception, they implicitly state that they are operating under one of these assumptions. Example 1: The following code excerpt ignores a rarely-thrown exception from doExchange() . try { doExchange(); } catch (RareException e) { // this can never happen } If a RareException were to ever be thrown, the program would continue to execute as though nothing unusual had occurred. The program records no evidence indicating the special situation, potentially frustrating any later attempt to explain the program's behavior.",
+              "label": "default"
+            },
+            {
+              "data": "At a minimum, log the fact that the exception was thrown so that it will be possible to come back later and make sense of the resulting program behavior. Better yet, abort the current operation. If the exception is being ignored because the caller cannot properly handle it but the context makes it inconvenient or impossible for the caller to declare that it throws the exception itself, consider throwing a RuntimeException or an Error , both of which are unchecked exceptions. As of JDK 1.4, RuntimeException has a constructor that makes it easy to wrap another exception. Example 2: The code in Example 1 could be rewritten in the following way: try { doExchange(); } catch (RareException e) { throw new RuntimeException(\"This can never happen\", e); }",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Path: webgoat-lessons/password-reset/src/main/java/org/owasp/webgoat/password_reset/ResetLinkAssignmentForgotPassword.java\nStartLine: 91, EndLine: 98\nCode:\nHttpHeaders httpHeaders = new HttpHeaders();\n            HttpEntity httpEntity = new HttpEntity(httpHeaders);\n            new RestTemplate().exchange(String.format(\"http://%s/PasswordReset/reset/reset-password/%s\", host, resetLink), HttpMethod.GET, httpEntity, Void.class);\n        } catch (Exception e) {\n            //don't care\n        }\n    }\n}",
+              "startTime": "2019-10-02T23:00:39Z",
+              "status": "failed"
+            }
+          ],
+          "id": "8843F319-8A22-4101-A378-C2B2F2597988",
+          "impact": 0.4,
+          "tags": {
+            "cci": [
+              "CCI-001312"
+            ],
+            "nist": [
+              "SI-11"
+            ]
+          },
+          "title": "The method in ignores an exception on line , which could cause the program to overlook unexpected states and conditions. Ignoring an exception can cause the program to overlook unexpected states and conditions."
+        },
+        {
+          "descriptions": [
+            {
+              "data": "An information leak occurs when system data or debugging information leaves the program through an output stream or logging function. In this case, is called in at line . Example 1: The following code writes an exception to the standard error stream: try { ... } catch (Exception e) { e.printStackTrace(); } Depending upon the system configuration, this information can be dumped to a console, written to a log file, or exposed to a remote user. For example, with scripting mechanisms it is trivial to redirect output information from \u0026quot;Standard error\u0026quot; or \u0026quot;Standard output\u0026quot; into a file or another program. Alternatively the system that the program runs on could have a remote logging mechanism such as a \u0026quot;syslog\u0026quot; server that will send the logs to a remote device. During development you will have no way of knowing where this information may end up being displayed. In some cases the error message tells the attacker precisely what sort of an attack the system is vulnerable to. For example, a database error message can reveal that the application is vulnerable to a SQL injection attack. Other error messages can reveal more oblique clues about the system. In Example 1 , the leaked information could imply information about the type of operating system, the applications installed on the system, and the amount of care that the administrators have put into configuring the program. Here is another scenario, specific to the mobile world. Most mobile devices now implement a Near-Field Communication (NFC) protocol for quickly sharing information between devices using radio communication. It works by bringing devices to close proximity or simply having them touch each other. Even though the communication range of NFC is limited to just a few centimeters, eavesdropping, data modification and various other types of attacks are possible, since NFC alone does not ensure secure communication. Example 2: The Android platform provides support for NFC. The following code creates a message that gets pushed to the other device within the range. ... public static final String TAG = \"NfcActivity\"; private static final String DATA_SPLITTER = \"__:DATA:__\"; private static final String MIME_TYPE = \"application/my.applications.mimetype\"; ... public NdefMessage createNdefMessage(NfcEvent event) { TelephonyManager tm = (TelephonyManager)Context.getSystemService(Context.TELEPHONY_SERVICE); String VERSION = tm.getDeviceSoftwareVersion(); String text = TAG + DATA_SPLITTER + VERSION; NdefRecord record = new NdefRecord(NdefRecord.TNF_MIME_MEDIA, MIME_TYPE.getBytes(), new byte[0], text.getBytes()); NdefRecord[] records = { record }; NdefMessage msg = new NdefMessage(records); return msg; } ... NFC Data Exchange Format (NDEF) message contains typed data, a URI, or a custom application payload. If the message contains information about the application, such as its name, MIME type, or device software version, this information could be leaked to an eavesdropper. In Example 2 , Fortify Static Code Analyzer reports a System Information Leak vulnerability on the return statement.",
+              "label": "default"
+            },
+            {
+              "data": "Write error messages with security in mind. In production environments, turn off detailed error information in favor of brief messages. Restrict the generation and storage of detailed output that can help administrators and programmers diagnose problems. Be careful, debugging traces can sometimes appear in non-obvious places (embedded in comments in the HTML for an error page, for example). Even brief error messages that do not reveal stack traces or database dumps can potentially aid an attacker. For example, an \"Access Denied\" message can reveal that a file or user exists on the system. If you are concerned about leaking system data via NFC on an Android device, you could do one of the following three things. Either do not include system data in the messages pushed to other devices in range, or encrypt the payload of the message, or establish secure communication channel at a higher layer.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Path: webgoat-lessons/missing-function-ac/src/main/java/org/owasp/webgoat/missing_ac/Users.java\nStartLine: 111, EndLine: 117\nCode:\nHashMap\u003cString,String\u003e errMap = new HashMap() {{\n                put(\"err\",e.getMessage() + \"::\" + e.getCause());\n            }};\n            e.printStackTrace();\n            return new HashMap\u003cInteger,HashMap\u003e() {{\n                put(0,errMap);\n            }};",
+              "startTime": "2019-10-02T23:00:39Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Path: webgoat-lessons/missing-function-ac/src/main/java/org/owasp/webgoat/missing_ac/Users.java\nStartLine: 90, EndLine: 96\nCode:\nHashMap\u003cString,String\u003e errMap = new HashMap() {{\n                    put(\"err\",e.getMessage() + \"::\" + e.getCause());\n                }};\n                e.printStackTrace();\n                return new HashMap\u003cInteger,HashMap\u003e() {{\n                    put(0,errMap);\n                }};",
+              "startTime": "2019-10-02T23:00:39Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Path: webgoat-lessons/missing-function-ac/src/main/java/org/owasp/webgoat/missing_ac/Users.java\nStartLine: 86, EndLine: 92\nCode:\nput(0,errMap);\n                }};\n            } catch (Exception e) {\n                e.printStackTrace();\n                HashMap\u003cString,String\u003e errMap = new HashMap() {{\n                    put(\"err\",e.getMessage() + \"::\" + e.getCause());\n                }};",
+              "startTime": "2019-10-02T23:00:39Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Path: webgoat-lessons/missing-function-ac/src/main/java/org/owasp/webgoat/missing_ac/Users.java\nStartLine: 107, EndLine: 113\nCode:\n}\n\n        } catch (Exception e) {\n            e.printStackTrace();\n            HashMap\u003cString,String\u003e errMap = new HashMap() {{\n                put(\"err\",e.getMessage() + \"::\" + e.getCause());\n            }};",
+              "startTime": "2019-10-02T23:00:39Z",
+              "status": "failed"
+            }
+          ],
+          "id": "FE4EADF2-7055-4C36-863E-5A01C4A0E1A4",
+          "impact": 0.6,
+          "tags": {
+            "cci": [
+              "CCI-001368",
+              "CCI-001414"
+            ],
+            "nist": [
+              "AC-4"
+            ]
+          },
+          "title": "The function in might reveal system data or debugging information by calling on line . The information revealed by could help an adversary form a plan of attack. Revealing system data or debugging information helps an adversary learn about the system and form a plan of attack."
+        },
+        {
+          "descriptions": [
+            {
+              "data": "This field is never accessed, except perhaps by dead code. Dead code is defined as code that is never directly or indirectly executed by a public method. It is likely that the field is simply vestigial, but it is also possible that the unused field points out a bug. Example 1: The field named glue is not used in the following class. The author of the class has accidentally put quotes around the field name, transforming it into a string constant. public class Dead { String glue; public String getGlue() { return \"glue\"; } } Example 2: The field named glue is used in the following class, but only from a method that is never called. public class Dead { String glue; private String getGlue() { return glue; } }",
+              "label": "default"
+            },
+            {
+              "data": "In general, you should repair or remove dead code. To repair dead code, execute the dead code directly or indirectly through a public method. Dead code causes additional complexity and maintenance burden without contributing to the functionality of the program.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Path: webgoat-lessons/sql-injection/src/main/java/org/owasp/webgoat/sql_injection/mitigation/Servers.java\nStartLine: 52, EndLine: 58\nCode:\nprivate String id;\n        private String hostname;\n        private String ip;\n        private String mac;\n        private String status;\n        private String description;\n    }",
+              "startTime": "2019-10-02T23:00:39Z",
+              "status": "failed"
+            }
+          ],
+          "id": "3E7BCE41-4A79-49FF-8B8B-3F55F1F2DC5E",
+          "impact": 0.4,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "The field is never used. This field is never used."
+        },
+        {
+          "descriptions": [
+            {
+              "data": "This variable's value is not used. After the assignment, the variable is either assigned another value or goes out of scope. Example: The following code excerpt assigns to the variable r and then overwrites the value without using it. r = getName(); r = getNewBuffer(buf);",
+              "label": "default"
+            },
+            {
+              "data": "Remove unnecessary assignments in order to make the code easier to understand and maintain.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Path: webgoat-lessons/sql-injection/src/main/java/org/owasp/webgoat/sql_injection/mitigation/SqlInjectionLesson10b.java\nStartLine: 91, EndLine: 97\nCode:\nJavaFileObject javaObjectFromString = getJavaFileContentsAsString(s);\n        Iterable fileObjects = Arrays.asList(javaObjectFromString);\n        JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnosticsCollector, null, null, fileObjects);\n        Boolean result = task.call();\n        List\u003cDiagnostic\u003e diagnostics = diagnosticsCollector.getDiagnostics();\n        return diagnostics;\n    }\nPath: webgoat-lessons/sql-injection/src/main/java/org/owasp/webgoat/sql_injection/mitigation/SqlInjectionLesson10b.java\nStartLine: 91, EndLine: 97\nCode:\nJavaFileObject javaObjectFromString = getJavaFileContentsAsString(s);\n        Iterable fileObjects = Arrays.asList(javaObjectFromString);\n        JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnosticsCollector, null, null, fileObjects);\n        Boolean result = task.call();\n        List\u003cDiagnostic\u003e diagnostics = diagnosticsCollector.getDiagnostics();\n        return diagnostics;\n    }",
+              "startTime": "2019-10-02T23:00:39Z",
+              "status": "failed"
+            }
+          ],
+          "id": "B30AA17C-87EC-42CF-9160-CFDF122CE28E",
+          "impact": 0.4,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "The method in never uses the value it assigns to the variable on line . The variable's value is assigned but never used, making it a dead store."
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "a3e729d49d06c90cf206a4d478b5ec06b9b2c520aac39cecdea4cbe0416f2f78"
+      },
+      "name": "Fortify Scan",
+      "status": "loaded",
+      "summary": "Fortify Static Analyzer Scan of UUID: b5e71375-1a97-4708-a07e-9a7e5fedeafe",
+      "title": "Fortify Static Analyzer Scan",
+      "version": "19.1.0.2241"
+    }
+  ],
+  "components": [
+    {
+      "name": "/root/webgoat",
+      "type": "repository"
+    }
+  ],
+  "generator": {
+    "name": "fortify-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2019-10-02T23:00:39Z",
+  "tool": {
+    "format": "FVDL",
+    "name": "Fortify"
+  }
+}

@@ -32,14 +32,12 @@ func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedR
 
 // ---- Input validation ----
 
-func TestConvertTrufflehogToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertTrufflehogToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertTrufflehogToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertTrufflehogToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "trufflehog-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertTrufflehogToHDF(input, testVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestConvertTrufflehogToHDF_EmptyArray(t *testing.T) {
@@ -182,9 +180,9 @@ func TestConvertTrufflehogToHDF_Target(t *testing.T) {
 	result, err := ConvertTrufflehogToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, "https://github.com/trufflesecurity/test_keys", result.Targets[0].Name)
-	assert.Equal(t, hdf.Repository, result.Targets[0].Type)
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, "https://github.com/trufflesecurity/test_keys", result.Components[0].Name)
+	assert.Equal(t, hdf.Repository, result.Components[0].Type)
 }
 
 func TestConvertTrufflehogToHDF_BaselineTitle(t *testing.T) {
@@ -237,18 +235,18 @@ func TestConvertTrufflehogToHDF_NDJSONDescription(t *testing.T) {
 	assert.Contains(t, postgres.Descriptions[0].Data, "Postgres")
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertTrufflehogToHDF_DataSource(t *testing.T) {
+func TestConvertTrufflehogToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertTrufflehogToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "TruffleHog", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "TruffleHog", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- No target for filesystem sources ----
@@ -259,7 +257,7 @@ func TestConvertTrufflehogToHDF_NoTargetForFilesystem(t *testing.T) {
 	require.NoError(t, err)
 
 	// NDJSON fixture only has Filesystem sources (no Git repository URL)
-	assert.Empty(t, result.Targets, "filesystem sources should not produce a target")
+	assert.Empty(t, result.Components, "filesystem sources should not produce a target")
 }
 
 // ---- Requirement ID format ----
@@ -297,4 +295,10 @@ func TestConvertTrufflehogToHDF_OutputIsValidJSON(t *testing.T) {
 
 	var parsed map[string]interface{}
 	require.NoError(t, json.Unmarshal(output, &parsed))
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "trufflehog-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertTrufflehogToHDF(input, "0.1.0")
+	})
 }

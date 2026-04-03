@@ -1,9 +1,14 @@
 package oscal
 
 import (
+	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
+
+	shared "github.com/mitre/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-schema"
 )
 
 // controlEnhancementRe matches OSCAL control IDs with enhancements like "ac-2.3".
@@ -173,3 +178,105 @@ func ExtractMetadata(m Metadata) MetadataInfo {
 		LastModified: m.LastModified,
 	}
 }
+
+// ToKebabCase converts a title to kebab-case, truncated to 80 characters.
+// Returns fallback if title is empty.
+func ToKebabCase(title, fallback string) string {
+	if title == "" {
+		return fallback
+	}
+	name := strings.ToLower(title)
+	name = strings.Map(func(r rune) rune {
+		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
+			return r
+		}
+		return '-'
+	}, name)
+	for strings.Contains(name, "--") {
+		name = strings.ReplaceAll(name, "--", "-")
+	}
+	name = strings.Trim(name, "-")
+	if len(name) > 80 {
+		name = name[:80]
+	}
+	return name
+}
+
+// nistEnhancementReverseRe matches NIST tags with enhancements like "AC-2 (3)".
+var nistEnhancementReverseRe = regexp.MustCompile(`^([A-Z]{2}-\d+)\s*\((\d+)\)$`)
+
+// NistTagToControlID converts NIST 800-53 notation back to OSCAL control ID.
+// Examples:
+//
+//	"AC-1"     → "ac-1"
+//	"AC-2 (3)" → "ac-2.3"
+//	"SI-7 (1)" → "si-7.1"
+func NistTagToControlID(tag string) string {
+	tag = strings.TrimSpace(tag)
+	if m := nistEnhancementReverseRe.FindStringSubmatch(tag); m != nil {
+		return fmt.Sprintf("%s.%s", strings.ToLower(m[1]), m[2])
+	}
+	return strings.ToLower(tag)
+}
+
+// ParseOscalDocument parses raw JSON input into an OscalDocument, performing
+// size validation and type checking. Returns an error if the input is empty,
+// too large, invalid JSON, or not the expected document type.
+func ParseOscalDocument(input []byte, expectedType, converterName string) (*OscalDocument, error) {
+	if err := shared.ValidateJSONSize(input, converterName, 0); err != nil {
+		return nil, err
+	}
+	if len(input) == 0 {
+		return nil, fmt.Errorf("%s: empty input", converterName)
+	}
+	var doc OscalDocument
+	if err := json.Unmarshal(input, &doc); err != nil {
+		return nil, fmt.Errorf("%s: failed to parse JSON: %w", converterName, err)
+	}
+	docType := doc.DocumentType()
+	if docType != expectedType {
+		return nil, fmt.Errorf("%s: expected %s document, got %s", converterName, expectedType, docType)
+	}
+	return &doc, nil
+}
+
+// GenerateUUID creates a version-4 UUID using crypto/rand.
+func GenerateUUID() string {
+	var u [16]byte
+	_, _ = rand.Read(u[:])
+	u[6] = (u[6] & 0x0f) | 0x40 // version 4
+	u[8] = (u[8] & 0x3f) | 0x80 // variant RFC 4122
+	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
+		u[0:4], u[4:6], u[6:8], u[8:10], u[10:16])
+}
+
+// ImpactToSeverity converts a 0.0-1.0 impact value to an OSCAL severity string.
+// This is the reverse of ExtractRiskSeverity.
+func ImpactToSeverity(impact float64) string {
+	switch {
+	case impact >= 0.9:
+		return "critical"
+	case impact >= 0.7:
+		return "high"
+	case impact >= 0.4:
+		return "moderate"
+	case impact >= 0.1:
+		return "low"
+	default:
+		return "info"
+	}
+}
+
+// HDFStatusToOSCALRiskStatus maps an HDF ResultStatus to an OSCAL risk status
+// string. "passed"/"notApplicable" → "closed", everything else → "open".
+func HDFStatusToOSCALRiskStatus(status hdf.ResultStatus) string {
+	switch status {
+	case hdf.Passed, hdf.NotApplicable:
+		return "closed"
+	default:
+		return "open"
+	}
+}
+
+// OscalVersion is the OSCAL specification version used in reverse converter output documents.
+const OscalVersion = "1.1.2"

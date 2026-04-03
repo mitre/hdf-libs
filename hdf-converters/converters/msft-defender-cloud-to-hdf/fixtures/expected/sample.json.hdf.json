@@ -1,0 +1,287 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Private links enforce secure communication by providing private connectivity to the storage account.",
+              "label": "default"
+            },
+            {
+              "data": "To add a private endpoint connection: 1. Go to the Azure portal. 2. Select Networking. 3. Select Private endpoint connections. 4. Select + Private endpoint.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Storage/storageAccounts/mystorageacct",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "11111111-1111-1111-1111-111111111111",
+          "impact": 0.5,
+          "tags": {
+            "assessmentType": "BuiltIn",
+            "categories": [
+              "Networking"
+            ],
+            "implementationEffort": "Moderate",
+            "severity": "Medium",
+            "tactics": [
+              "Discovery",
+              "Exfiltration"
+            ],
+            "techniques": [
+              "T1046",
+              "T1530"
+            ],
+            "threats": [
+              "dataExfiltration",
+              "dataSpillage"
+            ],
+            "userImpact": "Low"
+          },
+          "title": "Storage account should use a private link connection"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "By default, a virtual machine's OS and data disks are encrypted at rest using platform-managed keys. Temp disks and data caches aren't encrypted, and data isn't encrypted when flowing between compute and storage resources.",
+              "label": "default"
+            },
+            {
+              "data": "To enable disk encryption: 1. Go to the Azure portal. 2. Select the VM. 3. Under Settings, select Disks. 4. Enable encryption.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Compute/virtualMachines/myvm",
+              "message": "Azure Disk Encryption is not enabled on the virtual machine.",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "22222222-2222-2222-2222-222222222222",
+          "impact": 0.7,
+          "tags": {
+            "assessmentType": "BuiltIn",
+            "categories": [
+              "Compute"
+            ],
+            "implementationEffort": "Low",
+            "severity": "High",
+            "tactics": [
+              "Collection"
+            ],
+            "techniques": [
+              "T1005"
+            ],
+            "threats": [
+              "dataExfiltration",
+              "dataSpillage",
+              "maliciousInsider"
+            ],
+            "userImpact": "Low"
+          },
+          "title": "Virtual machines should encrypt temp disks, caches, and data flows"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Provision an Azure AD administrator for your SQL server to enable Azure AD authentication. Azure AD authentication enables simplified permission management and centralized identity management.",
+              "label": "default"
+            },
+            {
+              "data": "To set an Azure AD admin for your SQL server: 1. Go to the Azure portal. 2. Navigate to your SQL server. 3. Under Settings, select Azure Active Directory. 4. Set admin.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-database/providers/Microsoft.Sql/servers/mysqlserver",
+              "message": "An Azure Active Directory administrator has not been provisioned for this SQL server.",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "33333333-3333-3333-3333-333333333333",
+          "impact": 0.7,
+          "tags": {
+            "assessmentType": "BuiltIn",
+            "categories": [
+              "Data"
+            ],
+            "implementationEffort": "Low",
+            "severity": "High",
+            "tactics": [
+              "InitialAccess",
+              "PrivilegeEscalation"
+            ],
+            "techniques": [
+              "T1078",
+              "T1548"
+            ],
+            "threats": [
+              "accountBreach",
+              "elevationOfPrivilege"
+            ],
+            "userImpact": "High"
+          },
+          "title": "SQL servers should have an Azure Active Directory administrator provisioned"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Use of HTTPS ensures server/service authentication and protects data in transit from network layer eavesdropping attacks.",
+              "label": "default"
+            },
+            {
+              "data": "To enforce HTTPS: 1. Go to your App Service. 2. Select TLS/SSL settings. 3. Set HTTPS Only to On.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Web/sites/mywebapp",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "44444444-4444-4444-4444-444444444444",
+          "impact": 0.5,
+          "tags": {
+            "assessmentType": "BuiltIn",
+            "categories": [
+              "Networking"
+            ],
+            "implementationEffort": "Low",
+            "severity": "Medium",
+            "tactics": [
+              "CredentialAccess"
+            ],
+            "techniques": [
+              "T1557"
+            ],
+            "threats": [
+              "dataExfiltration",
+              "threatResistance"
+            ],
+            "userImpact": "Low"
+          },
+          "title": "Web Application should only be accessible over HTTPS"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "This policy audits any Key Vault not configured to use a virtual network service endpoint.",
+              "label": "default"
+            },
+            {
+              "data": "To configure a virtual network service endpoint: 1. Open Key Vault in the portal. 2. Select Networking. 3. Add a virtual network.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.KeyVault/vaults/mykeyvault",
+              "message": "Resource does not support virtual network service endpoints.",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notApplicable"
+            }
+          ],
+          "id": "55555555-5555-5555-5555-555555555555",
+          "impact": 0.3,
+          "tags": {
+            "assessmentType": "BuiltIn",
+            "categories": [
+              "Networking"
+            ],
+            "implementationEffort": "Moderate",
+            "severity": "Low",
+            "tactics": [
+              "Exfiltration"
+            ],
+            "techniques": [
+              "T1048"
+            ],
+            "threats": [
+              "dataExfiltration"
+            ],
+            "userImpact": "Low"
+          },
+          "title": "Key Vault should use a virtual network service endpoint"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "This policy audits any Windows/Linux virtual machines if the Log Analytics agent is not installed.",
+              "label": "default"
+            },
+            {
+              "data": "To install the Log Analytics agent: 1. Go to the VM in the Azure portal. 2. Under Settings, select Extensions. 3. Add Log Analytics agent.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-monitoring/providers/Microsoft.OperationalInsights/workspaces/myworkspace",
+              "message": "The Log Analytics agent is not installed on this resource.",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "66666666-6666-6666-6666-666666666666",
+          "impact": 0.7,
+          "tags": {
+            "assessmentType": "BuiltIn",
+            "categories": [
+              "Compute"
+            ],
+            "implementationEffort": "Low",
+            "severity": "High",
+            "tactics": [
+              "DefenseEvasion"
+            ],
+            "techniques": [
+              "T1562"
+            ],
+            "threats": [
+              "missingCoverage"
+            ],
+            "userImpact": "Low"
+          },
+          "title": "Log Analytics agent should be installed on virtual machines"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "b6f3b2d25bcdd00fcf7d170754e6ee79506580ff420f9b47335730b06c014d56"
+      },
+      "name": "Microsoft Defender for Cloud Assessments"
+    }
+  ],
+  "components": [
+    {
+      "labels": {
+        "account": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "provider": "azure"
+      },
+      "name": "Azure Subscription a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "type": "cloudAccount",
+      "accountId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "provider": "azure"
+    }
+  ],
+  "generator": {
+    "name": "msft-defender-cloud-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:57.0078086Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Microsoft Defender for Cloud"
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "baselines": [
+    {
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "e326e0307c7881ebefef647a9b21cda3b2c5544bbbbb8e9d70f1ee6a9db8808c"
+      },
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Checks whether the root user of your AWS account requires multi-factor authentication for console sign-in.",
+              "label": "default"
+            },
+            {
+              "data": "ARN: arn:aws:config:us-east-1:123456789012:config-rule/config-rule-abc123\u003cbr/\u003eSource Identifier: ROOT_ACCOUNT_MFA_ENABLED",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "config_rule_name: root-account-mfa-enabled, resource_type: AWS::IAM::User, resource_id: arn:aws:iam::123456789012:root",
+              "message": "(config_rule_name: root-account-mfa-enabled, resource_type: AWS::IAM::User, resource_id: arn:aws:iam::123456789012:root): Root account does not have MFA enabled",
+              "runTime": 10,
+              "startTime": "2024-02-19T00:00:05Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 1,
+            "ref": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-abc123"
+          },
+          "id": "config-rule-abc123",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "AC-2(j)",
+              "IA-2(1)(11)"
+            ]
+          },
+          "title": "123456789012 - root-account-mfa-enabled"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Checks that your Amazon S3 bucket either has S3 default encryption enabled or that the S3 bucket policy explicitly denies put-object requests without server side encryption.",
+              "label": "default"
+            },
+            {
+              "data": "ARN: arn:aws:config:us-east-1:123456789012:config-rule/config-rule-def456\u003cbr/\u003eSource Identifier: S3_BUCKET_SERVER_SIDE_ENCRYPTION_ENABLED",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "config_rule_name: s3-bucket-server-side-encryption-enabled, resource_type: AWS::S3::Bucket, resource_id: my-secure-bucket",
+              "runTime": 10,
+              "startTime": "2024-02-19T00:00:06Z",
+              "status": "passed"
+            },
+            {
+              "codeDesc": "config_rule_name: s3-bucket-server-side-encryption-enabled, resource_type: AWS::S3::Bucket, resource_id: my-public-bucket",
+              "message": "(config_rule_name: s3-bucket-server-side-encryption-enabled, resource_type: AWS::S3::Bucket, resource_id: my-public-bucket): Bucket does not have server-side encryption enabled",
+              "runTime": 10,
+              "startTime": "2024-02-19T00:00:07Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 1,
+            "ref": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-def456"
+          },
+          "id": "config-rule-def456",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SC-13",
+              "SC-28"
+            ]
+          },
+          "title": "123456789012 - s3-bucket-server-side-encryption-enabled"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Checks whether AWS CloudTrail is enabled in your AWS account.",
+              "label": "default"
+            },
+            {
+              "data": "ARN: arn:aws:config:us-east-1:123456789012:config-rule/config-rule-ghi789\u003cbr/\u003eSource Identifier: CLOUD_TRAIL_ENABLED",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "config_rule_name: cloudtrail-enabled, resource_type: AWS::CloudTrail::Trail, resource_id: arn:aws:cloudtrail:us-east-1:123456789012:trail/my-trail",
+              "runTime": 10,
+              "startTime": "2024-02-19T00:00:08Z",
+              "status": "notApplicable"
+            }
+          ],
+          "sourceLocation": {
+            "line": 1,
+            "ref": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-ghi789"
+          },
+          "id": "config-rule-ghi789",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "AC-2(4)",
+              "AC-2(g)",
+              "AU-2(a)(d)",
+              "AU-3",
+              "AU-12(a)(c)"
+            ]
+          },
+          "title": "123456789012 - cloudtrail-enabled"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Custom organization rule for internal compliance.",
+              "label": "default"
+            },
+            {
+              "data": "ARN: arn:aws:config:us-east-1:123456789012:config-rule/config-rule-jkl012\u003cbr/\u003eSource Identifier: arn:aws:lambda:us-east-1:123456789012:function:my-compliance-function",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "config_rule_name: custom-org-rule, resource_type: AWS::EC2::Instance, resource_id: some-resource",
+              "runTime": 10,
+              "startTime": "2024-02-19T00:00:09Z",
+              "status": "notReviewed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 1,
+            "ref": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-jkl012"
+          },
+          "id": "config-rule-jkl012",
+          "impact": 0.5,
+          "tags": {},
+          "title": "123456789012 - custom-org-rule"
+        }
+      ],
+      "name": "AWS Config",
+      "maintainer": "Amazon Web Services",
+      "title": "AWS Config Compliance Results",
+      "version": "1.0.0"
+    }
+  ],
+  "components": [
+    {
+      "labels": {
+        "account": "123456789012",
+        "provider": "aws",
+        "region": "us-east-1"
+      },
+      "name": "AWS Account 123456789012",
+      "type": "cloudAccount"
+    }
+  ],
+  "generator": {
+    "name": "aws-config-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:50.983582Z",
+  "tool": {
+    "name": "AWS Config"
+  }
+}

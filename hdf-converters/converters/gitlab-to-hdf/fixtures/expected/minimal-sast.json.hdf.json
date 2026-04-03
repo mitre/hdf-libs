@@ -1,0 +1,64 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "User input is concatenated into a SQL query without sanitization, allowing an attacker to execute arbitrary SQL commands.",
+              "label": "default"
+            },
+            {
+              "data": "Use parameterized queries or prepared statements instead of string concatenation.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "File: src/db/queries.py | Line: 42 | Class: UserRepository | Method: find_by_name",
+              "startTime": "2024-01-15T10:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "impact": 0.9,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "89"
+            ],
+            "nist": [
+              "SI-10"
+            ]
+          },
+          "title": "SQL Injection"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "39d24442673c663d46c5677826e8e5b2178154e367a15bcefcdaee7e230b2c47"
+      },
+      "name": "GitLab Security Scan",
+      "summary": "Scanner: Semgrep v1.34.0",
+      "title": "GitLab SAST Security Scan"
+    }
+  ],
+  "components": [
+    {
+      "name": "Semgrep",
+      "type": "repository"
+    }
+  ],
+  "generator": {
+    "name": "gitlab-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2024-01-15T10:01:30Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Semgrep",
+    "version": "1.34.0"
+  }
+}

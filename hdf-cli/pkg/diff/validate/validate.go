@@ -60,7 +60,7 @@ func loadSchemaFile(baseDir, relativePath string) (any, error) {
 // buildSchema loads all schemas and compiles the comparison schema.
 //
 // Schema loading order (mirrors TypeScript):
-//  1. All primitive schemas (common, platform, target, runner, statistics, result, extensions, comparison).
+//  1. All primitive schemas (common, platform, target, runner, statistics, result, extensions, component, data-flow, system, comparison).
 //  2. hdf-results schema (defines Evaluated_Requirement referenced by comparison).
 //  3. hdf-comparison schema (top-level validation target).
 func buildSchema() (*jsonschema.Schema, error) {
@@ -83,7 +83,12 @@ func buildSchema() (*jsonschema.Schema, error) {
 		{"primitives/runner.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v2.0.0"},
 		{"primitives/statistics.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0"},
 		{"primitives/result.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0"},
+		{"primitives/amendments.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v2.0.0"},
 		{"primitives/extensions.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0"},
+		{"primitives/parameter.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v2.0.0"},
+		{"primitives/component.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0"},
+		{"primitives/data-flow.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0"},
+		{"primitives/system.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0"},
 		{"primitives/comparison.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v1.0.0"},
 		{"hdf-results.schema.json", "https://mitre.github.io/hdf-libs/schemas/hdf-results/v2.0.0"},
 		{"hdf-comparison.schema.json", comparisonSchemaID},

@@ -325,3 +325,67 @@ describe('integration: edge cases', () => {
     expect(graph.requirements).toHaveLength(0);
   });
 });
+
+// ── Real InSpec multi-layered profile fixture ──────────────────────────
+describe('integration: real multi-layered InSpec profile', () => {
+  // Profile chain:
+  //   metawrapper (root)
+  //   ├── wrapper (parent=metawrapper)
+  //   │   ├── k8s-node-stig-baseline (parent=wrapper)
+  //   │   └── rhel9-stig-baseline (parent=wrapper)
+  //   └── dep (parent=metawrapper)
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fixture = require('./fixtures/multilayered-inspec.json') as HdfResults;
+  const graph = buildExtensionGraph(fixture);
+
+  it('detects all 5 baselines', () => {
+    expect(graph.baselines).toHaveLength(5);
+  });
+
+  it('identifies metawrapper as the only root baseline', () => {
+    expect(graph.rootBaselines).toHaveLength(1);
+    expect(graph.rootBaselines[0]!.data.name).toBe('metawrapper');
+  });
+
+  it('links wrapper to metawrapper via parentBaseline', () => {
+    const wrapper = graph.baselines.find(b => b.data.name === 'wrapper');
+    expect(wrapper).toBeDefined();
+    expect(wrapper!.extendsFrom).toHaveLength(1);
+    expect(wrapper!.extendsFrom[0]!.data.name).toBe('metawrapper');
+  });
+
+  it('links STIG baselines to wrapper', () => {
+    const rhel9 = graph.baselines.find(b => b.data.name === 'redhat-enterprise-linux-9-stig-baseline');
+    const k8s = graph.baselines.find(b => b.data.name === 'k8s-node-stig-baseline');
+    expect(rhel9).toBeDefined();
+    expect(k8s).toBeDefined();
+    expect(rhel9!.extendsFrom).toHaveLength(1);
+    expect(rhel9!.extendsFrom[0]!.data.name).toBe('wrapper');
+    expect(k8s!.extendsFrom).toHaveLength(1);
+    expect(k8s!.extendsFrom[0]!.data.name).toBe('wrapper');
+  });
+
+  it('links dep to metawrapper', () => {
+    const dep = graph.baselines.find(b => b.data.name === 'dep');
+    expect(dep).toBeDefined();
+    expect(dep!.extendsFrom).toHaveLength(1);
+    expect(dep!.extendsFrom[0]!.data.name).toBe('metawrapper');
+  });
+
+  it('has requirements from all baselines', () => {
+    // Total across all 5 baselines
+    expect(graph.requirements.length).toBeGreaterThan(500);
+  });
+
+  it('identifies overlaid requirements via extension chain', () => {
+    // Requirements in wrapper that share IDs with rhel9/k8s baselines
+    // should have extension chains showing the overlay relationship
+    const wrapperReqs = graph.requirements.filter(
+      r => r.sourcedFrom.data.name === 'wrapper'
+    );
+    const withChain = wrapperReqs.filter(r => r.extensionChain.length > 1);
+    // Wrapper should have overlaid requirements from the underlying STIGs
+    expect(withChain.length).toBeGreaterThan(0);
+  });
+});

@@ -73,7 +73,7 @@ func TestLegacyHDFConverter_Convert_Minimal(t *testing.T) {
 	if _, ok := result["baselines"]; !ok {
 		t.Error("Convert() output missing 'baselines' field")
 	}
-	if _, ok := result["targets"]; !ok {
+	if _, ok := result["components"]; !ok {
 		t.Error("Convert() output missing 'targets' field")
 	}
 }
@@ -142,7 +142,7 @@ func TestLegacyHDFConverter_Convert_NotV1Format(t *testing.T) {
 	}
 
 	// Valid JSON but not v1.0 format (missing required fields)
-	input := []byte(`{"baselines": [], "targets": []}`)
+	input := []byte(`{"baselines": [], "components": []}`)
 	_, err = conv.Convert(input)
 	if err == nil {
 		t.Error("Convert() expected error for non-v1 JSON, got nil")

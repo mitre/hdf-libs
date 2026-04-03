@@ -40,14 +40,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertMsftSecureScore_InvalidJSON(t *testing.T) {
-	_, err := ConvertMsftSecureScoreToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertMsftSecureScore_EmptyInput(t *testing.T) {
-	_, err := ConvertMsftSecureScoreToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "msft-secure-score-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertMsftSecureScoreToHDF(input, testVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestConvertMsftSecureScore_MissingSecureScore(t *testing.T) {
@@ -112,18 +110,18 @@ func TestConvertMsftSecureScore_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertMsftSecureScore_DataSource(t *testing.T) {
+func TestConvertMsftSecureScore_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Microsoft Secure Score", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Microsoft Secure Score", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- Target ----
@@ -133,9 +131,9 @@ func TestConvertMsftSecureScore_Target(t *testing.T) {
 	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, hdf.CloudAccount, result.Targets[0].Type)
-	assert.Contains(t, result.Targets[0].Name, "12345678-1234-1234-1234-1234567890abcd")
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, hdf.CloudAccount, result.Components[0].Type)
+	assert.Contains(t, result.Components[0].Name, "12345678-1234-1234-1234-1234567890abcd")
 }
 
 // ---- Requirement ID format ----
@@ -339,4 +337,10 @@ func TestConvertMsftSecureScore_Timestamp(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotNil(t, result.Timestamp)
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "msft-secure-score-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertMsftSecureScoreToHDF(input, "0.1.0")
+	})
 }

@@ -3,7 +3,6 @@ package nikto_to_hdf
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
@@ -15,10 +14,10 @@ import (
 // Nikto JSON input structures
 
 type NiktoReport struct {
-	Banner          string              `json:"banner,omitempty"`
-	Host            string              `json:"host,omitempty"`
-	IP              string              `json:"ip,omitempty"`
-	Port            string              `json:"port,omitempty"`
+	Banner          string               `json:"banner,omitempty"`
+	Host            string               `json:"host,omitempty"`
+	IP              string               `json:"ip,omitempty"`
+	Port            string               `json:"port,omitempty"`
 	Vulnerabilities []NiktoVulnerability `json:"vulnerabilities"`
 }
 
@@ -84,6 +83,13 @@ func convertVulnToRequirement(vuln NiktoVulnerability) hdf.EvaluatedRequirement 
 
 // ConvertNiktoToHDF converts Nikto JSON to HDF
 func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("nikto: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "nikto", 0); err != nil {
+		return nil, fmt.Errorf("nikto: %w", err)
+	}
+
 	resultsChecksum := shared.InputChecksum(input)
 
 	var niktoData NiktoReport
@@ -99,10 +105,7 @@ func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	groups := make(map[string]*vulnGroup)
 	var order []string // Preserve insertion order
 
-	limitedVulns, truncatedVulns := shared.LimitSlice(niktoData.Vulnerabilities, 0)
-	if truncatedVulns {
-		log.Printf("WARNING: Input truncated at %d vulnerability items (original: %d)", len(limitedVulns), len(niktoData.Vulnerabilities))
-	}
+	limitedVulns := shared.LimitSliceWithWarning(niktoData.Vulnerabilities, 0, "vulnerability")
 	for _, vuln := range limitedVulns {
 		if g, ok := groups[vuln.ID]; ok {
 			g.extras = append(g.extras, vuln)
@@ -153,12 +156,18 @@ func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		ResultsChecksum: resultsChecksum,
 	}
 
+	target := hdf.Component{
+		Name: targetName,
+		Type: hdf.CopyrightApplication,
+	}
+
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "nikto-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Nikto",
-		DataSourceFormat: "JSON",
+		ToolName:         "Nikto",
+		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Components:          []hdf.Component{target},
 	})
 
 	return hdfResult, nil

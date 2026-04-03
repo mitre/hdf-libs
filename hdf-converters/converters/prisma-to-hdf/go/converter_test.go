@@ -125,18 +125,18 @@ func TestConvertPrisma_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertPrisma_DataSource(t *testing.T) {
+func TestConvertPrisma_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal.csv")
 	result, err := ConvertPrismaToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Prisma Cloud", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "CSV", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Prisma Cloud", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "CSV", *result.Tool.Format)
 }
 
 // ---- Targets ----
@@ -146,12 +146,12 @@ func TestConvertPrisma_Targets(t *testing.T) {
 	result, err := ConvertPrismaToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 2)
-	names := []string{result.Targets[0].Name, result.Targets[1].Name}
+	require.Len(t, result.Components, 2)
+	names := []string{result.Components[0].Name, result.Components[1].Name}
 	sort.Strings(names)
 	assert.Equal(t, "host-1.example.com", names[0])
 	assert.Equal(t, "host-2.example.com", names[1])
-	for _, target := range result.Targets {
+	for _, target := range result.Components {
 		assert.Equal(t, hdf.Host, target.Type)
 	}
 }
@@ -359,4 +359,10 @@ func TestConvertPrisma_MessageField(t *testing.T) {
 	msg := req.Results[0].Message
 	require.NotNil(t, msg)
 	assert.Contains(t, *msg, "File ownership is wrong")
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "prisma-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertPrismaToHDF(input, "0.1.0")
+	})
 }

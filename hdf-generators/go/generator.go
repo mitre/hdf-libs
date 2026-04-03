@@ -2,6 +2,7 @@ package generators
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	hdf "github.com/mitre/hdf-schema"
@@ -37,10 +38,10 @@ type InSpecProfile struct {
 func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string {
 	var lines []string
 
-	lines = append(lines, fmt.Sprintf("name: %s", baseline.Name))
+	lines = append(lines, fmt.Sprintf("name: %s", yamlScalar(baseline.Name)))
 
 	if baseline.Title != nil {
-		lines = append(lines, fmt.Sprintf("title: %s", *baseline.Title))
+		lines = append(lines, fmt.Sprintf("title: %s", yamlScalar(*baseline.Title)))
 	}
 
 	maintainer := ptrOr(baseline.Maintainer, "")
@@ -48,7 +49,7 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 		maintainer = opts.Metadata.Maintainer
 	}
 	if maintainer != "" {
-		lines = append(lines, fmt.Sprintf("maintainer: %s", maintainer))
+		lines = append(lines, fmt.Sprintf("maintainer: %s", yamlScalar(maintainer)))
 	}
 
 	copyright := ptrOr(baseline.Copyright, "")
@@ -56,7 +57,7 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 		copyright = opts.Metadata.Copyright
 	}
 	if copyright != "" {
-		lines = append(lines, fmt.Sprintf("copyright: %s", copyright))
+		lines = append(lines, fmt.Sprintf("copyright: %s", yamlScalar(copyright)))
 	}
 
 	license := ptrOr(baseline.License, "")
@@ -64,11 +65,11 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 		license = opts.Metadata.License
 	}
 	if license != "" {
-		lines = append(lines, fmt.Sprintf("license: %s", license))
+		lines = append(lines, fmt.Sprintf("license: %s", yamlScalar(license)))
 	}
 
 	if baseline.Summary != nil {
-		lines = append(lines, fmt.Sprintf("summary: %s", *baseline.Summary))
+		lines = append(lines, fmt.Sprintf("summary: %s", yamlScalar(*baseline.Summary)))
 	}
 
 	version := ptrOr(baseline.Version, "")
@@ -79,7 +80,7 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 		lines = append(lines, fmt.Sprintf("version: '%s'", version))
 	}
 
-	inspecVersion := "~>6.0"
+	inspecVersion := ">=6.0"
 	if opts != nil && opts.InSpecVersion != "" {
 		inspecVersion = opts.InSpecVersion
 	}
@@ -91,16 +92,16 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 		for _, s := range baseline.Supports {
 			var entries []string
 			if s.PlatformName != nil {
-				entries = append(entries, fmt.Sprintf("platform-name: %s", *s.PlatformName))
+				entries = append(entries, fmt.Sprintf("platform-name: %s", yamlScalar(*s.PlatformName)))
 			}
 			if s.PlatformFamily != nil {
-				entries = append(entries, fmt.Sprintf("platform-family: %s", *s.PlatformFamily))
+				entries = append(entries, fmt.Sprintf("platform-family: %s", yamlScalar(*s.PlatformFamily)))
 			}
 			if s.Platform != nil {
-				entries = append(entries, fmt.Sprintf("platform: %s", *s.Platform))
+				entries = append(entries, fmt.Sprintf("platform: %s", yamlScalar(*s.Platform)))
 			}
 			if s.Release != nil {
-				entries = append(entries, fmt.Sprintf("release: %s", *s.Release))
+				entries = append(entries, fmt.Sprintf("release: %s", yamlScalar(*s.Release)))
 			}
 			if len(entries) > 0 {
 				lines = append(lines, fmt.Sprintf("- %s", entries[0]))
@@ -117,25 +118,25 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 		for _, dep := range baseline.Depends {
 			var entries []string
 			if dep.Name != nil {
-				entries = append(entries, fmt.Sprintf("name: %s", *dep.Name))
+				entries = append(entries, fmt.Sprintf("name: %s", yamlScalar(*dep.Name)))
 			}
 			if dep.Git != nil {
-				entries = append(entries, fmt.Sprintf("git: %s", *dep.Git))
+				entries = append(entries, fmt.Sprintf("git: %s", yamlScalar(*dep.Git)))
 			}
 			if dep.URL != nil {
-				entries = append(entries, fmt.Sprintf("url: %s", *dep.URL))
+				entries = append(entries, fmt.Sprintf("url: %s", yamlScalar(*dep.URL)))
 			}
 			if dep.Path != nil {
-				entries = append(entries, fmt.Sprintf("path: %s", *dep.Path))
+				entries = append(entries, fmt.Sprintf("path: %s", yamlScalar(*dep.Path)))
 			}
 			if dep.Branch != nil {
-				entries = append(entries, fmt.Sprintf("branch: %s", *dep.Branch))
+				entries = append(entries, fmt.Sprintf("branch: %s", yamlScalar(*dep.Branch)))
 			}
 			if dep.Compliance != nil {
-				entries = append(entries, fmt.Sprintf("compliance: %s", *dep.Compliance))
+				entries = append(entries, fmt.Sprintf("compliance: %s", yamlScalar(*dep.Compliance)))
 			}
 			if dep.Supermarket != nil {
-				entries = append(entries, fmt.Sprintf("supermarket: %s", *dep.Supermarket))
+				entries = append(entries, fmt.Sprintf("supermarket: %s", yamlScalar(*dep.Supermarket)))
 			}
 			if len(entries) > 0 {
 				lines = append(lines, fmt.Sprintf("- %s", entries[0]))
@@ -150,8 +151,16 @@ func GenerateInSpecYml(baseline hdf.HDFBaseline, opts *GeneratorOptions) string 
 	if len(baseline.Inputs) > 0 {
 		lines = append(lines, "inputs:")
 		for _, input := range baseline.Inputs {
-			for k, v := range input {
-				lines = append(lines, fmt.Sprintf("- %s: %s", k, formatYamlValue(v)))
+			val := ""
+			if input.Value != nil {
+				val = fmt.Sprintf("%v", input.Value)
+			}
+			lines = append(lines, fmt.Sprintf("- name: %s", yamlScalar(input.Name)))
+			if val != "" {
+				lines = append(lines, fmt.Sprintf("  value: %s", yamlScalar(val)))
+			}
+			if input.Description != nil {
+				lines = append(lines, fmt.Sprintf("  description: %s", yamlScalar(*input.Description)))
 			}
 		}
 	}
@@ -177,7 +186,13 @@ func GenerateInSpecProfile(baseline hdf.HDFBaseline, opts *GeneratorOptions) InS
 		controls["controls/controls.rb"] = strings.Join(stubs, "\n")
 	} else {
 		for _, req := range baseline.Requirements {
-			filename := fmt.Sprintf("controls/%s.rb", req.ID)
+			// Sanitize ID for use as filename — strip path separators and
+			// reject traversal attempts to prevent writing outside output dir.
+			safeID := filepath.Base(strings.ReplaceAll(req.ID, "..", ""))
+			if safeID == "." || safeID == "" {
+				safeID = "unknown"
+			}
+			filename := fmt.Sprintf("controls/%s.rb", safeID)
 			controls[filename] = GenerateControlStub(req)
 		}
 	}
@@ -193,6 +208,20 @@ func ptrOr(p *string, def string) string {
 	return def
 }
 
+// yamlScalar wraps a string in single quotes if it contains characters that
+// would break plain YAML scalars (colons, hashes, brackets, etc.). Strings
+// that are safe as plain scalars are returned unquoted.
+func yamlScalar(s string) string {
+	// Characters that require quoting in a YAML plain scalar value.
+	// Colon-space is the most common trigger (e.g., "address: foo").
+	if strings.ContainsAny(s, ":#{}&*!|>'\"`@,[]{}") || strings.HasPrefix(s, "- ") {
+		// Single-quote the value; escape embedded single quotes by doubling them.
+		escaped := strings.ReplaceAll(s, "'", "''")
+		return "'" + escaped + "'"
+	}
+	return s
+}
+
 // formatYamlValue formats a value for inline YAML output.
 func formatYamlValue(v interface{}) string {
 	switch val := v.(type) {
@@ -201,7 +230,7 @@ func formatYamlValue(v interface{}) string {
 	case float64:
 		return formatFloat(val)
 	case string:
-		return val
+		return yamlScalar(val)
 	default:
 		return fmt.Sprintf("%v", val)
 	}

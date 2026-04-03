@@ -4,6 +4,11 @@ import addFormats from 'ajv-formats';
 // Import all schemas (bare JSON imports — bundled by Vite via noExternal config)
 import hdfResultsSchema from '@mitre/hdf-schema/schemas/hdf-results.schema.json';
 import hdfBaselineSchema from '@mitre/hdf-schema/schemas/hdf-baseline.schema.json';
+import hdfComparisonSchema from '@mitre/hdf-schema/schemas/hdf-comparison.schema.json';
+import hdfSystemSchema from '@mitre/hdf-schema/schemas/hdf-system.schema.json';
+import hdfPlanSchema from '@mitre/hdf-schema/schemas/hdf-plan.schema.json';
+import hdfAmendmentsSchema from '@mitre/hdf-schema/schemas/hdf-amendments.schema.json';
+import hdfEvidencePackageSchema from '@mitre/hdf-schema/schemas/hdf-evidence-package.schema.json';
 import commonSchema from '@mitre/hdf-schema/schemas/primitives/common.schema.json';
 import extensionsSchema from '@mitre/hdf-schema/schemas/primitives/extensions.schema.json';
 import platformSchema from '@mitre/hdf-schema/schemas/primitives/platform.schema.json';
@@ -11,6 +16,13 @@ import resultSchema from '@mitre/hdf-schema/schemas/primitives/result.schema.jso
 import runnerSchema from '@mitre/hdf-schema/schemas/primitives/runner.schema.json';
 import statisticsSchema from '@mitre/hdf-schema/schemas/primitives/statistics.schema.json';
 import targetSchema from '@mitre/hdf-schema/schemas/primitives/target.schema.json';
+import parameterSchema from '@mitre/hdf-schema/schemas/primitives/parameter.schema.json';
+import systemSchema from '@mitre/hdf-schema/schemas/primitives/system.schema.json';
+import planSchema from '@mitre/hdf-schema/schemas/primitives/plan.schema.json';
+import amendmentsSchema from '@mitre/hdf-schema/schemas/primitives/amendments.schema.json';
+import comparisonSchema from '@mitre/hdf-schema/schemas/primitives/comparison.schema.json';
+import componentSchema from '@mitre/hdf-schema/schemas/primitives/component.schema.json';
+import dataFlowSchema from '@mitre/hdf-schema/schemas/primitives/data-flow.schema.json';
 
 /**
  * Validation error details
@@ -47,12 +59,19 @@ function createValidator(): Ajv {
 
   // Add all primitive schemas so they can be referenced
   ajv.addSchema(commonSchema);
-  ajv.addSchema(extensionsSchema);
   ajv.addSchema(platformSchema);
   ajv.addSchema(resultSchema);
   ajv.addSchema(runnerSchema);
   ajv.addSchema(statisticsSchema);
   ajv.addSchema(targetSchema);
+  ajv.addSchema(parameterSchema);
+  ajv.addSchema(amendmentsSchema);   // before extensions (extensions $refs amendments Override_Type)
+  ajv.addSchema(extensionsSchema);
+  ajv.addSchema(systemSchema);
+  ajv.addSchema(planSchema);
+  ajv.addSchema(comparisonSchema);
+  ajv.addSchema(componentSchema);
+  ajv.addSchema(dataFlowSchema);
 
   return ajv;
 }
@@ -60,13 +79,15 @@ function createValidator(): Ajv {
 // Singleton Ajv instance
 const ajv = createValidator();
 
-// Compile schemas once
+// Compile schemas once (lazy initialization)
 let resultsValidator: ValidateFunction | null = null;
 let baselineValidator: ValidateFunction | null = null;
+let comparisonValidator: ValidateFunction | null = null;
+let systemValidator: ValidateFunction | null = null;
+let planValidator: ValidateFunction | null = null;
+let amendmentsValidator: ValidateFunction | null = null;
+let evidencePackageValidator: ValidateFunction | null = null;
 
-/**
- * Get or compile the HDF Results validator
- */
 function getResultsValidator(): ValidateFunction {
   if (!resultsValidator) {
     resultsValidator = ajv.compile(hdfResultsSchema);
@@ -74,14 +95,46 @@ function getResultsValidator(): ValidateFunction {
   return resultsValidator;
 }
 
-/**
- * Get or compile the HDF Baseline validator
- */
 function getBaselineValidator(): ValidateFunction {
   if (!baselineValidator) {
     baselineValidator = ajv.compile(hdfBaselineSchema);
   }
   return baselineValidator;
+}
+
+function getComparisonValidator(): ValidateFunction {
+  if (!comparisonValidator) {
+    comparisonValidator = ajv.compile(hdfComparisonSchema);
+  }
+  return comparisonValidator;
+}
+
+function getSystemValidator(): ValidateFunction {
+  if (!systemValidator) {
+    systemValidator = ajv.compile(hdfSystemSchema);
+  }
+  return systemValidator;
+}
+
+function getPlanValidator(): ValidateFunction {
+  if (!planValidator) {
+    planValidator = ajv.compile(hdfPlanSchema);
+  }
+  return planValidator;
+}
+
+function getAmendmentsValidator(): ValidateFunction {
+  if (!amendmentsValidator) {
+    amendmentsValidator = ajv.compile(hdfAmendmentsSchema);
+  }
+  return amendmentsValidator;
+}
+
+function getEvidencePackageValidator(): ValidateFunction {
+  if (!evidencePackageValidator) {
+    evidencePackageValidator = ajv.compile(hdfEvidencePackageSchema);
+  }
+  return evidencePackageValidator;
 }
 
 /**
@@ -156,8 +209,6 @@ function createResult(validator: ValidateFunction, data: unknown): ValidationRes
 
 /**
  * Validate HDF Results document against schema
- * @param data - HDF Results document (JavaScript object)
- * @returns Validation result with errors if invalid
  */
 export function validateResults(data: unknown): ValidationResult {
   const validator = getResultsValidator();
@@ -166,8 +217,6 @@ export function validateResults(data: unknown): ValidationResult {
 
 /**
  * Validate HDF Baseline document against schema
- * @param data - HDF Baseline document (JavaScript object)
- * @returns Validation result with errors if invalid
  */
 export function validateBaseline(data: unknown): ValidationResult {
   const validator = getBaselineValidator();
@@ -175,12 +224,49 @@ export function validateBaseline(data: unknown): ValidationResult {
 }
 
 /**
+ * Validate HDF Comparison document against schema
+ */
+export function validateComparison(data: unknown): ValidationResult {
+  const validator = getComparisonValidator();
+  return createResult(validator, data);
+}
+
+/**
+ * Validate HDF System document against schema
+ */
+export function validateSystem(data: unknown): ValidationResult {
+  const validator = getSystemValidator();
+  return createResult(validator, data);
+}
+
+/**
+ * Validate HDF Plan document against schema
+ */
+export function validatePlan(data: unknown): ValidationResult {
+  const validator = getPlanValidator();
+  return createResult(validator, data);
+}
+
+/**
+ * Validate HDF Amendments document against schema
+ */
+export function validateAmendments(data: unknown): ValidationResult {
+  const validator = getAmendmentsValidator();
+  return createResult(validator, data);
+}
+
+/**
+ * Validate HDF Evidence Package document against schema
+ */
+export function validateEvidencePackage(data: unknown): ValidationResult {
+  const validator = getEvidencePackageValidator();
+  return createResult(validator, data);
+}
+
+/**
  * Validate HDF document (auto-detect type based on structure)
- * @param data - HDF document (JavaScript object)
- * @returns Validation result with errors if invalid
  */
 export function validate(data: unknown): ValidationResult {
-  // Try to auto-detect type based on structure
   if (typeof data === 'object' && data !== null) {
     const obj = data as Record<string, unknown>;
 
@@ -193,20 +279,43 @@ export function validate(data: unknown): ValidationResult {
     if ('name' in obj && 'requirements' in obj) {
       return validateBaseline(data);
     }
+
+    // HDF System has 'name' and 'components' at root
+    if ('name' in obj && 'components' in obj) {
+      return validateSystem(data);
+    }
+
+    // HDF Plan has 'name' and 'assessments' at root
+    if ('name' in obj && 'assessments' in obj) {
+      return validatePlan(data);
+    }
+
+    // HDF Amendments has 'name' and 'overrides' at root
+    if ('name' in obj && 'overrides' in obj) {
+      return validateAmendments(data);
+    }
+
+    // HDF Comparison has 'mode' and 'sources' at root
+    if ('mode' in obj && 'sources' in obj) {
+      return validateComparison(data);
+    }
+
+    // HDF Evidence Package has 'name' and 'contents' at root
+    if ('name' in obj && 'contents' in obj) {
+      return validateEvidencePackage(data);
+    }
   }
 
-  // Cannot determine type, try results first
+  // Cannot determine type, try results first (most common)
   const resultsResult = validateResults(data);
   if (resultsResult.valid) {
     return resultsResult;
   }
 
-  // Try baseline
   const baselineResult = validateBaseline(data);
   if (baselineResult.valid) {
     return baselineResult;
   }
 
-  // Return results validation errors (most common case)
   return resultsResult;
 }

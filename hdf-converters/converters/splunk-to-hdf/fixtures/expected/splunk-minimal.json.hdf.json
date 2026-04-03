@@ -1,0 +1,100 @@
+{
+  "baselines": [
+    {
+      "groups": [
+        {
+          "id": "controls/V-77825.rb",
+          "requirements": [
+            "V-77825"
+          ]
+        }
+      ],
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "d4ecb3e201285a383a4aa6af8d9028e8311cb1975af2b380f098a21c895246ff"
+      },
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Verify the operating system implements virtual address space\nrandomization.\n\nCheck that the operating system implements virtual address space randomization\nwith the following command:\n\n# grep kernel.randomize_va_space /etc/sysctl.conf\n\nkernel.randomize_va_space=2\n\nIf \"kernel.randomize_va_space\" does not have a value of \"2\", this is a\nfinding.",
+              "label": "check"
+            },
+            {
+              "data": "Address space layout randomization (ASLR) makes it more difficult for\nan attacker to predict the location of attack code he or she has introduced\ninto a process's address space during an attempt at exploitation. Additionally,\nASLR also makes it more difficult for an attacker to know the location of\nexisting code in order to repurpose it using return-oriented programming (ROP)\ntechniques.",
+              "label": "default"
+            },
+            {
+              "data": "Configure the operating system implement virtual address space\nrandomization.\n\nSet the system to the required kernel parameter by adding the following line to\n\"/etc/sysctl.conf\" (or modify the line to have the required value):\n\nkernel.randomize_va_space=2",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Kernel Parameter kernel.randomize_va_space value should eq 2",
+              "runTime": 0.015331197,
+              "startTime": "2019-11-04T16:17:17-05:00",
+              "status": "passed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 7,
+            "ref": "inspec-profile-disa_stig-el7-master/controls/V-77825.rb"
+          },
+          "id": "V-77825",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000366"
+            ],
+            "documentable": false,
+            "fix_id": "F-84531r1_fix",
+            "gid": "V-77825",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
+            "nist": [
+              "CM-6 b",
+              "Rev_4"
+            ],
+            "rid": "SV-92521r1_rule",
+            "stig_id": "RHEL-07-040201",
+            "subsystems": [
+              "ASLR",
+              "kernel_parameter"
+            ]
+          },
+          "code": "control \"V-77825\" do\n  title \"The operating system must implement virtual address space\nrandomization.\"\n  desc  \"Address space layout randomization (ASLR) makes it more difficult for\nan attacker to predict the location of attack code he or she has introduced\ninto a process's address space during an attempt at exploitation. Additionally,\nASLR also makes it more difficult for an attacker to know the location of\nexisting code in order to repurpose it using return-oriented programming (ROP)\ntechniques.\"\n  impact 0.5\n  tag \"gtitle\": \"SRG-OS-000480-GPOS-00227\"\n  tag \"gid\": \"V-77825\"\n  tag \"rid\": \"SV-92521r1_rule\"\n  tag \"stig_id\": \"RHEL-07-040201\"\n  tag \"cci\": [\"CCI-000366\"]\n  tag \"documentable\": false\n  tag \"nist\": [\"CM-6 b\", \"Rev_4\"]\n  tag \"subsystems\": ['ASLR', 'kernel_parameter']\n  desc \"check\", \"Verify the operating system implements virtual address space\nrandomization.\n\nCheck that the operating system implements virtual address space randomization\nwith the following command:\n\n# grep kernel.randomize_va_space /etc/sysctl.conf\n\nkernel.randomize_va_space=2\n\nIf \\\"kernel.randomize_va_space\\\" does not have a value of \\\"2\\\", this is a\nfinding.\"\n  desc \"fix\", \"Configure the operating system implement virtual address space\nrandomization.\n\nSet the system to the required kernel parameter by adding the following line to\n\\\"/etc/sysctl.conf\\\" (or modify the line to have the required value):\n\nkernel.randomize_va_space=2\"\n  tag \"fix_id\": \"F-84531r1_fix\"\n\ndescribe kernel_parameter('kernel.randomize_va_space') do\n  its('value') { should eq randomize_va_space }\nend\n\nend\n",
+          "title": ""
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "534a89b6b01c69db2fe85fe615d77c75c5ca5d9c5cc576d535e36d0ed21b9bd6"
+      },
+      "name": "disa_stig-el7",
+      "copyright": "SIMP Team",
+      "license": "Apache-2.0",
+      "maintainer": "SIMP Team",
+      "summary": "The `disa_stig-el7` inspec profile helps scan your system aginst the DISA RHEL7 STIG",
+      "title": "DISA RedHat Enterprise Linux 7 STIG - v1r4",
+      "version": "0.2.0"
+    }
+  ],
+  "components": [
+    {
+      "name": "centos",
+      "type": "host",
+      "osVersion": "7.6.1810"
+    }
+  ],
+  "generator": {
+    "name": "splunk-to-hdf",
+    "version": "0.1.0"
+  },
+  "statistics": {
+    "duration": 10.681128104
+  },
+  "timestamp": "2026-04-03T13:18:03.9118074-04:00",
+  "tool": {
+    "name": "Splunk"
+  }
+}

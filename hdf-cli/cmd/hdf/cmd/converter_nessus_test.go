@@ -31,7 +31,7 @@ func TestNessusConverter_Convert_Sample(t *testing.T) {
 	// the Nessus converter ref handling is fixed.
 	s := string(output)
 	assert.Contains(t, s, "\"baselines\"")
-	assert.Contains(t, s, "\"targets\"")
+	assert.Contains(t, s, "\"components\"")
 	assert.Contains(t, s, "\"generator\"")
 }
 

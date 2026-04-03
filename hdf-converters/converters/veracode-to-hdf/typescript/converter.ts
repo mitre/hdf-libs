@@ -13,13 +13,11 @@
 
 import { parseXml } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
-import { inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -422,20 +420,15 @@ export async function convertVeracodeToHdf(input: string): Promise<string> {
   }) as EvaluatedBaseline;
 
   const targetName = attr(report, 'app_name') || 'Veracode Application';
-  const dataSource: DataSource = { name: 'Veracode', format: 'XML' };
-
   const timestamp = parseVeracodeTimestamp(firstBuildDate);
 
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'veracode-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'Veracode',
+    toolFormat: 'XML',
     baselines: [baseline],
-    generator: {
-      name: 'veracode-to-hdf',
-      version: '1.0.0',
-    },
-    dataSource,
-    targets: [{ name: targetName, type: Copyright.Application }],
+    components: [{ name: targetName, type: Copyright.Application }],
     timestamp,
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

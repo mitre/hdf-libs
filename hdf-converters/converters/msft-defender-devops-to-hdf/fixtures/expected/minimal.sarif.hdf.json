@@ -1,0 +1,188 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs ",
+              "label": "default"
+            },
+            {
+              "data": "used as a private component in SSL certificates.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem LINE : 1 COLUMN : 1",
+              "startTime": "2026-04-03T13:17:57.5631144-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 1,
+            "ref": ".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem"
+          },
+          "id": "CSCAN-GENERAL0020",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "fingerprints": {
+              "fingerprints": {
+                "HashCode": "K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=",
+                "gdnAlternativeSignature0": "471e593e20b5c75c62e499b8249c85f1835dc7f99dc9553a8a66b1be2550515d",
+                "gdnPrimarySignature": "ad80df55e021c410c64bbdc3c768739c9b7fd32cfe9d37e5049efe305a7cabbe"
+              }
+            },
+            "helpUri": "https://aka.ms/CredScanDocs",
+            "msdo_fullName": "CredentialScanner 2.5.1.13",
+            "msdo_organization": "Microsoft Corporation",
+            "msdo_policy": "Microsoft 2.0.3",
+            "msdo_product": "Microsoft Security Credential Scanner Client",
+            "msdo_properties": {
+              "DefectCode": "SecretInFile",
+              "EnrichmentScore": 112.5,
+              "MatchingScore": 94.41,
+              "Risk": "100",
+              "Severity": 94,
+              "Validation": "NoValidationRequested"
+            },
+            "msdo_rawName": "credscan",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "error"
+          },
+          "title": "X.509 Certificate Private Key"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "2a4e1d0d65af1c01d8ac1616a9d3134822f145fc71ca70b4a333b4545342b44d"
+      },
+      "name": "credscan",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    },
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : samples/Dockerfile LINE : 1 COLUMN : 0\nFROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
+              "startTime": "2026-04-03T13:17:57.5631144-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 1,
+            "ref": "samples/Dockerfile"
+          },
+          "id": "CKV_DOCKER_2",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "fingerprints": {
+              "fingerprints": {
+                "gdnAlternativeSignature0": "b638b75acb82e58442ebe3ecff85569f7009ac136ba3db701680ba599b613c84",
+                "gdnPrimarySignature": "d575ad4cda6d50d0a5b22693f2455c3705f7c36bb4b15adc9192690133bf9374"
+              }
+            },
+            "msdo_policy": "Microsoft 2.0.3",
+            "msdo_rawName": "checkov",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "note"
+          },
+          "title": "Ensure that HEALTHCHECK instructions have been added to container images"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : samples/Dockerfile LINE : 1 COLUMN : 0\nFROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
+              "startTime": "2026-04-03T13:17:57.5631144-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 1,
+            "ref": "samples/Dockerfile"
+          },
+          "id": "CKV_DOCKER_3",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "fingerprints": {
+              "fingerprints": {
+                "gdnAlternativeSignature0": "81662655dc607bf53d1554c1d9b11df48d1d564eac1529173b8d0a2e61969e63",
+                "gdnPrimarySignature": "1242a262a0e0dc6e681ad67a81a121ae66f0b2562d1d669a066233daaa7a615a"
+              }
+            },
+            "msdo_policy": "Microsoft 2.0.3",
+            "msdo_rawName": "checkov",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "note"
+          },
+          "title": "Ensure that a user for the container has been created"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "2a4e1d0d65af1c01d8ac1616a9d3134822f145fc71ca70b4a333b4545342b44d"
+      },
+      "name": "checkov",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "components": [
+    {
+      "name": "security-devops-action",
+      "type": "repository",
+      "branch": "main",
+      "commit": "c5bc432f9640469fd713f651b4d18af73867f27a",
+      "url": "https://github.com/reynoldsa/security-devops-action"
+    }
+  ],
+  "generator": {
+    "name": "msft-defender-devops-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T13:17:57.5631144-04:00",
+  "tool": {
+    "format": "SARIF",
+    "name": "Microsoft Defender for DevOps",
+    "version": "2.5.1.13"
+  }
+}

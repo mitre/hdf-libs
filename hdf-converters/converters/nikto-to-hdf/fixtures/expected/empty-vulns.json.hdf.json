@@ -1,0 +1,28 @@
+{
+  "baselines": [
+    {
+      "requirements": [],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "e973f3417ef29ade67621491f76eb4ba18c470f42836b73d1bab8632bbb15827"
+      },
+      "name": "Host: clean.example.com Port: 443",
+      "summary": "nginx/1.24.0",
+      "title": "Nikto Target: Host: clean.example.com Port: 443"
+    }
+  ],
+  "components": [
+    {
+      "name": "Host: clean.example.com Port: 443",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "nikto-to-hdf",
+    "version": "0.1.0"
+  },
+  "tool": {
+    "format": "JSON",
+    "name": "Nikto"
+  }
+}

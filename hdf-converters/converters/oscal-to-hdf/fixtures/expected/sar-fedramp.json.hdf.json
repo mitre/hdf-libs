@@ -1,0 +1,237 @@
+{
+  "baselines": [
+    {
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
+      },
+      "description": "Brief assessment description.",
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "An overall statement about the system's satisfaction of this objective.\nAn overall statement about the system's satisfaction of this objective.\nAn overall statement about the system's satisfaction of this objective.",
+              "label": "default"
+            },
+            {
+              "data": "[EXAMPLE]The AC policy existed, and had all the required elements.\n[EXAMPLE]The person interviewed knew about the policy and where to find it.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Methods: EXAMINE; Subject: Reviewed Policy (component)",
+              "message": "Risk Title: This is a description of the identified risk.\n\nTCW: Identified Risk.\n\nScans: Vulnerability Description.\n\nPen Test: Risk Description.\n\nRET: Description.",
+              "startTime": "2023-03-01T00:00:00Z",
+              "status": "passed"
+            },
+            {
+              "codeDesc": "Methods: EXAMINE; Subject: Reviewed Policy (component)",
+              "message": "Risk Title: This is a description of the identified risk.\n\nTCW: Identified Risk.\n\nScans: Vulnerability Description.\n\nPen Test: Risk Description.\n\nRET: Description.",
+              "startTime": "2023-03-01T00:00:00Z",
+              "status": "passed"
+            },
+            {
+              "codeDesc": "Methods: EXAMINE; Subject: Reviewed Policy (component); Methods: INTERVIEW; Subject: Interviewed Person (party)",
+              "message": "Risk Title: This is a description of the identified risk.\n\nTCW: Identified Risk.\n\nScans: Vulnerability Description.\n\nPen Test: Risk Description.\n\nRET: Description.",
+              "startTime": "2023-03-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "AC-1",
+          "impact": 0.7,
+          "tags": {
+            "nist": [
+              "AC-1"
+            ]
+          },
+          "title": "[EXAMPLE]TCW Objective AC-1(a)(1)[1] (Examine)"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "[EXAMPLE]There is an issue with an SSP Statement.",
+              "label": "default"
+            },
+            {
+              "data": "The policy describes a procedure, which could not be found.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Methods: EXAMINE",
+              "startTime": "2023-03-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "AU-1",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "AU-1"
+            ]
+          },
+          "title": "[EXAMPLE]Issue With AU-1 Statement"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "The results of the discovery scan.",
+              "label": "default"
+            },
+            {
+              "data": "Undocumented devices found on network.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Methods: TEST; Subject: inventory-item; Subject: inventory-item; Subject: inventory-item; Subject: component",
+              "startTime": "2023-03-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "RA-5",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "RA-5"
+            ]
+          },
+          "title": "Discovery Scan Results"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "An example set of infrastructure scan findings.",
+              "label": "default"
+            },
+            {
+              "data": "[EXAMPLE]Scanner Output.\nProvide the justification for the operational requirement.\nDescribe the false positive here.\nDescribe the risk adjustment justification here.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Methods: TEST; Subject: inventory-item; Subject: inventory-item; Subject: inventory-item; Subject: component; Methods: EXAMINE; Methods: EXAMINE; Methods: EXAMINE",
+              "message": "Vulnerability Title: This is a description of the vulnerability provided by the tool.",
+              "startTime": "2023-03-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "CM-2 (1)",
+          "impact": 0.7,
+          "tags": {
+            "nist": [
+              "CM-2 (1)"
+            ]
+          },
+          "title": "[EXAMPLE]Infrastructure Scan Unique Vulnerability"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "The Results of the spear phishing test.",
+              "label": "default"
+            },
+            {
+              "data": "[EXAMPLE]Describe the finding.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Methods: TEST",
+              "startTime": "2023-03-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "AT-2",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "AT-2"
+            ]
+          },
+          "title": "[EXAMPLE]Spear Phishing Results"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "A finding from penetration testing activities.",
+              "label": "default"
+            },
+            {
+              "data": "[EXAMPLE]Describe the finding.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Methods: TEST",
+              "message": "Risk Title: This is a description of the issue found by the penetration testing team.",
+              "startTime": "2023-03-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "CA-8 (1)",
+          "impact": 0.7,
+          "tags": {
+            "nist": [
+              "CA-8 (1)"
+            ]
+          },
+          "title": "[EXAMPLE]Penetration Test Result"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
+      },
+      "name": "2023-annual-assessment",
+      "status": "loaded",
+      "title": "2023 Annual Assessment"
+    },
+    {
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
+      },
+      "description": "Description",
+      "requirements": [],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
+      },
+      "name": "2022-annual-assessment",
+      "status": "loaded",
+      "title": "2022 Annual Assessment"
+    },
+    {
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
+      },
+      "description": "Description",
+      "requirements": [],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
+      },
+      "name": "initial-2021-assessment",
+      "status": "loaded",
+      "title": "Initial (2021) Assessment"
+    }
+  ],
+  "tool": {
+    "format": "OSCAL",
+    "name": "OSCAL Assessment Results"
+  },
+  "generator": {
+    "name": "oscal-assessment-results-to-hdf",
+    "version": "0.1.0"
+  },
+  "planRef": "#5cce2310-8fcc-49f8-8cae-8e31dc8048f1",
+  "timestamp": "2024-09-24T02:24:00Z"
+}

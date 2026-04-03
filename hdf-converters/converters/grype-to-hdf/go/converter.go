@@ -3,13 +3,12 @@ package grype_to_hdf
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
-	hdf "github.com/mitre/hdf-schema"
 	"github.com/mitre/hdf-mappings/go/cci"
+	hdf "github.com/mitre/hdf-schema"
 )
 
 // Grype JSON report input structures
@@ -41,10 +40,10 @@ type GrypeDistro struct {
 }
 
 type GrypeMatch struct {
-	Vulnerability          GrypeVulnerability           `json:"vulnerability"`
-	RelatedVulnerabilities []GrypeRelatedVulnerability  `json:"relatedVulnerabilities,omitempty"`
-	MatchDetails           []GrypeMatchDetail           `json:"matchDetails"`
-	Artifact               GrypeArtifact                `json:"artifact"`
+	Vulnerability          GrypeVulnerability          `json:"vulnerability"`
+	RelatedVulnerabilities []GrypeRelatedVulnerability `json:"relatedVulnerabilities,omitempty"`
+	MatchDetails           []GrypeMatchDetail          `json:"matchDetails"`
+	Artifact               GrypeArtifact               `json:"artifact"`
 }
 
 type GrypeVulnerability struct {
@@ -86,8 +85,8 @@ type GrypeFix struct {
 }
 
 type GrypeMatchDetail struct {
-	Type    string                 `json:"type,omitempty"` // "exact-direct-match", "exact-indirect-match", "cpe-match"
-	Matcher string                 `json:"matcher,omitempty"`
+	Type       string                 `json:"type,omitempty"` // "exact-direct-match", "exact-indirect-match", "cpe-match"
+	Matcher    string                 `json:"matcher,omitempty"`
 	SearchedBy map[string]interface{} `json:"searchedBy,omitempty"`
 	Found      map[string]interface{} `json:"found,omitempty"`
 }
@@ -108,7 +107,6 @@ type GrypeLocation struct {
 	Path    string `json:"path,omitempty"`
 	LayerID string `json:"layerID,omitempty"`
 }
-
 
 // Severity to impact mapping.
 // Grype maps "critical" to 0.9 (not the standard 1.0) and adds "negligible"=0.0.
@@ -326,6 +324,13 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 
 // ConvertGrypeToHDF converts Grype JSON to HDF
 func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("grype: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "grype", 0); err != nil {
+		return nil, fmt.Errorf("grype: %w", err)
+	}
+
 	// Calculate checksum of input data
 	resultsChecksum := shared.InputChecksum(input)
 
@@ -339,19 +344,13 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	requirements := []hdf.EvaluatedRequirement{}
 
 	// Process regular matches
-	limitedMatches, truncatedMatches := shared.LimitSlice(grypeData.Matches, 0)
-	if truncatedMatches {
-		log.Printf("WARNING: Input truncated at %d match items (original: %d)", len(limitedMatches), len(grypeData.Matches))
-	}
+	limitedMatches := shared.LimitSliceWithWarning(grypeData.Matches, 0, "match")
 	for _, match := range limitedMatches {
 		requirements = append(requirements, convertMatchToRequirement(match, false))
 	}
 
 	// Process ignored matches
-	limitedIgnored, truncatedIgnored := shared.LimitSlice(grypeData.IgnoredMatches, 0)
-	if truncatedIgnored {
-		log.Printf("WARNING: Input truncated at %d ignoredMatch items (original: %d)", len(limitedIgnored), len(grypeData.IgnoredMatches))
-	}
+	limitedIgnored := shared.LimitSliceWithWarning(grypeData.IgnoredMatches, 0, "ignored match")
 	for _, match := range limitedIgnored {
 		requirements = append(requirements, convertMatchToRequirement(match, true))
 	}
@@ -381,13 +380,20 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		}
 	}
 
+	// Build target from scan source
+	target := hdf.Component{
+		Name: targetName,
+		Type: hdf.Artifact,
+	}
+
 	// Build HDF results
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:     "grype-to-hdf",
 		ConverterVersion:  converterVersion,
-		DataSourceName:    "Grype",
-		DataSourceVersion: grypeData.Descriptor.Version,
+		ToolName:    "Grype",
+		ToolVersion: grypeData.Descriptor.Version,
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
+		Components:           []hdf.Component{target},
 		Timestamp:         timestamp,
 	})
 

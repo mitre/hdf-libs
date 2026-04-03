@@ -502,3 +502,221 @@ func derefStr(s *string) string {
 	}
 	return *s
 }
+
+// defaultBaselineTrackedFields is the set of fields tracked for baseline evolution diffs.
+var defaultBaselineTrackedFields = []string{fieldNameTitle, fieldNameImpact, fieldNameDescriptions, fieldNameTags}
+
+// DiffBaselines compares two HDF baseline documents and produces a structured comparison
+// showing requirement changes between baseline versions.
+//
+// Unlike DiffHdf (which compares evaluation results), this compares baseline definitions —
+// requirements without results. There is no status-based classification (fixed/regressed);
+// only metadata changes (title, impact, descriptions, tags) are tracked.
+func DiffBaselines(oldBaseline, newBaseline hdf.HdfBaseline, opts Options) (types.HdfComparison, error) {
+	trackedFields := opts.TrackedFields
+	if len(trackedFields) == 0 {
+		trackedFields = defaultBaselineTrackedFields
+	}
+	matchStrategy := opts.MatchStrategy
+	if matchStrategy == "" {
+		matchStrategy = defaultMatchStrategy
+	}
+	matchOpts := buildMatchOptions(opts)
+
+	// Convert baseline requirements to EvaluatedRequirement for matching compatibility
+	oldReqs := baselineReqsToEvaluated(oldBaseline.Requirements)
+	newReqs := baselineReqsToEvaluated(newBaseline.Requirements)
+
+	// Use the matching system to pair requirements
+	matchResult, err := matching.MatchRequirementsWithError(oldReqs, newReqs, matchOpts)
+	if err != nil {
+		return types.HdfComparison{}, err
+	}
+
+	// Build requirement diffs from match results
+	var requirementDiffs []types.RequirementDiff
+
+	// Matched pairs
+	for _, pair := range matchResult.Matched {
+		id := pair.NewReq.ID
+		if id == "" {
+			id = pair.OldReq.ID
+		}
+
+		fieldChanges := computeFieldChanges(pair.OldReq, pair.NewReq, trackedFields)
+
+		// For baseline evolution, state is determined by metadata changes only
+		state := types.StateUnchanged
+		if len(fieldChanges) > 0 {
+			state = types.StateUpdated
+		}
+
+		// Determine change reasons
+		changeReasons := classifyBaselineChangeReasons(pair.OldReq, pair.NewReq)
+
+		title := resolveTitle(pair.OldReq.Title, pair.NewReq.Title)
+		oldImpact := pair.OldReq.Impact
+		newImpact := pair.NewReq.Impact
+		confidence := pair.Confidence
+
+		oldReqCopy := pair.OldReq
+		newReqCopy := pair.NewReq
+
+		requirementDiffs = append(requirementDiffs, types.RequirementDiff{
+			ID:              id,
+			Title:           title,
+			State:           state,
+			ChangeReasons:   changeReasons,
+			OldImpact:       &oldImpact,
+			NewImpact:       &newImpact,
+			FieldChanges:    fieldChanges,
+			Before:          &oldReqCopy,
+			After:           &newReqCopy,
+			MatchStrategy:   pair.Strategy,
+			MatchConfidence: &confidence,
+		})
+	}
+
+	// Unmatched old requirements (absent)
+	for _, oldReq := range matchResult.UnmatchedOld {
+		title := resolveTitle(oldReq.Title, nil)
+		oldImpact := oldReq.Impact
+		oldReqCopy := oldReq
+
+		requirementDiffs = append(requirementDiffs, types.RequirementDiff{
+			ID:            oldReq.ID,
+			Title:         title,
+			State:         types.StateAbsent,
+			ChangeReasons: []types.ChangeReason{},
+			OldImpact:     &oldImpact,
+			FieldChanges:  []types.FieldChange{},
+			Before:        &oldReqCopy,
+			After:         nil,
+		})
+	}
+
+	// Unmatched new requirements (new)
+	for _, newReq := range matchResult.UnmatchedNew {
+		title := resolveTitle(nil, newReq.Title)
+		newImpact := newReq.Impact
+		newReqCopy := newReq
+
+		requirementDiffs = append(requirementDiffs, types.RequirementDiff{
+			ID:            newReq.ID,
+			Title:         title,
+			State:         types.StateNew,
+			ChangeReasons: []types.ChangeReason{},
+			NewImpact:     &newImpact,
+			FieldChanges:  []types.FieldChange{},
+			Before:        nil,
+			After:         &newReqCopy,
+		})
+	}
+
+	// Sort by ID
+	sort.Slice(requirementDiffs, func(i, j int) bool {
+		return requirementDiffs[i].ID < requirementDiffs[j].ID
+	})
+
+	// Build baseline diff from top-level metadata
+	oldName := oldBaseline.Name
+	newName := newBaseline.Name
+	oldVersion := derefStr(oldBaseline.Version)
+	newVersion := derefStr(newBaseline.Version)
+
+	var baselineDiffs []types.BaselineDiff
+	baselineName := newName
+	if baselineName == "" {
+		baselineName = oldName
+	}
+	if baselineName != "" {
+		state := types.StateUnchanged
+		if oldVersion != newVersion {
+			state = types.StateUpdated
+		}
+		baselineDiffs = append(baselineDiffs, types.BaselineDiff{
+			Name:       baselineName,
+			OldVersion: oldVersion,
+			NewVersion: newVersion,
+			State:      state,
+		})
+	}
+
+	// Build sources
+	oldLabel := baselineName
+	if oldVersion != "" {
+		oldLabel = baselineName + " " + oldVersion
+	}
+	if oldLabel == "" {
+		oldLabel = "Old baseline"
+	}
+	newLabel := baselineName
+	if newVersion != "" {
+		newLabel = baselineName + " " + newVersion
+	}
+	if newLabel == "" {
+		newLabel = "New baseline"
+	}
+	sources := []types.Source{
+		{Role: types.RoleOld, Label: oldLabel},
+		{Role: types.RoleNew, Label: newLabel},
+	}
+
+	return types.HdfComparison{
+		FormatVersion:    "1.0.0",
+		ComparisonMode:   types.ModeBaselineEvolution,
+		Timestamp:        time.Now().UTC().Format(time.RFC3339),
+		Sources:          sources,
+		Matching:         &types.MatchingConfig{PrimaryStrategy: matchStrategy},
+		Summary:          summary.ComputeSummary(requirementDiffs),
+		BaselineDiffs:    baselineDiffs,
+		RequirementDiffs: requirementDiffs,
+	}, nil
+}
+
+// baselineReqsToEvaluated converts BaselineRequirement slices to EvaluatedRequirement slices
+// for compatibility with the matching system. Baseline requirements are a subset of
+// evaluated requirements — they have metadata but no results.
+func baselineReqsToEvaluated(reqs []hdf.BaselineRequirement) []hdf.EvaluatedRequirement {
+	result := make([]hdf.EvaluatedRequirement, len(reqs))
+	for i, req := range reqs {
+		result[i] = hdf.EvaluatedRequirement{
+			ID:             req.ID,
+			Title:          req.Title,
+			Impact:         req.Impact,
+			Tags:           req.Tags,
+			Descriptions:   req.Descriptions,
+			Refs:           req.Refs,
+			SourceLocation: req.SourceLocation,
+		}
+	}
+	return result
+}
+
+// classifyBaselineChangeReasons determines change reasons for baseline evolution.
+// Only impactChanged and metadataChanged are relevant — no result-based reasons.
+func classifyBaselineChangeReasons(oldReq, newReq hdf.EvaluatedRequirement) []types.ChangeReason {
+	reasons := []types.ChangeReason{}
+
+	if oldReq.Impact != newReq.Impact {
+		reasons = append(reasons, types.ReasonImpactChanged)
+	}
+
+	tagsChanged := !reflect.DeepEqual(oldReq.Tags, newReq.Tags)
+	descsChanged := !reflect.DeepEqual(oldReq.Descriptions, newReq.Descriptions)
+
+	oldTitle := ""
+	if oldReq.Title != nil {
+		oldTitle = *oldReq.Title
+	}
+	newTitle := ""
+	if newReq.Title != nil {
+		newTitle = *newReq.Title
+	}
+
+	if tagsChanged || descsChanged || oldTitle != newTitle {
+		reasons = append(reasons, types.ReasonMetadataChanged)
+	}
+
+	return reasons
+}

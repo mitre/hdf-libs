@@ -41,14 +41,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertTwistlock_InvalidJSON(t *testing.T) {
-	_, err := ConvertTwistlockToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertTwistlock_EmptyInput(t *testing.T) {
-	_, err := ConvertTwistlockToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "twistlock-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertTwistlockToHDF(input, testVersion) },
+		MinimalFixture: "twistlock-twistcli-coderepo-scan-sample.json",
+	})
 }
 
 // ---- Container scan (has "results" wrapper) ----
@@ -150,18 +148,18 @@ func TestConvertTwistlock_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertTwistlock_DataSource(t *testing.T) {
+func TestConvertTwistlock_Tool(t *testing.T) {
 	input := loadFixture(t, "input/twistlock-twistcli-coderepo-scan-sample.json")
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Twistlock", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Twistlock", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- Severity → Impact mapping ----
@@ -315,10 +313,10 @@ func TestConvertTwistlock_Target(t *testing.T) {
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
+	require.NotEmpty(t, result.Components)
 	// Target name should be the image name
-	assert.Contains(t, result.Targets[0].Name, "registry.io/test")
-	assert.Equal(t, hdf.ContainerImage, result.Targets[0].Type)
+	assert.Contains(t, result.Components[0].Name, "registry.io/test")
+	assert.Equal(t, hdf.ContainerImage, result.Components[0].Type)
 }
 
 // ---- Empty vulnerabilities ----
@@ -353,4 +351,10 @@ func TestConvertTwistlock_StartTime(t *testing.T) {
 	expected, err := time.Parse(time.RFC3339, "2021-12-10T10:15:00Z")
 	require.NoError(t, err)
 	assert.Equal(t, expected, req.Results[0].StartTime)
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "twistlock-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertTwistlockToHDF(input, "0.1.0")
+	})
 }

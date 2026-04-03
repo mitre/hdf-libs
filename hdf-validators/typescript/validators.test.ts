@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { validateResults, validateBaseline, ValidationResult } from './index.js';
 
+/** Minimal requirement that satisfies EvaluatedBaseline.requirements minItems: 1. */
+const minReq = {
+  id: 'SV-1', impact: 0.5, tags: {},
+  descriptions: [{ label: 'default', data: 'Test' }],
+  results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }],
+};
+
 describe('HDF Results Validation', () => {
   describe('Valid documents', () => {
     it('should validate minimal valid HDF results', () => {
@@ -44,7 +51,7 @@ describe('HDF Results Validation', () => {
           {
             name: 'Test Baseline',
             checksum: { algorithm: 'sha256', value: 'abc123' },
-            requirements: []
+            requirements: [minReq]
           }
         ],
         targets: [
@@ -70,7 +77,7 @@ describe('HDF Results Validation', () => {
             version: '1.0.0',
             title: 'Test Title',
             checksum: { algorithm: 'sha256', value: 'abc123' },
-            requirements: []
+            requirements: [minReq]
           }
         ],
         targets: [],
@@ -130,7 +137,7 @@ describe('HDF Results Validation', () => {
         baselines: [
           {
             name: 'Test',
-            requirements: []
+            requirements: [minReq]
           }
         ],
         targets: [],

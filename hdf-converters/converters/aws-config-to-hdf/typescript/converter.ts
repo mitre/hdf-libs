@@ -3,15 +3,14 @@ import {
   getAwsConfigNistControlByIdentifier,
   getAwsConfigNistControlByName,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
-import type {
-  HdfResults,
-  EvaluatedBaseline,
-  EvaluatedRequirement,
-  RequirementResult,
-  Checksum,
-  Description,
-  DataSource,
+import { inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import {
+  Copyright,
+  type EvaluatedBaseline,
+  type EvaluatedRequirement,
+  type RequirementResult,
+  type Checksum,
+  type Description,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -62,11 +61,16 @@ interface EvaluationResultQualifier {
   ResourceId: string;
 }
 
-const ACCOUNT_ID_RE = /:(\d{12}):config-rule/;
+const ARN_RE = /arn:aws[^:]*:config:([^:]+):(\d{12}):config-rule/;
 
 function getAccountId(arn: string): string {
-  const m = ACCOUNT_ID_RE.exec(arn);
-  return m ? m[1]! : 'no-account-id';
+  const m = ARN_RE.exec(arn);
+  return m ? m[2]! : 'no-account-id';
+}
+
+function getRegion(arn: string): string {
+  const m = ARN_RE.exec(arn);
+  return m ? m[1]! : 'unknown';
 }
 
 function mapComplianceStatus(complianceType: string): ResultStatus {
@@ -185,17 +189,25 @@ export async function convertAwsConfigToHdf(input: string): Promise<string> {
     maintainer: 'Amazon Web Services',
   } as EvaluatedBaseline;
 
-  const dataSource: DataSource = { name: 'AWS Config' };
+  // Extract account/region from the first rule's ARN for target labels
+  const firstArn = limitedRules[0]?.ConfigRuleArn ?? '';
+  const accountId = getAccountId(firstArn);
+  const region = getRegion(firstArn);
 
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'aws-config-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'AWS Config',
     baselines: [baseline],
-    generator: {
-      name: 'aws-config-to-hdf',
-      version: '1.0.0',
-    },
-    dataSource,
+    components: [{
+      type: Copyright.CloudAccount,
+      name: `AWS Account ${accountId}`,
+      labels: {
+        account: accountId,
+        region,
+        provider: 'aws',
+      },
+    }],
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

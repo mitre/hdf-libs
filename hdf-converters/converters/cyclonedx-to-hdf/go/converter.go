@@ -3,7 +3,6 @@ package cyclonedx_to_hdf
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -14,11 +13,11 @@ import (
 
 // CycloneDXBom is the top-level CycloneDX BOM structure.
 type CycloneDXBom struct {
-	BomFormat       string              `json:"bomFormat"`
-	SpecVersion     string              `json:"specVersion"`
-	Metadata        *CDXMetadata        `json:"metadata"`
-	Components      []CDXComponent      `json:"components"`
-	Vulnerabilities []CDXVulnerability  `json:"vulnerabilities"`
+	BomFormat       string             `json:"bomFormat"`
+	SpecVersion     string             `json:"specVersion"`
+	Metadata        *CDXMetadata       `json:"metadata"`
+	Components      []CDXComponent     `json:"components"`
+	Vulnerabilities []CDXVulnerability `json:"vulnerabilities"`
 }
 
 // CDXMetadata holds BOM metadata.
@@ -126,26 +125,12 @@ func maxImpact(ratings []CDXRating) float64 {
 	return max
 }
 
-var infoUnknownSeverities = map[string]bool{
-	"info":    true,
-	"unknown": true,
-}
-
-// isInfoOrUnknownOnly returns true if all ratings have only info or unknown severity.
-//
-// NOTE: This replicates heimdall2 behavior. The semantic correctness of mapping
-// "unknown severity" to "not reviewed" is debatable and should be re-examined.
-func isInfoOrUnknownOnly(ratings []CDXRating) bool {
-	if len(ratings) == 0 {
-		return false
-	}
-	for _, r := range ratings {
-		if !infoUnknownSeverities[strings.ToLower(r.Severity)] {
-			return false
-		}
-	}
-	return true
-}
+// NOTE: heimdall2 mapped info/unknown severity to NotReviewed status.
+// We intentionally do NOT replicate that behavior — a vulnerability is a
+// finding regardless of severity confidence. Info/unknown severity vulns
+// are Failed with impact derived from the severity mapping (info→0.1,
+// unknown→0.5). NotReviewed means "not evaluated" which is incorrect
+// when a scanner has identified a CVE.
 
 // formatRatingsTag formats ratings as a human-readable tag string.
 func formatRatingsTag(ratings []CDXRating) string {
@@ -200,6 +185,9 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	if len(input) == 0 {
 		return nil, fmt.Errorf("cyclonedx: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "cyclonedx", 0); err != nil {
+		return nil, fmt.Errorf("cyclonedx: %w", err)
+	}
 
 	var bom CycloneDXBom
 	if err := json.Unmarshal(input, &bom); err != nil {
@@ -214,6 +202,12 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		return nil, fmt.Errorf("cyclonedx: input has neither components nor vulnerabilities")
 	}
 
+	if len(bom.Vulnerabilities) == 0 {
+		return nil, fmt.Errorf("cyclonedx: this file is an SBOM inventory with no vulnerabilities; " +
+			"to import SBOM data into a system document, use:\n" +
+			"  hdf system create --from <sbom-file> --component-name <name>")
+	}
+
 	checksum := shared.InputChecksum(input)
 
 	// Flatten nested components and build lookup by bom-ref
@@ -225,13 +219,8 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		}
 	}
 
-	limitedVulns, truncatedVulns := shared.LimitSlice(bom.Vulnerabilities, 0)
-	if truncatedVulns {
-		log.Printf("WARNING: Input truncated at %d vulnerability items (original: %d)", len(limitedVulns), len(bom.Vulnerabilities))
-	}
+	limitedVulns := shared.LimitSliceWithWarning(bom.Vulnerabilities, 0, "vulnerability")
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(limitedVulns))
-
-	infoUnknownMsg := "Manual review required because a CycloneDX rating severity is set to `info` or `unknown`."
 
 	for _, vuln := range limitedVulns {
 		ratings := vuln.Ratings
@@ -294,42 +283,22 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			})
 		}
 
-		// Determine if this is an info/unknown-only vulnerability
-		infoUnknown := isInfoOrUnknownOnly(ratings)
-
-		// Build results: one per affected component
+		// Build results: one per affected component.
+		// All vulnerabilities are Failed — info/unknown severity affects impact
+		// score but not status (a vuln is a finding regardless of severity confidence).
 		var results []hdf.RequirementResult
 		if len(vuln.Affects) > 0 {
 			for _, affect := range vuln.Affects {
-				codeDesc := formatCodeDesc(componentLookup, affect.Ref)
-				if infoUnknown {
-					results = append(results, hdf.RequirementResult{
-						Status:   hdf.NotReviewed,
-						Message:  &infoUnknownMsg,
-						CodeDesc: codeDesc,
-					})
-				} else {
-					results = append(results, hdf.RequirementResult{
-						Status:   hdf.Failed,
-						CodeDesc: codeDesc,
-					})
-				}
-			}
-		} else {
-			// Vulnerability with no affects — create a single result
-			codeDesc := fmt.Sprintf("Vulnerability %s", vuln.ID)
-			if infoUnknown {
-				results = append(results, hdf.RequirementResult{
-					Status:   hdf.NotReviewed,
-					Message:  &infoUnknownMsg,
-					CodeDesc: codeDesc,
-				})
-			} else {
 				results = append(results, hdf.RequirementResult{
 					Status:   hdf.Failed,
-					CodeDesc: codeDesc,
+					CodeDesc: formatCodeDesc(componentLookup, affect.Ref),
 				})
 			}
+		} else {
+			results = append(results, hdf.RequirementResult{
+				Status:   hdf.Failed,
+				CodeDesc: fmt.Sprintf("Vulnerability %s", vuln.ID),
+			})
 		}
 
 		title := vuln.ID
@@ -355,20 +324,31 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 	now := time.Now().UTC()
 
-	targetName := ""
+	comp := hdf.Component{
+		Type: hdf.CopyrightApplication,
+	}
 	if bom.Metadata != nil && bom.Metadata.Component != nil {
-		targetName = bom.Metadata.Component.Name
+		comp.Name = bom.Metadata.Component.Name
+		if bom.Metadata.Component.Version != "" {
+			comp.Version = &bom.Metadata.Component.Version
+		}
+	}
+
+	// Embed the raw CycloneDX SBOM into the component
+	var rawSbom interface{}
+	if err := json.Unmarshal(input, &rawSbom); err == nil {
+		sbomFmt := hdf.Cyclonedx
+		comp.Sbom = rawSbom
+		comp.SbomFormat = &sbomFmt
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "cyclonedx-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "CycloneDX",
-		DataSourceFormat: "JSON",
+		ToolName:   "CycloneDX",
+		ToolFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
-			{Name: targetName, Type: hdf.Application},
-		},
-		Timestamp: &now,
+		Components:       []hdf.Component{comp},
+		Timestamp:        &now,
 	}), nil
 }

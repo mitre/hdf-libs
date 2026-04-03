@@ -1,11 +1,10 @@
 import {
   type Checksum,
+  Copyright,
   createMinimalBaseline,
-  type DataSource,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
-  type HdfResults,
   ResultStatus,
 } from '@mitre/hdf-schema';
 import {
@@ -14,7 +13,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, limitArray, validateInputSize} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
 
 // Nikto JSON input types
 
@@ -141,19 +140,15 @@ export async function convertNiktoToHdf(input: string): Promise<string> {
     summary: niktoData.banner || '',
   }) as EvaluatedBaseline;
 
-  const dataSource: DataSource = {
-    name: 'Nikto',
-    format: 'JSON',
-  };
-
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'nikto-to-hdf',
+    converterVersion: 'unknown',
+    toolName: 'Nikto',
+    toolFormat: 'JSON',
     baselines: [baseline],
-    generator: {
-      name: 'nikto-to-hdf',
-      version: 'unknown',
-    },
-    dataSource,
-  };
-
-  return JSON.stringify(hdf, null, 2);
+    components: [{
+      type: Copyright.Application,
+      name: targetName,
+    }],
+  });
 }

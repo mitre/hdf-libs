@@ -1,0 +1,122 @@
+{
+  "baselines": [
+    {
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "a495f3f296614c75bcc73be49f2a3b5184156022c2be61d108a40c0962fe1513"
+      },
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Dependency n/a/-e",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Dependency inventory item",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "dependency-n/a/-e",
+          "impact": 0,
+          "tags": {
+            "file": "requirements.txt",
+            "latest_version": "n/a",
+            "name": "-e",
+            "nist": [
+              "CM-8"
+            ],
+            "org": "n/a",
+            "requirement": "n/a",
+            "scope": "runtime",
+            "type": "pypi",
+            "version": "n/a"
+          },
+          "code": "{\n  \"latest_version\": \"n/a\",\n  \"org\": \"n/a\",\n  \"name\": \"-e\",\n  \"type\": \"pypi\",\n  \"package\": \"egg\",\n  \"version\": \"n/a\",\n  \"scope\": \"runtime\",\n  \"requirement\": \"n/a\",\n  \"file\": \"requirements.txt\",\n  \"outdated_version\": {\n    \"major_behind\": 0,\n    \"minor_behind\": 0,\n    \"patch_behind\": 0\n  },\n  \"dependencies\": []\n}",
+          "title": "Python requirements file requirements.txt"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Dependency n/a/requests",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Dependency inventory item",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "dependency-n/a/requests",
+          "impact": 0,
+          "tags": {
+            "file": "requirements.txt",
+            "latest_version": "3.1.0",
+            "name": "requests",
+            "nist": [
+              "CM-8"
+            ],
+            "org": "n/a",
+            "requirement": "n/a",
+            "scope": "runtime",
+            "type": "pypi",
+            "version": "2.31.0"
+          },
+          "code": "{\n  \"latest_version\": \"3.1.0\",\n  \"org\": \"n/a\",\n  \"name\": \"requests\",\n  \"type\": \"pypi\",\n  \"package\": \"pypi\",\n  \"version\": \"2.31.0\",\n  \"scope\": \"runtime\",\n  \"requirement\": \"n/a\",\n  \"file\": \"requirements.txt\",\n  \"outdated_version\": {\n    \"major_behind\": 1,\n    \"minor_behind\": 0,\n    \"patch_behind\": 0\n  },\n  \"dependencies\": []\n}",
+          "title": "Dependency requests @ 2.31.0"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Dependency example-corp/internal-lib",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Dependency inventory item",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "dependency-example-corp/internal-lib",
+          "impact": 0,
+          "tags": {
+            "file": "requirements.txt",
+            "latest_version": "1.0.0",
+            "name": "internal-lib",
+            "nist": [
+              "CM-8"
+            ],
+            "org": "example-corp",
+            "requirement": "\u003e=0.5.0",
+            "scope": "runtime",
+            "type": "pypi",
+            "version": "n/a"
+          },
+          "code": "{\n  \"latest_version\": \"1.0.0\",\n  \"org\": \"example-corp\",\n  \"name\": \"internal-lib\",\n  \"type\": \"pypi\",\n  \"package\": \"pypi\",\n  \"version\": \"n/a\",\n  \"scope\": \"runtime\",\n  \"requirement\": \"\\u003e=0.5.0\",\n  \"file\": \"requirements.txt\",\n  \"outdated_version\": {\n    \"major_behind\": 0,\n    \"minor_behind\": 0,\n    \"patch_behind\": 0\n  },\n  \"dependencies\": []\n}",
+          "title": "Dependency internal-lib from example-corp (Required \u003e=0.5.0)"
+        }
+      ],
+      "name": "Ion Channel SBOM Analysis",
+      "maintainer": "saf@groups.mitre.org",
+      "status": "loaded",
+      "summary": "Some dependencies have issues",
+      "title": "Ion Channel Analysis of https://github.com/example-org/python-mixed.git",
+      "version": ""
+    }
+  ],
+  "generator": {
+    "name": "ionchannel-to-hdf",
+    "version": "0.1.0"
+  },
+  "tool": {
+    "format": "JSON",
+    "name": "Ion Channel"
+  }
+}

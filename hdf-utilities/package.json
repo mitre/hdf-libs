@@ -2,6 +2,9 @@
   "name": "@mitre/hdf-utilities",
   "version": "0.1.0",
   "description": "Utility functions for HDF libraries (JSON parsing, validation helpers)",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -59,7 +62,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "d3-dsv": "^3.0.1",
-    "fast-xml-parser": "5.5.3"
+    "fast-xml-parser": "5.5.7"
   },
   "engines": {
     "node": ">=20.0.0"

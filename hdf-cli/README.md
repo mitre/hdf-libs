@@ -165,31 +165,36 @@ EXAMPLES
 
 ### convert
 
-Convert security assessment data between HDF and other formats. Uses natural language syntax: `convert <source> to <destination>`.
+Convert security assessment data between HDF and other formats. Supports auto-detection, explicit `--from`/`--to` flags, stdin, and stdout.
 
 ```
 USAGE
-  hdf convert <src-format> to <dest-format> <input> [output]
+  hdf convert <file> -o <output>                        # Auto-detect format
+  hdf convert --from <source> <file> -o <output>        # Explicit source format
+  hdf convert --from <source> --to <dest> <file> -o <output>  # Explicit both
+  hdf convert <file>                                     # Auto-detect, stdout
+  cat scan.json | hdf convert -                          # stdin
 
 INPUT/OUTPUT
-  <input>     File path or "-" for stdin
-  [output]    File path; defaults to stdout if omitted
+  <file>      File path or "-" for stdin
+  -o <output> Output file path; defaults to stdout if omitted
 
 EXAMPLES
-  hdf convert nessus to hdf scan.nessus results.json
-  hdf convert sarif to hdf findings.sarif results.json
-  hdf convert gosec to hdf gosec-output.json results.json
-  hdf convert grype to hdf grype-output.json results.json
-  hdf convert snyk to hdf snyk-output.json results.json
-  hdf convert trufflehog to hdf secrets.json results.json
-  hdf convert xccdf to hdf xccdf-results.xml results.json
-  hdf convert gitlab to hdf gl-sast-report.json results.json
-  hdf convert junit to hdf test-results.xml results.json
-  hdf convert zap to hdf zap-report.json results.json
-  hdf convert legacyhdf to hdf old-scan.json new-scan.json
-  hdf convert hdf to csv results.json controls.csv
-  hdf convert hdf to xml results.json controls.xml
-  cat scan.json | hdf convert sarif to hdf - output.json
+  hdf convert scan.nessus -o results.json
+  hdf convert --from nessus scan.nessus -o results.json
+  hdf convert --from sarif findings.sarif -o results.json
+  hdf convert --from gosec gosec-output.json -o results.json
+  hdf convert --from grype grype-output.json -o results.json
+  hdf convert --from snyk snyk-output.json -o results.json
+  hdf convert --from trufflehog secrets.json -o results.json
+  hdf convert --from xccdf xccdf-results.xml -o results.json
+  hdf convert --from gitlab gl-sast-report.json -o results.json
+  hdf convert --from junit test-results.xml -o results.json
+  hdf convert --from zap zap-report.json -o results.json
+  hdf convert --from legacyhdf old-scan.json -o new-scan.json
+  hdf convert --from hdf --to csv results.json -o controls.csv
+  hdf convert --from hdf --to xml results.json -o controls.xml
+  cat scan.json | hdf convert --from sarif - -o output.json
 ```
 
 See [Supported Conversions](#supported-conversions) for the full list.

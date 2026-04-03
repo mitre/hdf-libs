@@ -41,22 +41,22 @@ func TestConvertHDFToCSV_Minimal(t *testing.T) {
 	// Verify first data row
 	row1 := records[1]
 	assert.Equal(t, "Example STIG Baseline", row1[0]) // Baseline ID
-	assert.Equal(t, "SV-123456", row1[5])            // Requirement ID
-	assert.Equal(t, "passed", row1[10])              // Status
-	assert.Contains(t, row1[11], "IA-5 (1)")         // NIST Controls
-	assert.Contains(t, row1[12], "CCI-000192")       // CCI Controls
+	assert.Equal(t, "SV-123456", row1[5])             // Requirement ID
+	assert.Equal(t, "passed", row1[10])               // Status
+	assert.Contains(t, row1[11], "IA-5 (1)")          // NIST Controls
+	assert.Contains(t, row1[12], "CCI-000192")        // CCI Controls
 
 	// Verify second data row
 	row2 := records[2]
-	assert.Equal(t, "SV-123457", row2[5])                           // Requirement ID
-	assert.Equal(t, "failed", row2[10])                             // Status
-	assert.Equal(t, "Audit logging is not configured", row2[13])    // Message
+	assert.Equal(t, "SV-123457", row2[5])                        // Requirement ID
+	assert.Equal(t, "failed", row2[10])                          // Status
+	assert.Equal(t, "Audit logging is not configured", row2[13]) // Message
 }
 
 func TestConvertHDFToCSV_EmptyBaselines(t *testing.T) {
 	input := `{
 		"baselines": [],
-		"targets": [],
+		"components": [],
 		"statistics": { "duration": 0 }
 	}`
 
@@ -73,12 +73,12 @@ func TestConvertHDFToCSV_NoRequirements(t *testing.T) {
 			"title": "Test",
 			"maintainer": "Test",
 			"supports": [],
-			"attributes": [],
+			"inputs": [],
 			"groups": [],
 			"checksum": { "algorithm": "sha256", "value": "abc" },
 			"requirements": []
 		}],
-		"targets": [],
+		"components": [],
 		"statistics": { "duration": 0 }
 	}`
 
@@ -96,7 +96,7 @@ func TestConvertHDFToCSV_MultipleBaselines(t *testing.T) {
 				"title": "First Baseline",
 				"maintainer": "Test",
 				"supports": [],
-				"attributes": [],
+				"inputs": [],
 				"groups": [],
 				"checksum": { "algorithm": "sha256", "value": "abc" },
 				"requirements": [{
@@ -115,7 +115,7 @@ func TestConvertHDFToCSV_MultipleBaselines(t *testing.T) {
 				"title": "Second Baseline",
 				"maintainer": "Test",
 				"supports": [],
-				"attributes": [],
+				"inputs": [],
 				"groups": [],
 				"checksum": { "algorithm": "sha256", "value": "def" },
 				"requirements": [{
@@ -129,7 +129,7 @@ func TestConvertHDFToCSV_MultipleBaselines(t *testing.T) {
 				}]
 			}
 		],
-		"targets": [],
+		"components": [],
 		"statistics": { "duration": 0 }
 	}`
 
@@ -149,7 +149,7 @@ func TestConvertHDFToCSV_MultipleBaselines(t *testing.T) {
 	assert.Equal(t, "Baseline 2", records[2][0])
 }
 
-func TestConvertHDFToCSV_MultipleTargets(t *testing.T) {
+func TestConvertHDFToCSV_MultipleComponents(t *testing.T) {
 	input := `{
 		"baselines": [{
 			"name": "Test Baseline",
@@ -157,7 +157,7 @@ func TestConvertHDFToCSV_MultipleTargets(t *testing.T) {
 			"title": "Test",
 			"maintainer": "Test",
 			"supports": [],
-			"attributes": [],
+			"inputs": [],
 			"groups": [],
 			"checksum": { "algorithm": "sha256", "value": "abc" },
 			"requirements": [{
@@ -170,7 +170,7 @@ func TestConvertHDFToCSV_MultipleTargets(t *testing.T) {
 				"results": [{ "status": "passed", "codeDesc": "Test", "startTime": "2026-01-29T18:00:00.000Z" }]
 			}]
 		}],
-		"targets": [
+		"components": [
 			{ "name": "target1", "type": "host" },
 			{ "name": "target2", "type": "container" }
 		],
@@ -193,7 +193,7 @@ func TestConvertHDFToCSV_FieldExtraction(t *testing.T) {
 			"title": "Test",
 			"maintainer": "Test",
 			"supports": [],
-			"attributes": [],
+			"inputs": [],
 			"groups": [],
 			"checksum": { "algorithm": "sha256", "value": "abc" },
 			"requirements": [{
@@ -215,7 +215,7 @@ func TestConvertHDFToCSV_FieldExtraction(t *testing.T) {
 				}]
 			}]
 		}],
-		"targets": [],
+		"components": [],
 		"statistics": { "duration": 0 }
 	}`
 
@@ -236,7 +236,7 @@ func TestConvertHDFToCSV_CSVInjection(t *testing.T) {
 			"title": "Test",
 			"maintainer": "Test",
 			"supports": [],
-			"attributes": [],
+			"inputs": [],
 			"groups": [],
 			"checksum": { "algorithm": "sha256", "value": "abc" },
 			"requirements": [
@@ -278,7 +278,7 @@ func TestConvertHDFToCSV_CSVInjection(t *testing.T) {
 				}
 			]
 		}],
-		"targets": [],
+		"components": [],
 		"statistics": { "duration": 0 }
 	}`
 

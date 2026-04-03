@@ -1,0 +1,194 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "A suspicious process was detected executing on the host. This may indicate malware activity or unauthorized code execution.",
+              "label": "default"
+            },
+            {
+              "data": "Isolate the affected machine immediately. Collect forensic artifacts for analysis.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Device: workstation01.corp.contoso.com (OS: Windows11)\nProcess: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe (Command: powershell.exe -encodedCommand JABjAGwAaQBlAG4AdA...)",
+              "message": "Alert: Suspicious process executed\nStatus: new\nSeverity: high\nURL: https://security.microsoft.com/alerts/da637472900382838869_1364969609",
+              "startTime": "2021-01-26T20:31:32.9562661Z",
+              "status": "failed"
+            }
+          ],
+          "id": "da637472900382838869_1364969609",
+          "impact": 0.7,
+          "tags": {
+            "category": "Execution",
+            "mitre": [
+              "T1059",
+              "T1059.001"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Suspicious process executed"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "A remote WMI execution was detected, which may indicate lateral movement by an attacker.",
+              "label": "default"
+            },
+            {
+              "data": "Verify the legitimacy of the WMI execution. Check the source and destination hosts for compromise indicators.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Device: server02.corp.contoso.com (OS: WindowsServer2019)",
+              "message": "Alert: Suspicious remote WMI execution\nStatus: inProgress\nSeverity: medium\nURL: https://security.microsoft.com/alerts/da637472900382838870_9876543210",
+              "startTime": "2021-01-27T10:14:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "da637472900382838870_9876543210",
+          "impact": 0.5,
+          "tags": {
+            "category": "LateralMovement",
+            "mitre": [
+              "T1047"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Suspicious remote WMI execution"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "An unusual outbound network connection was detected from the host. Investigation determined this was legitimate traffic.",
+              "label": "default"
+            },
+            {
+              "data": "No action required. Alert resolved as false positive.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Device: laptop03.corp.contoso.com (OS: Windows10)",
+              "message": "Alert: Unusual network connection established\nStatus: resolved\nSeverity: informational\nURL: https://security.microsoft.com/alerts/da637472900382838871_1111111111",
+              "startTime": "2021-01-28T07:58:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "da637472900382838871_1111111111",
+          "impact": 0,
+          "tags": {
+            "category": "DefenseEvasion",
+            "classification": "falsePositive",
+            "determination": "notMalicious",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Unusual network connection established"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Known malware was detected on the endpoint and automatically quarantined by Windows Defender Antivirus.",
+              "label": "default"
+            },
+            {
+              "data": "Verify quarantine was successful. Scan other machines on the network for related indicators of compromise.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Device: workstation04.corp.contoso.com (OS: Windows10)\nFile: C:\\Users\\jdoe\\Downloads\\invoice.doc",
+              "message": "Alert: Malware detected and quarantined\nStatus: resolved\nSeverity: medium\nThreat: Trojan:Win32/Emotet\nURL: https://security.microsoft.com/alerts/da637472900382838872_2222222222",
+              "startTime": "2021-01-29T13:55:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "da637472900382838872_2222222222",
+          "impact": 0.5,
+          "tags": {
+            "category": "Malware",
+            "classification": "truePositive",
+            "determination": "malware",
+            "mitre": [
+              "T1566",
+              "T1566.001"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Malware detected and quarantined"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "1d9cbba439fe99253e2fd8b774d6c5652321539ee558fdacd3704177b7d56b01"
+      },
+      "name": "Microsoft Defender for Endpoint Scan"
+    }
+  ],
+  "components": [
+    {
+      "labels": {
+        "provider": "azure"
+      },
+      "name": "workstation01.corp.contoso.com",
+      "type": "host",
+      "fqdn": "workstation01.corp.contoso.com",
+      "osName": "Windows11"
+    },
+    {
+      "labels": {
+        "provider": "azure"
+      },
+      "name": "server02.corp.contoso.com",
+      "type": "host",
+      "fqdn": "server02.corp.contoso.com",
+      "osName": "WindowsServer2019"
+    },
+    {
+      "labels": {
+        "provider": "azure"
+      },
+      "name": "laptop03.corp.contoso.com",
+      "type": "host",
+      "fqdn": "laptop03.corp.contoso.com",
+      "osName": "Windows10"
+    },
+    {
+      "labels": {
+        "provider": "azure"
+      },
+      "name": "workstation04.corp.contoso.com",
+      "type": "host",
+      "fqdn": "workstation04.corp.contoso.com",
+      "osName": "Windows10"
+    }
+  ],
+  "generator": {
+    "name": "msft-defender-endpoint-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:57.9216887Z",
+  "tool": {
+    "name": "Microsoft Defender for Endpoint"
+  }
+}

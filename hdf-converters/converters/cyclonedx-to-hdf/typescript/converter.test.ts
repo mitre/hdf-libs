@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertCyclonedxToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,16 +13,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'cyclonedx-to-hdf',
+  convertFn: convertCyclonedxToHdf,
+  minimalFixture: 'minimal-vulns.json',
+});
+
 describe('cyclonedx to HDF converter', async () => {
   describe('input validation', async () => {
-    it('should throw on empty input', async () => {
-      await expect(convertCyclonedxToHdf('')).rejects.toThrow();
-    });
-
-    it('should throw on invalid JSON', async () => {
-      await expect(convertCyclonedxToHdf('not json')).rejects.toThrow();
-    });
-
     it('should throw on missing bomFormat', async () => {
       await expect(
         convertCyclonedxToHdf(JSON.stringify({ specVersion: '1.5' }))
@@ -80,8 +79,8 @@ describe('cyclonedx to HDF converter', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
       ) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('CycloneDX');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('CycloneDX');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 
@@ -232,8 +231,8 @@ describe('cyclonedx to HDF converter', async () => {
     });
   });
 
-  describe('info/unknown severity skip', async () => {
-    it('should mark results as NotReviewed when only info/unknown ratings', async () => {
+  describe('info/unknown severity — still Failed', async () => {
+    it('should mark info/unknown severity vulns as Failed', async () => {
       const input = JSON.stringify({
         bomFormat: 'CycloneDX',
         specVersion: '1.5',
@@ -256,15 +255,16 @@ describe('cyclonedx to HDF converter', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(input)
       ) as HdfResults;
+      // Info/unknown severity vulns are still Failed — a vuln is a finding
+      // regardless of severity confidence. Impact reflects the severity.
       for (const req of hdf.baselines[0]!.requirements) {
         for (const result of req.results) {
-          expect(result.status).toBe('notReviewed');
-          expect(result.message).toContain('Manual review required');
+          expect(result.status).toBe('failed');
         }
       }
     });
 
-    it('should NOT mark as NotReviewed when mixed with other severities', async () => {
+    it('should also mark mixed severity vulns as Failed', async () => {
       const input = JSON.stringify({
         bomFormat: 'CycloneDX',
         specVersion: '1.5',
@@ -290,11 +290,10 @@ describe('cyclonedx to HDF converter', async () => {
   });
 
   describe('no-vuln SBOM', async () => {
-    it('should produce empty requirements for SBOM without vulnerabilities', async () => {
-      const hdf = JSON.parse(
-        await convertCyclonedxToHdf(loadFixture('spdx-to-cyclonedx.json'))
-      ) as HdfResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    it('should reject SBOM-only input with helpful message', async () => {
+      await expect(
+        convertCyclonedxToHdf(loadFixture('spdx-to-cyclonedx.json'))
+      ).rejects.toThrow('SBOM inventory with no vulnerabilities');
     });
   });
 

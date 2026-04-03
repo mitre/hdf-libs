@@ -45,9 +45,11 @@
         "temporal",
         "baseline",
         "fleet",
-        "multiSource"
+        "multiSource",
+        "baselineEvolution",
+        "systemDrift"
       ],
-      "description": "The mode of comparison. 'temporal' compares the same target over time. 'baseline' compares against a golden reference. 'fleet' compares across multiple systems. 'multiSource' compares outputs from different scanners.",
+      "description": "The mode of comparison. 'temporal' compares the same target over time. 'baseline' compares against a golden reference. 'fleet' compares across multiple systems. 'multiSource' compares outputs from different scanners. 'baselineEvolution' compares two baseline documents to detect requirement changes between versions. 'systemDrift' compares two system documents to detect component-level changes.",
       "title": "Comparison Mode"
     },
     "Source_Role": {
@@ -175,16 +177,16 @@
           "format": "date-time",
           "description": "When the source assessment was performed. ISO 8601 format."
         },
-        "dataSource": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/DataSource",
-          "description": "The tool or service that produced the source data."
+        "tool": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Tool",
+          "description": "The security tool that produced the assessment data in this source."
         },
-        "targets": {
+        "components": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Target"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0#/$defs/Component"
           },
-          "description": "The target systems assessed in this source."
+          "description": "The components assessed in this source."
         },
         "baselineRef": {
           "type": "object",
@@ -506,6 +508,88 @@
       },
       "description": "Comparison of a baseline between sources.",
       "title": "Baseline Diff"
+    },
+    "Component_Diff": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "name",
+        "state"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Component name used for matching across system versions."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "new",
+            "absent",
+            "unchanged",
+            "updated"
+          ],
+          "description": "The state of this component in the comparison."
+        },
+        "before": {
+          "description": "Component snapshot from the old system document."
+        },
+        "after": {
+          "description": "Component snapshot from the new system document."
+        },
+        "fieldChanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Field_Change"
+          },
+          "description": "Detailed field-level changes between the before and after component snapshots."
+        }
+      },
+      "description": "Comparison of a single component between two system document versions.",
+      "title": "Component Diff"
+    },
+    "Package_Diff": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "purl",
+        "state"
+      ],
+      "properties": {
+        "purl": {
+          "type": "string",
+          "description": "Package URL (purl) used as the identity key for matching across SBOMs."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable package name."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "added",
+            "removed",
+            "updated",
+            "unchanged"
+          ],
+          "description": "The state of this package: added (new in new SBOM), removed (absent from new SBOM), updated (version changed), unchanged."
+        },
+        "oldVersion": {
+          "type": "string",
+          "description": "Package version in the old SBOM."
+        },
+        "newVersion": {
+          "type": "string",
+          "description": "Package version in the new SBOM."
+        },
+        "licenses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "License identifiers for this package."
+        }
+      },
+      "description": "Comparison of a single package between two SBOM versions, matched by purl.",
+      "title": "Package Diff"
     },
     "Scanner_Conflict": {
       "type": "object",

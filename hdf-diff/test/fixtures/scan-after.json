@@ -4,7 +4,7 @@
       "name": "rhel9-stig-baseline",
       "title": "RHEL 9 STIG Baseline",
       "version": "1.1.0",
-      "attributes": [],
+      "inputs": [],
       "checksum": { "algorithm": "sha256", "value": "def456" },
       "depends": [],
       "groups": [

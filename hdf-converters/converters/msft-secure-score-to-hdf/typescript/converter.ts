@@ -2,13 +2,11 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, stripHTML, buildNistCciTags, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, stripHTML, buildNistCciTags, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -278,24 +276,17 @@ export async function convertMsftSecureScoreToHdf(input: string): Promise<string
     ) as EvaluatedBaseline;
   });
 
-  const dataSource: DataSource = {
-    name: 'Microsoft Secure Score',
-    format: 'JSON',
-  };
-
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'msft-secure-score-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'Microsoft Secure Score',
+    toolFormat: 'JSON',
     baselines,
-    generator: {
-      name: 'msft-secure-score-to-hdf',
-      version: '1.0.0',
-    },
-    dataSource,
-    targets: [{
+    components: [{
       name: `Azure Tenant: ${tenantId}`,
       type: Copyright.CloudAccount,
+      labels: { account: tenantId, provider: 'azure' },
     }],
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

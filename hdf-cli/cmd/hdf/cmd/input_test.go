@@ -117,3 +117,66 @@ func TestGetMaxFileSize(t *testing.T) {
 		t.Errorf("getMaxFileSize() = %d, want %d", actual, expected)
 	}
 }
+
+// ── safePath tests ──────────────────────────────────────────────────────
+// Use t.TempDir() for cross-platform paths (Windows uses C:\Users\...).
+
+func TestSafePath_ValidRelative(t *testing.T) {
+	base := t.TempDir()
+	result, err := safePath(base, "subdir/file.json")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := filepath.Join(base, "subdir", "file.json")
+	if result != want {
+		t.Errorf("got %q, want %q", result, want)
+	}
+}
+
+func TestSafePath_ValidBasename(t *testing.T) {
+	base := t.TempDir()
+	result, err := safePath(base, "file.json")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := filepath.Join(base, "file.json")
+	if result != want {
+		t.Errorf("got %q, want %q", result, want)
+	}
+}
+
+func TestSafePath_TraversalBlocked(t *testing.T) {
+	base := t.TempDir()
+	_, err := safePath(base, "../outside.json")
+	if err == nil {
+		t.Fatal("expected error for ../ traversal")
+	}
+}
+
+func TestSafePath_DeepTraversalBlocked(t *testing.T) {
+	base := t.TempDir()
+	_, err := safePath(base, "subdir/../../outside.json")
+	if err == nil {
+		t.Fatal("expected error for deep traversal")
+	}
+}
+
+func TestSafePath_EmptyPathBlocked(t *testing.T) {
+	base := t.TempDir()
+	_, err := safePath(base, "")
+	if err == nil {
+		t.Fatal("expected error for empty path")
+	}
+}
+
+func TestSafePath_DotResolvesToBase(t *testing.T) {
+	base := t.TempDir()
+	result, err := safePath(base, ".")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := filepath.Clean(base)
+	if result != want {
+		t.Errorf("got %q, want %q", result, want)
+	}
+}

@@ -26,8 +26,106 @@ func init() {
 		oscal.ConvertCatalogToHDF,
 	)
 
+	// oscal-component-definition — Convert component definition to baseline
+	registerHDFBaselineConverter(
+		"oscal-component-definition",
+		"OSCAL Component Definition to HDF Baseline", "oscal-component-definition",
+		oscal.ConvertComponentDefinitionToHDF,
+	)
+
+	// oscal-ssp — Convert system security plan to HDF system
+	registerRawConverter(
+		"oscal-ssp",
+		"OSCAL System Security Plan to HDF System", "oscal-ssp",
+		oscalSSPRawConvert,
+	)
+
 	// oscal-profile — Resolve profile against catalog, produce baseline
 	RegisterConverter("oscal-profile", "hdf", &oscalProfileConverter{})
+
+	// oscal-assessment-plan — Convert assessment plan to HDF plan
+	registerHDFPlanConverter(
+		"oscal-assessment-plan",
+		"OSCAL Assessment Plan to HDF Plan", "oscal-assessment-plan",
+		oscal.ConvertAssessmentPlanToHDF,
+	)
+
+	// oscal-poam — Convert POA&M to HDF amendments
+	registerHDFAmendmentsConverter(
+		"oscal-poam",
+		"OSCAL POA&M to HDF Amendments", "oscal-poam",
+		oscal.ConvertPOAMToHDF,
+	)
+
+	// oscal-assessment-results / oscal-sar — Convert SAR to HDF results
+	registerHDFConverterMulti(
+		[]string{"oscal-assessment-results", "oscal-sar"},
+		"OSCAL Assessment Results to HDF", "oscal-assessment-results",
+		oscal.ConvertAssessmentResultsToHDF,
+	)
+
+	// oscal — Auto-detect OSCAL document type and delegate
+	RegisterConverter("oscal", "hdf", &oscalAutoDetectConverter{})
+}
+
+// oscalSSPRawConvert wraps the SSP converter to produce raw JSON bytes,
+// since HDFSystem is neither HDFResults nor HDFBaseline.
+func oscalSSPRawConvert(input []byte, converterVersion string) ([]byte, error) {
+	system, err := oscal.ConvertSSPToHDF(input, converterVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	output, err := json.MarshalIndent(system, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize HDF output: %w", err)
+	}
+
+	return output, nil
+}
+
+// oscalAutoDetectConverter detects the OSCAL document type and delegates
+// to the appropriate converter. Profile requires --catalog so it gets
+// special handling.
+type oscalAutoDetectConverter struct{}
+
+func (c *oscalAutoDetectConverter) Name() string {
+	return "OSCAL (auto-detect) to HDF"
+}
+
+func (c *oscalAutoDetectConverter) Convert(input []byte) ([]byte, error) {
+	docType, err := oscal.DetectDocumentType(input)
+	if err != nil {
+		return nil, fmt.Errorf("oscal auto-detect failed: %w", err)
+	}
+
+	// Map detected type to registered converter name
+	converterName := ""
+	switch docType {
+	case "catalog":
+		converterName = "oscal-catalog"
+	case "profile":
+		converterName = "oscal-profile"
+	case "component-definition":
+		converterName = "oscal-component-definition"
+	case "system-security-plan":
+		converterName = "oscal-ssp"
+	case "assessment-plan":
+		converterName = "oscal-assessment-plan"
+	case "assessment-results":
+		converterName = "oscal-assessment-results"
+	case "plan-of-action-and-milestones":
+		converterName = "oscal-poam"
+	default:
+		return nil, fmt.Errorf("oscal auto-detect: unsupported document type %q", docType)
+	}
+
+	delegate, err := GetConverter(converterName, "hdf")
+	if err != nil {
+		return nil, fmt.Errorf("oscal auto-detect: no converter for %s: %w", docType, err)
+	}
+
+	return delegate.Convert(input)
 }
 
 // oscalProfileConverter handles OSCAL profile → HDF baseline conversion,
@@ -52,7 +150,7 @@ func (c *oscalProfileConverter) Convert(input []byte) ([]byte, error) {
 
 	baseline, err := oscal.ConvertProfileToHDF(input, catalogData, version)
 	if err != nil {
-		return nil, fmt.Errorf("oscal-profile conversion failed: %w", err)
+		return nil, fmt.Errorf("oscal-profile conversion failed (catalog: %s): %w", oscalCatalogFlag, err)
 	}
 
 	output, err := json.MarshalIndent(baseline, "", "  ")

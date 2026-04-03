@@ -1,0 +1,65 @@
+/**
+ * MITRE SAF Theme — HDF Schema Reference
+ *
+ * Brand colors borrowed from saf.mitre.org VitePress theme.
+ * Simplified for documentation (no Tailwind/shadcn dependency).
+ */
+
+:root {
+  /* MITRE brand */
+  --vp-c-brand-1: #005288;
+  --vp-c-brand-2: #0066a8;
+  --vp-c-brand-3: #0080cc;
+
+  /* Tip/info styling uses brand color */
+  --vp-c-tip-1: var(--vp-c-brand-1);
+  --vp-c-tip-2: var(--vp-c-brand-2);
+  --vp-c-tip-3: var(--vp-c-brand-3);
+}
+
+.dark {
+  --vp-c-brand-1: #4a9fd4;
+  --vp-c-brand-2: #5db3e4;
+  --vp-c-brand-3: #70c7f4;
+}
+
+/* Wider content area for property tables */
+.VPDoc .container {
+  max-width: 1200px !important;
+}
+
+.VPDoc .content {
+  max-width: none !important;
+}
+
+/* Property tables — compact styling */
+.vp-doc table {
+  width: 100%;
+  font-size: 0.9em;
+}
+
+.vp-doc table th {
+  white-space: nowrap;
+}
+
+.vp-doc table td:first-child {
+  white-space: nowrap;
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.85em;
+}
+
+/* Type column */
+.vp-doc table td:nth-child(2) {
+  font-size: 0.85em;
+}
+
+/* Details blocks (examples) — subtle styling */
+.vp-doc details {
+  margin: 0.5em 0;
+}
+
+.vp-doc details summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--vp-c-brand-1);
+}

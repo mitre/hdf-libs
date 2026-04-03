@@ -50,10 +50,12 @@ type ComparisonMode string
 
 // ComparisonMode values.
 const (
-	ModeTemporal    ComparisonMode = "temporal"
-	ModeBaseline    ComparisonMode = "baseline"
-	ModeFleet       ComparisonMode = "fleet"
-	ModeMultiSource ComparisonMode = "multiSource"
+	ModeTemporal          ComparisonMode = "temporal"
+	ModeBaseline          ComparisonMode = "baseline"
+	ModeFleet             ComparisonMode = "fleet"
+	ModeMultiSource       ComparisonMode = "multiSource"
+	ModeBaselineEvolution ComparisonMode = "baselineEvolution"
+	ModeSystemDrift       ComparisonMode = "systemDrift"
 )
 
 // SourceRole defines the role of a source document.
@@ -120,6 +122,16 @@ type RequirementDiff struct {
 	SourceIndex        *int                      `json:"sourceIndex,omitempty"`
 }
 
+// ComponentDiff holds the comparison result for a single component
+// between two system documents. Used in systemDrift mode.
+type ComponentDiff struct {
+	Name         string           `json:"name"`
+	State        RequirementState `json:"state"`
+	Before       map[string]any   `json:"before"`
+	After        map[string]any   `json:"after"`
+	FieldChanges []FieldChange    `json:"fieldChanges"`
+}
+
 // BaselineDiff holds the comparison result for a single baseline.
 type BaselineDiff struct {
 	Name       string           `json:"name"`
@@ -159,6 +171,8 @@ type HdfComparison struct {
 	Summary          ComparisonSummary     `json:"summary"`
 	BaselineDiffs    []BaselineDiff        `json:"baselineDiffs"`
 	RequirementDiffs []RequirementDiff     `json:"requirementDiffs"`
+	ComponentDiffs   []ComponentDiff       `json:"componentDiffs,omitempty"`
+	SystemRef        string                `json:"systemRef,omitempty"`
 	Drift            []RequirementDiff     `json:"drift,omitempty"`
 	Annotations      map[string]Annotation `json:"annotations,omitempty"`
 	Extensions       map[string]any        `json:"extensions,omitempty"`

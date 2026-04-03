@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-system/v2.0.0",
+  "title": "HDF System",
+  "description": "Describes a system's authorization boundary, components, and interconnections. Maps to OSCAL SSP system-characteristics and FedRAMP system inventory.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "name",
+    "components"
+  ],
+  "properties": {
+    "systemId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Stable UUID (RFC 4122) for this system. Enables cross-document correlation independent of file location. Optional in casual use, expected in production documents."
+    },
+    "owner": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+      "description": "Team or individual responsible for this system's authorization and compliance. Maps to OSCAL responsible-party with role 'system-owner'."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable system name. Example: 'Enterprise Portal Production'."
+    },
+    "identifier": {
+      "type": "string",
+      "description": "System identifier from an authoritative source. Example: eMASS system ID, FedRAMP package ID."
+    },
+    "identifierScheme": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "URI identifying the scheme of the system identifier. Example: 'https://emass.mil', 'https://fedramp.gov'."
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the system's purpose and mission."
+    },
+    "authorizationStatus": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Authorization_Status",
+      "description": "Current Authorization to Operate (ATO) status."
+    },
+    "authorizationDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date the current authorization status was granted. ISO 8601 format."
+    },
+    "categorizationLevel": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Categorization_Level",
+      "description": "FIPS 199 security categorization (impact level)."
+    },
+    "boundaryDescription": {
+      "type": "string",
+      "description": "Description of the system's authorization boundary. Example: network CIDR blocks, cloud VPC IDs, physical locations."
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0#/$defs/Component"
+      },
+      "description": "System components within the authorization boundary. Uses the full polymorphic Component type with stable identity (componentId), external references, and SBOM support."
+    },
+    "controlDesignations": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Control_Designation"
+      },
+      "description": "Declares which controls are common, hybrid, or system-specific, and which component provides them. Maps to NIST SP 800-53 control designations and OSCAL leveraged-authorizations."
+    },
+    "dataFlows": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0#/$defs/Data_Flow"
+      },
+      "description": "Inter-component data flows describing how components communicate. Supports local, cross-system, and external flows. Replaces the interconnections[] field."
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Optional key-value labels for grouping and querying systems."
+    },
+    "integrity": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
+      "description": "Cryptographic integrity information for verifying this system document has not been tampered with."
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of this system document."
+    },
+    "generator": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
+      "description": "Information about the tool that generated this system document."
+    }
+  },
+  "examples": [
+    {
+      "name": "Enterprise Portal Production",
+      "identifier": "SYS-2024-00142",
+      "identifierScheme": "https://emass.mil",
+      "authorizationStatus": "authorized",
+      "authorizationDate": "2025-06-15T00:00:00Z",
+      "categorizationLevel": "moderate",
+      "boundaryDescription": "All resources in prod VPC (10.0.0.0/16)",
+      "components": [
+        {
+          "name": "WebTier",
+          "type": "application",
+          "componentId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "description": "RHEL 9 web servers running the portal",
+          "baselineRefs": ["RHEL9-STIG", "DISA-Container-STIG"],
+          "sbomRef": "https://artifacts.agency.gov/sbom/webtier-2026-03.cdx.json",
+          "sbomFormat": "cyclonedx"
+        },
+        {
+          "name": "DatabaseTier",
+          "type": "database",
+          "componentId": "11111111-2222-3333-4444-555555555555",
+          "baselineRefs": ["PostgreSQL-15-STIG"]
+        }
+      ],
+      "dataFlows": [
+        {
+          "from": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "to": "11111111-2222-3333-4444-555555555555",
+          "protocol": "jdbc",
+          "port": 5432,
+          "direction": "unidirectional",
+          "description": "Web tier connects to database"
+        }
+      ]
+    }
+  ]
+}

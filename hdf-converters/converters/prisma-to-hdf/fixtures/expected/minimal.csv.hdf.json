@@ -1,0 +1,229 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "message": "Cause: File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_ecdsa_key",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "60522-redhat-RHEL7-high",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "host-1.example.com-redhat-RHEL7-linux"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Samba out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Version check of package: samba-common\n\nSamba out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution.",
+              "message": "Fix Status: fixed in 4.10.16-18.el7_9",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "46-CVE-2021-44142",
+          "impact": 0.9,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2021-44142"
+            ],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ]
+          },
+          "title": "host-1.example.com-redhat-RHEL7-image"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Integer overflow in libiberty allows remote attackers to execute arbitrary code.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Version check of package: gcc\n\nInteger overflow in libiberty allows remote attackers to execute arbitrary code.",
+              "message": "Fix Status: will not fix",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "46-CVE-2016-2226",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2016-2226"
+            ],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ]
+          },
+          "title": "host-1.example.com-redhat-RHEL7-image"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "6995eac145f1261c850cb8250de377649f1a032b9b4c3070959fd7454e45e773"
+      },
+      "name": "Prisma Cloud Scan",
+      "title": "Prisma Cloud Scan (host-1.example.com)"
+    },
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "(CIS_Linux_2.0.0 - 1.4.3) Ensure authentication required for single user mode",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 1.4.3) Ensure authentication required for single user mode",
+              "message": "Cause: Password should be set for user \"root\". File: /etc/shadow",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "6143-redhat-RHEL7-critical",
+          "impact": 0.9,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "host-2.example.com-redhat-RHEL7-linux"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Go vulnerability CVE-2021-38297.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Version check of package: go\n\nGo vulnerability CVE-2021-38297.",
+              "message": "Fix Status: fixed in 1.17.2, 1.16.9",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "411-CVE-2021-38297",
+          "impact": 0.9,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2021-38297"
+            ],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ]
+          },
+          "title": "host-2.example.com-redhat-RHEL7-image"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Go net/http/httputil ReverseProxy vulnerability.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Version check of package: go\n\nGo net/http/httputil ReverseProxy vulnerability.",
+              "message": "Fix Status: fixed in 1.16.5, 1.15.13",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "411-CVE-2021-33197",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "cve": [
+              "CVE-2021-33197"
+            ],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ]
+          },
+          "title": "host-2.example.com-redhat-RHEL7-image"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "6995eac145f1261c850cb8250de377649f1a032b9b4c3070959fd7454e45e773"
+      },
+      "name": "Prisma Cloud Scan",
+      "title": "Prisma Cloud Scan (host-2.example.com)"
+    }
+  ],
+  "components": [
+    {
+      "name": "host-1.example.com",
+      "type": "host"
+    },
+    {
+      "name": "host-2.example.com",
+      "type": "host"
+    }
+  ],
+  "generator": {
+    "name": "prisma-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:18:01.1779541Z",
+  "tool": {
+    "format": "CSV",
+    "name": "Prisma Cloud"
+  }
+}

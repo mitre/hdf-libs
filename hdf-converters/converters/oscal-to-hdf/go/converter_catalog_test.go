@@ -38,9 +38,9 @@ func TestConvertCatalogToHDF_FullCatalog(t *testing.T) {
 	assert.Equal(t, "hdf-converters", baseline.Generator.Name)
 	assert.Equal(t, "1.0.0-test", baseline.Generator.Version)
 
-	// Checksum
-	assert.NotNil(t, baseline.Checksum)
-	assert.Equal(t, hdf.Sha256, baseline.Checksum.Algorithm)
+	// Integrity
+	assert.NotNil(t, baseline.Integrity)
+	assert.Equal(t, hdf.Sha256, *baseline.Integrity.Algorithm)
 
 	// Status
 	assert.NotNil(t, baseline.Status)
@@ -158,7 +158,7 @@ func TestConvertCatalogToHDF_NotCatalog(t *testing.T) {
 
 	_, err = ConvertCatalogToHDF(input, "1.0.0")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not a catalog")
+	assert.Contains(t, err.Error(), "expected catalog document")
 }
 
 func TestConvertCatalogToHDF_InvalidJSON(t *testing.T) {
@@ -197,8 +197,7 @@ func TestCatalogBaselineName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
-			c := &Catalog{Metadata: Metadata{Title: tt.title}}
-			assert.Equal(t, tt.expected, catalogBaselineName(c))
+			assert.Equal(t, tt.expected, ToKebabCase(tt.title, "oscal-catalog"))
 		})
 	}
 }

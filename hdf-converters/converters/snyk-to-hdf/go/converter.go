@@ -3,11 +3,11 @@ package snyk
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
+	"github.com/mitre/hdf-converters/registry"
 	shared "github.com/mitre/hdf-converters/shared/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
@@ -15,14 +15,14 @@ import (
 
 // SnykReport is the top-level Snyk test JSON output structure.
 type SnykReport struct {
-	OK              bool              `json:"ok"`
-	Vulnerabilities []SnykVuln        `json:"vulnerabilities"`
-	DependencyCount int               `json:"dependencyCount"`
-	Org             string            `json:"org"`
-	PackageManager  string            `json:"packageManager"`
-	Summary         string            `json:"summary"`
-	ProjectName     string            `json:"projectName"`
-	Path            string            `json:"path"`
+	OK              bool       `json:"ok"`
+	Vulnerabilities []SnykVuln `json:"vulnerabilities"`
+	DependencyCount int        `json:"dependencyCount"`
+	Org             string     `json:"org"`
+	PackageManager  string     `json:"packageManager"`
+	Summary         string     `json:"summary"`
+	ProjectName     string     `json:"projectName"`
+	Path            string     `json:"path"`
 }
 
 // SnykVuln represents a single vulnerability entry from Snyk output.
@@ -122,10 +122,7 @@ func buildRequirement(vulnID string, vulns []SnykVuln) hdf.EvaluatedRequirement 
 
 // convertSingleProject converts a single Snyk project report to an HDF baseline.
 func convertSingleProject(report SnykReport, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
-	limitedVulns, truncatedVulns := shared.LimitSlice(report.Vulnerabilities, 0)
-	if truncatedVulns {
-		log.Printf("WARNING: Input truncated at %d vulnerability items (original: %d)", len(limitedVulns), len(report.Vulnerabilities))
-	}
+	limitedVulns := shared.LimitSliceWithWarning(report.Vulnerabilities, 0, "vulnerability")
 	order, groups := groupByID(limitedVulns)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, vulnID := range order {
@@ -156,9 +153,12 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 	if len(input) == 0 {
 		return nil, fmt.Errorf("snyk: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "snyk", 0); err != nil {
+		return nil, fmt.Errorf("snyk: %w", err)
+	}
 
 	// Detect format: if SARIF, delegate to the shared SARIF converter
-	if shared.DetectFormat(input) == shared.FormatSARIF {
+	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
 		return sarif.ConvertSarifToHDF(input, converterVersion)
 	}
 
@@ -199,21 +199,18 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "snyk-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Snyk",
-		DataSourceFormat: "JSON",
+		ToolName:         "Snyk",
+		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
-			{Name: targetName, Type: hdf.Application},
+		Components: []hdf.Component{
+			{Name: targetName, Type: hdf.CopyrightApplication},
 		},
 		Timestamp: &now,
 	}), nil
 }
 
 func convertMultiProject(reports []SnykReport, checksum *hdf.Checksum, converterVersion string) (*hdf.HDFResults, error) {
-	limitedReports, truncatedReports := shared.LimitSlice(reports, 0)
-	if truncatedReports {
-		log.Printf("WARNING: Input truncated at %d project items (original: %d)", len(limitedReports), len(reports))
-	}
+	limitedReports := shared.LimitSliceWithWarning(reports, 0, "project")
 	baselines := make([]hdf.EvaluatedBaseline, len(limitedReports))
 	for i, report := range limitedReports {
 		baselines[i] = convertSingleProject(report, checksum)
@@ -224,8 +221,8 @@ func convertMultiProject(reports []SnykReport, checksum *hdf.Checksum, converter
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "snyk-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Snyk",
-		DataSourceFormat: "JSON",
+		ToolName:         "Snyk",
+		ToolFormat:       "JSON",
 		Baselines:        baselines,
 		Timestamp:        &now,
 	}), nil

@@ -4,10 +4,10 @@
       "name": "test-profile",
       "version": "1.0.0",
       "supports": [],
-      "attributes": [],
-      "checksum": {
+      "inputs": [],
+      "integrity": {
         "algorithm": "sha256",
-        "value": "abc123"
+        "checksum": "abc123"
       },
       "groups": [],
       "requirements": [
@@ -48,15 +48,16 @@
   "statistics": {
     "duration": 0.1
   },
-  "targets": [
+  "components": [
     {
       "type": "host",
       "id": "test-system",
       "name": "test-system",
-      "release": "1.0"
+      "release": "1.0",
+      "labels": {}
     }
   ],
-  "dataSource": {
+  "tool": {
     "name": "Heimdall Data Format v1"
   }
 }

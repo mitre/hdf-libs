@@ -7,7 +7,7 @@
  */
 
 import { sha256 } from '@mitre/hdf-utilities';
-import type { Checksum } from '@mitre/hdf-schema';
+import type { Checksum, Component, EvaluatedBaseline, HdfResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { HashAlgorithm } from '@mitre/hdf-schema';
 import { getCweNistControl } from '@mitre/hdf-mappings';
 
@@ -25,6 +25,20 @@ export async function inputChecksum(input: string): Promise<Checksum> {
     algorithm: HashAlgorithm.Sha256,
     value: await sha256(input),
   };
+}
+
+/**
+ * Compute an Integrity object (for root-level document integrity) from raw input.
+ *
+ * Returns an Integrity with algorithm and checksum fields, suitable for
+ * HdfBaseline.integrity, HdfSystem.integrity, HdfPlan.integrity, etc.
+ *
+ * @param input - Raw input string (JSON, XML, etc.)
+ * @returns Integrity object with SHA-256 algorithm and checksum
+ */
+export async function inputIntegrity(input: string): Promise<Integrity> {
+  const checksum = await inputChecksum(input);
+  return { algorithm: checksum.algorithm, checksum: checksum.value };
 }
 
 /**
@@ -214,3 +228,60 @@ export { DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
  * Mirrors Go shared.DefaultRemediationNIST.
  */
 export const DEFAULT_REMEDIATION_NIST_TAGS = ['SI-2', 'RA-5'];
+
+/**
+ * Options for building an HDF Results document.
+ * Mirrors the Go shared.HDFResultsOptions struct.
+ */
+export interface HdfResultsOptions {
+  /** Name of the converter that produced this HDF file (e.g., 'grype-to-hdf') */
+  generatorName: string;
+  /** Version of the converter */
+  converterVersion: string;
+  /** Name of the source security tool (e.g., 'Grype', 'Nessus') */
+  toolName?: string;
+  /** Version of the source tool */
+  toolVersion?: string;
+  /** Output format of the source tool (e.g., 'SARIF', 'XCCDF') */
+  toolFormat?: string;
+  /** Evaluated baselines with findings */
+  baselines: EvaluatedBaseline[];
+  /** Components that were assessed */
+  components?: Component[];
+  /** When the assessment was executed */
+  timestamp?: Date;
+  /** Assessment statistics */
+  statistics?: Statistics;
+}
+
+/**
+ * Build an HDF Results document from options.
+ *
+ * Eliminates the repeated boilerplate of constructing generator, tool,
+ * and assembling the top-level HdfResults in every converter. Mirrors
+ * the Go shared.BuildHDFResults() function.
+ *
+ * @returns JSON string of the HDF Results document (pretty-printed)
+ */
+export function buildHdfResults(opts: HdfResultsOptions): string {
+  const hdf: HdfResults = {
+    baselines: opts.baselines,
+    generator: {
+      name: opts.generatorName,
+      version: opts.converterVersion,
+    },
+  };
+
+  if (opts.toolName || opts.toolVersion || opts.toolFormat) {
+    hdf.tool = {};
+    if (opts.toolName) hdf.tool.name = opts.toolName;
+    if (opts.toolVersion) hdf.tool.version = opts.toolVersion;
+    if (opts.toolFormat) hdf.tool.format = opts.toolFormat;
+  }
+
+  if (opts.components) hdf.components = opts.components;
+  if (opts.timestamp) hdf.timestamp = opts.timestamp;
+  if (opts.statistics) hdf.statistics = opts.statistics;
+
+  return JSON.stringify(hdf, null, 2);
+}

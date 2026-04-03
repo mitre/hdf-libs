@@ -32,16 +32,13 @@ func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedR
 
 // ---- Input validation ----
 
-func TestConvertDbprotect_EmptyInput(t *testing.T) {
-	_, err := ConvertDbprotectToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "dbprotect")
-}
-
-func TestConvertDbprotect_InvalidXML(t *testing.T) {
-	_, err := ConvertDbprotectToHDF([]byte("not valid xml"), testVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "dbprotect")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "dbprotect-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertDbprotectToHDF(input, testVersion) },
+		MinimalFixture: "sample-check-results.xml",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 // ---- Check Results Details fixture ----
@@ -60,10 +57,10 @@ func TestConvertDbprotect_CheckResults_BasicStructure(t *testing.T) {
 	// Should have one baseline
 	require.Len(t, result.Baselines, 1)
 
-	// Should have data source
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "DBProtect", *result.DataSource.Name)
+	// Should have tool
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "DBProtect", *result.Tool.Name)
 }
 
 func TestConvertDbprotect_CheckResults_BaselineName(t *testing.T) {
@@ -306,9 +303,9 @@ func TestConvertDbprotect_CheckResults_Target(t *testing.T) {
 	result, err := ConvertDbprotectToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, "CONDS181", result.Targets[0].Name)
-	assert.Equal(t, hdf.Host, result.Targets[0].Type)
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, "CONDS181", result.Components[0].Name)
+	assert.Equal(t, hdf.Host, result.Components[0].Type)
 }
 
 // ---- Findings Detail fixture ----
@@ -360,4 +357,10 @@ func TestConvertDbprotectToHDF_EntityExpansion(t *testing.T) {
 	_, err := ConvertDbprotectToHDF(input, testVersion)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "dbprotect-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertDbprotectToHDF(input, "0.1.0")
+	})
 }

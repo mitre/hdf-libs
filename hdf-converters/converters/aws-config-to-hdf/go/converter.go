@@ -4,7 +4,6 @@ package awsconfig
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -62,15 +61,18 @@ type EvaluationResultQualifier struct {
 
 // ---- Converter ----------------------------------------------------------
 
-var accountIDRe = regexp.MustCompile(`:(\d{12}):config-rule`)
+var arnRe = regexp.MustCompile(`arn:aws[^:]*:config:([^:]+):(\d{12}):config-rule`)
 
 // ConvertAWSConfigToHDF converts a ConfigRulesFile JSON export to HDF format.
 func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "aws-config", 0); err != nil {
+		return nil, fmt.Errorf("aws-config: %w", err)
+	}
 
-	checksum := shared.InputChecksum(input)
+	integrity := shared.InputIntegrity(input)
 
 	var data ConfigRulesFile
 	if err := json.Unmarshal(input, &data); err != nil {
@@ -80,25 +82,40 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		return nil, fmt.Errorf("invalid AWS Config export: ConfigRules field is required")
 	}
 
-	baseline := buildBaseline(data.ConfigRules, checksum)
+	baseline := buildBaseline(data.ConfigRules, integrity)
 	now := time.Now().UTC()
+
+	// Extract account/region from first rule's ARN for target labels
+	firstArn := ""
+	if len(data.ConfigRules) > 0 {
+		firstArn = data.ConfigRules[0].ConfigRuleArn
+	}
+	accountID := getAccountID(firstArn)
+	region := getRegion(firstArn)
+
+	target := hdf.Component{
+		Name: fmt.Sprintf("AWS Account %s", accountID),
+		Type: hdf.CloudAccount,
+		Labels: map[string]string{
+			"account":  accountID,
+			"region":   region,
+			"provider": "aws",
+		},
+	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "aws-config-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "AWS Config",
+		ToolName:         "AWS Config",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets:          []hdf.Target{},
+		Components:          []hdf.Component{target},
 		Timestamp:        &now,
 	}), nil
 }
 
 // buildBaseline creates one EvaluatedBaseline from all ConfigRules.
-func buildBaseline(rules []ConfigRule, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
-	limitedRules, truncatedRules := shared.LimitSlice(rules, 0)
-	if truncatedRules {
-		log.Printf("WARNING: Input truncated at %d ConfigRule items (original: %d)", len(limitedRules), len(rules))
-	}
+func buildBaseline(rules []ConfigRule, integrity *hdf.Integrity) hdf.EvaluatedBaseline {
+	limitedRules := shared.LimitSliceWithWarning(rules, 0, "rule")
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(limitedRules))
 	for _, rule := range limitedRules {
 		requirements = append(requirements, buildRequirement(rule))
@@ -109,7 +126,7 @@ func buildBaseline(rules []ConfigRule, checksum *hdf.Checksum) hdf.EvaluatedBase
 		Title:        shared.Ptr("AWS Config Compliance Results"),
 		Version:      shared.Ptr("1.0.0"),
 		Maintainer:   shared.Ptr("Amazon Web Services"),
-		Checksum:     checksum,
+		Integrity:    integrity,
 		Requirements: requirements,
 	}
 }
@@ -139,8 +156,8 @@ func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 		ID:           rule.ConfigRuleID,
 		Title:        shared.Ptr(buildTitle(rule)),
 		Descriptions: descriptions,
-		Impact: 0.5,
-		Tags:   tags,
+		Impact:       0.5,
+		Tags:         tags,
 		SourceLocation: &hdf.SourceLocation{
 			Ref:  &arnRef,
 			Line: &line,
@@ -198,9 +215,18 @@ func buildTitle(rule ConfigRule) string {
 
 // getAccountID extracts the 12-digit AWS account ID from a config-rule ARN.
 func getAccountID(arn string) string {
-	m := accountIDRe.FindStringSubmatch(arn)
-	if len(m) < 2 {
+	m := arnRe.FindStringSubmatch(arn)
+	if len(m) < 3 {
 		return "no-account-id"
+	}
+	return m[2]
+}
+
+// getRegion extracts the AWS region from a config-rule ARN.
+func getRegion(arn string) string {
+	m := arnRe.FindStringSubmatch(arn)
+	if len(m) < 2 {
+		return "unknown"
 	}
 	return m[1]
 }

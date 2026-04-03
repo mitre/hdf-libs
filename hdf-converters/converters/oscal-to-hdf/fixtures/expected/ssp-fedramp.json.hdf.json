@@ -1,0 +1,180 @@
+{
+  "authorizationStatus": "authorized",
+  "boundaryDescription": "A holistic, top-level explanation of the FedRAMP authorization boundary.",
+  "categorizationLevel": "moderate",
+  "checksum": {
+    "algorithm": "sha256",
+    "value": "f76de57b325d54ef8e06e63d3d39c145c9986deacc139f9ab71ba8d8508349f7"
+  },
+  "components": [
+    {
+      "baselineRefs": [
+        "AC-2",
+        "PS-1",
+        "SR-1",
+        "PL-1",
+        "AT-1",
+        "CM-1",
+        "MA-1",
+        "MP-1",
+        "PE-1",
+        "SI-1",
+        "AU-1",
+        "CP-1",
+        "IR-1",
+        "RA-1",
+        "SA-1",
+        "SC-1",
+        "AC-1",
+        "CA-1",
+        "IA-1"
+      ],
+      "description": "The entire system as depicted in the system authorization boundary\n\nEmail is employed",
+      "name": "This System",
+      "type": "application"
+    },
+    {
+      "description": "Provide a description and any pertinent note regarding the use of this CM.\n\nFor data-at-rest modules, describe type of encryption implemented (e.g., full disk, file, record-level, etc.)\n\nLastly, provide any supporting notes on FIPS status (e.g. historical) or lack of FIPS compliance (e.g., Module in Process).",
+      "name": "[SAMPLE]Cryptographic Module Name",
+      "type": "other"
+    },
+    {
+      "description": "Provide a description and any pertinent note regarding the use of this CM.\n\nFor example, any supporting notes on FIPS status (e.g. historical) or lack of FIPS compliance (e.g., Module in Process).",
+      "name": "[SAMPLE]Cryptographic Module Name",
+      "type": "other"
+    },
+    {
+      "baselineRefs": [
+        "AC-2"
+      ],
+      "description": "If the leveraged system owner provides a UUID for their system (such as in an OSCAL-based CRM), it should be reflected in the `inherited-uuid` property.\n\nMust include all leveraged services and features from the leveraged authorization here.",
+      "name": "Name of Leveraged System",
+      "type": "other"
+    },
+    {
+      "description": "If the leveraged system owner provides a UUID for their service (such as in an OSCAL-based CRM), it should be reflected in the `inherited-uuid` property.\n\nMust include all leveraged services and features from the leveraged authorization here.",
+      "name": "Service Provided by Leveraged System",
+      "type": "service"
+    },
+    {
+      "description": "Describe the purpose of the external system/service; specifically, provide reasons for connectivity (e.g., system monitoring, system alerting, download updates, etc.).",
+      "name": "[EXAMPLE]Authorized Connection Information System Name",
+      "type": "other"
+    },
+    {
+      "description": "FUNCTION: Describe typical component function.",
+      "name": "[SAMPLE]Product Name",
+      "type": "application"
+    },
+    {
+      "description": "FUNCTION: Describe typical component function.",
+      "name": "[SAMPLE]Product",
+      "type": "compute"
+    },
+    {
+      "description": "None",
+      "name": "OS Sample",
+      "type": "application"
+    },
+    {
+      "description": "None",
+      "name": "Database Sample",
+      "type": "application"
+    },
+    {
+      "description": "None",
+      "name": "Appliance Sample",
+      "type": "application"
+    },
+    {
+      "baselineRefs": [
+        "IR-1",
+        "MP-1",
+        "CP-1",
+        "MA-1",
+        "PE-1",
+        "RA-1",
+        "PL-1",
+        "PS-1",
+        "AC-1",
+        "IA-1",
+        "SA-1",
+        "SC-1",
+        "SI-1",
+        "SR-1",
+        "AT-1",
+        "AU-1",
+        "CA-1",
+        "CM-1"
+      ],
+      "description": "[EXAMPLE]component representing a collection of policies in appendix A.",
+      "name": "[EXAMPLE]Policies",
+      "type": "other"
+    },
+    {
+      "baselineRefs": [
+        "RA-1",
+        "MA-1",
+        "PE-1",
+        "PS-1",
+        "SC-1",
+        "AU-1",
+        "PL-1",
+        "SA-1",
+        "SI-1",
+        "AT-1",
+        "CA-1",
+        "CM-1",
+        "IR-1",
+        "MP-1",
+        "AC-1",
+        "CP-1",
+        "IA-1",
+        "SR-1"
+      ],
+      "description": "[EXAMPLE]component representing a collection of procedures in appendix A.",
+      "name": "[EXAMPLE]Procedures",
+      "type": "other"
+    },
+    {
+      "baselineRefs": [
+        "AC-2"
+      ],
+      "description": "Describe the service",
+      "name": "[SAMPLE]Service Name",
+      "type": "service"
+    },
+    {
+      "description": "Briefly describe the interconnection.",
+      "name": "[EXAMPLE]Authorized Connection Information System Name",
+      "type": "other"
+    },
+    {
+      "description": "IPv4 Production Subnet.",
+      "name": "IPv4 Production Subnet",
+      "type": "network"
+    },
+    {
+      "description": "IPv4 Management Subnet.",
+      "name": "IPv4 Management Subnet",
+      "type": "network"
+    },
+    {
+      "baselineRefs": [
+        "SI-8"
+      ],
+      "description": "Email Service",
+      "name": "Email Service",
+      "type": "service"
+    }
+  ],
+  "description": "[Insert CSO Name] is delivered as [a/an] [insert based on the Service Model above] offering using a multi-tenant [insert based on the Deployment Model above] cloud computing environment. It is available to [Insert scope of customers in accordance with instructions above (for example, the public, federal, state, local, and tribal governments, as well as research institutions, federal contractors, government contractors etc.)].\n\nNOTE: Additional description, including the purpose and functions of this system may be added here. This includes any narrative text usually included in section 9.1 of the SSP.\n\nNOTE: The description is expected to be at least 32 words in length.\n\nAuthorization Boundary: A holistic, top-level explanation of the FedRAMP authorization boundary.",
+  "generator": {
+    "name": "hdf-converters",
+    "version": "0.1.0"
+  },
+  "identifier": "F00000000",
+  "identifierScheme": "https://fedramp.gov",
+  "name": "System's Full Name",
+  "version": "fedramp2.1.0-oscal1.0.4"
+}

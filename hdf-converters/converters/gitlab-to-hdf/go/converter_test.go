@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,14 +21,12 @@ func loadFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-func TestConvertGitlabToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertGitlabToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertGitlabToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertGitlabToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "gitlab-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertGitlabToHDF(input, testVersion) },
+		MinimalFixture: "minimal-dast.json",
+	})
 }
 
 func TestConvertGitlabToHDF_EmptyVulnerabilities(t *testing.T) {
@@ -122,14 +121,14 @@ func TestConvertGitlabToHDF_MinimalSAST_Checksum(t *testing.T) {
 	assert.Len(t, checksum.Value, 64)
 }
 
-func TestConvertGitlabToHDF_MinimalSAST_DataSource(t *testing.T) {
+func TestConvertGitlabToHDF_MinimalSAST_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal-sast.json")
 	result, err := ConvertGitlabToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	assert.Equal(t, "Semgrep", *result.DataSource.Name)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
-	assert.Equal(t, "1.34.0", *result.DataSource.Version)
+	assert.Equal(t, "Semgrep", *result.Tool.Name)
+	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Equal(t, "1.34.0", *result.Tool.Version)
 }
 
 func TestConvertGitlabToHDF_MinimalSAST_Timestamp(t *testing.T) {
@@ -145,8 +144,8 @@ func TestConvertGitlabToHDF_MinimalSAST_Target(t *testing.T) {
 	result, err := ConvertGitlabToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	assert.Equal(t, hdf.Repository, result.Targets[0].Type)
+	require.Len(t, result.Components, 1)
+	assert.Equal(t, hdf.Repository, result.Components[0].Type)
 }
 
 func TestConvertGitlabToHDF_MinimalDAST_Baseline(t *testing.T) {
@@ -180,8 +179,8 @@ func TestConvertGitlabToHDF_MinimalDAST_Target(t *testing.T) {
 	result, err := ConvertGitlabToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	assert.Equal(t, hdf.Application, result.Targets[0].Type)
+	require.Len(t, result.Components, 1)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
 }
 
 func TestConvertGitlabToHDF_MultiVuln_Count(t *testing.T) {
@@ -311,4 +310,10 @@ func Test_scanTypeLabel(t *testing.T) {
 	assert.Equal(t, "Container Scanning", scanTypeLabel("container_scanning"))
 	assert.Equal(t, "Secret Detection", scanTypeLabel("secret_detection"))
 	assert.Equal(t, "CUSTOM", scanTypeLabel("custom"))
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "gitlab-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertGitlabToHDF(input, "0.1.0")
+	})
 }

@@ -1,0 +1,193 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Display of a standardized and approved use notification before granting access to the operating system ensures privacy and security notification verbiage used is consistent with applicable federal laws, Executive Orders, directives, policies, regulations, standards, and guidance. System use notifications are required only for access via logon interfaces with human users and are not required when such human interfaces do not exist. The banner must be formatted in accordance with applicable DoD policy. Use the following verbiage for operating systems that can accommodate banners of 1300 characters: \"You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only. By using this IS (which includes any device attached to this IS), you consent to the following conditions: -The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations. -At any time, the USG may inspect and seize data stored on this IS. -Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose. -This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy. -Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details.\" Satisfies: SRG-OS-000023-GPOS-00006, SRG-OS-000024-GPOS-00007, SRG-OS-000228-GPOS-00088",
+              "label": "default"
+            },
+            {
+              "data": "Configure the operating system to display the Standard Mandatory DoD Notice and Consent Banner before granting access to the system. Note: If the system does not have GNOME installed, this requirement is Not Applicable. Create a database to contain the system-wide graphical user logon settings (if it does not already exist) with the following command: # touch /etc/dconf/db/local.d/01-banner-message Add the following line to the [org/gnome/login-screen] section of the \"/etc/dconf/db/local.d/01-banner-message\": [org/gnome/login-screen] banner-message-enable=true Update the system databases: # dconf update Users must log out and back in again before the system-wide settings take effect.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204393r603261_rule",
+              "startTime": "2021-12-17T10:39:30Z",
+              "status": "failed"
+            }
+          ],
+          "id": "RHEL-07-010030",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000048"
+            ],
+            "nist": [
+              "AC-8 a",
+              "AC-8.1 (ii)"
+            ]
+          },
+          "title": "The Red Hat Enterprise Linux operating system must display the Standard Mandatory DoD Notice and Consent Banner before granting local or remote access to the system via a graphical user logon."
+        },
+        {
+          "descriptions": [
+            {
+              "data": "A session lock is a temporary action taken when a user stops work and moves away from the immediate physical vicinity of the information system but does not want to log out because of the temporary nature of the absence. The session lock is implemented at the point where session activity can be determined. Regardless of where the session lock is determined and implemented, once invoked, the session lock must remain in place until the user reauthenticates. No other activity aside from reauthentication must unlock the system. Satisfies: SRG-OS-000028-GPOS-00009, SRG-OS-000030-GPOS-00011",
+              "label": "default"
+            },
+            {
+              "data": "Configure the operating system to enable a user's session lock until that user re-establishes access using established identification and authentication procedures. Create a database to contain the system-wide screensaver settings (if it does not already exist) with the following example: # touch /etc/dconf/db/local.d/00-screensaver Edit the \"[org/gnome/desktop/screensaver]\" section of the database file and add or update the following lines: # Set this to true to lock the screen when the screensaver activates lock-enabled=true Update the system databases: # dconf update Users must log out and back in again before the system-wide settings take effect.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204396r603261_rule",
+              "startTime": "2021-12-17T10:39:30Z",
+              "status": "failed"
+            }
+          ],
+          "id": "RHEL-07-010060",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000056"
+            ],
+            "nist": [
+              "AC-11 b",
+              "AC-11.1 (iii)"
+            ]
+          },
+          "title": "The Red Hat Enterprise Linux operating system must enable a user session lock until that user re-establishes access using established identification and authentication procedures."
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Pluggable authentication modules (PAM) allow for a modular approach to integrating authentication methods. PAM operates in a top-down processing model and if the modules are not listed in the correct order, an important security function could be bypassed if stack entries are not centralized.",
+              "label": "default"
+            },
+            {
+              "data": "Configure PAM to utilize /etc/pam.d/system-auth when changing passwords. Add the following line to \"/etc/pam.d/passwd\" (or modify the line to have the required value): password substack system-auth",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204405r603261_rule",
+              "startTime": "2021-12-17T10:39:30Z",
+              "status": "passed"
+            }
+          ],
+          "id": "RHEL-07-010118",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000192"
+            ],
+            "nist": [
+              "IA-5 (1) (a)",
+              "IA-5 (1).1 (v)"
+            ]
+          },
+          "title": "The Red Hat Enterprise Linux operating system must be configured so that /etc/pam.d/passwd implements /etc/pam.d/system-auth when changing passwords."
+        },
+        {
+          "descriptions": [
+            {
+              "data": "If an account has an empty password, anyone could log on and run commands with the privileges of that account. Accounts with empty passwords should never be used in operational environments.",
+              "label": "default"
+            },
+            {
+              "data": "If an account is configured for password authentication but does not have an assigned password, it may be possible to log on to the account without authenticating. Remove any instances of the \"nullok\" option in \"/etc/pam.d/system-auth\" and \"/etc/pam.d/password-auth\" to prevent logons with empty passwords. Note: Manual changes to the listed files may be overwritten by the \"authconfig\" program. The \"authconfig\" program should not be used to update the configurations listed in this requirement.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204424r603261_rule",
+              "startTime": "2021-12-17T10:39:30Z",
+              "status": "failed"
+            }
+          ],
+          "id": "RHEL-07-010290",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-000366"
+            ],
+            "nist": [
+              "CM-6 b",
+              "CM-6.1 (iv)"
+            ]
+          },
+          "title": "The Red Hat Enterprise Linux operating system must not have accounts configured with blank or null passwords."
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Previous versions of software components that are not removed from the information system after updates have been installed may be exploited by adversaries. Some information technology products may remove older versions of software automatically from the information system.",
+              "label": "default"
+            },
+            {
+              "data": "Configure the operating system to remove all software components after updated versions have been installed. Set the \"clean_requirements_on_remove\" option to \"1\" in the \"/etc/yum.conf\" file: clean_requirements_on_remove=1",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_mil.disa.stig_rule_SV-204452r603261_rule",
+              "startTime": "2021-12-17T10:39:31Z",
+              "status": "failed"
+            }
+          ],
+          "id": "RHEL-07-020200",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-002617"
+            ],
+            "nist": [
+              "SI-2 (6)"
+            ]
+          },
+          "title": "The Red Hat Enterprise Linux operating system must remove all software components after updated versions have been installed."
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "117c4b883a1b2a5d6787b68b8e3f48524f0de19cb06a70318e292138bd9fa7a8"
+      },
+      "name": "Red Hat Enterprise Linux 7 Security Technical Implementation Guide",
+      "status": "loaded",
+      "summary": "This Security Technical Implementation Guide is published as a tool to improve the security of Department of Defense (DoD) information systems. The requirements are derived from the National Institute of Standards and Technology (NIST) 800-53 and related documents. Comments or proposed revisions to this document should be sent via email to the following address: disa.stig_spt@mail.mil.",
+      "title": "Red Hat Enterprise Linux 7 Security Technical Implementation Guide",
+      "version": "003.005"
+    }
+  ],
+  "dataSource": {
+    "format": "XCCDF",
+    "name": "XCCDF"
+  },
+  "generator": {
+    "name": "hdf-converters",
+    "version": "dev"
+  },
+  "statistics": {
+    "duration": 89
+  },
+  "components": [
+    {
+      "labels": {
+        "service": "xccdf"
+      },
+      "name": "localhost.localdomain",
+      "type": "host",
+      "ipAddress": "127.0.0.1"
+    }
+  ],
+  "timestamp": "2021-12-17T10:39:29Z"
+}

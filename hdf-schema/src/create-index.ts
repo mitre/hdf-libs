@@ -3,7 +3,7 @@
  */
 import { writeFileSync, copyFileSync, existsSync, rmSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,7 +29,7 @@ export function createIndex(options: CreateIndexOptions = {}): void {
   }
 
   // Clean stale .d.ts and .js output so tsc doesn't refuse to overwrite its own input
-  for (const name of ['hdf-results', 'hdf-baseline', 'hdf-comparison']) {
+  for (const name of ['hdf-results', 'hdf-baseline', 'hdf-comparison', 'hdf-system', 'hdf-plan', 'hdf-amendments', 'hdf-evidence-package']) {
     for (const ext of ['.d.ts', '.js']) {
       const file = join(tsDir, `${name}${ext}`);
       if (existsSync(file)) {
@@ -113,6 +113,39 @@ export * from './ts/hdf-results.js';
 // hdf-results and cause ambiguous-export collisions.
 export type { HdfBaseline, BaselineRequirement } from './ts/hdf-baseline.js';
 ${comparisonDtsExport}
+// Re-export system types
+// No Component re-export — it's already exported by hdf-results.js via export *
+export type {
+  HdfSystem, InputOverride, ControlDesignation, DataFlow,
+} from './ts/hdf-system.js';
+export {
+  AuthorizationStatus, BoundaryDescription, CategorizationLevel, Designation, Direction,
+} from './ts/hdf-system.js';
+
+// Re-export plan types
+export type {
+  HdfPlan, Assessment, Schedule, RunnerConfig,
+} from './ts/hdf-plan.js';
+export {
+  PlanType,
+} from './ts/hdf-plan.js';
+
+// Re-export amendments types
+export type {
+  HdfAmendments, StandaloneOverride,
+} from './ts/hdf-amendments.js';
+export {
+  OverrideType,
+} from './ts/hdf-amendments.js';
+
+// Re-export evidence-package types
+export type {
+  HdfEvidencePackage, ContentReference, CompletenessCheck, SBOMCoverage,
+} from './ts/hdf-evidence-package.js';
+export {
+  ContentType,
+} from './ts/hdf-evidence-package.js';
+
 // Re-export helper functions
 export * from './helpers.js';
 `;
@@ -140,6 +173,26 @@ export {
 // Re-export all values from hdf-results (enums like ResultStatus, HashAlgorithm, Severity)
 export * from './ts/hdf-results.js';
 ${comparisonJsExport}
+// Re-export system enums (runtime values)
+export {
+  AuthorizationStatus, BoundaryDescription, CategorizationLevel, Designation, Direction,
+} from './ts/hdf-system.js';
+
+// Re-export plan enums (runtime values)
+export {
+  PlanType,
+} from './ts/hdf-plan.js';
+
+// Re-export amendments enums (runtime values)
+export {
+  OverrideType,
+} from './ts/hdf-amendments.js';
+
+// Re-export evidence-package enums (runtime values)
+export {
+  ContentType,
+} from './ts/hdf-evidence-package.js';
+
 // Re-export helper functions
 export * from './helpers.js';
 `;
@@ -157,6 +210,6 @@ export * from './helpers.js';
 
 // Run if called directly
 /* v8 ignore next 3 -- CLI entry point, not testable in vitest */
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   createIndex();
 }

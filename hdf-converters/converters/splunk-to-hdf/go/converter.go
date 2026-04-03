@@ -69,17 +69,17 @@ type SplunkGroup struct {
 
 // SplunkControl represents a control event.
 type SplunkControl struct {
-	Meta           SplunkMeta            `json:"meta"`
-	ID             string                `json:"id"`
-	Title          string                `json:"title"`
-	Desc           string                `json:"desc"`
-	Descriptions   map[string]string     `json:"descriptions"`
-	Impact         float64               `json:"impact"`
-	Code           string                `json:"code"`
+	Meta           SplunkMeta             `json:"meta"`
+	ID             string                 `json:"id"`
+	Title          string                 `json:"title"`
+	Desc           string                 `json:"desc"`
+	Descriptions   map[string]string      `json:"descriptions"`
+	Impact         float64                `json:"impact"`
+	Code           string                 `json:"code"`
 	Tags           map[string]interface{} `json:"tags"`
-	Results        []SplunkResult        `json:"results"`
-	Refs           []interface{}         `json:"refs"`
-	SourceLocation *SplunkSourceLocation `json:"source_location,omitempty"`
+	Results        []SplunkResult         `json:"results"`
+	Refs           []interface{}          `json:"refs"`
+	SourceLocation *SplunkSourceLocation  `json:"source_location,omitempty"`
 }
 
 // SplunkResult represents a single test result within a control.
@@ -105,6 +105,13 @@ type SplunkSourceLocation struct {
 // into HDF Results format. The input is a JSON array of Splunk events that
 // were originally decomposed from HDF data for Splunk storage.
 func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("splunk: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "splunk", 0); err != nil {
+		return nil, fmt.Errorf("splunk: %w", err)
+	}
+
 	resultsChecksum := shared.InputChecksum(input)
 
 	var rawEvents []json.RawMessage
@@ -141,7 +148,7 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 
 	// Process each GUID group into baselines and targets.
 	var allBaselines []hdf.EvaluatedBaseline
-	var allTargets []hdf.Target
+	var allTargets []hdf.Component
 	var lastHeader *SplunkHeader
 	timestamp := time.Now()
 
@@ -208,9 +215,9 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		}
 
 		// Build target from header platform info.
-		target := hdf.Target{
-			Name: header.Platform.Name,
-			Type: hdf.Host,
+		target := hdf.Component{
+			Name:   header.Platform.Name,
+			Type:   hdf.Host,
 		}
 		if header.Platform.Release != "" {
 			target.OSVersion = shared.Ptr(header.Platform.Release)
@@ -227,9 +234,9 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "splunk-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Splunk",
+		ToolName:         "Splunk",
 		Baselines:        allBaselines,
-		Targets:          allTargets,
+		Components:          allTargets,
 		Statistics:       stats,
 		Timestamp:        &timestamp,
 	})
@@ -284,9 +291,10 @@ func convertProfileToBaseline(
 	}
 
 	if profile.SHA256 != "" {
-		baseline.Checksum = &hdf.Checksum{
-			Algorithm: hdf.Sha256,
-			Value:     profile.SHA256,
+		alg := hdf.Sha256
+		baseline.Integrity = &hdf.Integrity{
+			Algorithm: &alg,
+			Checksum:  &profile.SHA256,
 		}
 	}
 

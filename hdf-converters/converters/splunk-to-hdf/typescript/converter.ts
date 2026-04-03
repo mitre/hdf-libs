@@ -167,7 +167,7 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
     eventsByGuid.get(guid)!.push(event);
   }
 
-  // Process each GUID group into baselines + targets
+  // Process each GUID group into baselines + components
   const allBaselines: EvaluatedBaseline[] = [];
   let targetName = 'unknown';
   let targetRelease = '';
@@ -286,11 +286,12 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
 
   const hdf: HdfResults = {
     baselines: allBaselines,
-    targets: [
+    components: [
       {
         name: targetName,
         type: Copyright.Host,
         osName: targetRelease || undefined,
+        labels: {},
       },
     ],
     generator: {

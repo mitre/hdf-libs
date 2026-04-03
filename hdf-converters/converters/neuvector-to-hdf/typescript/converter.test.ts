@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertNeuvectorToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,17 +13,13 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'neuvector-to-hdf',
+  convertFn: convertNeuvectorToHdf,
+  minimalFixture: 'minimal.json',
+});
+
 describe('neuvector to HDF converter', async () => {
-  describe('input validation', async () => {
-    it('should throw on invalid JSON', async () => {
-      await expect(convertNeuvectorToHdf('not json')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertNeuvectorToHdf('')).rejects.toThrow();
-    });
-  });
-
   describe('conversion basics', async () => {
     it('should produce valid HDF from minimal fixture', async () => {
       const output = await convertNeuvectorToHdf(loadFixture('minimal.json'));
@@ -62,10 +59,10 @@ describe('neuvector to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource name to "NeuVector" and format to "JSON"', async () => {
+    it('should set tool name to "NeuVector" and format to "JSON"', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('NeuVector');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('NeuVector');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 
@@ -241,9 +238,9 @@ describe('neuvector to HDF converter', async () => {
   describe('target', async () => {
     it('should include image reference as target', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.name).toContain('mitre/heimdall');
-      expect(hdf.targets![0]!.type).toBe('containerImage');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.name).toContain('mitre/heimdall');
+      expect(hdf.components![0]!.type).toBe('containerImage');
     });
   });
 

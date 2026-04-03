@@ -51,12 +51,12 @@ func TestConvertV1ToV2_Minimal(t *testing.T) {
 
 	// Basic structural checks
 	require.NotNil(t, v2.Baselines)
-	require.NotNil(t, v2.Targets)
-	assert.Len(t, v2.Targets, 1)
-	assert.Equal(t, hdf.Host, v2.Targets[0].Type)
+	require.NotNil(t, v2.Components)
+	assert.Len(t, v2.Components, 1)
+	assert.Equal(t, hdf.Host, v2.Components[0].Type)
 }
 
-func TestConvertV1ToV2_DataSource(t *testing.T) {
+func TestConvertV1ToV2_Tool(t *testing.T) {
 	inputPath := filepath.Join(getFixturesDir(), "input", "minimal.json")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
@@ -67,11 +67,11 @@ func TestConvertV1ToV2_DataSource(t *testing.T) {
 
 	v2 := ConvertV1ToV2(&v1)
 
-	require.NotNil(t, v2.DataSource)
-	require.NotNil(t, v2.DataSource.Name)
-	assert.Equal(t, "Heimdall Data Format v1", *v2.DataSource.Name)
-	assert.Nil(t, v2.DataSource.Version)
-	assert.Nil(t, v2.DataSource.Format)
+	require.NotNil(t, v2.Tool)
+	require.NotNil(t, v2.Tool.Name)
+	assert.Equal(t, "Heimdall Data Format v1", *v2.Tool.Name)
+	assert.Nil(t, v2.Tool.Version)
+	assert.Nil(t, v2.Tool.Format)
 }
 
 func TestConvertV1ToV2_ContainerScan(t *testing.T) {
@@ -101,7 +101,7 @@ func TestConvertV1ToV2_ContainerScan(t *testing.T) {
 
 	// Basic structural checks
 	require.NotNil(t, v2.Baselines)
-	require.NotNil(t, v2.Targets)
+	require.NotNil(t, v2.Components)
 }
 
 func TestConvertV1ToV2_Wrapper(t *testing.T) {
@@ -131,7 +131,7 @@ func TestConvertV1ToV2_Wrapper(t *testing.T) {
 
 	// Basic structural checks
 	require.NotNil(t, v2.Baselines)
-	require.NotNil(t, v2.Targets)
+	require.NotNil(t, v2.Components)
 }
 
 func TestIsHDFV1(t *testing.T) {
@@ -310,9 +310,9 @@ func TestConvertV1ToV2_WithNilProfiles(t *testing.T) {
 	assert.Len(t, v2.Baselines, 0)
 
 	// Should have targets
-	require.Len(t, v2.Targets, 1)
-	assert.Equal(t, hdf.Host, v2.Targets[0].Type)
-	assert.Equal(t, "test-system", v2.Targets[0].Name)
+	require.Len(t, v2.Components, 1)
+	assert.Equal(t, hdf.Host, v2.Components[0].Type)
+	assert.Equal(t, "test-system", v2.Components[0].Name)
 }
 
 func TestConvertResult_AllOptionalFields(t *testing.T) {
@@ -464,8 +464,8 @@ func TestConvertProfile_AllOptionalFields(t *testing.T) {
 	assert.Equal(t, copyright, *v2.Copyright)
 	require.NotNil(t, v2.CopyrightEmail)
 	assert.Equal(t, copyrightEmail, *v2.CopyrightEmail)
-	assert.Equal(t, hdf.Sha256, v2.Checksum.Algorithm)
-	assert.Equal(t, sha256, v2.Checksum.Value)
+	assert.Equal(t, hdf.Sha256, *v2.Integrity.Algorithm)
+	assert.Equal(t, sha256, *v2.Integrity.Checksum)
 	require.NotNil(t, v2.ParentBaseline)
 	assert.Equal(t, parentProfile, *v2.ParentBaseline)
 	require.NotNil(t, v2.Status)
@@ -548,8 +548,8 @@ func TestConvertV1ToV2_PassthroughNoOverlays(t *testing.T) {
 		Profiles: []V1Profile{{
 			Name: "simple-profile",
 			Controls: []V1Control{{
-				ID:     "V-1",
-				Impact: 0.5,
+				ID:      "V-1",
+				Impact:  0.5,
 				Results: []V1Result{{Status: "passed"}},
 			}},
 		}},
@@ -731,8 +731,6 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 	})
 }
 
-func strPtr(s string) *string { return &s }
-
 // ── Severity from tags.severity ──────────────────
 
 func TestSeverityFromTagsSeverity(t *testing.T) {
@@ -774,7 +772,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 		}
 		v2 := ConvertV1ToV2(v1)
 		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
-		assert.Equal(t, hdf.High, *v2.Baselines[0].Requirements[0].Severity)
+		assert.Equal(t, hdf.SeverityHigh, *v2.Baselines[0].Requirements[0].Severity)
 	})
 
 	t.Run("falls back to impact-derived severity when tags.severity missing", func(t *testing.T) {
@@ -792,7 +790,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 		}
 		v2 := ConvertV1ToV2(v1)
 		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
-		assert.Equal(t, hdf.High, *v2.Baselines[0].Requirements[0].Severity)
+		assert.Equal(t, hdf.SeverityHigh, *v2.Baselines[0].Requirements[0].Severity)
 	})
 
 	t.Run("maps impact values to correct severity levels", func(t *testing.T) {
@@ -801,9 +799,9 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 			expected hdf.Severity
 		}{
 			{0.9, hdf.Critical},
-			{0.7, hdf.High},
+			{0.7, hdf.SeverityHigh},
 			{0.5, hdf.Medium},
-			{0.3, hdf.Low},
+			{0.3, hdf.SeverityLow},
 		}
 		for _, tc := range cases {
 			v1 := &HDFV1Results{
@@ -836,7 +834,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 		}
 		v2 := ConvertV1ToV2(v1)
 		require.NotNil(t, v2.Baselines[0].Requirements[0].Severity)
-		assert.Equal(t, hdf.High, *v2.Baselines[0].Requirements[0].Severity)
+		assert.Equal(t, hdf.SeverityHigh, *v2.Baselines[0].Requirements[0].Severity)
 	})
 
 	t.Run("ubi9 fixture: NA controls have severity from tags not none", func(t *testing.T) {

@@ -7,7 +7,7 @@
       "title": "Example Security Technical Implementation Guide",
       "maintainer": "DISA",
       "supports": [],
-      "attributes": [],
+      "inputs": [],
       "groups": [],
       "checksum": {
         "algorithm": "sha256",
@@ -72,7 +72,7 @@
       ]
     }
   ],
-  "targets": [
+  "components": [
     {
       "name": "test-server-01",
       "type": "host",
