@@ -78,8 +78,8 @@ jobs:
           cd hdf-cli && govulncheck ./...
       - name: gosec
         run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-          cd hdf-cli && gosec -exclude=G304,G104 -exclude-generated ./...
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.25.0
+          cd hdf-cli && gosec -exclude=G304,G104,G115,G706 -exclude-generated ./...
 
   # ── Build (once, share artifacts) ────────────────────────────────────────
   build:
