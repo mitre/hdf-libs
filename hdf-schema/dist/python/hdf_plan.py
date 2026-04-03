@@ -139,27 +139,27 @@ class Assessment:
 
 @dataclass
 class Generator:
-    """Information about the tool that generated this plan."""
+    """Information about the tool that generated this plan.
+    
+    Information about the tool that generated this HDF file.
+    """
+    name: str
+    """The name of the software that produced this HDF file. Example: 'gosec-to-hdf'."""
 
-    name: Optional[str] = None
-    """Name of the tool that generated this document."""
-
-    version: Optional[str] = None
-    """Version of the generating tool."""
+    version: str
+    """The version of the tool. Example: '5.22.3'."""
 
     @staticmethod
     def from_dict(obj: Any) -> 'Generator':
         assert isinstance(obj, dict)
-        name = from_union([from_str, from_none], obj.get("name"))
-        version = from_union([from_str, from_none], obj.get("version"))
+        name = from_str(obj.get("name"))
+        version = from_str(obj.get("version"))
         return Generator(name, version)
 
     def to_dict(self) -> dict:
         result: dict = {}
-        if self.name is not None:
-            result["name"] = from_union([from_str, from_none], self.name)
-        if self.version is not None:
-            result["version"] = from_union([from_str, from_none], self.version)
+        result["name"] = from_str(self.name)
+        result["version"] = from_str(self.version)
         return result
 
 

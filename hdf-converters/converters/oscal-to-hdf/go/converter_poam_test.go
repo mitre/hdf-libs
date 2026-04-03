@@ -55,8 +55,8 @@ func TestConvertPOAMToHDF_FedRAMPFixture(t *testing.T) {
 
 	// Generator
 	assert.NotNil(t, amendments.Generator)
-	assert.Equal(t, "hdf-converters", *amendments.Generator.Name)
-	assert.Equal(t, "1.0.0-test", *amendments.Generator.Version)
+	assert.Equal(t, "hdf-converters", amendments.Generator.Name)
+	assert.Equal(t, "1.0.0-test", amendments.Generator.Version)
 
 	// Integrity
 	assert.NotNil(t, amendments.Integrity)

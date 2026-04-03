@@ -109,16 +109,18 @@ export interface RunnerConfig {
 
 /**
  * Information about the tool that generated this plan.
+ *
+ * Information about the tool that generated this HDF file.
  */
 export interface Generator {
     /**
-     * Name of the tool that generated this document.
+     * The name of the software that produced this HDF file. Example: 'gosec-to-hdf'.
      */
-    name?: string;
+    name: string;
     /**
-     * Version of the generating tool.
+     * The version of the tool. Example: '5.22.3'.
      */
-    version?: string;
+    version: string;
     [property: string]: any;
 }
 

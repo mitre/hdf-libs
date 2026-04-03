@@ -52,9 +52,9 @@ func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, conve
 		SystemRef: systemRef,
 		Version:   shared.Ptr(meta.Version),
 		AppliedBy: appliedBy,
-		Generator: &hdf.HDFAmendmentsGenerator{
-			Name:    &genName,
-			Version: &converterVersion,
+		Generator: &hdf.Generator{
+			Name:    genName,
+			Version: converterVersion,
 		},
 	}
 

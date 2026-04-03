@@ -31,21 +31,6 @@ def from_list(f: Callable[[Any], T], x: Any) -> List[T]:
     return [f(y) for y in x]
 
 
-def to_enum(c: Type[EnumT], x: Any) -> EnumT:
-    assert isinstance(x, c)
-    return x.value
-
-
-def to_class(c: Type[T], x: Any) -> dict:
-    assert isinstance(x, c)
-    return cast(Any, x).to_dict()
-
-
-def from_dict(f: Callable[[Any], T], x: Any) -> Dict[str, T]:
-    assert isinstance(x, dict)
-    return { k: f(v) for (k, v) in x.items() }
-
-
 def from_float(x: Any) -> float:
     assert isinstance(x, (float, int)) and not isinstance(x, bool)
     return float(x)
@@ -54,6 +39,26 @@ def from_float(x: Any) -> float:
 def to_float(x: Any) -> float:
     assert isinstance(x, (int, float))
     return x
+
+
+def from_bool(x: Any) -> bool:
+    assert isinstance(x, bool)
+    return x
+
+
+def to_class(c: Type[T], x: Any) -> dict:
+    assert isinstance(x, c)
+    return cast(Any, x).to_dict()
+
+
+def to_enum(c: Type[EnumT], x: Any) -> EnumT:
+    assert isinstance(x, c)
+    return x.value
+
+
+def from_dict(f: Callable[[Any], T], x: Any) -> Dict[str, T]:
+    assert isinstance(x, dict)
+    return { k: f(v) for (k, v) in x.items() }
 
 
 @dataclass
@@ -180,6 +185,142 @@ class RequirementGroup:
         result["requirements"] = from_list(from_str, self.requirements)
         if self.title is not None:
             result["title"] = from_union([from_str, from_none], self.title)
+        return result
+
+
+@dataclass
+class InputConstraints:
+    """Validation constraints for the input value.
+    
+    Validation constraints for an input value.
+    """
+    allowed_values: Optional[List[Any]] = None
+    """Enumeration of permitted values."""
+
+    max: Optional[float] = None
+    """Maximum allowed value (for Numeric inputs)."""
+
+    min: Optional[float] = None
+    """Minimum allowed value (for Numeric inputs)."""
+
+    pattern: Optional[str] = None
+    """Regular expression pattern the value must match (for String inputs)."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'InputConstraints':
+        assert isinstance(obj, dict)
+        allowed_values = from_union([lambda x: from_list(lambda x: x, x), from_none], obj.get("allowedValues"))
+        max = from_union([from_float, from_none], obj.get("max"))
+        min = from_union([from_float, from_none], obj.get("min"))
+        pattern = from_union([from_str, from_none], obj.get("pattern"))
+        return InputConstraints(allowed_values, max, min, pattern)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        if self.allowed_values is not None:
+            result["allowedValues"] = from_union([lambda x: from_list(lambda x: x, x), from_none], self.allowed_values)
+        if self.max is not None:
+            result["max"] = from_union([to_float, from_none], self.max)
+        if self.min is not None:
+            result["min"] = from_union([to_float, from_none], self.min)
+        if self.pattern is not None:
+            result["pattern"] = from_union([from_str, from_none], self.pattern)
+        return result
+
+
+class ComparisonOperator(Enum):
+    """The comparison operator used when evaluating this input against observed values.
+    
+    Comparison operator for evaluating the input value against observed values. Numeric:
+    eq/ne/lt/le/gt/ge. String: eq/ne/contains/matches. Collection: in/notIn.
+    """
+    CONTAINS = "contains"
+    EQ = "eq"
+    GE = "ge"
+    GT = "gt"
+    IN = "in"
+    LE = "le"
+    LT = "lt"
+    MATCHES = "matches"
+    NE = "ne"
+    NOT_IN = "notIn"
+
+
+class InputType(Enum):
+    """The data type of this input.
+    
+    The data type of the input value. Aligns with InSpec input types.
+    """
+    ARRAY = "Array"
+    BOOLEAN = "Boolean"
+    HASH = "Hash"
+    NUMERIC = "Numeric"
+    REGEXP = "Regexp"
+    STRING = "String"
+
+
+@dataclass
+class Input:
+    """A typed input parameter that bridges governance requirements and scanner automation.
+    Inputs carry expected configuration values with type information, comparison operators,
+    and validation constraints, enabling traceability from policy through to scan results.
+    """
+    name: str
+    """The input name. Must be unique within a baseline or results document. Example:
+    'max_concurrent_sessions'.
+    """
+    constraints: Optional[InputConstraints] = None
+    """Validation constraints for the input value."""
+
+    description: Optional[str] = None
+    """Human-readable description of what this input controls."""
+
+    operator: Optional[ComparisonOperator] = None
+    """The comparison operator used when evaluating this input against observed values."""
+
+    required: Optional[bool] = None
+    """Whether this input must be provided. Defaults to false if omitted."""
+
+    sensitive: Optional[bool] = None
+    """Whether this input contains sensitive data (passwords, keys). Sensitive values should be
+    redacted in output. Defaults to false if omitted.
+    """
+    type: Optional[InputType] = None
+    """The data type of this input."""
+
+    value: Any
+    """The input value. Type should match the declared type field. Accepts any JSON value."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'Input':
+        assert isinstance(obj, dict)
+        name = from_str(obj.get("name"))
+        constraints = from_union([InputConstraints.from_dict, from_none], obj.get("constraints"))
+        description = from_union([from_str, from_none], obj.get("description"))
+        operator = from_union([ComparisonOperator, from_none], obj.get("operator"))
+        required = from_union([from_bool, from_none], obj.get("required"))
+        sensitive = from_union([from_bool, from_none], obj.get("sensitive"))
+        type = from_union([InputType, from_none], obj.get("type"))
+        value = obj.get("value")
+        return Input(name, constraints, description, operator, required, sensitive, type, value)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["name"] = from_str(self.name)
+        if self.constraints is not None:
+            result["constraints"] = from_union([lambda x: to_class(InputConstraints, x), from_none], self.constraints)
+        if self.description is not None:
+            result["description"] = from_union([from_str, from_none], self.description)
+        if self.operator is not None:
+            result["operator"] = from_union([lambda x: to_enum(ComparisonOperator, x), from_none], self.operator)
+        if self.required is not None:
+            result["required"] = from_union([from_bool, from_none], self.required)
+        if self.sensitive is not None:
+            result["sensitive"] = from_union([from_bool, from_none], self.sensitive)
+        if self.type is not None:
+            result["type"] = from_union([lambda x: to_enum(InputType, x), from_none], self.type)
+        if self.value is not None:
+            result["value"] = self.value
         return result
 
 
@@ -529,7 +670,7 @@ class HdfBaseline:
     groups: Optional[List[RequirementGroup]] = None
     """A set of descriptions for the requirement groups."""
 
-    inputs: Optional[List[Dict[str, Any]]] = None
+    inputs: Optional[List[Input]] = None
     """The input(s) or attribute(s) to be used in the run."""
 
     integrity: Optional[Integrity] = None
@@ -579,7 +720,7 @@ class HdfBaseline:
         depends = from_union([lambda x: from_list(Dependency.from_dict, x), from_none], obj.get("depends"))
         generator = from_union([Generator.from_dict, from_none], obj.get("generator"))
         groups = from_union([lambda x: from_list(RequirementGroup.from_dict, x), from_none], obj.get("groups"))
-        inputs = from_union([lambda x: from_list(lambda x: from_dict(lambda x: x, x), x), from_none], obj.get("inputs"))
+        inputs = from_union([lambda x: from_list(Input.from_dict, x), from_none], obj.get("inputs"))
         integrity = from_union([Integrity.from_dict, from_none], obj.get("integrity"))
         remediation = from_union([Remediation.from_dict, from_none], obj.get("remediation"))
         copyright = from_union([from_str, from_none], obj.get("copyright"))
@@ -605,7 +746,7 @@ class HdfBaseline:
         if self.groups is not None:
             result["groups"] = from_union([lambda x: from_list(lambda x: to_class(RequirementGroup, x), x), from_none], self.groups)
         if self.inputs is not None:
-            result["inputs"] = from_union([lambda x: from_list(lambda x: from_dict(lambda x: x, x), x), from_none], self.inputs)
+            result["inputs"] = from_union([lambda x: from_list(lambda x: to_class(Input, x), x), from_none], self.inputs)
         if self.integrity is not None:
             result["integrity"] = from_union([lambda x: to_class(Integrity, x), from_none], self.integrity)
         if self.remediation is not None:

@@ -814,6 +814,12 @@ type InputOverride struct {
 // The tool that generated this file.
 //
 // Information about the tool that generated this comparison.
+//
+// Information about the tool that generated this system document.
+//
+// Information about the tool that generated this plan.
+//
+// Information about the tool that generated this document.
 type Generator struct {
 	// The name of the software that produced this HDF file. Example: 'gosec-to-hdf'.       
 	Name                                                                             string `json:"name"`
@@ -936,45 +942,45 @@ type Tool struct {
 // Shared metadata fields for baselines. Used in both standalone baseline documents and
 // evaluated baseline results.
 type HDFBaseline struct {
-	// The set of dependencies this baseline depends on.                                                              
-	Depends                                                                                  []Dependency             `json:"depends,omitempty"`
-	// The tool that generated this file.                                                                             
-	Generator                                                                                *Generator               `json:"generator,omitempty"`
-	// A set of descriptions for the requirement groups.                                                              
-	Groups                                                                                   []RequirementGroup       `json:"groups,omitempty"`
-	// The input(s) or attribute(s) to be used in the run.                                                            
-	Inputs                                                                                   []map[string]interface{} `json:"inputs,omitempty"`
-	// Cryptographic integrity information for verifying this baseline has not been tampered                          
-	// with.                                                                                                          
-	Integrity                                                                                *Integrity               `json:"integrity,omitempty"`
-	// Optional reference to automated remediation resources (Ansible playbooks, Terraform                            
-	// scripts, etc.) for implementing the security controls defined in this baseline.                                
-	Remediation                                                                              *Remediation             `json:"remediation,omitempty"`
-	// The set of requirements - contains no findings as the assessment has not yet occurred.                         
-	Requirements                                                                             []BaselineRequirement    `json:"requirements"`
-	// The name - must be unique.                                                                                     
-	Name                                                                                     string                   `json:"name"`
-	// The copyright holder(s).                                                                                       
-	Copyright                                                                                *string                  `json:"copyright,omitempty"`
-	// The email address or other contact information of the copyright holder(s).                                     
-	CopyrightEmail                                                                           *string                  `json:"copyrightEmail,omitempty"`
-	// Optional key-value labels for flexible grouping. Well-known keys: system, component,                           
-	// environment, region, team. Values must be strings.                                                             
-	Labels                                                                                   map[string]string        `json:"labels,omitempty"`
-	// The copyright license. Example: 'Apache-2.0'.                                                                  
-	License                                                                                  *string                  `json:"license,omitempty"`
-	// The maintainer(s).                                                                                             
-	Maintainer                                                                               *string                  `json:"maintainer,omitempty"`
-	// The status. Example: 'loaded'.                                                                                 
-	Status                                                                                   *string                  `json:"status,omitempty"`
-	// The summary. Example: the Security Technical Implementation Guide (STIG) header.                               
-	Summary                                                                                  *string                  `json:"summary,omitempty"`
-	// The set of supported platform targets.                                                                         
-	Supports                                                                                 []SupportedPlatform      `json:"supports,omitempty"`
-	// The title - should be human readable.                                                                          
-	Title                                                                                    *string                  `json:"title,omitempty"`
-	// The version of the baseline.                                                                                   
-	Version                                                                                  *string                  `json:"version,omitempty"`
+	// The set of dependencies this baseline depends on.                                                           
+	Depends                                                                                  []Dependency          `json:"depends,omitempty"`
+	// The tool that generated this file.                                                                          
+	Generator                                                                                *Generator            `json:"generator,omitempty"`
+	// A set of descriptions for the requirement groups.                                                           
+	Groups                                                                                   []RequirementGroup    `json:"groups,omitempty"`
+	// The input(s) or attribute(s) to be used in the run.                                                         
+	Inputs                                                                                   []Input               `json:"inputs,omitempty"`
+	// Cryptographic integrity information for verifying this baseline has not been tampered                       
+	// with.                                                                                                       
+	Integrity                                                                                *Integrity            `json:"integrity,omitempty"`
+	// Optional reference to automated remediation resources (Ansible playbooks, Terraform                         
+	// scripts, etc.) for implementing the security controls defined in this baseline.                             
+	Remediation                                                                              *Remediation          `json:"remediation,omitempty"`
+	// The set of requirements - contains no findings as the assessment has not yet occurred.                      
+	Requirements                                                                             []BaselineRequirement `json:"requirements"`
+	// The name - must be unique.                                                                                  
+	Name                                                                                     string                `json:"name"`
+	// The copyright holder(s).                                                                                    
+	Copyright                                                                                *string               `json:"copyright,omitempty"`
+	// The email address or other contact information of the copyright holder(s).                                  
+	CopyrightEmail                                                                           *string               `json:"copyrightEmail,omitempty"`
+	// Optional key-value labels for flexible grouping. Well-known keys: system, component,                        
+	// environment, region, team. Values must be strings.                                                          
+	Labels                                                                                   map[string]string     `json:"labels,omitempty"`
+	// The copyright license. Example: 'Apache-2.0'.                                                               
+	License                                                                                  *string               `json:"license,omitempty"`
+	// The maintainer(s).                                                                                          
+	Maintainer                                                                               *string               `json:"maintainer,omitempty"`
+	// The status. Example: 'loaded'.                                                                              
+	Status                                                                                   *string               `json:"status,omitempty"`
+	// The summary. Example: the Security Technical Implementation Guide (STIG) header.                            
+	Summary                                                                                  *string               `json:"summary,omitempty"`
+	// The set of supported platform targets.                                                                      
+	Supports                                                                                 []SupportedPlatform   `json:"supports,omitempty"`
+	// The title - should be human readable.                                                                       
+	Title                                                                                    *string               `json:"title,omitempty"`
+	// The version of the baseline.                                                                                
+	Version                                                                                  *string               `json:"version,omitempty"`
 }
 
 // A requirement definition without assessment results.
@@ -1354,7 +1360,7 @@ type HDFSystem struct {
 	// Description of the system's purpose and mission.                                                              
 	Description                                                                                 *string              `json:"description,omitempty"`
 	// Information about the tool that generated this system document.                                               
-	Generator                                                                                   *HDFSystemGenerator  `json:"generator,omitempty"`
+	Generator                                                                                   *Generator           `json:"generator,omitempty"`
 	// System identifier from an authoritative source. Example: eMASS system ID, FedRAMP package                     
 	// ID.                                                                                                           
 	Identifier                                                                                  *string              `json:"identifier,omitempty"`
@@ -1429,14 +1435,6 @@ type DataFlow struct {
 	To interface{} `json:"to,omitempty"`
 }
 
-// Information about the tool that generated this system document.
-type HDFSystemGenerator struct {
-	// Name of the tool that generated this document.        
-	Name                                             *string `json:"name,omitempty"`
-	// Version of the generating tool.                       
-	Version                                          *string `json:"version,omitempty"`
-}
-
 // Defines an assessment plan — what baselines to run against which targets, with resolved
 // inputs and scheduling. Maps to OSCAL Assessment Plan.
 type HDFPlan struct {
@@ -1446,7 +1444,7 @@ type HDFPlan struct {
 	// Description of the plan's purpose and scope.                                                               
 	Description                                                                                 *string           `json:"description,omitempty"`
 	// Information about the tool that generated this plan.                                                       
-	Generator                                                                                   *HDFPlanGenerator `json:"generator,omitempty"`
+	Generator                                                                                   *Generator        `json:"generator,omitempty"`
 	// Cryptographic integrity information for verifying this plan document has not been                          
 	// tampered with.                                                                                             
 	Integrity                                                                                   *Integrity        `json:"integrity,omitempty"`
@@ -1499,14 +1497,6 @@ type RunnerConfig struct {
 	Version                                                                         *string `json:"version,omitempty"`
 }
 
-// Information about the tool that generated this plan.
-type HDFPlanGenerator struct {
-	// Name of the tool that generated this document.        
-	Name                                             *string `json:"name,omitempty"`
-	// Version of the generating tool.                       
-	Version                                          *string `json:"version,omitempty"`
-}
-
 // Optional scheduling configuration for recurring assessments.
 //
 // Scheduling configuration for recurring assessments.
@@ -1527,41 +1517,33 @@ type Schedule struct {
 // Waivers, attestations, exceptions, and POA&Ms that modify requirement compliance status.
 // Amendments are standalone documents that can be applied to results via merge operations.
 type HDFAmendments struct {
-	// Unique identifier for this amendments document. Useful for cross-referencing when                              
-	// multiple amendment documents target the same results.                                                          
-	AmendmentID                                                                               *string                 `json:"amendmentId,omitempty"`
-	// Default identity of who created this amendments document. Individual overrides may                             
-	// specify their own appliedBy.                                                                                   
-	AppliedBy                                                                                 *Identity               `json:"appliedBy,omitempty"`
-	// Identity of the authorizing official who approved these amendments.                                            
-	ApprovedBy                                                                                *Identity               `json:"approvedBy,omitempty"`
-	// Description of the amendments' purpose and scope.                                                              
-	Description                                                                               *string                 `json:"description,omitempty"`
-	// Information about the tool that generated this document.                                                       
-	Generator                                                                                 *HDFAmendmentsGenerator `json:"generator,omitempty"`
-	// Cryptographic integrity information for verifying this amendments document has not been                        
-	// tampered with.                                                                                                 
-	Integrity                                                                                 *Integrity              `json:"integrity,omitempty"`
-	// Optional key-value labels for grouping and querying amendments.                                                
-	Labels                                                                                    map[string]string       `json:"labels,omitempty"`
-	// Human-readable name for this amendments document. Example: 'Portal Q1 2026 Waivers'.                           
-	Name                                                                                      string                  `json:"name"`
-	// The set of amendments (waivers, attestations, exceptions, POA&Ms).                                             
-	Overrides                                                                                 []StandaloneOverride    `json:"overrides"`
-	// Document-level digital signature covering all amendments.                                                      
-	Signature                                                                                 *Signature              `json:"signature,omitempty"`
-	// URI to the hdf-system document these amendments apply to.                                                      
-	SystemRef                                                                                 *string                 `json:"systemRef,omitempty"`
-	// Version of this amendments document.                                                                           
-	Version                                                                                   *string                 `json:"version,omitempty"`
-}
-
-// Information about the tool that generated this document.
-type HDFAmendmentsGenerator struct {
-	// Name of the tool that generated this document.        
-	Name                                             *string `json:"name,omitempty"`
-	// Version of the generating tool.                       
-	Version                                          *string `json:"version,omitempty"`
+	// Unique identifier for this amendments document. Useful for cross-referencing when                           
+	// multiple amendment documents target the same results.                                                       
+	AmendmentID                                                                               *string              `json:"amendmentId,omitempty"`
+	// Default identity of who created this amendments document. Individual overrides may                          
+	// specify their own appliedBy.                                                                                
+	AppliedBy                                                                                 *Identity            `json:"appliedBy,omitempty"`
+	// Identity of the authorizing official who approved these amendments.                                         
+	ApprovedBy                                                                                *Identity            `json:"approvedBy,omitempty"`
+	// Description of the amendments' purpose and scope.                                                           
+	Description                                                                               *string              `json:"description,omitempty"`
+	// Information about the tool that generated this document.                                                    
+	Generator                                                                                 *Generator           `json:"generator,omitempty"`
+	// Cryptographic integrity information for verifying this amendments document has not been                     
+	// tampered with.                                                                                              
+	Integrity                                                                                 *Integrity           `json:"integrity,omitempty"`
+	// Optional key-value labels for grouping and querying amendments.                                             
+	Labels                                                                                    map[string]string    `json:"labels,omitempty"`
+	// Human-readable name for this amendments document. Example: 'Portal Q1 2026 Waivers'.                        
+	Name                                                                                      string               `json:"name"`
+	// The set of amendments (waivers, attestations, exceptions, POA&Ms).                                          
+	Overrides                                                                                 []StandaloneOverride `json:"overrides"`
+	// Document-level digital signature covering all amendments.                                                   
+	Signature                                                                                 *Signature           `json:"signature,omitempty"`
+	// URI to the hdf-system document these amendments apply to.                                                   
+	SystemRef                                                                                 *string              `json:"systemRef,omitempty"`
+	// Version of this amendments document.                                                                        
+	Version                                                                                   *string              `json:"version,omitempty"`
 }
 
 // A standalone amendment that modifies a requirement's compliance status. Extends the
@@ -1610,39 +1592,39 @@ type StandaloneOverride struct {
 // Each content entry references a document by type, URI, and checksum for integrity
 // verification.
 type HDFEvidencePackage struct {
-	// Summary of assessment completeness and compliance status.                                                             
-	CompletenessCheck                                                                           *CompletenessCheck           `json:"completenessCheck,omitempty"`
-	// References to HDF documents included in this evidence package.                                                        
-	Contents                                                                                    []ContentReference           `json:"contents"`
-	// Description of the evidence package's purpose and scope.                                                              
-	Description                                                                                 *string                      `json:"description,omitempty"`
-	// Information about the tool that generated this document.                                                              
-	Generator                                                                                   *HDFEvidencePackageGenerator `json:"generator,omitempty"`
-	// Cryptographic integrity information for verifying this evidence package has not been                                  
-	// tampered with.                                                                                                        
-	Integrity                                                                                   *Integrity                   `json:"integrity,omitempty"`
-	// Optional key-value labels for grouping and querying evidence packages.                                                
-	Labels                                                                                      map[string]string            `json:"labels,omitempty"`
-	// Human-readable name for this evidence package. Example: 'Enterprise Portal ATO Evidence -                             
-	// Q1 2026'.                                                                                                             
-	Name                                                                                        string                       `json:"name"`
-	// Unique identifier for this evidence package. Optional in casual use, expected in                                      
-	// production ATO submissions. Auto-generated if omitted during creation.                                                
-	PackageID                                                                                   *string                      `json:"packageId,omitempty"`
-	// URI to the hdf-plan document that drove this assessment. Used for completeness                                        
-	// verification — every baseline in the plan should have a corresponding results document in                             
-	// this package.                                                                                                         
-	PlanRef                                                                                     *string                      `json:"planRef,omitempty"`
-	// When this evidence package was prepared. ISO 8601 format.                                                             
-	PreparedAt                                                                                  *time.Time                   `json:"preparedAt,omitempty"`
-	// Identity of who prepared this evidence package.                                                                       
-	PreparedBy                                                                                  *Identity                    `json:"preparedBy,omitempty"`
-	// Digital signature covering the entire evidence package.                                                               
-	Signature                                                                                   *Signature                   `json:"signature,omitempty"`
-	// URI to the hdf-system document this evidence package covers.                                                          
-	SystemRef                                                                                   *string                      `json:"systemRef,omitempty"`
-	// Version of this evidence package.                                                                                     
-	Version                                                                                     *string                      `json:"version,omitempty"`
+	// Summary of assessment completeness and compliance status.                                                   
+	CompletenessCheck                                                                           *CompletenessCheck `json:"completenessCheck,omitempty"`
+	// References to HDF documents included in this evidence package.                                              
+	Contents                                                                                    []ContentReference `json:"contents"`
+	// Description of the evidence package's purpose and scope.                                                    
+	Description                                                                                 *string            `json:"description,omitempty"`
+	// Information about the tool that generated this document.                                                    
+	Generator                                                                                   *Generator         `json:"generator,omitempty"`
+	// Cryptographic integrity information for verifying this evidence package has not been                        
+	// tampered with.                                                                                              
+	Integrity                                                                                   *Integrity         `json:"integrity,omitempty"`
+	// Optional key-value labels for grouping and querying evidence packages.                                      
+	Labels                                                                                      map[string]string  `json:"labels,omitempty"`
+	// Human-readable name for this evidence package. Example: 'Enterprise Portal ATO Evidence -                   
+	// Q1 2026'.                                                                                                   
+	Name                                                                                        string             `json:"name"`
+	// Unique identifier for this evidence package. Optional in casual use, expected in                            
+	// production ATO submissions. Auto-generated if omitted during creation.                                      
+	PackageID                                                                                   *string            `json:"packageId,omitempty"`
+	// URI to the hdf-plan document that drove this assessment. Used for completeness                              
+	// verification — every baseline in the plan should have a corresponding results document in                   
+	// this package.                                                                                               
+	PlanRef                                                                                     *string            `json:"planRef,omitempty"`
+	// When this evidence package was prepared. ISO 8601 format.                                                   
+	PreparedAt                                                                                  *time.Time         `json:"preparedAt,omitempty"`
+	// Identity of who prepared this evidence package.                                                             
+	PreparedBy                                                                                  *Identity          `json:"preparedBy,omitempty"`
+	// Digital signature covering the entire evidence package.                                                     
+	Signature                                                                                   *Signature         `json:"signature,omitempty"`
+	// URI to the hdf-system document this evidence package covers.                                                
+	SystemRef                                                                                   *string            `json:"systemRef,omitempty"`
+	// Version of this evidence package.                                                                           
+	Version                                                                                     *string            `json:"version,omitempty"`
 }
 
 // Summary of assessment completeness and compliance status.
@@ -1687,14 +1669,6 @@ type ContentReference struct {
 	Type                                                                                      ContentType `json:"type"`
 	// URI to the document. Can be a relative path or absolute URL.                                       
 	URI                                                                                       string      `json:"uri"`
-}
-
-// Information about the tool that generated this document.
-type HDFEvidencePackageGenerator struct {
-	// Name of the tool that generated this document.        
-	Name                                             *string `json:"name,omitempty"`
-	// Version of the generating tool.                       
-	Version                                          *string `json:"version,omitempty"`
 }
 
 // The comparison operator used when evaluating this input against observed values.

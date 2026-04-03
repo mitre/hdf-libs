@@ -21,7 +21,7 @@ export interface HdfBaseline {
     /**
      * The input(s) or attribute(s) to be used in the run.
      */
-    inputs?: { [key: string]: any }[];
+    inputs?: Input[];
     /**
      * Cryptographic integrity information for verifying this baseline has not been tampered
      * with.
@@ -164,6 +164,107 @@ export interface RequirementGroup {
      */
     title?: string;
     [property: string]: any;
+}
+
+/**
+ * A typed input parameter that bridges governance requirements and scanner automation.
+ * Inputs carry expected configuration values with type information, comparison operators,
+ * and validation constraints, enabling traceability from policy through to scan results.
+ */
+export interface Input {
+    /**
+     * Validation constraints for the input value.
+     */
+    constraints?: InputConstraints;
+    /**
+     * Human-readable description of what this input controls.
+     */
+    description?: string;
+    /**
+     * The input name. Must be unique within a baseline or results document. Example:
+     * 'max_concurrent_sessions'.
+     */
+    name: string;
+    /**
+     * The comparison operator used when evaluating this input against observed values.
+     */
+    operator?: ComparisonOperator;
+    /**
+     * Whether this input must be provided. Defaults to false if omitted.
+     */
+    required?: boolean;
+    /**
+     * Whether this input contains sensitive data (passwords, keys). Sensitive values should be
+     * redacted in output. Defaults to false if omitted.
+     */
+    sensitive?: boolean;
+    /**
+     * The data type of this input.
+     */
+    type?: InputType;
+    /**
+     * The input value. Type should match the declared type field. Accepts any JSON value.
+     */
+    value?: any;
+    [property: string]: any;
+}
+
+/**
+ * Validation constraints for the input value.
+ *
+ * Validation constraints for an input value.
+ */
+export interface InputConstraints {
+    /**
+     * Enumeration of permitted values.
+     */
+    allowedValues?: any[];
+    /**
+     * Maximum allowed value (for Numeric inputs).
+     */
+    max?: number;
+    /**
+     * Minimum allowed value (for Numeric inputs).
+     */
+    min?: number;
+    /**
+     * Regular expression pattern the value must match (for String inputs).
+     */
+    pattern?: string;
+    [property: string]: any;
+}
+
+/**
+ * The comparison operator used when evaluating this input against observed values.
+ *
+ * Comparison operator for evaluating the input value against observed values. Numeric:
+ * eq/ne/lt/le/gt/ge. String: eq/ne/contains/matches. Collection: in/notIn.
+ */
+export enum ComparisonOperator {
+    Contains = "contains",
+    Eq = "eq",
+    Ge = "ge",
+    Gt = "gt",
+    In = "in",
+    LE = "le",
+    Lt = "lt",
+    Matches = "matches",
+    Ne = "ne",
+    NotIn = "notIn",
+}
+
+/**
+ * The data type of this input.
+ *
+ * The data type of the input value. Aligns with InSpec input types.
+ */
+export enum InputType {
+    Array = "Array",
+    Boolean = "Boolean",
+    Hash = "Hash",
+    Numeric = "Numeric",
+    Regexp = "Regexp",
+    String = "String",
 }
 
 /**

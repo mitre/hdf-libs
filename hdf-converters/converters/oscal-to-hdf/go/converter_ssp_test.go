@@ -56,10 +56,8 @@ func TestConvertSSPToHDF_Fixture(t *testing.T) {
 
 	// Generator
 	assert.NotNil(t, system.Generator)
-	assert.NotNil(t, system.Generator.Name)
-	assert.Equal(t, "hdf-converters", *system.Generator.Name)
-	assert.NotNil(t, system.Generator.Version)
-	assert.Equal(t, "1.0.0-test", *system.Generator.Version)
+	assert.Equal(t, "hdf-converters", system.Generator.Name)
+	assert.Equal(t, "1.0.0-test", system.Generator.Version)
 }
 
 func TestConvertSSPToHDF_Components(t *testing.T) {

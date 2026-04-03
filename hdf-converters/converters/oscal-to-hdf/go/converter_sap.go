@@ -48,9 +48,9 @@ func assessmentPlanToHDFPlan(ap *AssessmentPlan, rawInput []byte, converterVersi
 		Version:     shared.Ptr(meta.Version),
 		Type:        planType,
 		Description: description,
-		Generator: &hdf.HDFPlanGenerator{
-			Name:    &genName,
-			Version: &converterVersion,
+		Generator: &hdf.Generator{
+			Name:    genName,
+			Version: converterVersion,
 		},
 	}
 

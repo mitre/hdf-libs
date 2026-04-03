@@ -91,17 +91,7 @@
       "description": "Version of this system document."
     },
     "generator": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Name of the tool that generated this document."
-        },
-        "version": {
-          "type": "string",
-          "description": "Version of the generating tool."
-        }
-      },
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
       "description": "Information about the tool that generated this system document."
     }
   },

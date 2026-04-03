@@ -23,9 +23,9 @@ func ConvertSSPToHDF(input []byte, converterVersion string) (*hdf.HDFSystem, err
 	system := &hdf.HDFSystem{
 		Name:      sspSystemName(ssp),
 		Integrity: integrity,
-		Generator: &hdf.HDFSystemGenerator{
-			Name:    shared.Ptr("hdf-converters"),
-			Version: shared.Ptr(converterVersion),
+		Generator: &hdf.Generator{
+			Name:    "hdf-converters",
+			Version: converterVersion,
 		},
 	}
 
