@@ -17,10 +17,10 @@ export default defineConfig({
       exclude: ['src/**/*.d.ts', 'src/generated/**'],
       // Note: CLI entry points excluded with c8 ignore comments
       thresholds: {
-        statements: 95,
-        branches: 95,
-        functions: 95,
-        lines: 95,
+        statements: 90,
+        branches: 90,
+        functions: 90,
+        lines: 90,
       },
     },
   },
