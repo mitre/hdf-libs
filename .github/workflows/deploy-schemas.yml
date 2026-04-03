@@ -40,30 +40,31 @@ jobs:
           # Create versioned directories matching $id URLs
           for schema in _site/schemas/*.schema.json; do
             basename=$(basename "$schema" .schema.json)
-            mkdir -p "_site/schemas/$basename/v2.0.0"
-            cp "$schema" "_site/schemas/$basename/v2.0.0/index.json"
+            # Extract version from the schema's $id field
+            version=$(python3 -c "import json; print(json.load(open('$schema'))['\$id'].split('/')[-1])")
+            mkdir -p "_site/schemas/$basename/$version"
+            cp "$schema" "_site/schemas/$basename/$version/index.json"
           done
 
-          # Create index page
-          cat > _site/index.html << 'HTML'
-          <!DOCTYPE html>
+          # Create index page (auto-generated from deployed schemas)
+          python3 -c "
+          import json, glob, os
+          schemas = sorted(glob.glob('_site/schemas/*.schema.json'))
+          links = []
+          for s in schemas:
+              name = os.path.basename(s).replace('.schema.json', '')
+              version = json.load(open(s))['\$id'].split('/')[-1]
+              links.append(f'<li><a href=\"schemas/{name}/{version}/\">{name} {version}</a></li>')
+          print(f'''<!DOCTYPE html>
           <html>
           <head><title>HDF Schemas</title></head>
           <body>
-          <h1>Heimdall Data Format (HDF) v2.0 Schemas</h1>
-          <ul>
-            <li><a href="schemas/hdf-results/v2.0.0/">hdf-results v2.0.0</a></li>
-            <li><a href="schemas/hdf-baseline/v2.0.0/">hdf-baseline v2.0.0</a></li>
-            <li><a href="schemas/hdf-system/v2.0.0/">hdf-system v2.0.0</a></li>
-            <li><a href="schemas/hdf-plan/v2.0.0/">hdf-plan v2.0.0</a></li>
-            <li><a href="schemas/hdf-amendments/v2.0.0/">hdf-amendments v2.0.0</a></li>
-            <li><a href="schemas/hdf-comparison/v2.0.0/">hdf-comparison v2.0.0</a></li>
-            <li><a href="schemas/hdf-evidence-package/v2.0.0/">hdf-evidence-package v2.0.0</a></li>
-          </ul>
-          <p><a href="https://github.com/mitre/hdf-libs">Source on GitHub</a></p>
+          <h1>Heimdall Data Format (HDF) Schemas</h1>
+          <ul>{chr(10).join(links)}</ul>
+          <p><a href=\"https://github.com/mitre/hdf-libs\">Source on GitHub</a></p>
           </body>
-          </html>
-          HTML
+          </html>''')
+          " > _site/index.html
 
       - uses: actions/configure-pages@v5
 
