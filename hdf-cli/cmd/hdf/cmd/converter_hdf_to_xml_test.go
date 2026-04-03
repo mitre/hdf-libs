@@ -60,7 +60,7 @@ func TestHDFToXMLConverter_Convert_EmptyBaselines(t *testing.T) {
 
 	input := []byte(`{
 		"baselines": [],
-		"targets": [],
+		"components": [],
 		"statistics": { "duration": 0 }
 	}`)
 

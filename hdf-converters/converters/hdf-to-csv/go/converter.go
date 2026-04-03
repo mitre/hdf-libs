@@ -7,11 +7,19 @@ import (
 	"fmt"
 	"strings"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
 // ConvertHDFToCSV converts HDF JSON to CSV format
 func ConvertHDFToCSV(input []byte) ([]byte, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("hdf-to-csv: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "hdf-to-csv", 0); err != nil {
+		return nil, fmt.Errorf("hdf-to-csv: %w", err)
+	}
+
 	// Parse HDF JSON
 	var hdfData hdf.HDFResults
 	if err := json.Unmarshal(input, &hdfData); err != nil {
@@ -67,10 +75,10 @@ func buildCSVRows(hdfData *hdf.HDFResults) [][]string {
 	rows = append(rows, header)
 
 	// Get targets (may be nil or empty)
-	targets := hdfData.Targets
+	targets := hdfData.Components
 	if len(targets) == 0 {
 		// Create single empty target entry
-		targets = []hdf.Target{{Name: "", Type: hdf.Copyright("")}}
+		targets = []hdf.Component{{Name: "", Type: hdf.Copyright("")}}
 	}
 
 	// Iterate through baselines
@@ -99,7 +107,7 @@ func buildCSVRows(hdfData *hdf.HDFResults) [][]string {
 }
 
 // createRow creates a single CSV row
-func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequirement, target *hdf.Target) []string {
+func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequirement, target *hdf.Component) []string {
 	// Get default description
 	description := ""
 	for _, desc := range requirement.Descriptions {

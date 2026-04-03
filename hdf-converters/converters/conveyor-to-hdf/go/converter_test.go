@@ -43,25 +43,15 @@ func containsStr(s, substr string) bool {
 	return false
 }
 
-func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedRequirement {
-	for i := range reqs {
-		if reqs[i].ID == id {
-			return &reqs[i]
-		}
-	}
-	return nil
-}
 
 // ---- Input validation ----
 
-func TestConvertConveyor_EmptyInput(t *testing.T) {
-	_, err := ConvertConveyorToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertConveyor_InvalidJSON(t *testing.T) {
-	_, err := ConvertConveyorToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "conveyor-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertConveyorToHDF(input, testVersion) },
+		MinimalFixture: "sample-results.json",
+	})
 }
 
 func TestConvertConveyor_MissingApiResponse(t *testing.T) {
@@ -144,18 +134,18 @@ func TestConvertConveyor_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertConveyor_DataSource(t *testing.T) {
+func TestConvertConveyor_Tool(t *testing.T) {
 	input := loadFixture(t, "input/sample-results.json")
 	result, err := ConvertConveyorToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Conveyor", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Conveyor", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- Target ----
@@ -165,8 +155,8 @@ func TestConvertConveyor_Target(t *testing.T) {
 	result, err := ConvertConveyorToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, hdf.Application, result.Targets[0].Type)
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
 }
 
 // ---- Score-to-impact mapping ----
@@ -337,4 +327,10 @@ func TestConvertConveyor_Timestamp(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotNil(t, result.Timestamp, "HDF result should have a timestamp")
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "conveyor-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertConveyorToHDF(input, "0.1.0")
+	})
 }

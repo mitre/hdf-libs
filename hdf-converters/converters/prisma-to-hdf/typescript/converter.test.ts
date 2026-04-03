@@ -71,21 +71,21 @@ describe('prisma to HDF converter', () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource to Prisma Cloud / CSV', async () => {
+    it('should set tool to Prisma Cloud / CSV', async () => {
       const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('Prisma Cloud');
-      expect(hdf.dataSource?.format).toBe('CSV');
+      expect(hdf.tool?.name).toBe('Prisma Cloud');
+      expect(hdf.tool?.format).toBe('CSV');
     });
   });
 
   describe('targets', () => {
     it('should produce one target per hostname with Host type', async () => {
       const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
-      expect(hdf.targets).toHaveLength(2);
-      const names = hdf.targets!.map(t => t.name).sort();
+      expect(hdf.components).toHaveLength(2);
+      const names = hdf.components!.map(t => t.name).sort();
       expect(names[0]).toBe('host-1.example.com');
       expect(names[1]).toBe('host-2.example.com');
-      for (const target of hdf.targets!) {
+      for (const target of hdf.components!) {
         expect(target.type).toBe('host');
       }
     });

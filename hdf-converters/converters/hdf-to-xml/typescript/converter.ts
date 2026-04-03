@@ -1,5 +1,6 @@
 import { parseJSON, buildXml } from '@mitre/hdf-utilities';
 import type { HdfResults, EvaluatedRequirement, Description, RequirementResult } from '@mitre/hdf-schema';
+import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 /**
  * Convert HDF JSON to XML format
@@ -7,6 +8,7 @@ import type { HdfResults, EvaluatedRequirement, Description, RequirementResult }
  * @returns XML string with proper HDF structure
  */
 export function convertHdfToXml(input: string): string {
+  validateInputSize(input, 'hdf-to-xml');
   const hdf = parseJSON<HdfResults>(input);
 
   if (!hdf || typeof hdf !== 'object' || !('baselines' in hdf)) {
@@ -46,10 +48,10 @@ function transformHdfToXmlObject(hdf: HdfResults): Record<string, unknown> {
         name: wrap(baseline.name),
         ...(baseline.version && { version: wrap(baseline.version) }),
         ...(baseline.title && { title: wrap(baseline.title) }),
-        ...(baseline.checksum && {
-          checksum: {
-            algorithm: wrap(baseline.checksum.algorithm),
-            value: wrap(baseline.checksum.value)
+        ...(baseline.integrity && {
+          integrity: {
+            ...(baseline.integrity.algorithm && { algorithm: wrap(baseline.integrity.algorithm) }),
+            ...(baseline.integrity.checksum && { checksum: wrap(baseline.integrity.checksum) })
           }
         }),
         ...(baseline.requirements && baseline.requirements.length > 0 && {
@@ -66,10 +68,10 @@ function transformHdfToXmlObject(hdf: HdfResults): Record<string, unknown> {
     result.baselines = {};
   }
 
-  // Transform targets array
-  if (hdf.targets && hdf.targets.length > 0) {
-    result.targets = {
-      target: hdf.targets.map(target => ({
+  // Transform components array
+  if (hdf.components && hdf.components.length > 0) {
+    result.components = {
+      target: hdf.components.map(target => ({
         name: wrap(target.name),
         type: wrap(target.type),
         ...(target.fqdn && { fqdn: wrap(target.fqdn) }),

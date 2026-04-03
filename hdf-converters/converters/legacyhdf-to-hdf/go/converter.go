@@ -118,9 +118,9 @@ func convertResult(v1 V1Result) hdf.RequirementResult {
 // validSeverities maps lowercase severity strings to hdf.Severity values.
 var validSeverities = map[string]hdf.Severity{
 	"critical":      hdf.Critical,
-	"high":          hdf.High,
+	"high":          hdf.SeverityHigh,
 	"medium":        hdf.Medium,
-	"low":           hdf.Low,
+	"low":           hdf.SeverityLow,
 	"informational": hdf.Informational,
 }
 
@@ -152,11 +152,11 @@ func impactToSeverity(impact float64) hdf.Severity {
 	case impact >= 0.9:
 		return hdf.Critical
 	case impact >= 0.7:
-		return hdf.High
+		return hdf.SeverityHigh
 	case impact >= 0.5:
 		return hdf.Medium
 	case impact > 0:
-		return hdf.Low
+		return hdf.SeverityLow
 	default:
 		return hdf.Informational // impact=0, no tags.severity
 	}
@@ -238,6 +238,46 @@ func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 	return v2
 }
 
+// convertAttributes converts v1.0 attributes to v2.0 Input structs.
+// V1 attributes are generic maps with "name" and "options" (containing "default").
+func convertAttributes(attrs []map[string]interface{}) []hdf.Input {
+	inputs := make([]hdf.Input, 0, len(attrs))
+	for _, attr := range attrs {
+		name, _ := attr["name"].(string)
+		if name == "" {
+			continue
+		}
+		input := hdf.Input{
+			Name: name,
+		}
+		// Extract default value from options
+		if options, ok := attr["options"].(map[string]interface{}); ok {
+			if val, exists := options["default"]; exists {
+				input.Value = val
+			}
+		}
+		// Extract description if present
+		if desc, ok := attr["description"].(string); ok {
+			input.Description = &desc
+		}
+		// Extract sensitive flag if present
+		if sensitive, ok := attr["sensitive"].(bool); ok {
+			input.Sensitive = &sensitive
+		}
+		// Extract required flag if present
+		if required, ok := attr["required"].(bool); ok {
+			input.Required = &required
+		}
+		// Extract type if present
+		if t, ok := attr["type"].(string); ok {
+			inputType := hdf.InputType(t)
+			input.Type = &inputType
+		}
+		inputs = append(inputs, input)
+	}
+	return inputs
+}
+
 // convertGroup converts a v1.0 group to v2.0 RequirementGroup.
 // Renames controls array to requirements.
 func convertGroup(v1 V1Group) hdf.RequirementGroup {
@@ -278,12 +318,18 @@ func convertProfile(v1 V1Profile) hdf.EvaluatedBaseline {
 		ParentBaseline: v1.ParentProfile,
 	}
 
-	// Transform sha256 to checksum object
+	// Transform sha256 to integrity object
 	if v1.SHA256 != nil {
-		v2.Checksum = &hdf.Checksum{
-			Algorithm: hdf.Sha256,
-			Value:     *v1.SHA256,
+		alg := hdf.Sha256
+		v2.Integrity = &hdf.Integrity{
+			Algorithm: &alg,
+			Checksum:  v1.SHA256,
 		}
+	}
+
+	// Transform attributes to inputs
+	if v1.Attributes != nil {
+		v2.Inputs = convertAttributes(v1.Attributes)
 	}
 
 	// Transform groups (controls → requirements)
@@ -326,7 +372,7 @@ func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 		Statistics: &hdf.Statistics{
 			Duration: v1.Statistics.Duration,
 		},
-		DataSource: &hdf.DataSource{Name: &toolName},
+		Tool: &hdf.Tool{Name: &toolName},
 	}
 
 	// Convert profiles to baselines
@@ -340,7 +386,7 @@ func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 	}
 
 	// Transform platform to targets array
-	target := hdf.Target{
+	target := hdf.Component{
 		Type: hdf.Host,
 		Name: v1.Platform.Name,
 	}
@@ -348,7 +394,7 @@ func ConvertV1ToV2(v1 *HDFV1Results) *hdf.HDFResults {
 		target.OSName = &v1.Platform.Name // Use platform name as OS name
 		target.OSVersion = v1.Platform.Release
 	}
-	v2.Targets = []hdf.Target{target}
+	v2.Components = []hdf.Component{target}
 
 	// Flatten overlays: merge overlay/wrapper baselines so every requirement
 	// has results and consumers don't see duplicated controls (741→247 fix).

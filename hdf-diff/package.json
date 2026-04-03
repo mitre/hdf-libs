@@ -2,6 +2,9 @@
   "name": "@mitre/hdf-diff",
   "version": "0.1.0",
   "description": "Structured comparison of HDF evaluation results — tracks what changed, why, and by how much",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

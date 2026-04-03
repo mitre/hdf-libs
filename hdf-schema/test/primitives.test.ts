@@ -7,6 +7,7 @@ import targetSchema from '../src/schemas/primitives/target.schema.json';
 import runnerSchema from '../src/schemas/primitives/runner.schema.json';
 import statisticsSchema from '../src/schemas/primitives/statistics.schema.json';
 import resultSchema from '../src/schemas/primitives/result.schema.json';
+import amendmentsSchema from '../src/schemas/primitives/amendments.schema.json';
 import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
 
 describe('Primitive Schema Validation', () => {
@@ -20,6 +21,7 @@ describe('Primitive Schema Validation', () => {
   ajv.addSchema(runnerSchema);
   ajv.addSchema(statisticsSchema);
   ajv.addSchema(resultSchema);
+  ajv.addSchema(amendmentsSchema);
   ajv.addSchema(extensionsSchema);
 
   describe('common.schema.json', () => {
@@ -1647,7 +1649,7 @@ describe('Primitive Schema Validation', () => {
 
       it('should reject status override with invalid type', () => {
         const invalid = {
-          type: 'exception', // invalid - not a status override type
+          type: 'invalid_type', // not a valid override type
           status: 'failed',
           reason: 'Test',
           appliedBy: {

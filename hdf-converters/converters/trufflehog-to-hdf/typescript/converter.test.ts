@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertTrufflehogToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,16 +13,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'trufflehog-to-hdf',
+  convertFn: convertTrufflehogToHdf,
+  minimalFixture: 'minimal.json',
+});
+
 describe('trufflehog to HDF converter', async () => {
   describe('input validation', async () => {
-    it('should throw on empty input', async () => {
-      await expect(convertTrufflehogToHdf('')).rejects.toThrow();
-    });
-
-    it('should throw on invalid JSON', async () => {
-      await expect(convertTrufflehogToHdf('not json')).rejects.toThrow();
-    });
-
     it('should throw on empty array', async () => {
       await expect(convertTrufflehogToHdf('[]')).rejects.toThrow(/no findings/);
     });
@@ -100,10 +99,10 @@ describe('trufflehog to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource to TruffleHog/JSON', async () => {
+    it('should set tool to TruffleHog/JSON', async () => {
       const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('TruffleHog');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('TruffleHog');
+      expect(hdf.tool?.format).toBe('JSON');
     });
 
     it('should set requirement ID to "AWS PLAIN"', async () => {
@@ -138,9 +137,9 @@ describe('trufflehog to HDF converter', async () => {
 
     it('should set target from Git repository URL', async () => {
       const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('multi-detector.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.name).toBe('https://github.com/trufflesecurity/test_keys');
-      expect(hdf.targets![0]!.type).toBe('repository');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.name).toBe('https://github.com/trufflesecurity/test_keys');
+      expect(hdf.components![0]!.type).toBe('repository');
     });
 
     it('should include baseline title with source name', async () => {
@@ -177,7 +176,7 @@ describe('trufflehog to HDF converter', async () => {
 
     it('should not produce a target for filesystem sources', async () => {
       const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('ndjson-input.ndjson'))) as HdfResults;
-      expect(hdf.targets ?? []).toHaveLength(0);
+      expect(hdf.components ?? []).toHaveLength(0);
     });
   });
 });

@@ -8,17 +8,17 @@ package legacyhdf
 
 // V1Result represents a test result in HDF v1.0 format.
 type V1Result struct {
-	Status         string      `json:"status"`
-	CodeDesc       *string     `json:"code_desc,omitempty"`
-	RunTime        *float64    `json:"run_time,omitempty"`
-	StartTime      *string     `json:"start_time,omitempty"`
-	Message        *string     `json:"message,omitempty"`
-	Exception      *string     `json:"exception,omitempty"`
-	Backtrace      []string    `json:"backtrace,omitempty"`
-	ResourceClass  *string     `json:"resource_class,omitempty"`
-	ResourceParams *string     `json:"resource_params,omitempty"`
-	ResourceID     *string     `json:"resource_id,omitempty"`
-	SkipMessage    *string     `json:"skip_message,omitempty"`
+	Status         string   `json:"status"`
+	CodeDesc       *string  `json:"code_desc,omitempty"`
+	RunTime        *float64 `json:"run_time,omitempty"`
+	StartTime      *string  `json:"start_time,omitempty"`
+	Message        *string  `json:"message,omitempty"`
+	Exception      *string  `json:"exception,omitempty"`
+	Backtrace      []string `json:"backtrace,omitempty"`
+	ResourceClass  *string  `json:"resource_class,omitempty"`
+	ResourceParams *string  `json:"resource_params,omitempty"`
+	ResourceID     *string  `json:"resource_id,omitempty"`
+	SkipMessage    *string  `json:"skip_message,omitempty"`
 }
 
 // V1SourceLocation represents the source location of a control.
@@ -74,24 +74,24 @@ type V1Dependency struct {
 
 // V1Profile represents a profile in HDF v1.0 format.
 type V1Profile struct {
-	Name           string                 `json:"name"`
-	Version        *string                `json:"version,omitempty"`
-	Title          *string                `json:"title,omitempty"`
-	Maintainer     *string                `json:"maintainer,omitempty"`
-	Summary        *string                `json:"summary,omitempty"`
-	License        *string                `json:"license,omitempty"`
-	Copyright      *string                `json:"copyright,omitempty"`
-	CopyrightEmail *string                `json:"copyright_email,omitempty"`
+	Name           string                   `json:"name"`
+	Version        *string                  `json:"version,omitempty"`
+	Title          *string                  `json:"title,omitempty"`
+	Maintainer     *string                  `json:"maintainer,omitempty"`
+	Summary        *string                  `json:"summary,omitempty"`
+	License        *string                  `json:"license,omitempty"`
+	Copyright      *string                  `json:"copyright,omitempty"`
+	CopyrightEmail *string                  `json:"copyright_email,omitempty"`
 	Supports       []map[string]interface{} `json:"supports,omitempty"`
 	Attributes     []map[string]interface{} `json:"attributes,omitempty"`
-	Groups         []V1Group              `json:"groups,omitempty"`
-	Controls       []V1Control            `json:"controls,omitempty"`
-	SHA256         *string                `json:"sha256,omitempty"`
-	Depends        []V1Dependency         `json:"depends,omitempty"`
-	ParentProfile  *string                `json:"parent_profile,omitempty"`
-	Status         *string                `json:"status,omitempty"`
-	StatusMessage  *string                `json:"status_message,omitempty"`
-	SkipMessage    *string                `json:"skip_message,omitempty"`
+	Groups         []V1Group                `json:"groups,omitempty"`
+	Controls       []V1Control              `json:"controls,omitempty"`
+	SHA256         *string                  `json:"sha256,omitempty"`
+	Depends        []V1Dependency           `json:"depends,omitempty"`
+	ParentProfile  *string                  `json:"parent_profile,omitempty"`
+	Status         *string                  `json:"status,omitempty"`
+	StatusMessage  *string                  `json:"status_message,omitempty"`
+	SkipMessage    *string                  `json:"skip_message,omitempty"`
 }
 
 // V1Platform represents the platform in HDF v1.0 format.

@@ -81,10 +81,10 @@ func TestMultiSource_SecondSourceRoleIsNew(t *testing.T) {
 	}
 }
 
-// The TS multiSource mode uses dataSource.name from the raw document for labels.
+// The TS multiSource mode uses tool.name from the raw document for labels.
 // The Go engine currently uses static default labels. This test verifies the
-// current Go behavior with default labels when no dataSource is available.
-func TestMultiSource_DefaultLabelsWhenNoDataSource(t *testing.T) {
+// current Go behavior with default labels when no tool field is available.
+func TestMultiSource_DefaultLabelsWhenNoTool(t *testing.T) {
 	diff := mustDiffHdf(t, buildMultiSourceScanA(), []hdf.HdfResults{buildMultiSourceScanB()}, multiSourceOpts())
 
 	if diff.Sources[0].Label != "Old evaluation" {

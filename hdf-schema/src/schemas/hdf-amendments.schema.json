@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v2.0.0",
+  "title": "HDF Amendments",
+  "description": "Waivers, attestations, exceptions, and POA&Ms that modify requirement compliance status. Amendments are standalone documents that can be applied to results via merge operations.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "name",
+    "overrides"
+  ],
+  "properties": {
+    "amendmentId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this amendments document. Useful for cross-referencing when multiple amendment documents target the same results."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name for this amendments document. Example: 'Portal Q1 2026 Waivers'."
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the amendments' purpose and scope."
+    },
+    "systemRef": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "URI to the hdf-system document these amendments apply to."
+    },
+    "appliedBy": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+      "description": "Default identity of who created this amendments document. Individual overrides may specify their own appliedBy."
+    },
+    "approvedBy": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+      "description": "Identity of the authorizing official who approved these amendments."
+    },
+    "overrides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v2.0.0#/$defs/Standalone_Override"
+      },
+      "description": "The set of amendments (waivers, attestations, exceptions, POA&Ms)."
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Optional key-value labels for grouping and querying amendments."
+    },
+    "integrity": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
+      "description": "Cryptographic integrity information for verifying this amendments document has not been tampered with."
+    },
+    "signature": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature",
+      "description": "Document-level digital signature covering all amendments."
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of this amendments document."
+    },
+    "generator": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
+      "description": "Information about the tool that generated this document."
+    }
+  },
+  "examples": [
+    {
+      "name": "Portal Q1 2026 Waivers",
+      "systemRef": "portal-prod.hdf-system.json",
+      "approvedBy": { "type": "email", "identifier": "ao@agency.gov" },
+      "overrides": [
+        {
+          "type": "waiver",
+          "requirementId": "SV-257777",
+          "baselineRef": "RHEL9-STIG",
+          "status": "passed",
+          "reason": "Compensating control: session timeout set to 15 min",
+          "appliedBy": { "type": "email", "identifier": "ao@agency.gov" },
+          "appliedAt": "2026-01-15T10:00:00Z",
+          "expiresAt": "2026-06-30T00:00:00Z",
+          "evidence": [
+            {
+              "type": "url",
+              "data": "https://jira.agency.gov/CYBER-4521",
+              "description": "ISSM approval with compensating control documentation"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Apache/2.4.41 appears to be outdated (current is at least Apache/2.4.54).",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL: / Method: HEAD",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "600050",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-002605"
+            ],
+            "nist": [
+              "SI-2"
+            ]
+          },
+          "title": "Apache/2.4.41 appears to be outdated (current is at least Apache/2.4.54)."
+        },
+        {
+          "descriptions": [
+            {
+              "data": "The anti-clickjacking X-Frame-Options header is not present.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL: / Method: GET",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "999957",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "The anti-clickjacking X-Frame-Options header is not present."
+        },
+        {
+          "descriptions": [
+            {
+              "data": "HTTP TRACE method is active, suggesting the host is vulnerable to XST",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL: / Method: TRACE",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "999971",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "osvdb": "877"
+          },
+          "title": "HTTP TRACE method is active, suggesting the host is vulnerable to XST"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "mod_ssl 2.8.7 and lower are vulnerable to a remote buffer overflow. CVE-2002-0082, OSVDB-756.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL: /admin Method: GET",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "800132",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "nist": [
+              "SI-10"
+            ]
+          },
+          "title": "mod_ssl 2.8.7 and lower are vulnerable to a remote buffer overflow. CVE-2002-0082, OSVDB-756."
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "0b4f1c4a74af9d8435d0cc3edac57277e986489377b609d22f0d01dca1665cdf"
+      },
+      "name": "Host: example.com Port: 80",
+      "summary": "Apache/2.4.41",
+      "title": "Nikto Target: Host: example.com Port: 80"
+    }
+  ],
+  "components": [
+    {
+      "name": "Host: example.com Port: 80",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "nikto-to-hdf",
+    "version": "0.1.0"
+  },
+  "tool": {
+    "format": "JSON",
+    "name": "Nikto"
+  }
+}

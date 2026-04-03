@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,15 +43,13 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // --- Validation tests ---
 
-func TestConvertScoutsuiteToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertScoutsuiteToHDF([]byte(""), testConverterVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "empty input")
-}
-
-func TestConvertScoutsuiteToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertScoutsuiteToHDF([]byte("not valid json"), testConverterVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "scoutsuite-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertScoutsuiteToHDF(input, testConverterVersion) },
+		MinimalFixture: "scoutsuite_sample.js",
+		InvalidInput:   "not valid",
+	})
 }
 
 func TestConvertScoutsuiteToHDF_PureJSON(t *testing.T) {
@@ -84,15 +83,15 @@ func TestConvertScoutsuiteToHDF_Generator(t *testing.T) {
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 }
 
-func TestConvertScoutsuiteToHDF_DataSource(t *testing.T) {
+func TestConvertScoutsuiteToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/scoutsuite_sample.js")
 	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	assert.Equal(t, "ScoutSuite", *result.DataSource.Name)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
-	assert.Equal(t, "5.10.2", *result.DataSource.Version)
+	require.NotNil(t, result.Tool)
+	assert.Equal(t, "ScoutSuite", *result.Tool.Name)
+	assert.Equal(t, "JSON", *result.Tool.Format)
+	assert.Equal(t, "5.10.2", *result.Tool.Version)
 }
 
 func TestConvertScoutsuiteToHDF_BaselineName(t *testing.T) {
@@ -141,9 +140,9 @@ func TestConvertScoutsuiteToHDF_Target(t *testing.T) {
 	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	assert.Contains(t, result.Targets[0].Name, "916481805664")
-	assert.Equal(t, hdf.CloudAccount, result.Targets[0].Type)
+	require.Len(t, result.Components, 1)
+	assert.Contains(t, result.Components[0].Name, "916481805664")
+	assert.Equal(t, hdf.CloudAccount, result.Components[0].Type)
 }
 
 // --- Impact mapping ---
@@ -365,4 +364,10 @@ func TestGetImpact(t *testing.T) {
 	assert.Equal(t, 0.5, getImpact("warning"))
 	assert.Equal(t, 0.3, getImpact("unknown"))
 	assert.Equal(t, 0.3, getImpact(""))
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "scoutsuite-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertScoutsuiteToHDF(input, "0.1.0")
+	})
 }

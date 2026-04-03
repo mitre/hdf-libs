@@ -50,12 +50,12 @@ var (
 // GlobalFlags holds the global command-line flags.
 type GlobalFlags struct {
 	JSONOutput       bool
-	NoColor          bool
 	Debug            bool
 	MaxSizeMB        int
 	NoFollowSymlinks bool
 	SchemaDirFlag    string
-	Interactive      bool
+	ContinueOnError  bool
+	NoHeaders        bool
 }
 
 // Global flag variables (used by legacy code and helper functions).
@@ -65,6 +65,8 @@ var (
 	maxSizeMB        int
 	noFollowSymlinks bool
 	schemaDirFlag    string
+	continueOnError  bool
+	noHeaders        bool
 )
 
 // NewRootCmd creates a new root command with fresh state.
@@ -75,16 +77,19 @@ func NewRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "hdf",
 		Short: "Work with Heimdall Data Format (HDF) files",
-		Long: `hdf is a CLI tool for working with Heimdall Data Format (HDF) files.
+		Long: `hdf is a CLI tool for working with Heimdall Data Format (HDF) documents.
 
-HDF is a standardized format for security assessment results, designed to work
-with compliance tools like Chef InSpec, AWS Security Hub, and more.
+HDF is a standardized format for security assessments covering the full
+compliance lifecycle: baselines, results, system architecture, assessment
+plans, amendments (waivers/attestations), and evidence packages.
 
 Examples:
-  hdf validate results.json           Validate an HDF results file
-  hdf info results.json               Display summary information
-  hdf stats results.json              Show assessment statistics
-  hdf list controls results.json      List all controls/requirements
+  hdf validate results.json                 Validate any HDF document
+  hdf list results.json                     Summary of what's in a file
+  hdf list results.json --detail requirements   List individual requirements
+  hdf query results.json --status failed    Filter requirements by status
+  hdf convert scan.nessus                   Auto-detect and convert to HDF
+  hdf diff old.json new.json                Compare two assessments
 
 For more information: https://github.com/mitre/hdf-libs`,
 		SilenceUsage:  true,
@@ -96,6 +101,8 @@ For more information: https://github.com/mitre/hdf-libs`,
 			maxSizeMB = gf.MaxSizeMB
 			noFollowSymlinks = gf.NoFollowSymlinks
 			schemaDirFlag = gf.SchemaDirFlag
+			continueOnError = gf.ContinueOnError
+			noHeaders = gf.NoHeaders
 
 			initConfig()
 		},
@@ -103,24 +110,27 @@ For more information: https://github.com/mitre/hdf-libs`,
 
 	// Global persistent flags
 	cmd.PersistentFlags().BoolVar(&gf.JSONOutput, "json", false, "Output in JSON format")
-	cmd.PersistentFlags().BoolVar(&gf.NoColor, "no-color", false, "Disable colored output")
 	cmd.PersistentFlags().BoolVarP(&gf.Debug, "debug", "d", false, "Enable debug output")
 	cmd.PersistentFlags().IntVar(&gf.MaxSizeMB, "max-size", 50, "Maximum file size in MB")
 	cmd.PersistentFlags().BoolVar(&gf.NoFollowSymlinks, "no-follow-symlinks", false, "Refuse to read symlinked files")
 	cmd.PersistentFlags().StringVar(&gf.SchemaDirFlag, "schema-dir", "", "Load schemas from directory instead of embedded (for development)")
-	cmd.PersistentFlags().BoolVarP(&gf.Interactive, "interactive", "i", false, "Launch interactive TUI mode")
+	cmd.PersistentFlags().BoolVarP(&gf.ContinueOnError, "continue-on-error", "k", false, "Skip files that fail and report errors at the end")
+	cmd.PersistentFlags().BoolVar(&gf.NoHeaders, "no-headers", false, "Suppress column headers in table output")
 
 	// Add subcommands
 	cmd.AddCommand(NewValidateCmd())
-	cmd.AddCommand(NewInfoCmd())
-	cmd.AddCommand(NewStatsCmd())
 	cmd.AddCommand(NewListCmd())
 	cmd.AddCommand(NewQueryCmd())
-	cmd.AddCommand(NewVersionCmd())
 	cmd.AddCommand(NewConvertCmd())
 	cmd.AddCommand(NewDiffCmd())
-	cmd.AddCommand(NewFetchCmd())
+	cmd.AddCommand(NewAmendCmd())
+	cmd.AddCommand(NewEvidenceCmd())
+	cmd.AddCommand(NewSystemCmd())
+	cmd.AddCommand(NewPlanCmd())
+	cmd.AddCommand(NewLabelCmd())
 	cmd.AddCommand(NewGenerateCmd())
+	cmd.AddCommand(NewFetchCmd())
+	cmd.AddCommand(NewVersionCmd())
 
 	return cmd
 }
@@ -141,11 +151,8 @@ func initConfig() {
 }
 
 // printError prints an error message to stderr with optional suggestions.
-func printError(msg string, suggestions ...string) {
+func printError(msg string, _ ...string) {
 	fmt.Fprintln(os.Stderr, "Error:", msg)
-	for _, s := range suggestions {
-		fmt.Fprintln(os.Stderr, "  →", s)
-	}
 }
 
 // printDebug prints debug information if debug mode is enabled.

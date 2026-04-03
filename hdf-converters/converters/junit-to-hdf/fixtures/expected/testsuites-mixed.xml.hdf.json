@@ -1,0 +1,151 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: testAddition in com.example.math.MathTest",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "com.example.math.MathTest :: testAddition",
+              "runTime": 0.012,
+              "startTime": "2024-11-15T10:30:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "com.example.math.MathTest.testAddition",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "title": "testAddition"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: testDivisionByZero in com.example.math.MathTest",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "com.example.math.MathTest :: testDivisionByZero",
+              "message": "java.lang.AssertionError: Expected exception was not thrown\njava.lang.AssertionError: Expected exception was not thrown\n\tat com.example.math.MathTest.testDivisionByZero(MathTest.java:28)\n",
+              "runTime": 0.021,
+              "startTime": "2024-11-15T10:30:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "com.example.math.MathTest.testDivisionByZero",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "title": "testDivisionByZero"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: testSquareRoot in com.example.math.MathTest",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "com.example.math.MathTest :: testSquareRoot",
+              "message": "Skipped: Requires math library upgrade",
+              "runTime": 0.001,
+              "startTime": "2024-11-15T10:30:00Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "com.example.math.MathTest.testSquareRoot",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "title": "testSquareRoot"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: testConcat in com.example.string.StringTest",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "com.example.string.StringTest :: testConcat",
+              "runTime": 0.008,
+              "startTime": "2024-11-15T10:30:01Z",
+              "status": "passed"
+            }
+          ],
+          "id": "com.example.string.StringTest.testConcat",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "title": "testConcat"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: testParseInt in com.example.string.StringTest",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "com.example.string.StringTest :: testParseInt",
+              "message": "java.lang.NullPointerException: Unexpected null\njava.lang.NullPointerException: Unexpected null\n\tat com.example.string.StringTest.testParseInt(StringTest.java:42)\n",
+              "runTime": 0.025,
+              "startTime": "2024-11-15T10:30:01Z",
+              "status": "error"
+            }
+          ],
+          "id": "com.example.string.StringTest.testParseInt",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "title": "testParseInt"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "f569adfeaf37dae5cfe6259784f595258f9410439bdc4fefb4ab18a171d75dc5"
+      },
+      "name": "JUnit Test Results"
+    }
+  ],
+  "components": [
+    {
+      "name": "JUnit Test Results",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "hdf-converters",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:57.146433Z",
+  "tool": {
+    "format": "XML",
+    "name": "JUnit XML"
+  }
+}

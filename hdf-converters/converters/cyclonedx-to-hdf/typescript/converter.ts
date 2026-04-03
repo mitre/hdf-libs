@@ -3,13 +3,11 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -96,7 +94,10 @@ const CVSS_METHODS = new Set([
   'CVSSv4',
 ]);
 
-const INFO_UNKNOWN_SEVERITIES = new Set(['info', 'unknown']);
+// NOTE: heimdall2 mapped info/unknown severity to NotReviewed status.
+// We intentionally do NOT replicate that — a vulnerability is a finding
+// regardless of severity confidence. Info/unknown severity vulns are Failed
+// with impact from the severity mapping (info→0.1, unknown→0.5).
 
 /**
  * Computes the maximum impact across all ratings for a vulnerability.
@@ -127,21 +128,6 @@ function maxImpact(ratings: CycloneDXRating[]): number {
   return max;
 }
 
-/**
- * Returns true if all ratings have only info or unknown severity
- * (and none have a recognized severity like critical/high/medium/low/none).
- *
- * NOTE: This replicates heimdall2 behavior. The semantic correctness of mapping
- * "unknown severity" to "not reviewed" is debatable and should be re-examined.
- */
-function isInfoOrUnknownOnly(ratings: CycloneDXRating[]): boolean {
-  if (ratings.length === 0) {
-    return false;
-  }
-  return ratings.every(
-    (r) => INFO_UNKNOWN_SEVERITIES.has((r.severity ?? '').toLowerCase())
-  );
-}
 
 /**
  * Formats the ratings as a human-readable tag string.
@@ -223,6 +209,14 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
     );
   }
 
+  if (!bom.vulnerabilities || bom.vulnerabilities.length === 0) {
+    throw new Error(
+      'cyclonedx: this file is an SBOM inventory with no vulnerabilities; ' +
+      'to import SBOM data into a system document, use:\n' +
+      '  hdf system create --from <sbom-file> --component-name <name>'
+    );
+  }
+
   const resultsChecksum: Checksum = await inputChecksum(input);
 
   // Flatten nested components and build lookup by bom-ref
@@ -291,36 +285,21 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
       descriptions.push({ label: 'fix', data: fixParts.join('\n\n') });
     }
 
-    // Determine if this is an info/unknown-only vulnerability
-    const infoUnknownSkip = isInfoOrUnknownOnly(ratings);
-
-    // Build results: one per affected component
+    // Build results: one per affected component.
+    // All vulnerabilities are Failed — info/unknown severity affects impact
+    // score but not status.
     const affects = vuln.affects ?? [];
     const results =
       affects.length > 0
-        ? affects.map((affect) => {
-            if (infoUnknownSkip) {
-              return createResult(
-                ResultStatus.NotReviewed,
-                'Manual review required because a CycloneDX rating severity is set to `info` or `unknown`.',
-                { codeDesc: formatCodeDesc(componentLookup, affect.ref) }
-              );
-            }
-            return createResult(ResultStatus.Failed, undefined, {
+        ? affects.map((affect) =>
+            createResult(ResultStatus.Failed, undefined, {
               codeDesc: formatCodeDesc(componentLookup, affect.ref),
-            });
-          })
+            })
+          )
         : [
-            // Vulnerability with no affects — create a single result
-            infoUnknownSkip
-              ? createResult(
-                  ResultStatus.NotReviewed,
-                  'Manual review required because a CycloneDX rating severity is set to `info` or `unknown`.',
-                  { codeDesc: `Vulnerability ${vuln.id}` }
-                )
-              : createResult(ResultStatus.Failed, undefined, {
-                  codeDesc: `Vulnerability ${vuln.id}`,
-                }),
+            createResult(ResultStatus.Failed, undefined, {
+              codeDesc: `Vulnerability ${vuln.id}`,
+            }),
           ];
 
     const title = vuln.source?.name
@@ -336,20 +315,15 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
     resultsChecksum,
   }) as EvaluatedBaseline;
 
-  const dataSource: DataSource = { name: 'CycloneDX', format: 'JSON' };
-
   const targetName = bom.metadata?.component?.name ?? '';
 
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'cyclonedx-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'CycloneDX',
+    toolFormat: 'JSON',
     baselines: [baseline],
-    generator: {
-      name: 'cyclonedx-to-hdf',
-      version: '1.0.0',
-    },
-    dataSource,
-    targets: [{ name: targetName, type: Copyright.Application }],
+    components: [{ name: targetName, type: Copyright.Application }],
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

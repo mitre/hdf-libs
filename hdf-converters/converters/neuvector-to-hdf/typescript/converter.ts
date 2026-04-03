@@ -3,13 +3,11 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -237,23 +235,22 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
     }
   ) as EvaluatedBaseline;
 
-  const dataSource: DataSource = { name: 'NeuVector', format: 'JSON' };
-
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'neuvector-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'NeuVector',
+    toolFormat: 'JSON',
     baselines: [baseline],
-    generator: {
-      name: 'neuvector-to-hdf',
-      version: '1.0.0',
-    },
-    dataSource,
-    targets: [
+    components: [
       {
         name: targetNameFromReport(scan.report),
         type: Copyright.ContainerImage,
+        labels: {
+          image: `${scan.report.registry}/${scan.report.repository}:${scan.report.tag}`,
+          registry: scan.report.registry,
+        },
       },
     ],
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

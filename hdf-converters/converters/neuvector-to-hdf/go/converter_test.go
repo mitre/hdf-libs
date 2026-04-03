@@ -40,14 +40,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertNeuVector_InvalidJSON(t *testing.T) {
-	_, err := ConvertNeuVectorToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertNeuVector_EmptyInput(t *testing.T) {
-	_, err := ConvertNeuVectorToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "neuvector-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertNeuVectorToHDF(input, testVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 // ---- Minimal fixture: baseline structure ----
@@ -103,18 +101,18 @@ func TestConvertNeuVector_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertNeuVector_DataSource(t *testing.T) {
+func TestConvertNeuVector_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertNeuVectorToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "NeuVector", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "NeuVector", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- Impact: score_v3 / 10 ----
@@ -342,10 +340,10 @@ func TestConvertNeuVector_Target(t *testing.T) {
 	result, err := ConvertNeuVectorToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
+	require.NotEmpty(t, result.Components)
 	// Target name should be the image reference
-	assert.Contains(t, result.Targets[0].Name, "mitre/heimdall")
-	assert.Equal(t, hdf.ContainerImage, result.Targets[0].Type)
+	assert.Contains(t, result.Components[0].Name, "mitre/heimdall")
+	assert.Equal(t, hdf.ContainerImage, result.Components[0].Type)
 }
 
 // ---- Tags with extras ----
@@ -422,4 +420,10 @@ func TestConvertNeuVector_FullFixtureHeimdall2(t *testing.T) {
 		assert.NotEmpty(t, req.ID)
 		assert.NotEmpty(t, req.Results)
 	}
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "neuvector-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertNeuVectorToHDF(input, "0.1.0")
+	})
 }

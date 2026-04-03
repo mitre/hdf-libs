@@ -28,10 +28,10 @@ describe('Nessus to HDF Converter', async () => {
       expect(result).toBeDefined();
       expect(result.baselines).toBeDefined();
       expect(result.statistics).toBeDefined();
-      expect(result.targets).toBeDefined();
-      expect(result.dataSource?.name).toBe('Nessus');
-      expect(result.dataSource?.version).toBeUndefined();
-      expect(result.dataSource?.format).toBeUndefined();
+      expect(result.components).toBeDefined();
+      expect(result.tool?.name).toBe('Nessus');
+      expect(result.tool?.version).toBeUndefined();
+      expect(result.tool?.format).toBeUndefined();
     });
 
     it('should create one baseline per report with correct metadata', async () => {
@@ -216,14 +216,14 @@ describe('Nessus to HDF Converter', async () => {
 
       const result = await convertNessusToHdf(nessusXml);
 
-      expect(result.targets).toBeDefined();
-      expect(result.targets?.length).toBe(3);
+      expect(result.components).toBeDefined();
+      expect(result.components?.length).toBe(3);
 
       // Find the first host (10.0.0.3)
-      const target = result.targets!.find(t => t.id === '10.0.0.3');
+      const target = result.components!.find(t => t.name === '10.0.0.3');
       expect(target).toBeDefined();
-      expect(target?.attributes?.['operating-system']).toContain('Ubuntu');
-      expect(target?.attributes?.['host-ip']).toBe('10.0.0.3');
+      expect(target?.osName).toContain('Ubuntu');
+      expect(target?.ipAddress).toBe('10.0.0.3');
     });
 
     it('should set generator metadata', async () => {
@@ -502,7 +502,7 @@ describe('Nessus to HDF Converter', async () => {
 </NessusClientData_v2>`;
 
       const result = await convertNessusToHdf(xml);
-      expect(result.targets).toBeDefined();
+      expect(result.components).toBeDefined();
     });
 
     it('should handle ReportHost without ReportItems', async () => {

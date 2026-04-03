@@ -1,0 +1,48 @@
+{
+  "checksum": {
+    "algorithm": "sha256",
+    "value": "f115bdc4365108f67d4e5503f19f26676338b3b91a353a1fd95b1063ac411758"
+  },
+  "generator": {
+    "name": "hdf-converters",
+    "version": "0.1.0"
+  },
+  "requirements": [
+    {
+      "descriptions": [
+        {
+          "data": "Inactive accounts are automatically disabled based on the duration specified by the duration parameter. Disabled accounts are expected to be reviewed and removed when appropriate.",
+          "label": "default"
+        }
+      ],
+      "id": "AC-2 (3)",
+      "impact": 0.5,
+      "tags": {
+        "nist": [
+          "AC-2 (3)"
+        ]
+      },
+      "title": "AC-2 (3)"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "An alternate narrative for FedRAMP..",
+          "label": "default"
+        }
+      ],
+      "id": "AC-2 (3)",
+      "impact": 0.5,
+      "tags": {
+        "nist": [
+          "AC-2 (3)"
+        ]
+      },
+      "title": "AC-2 (3)"
+    }
+  ],
+  "name": "test-component-1",
+  "status": "loaded",
+  "title": "Test Component Definition",
+  "version": "20231012"
+}

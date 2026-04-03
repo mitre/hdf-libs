@@ -1,0 +1,62 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "AWS secret detected by PLAIN decoder",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "{\"Data\":{\"Git\":{\"commit\":\"0416560b1330d8ac42045813251d85c688717eaf\",\"file\":\"new_key\",\"email\":\"counter \\u003chello@trufflesec.com\\u003e\",\"repository\":\"https://github.com/trufflesecurity/test_keys\",\"timestamp\":\"2023-10-19 02:56:37 +0000\",\"line\":2}}}",
+              "message": "{\"ExtraData\":{\"account\":\"052310077262\",\"arn\":\"arn:aws:iam::052310077262:user/canarytokens.com@@c20nnjzlioibnaxvt392i9ope\",\"is_canary\":\"true\",\"message\":\"This is an AWS canary token generated at canarytokens.org, and was not set off; learn more here: https://trufflesecurity.com/canaries\",\"resource_type\":\"Access key\"},\"Redacted\":\"AKIAQYLPMN5HHHFPZAM2\",\"Verified\":true}",
+              "startTime": "2023-10-19T02:56:37Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 2,
+            "ref": "new_key"
+          },
+          "id": "AWS PLAIN",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000202",
+              "CCI-000203",
+              "CCI-002367"
+            ],
+            "nist": [
+              "IA-5 (7)"
+            ]
+          },
+          "title": "Found AWS secret using PLAIN decoder"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "3733658fc315c4a3c1846c59253dfd2a5d640ee9a8cd0769197e7aabc8edefc7"
+      },
+      "name": "TruffleHog Scan",
+      "title": "TruffleHog Scan (trufflehog - git)"
+    }
+  ],
+  "components": [
+    {
+      "name": "https://github.com/trufflesecurity/test_keys",
+      "type": "repository"
+    }
+  ],
+  "generator": {
+    "name": "hdf-converters",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:18:04.0296541Z",
+  "tool": {
+    "format": "JSON",
+    "name": "TruffleHog"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Binaries signed by Microsoft can be used to run low-reputation arbitrary code. This technique is used by attackers to move laterally or execute malicious code while evading detection.",
+              "label": "default"
+            },
+            {
+              "data": "Collect artifacts and determine scope. Update antivirus signatures and run a full scan. Isolate the machine from the network.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Device: temp123.middleeast.corp.microsoft.com (OS: Windows10)\nProcess: C:\\Windows\\SysWOW64\\rundll32.exe (Command: rundll32.exe c:\\temp\\suspicious.dll,RepeatAfterMe)",
+              "message": "Alert: Low-reputation arbitrary code executed by signed executable\nStatus: new\nSeverity: low\nURL: https://security.microsoft.com/alerts/da637472900382838869_1364969609",
+              "startTime": "2021-01-26T20:31:32.9562661Z",
+              "status": "failed"
+            }
+          ],
+          "id": "da637472900382838869_1364969609",
+          "impact": 0.3,
+          "tags": {
+            "category": "Execution",
+            "mitre": [
+              "T1064",
+              "T1085",
+              "T1220"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Low-reputation arbitrary code executed by signed executable"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "0550bc6aae3618e9d7a485c5d89d787942cdc6eb0b750ef7e9758f62eae13e84"
+      },
+      "name": "Microsoft Defender for Endpoint Scan"
+    }
+  ],
+  "components": [
+    {
+      "labels": {
+        "provider": "azure"
+      },
+      "name": "temp123.middleeast.corp.microsoft.com",
+      "type": "host",
+      "fqdn": "temp123.middleeast.corp.microsoft.com",
+      "osName": "Windows10"
+    }
+  ],
+  "generator": {
+    "name": "msft-defender-endpoint-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:57.9206827Z",
+  "tool": {
+    "name": "Microsoft Defender for Endpoint"
+  }
+}

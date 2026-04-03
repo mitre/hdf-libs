@@ -3,7 +3,6 @@ package sonarqube
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"time"
@@ -13,15 +12,18 @@ import (
 	hdf "github.com/mitre/hdf-schema"
 )
 
-// SonarQube /api/issues/search response structure
+// IssuesResponse is the SonarQube /api/issues/search response structure.
+// ServerVersion is populated by the fetcher from /api/server/version and
+// travels with the data so the converter can include it in the HDF output.
 type IssuesResponse struct {
-	Total      int         `json:"total"`
-	Page       int         `json:"p"`
-	PageSize   int         `json:"ps"`
-	Paging     Paging      `json:"paging"`
-	Issues     []Issue     `json:"issues"`
-	Components []Component `json:"components,omitempty"`
-	Rules      []Rule      `json:"rules,omitempty"`
+	Total         int         `json:"total"`
+	Page          int         `json:"p"`
+	PageSize      int         `json:"ps"`
+	Paging        Paging      `json:"paging"`
+	Issues        []Issue     `json:"issues"`
+	Components    []Component `json:"components,omitempty"`
+	Rules         []Rule      `json:"rules,omitempty"`
+	ServerVersion string      `json:"serverVersion,omitempty"`
 }
 
 type Paging struct {
@@ -122,9 +124,15 @@ const defaultNistTag = "SA-11"
 // SonarQube omits the colon in the timezone offset, so time.RFC3339 does not parse it.
 const sonarTimestampFormat = "2006-01-02T15:04:05-0700"
 
-
 // ConvertSonarqubeToHDF converts SonarQube issues JSON to HDF format
 func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("sonarqube: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "sonarqube", 0); err != nil {
+		return nil, fmt.Errorf("sonarqube: %w", err)
+	}
+
 	// Calculate checksum of source scan data
 	resultsChecksum := shared.InputChecksum(input)
 
@@ -149,10 +157,7 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}
 
 	// Group issues by project
-	limitedIssues, truncatedIssues := shared.LimitSlice(sonarData.Issues, 0)
-	if truncatedIssues {
-		log.Printf("WARNING: Input truncated at %d issue items (original: %d)", len(limitedIssues), len(sonarData.Issues))
-	}
+	limitedIssues := shared.LimitSliceWithWarning(sonarData.Issues, 0, "issue")
 	issuesByProject := make(map[string][]Issue)
 	for _, issue := range limitedIssues {
 		projectKey := issue.Project
@@ -166,16 +171,26 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		baselines = append(baselines, baseline)
 	}
 
+	// Build targets from project keys
+	targets := make([]hdf.Component, 0, len(issuesByProject))
+	for projectKey := range issuesByProject {
+		targets = append(targets, hdf.Component{
+			Name: projectKey,
+			Type: hdf.CopyrightApplication,
+		})
+	}
+
 	// Build HDF
 	timestamp := time.Now()
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:    "sonarqube-to-hdf",
-		ConverterVersion: converterVersion,
-		DataSourceName:   "SonarQube",
-		Baselines:        baselines,
-		Targets:          []hdf.Target{},
-		Timestamp:        &timestamp,
+		GeneratorName:     "sonarqube-to-hdf",
+		ConverterVersion:  converterVersion,
+		ToolName:          "SonarQube",
+		ToolVersion:       sonarData.ServerVersion,
+		Baselines:         baselines,
+		Components:           targets,
+		Timestamp:         &timestamp,
 	}), nil
 }
 
@@ -337,7 +352,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 
 			// Check for CWE tags
 			if strings.HasPrefix(lowerTag, "cwe-") || strings.Contains(lowerTag, "cwe") {
-					if match := shared.CWEPattern.FindStringSubmatch(tag); match != nil {
+				if match := shared.CWEPattern.FindStringSubmatch(tag); match != nil {
 					cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 				}
 			}
@@ -366,7 +381,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 			lowerTag := strings.ToLower(tag)
 
 			if strings.HasPrefix(lowerTag, "cwe-") {
-					if match := shared.CWEPattern.FindStringSubmatch(tag); match != nil {
+				if match := shared.CWEPattern.FindStringSubmatch(tag); match != nil {
 					cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 				}
 			}
@@ -422,7 +437,6 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 	return cweIds, owaspTags, allTags
 }
 
-
 func createResultFromIssue(issue Issue, componentMap map[string]Component) hdf.RequirementResult {
 	status := hdf.Failed
 	if issue.Status == "RESOLVED" || issue.Status == "CLOSED" {
@@ -477,4 +491,3 @@ func extractSourceLocation(issue Issue, componentMap map[string]Component) *hdf.
 		Line: &lineFloat,
 	}
 }
-

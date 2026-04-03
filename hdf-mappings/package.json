@@ -2,6 +2,9 @@
   "name": "@mitre/hdf-mappings",
   "version": "0.1.0",
   "description": "CCI/NIST/CIS/CMMC security framework mappings for HDF",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,7 +20,7 @@
   "scripts": {
     "build": "pnpm clean && tsc && pnpm copy-data",
     "clean": "rimraf dist",
-    "copy-data": "cpy 'src/data/**' dist/data",
+    "copy-data": "cpy src/data/** dist/data",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
     "test:go": "cd go && go test ./...",

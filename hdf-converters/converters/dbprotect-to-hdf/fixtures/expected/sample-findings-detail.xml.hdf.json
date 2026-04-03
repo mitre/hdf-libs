@@ -1,0 +1,120 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Task : Audit; Check Category : Improper Access Controls",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Key=MS_SQLEnableSystemAssemblyLoadingKey;Private key encryption type=NO_PRIVATE_KEY;Database containing key=master",
+              "startTime": "2021-02-18T15:57:00Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Owner of the key=sa;Is SYSADMIN=Yes;Key=MS_SQLEnableSystemAssemblyLoadingKey;Database containing key=master",
+              "startTime": "2021-02-18T15:57:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "2801",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Protection of DBMS asymmetric encryption keys"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Task : Audit; Check Category : Improper Access Controls",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Grantee=db_ssisadmin;State=GRANT;Database=msdb;Object Name=sysssislog;Permission=DELETE;Object Type=Table",
+              "startTime": "2021-02-18T15:57:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "2830",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "System Table Permissions"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Task : Audit; Check Category : Misconfigurations",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Key=##MS_ServiceMasterKey##;Database=master;Algorithm=AES_256",
+              "startTime": "2021-02-18T15:57:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "2903",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Symmetric encryption keys"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "4925b57ec519fe44e3f4d012e77085ddd8e726f2bac8af8af0d73c5b76c08a29"
+      },
+      "name": "DBProtect Scan",
+      "summary": "Organization : Sample Organization Server\nAsset : HOST1\nAsset Type : Microsoft SQL Server\nIP Address, Port, Instance : 192.168.1.200, 1433, MSSQLSERVER",
+      "title": "Sample scan report generation",
+      "version": "DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)"
+    }
+  ],
+  "components": [
+    {
+      "name": "HOST1",
+      "type": "host"
+    }
+  ],
+  "generator": {
+    "name": "dbprotect-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:51.748668Z",
+  "tool": {
+    "format": "XML",
+    "name": "DBProtect"
+  }
+}

@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertJunitToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
 
@@ -20,18 +21,16 @@ async function parseHdf(fixture: string): Promise<HdfResults> {
 // Fixtures sourced from apache/maven-surefire test resources:
 // https://github.com/apache/maven-surefire/tree/master/surefire-report-parser/src/test/resources/fixture/testsuitexmlparser
 
+runConverterContractTests({
+  converterName: 'junit-to-hdf',
+  convertFn: convertJunitToHdf,
+  minimalFixture: 'surefire-error.xml',
+});
+
 describe('junit to HDF converter', async () => {
   // --- Input validation ---
 
   describe('input validation', async () => {
-    it('should throw on empty input', async () => {
-      await expect(convertJunitToHdf('')).rejects.toThrow();
-    });
-
-    it('should throw on invalid XML', async () => {
-      await expect(convertJunitToHdf('not xml')).rejects.toThrow();
-    });
-
     it('should throw on unclosed XML', async () => {
       await expect(convertJunitToHdf('<unclosed')).rejects.toThrow();
     });
@@ -55,10 +54,10 @@ describe('junit to HDF converter', async () => {
       expect(hdf.baselines).toHaveLength(1);
     });
 
-    it('should set dataSource', async () => {
+    it('should set tool', async () => {
       const hdf = await parseHdf('surefire-failing.xml');
-      expect(hdf.dataSource?.name).toBe('JUnit XML');
-      expect(hdf.dataSource?.format).toBe('XML');
+      expect(hdf.tool?.name).toBe('JUnit XML');
+      expect(hdf.tool?.format).toBe('XML');
     });
   });
 

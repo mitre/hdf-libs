@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-plan/v2.0.0",
+  "title": "HDF Plan",
+  "description": "Defines an assessment plan — what baselines to run against which targets, with resolved inputs and scheduling. Maps to OSCAL Assessment Plan.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "name",
+    "assessments"
+  ],
+  "properties": {
+    "planId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this plan. Optional in casual use, expected in production documents. Auto-generated if omitted during creation."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable plan name. Example: 'Portal Monthly Assessment'."
+    },
+    "type": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v2.0.0#/$defs/Plan_Type",
+      "description": "The type of assessment plan."
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the plan's purpose and scope."
+    },
+    "systemRef": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "URI to the hdf-system document this plan targets. Example: 'portal-prod.hdf-system.json'."
+    },
+    "assessments": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v2.0.0#/$defs/Assessment"
+      },
+      "description": "The assessments to perform. Each assessment pairs a baseline with targets and resolved inputs."
+    },
+    "schedule": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v2.0.0#/$defs/Schedule",
+      "description": "Optional scheduling configuration for recurring assessments."
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Optional key-value labels for grouping and querying plans."
+    },
+    "integrity": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
+      "description": "Cryptographic integrity information for verifying this plan document has not been tampered with."
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of this plan document."
+    },
+    "generator": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
+      "description": "Information about the tool that generated this plan."
+    }
+  },
+  "examples": [
+    {
+      "name": "Portal Monthly Assessment",
+      "type": "automated",
+      "systemRef": "portal-prod.hdf-system.json",
+      "assessments": [
+        {
+          "baselineRef": "RHEL9-STIG",
+          "targetSelector": { "labels.component": "WebTier" },
+          "inputs": {
+            "max_concurrent_sessions": 5,
+            "password_min_length": 15
+          },
+          "runner": {
+            "name": "cinc-auditor",
+            "version": "6.8.1"
+          }
+        }
+      ],
+      "schedule": {
+        "cron": "0 2 1 * *",
+        "notifyOnRegression": ["security-team@agency.gov"]
+      }
+    }
+  ]
+}

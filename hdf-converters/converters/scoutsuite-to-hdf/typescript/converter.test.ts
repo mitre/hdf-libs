@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertScoutsuiteToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -22,16 +23,14 @@ function findRequirement(baselines: Array<Record<string, unknown>>, id: string) 
   return undefined;
 }
 
+runConverterContractTests({
+  converterName: 'scoutsuite-to-hdf',
+  convertFn: convertScoutsuiteToHdf,
+  minimalFixture: 'scoutsuite_sample.js',
+});
+
 describe('ScoutSuite to HDF Converter', () => {
   // --- Validation tests ---
-
-  it('should reject empty input', async () => {
-    await expect(convertScoutsuiteToHdf('')).rejects.toThrow('empty input');
-  });
-
-  it('should reject input that is not valid JSON after prefix stripping', async () => {
-    await expect(convertScoutsuiteToHdf('not valid json')).rejects.toThrow();
-  });
 
   it('should handle pure JSON without JS prefix', async () => {
     const input = '{"account_id": "123", "provider_name": "AWS", "services": {}, "last_run": {"time": "2021-01-01 00:00:00+0000", "version": "5.0.0", "ruleset_name": "test", "ruleset_about": "test"}}';
@@ -70,10 +69,10 @@ describe('ScoutSuite to HDF Converter', () => {
       expect(gen.version).toBe('1.0.0');
     });
 
-    it('should set dataSource correctly', async () => {
+    it('should set tool correctly', async () => {
       const input = loadFixture('input/scoutsuite_sample.js');
       const out = parseOutput(await convertScoutsuiteToHdf(input));
-      const ds = out.dataSource as Record<string, unknown>;
+      const ds = out.tool as Record<string, unknown>;
       expect(ds.name).toBe('ScoutSuite');
       expect(ds.format).toBe('JSON');
       expect(ds.version).toBe('5.10.2');
@@ -116,7 +115,7 @@ describe('ScoutSuite to HDF Converter', () => {
     it('should set target as CloudAccount type', async () => {
       const input = loadFixture('input/scoutsuite_sample.js');
       const out = parseOutput(await convertScoutsuiteToHdf(input));
-      const targets = out.targets as Array<Record<string, unknown>>;
+      const targets = out.components as Array<Record<string, unknown>>;
       expect(targets).toHaveLength(1);
       expect(targets[0]!.name).toContain('916481805664');
       expect(targets[0]!.type).toBe('cloudAccount');

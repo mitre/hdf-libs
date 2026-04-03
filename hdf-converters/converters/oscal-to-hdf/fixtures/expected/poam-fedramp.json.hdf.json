@@ -1,0 +1,57 @@
+{
+  "appliedBy": {
+    "identifier": "72bf37e1-9f76-4261-886f-8e297599f365",
+    "type": "simple"
+  },
+  "checksum": {
+    "algorithm": "sha256",
+    "value": "794b060aa133e438a3af4490746ee7056df43256146899f10020a15f75f59466"
+  },
+  "generator": {
+    "name": "hdf-converters",
+    "version": "0.1.0"
+  },
+  "name": "system-name-fedramp-plan-of-action-and-milestones-poa-m",
+  "overrides": [
+    {
+      "appliedAt": "2024-09-24T02:24:00Z",
+      "appliedBy": {
+        "identifier": "72bf37e1-9f76-4261-886f-8e297599f365",
+        "type": "simple"
+      },
+      "expiresAt": "2027-03-23T00:28:13.371721-04:00",
+      "milestones": [
+        {
+          "description": "CSP's Remediation Plan: A description of the CSP's intended approach to remediating the identified risk.",
+          "estimatedCompletion": "2026-06-23T00:28:13.371762-04:00",
+          "status": "pending"
+        }
+      ],
+      "reason": "Provide description",
+      "requirementId": "AC-2",
+      "status": "failed",
+      "type": "poam"
+    },
+    {
+      "appliedAt": "2024-09-24T02:24:00Z",
+      "appliedBy": {
+        "identifier": "72bf37e1-9f76-4261-886f-8e297599f365",
+        "type": "simple"
+      },
+      "expiresAt": "2027-03-23T00:28:13.371763-04:00",
+      "milestones": [
+        {
+          "description": "CSP's Remediation Plan: A description of the CSP's intended approach to remediating the identified risk.",
+          "estimatedCompletion": "2026-06-23T00:28:13.371763-04:00",
+          "status": "pending"
+        }
+      ],
+      "reason": "An example set of infrastructure scan findings.",
+      "requirementId": "AC-2",
+      "status": "failed",
+      "type": "poam"
+    }
+  ],
+  "systemRef": "#7c30125f-c056-4888-9f1a-7ed1b6a1b638",
+  "version": "fedramp2.1.0-oscal1.0.4"
+}

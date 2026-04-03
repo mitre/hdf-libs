@@ -1,0 +1,80 @@
+import { runFingerprintTests } from '../../../shared/typescript/fptest.js';
+import { register, neuvectorFingerprint } from './fingerprint.js';
+
+runFingerprintTests({
+  id: 'neuvector-to-hdf',
+  label: 'NeuVector',
+  direction: 'ingest',
+  inputFamily: 'json',
+  outputType: 'results',
+  fingerprint: neuvectorFingerprint,
+  register,
+  positive: [
+    {
+      name: 'detects NeuVector JSON at confidence 1.0',
+      input: JSON.stringify({
+        error_message: '',
+        report: {
+          image_id: 'sha256:abc',
+          registry: 'docker.io',
+          repository: 'library/nginx',
+          tag: 'latest',
+          digest: 'sha256:xyz',
+          size: 12345,
+          author: '',
+          base_os: 'debian',
+          created_at: '2024-01-01T00:00:00Z',
+          cvedb_version: '1.0',
+          cvedb_create_time: '2024-01-01T00:00:00Z',
+          layers: [],
+          vulnerabilities: [
+            {
+              name: 'CVE-2024-0001',
+              score: 7.5,
+              severity: 'High',
+              vectors: '',
+              description: 'A vulnerability',
+              file_name: 'libssl.so',
+              package_name: 'openssl',
+              package_version: '1.1.1',
+              fixed_version: '1.1.2',
+              link: 'https://nvd.nist.gov/',
+              score_v3: 7.5,
+              vectors_v3: '',
+              published_timestamp: 0,
+              last_modified_timestamp: 0,
+              feed_rating: '',
+            },
+          ],
+        },
+      }),
+      confidence: 1.0,
+    },
+    {
+      name: 'detects NeuVector with empty vulnerabilities at confidence 0.7',
+      input: JSON.stringify({
+        error_message: '',
+        report: {
+          image_id: 'sha256:abc',
+          registry: 'docker.io',
+          repository: 'library/alpine',
+          tag: '3.18',
+          digest: '',
+          size: 5000,
+          author: '',
+          base_os: 'alpine',
+          created_at: '',
+          cvedb_version: '',
+          cvedb_create_time: '',
+          layers: [],
+          vulnerabilities: [],
+        },
+      }),
+      confidence: 0.7,
+    },
+  ],
+  negative: [
+    { name: 'does not match Snyk JSON (top-level vulnerabilities)', input: JSON.stringify({ vulnerabilities: [], packageManager: 'npm' }), confidence: 0 },
+    { name: 'does not match random JSON', input: JSON.stringify({ foo: 'bar' }), confidence: 0 },
+  ],
+});

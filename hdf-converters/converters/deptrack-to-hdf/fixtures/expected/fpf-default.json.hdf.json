@@ -1,0 +1,104 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Affected versions of `timespan`...",
+              "label": "default"
+            },
+            {
+              "data": "Affected versions of `timespan`...",
+              "label": "check"
+            },
+            {
+              "data": "No direct patch is available...",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "No direct patch is available...",
+              "startTime": "2022-02-18T23:31:42Z",
+              "status": "failed"
+            }
+          ],
+          "id": "ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cweIds": [
+              "CWE-400"
+            ],
+            "nist": [
+              "SI-10"
+            ]
+          },
+          "title": "pkg:npm/timespan@2.3.0 - Regular Expression Denial of Service"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Versions of `uglify-js` prior to...",
+              "label": "default"
+            },
+            {
+              "data": "Versions of `uglify-js` prior to...",
+              "label": "check"
+            },
+            {
+              "data": "Update to version 2.6.0 or later.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Update to version 2.6.0 or later.",
+              "startTime": "2022-02-18T23:31:42Z",
+              "status": "failed"
+            }
+          ],
+          "id": "ca4f2da9-0fad-4a13-92d7-f627f3168a56:979f87f5-eaf5-4095-9d38-cde17bf9228e:701a3953-666b-4b7a-96ca-e1e6a3e1def3",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cweIds": [
+              "CWE-400"
+            ],
+            "nist": [
+              "SI-10"
+            ]
+          },
+          "title": "pkg:npm/uglify-js@2.4.24 - Regular Expression Denial of Service"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "169f2bccda992794d9de19d7783a196cd747b60902d2aee193fca4a71ce967cc"
+      },
+      "name": "Dependency-Track Scan",
+      "summary": "A sample application",
+      "title": "Dependency-Track: Acme Example 1.0"
+    }
+  ],
+  "components": [
+    {
+      "name": "Acme Example",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "deptrack-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:51.8058862Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Dependency-Track"
+  }
+}

@@ -2,7 +2,7 @@
  * HDF v1.0 to v2.0 converter.
  *
  * Comprehensive transformations:
- * - Top-level: version removed, profiles → baselines, platform → targets
+ * - Top-level: version removed, profiles → baselines, platform → components
  * - Baseline: sha256 → checksum, controls → requirements
  * - Control: source_location → sourceLocation, waiver_data → waiverData, status → effectiveStatus
  * - Results: snake_case → camelCase for all fields
@@ -11,6 +11,7 @@
 
 import { flattenOverlays } from '@mitre/hdf-parsers';
 import type { HdfResults } from '@mitre/hdf-schema';
+import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
 
@@ -179,7 +180,7 @@ export interface V2Baseline {
   copyright?: string;
   copyright_email?: string;
   supports?: unknown[];
-  attributes?: unknown[];
+  inputs?: unknown[];
   groups?: V2Group[];
   requirements?: V2Requirement[];
   checksum?: {
@@ -197,9 +198,9 @@ export interface V2Baseline {
 export interface HDFV2Results {
   baselines: V2Baseline[];
   statistics: unknown;
-  targets?: unknown[];
+  components?: unknown[];
   generator?: unknown;
-  dataSource?: { name?: string; version?: string; format?: string };
+  tool?: { name?: string; version?: string; format?: string };
   timestamp?: string;
   id?: string;
   integrity?: unknown;
@@ -463,14 +464,14 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
   if (v1Profile.copyright !== undefined) v2Baseline.copyright = v1Profile.copyright;
   if (v1Profile.copyright_email !== undefined) v2Baseline.copyright_email = v1Profile.copyright_email;
   if (v1Profile.supports !== undefined) v2Baseline.supports = v1Profile.supports;
-  if (v1Profile.attributes !== undefined) v2Baseline.attributes = v1Profile.attributes;
+  if (v1Profile.attributes !== undefined) v2Baseline.inputs = v1Profile.attributes;
   if (v1Profile.status !== undefined) v2Baseline.status = v1Profile.status;
 
-  // Transform sha256 to checksum object
+  // Transform sha256 to integrity object
   if (v1Profile.sha256) {
-    v2Baseline.checksum = {
+    v2Baseline.integrity = {
       algorithm: 'sha256',
-      value: v1Profile.sha256,
+      checksum: v1Profile.sha256,
     };
   }
 
@@ -519,7 +520,7 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
  * Convert HDF v1.0 results to v2.0 format.
  *
  * Performs comprehensive transformation at all levels:
- * - Top-level: version removed, profiles → baselines, platform → targets
+ * - Top-level: version removed, profiles → baselines, platform → components
  * - Baselines: sha256 → checksum, controls → requirements, field renaming
  * - Requirements: snake_case → camelCase, status → effectiveStatus
  * - Results: snake_case → camelCase for all fields
@@ -536,23 +537,25 @@ function convertProfile(v1Profile: V1Profile): V2Baseline {
  *   statistics: {...}
  * };
  * const v2 = convertV1ToV2(v1);
- * // v2 = { baselines: [...], targets: [{...}], statistics: {...} }
+ * // v2 = { baselines: [...], components: [{...}], statistics: {...} }
  * ```
  */
 export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
+  validateInputSize(JSON.stringify(v1Data), 'legacyhdf-to-hdf');
   const v2: HDFV2Results = {
     baselines: (v1Data.profiles || []).map(convertProfile),
     statistics: v1Data.statistics || {},
   };
 
-  // Transform platform to targets array
+  // Transform platform to components array
   if (v1Data.platform) {
-    v2.targets = [
+    v2.components = [
       {
         type: 'host', // v2.0 uses 'host' instead of 'system'
         id: v1Data.platform.target_id || v1Data.platform.name,
         name: v1Data.platform.name,
         ...(v1Data.platform.release && { release: v1Data.platform.release }),
+        labels: {},
       },
     ];
   }
@@ -562,7 +565,7 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
     v2.generator = v1Data.generator;
   }
 
-  v2.dataSource = { name: 'Heimdall Data Format v1' };
+  v2.tool = { name: 'Heimdall Data Format v1' };
 
   if (v1Data.timestamp) {
     v2.timestamp = v1Data.timestamp;

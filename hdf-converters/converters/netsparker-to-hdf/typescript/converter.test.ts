@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { convertNetsparkerToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 function loadFixture(name: string): string {
@@ -32,15 +33,13 @@ function findDescription(
 
 // ---- Input validation ----
 
+runConverterContractTests({
+  converterName: 'netsparker-to-hdf',
+  convertFn: convertNetsparkerToHdf,
+  minimalFixture: 'sample-netsparker-invicti.xml',
+});
+
 describe('Netsparker to HDF converter', () => {
-  it('should reject empty input', async () => {
-    await expect(convertNetsparkerToHdf('')).rejects.toThrow('empty input');
-  });
-
-  it('should reject invalid XML', async () => {
-    await expect(convertNetsparkerToHdf('not xml')).rejects.toThrow();
-  });
-
   // ---- Baseline structure ----
 
   it('should produce exactly one baseline', async () => {
@@ -84,13 +83,13 @@ describe('Netsparker to HDF converter', () => {
     expect(hdf.generator?.name).toBe('netsparker-to-hdf');
   });
 
-  // ---- DataSource ----
+  // ---- Tool ----
 
-  it('should set data source name to Invicti for invicti-enterprise root', async () => {
+  it('should set tool name to Invicti for invicti-enterprise root', async () => {
     const input = loadFixture('input/sample-netsparker-invicti.xml');
     const hdf = parseResult(await convertNetsparkerToHdf(input));
-    expect(hdf.dataSource?.name).toContain('Invicti');
-    expect(hdf.dataSource?.format).toBe('XML');
+    expect(hdf.tool?.name).toContain('Invicti');
+    expect(hdf.tool?.format).toBe('XML');
   });
 
   // ---- Target ----
@@ -98,9 +97,9 @@ describe('Netsparker to HDF converter', () => {
   it('should set target name to scan URL', async () => {
     const input = loadFixture('input/sample-netsparker-invicti.xml');
     const hdf = parseResult(await convertNetsparkerToHdf(input));
-    expect(hdf.targets).toBeDefined();
-    expect(hdf.targets![0]!.name).toBe('https://foo.bar/');
-    expect(hdf.targets![0]!.type).toBe('application');
+    expect(hdf.components).toBeDefined();
+    expect(hdf.components![0]!.name).toBe('https://foo.bar/');
+    expect(hdf.components![0]!.type).toBe('application');
   });
 
   // ---- Requirement IDs use LookupId ----
@@ -263,7 +262,7 @@ describe('Netsparker to HDF converter', () => {
 </netsparker-enterprise>`;
 
     const hdf = parseResult(await convertNetsparkerToHdf(xml));
-    expect(hdf.dataSource?.name).toBe('Netsparker');
+    expect(hdf.tool?.name).toBe('Netsparker');
   });
 
   // ---- Edge cases: missing optional fields ----
@@ -325,7 +324,7 @@ describe('Netsparker to HDF converter', () => {
     // No http-request/response → fallback empty strings in codeDesc
     expect(req.results[0]!.codeDesc).toContain('http-request');
     // Missing target url → 'Unknown'
-    expect(hdf.targets![0]!.name).toBe('Unknown');
+    expect(hdf.components![0]!.name).toBe('Unknown');
   });
 
   it('should handle vulnerability with no description but has name', async () => {

@@ -185,6 +185,16 @@
           "description": "The line on which this requirement is located."
         }
       },
+      "examples": [
+        {
+          "ref": "controls/SV-260476.rb",
+          "line": 1
+        },
+        {
+          "ref": "profiles/ubuntu/controls/configure_audit.rb",
+          "line": 42
+        }
+      ],
       "description": "The explicit location of a requirement within source code.",
       "title": "Source Location"
     },
@@ -230,6 +240,16 @@
           "description": "The checksum value."
         }
       },
+      "examples": [
+        {
+          "algorithm": "sha256",
+          "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "algorithm": "sha512",
+          "value": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+        }
+      ],
       "description": "Cryptographic checksum for baseline integrity verification.",
       "title": "Checksum"
     },
@@ -261,6 +281,22 @@
           "description": "Optional description of the identity or identity system, particularly useful when type is 'other'."
         }
       },
+      "examples": [
+        {
+          "type": "email",
+          "identifier": "admin@example.com"
+        },
+        {
+          "type": "username",
+          "identifier": "jdoe",
+          "description": "Security Operations Analyst"
+        },
+        {
+          "type": "system",
+          "identifier": "automated-scanner-01",
+          "description": "Nightly compliance scan pipeline"
+        }
+      ],
       "description": "Represents an identity that performed an action, such as capturing evidence or applying an override.",
       "title": "Identity"
     },
@@ -382,6 +418,18 @@
           "description": "Optional cryptographic checksum for verifying the integrity of remediation resources fetched from the URI. Recommended for security when referencing external automation scripts."
         }
       },
+      "examples": [
+        {
+          "uri": "https://github.com/ansible-lockdown/RHEL9-STIG/tree/main/tasks"
+        },
+        {
+          "uri": "https://artifacts.example.com/remediation/ubuntu-22.04-hardening-v1.2.tar.gz",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+          }
+        }
+      ],
       "description": "Reference to automated remediation resources for implementing security controls. Points to external automation content like Ansible playbooks, Terraform scripts, or vendor-provided remediation tools.",
       "title": "Remediation"
     },
@@ -611,8 +659,35 @@
         "status": {
           "type": "string",
           "description": "The status. Example: 'loaded'."
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
         }
       },
+      "examples": [
+        {
+          "name": "rhel-9-stig-baseline",
+          "title": "Red Hat Enterprise Linux 9 STIG Baseline",
+          "maintainer": "MITRE SAF Team",
+          "copyright": "The MITRE Corporation",
+          "copyrightEmail": "saf@mitre.org",
+          "license": "Apache-2.0",
+          "summary": "InSpec baseline for RHEL 9 STIG compliance",
+          "version": "1.0.0",
+          "supports": [
+            {
+              "platformName": "redhat",
+              "platformFamily": "redhat",
+              "release": "9"
+            }
+          ],
+          "status": "loaded"
+        }
+      ],
       "description": "Shared metadata fields for baselines. Used in both standalone baseline documents and evaluated baseline results.",
       "title": "Baseline Metadata"
     },
@@ -677,8 +752,63 @@
           "description": "The explicit location of the requirement within the source code."
         }
       },
+      "examples": [
+        {
+          "id": "SV-238196",
+          "title": "The Ubuntu operating system must enforce password complexity",
+          "impact": 0.5,
+          "tags": {
+            "nist": ["IA-5"],
+            "severity": "medium",
+            "cci": ["CCI-000192"]
+          },
+          "refs": [
+            {
+              "url": "https://public.cyber.mil/stigs/"
+            }
+          ],
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Use of a complex password helps to increase the time and resources required to compromise the password."
+            },
+            {
+              "label": "check",
+              "data": "Verify the value of 'minlen' in /etc/security/pwquality.conf."
+            }
+          ]
+        }
+      ],
       "description": "Core requirement fields shared between baseline requirements and evaluated requirements. Contains the fundamental requirement definition without assessment results.",
       "title": "Requirement Core"
+    },
+    "Severity": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "informational"
+      ],
+      "description": "Severity rating for a requirement. Typically derived from the numeric impact score.",
+      "title": "Severity"
+    },
+    "Cloud_Provider": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "aws",
+        "azure",
+        "gcp",
+        "oci",
+        "other",
+        null
+      ],
+      "description": "Cloud service provider identifier.",
+      "title": "Cloud Provider"
     }
   }
 }

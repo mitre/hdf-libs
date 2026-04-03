@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,14 +41,14 @@ func TestConvertNiktoToHDF_Generator(t *testing.T) {
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 }
 
-func TestConvertNiktoToHDF_DataSource(t *testing.T) {
+func TestConvertNiktoToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertNiktoToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	assert.Equal(t, "Nikto", *result.DataSource.Name)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	assert.Equal(t, "Nikto", *result.Tool.Name)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 func TestConvertNiktoToHDF_BaselineName(t *testing.T) {
@@ -248,13 +249,16 @@ func TestConvertNiktoToHDF_RequirementTitle(t *testing.T) {
 	assert.Equal(t, "Retrieved access-control-allow-origin header: *", *req.Title)
 }
 
-func TestConvertNiktoToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertNiktoToHDF([]byte("not valid json"), testConverterVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid Nikto JSON")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "nikto-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertNiktoToHDF(input, testConverterVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
-func TestConvertNiktoToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertNiktoToHDF([]byte(""), testConverterVersion)
-	assert.Error(t, err)
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "nikto-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertNiktoToHDF(input, "0.1.0")
+	})
 }

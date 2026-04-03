@@ -3,7 +3,6 @@ package gitlab_to_hdf
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -42,14 +41,14 @@ type GitLabTool struct {
 
 // GitLabVulnerability is a single finding in the report.
 type GitLabVulnerability struct {
-	ID          string               `json:"id"`
-	Name        string               `json:"name,omitempty"`
-	Description string               `json:"description,omitempty"`
-	Severity    string               `json:"severity,omitempty"`
-	Solution    string               `json:"solution,omitempty"`
-	Identifiers []GitLabIdentifier   `json:"identifiers,omitempty"`
-	Location    *GitLabLocation      `json:"location,omitempty"`
-	Links       []GitLabLink         `json:"links,omitempty"`
+	ID          string             `json:"id"`
+	Name        string             `json:"name,omitempty"`
+	Description string             `json:"description,omitempty"`
+	Severity    string             `json:"severity,omitempty"`
+	Solution    string             `json:"solution,omitempty"`
+	Identifiers []GitLabIdentifier `json:"identifiers,omitempty"`
+	Location    *GitLabLocation    `json:"location,omitempty"`
+	Links       []GitLabLink       `json:"links,omitempty"`
 }
 
 // GitLabIdentifier is a vulnerability identifier (CWE, CVE, etc.).
@@ -116,7 +115,7 @@ func severityToImpact(severity string) float64 {
 func scanTypeToTargetType(scanType string) hdf.Copyright {
 	switch scanType {
 	case "dast":
-		return hdf.Application
+		return hdf.CopyrightApplication
 	case "container_scanning":
 		return hdf.ContainerImage
 	default:
@@ -128,12 +127,12 @@ func scanTypeToTargetType(scanType string) hdf.Copyright {
 
 func scanTypeLabel(scanType string) string {
 	labels := map[string]string{
-		"sast":                 "SAST",
-		"dast":                 "DAST",
-		"dependency_scanning":  "Dependency Scanning",
-		"container_scanning":   "Container Scanning",
-		"secret_detection":     "Secret Detection",
-		"api_fuzzing":          "API Fuzzing",
+		"sast":                "SAST",
+		"dast":                "DAST",
+		"dependency_scanning": "Dependency Scanning",
+		"container_scanning":  "Container Scanning",
+		"secret_detection":    "Secret Detection",
+		"api_fuzzing":         "API Fuzzing",
 	}
 	if label, ok := labels[scanType]; ok {
 		return label
@@ -275,6 +274,9 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "gitlab", 0); err != nil {
+		return nil, fmt.Errorf("gitlab: %w", err)
+	}
 
 	resultsChecksum := shared.InputChecksum(input)
 
@@ -301,10 +303,7 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		startTime = report.Scan.StartTime
 	}
 
-	limitedVulns, truncated := shared.LimitSlice(report.Vulnerabilities, 0)
-	if truncated {
-		log.Printf("WARNING: Input truncated at %d vulnerabilities (original: %d)", len(limitedVulns), len(report.Vulnerabilities))
-	}
+	limitedVulns := shared.LimitSliceWithWarning(report.Vulnerabilities, 0, "vulnerability")
 
 	var requirements []hdf.EvaluatedRequirement
 
@@ -388,7 +387,7 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 
 	// Build targets
 	targetType := scanTypeToTargetType(scanType)
-	targets := []hdf.Target{
+	targets := []hdf.Component{
 		{Name: scannerName, Type: targetType},
 	}
 
@@ -404,14 +403,13 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:     "gitlab-to-hdf",
 		ConverterVersion:  converterVersion,
-		DataSourceName:    scannerName,
-		DataSourceVersion: scannerVersion,
-		DataSourceFormat:  "JSON",
+		ToolName:    scannerName,
+		ToolVersion: scannerVersion,
+		ToolFormat:  "JSON",
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
-		Targets:           targets,
+		Components:           targets,
 		Timestamp:         timestamp,
 	})
 
 	return hdfResult, nil
 }
-

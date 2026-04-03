@@ -3,7 +3,6 @@ package burpsuite
 import (
 	"encoding/xml"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -129,10 +128,7 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		return nil, fmt.Errorf("failed to parse BurpSuite XML: %w", err)
 	}
 
-	limitedIssues, truncated := shared.LimitSlice(burpData.Issues, 0)
-	if truncated {
-		log.Printf("WARNING: Input truncated at %d issue items (original: %d)", len(limitedIssues), len(burpData.Issues))
-	}
+	limitedIssues := shared.LimitSliceWithWarning(burpData.Issues, 0, "issue")
 
 	// Group issues by type (preserving insertion order)
 	order := []string{}
@@ -177,14 +173,14 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:     "burpsuite-to-hdf",
 		ConverterVersion:  converterVersion,
-		DataSourceName:    "BurpSuite",
-		DataSourceVersion: burpData.BurpVersion,
-		DataSourceFormat:  "XML",
+		ToolName:          "BurpSuite",
+		ToolVersion:       burpData.BurpVersion,
+		ToolFormat:        "XML",
 		Baselines:         []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
+		Components: []hdf.Component{
 			{
 				Name: targetName,
-				Type: hdf.Application,
+				Type: hdf.CopyrightApplication,
 			},
 		},
 		Timestamp: timestamp,

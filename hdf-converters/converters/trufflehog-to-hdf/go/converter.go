@@ -12,21 +12,21 @@ import (
 
 // TrufflehogFinding represents a single finding from TruffleHog output.
 type TrufflehogFinding struct {
-	SourceMetadata     SourceMetadata         `json:"SourceMetadata"`
-	SourceID           int                    `json:"SourceID"`
-	SourceType         int                    `json:"SourceType"`
-	SourceName         string                 `json:"SourceName"`
-	DetectorType       int                    `json:"DetectorType"`
-	DetectorName       string                 `json:"DetectorName"`
-	DetectorDescription string               `json:"DetectorDescription"`
-	DecoderName        string                 `json:"DecoderName"`
-	Verified           bool                   `json:"Verified"`
-	VerificationError  string                 `json:"VerificationError"`
-	Raw                string                 `json:"Raw"`
-	RawV2              string                 `json:"RawV2"`
-	Redacted           string                 `json:"Redacted"`
-	ExtraData          map[string]interface{} `json:"ExtraData"`
-	StructuredData     interface{}            `json:"StructuredData"`
+	SourceMetadata      SourceMetadata         `json:"SourceMetadata"`
+	SourceID            int                    `json:"SourceID"`
+	SourceType          int                    `json:"SourceType"`
+	SourceName          string                 `json:"SourceName"`
+	DetectorType        int                    `json:"DetectorType"`
+	DetectorName        string                 `json:"DetectorName"`
+	DetectorDescription string                 `json:"DetectorDescription"`
+	DecoderName         string                 `json:"DecoderName"`
+	Verified            bool                   `json:"Verified"`
+	VerificationError   string                 `json:"VerificationError"`
+	Raw                 string                 `json:"Raw"`
+	RawV2               string                 `json:"RawV2"`
+	Redacted            string                 `json:"Redacted"`
+	ExtraData           map[string]interface{} `json:"ExtraData"`
+	StructuredData      interface{}            `json:"StructuredData"`
 }
 
 // SourceMetadata wraps the Data field containing source-specific info.
@@ -137,7 +137,7 @@ func buildMessage(f TrufflehogFinding) *string {
 	if f.VerificationError != "" {
 		msg["VerificationError"] = f.VerificationError
 	}
-	if f.ExtraData != nil && len(f.ExtraData) > 0 {
+	if len(f.ExtraData) > 0 {
 		msg["ExtraData"] = f.ExtraData
 	}
 	data, err := json.Marshal(msg)
@@ -272,6 +272,9 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	if len(input) == 0 {
 		return nil, fmt.Errorf("trufflehog: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "trufflehog", 0); err != nil {
+		return nil, fmt.Errorf("trufflehog: %w", err)
+	}
 
 	findings, err := parseFindings(input)
 	if err != nil {
@@ -305,10 +308,10 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	now := time.Now().UTC()
 
 	// Add target only if a Git repository URL is available
-	var targets []hdf.Target
+	var targets []hdf.Component
 	repoURL := findGitRepoURL(limitedFindings)
 	if repoURL != "" {
-		targets = []hdf.Target{
+		targets = []hdf.Component{
 			{Name: repoURL, Type: hdf.Repository},
 		}
 	}
@@ -316,10 +319,10 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "hdf-converters",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "TruffleHog",
-		DataSourceFormat: "JSON",
+		ToolName:         "TruffleHog",
+		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets:          targets,
+		Components:          targets,
 		Timestamp:        &now,
 	}), nil
 }

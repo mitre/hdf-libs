@@ -77,7 +77,7 @@ describe('bundle-schemas', () => {
     it('should validate a minimal results document', () => {
       const validate = ajv.compile(schema);
       const doc = {
-        baselines: [{ name: 'test-baseline', checksum: { algorithm: 'sha256', value: 'abc123' }, supports: [], attributes: [], groups: [], requirements: [] }],
+        baselines: [{ name: 'test-baseline', integrity: { algorithm: 'sha256', checksum: 'abc123' }, supports: [], inputs: [], groups: [], requirements: [{ id: 'SV-1', impact: 0.5, tags: {}, descriptions: [{ label: 'default', data: 'Test' }], results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }] }] }],
         statistics: { duration: 1.0 },
       };
       expect(validate(doc)).toBe(true);
@@ -144,7 +144,7 @@ describe('bundle-schemas', () => {
       const validate = ajv.compile(schema);
       const doc = {
         name: 'test-baseline',
-        checksum: { algorithm: 'sha256', value: 'abc123' },
+        integrity: { algorithm: 'sha256', checksum: 'abc123' },
         supports: [],
         groups: [],
         requirements: [

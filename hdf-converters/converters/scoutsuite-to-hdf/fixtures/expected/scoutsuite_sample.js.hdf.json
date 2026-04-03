@@ -1,0 +1,259 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Global service logging is enabled in multiple Trails. While this does not jeopardize the security of the environment, duplicated entries in logs increase the difficulty to investigate potential incidents.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Global Service Logging Duplicated",
+              "message": "Skipped because no items were checked",
+              "startTime": "2021-02-19T19:16:10Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "cloudtrail-duplicated-global-services-logging",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "AU-6"
+            ]
+          },
+          "title": "Global Service Logging Duplicated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "The lack of integration with CloudWatch hinders ral-time and historic activity logging as well as not allowing the configuration of alarms and notifications for anomalous account activity.",
+              "label": "default"
+            },
+            {
+              "data": "Configure each Trail to have a CloudWatch Logs group attached",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Trail Is Not Integrated with CloudWatch",
+              "message": "Skipped because no items were checked",
+              "startTime": "2021-02-19T19:16:10Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "cloudtrail-no-cloudwatch-integration",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000172"
+            ],
+            "nist": [
+              "AU-12",
+              "SI-4(2)"
+            ]
+          },
+          "title": "Trail Is Not Integrated with CloudWatch"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "CloudTrail Data Logging is not configured, which means that S3 access and Lambda invocations are not logged. \u003cbr\u003e\u003cbr\u003eNote: S3 bucket logging can be used in place of CloudTrail data events for S3. If that is the case, logs for Lambda invocations may still be missing.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Data Events Logging Not Configured",
+              "message": "Skipped because no items were checked",
+              "startTime": "2021-02-19T19:16:10Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "cloudtrail-no-data-logging",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000172"
+            ],
+            "nist": [
+              "AU-12"
+            ]
+          },
+          "title": "Data Events Logging Not Configured"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Not encrypting CloudTrail logs with SSE-KMS affects the confidentiality of the log data.",
+              "label": "default"
+            },
+            {
+              "data": "Ensure each Trail is encrypted with a KMS key",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "CloudTrail Logs Not Encrypted with KMS Customer Master Keys (CMKs)",
+              "message": "Skipped because no items were checked",
+              "startTime": "2021-02-19T19:16:10Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "cloudtrail-no-encryption-with-kms",
+          "impact": 0.7,
+          "tags": {
+            "nist": [
+              "AU-6"
+            ]
+          },
+          "title": "CloudTrail Logs Not Encrypted with KMS Customer Master Keys (CMKs)"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "API activity for global services such as IAM and STS is not logged. Investigation of incidents will be incomplete due to the lack of information.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Global Service Logging Disabled",
+              "message": "Skipped because no items were checked",
+              "startTime": "2021-02-19T19:16:10Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "cloudtrail-no-global-services-logging",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-000172"
+            ],
+            "nist": [
+              "AU-12"
+            ]
+          },
+          "title": "Global Service Logging Disabled"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "The lack of log file validation prevents from verifying the integrity of CloudTrail log files.",
+              "label": "default"
+            },
+            {
+              "data": "Ensure that each Trail has Enable log file validation set to Yes",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Log File Validation Is Disabled",
+              "message": "Skipped because no items were checked",
+              "startTime": "2021-02-19T19:16:10Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "cloudtrail-no-log-file-validation",
+          "impact": 0.7,
+          "tags": {
+            "nist": [
+              "AU-6"
+            ]
+          },
+          "title": "Log File Validation Is Disabled"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Logging is disabled for a given Trail. Depending on the configuration, logs for important API activity may be missing.",
+              "label": "default"
+            },
+            {
+              "data": "Configure all Trails to enable Logging, set Apply trail to all regions and ensure that Read/Write Events are set to ALL",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Disabled Trails",
+              "message": "Skipped because no items were checked",
+              "startTime": "2021-02-19T19:16:10Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "cloudtrail-no-logging",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-000172"
+            ],
+            "nist": [
+              "AU-12"
+            ]
+          },
+          "title": "Disabled Trails"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "CloudTrail is not configured, which means that API activity is not logged.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "CloudTrail Service Not Configured",
+              "message": "16 flagged items out of 16 checked items:\ncloudtrail.regions.ap-northeast-1.NotConfigured\ncloudtrail.regions.ap-northeast-2.NotConfigured\ncloudtrail.regions.ap-south-1.NotConfigured\ncloudtrail.regions.ap-southeast-1.NotConfigured\ncloudtrail.regions.ap-southeast-2.NotConfigured\ncloudtrail.regions.ca-central-1.NotConfigured\ncloudtrail.regions.eu-central-1.NotConfigured\ncloudtrail.regions.eu-north-1.NotConfigured\ncloudtrail.regions.eu-west-1.NotConfigured\ncloudtrail.regions.eu-west-2.NotConfigured\ncloudtrail.regions.eu-west-3.NotConfigured\ncloudtrail.regions.sa-east-1.NotConfigured\ncloudtrail.regions.us-east-1.NotConfigured\ncloudtrail.regions.us-east-2.NotConfigured\ncloudtrail.regions.us-west-1.NotConfigured\ncloudtrail.regions.us-west-2.NotConfigured",
+              "startTime": "2021-02-19T19:16:10Z",
+              "status": "failed"
+            }
+          ],
+          "id": "cloudtrail-not-configured",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-000172"
+            ],
+            "nist": [
+              "AU-12"
+            ]
+          },
+          "title": "CloudTrail Service Not Configured"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "c729e8b0feadaee0397f4338b95db1d843990bd60888d8d156378d2e392bb5fc"
+      },
+      "name": "ScoutSuite Scan",
+      "summary": "This ruleset consists of numerous rules that are considered standard by NCC Group. The rules enabled range from violations of well-known security best practices to gaps resulting from less-known security implications of provider-specific mechanisms. Additional rules exist, some of them requiring extra-parameters to be configured, and some of them being applicable to a limited number of users.",
+      "title": "Scout Suite Report using default ruleset on Amazon Web Services with account 916481805664"
+    }
+  ],
+  "components": [
+    {
+      "labels": {
+        "account": "916481805664",
+        "provider": "aws"
+      },
+      "name": "default ruleset:Amazon Web Services:916481805664",
+      "type": "cloudAccount"
+    }
+  ],
+  "generator": {
+    "name": "scoutsuite-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2021-02-19T19:16:10Z",
+  "tool": {
+    "format": "JSON",
+    "name": "ScoutSuite",
+    "version": "5.10.2"
+  }
+}

@@ -26,30 +26,38 @@ lifecycle diagrams, example JSON, CLI command tree, Heimdall integration, and de
 
 ## Implementation Status
 
-> **Update this table as phases complete.**
+> **Last updated: 2026-03-17**
 
 | Phase | Card | Status | Notes |
 |-------|------|--------|-------|
-| 0.1 Typed inputs | hdf-libs-hlvt | NOT STARTED | Unblocked, start here |
-| 0.2 Labels | hdf-libs-pdf7 | NOT STARTED | Unblocked (parallel with 0.1) |
-| 0.3 Rename attributes→inputs | hdf-libs-fjfe | NOT STARTED | Blocked on 0.1 |
-| 0.4 Cross-references | hdf-libs-5ef5 | NOT STARTED | Unblocked |
-| 1 hdf-system | hdf-libs-b4lj | NOT STARTED | Blocked on 0.1 + 0.2 |
-| 2 hdf-plan | hdf-libs-5sgt | NOT STARTED | Blocked on Phase 1 |
-| 3 hdf-amendments | hdf-libs-3qm7 | NOT STARTED | Blocked on 0.1 |
-| 4 hdf-evidence-package | hdf-libs-3cjk | NOT STARTED | Blocked on 1 + 2 + 3 |
-| 5 Ecosystem integration | hdf-libs-qcj7 | NOT STARTED | Incremental after each phase |
-| — System-level comparison | hdf-libs-tvcs | NOT STARTED | Blocked on Phase 1 |
-| — Baseline comparison | hdf-libs-gz0p | NOT STARTED | Blocked on Phase 0.1 |
-| — SBOM comparison | hdf-libs-a96 | NOT STARTED | Blocked on Phase 1 |
-| — Converter v2 alignment | hdf-libs-ccp0 | NOT STARTED | Blocked on all Phase 0 |
+| 0.1 Typed inputs | hdf-libs-hlvt | ✅ COMPLETE | parameter.schema.json — Input, Input_Type, Comparison_Operator, Input_Constraints. 26 tests. |
+| 0.2 Labels | hdf-libs-pdf7 | ✅ COMPLETE | labels: Record<string, string> on Base_Component + Baseline_Metadata. 16 tests. |
+| 0.3 Rename attributes→inputs | hdf-libs-fjfe | ✅ COMPLETE | hdf-results uses `inputs[]` consistently. |
+| 0.4 Cross-references | hdf-libs-5ef5 | ✅ COMPLETE | systemRef + planRef added to hdf-results. |
+| 1 hdf-system | hdf-libs-b4lj | ✅ COMPLETE | system.schema.json + hdf-system.schema.json — Component, InputOverride, Data_Flow, TargetSelector, 3 enums. 34 tests. |
+| 2 hdf-plan | hdf-libs-5sgt | ✅ COMPLETE | plan.schema.json + hdf-plan.schema.json — Assessment, Schedule, RunnerConfig, PlanType enum. 24 tests. |
+| 3 hdf-amendments | hdf-libs-3qm7 | ✅ COMPLETE | amendments.schema.json + hdf-amendments.schema.json — StandaloneOverride, OverrideType enum (waiver/attestation/exception/poam). 26 tests. |
+| 4 hdf-evidence-package | hdf-libs-3cjk | ✅ COMPLETE | hdf-evidence-package.schema.json — ContentReference, CompletenessCheck, SBOMCoverage, ContentType enum. 24 tests. |
+| — Validators + CLI | — | ✅ COMPLETE | All 7 types validated via hdf-validators (TS + Go) and `hdf validate --type`. |
+| 5 Ecosystem integration | hdf-libs-qcj7 | READY | All schema phases complete. Unblocked. |
+| — System-level comparison | hdf-libs-tvcs | READY | Unblocked (hdf-system exists). |
+| — Baseline comparison | hdf-libs-gz0p | READY | Unblocked (Input primitive exists). |
+| — SBOM comparison | hdf-libs-a96 | READY | Unblocked (hdf-system exists). |
+| — Converter v2 alignment | hdf-libs-ccp0 | READY | All Phase 0 deps closed. |
 
-**Already complete:**
-- hdf-comparison schema (exists)
-- hdf-diff TS library (380 tests, 100% coverage)
-- hdf-diff Go library (500+ tests, 98.4% coverage)
+**Complete (pre-v2 schemas):**
+- hdf-baseline + hdf-results schemas (original)
+- hdf-comparison schema + hdf-diff TS/Go libraries (380+ / 500+ tests)
 - hdf diff CLI command (exit codes 0/1/2 + 10-14)
-- v2 architecture doc, decisions doc, developer guide
+- v2 architecture doc, decisions doc (12 decisions), developer guide
+
+**Complete (v2 schemas, 2026-03-17):**
+- All 7 document type schemas implemented with full type generation (TS/Go/Python)
+- 12 primitive schemas (common, target, parameter, system, plan, amendments, comparison, extensions, platform, result, runner, statistics)
+- 150 new schema validation tests across 6 test files
+- hdf-validators updated for all types (TS + Go)
+- CLI `hdf validate --type` supports all 7 types
+- Go enum renames handled across 23 converter/parser files
 
 ---
 
@@ -83,7 +91,7 @@ Implementation:
 3. Add to type generation pipeline (TS/Go/Python)
 4. Reference from hdf-baseline `inputs[]` and hdf-results `inputs[]`
 
-### 0.2 Add labels to targets and baselines
+### 0.2 Add labels to components and baselines
 
 **Card:** `hdf-libs-pdf7`
 
@@ -92,7 +100,7 @@ Implementation:
 and label selector pattern used by hdf-system components.
 
 Add `labels: Record<string, string>` to:
-- `Base_Target` in `primitives/target.schema.json`
+- `Base_Component` in `primitives/component.schema.json`
 - `Baseline_Metadata` in `primitives/common.schema.json`
 
 Implementation:
@@ -143,11 +151,11 @@ selectors and input overrides. See "Labels" section for targetSelector design.
 $defs:
 - `Authorization_Status` enum — authorized, denied, pending, revoked, conditionallyAuthorized, underReview
 - `Categorization_Level` enum — low, moderate, high (FIPS 199)
-- `Component_Type` enum — application, database, network, infrastructure, service, policy, operatingSystem, container, cloudService, other
-- `System` — name (required), identifier, identifierScheme, description, authorizationStatus, authorizationDate, categorizationLevel, boundaryDescription, components[], targetRefs[], interconnections[], extensions
-- `Component` — name (required), type (required), description, targetSelector (label-based matching), baselineRefs[], inputOverrides[], sbomRef (optional URI to CycloneDX/SPDX), sbomFormat (optional: "cyclonedx" | "spdx"), extensions
+- Component types come from the `Copyright` type — host, containerImage, containerInstance, containerPlatform, cloudAccount, cloudResource, repository, application, artifact, network, database
+- `System` — name (required), identifier, identifierScheme, description, authorizationStatus, authorizationDate, categorizationLevel, boundaryDescription, components[], dataFlows[], controlDesignations[], extensions
+- `Component` — name (required), type (from Copyright enum), description, componentId (UUID), targetSelector (label-based matching), baselineRefs[], inputOverrides[], sbomRef (optional URI to CycloneDX/SPDX), sbomFormat (optional: "cyclonedx" | "spdx"), extensions
 - `InputOverride` — baselineRef, inputName, value, justification, approvedBy (Identity), approvedAt
-- `Interconnection` — name, direction (inbound/outbound/bidirectional), description, systemRef
+- `Data_Flow` — from (UUID), to (UUID or external endpoint), protocol, port, direction (inbound/outbound/bidirectional), description
 
 **Key design point:** Components use `targetSelector` (label-based matching like Kubernetes)
 not hardcoded target name lists. This means adding a new server with the right labels
@@ -161,7 +169,7 @@ Top-level document. Required: `name`. Optional: everything else.
 ### 1.3 Tests
 
 30+ validation tests: minimal valid document, required fields, enum validation,
-component structure, input overrides, interconnections, label selectors.
+component structure, input overrides, dataFlows, label selectors.
 
 ### 1.4 Type generation
 
@@ -170,7 +178,7 @@ Both TS and Go types must be generated — dual implementation from day one.
 
 ### 1.5 CLI: hdf system commands (TS + Go)
 
-- `hdf system info <file>` — display system architecture (components, targets, baselines)
+- `hdf system info <file>` — display system architecture (components, baselines)
 - `hdf system validate <file>` — validate against schema
 
 ### 1.6 Integration with hdf-diff
@@ -204,7 +212,7 @@ The plan resolves the input chain:
 ### 2.2 Design hdf-plan.schema.json
 
 Top-level: name (required), type, systemRef, assessments[] (required), schedule.
-References hdf-baseline (which baselines to run), hdf-system (which targets to scan).
+References hdf-baseline (which baselines to run), hdf-system (which components to scan).
 
 ### 2.3 Tests
 
@@ -324,7 +332,7 @@ Zero breaking changes — labels are additive and optional.
 
 | Converter | Labels | Source of data |
 |-----------|--------|---------------|
-| aws-config | labels.account, labels.region, labels.service | AWS resource ARN |
+| aws-config | labels.account, labels.region | AWS resource ARN |
 | nessus | labels.hostgroup, labels.network | Nessus host properties |
 | InSpec | typed inputs on baselines | inspec.yml inputs section |
 | k8s-bench | labels.cluster, labels.namespace | K8s metadata |
@@ -410,33 +418,29 @@ parity gap that happened with hdf-diff (learned the hard way).
 ## Dependency Order
 
 ```
-Phase 0 (foundation) — must be first
-  ├── Phase 0.1 (typed inputs) ← START HERE, no blockers
-  ├── Phase 0.2 (labels) ← depends on 0.1
-  ├── Phase 0.3 (rename) ← depends on 0.1
-  └── Phase 0.4 (refs) ← independent
+Phase 0 (foundation) ✅ COMPLETE
+  ├── Phase 0.1 (typed inputs) ✅
+  ├── Phase 0.2 (labels) ✅
+  ├── Phase 0.3 (rename) ✅
+  └── Phase 0.4 (refs) ✅
 
-Phase 0 complete
-  ├── Phase 1 (hdf-system) ← depends on 0.1 + 0.2
-  ├── Phase 3 (hdf-amendments) ← depends on 0.1 only (can parallel with Phase 1)
-  ├── Baseline comparison ← depends on Phase 0 only
-  └── Converter v2 alignment (hdf-libs-ccp0) ← depends on all Phase 0
+Phases 1–4 (schemas) ✅ COMPLETE
+  ├── Phase 1 (hdf-system) ✅
+  ├── Phase 2 (hdf-plan) ✅
+  ├── Phase 3 (hdf-amendments) ✅
+  └── Phase 4 (hdf-evidence-package) ✅
 
-Phase 1 complete
-  ├── Phase 2 (hdf-plan) ← depends on Phase 1
-  └── System-level comparison + SBOM diff ← depends on Phase 1
-
-Phases 1 + 2 + 3 complete
-  └── Phase 4 (hdf-evidence-package) ← depends on all three
-
-All phases complete
-  └── Phase 5 (ecosystem integration) ← can begin incrementally after each phase
-       ├── OSCAL converters (need target schemas to exist)
-       ├── Converter v2 alignment audit
-       └── Documentation
+Phase 5 (ecosystem integration) ← CURRENT FOCUS
+  All schema dependencies are satisfied. Work can proceed on all fronts:
+  ├── Converter v2 alignment audit (hdf-libs-ccp0) ← READY
+  ├── OSCAL bidirectional converters (SSP↔system, SAP↔plan, POA&M↔amendments)
+  ├── Converter label population (aws-config, nessus, k8s, grype/trivy)
+  ├── hdf-diff enhancements (systemDrift, baselineEvolution, SBOM diff)
+  ├── CLI commands for new doc types (hdf system, hdf plan, hdf amend, hdf evidence)
+  └── Documentation (v2 spec, migration guide, OSCAL alignment guide)
 ```
 
-Phases 1 and 3 can be parallelized (different document types, no shared code).
-Phase 5 subtasks can begin as soon as their dependency is complete (e.g., converter
-labels can start after Phase 0.2). System-level comparison and SBOM diff require
-hdf-system to exist first. OSCAL converters require their target schemas to exist.
+Phase 5 subtasks are independent and can be parallelized. The converter v2
+alignment audit (ccp0) is the broadest task — it touches all 30+ converters.
+OSCAL converters that produce new document types (SSP→hdf-system,
+SAP→hdf-plan, POA&M→hdf-amendments) can be updated incrementally.

@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertMsftSecureScoreToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,16 +13,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'msft-secure-score-to-hdf',
+  convertFn: convertMsftSecureScoreToHdf,
+  minimalFixture: 'minimal.json',
+});
+
 describe('msft-secure-score to HDF converter', async () => {
   describe('input validation', async () => {
-    it('should throw on invalid JSON', async () => {
-      await expect(convertMsftSecureScoreToHdf('not json')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertMsftSecureScoreToHdf('')).rejects.toThrow();
-    });
-
     it('should throw when secureScore is missing', async () => {
       await expect(convertMsftSecureScoreToHdf('{"profiles": {"value": []}}')).rejects.toThrow();
     });
@@ -69,23 +68,23 @@ describe('msft-secure-score to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource name to "Microsoft Secure Score" and format to "JSON"', async () => {
+    it('should set tool name to "Microsoft Secure Score" and format to "JSON"', async () => {
       const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('Microsoft Secure Score');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('Microsoft Secure Score');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 
   describe('target', async () => {
     it('should set target type to cloudAccount', async () => {
       const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.type).toBe('cloudAccount');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.type).toBe('cloudAccount');
     });
 
     it('should include tenant ID in target name', async () => {
       const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.targets![0]!.name).toContain('12345678-1234-1234-1234-1234567890abcd');
+      expect(hdf.components![0]!.name).toContain('12345678-1234-1234-1234-1234567890abcd');
     });
   });
 

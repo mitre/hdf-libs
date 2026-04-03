@@ -4,7 +4,7 @@ import type {
   HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
-  DataSource,
+  Tool,
   Description,
 } from '@mitre/hdf-schema';
 import {
@@ -268,7 +268,7 @@ export async function convertTrufflehogToHdf(input: string): Promise<string> {
     }
   ) as EvaluatedBaseline;
 
-  const dataSource: DataSource = { name: 'TruffleHog', format: 'JSON' };
+  const tool: Tool = { name: 'TruffleHog', format: 'JSON' };
 
   const hdf: HdfResults = {
     baselines: [baseline],
@@ -276,14 +276,14 @@ export async function convertTrufflehogToHdf(input: string): Promise<string> {
       name: 'hdf-converters',
       version: '1.0.0',
     },
-    dataSource,
+    tool,
     timestamp: new Date(),
   };
 
   // Add target only if a Git repository URL is available
   const repoURL = findGitRepoURL(limitedFindings);
   if (repoURL) {
-    hdf.targets = [{ name: repoURL, type: Copyright.Repository }];
+    hdf.components = [{ name: repoURL, type: Copyright.Repository }];
   }
 
   return JSON.stringify(hdf, null, 2);

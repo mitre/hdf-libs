@@ -135,8 +135,8 @@ func TestUbuntu_MatchedHaveBeforeAfter(t *testing.T) {
 func TestUbuntu_FormatVersionAndComparisonMode(t *testing.T) {
 	ensureUbuntuFixtures(t)
 
-	if ubuntu.diff.FormatVersion != "1.0.0" {
-		t.Errorf("formatVersion = %q, want %q", ubuntu.diff.FormatVersion, "1.0.0")
+	if ubuntu.diff.FormatVersion != version100 {
+		t.Errorf("formatVersion = %q, want %q", ubuntu.diff.FormatVersion, version100)
 	}
 	if ubuntu.diff.ComparisonMode != types.ModeTemporal {
 		t.Errorf("comparisonMode = %q, want %q", ubuntu.diff.ComparisonMode, types.ModeTemporal)

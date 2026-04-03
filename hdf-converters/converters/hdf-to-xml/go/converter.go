@@ -5,11 +5,19 @@ import (
 	"encoding/xml"
 	"fmt"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
 // ConvertHDFToXML converts HDF JSON to XML format
 func ConvertHDFToXML(input []byte) ([]byte, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("hdf-to-xml: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "hdf-to-xml", 0); err != nil {
+		return nil, fmt.Errorf("hdf-to-xml: %w", err)
+	}
+
 	// Parse HDF JSON
 	var hdfData hdf.HDFResults
 	if err := json.Unmarshal(input, &hdfData); err != nil {
@@ -18,7 +26,7 @@ func ConvertHDFToXML(input []byte) ([]byte, error) {
 
 	// Validate structure
 	if hdfData.Baselines == nil {
-		return nil, fmt.Errorf("Invalid HDF structure: missing baselines field")
+		return nil, fmt.Errorf("invalid HDF structure: missing baselines field")
 	}
 
 	// Transform to XML structure
@@ -39,7 +47,7 @@ func ConvertHDFToXML(input []byte) ([]byte, error) {
 type XMLHDFResults struct {
 	XMLName    xml.Name       `xml:"HdfResults"`
 	Baselines  XMLBaselines   `xml:"baselines"`
-	Targets    *XMLTargets    `xml:"targets,omitempty"`
+	Targets    *XMLTargets    `xml:"components,omitempty"`
 	Statistics *XMLStatistics `xml:"statistics,omitempty"`
 	Timestamp  string         `xml:"timestamp,omitempty"`
 }
@@ -51,17 +59,17 @@ type XMLBaselines struct {
 
 // XMLBaseline represents a baseline in XML
 type XMLBaseline struct {
-	Name         string            `xml:"name"`
-	Version      *string           `xml:"version,omitempty"`
-	Title        *string           `xml:"title,omitempty"`
-	Checksum     XMLChecksum       `xml:"checksum"`
-	Requirements *XMLRequirements  `xml:"requirements,omitempty"`
+	Name         string           `xml:"name"`
+	Version      *string          `xml:"version,omitempty"`
+	Title        *string          `xml:"title,omitempty"`
+	Integrity    XMLIntegrity     `xml:"integrity"`
+	Requirements *XMLRequirements `xml:"requirements,omitempty"`
 }
 
-// XMLChecksum represents a checksum
-type XMLChecksum struct {
+// XMLIntegrity represents an integrity block
+type XMLIntegrity struct {
 	Algorithm string `xml:"algorithm"`
-	Value     string `xml:"value"`
+	Checksum  string `xml:"checksum"`
 }
 
 // XMLRequirements wraps requirement array
@@ -71,12 +79,12 @@ type XMLRequirements struct {
 
 // XMLRequirement represents a requirement in XML
 type XMLRequirement struct {
-	ID           string            `xml:"id"`
-	Title        *string           `xml:"title,omitempty"`
-	Descriptions *XMLDescriptions  `xml:"descriptions,omitempty"`
-	Impact       float64           `xml:"impact"`
-	Tags         *XMLTags          `xml:"tags,omitempty"`
-	Results      *XMLResults       `xml:"results,omitempty"`
+	ID           string           `xml:"id"`
+	Title        *string          `xml:"title,omitempty"`
+	Descriptions *XMLDescriptions `xml:"descriptions,omitempty"`
+	Impact       float64          `xml:"impact"`
+	Tags         *XMLTags         `xml:"tags,omitempty"`
+	Results      *XMLResults      `xml:"results,omitempty"`
 }
 
 // XMLDescriptions wraps description array
@@ -92,8 +100,8 @@ type XMLDescription struct {
 
 // XMLTags represents requirement tags with array support
 type XMLTags struct {
-	NIST []string               `xml:"nist,omitempty"`
-	CCI  []string               `xml:"cci,omitempty"`
+	NIST  []string               `xml:"nist,omitempty"`
+	CCI   []string               `xml:"cci,omitempty"`
 	Other map[string]interface{} `xml:",omitempty"`
 }
 
@@ -137,15 +145,20 @@ func transformToXMLStructure(hdf *hdf.HDFResults) *XMLHDFResults {
 	if len(hdf.Baselines) > 0 {
 		result.Baselines.Baseline = make([]XMLBaseline, len(hdf.Baselines))
 		for i, baseline := range hdf.Baselines {
-			result.Baselines.Baseline[i] = XMLBaseline{
+			xmlBaseline := XMLBaseline{
 				Name:    baseline.Name,
 				Version: baseline.Version,
 				Title:   baseline.Title,
-				Checksum: XMLChecksum{
-					Algorithm: string(baseline.Checksum.Algorithm),
-					Value:     baseline.Checksum.Value,
-				},
 			}
+			if baseline.Integrity != nil {
+				if baseline.Integrity.Algorithm != nil {
+					xmlBaseline.Integrity.Algorithm = string(*baseline.Integrity.Algorithm)
+				}
+				if baseline.Integrity.Checksum != nil {
+					xmlBaseline.Integrity.Checksum = *baseline.Integrity.Checksum
+				}
+			}
+			result.Baselines.Baseline[i] = xmlBaseline
 
 			// Transform requirements
 			if len(baseline.Requirements) > 0 {
@@ -159,12 +172,12 @@ func transformToXMLStructure(hdf *hdf.HDFResults) *XMLHDFResults {
 		}
 	}
 
-	// Transform targets
-	if len(hdf.Targets) > 0 {
+	// Transform components
+	if len(hdf.Components) > 0 {
 		result.Targets = &XMLTargets{
-			Target: make([]XMLTarget, len(hdf.Targets)),
+			Target: make([]XMLTarget, len(hdf.Components)),
 		}
-		for i, target := range hdf.Targets {
+		for i, target := range hdf.Components {
 			result.Targets.Target[i] = XMLTarget{
 				Name:      target.Name,
 				Type:      string(target.Type),
@@ -175,7 +188,7 @@ func transformToXMLStructure(hdf *hdf.HDFResults) *XMLHDFResults {
 	}
 
 	// Transform statistics
-	if hdf.Statistics.Duration != nil {
+	if hdf.Statistics != nil && hdf.Statistics.Duration != nil {
 		result.Statistics = &XMLStatistics{
 			Duration: hdf.Statistics.Duration,
 		}
@@ -211,7 +224,7 @@ func transformRequirement(req hdf.EvaluatedRequirement) XMLRequirement {
 	}
 
 	// Transform tags - extract NIST and CCI as arrays
-	if req.Tags != nil && len(req.Tags) > 0 {
+	if len(req.Tags) > 0 {
 		xmlReq.Tags = &XMLTags{}
 
 		// Extract NIST controls

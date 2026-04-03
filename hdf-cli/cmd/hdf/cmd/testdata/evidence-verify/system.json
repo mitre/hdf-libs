@@ -1,0 +1,16 @@
+{
+  "systemId": "aaaaaaaa-1111-2222-3333-444444444444",
+  "name": "Portal Prod",
+  "components": [
+    {
+      "name": "WebTier",
+      "type": "application",
+      "baselineRefs": ["RHEL9-STIG"]
+    },
+    {
+      "name": "DatabaseTier",
+      "type": "application",
+      "baselineRefs": ["PostgreSQL-STIG"]
+    }
+  ]
+}

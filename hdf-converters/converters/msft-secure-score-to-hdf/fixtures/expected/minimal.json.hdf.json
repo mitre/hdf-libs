@@ -1,0 +1,122 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Idle session sign-out lets you specify a time at which users are warned and are later signed out of Microsoft 365 after a period of browser inactivity in SharePoint and OneDrive. This policy is one of several you can use with SharePoint and OneDrive to balance security and user productivity and help keep your data safe, regardless of where users access the data from, what device they're working on, and how secure their network connection is.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "The setting is not compliant.",
+              "startTime": "2024-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "Apps:spo_idle_session_timeout",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Apps:spo_idle_session_timeout"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Log collectors provide visibility into cloud app usage so you can identify if there are any apps that run without official approval, or if there is anomalous behavior. Log collectors automatically upload reports and parse the firewall/ proxy traffic logs to see if there is a match with your services in the Cloud App Catalog.",
+              "label": "default"
+            },
+            {
+              "data": "In the Defender for Cloud Apps portal, go to the Automatic log upload page. In the Data sources tab, select Add data source to create a data source for your appliance. In the Log collector tab, select Add log collector to add a new one. Follow the instructions provided to deploy Docker and the log collector container.",
+              "label": "fix"
+            },
+            {
+              "data": "This change has no known impact on your users.",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Feature in place: false.",
+              "startTime": "2024-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "Apps:McasFirewallLogUpload",
+          "impact": 0.1,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Deploy a log collector to discover shadow IT activity"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Data Loss Prevention (DLP) policies allows content in multiple locations, such as, devices, Exchange online and Teams chats to be scanned for specific types of data like social security numbers, credit card numbers, or passwords.",
+              "label": "default"
+            },
+            {
+              "data": "Ensure that at least one Microsoft 365 DLP policy exists in the Microsoft 365 Compliance portal Learn more Learn about data loss prevention | Microsoft Docs Create, test, and tune a DLP policy - Microsoft 365 Compliance | Microsoft Docs",
+              "label": "fix"
+            },
+            {
+              "data": "Unknown",
+              "label": "rationale"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "No implementation status provided",
+              "startTime": "2024-01-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "Data:dlp_datalossprevention",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Ensure DLP policies are enabled"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "c1b76ac66e5a284cb87d98793cb44b5f35db5e14a111408dc15deccc5b741198"
+      },
+      "name": "Microsoft Secure Score",
+      "title": "Azure Secure Score report - Tenant ID: 12345678-1234-1234-1234-1234567890abcd - Run ID: 12345678-1234-1234-1234-1234567890abcd_2024-01-01"
+    }
+  ],
+  "components": [
+    {
+      "labels": {
+        "account": "12345678-1234-1234-1234-1234567890abcd",
+        "provider": "azure"
+      },
+      "name": "Azure Tenant: 12345678-1234-1234-1234-1234567890abcd",
+      "type": "cloudAccount",
+      "provider": "azure"
+    }
+  ],
+  "generator": {
+    "name": "msft-secure-score-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:58.589756Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Microsoft Secure Score"
+  }
+}

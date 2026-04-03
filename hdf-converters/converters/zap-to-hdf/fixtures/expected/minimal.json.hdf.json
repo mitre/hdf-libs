@@ -1,0 +1,109 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'.",
+              "label": "default"
+            },
+            {
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately.\nThis issue still applies to error type pages.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URI: https://example.com/login | Method: GET | Param: X-Content-Type-Options",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "10021",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "confidence": "2",
+            "cweid": "16",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "riskdesc": "Low (Medium)",
+            "wascid": "15"
+          },
+          "title": "X-Content-Type-Options Header Missing"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "This page contains an error/warning message.",
+              "label": "default"
+            },
+            {
+              "data": "Review the source code.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URI: https://example.com/api/submit | Method: POST | Evidence: HTTP/1.1 500 Internal Server Error",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: https://example.com/api/login | Method: POST | Param: username | Evidence: HTTP/1.1 500 Internal Server Error",
+              "message": "' OR 1=1 --",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "90022",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "confidence": "1",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "riskdesc": "Medium (Low)",
+            "wascid": "13"
+          },
+          "title": "Application Error Disclosure"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "eb8812e6f4a62701ff5e8ccff65eaa5694cd71c8e4a22097945eabab2fa07cc1"
+      },
+      "name": "OWASP ZAP Scan",
+      "summary": "ZAP Version 2.7.0",
+      "title": "OWASP ZAP Scan of https://example.com"
+    }
+  ],
+  "components": [
+    {
+      "name": "example.com",
+      "type": "application",
+      "url": "https://example.com"
+    }
+  ],
+  "generator": {
+    "name": "zap-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2018-12-06T10:53:11Z",
+  "tool": {
+    "format": "JSON",
+    "name": "OWASP ZAP",
+    "version": "2.7.0"
+  }
+}

@@ -1,0 +1,1562 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v2.0.0",
+  "title": "HDF Amendments",
+  "description": "Waivers, attestations, exceptions, and POA&Ms that modify requirement compliance status. Amendments are standalone documents that can be applied to results via merge operations.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "name",
+    "overrides"
+  ],
+  "properties": {
+    "amendmentId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this amendments document. Useful for cross-referencing when multiple amendment documents target the same results."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name for this amendments document. Example: 'Portal Q1 2026 Waivers'."
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the amendments' purpose and scope."
+    },
+    "systemRef": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "URI to the hdf-system document these amendments apply to."
+    },
+    "appliedBy": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+      "description": "Default identity of who created this amendments document. Individual overrides may specify their own appliedBy."
+    },
+    "approvedBy": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+      "description": "Identity of the authorizing official who approved these amendments."
+    },
+    "overrides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v2.0.0#/$defs/Standalone_Override"
+      },
+      "description": "The set of amendments (waivers, attestations, exceptions, POA&Ms)."
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Optional key-value labels for grouping and querying amendments."
+    },
+    "integrity": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
+      "description": "Cryptographic integrity information for verifying this amendments document has not been tampered with."
+    },
+    "signature": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature",
+      "description": "Document-level digital signature covering all amendments."
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of this amendments document."
+    },
+    "generator": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
+      "description": "Information about the tool that generated this document."
+    }
+  },
+  "examples": [
+    {
+      "name": "Portal Q1 2026 Waivers",
+      "systemRef": "portal-prod.hdf-system.json",
+      "approvedBy": {
+        "type": "email",
+        "identifier": "ao@agency.gov"
+      },
+      "overrides": [
+        {
+          "type": "waiver",
+          "requirementId": "SV-257777",
+          "baselineRef": "RHEL9-STIG",
+          "status": "passed",
+          "reason": "Compensating control: session timeout set to 15 min",
+          "appliedBy": {
+            "type": "email",
+            "identifier": "ao@agency.gov"
+          },
+          "appliedAt": "2026-01-15T10:00:00Z",
+          "expiresAt": "2026-06-30T00:00:00Z",
+          "evidence": [
+            {
+              "type": "url",
+              "data": "https://jira.agency.gov/CYBER-4521",
+              "description": "ISSM approval with compensating control documentation"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0",
+      "title": "HDF Common Primitives",
+      "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
+      "$defs": {
+        "Hash_Algorithm": {
+          "type": "string",
+          "enum": [
+            "sha256",
+            "sha384",
+            "sha512"
+          ],
+          "description": "Supported cryptographic hash algorithms for checksums and integrity verification.",
+          "title": "Hash Algorithm"
+        },
+        "Requirement_Group": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "id",
+            "requirements"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "The unique identifier for the group. Example: the relative path to the file specifying the requirements."
+            },
+            "title": {
+              "type": "string",
+              "description": "The title of the group - should be human readable."
+            },
+            "requirements": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The set of requirements as specified by their ids in this group. Example: 'SV-238196'."
+            }
+          },
+          "description": "Describes a group of requirements, such as those defined in a single file.",
+          "title": "Requirement Group"
+        },
+        "Dependency": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name or assigned alias."
+            },
+            "url": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "The address of the dependency."
+            },
+            "branch": {
+              "type": "string",
+              "description": "The branch name for a git repo."
+            },
+            "path": {
+              "type": "string",
+              "description": "The relative path if the dependency is locally available."
+            },
+            "statusMessage": {
+              "type": "string",
+              "description": "The reason for the status if it is 'failed' or 'skipped'."
+            },
+            "status": {
+              "type": "string",
+              "description": "The status. Should be: 'loaded', 'failed', or 'skipped'."
+            },
+            "git": {
+              "type": "string",
+              "format": "uri",
+              "description": "The location of the git repo. Example: 'https://github.com/my-org/ubuntu-22.04-stig-baseline.git'."
+            },
+            "supermarket": {
+              "type": "string",
+              "description": "The 'user/profilename' attribute for a Supermarket server."
+            },
+            "compliance": {
+              "type": "string",
+              "description": "The 'user/profilename' attribute for an Automate server."
+            }
+          },
+          "examples": [
+            {
+              "name": "ubuntu-22.04-baseline",
+              "url": "https://github.com/my-org/ubuntu-22.04-stig-baseline",
+              "git": "https://github.com/my-org/ubuntu-22.04-stig-baseline.git",
+              "branch": "main",
+              "status": "loaded"
+            },
+            {
+              "name": "ssl-tls-baseline",
+              "path": "../shared-baselines/ssl-tls",
+              "status": "loaded"
+            },
+            {
+              "name": "windows-2022-baseline",
+              "git": "https://github.com/security-org/windows-2022-stig.git",
+              "branch": "v1.2.0",
+              "status": "failed",
+              "statusMessage": "Unable to clone repository: authentication failed"
+            },
+            {
+              "name": "chef-supermarket-baseline",
+              "supermarket": "dev-sec/linux-baseline",
+              "status": "loaded"
+            }
+          ],
+          "description": "A dependency for a baseline. Can include relative paths or URLs for where to find the dependency.",
+          "title": "Dependency"
+        },
+        "Reference": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "ref"
+              ],
+              "properties": {
+                "ref": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "description": "A human readable/meaningful reference. Example: a book title."
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      },
+                      "description": "An array of reference objects."
+                    }
+                  ]
+                }
+              },
+              "description": "A reference using the 'ref' field."
+            },
+            {
+              "type": "object",
+              "required": [
+                "url"
+              ],
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "description": "A URL pointing at the reference."
+            },
+            {
+              "type": "object",
+              "required": [
+                "uri"
+              ],
+              "properties": {
+                "uri": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "description": "A URI pointing at the reference."
+            }
+          ],
+          "description": "A reference to an external document.",
+          "title": "Reference"
+        },
+        "Source_Location": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [],
+          "properties": {
+            "ref": {
+              "type": "string",
+              "description": "Path to the file that this requirement originates from."
+            },
+            "line": {
+              "type": "number",
+              "description": "The line on which this requirement is located."
+            }
+          },
+          "examples": [
+            {
+              "ref": "controls/SV-260476.rb",
+              "line": 1
+            },
+            {
+              "ref": "profiles/ubuntu/controls/configure_audit.rb",
+              "line": 42
+            }
+          ],
+          "description": "The explicit location of a requirement within source code.",
+          "title": "Source Location"
+        },
+        "Supported_Platform": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [],
+          "properties": {
+            "platformFamily": {
+              "type": "string",
+              "description": "The platform family. Example: 'redhat'."
+            },
+            "platformName": {
+              "type": "string",
+              "description": "The platform name - can include wildcards. Example: 'debian'."
+            },
+            "platform": {
+              "type": "string",
+              "description": "The location of the platform. Can be: 'os', 'aws', 'azure', or 'gcp'."
+            },
+            "release": {
+              "type": "string",
+              "description": "The release of the platform. Example: '20.04' for 'ubuntu'."
+            }
+          },
+          "description": "A supported platform target. Example: the platform name being 'ubuntu'.",
+          "title": "Supported Platform"
+        },
+        "Checksum": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "algorithm",
+            "value"
+          ],
+          "properties": {
+            "algorithm": {
+              "$ref": "#/$defs/Hash_Algorithm",
+              "description": "The hash algorithm used for the checksum."
+            },
+            "value": {
+              "type": "string",
+              "description": "The checksum value."
+            }
+          },
+          "examples": [
+            {
+              "algorithm": "sha256",
+              "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "algorithm": "sha512",
+              "value": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+            }
+          ],
+          "description": "Cryptographic checksum for baseline integrity verification.",
+          "title": "Checksum"
+        },
+        "Identity": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "identifier",
+            "type"
+          ],
+          "properties": {
+            "identifier": {
+              "type": "string",
+              "description": "The identifier value. Example: 'user@example.com', 'jdoe', 'automated-scanner-01'."
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "email",
+                "username",
+                "system",
+                "simple",
+                "other"
+              ],
+              "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for automated systems, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
+            },
+            "description": {
+              "type": "string",
+              "description": "Optional description of the identity or identity system, particularly useful when type is 'other'."
+            }
+          },
+          "examples": [
+            {
+              "type": "email",
+              "identifier": "admin@example.com"
+            },
+            {
+              "type": "username",
+              "identifier": "jdoe",
+              "description": "Security Operations Analyst"
+            },
+            {
+              "type": "system",
+              "identifier": "automated-scanner-01",
+              "description": "Nightly compliance scan pipeline"
+            }
+          ],
+          "description": "Represents an identity that performed an action, such as capturing evidence or applying an override.",
+          "title": "Identity"
+        },
+        "Evidence": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "type",
+            "data"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "screenshot",
+                "code",
+                "log",
+                "url",
+                "file",
+                "other"
+              ],
+              "description": "The type of evidence being provided."
+            },
+            "data": {
+              "type": "string",
+              "description": "The evidence content. For screenshots/files: base64-encoded data or URL. For code/logs: the raw text. For URLs: the URL string."
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of what this evidence shows."
+            },
+            "mimeType": {
+              "type": "string",
+              "description": "MIME type of the evidence. Example: 'image/png', 'text/plain', 'application/json'."
+            },
+            "encoding": {
+              "type": "string",
+              "description": "Encoding used for the data. Example: 'base64', 'utf-8'."
+            },
+            "size": {
+              "type": "number",
+              "description": "Size of the evidence data in bytes."
+            },
+            "capturedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp when this evidence was captured. ISO 8601 format."
+            },
+            "capturedBy": {
+              "$ref": "#/$defs/Identity",
+              "description": "Identity of who or what captured this evidence."
+            }
+          },
+          "examples": [
+            {
+              "type": "screenshot",
+              "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+              "description": "Screenshot showing firewall configuration with required ports blocked",
+              "mimeType": "image/png",
+              "encoding": "base64",
+              "size": 95,
+              "capturedAt": "2025-12-14T10:30:00Z",
+              "capturedBy": {
+                "identifier": "security-auditor@example.com",
+                "type": "email"
+              }
+            },
+            {
+              "type": "code",
+              "data": "# Nginx configuration\nserver {\n  listen 443 ssl;\n  ssl_protocols TLSv1.2 TLSv1.3;\n  ssl_ciphers HIGH:!aNULL:!MD5;\n}",
+              "description": "Server configuration showing TLS 1.2+ enforcement",
+              "mimeType": "text/plain",
+              "capturedAt": "2025-12-14T10:45:00Z"
+            },
+            {
+              "type": "log",
+              "data": "[2025-12-14 10:00:15] INFO: Security scan completed - 0 critical vulnerabilities found\n[2025-12-14 10:00:16] INFO: All required security patches applied\n[2025-12-14 10:00:17] INFO: System compliant with security baseline",
+              "description": "Security scan log output",
+              "mimeType": "text/plain",
+              "size": 256
+            },
+            {
+              "type": "url",
+              "data": "https://jira.example.com/browse/SEC-12345",
+              "description": "Link to security ticket documenting remediation work",
+              "capturedAt": "2025-12-14T11:00:00Z"
+            },
+            {
+              "type": "file",
+              "data": "UEsDBBQAAAAIAI1ZX1YhQp8FHgAAABIAAAAIAAAAdGVzdC50eHRLy8nPS8lQSgIAUmNEBhQAAAA=",
+              "description": "Compliance audit report PDF",
+              "mimeType": "application/pdf",
+              "encoding": "base64",
+              "size": 2048,
+              "capturedAt": "2025-12-14T12:00:00Z",
+              "capturedBy": {
+                "identifier": "compliance-system",
+                "type": "system"
+              }
+            }
+          ],
+          "description": "Supporting evidence for a finding or override, such as screenshots, code samples, log excerpts, or URLs.",
+          "title": "Evidence"
+        },
+        "Remediation": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "uri"
+          ],
+          "properties": {
+            "uri": {
+              "type": "string",
+              "format": "uri",
+              "description": "URI pointing to automated remediation resources (Ansible playbooks, Terraform scripts, etc.). Examples: GitHub repository, DISA STIG Supplemental Automation Content, vendor-provided scripts."
+            },
+            "checksum": {
+              "$ref": "#/$defs/Checksum",
+              "description": "Optional cryptographic checksum for verifying the integrity of remediation resources fetched from the URI. Recommended for security when referencing external automation scripts."
+            }
+          },
+          "examples": [
+            {
+              "uri": "https://github.com/ansible-lockdown/RHEL9-STIG/tree/main/tasks"
+            },
+            {
+              "uri": "https://artifacts.example.com/remediation/ubuntu-22.04-hardening-v1.2.tar.gz",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+              }
+            }
+          ],
+          "description": "Reference to automated remediation resources for implementing security controls. Points to external automation content like Ansible playbooks, Terraform scripts, or vendor-provided remediation tools.",
+          "title": "Remediation"
+        },
+        "Verification_Method": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "type",
+            "controller"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "The type of verification method. Example: 'JsonWebKey2020', 'RsaVerificationKey2018', 'Ed25519VerificationKey2020'."
+            },
+            "controller": {
+              "type": "string",
+              "description": "The entity that controls this verification method. Can be a DID, URI, or other identifier."
+            },
+            "publicKeyJwk": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Public key in JSON Web Key format."
+            },
+            "publicKeyPem": {
+              "type": "string",
+              "description": "Public key in PEM format. Example: '-----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----'."
+            },
+            "publicKeyBase58": {
+              "type": "string",
+              "description": "Public key in Base58 format, commonly used with Ed25519 keys."
+            }
+          },
+          "description": "Verification method containing the public key needed to verify a digital signature. Supports multiple key formats including JWK (for RSA, EC), PEM, and Base58.",
+          "title": "Verification Method"
+        },
+        "Milestone": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "description",
+            "estimatedCompletion",
+            "status"
+          ],
+          "properties": {
+            "description": {
+              "type": "string",
+              "description": "Description of this milestone or task."
+            },
+            "estimatedCompletion": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Estimated completion date. ISO 8601 format."
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "inProgress",
+                "completed"
+              ],
+              "description": "Current status of this milestone."
+            },
+            "completedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Actual completion timestamp. ISO 8601 format."
+            },
+            "completedBy": {
+              "$ref": "#/$defs/Identity",
+              "description": "Identity of who completed this milestone."
+            }
+          },
+          "description": "A milestone or task within a POA&M remediation plan.",
+          "title": "Milestone"
+        },
+        "Signature": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "type",
+            "created",
+            "creator",
+            "signatureValue",
+            "proofPurpose",
+            "verificationMethod"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "The signature suite type. Example: 'JsonWebSignature2020', 'RsaSignature2018', 'Ed25519Signature2020'."
+            },
+            "created": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the signature was created. ISO 8601 format."
+            },
+            "creator": {
+              "$ref": "#/$defs/Identity",
+              "description": "The identity that created this signature."
+            },
+            "signatureValue": {
+              "type": "string",
+              "description": "The base64-encoded or base58-encoded signature value."
+            },
+            "proofPurpose": {
+              "type": "string",
+              "description": "The purpose of this signature. Example: 'attestation', 'authentication', 'assertionMethod'."
+            },
+            "verificationMethod": {
+              "$ref": "#/$defs/Verification_Method",
+              "description": "The verification method containing the public key for signature verification."
+            },
+            "nonce": {
+              "type": "string",
+              "description": "Random value to prevent replay attacks."
+            },
+            "challenge": {
+              "type": "string",
+              "description": "Challenge value from the verifier, used in challenge-response authentication."
+            },
+            "domain": {
+              "type": "string",
+              "description": "Domain restriction for the signature, prevents cross-domain replay attacks."
+            }
+          },
+          "examples": [
+            {
+              "type": "JsonWebSignature2020",
+              "created": "2025-12-14T10:00:00Z",
+              "creator": {
+                "identifier": "security-team@example.com",
+                "type": "email"
+              },
+              "signatureValue": "eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..MEYCIQDvKbtLRhWAa",
+              "proofPurpose": "attestation",
+              "verificationMethod": {
+                "type": "JsonWebKey2020",
+                "controller": "did:example:123456789abcdefghi",
+                "publicKeyJwk": {
+                  "kty": "RSA",
+                  "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtV",
+                  "e": "AQAB"
+                }
+              }
+            },
+            {
+              "type": "RsaSignature2018",
+              "created": "2025-12-14T11:30:00Z",
+              "creator": {
+                "identifier": "ciso@example.com",
+                "type": "email"
+              },
+              "signatureValue": "pY9...Cg==",
+              "proofPurpose": "authentication",
+              "verificationMethod": {
+                "type": "RsaVerificationKey2018",
+                "controller": "https://example.com/issuers/565049",
+                "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAryQICCl6NZ5gDKrnSztO\n-----END PUBLIC KEY-----"
+              },
+              "nonce": "c0ae1c8e-c7e7-469f-b252-86e6a0e7387e"
+            },
+            {
+              "type": "Ed25519Signature2020",
+              "created": "2025-12-14T14:00:00Z",
+              "creator": {
+                "identifier": "automated-signer",
+                "type": "system",
+                "description": "Hardware security module (HSM) for automated attestations"
+              },
+              "signatureValue": "z58DAdFfa9SkqZMVMxABEBC59Ck6WibLZ",
+              "proofPurpose": "assertionMethod",
+              "verificationMethod": {
+                "type": "Ed25519VerificationKey2020",
+                "controller": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+                "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
+              },
+              "challenge": "1f44d2f3-d16c-47a4-9f5f-1d6e8f4e3a2b",
+              "domain": "https://compliance.example.com"
+            }
+          ],
+          "description": "A digital signature following W3C Data Integrity Proofs pattern. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other cryptographic signing methods via JWK, PEM, or Base58 key formats.",
+          "title": "Signature"
+        },
+        "Baseline_Metadata": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name - must be unique."
+            },
+            "title": {
+              "type": "string",
+              "description": "The title - should be human readable."
+            },
+            "maintainer": {
+              "type": "string",
+              "description": "The maintainer(s)."
+            },
+            "copyright": {
+              "type": "string",
+              "description": "The copyright holder(s)."
+            },
+            "copyrightEmail": {
+              "type": "string",
+              "description": "The email address or other contact information of the copyright holder(s)."
+            },
+            "license": {
+              "type": "string",
+              "description": "The copyright license. Example: 'Apache-2.0'."
+            },
+            "summary": {
+              "type": "string",
+              "description": "The summary. Example: the Security Technical Implementation Guide (STIG) header."
+            },
+            "version": {
+              "type": "string",
+              "description": "The version of the baseline."
+            },
+            "supports": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Supported_Platform"
+              },
+              "description": "The set of supported platform targets."
+            },
+            "status": {
+              "type": "string",
+              "description": "The status. Example: 'loaded'."
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
+            }
+          },
+          "examples": [
+            {
+              "name": "rhel-9-stig-baseline",
+              "title": "Red Hat Enterprise Linux 9 STIG Baseline",
+              "maintainer": "MITRE SAF Team",
+              "copyright": "The MITRE Corporation",
+              "copyrightEmail": "saf@mitre.org",
+              "license": "Apache-2.0",
+              "summary": "InSpec baseline for RHEL 9 STIG compliance",
+              "version": "1.0.0",
+              "supports": [
+                {
+                  "platformName": "redhat",
+                  "platformFamily": "redhat",
+                  "release": "9"
+                }
+              ],
+              "status": "loaded"
+            }
+          ],
+          "description": "Shared metadata fields for baselines. Used in both standalone baseline documents and evaluated baseline results.",
+          "title": "Baseline Metadata"
+        },
+        "Requirement_Core": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "The requirement identifier. Example: 'SV-238196'."
+            },
+            "title": {
+              "type": "string",
+              "description": "The title - is nullable."
+            },
+            "descriptions": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "unevaluatedProperties": false,
+                "required": [
+                  "label",
+                  "data"
+                ],
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "Description category. The 'default' label is required for the primary description. Common labels: 'default', 'check', 'fix', 'rationale'. Tools may use custom labels."
+                  },
+                  "data": {
+                    "type": "string",
+                    "description": "The description text content."
+                  }
+                }
+              },
+              "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
+            },
+            "impact": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "The impactfulness or severity (0.0 to 1.0)."
+            },
+            "refs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Reference"
+              },
+              "description": "The set of references to external documents."
+            },
+            "tags": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "A set of tags - usually metadata like CCI, STIG ID, severity."
+            },
+            "code": {
+              "type": "string",
+              "description": "The raw source code of the requirement. Set to null for manual-only requirements or requirements not yet implemented. Note that if this is an overlay, it does not include the underlying source code."
+            },
+            "sourceLocation": {
+              "$ref": "#/$defs/Source_Location",
+              "description": "The explicit location of the requirement within the source code."
+            }
+          },
+          "examples": [
+            {
+              "id": "SV-238196",
+              "title": "The Ubuntu operating system must enforce password complexity",
+              "impact": 0.5,
+              "tags": {
+                "nist": [
+                  "IA-5"
+                ],
+                "severity": "medium",
+                "cci": [
+                  "CCI-000192"
+                ]
+              },
+              "refs": [
+                {
+                  "url": "https://public.cyber.mil/stigs/"
+                }
+              ],
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "Use of a complex password helps to increase the time and resources required to compromise the password."
+                },
+                {
+                  "label": "check",
+                  "data": "Verify the value of 'minlen' in /etc/security/pwquality.conf."
+                }
+              ]
+            }
+          ],
+          "description": "Core requirement fields shared between baseline requirements and evaluated requirements. Contains the fundamental requirement definition without assessment results.",
+          "title": "Requirement Core"
+        },
+        "Severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "informational"
+          ],
+          "description": "Severity rating for a requirement. Typically derived from the numeric impact score.",
+          "title": "Severity"
+        },
+        "Cloud_Provider": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "aws",
+            "azure",
+            "gcp",
+            "oci",
+            "other",
+            null
+          ],
+          "description": "Cloud service provider identifier.",
+          "title": "Cloud Provider"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v2.0.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v2.0.0",
+      "title": "HDF Amendment Primitives",
+      "description": "Types for waivers, attestations, exceptions, and POA&Ms that modify requirement compliance status.",
+      "$defs": {
+        "Override_Type": {
+          "type": "string",
+          "enum": [
+            "waiver",
+            "attestation",
+            "exception",
+            "poam",
+            "inherited"
+          ],
+          "description": "The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked (no status change). 'inherited': control provided by another component or system (overrides to notApplicable/passed).",
+          "title": "Override Type"
+        },
+        "Standalone_Override": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "type",
+            "requirementId",
+            "status",
+            "reason",
+            "appliedBy",
+            "appliedAt",
+            "expiresAt"
+          ],
+          "properties": {
+            "type": {
+              "$ref": "#/$defs/Override_Type",
+              "description": "The type of amendment."
+            },
+            "requirementId": {
+              "type": "string",
+              "description": "The ID of the requirement being amended. Must match a requirement ID in the referenced baseline."
+            },
+            "baselineRef": {
+              "type": "string",
+              "description": "Name of the baseline containing the requirement. Required when the system has multiple baselines with potentially overlapping requirement IDs."
+            },
+            "status": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Result_Status",
+              "description": "The new status this amendment sets. For POA&Ms, this is the current status (POA&Ms track work, they don't change status)."
+            },
+            "reason": {
+              "type": "string",
+              "description": "Justification for this amendment."
+            },
+            "appliedBy": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+              "description": "Identity of who applied this amendment."
+            },
+            "appliedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When this amendment was applied. ISO 8601 format."
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When this amendment expires and must be reviewed. No permanent amendments. ISO 8601 format."
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
+              },
+              "description": "Supporting evidence (screenshots, logs, URLs, documents)."
+            },
+            "signature": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature",
+              "description": "Digital signature for non-repudiation."
+            },
+            "previousChecksum": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
+              "description": "Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null for the first amendment."
+            },
+            "milestones": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone"
+              },
+              "description": "Remediation milestones (primarily for POA&M type amendments)."
+            },
+            "inheritedFrom": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of the local component that provides this control. Set when the provider is in the same system. Omit for external or cross-system providers; the reason field explains the source. Primarily used with type 'inherited'."
+            },
+            "componentRef": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of the component this amendment is scoped to. When set, the amendment only applies to the specified component. When omitted, the amendment applies system-wide."
+            }
+          },
+          "examples": [
+            {
+              "type": "waiver",
+              "requirementId": "SV-257777",
+              "baselineRef": "RHEL9-STIG",
+              "status": "passed",
+              "reason": "Compensating control: session timeout set to 15 min",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "ao@agency.gov"
+              },
+              "appliedAt": "2026-01-15T10:00:00Z",
+              "expiresAt": "2026-06-30T00:00:00Z",
+              "evidence": [
+                {
+                  "type": "url",
+                  "data": "https://jira.agency.gov/CYBER-4521",
+                  "description": "ISSM approval with compensating control documentation"
+                }
+              ]
+            },
+            {
+              "type": "poam",
+              "requirementId": "SV-258001",
+              "baselineRef": "RHEL9-STIG",
+              "status": "failed",
+              "reason": "Patch requires vendor release, expected Q2 2026",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "sysadmin@agency.gov"
+              },
+              "appliedAt": "2026-01-20T09:00:00Z",
+              "expiresAt": "2026-07-01T00:00:00Z",
+              "milestones": [
+                {
+                  "description": "Vendor patch release",
+                  "estimatedCompletion": "2026-04-15T00:00:00Z",
+                  "status": "pending"
+                },
+                {
+                  "description": "Apply patch to all servers",
+                  "estimatedCompletion": "2026-05-01T00:00:00Z",
+                  "status": "pending"
+                }
+              ]
+            },
+            {
+              "type": "inherited",
+              "requirementId": "SV-230368",
+              "baselineRef": "RHEL9-STIG",
+              "status": "notApplicable",
+              "reason": "IA-2 is a common control provided by Keycloak SSO. This application has no local authentication mechanism.",
+              "inheritedFrom": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "issm@agency.gov"
+              },
+              "appliedAt": "2026-03-26T10:00:00Z",
+              "expiresAt": "2026-09-26T00:00:00Z"
+            }
+          ],
+          "description": "A standalone amendment that modifies a requirement's compliance status. Extends the inline Status_Override concept with requirementId and baselineRef for use outside of results documents.",
+          "title": "Standalone Override"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0",
+      "title": "HDF Result Primitives",
+      "description": "Types for representing assessment results and statuses.",
+      "$defs": {
+        "Result_Status": {
+          "type": "string",
+          "enum": [
+            "passed",
+            "failed",
+            "notApplicable",
+            "notReviewed",
+            "error"
+          ],
+          "description": "The status of an individual test result. 'notApplicable' indicates the requirement does not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g., requires manual verification).",
+          "title": "Result Status"
+        },
+        "Requirement_Result": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "status",
+            "codeDesc",
+            "startTime"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/Result_Status",
+              "description": "The status of this test within the requirement. Example: 'failed'."
+            },
+            "codeDesc": {
+              "type": "string",
+              "description": "A description of this test. Example: 'limits.conf * is expected to include [\"hard\", \"maxlogins\", \"10\"]'."
+            },
+            "runTime": {
+              "type": "number",
+              "minimum": 0,
+              "description": "The execution time in seconds for the test."
+            },
+            "startTime": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The time at which the test started."
+            },
+            "resource": {
+              "type": "string",
+              "description": "The resource used in the test. Example: 'file', 'command', 'service'."
+            },
+            "resourceId": {
+              "type": "string",
+              "description": "The unique identifier of the resource. Example: '/etc/passwd'."
+            },
+            "message": {
+              "type": "string",
+              "description": "An explanation of the test result. Typically provided for failed tests, errors, or to explain why a test was not applicable or not reviewed."
+            },
+            "exception": {
+              "type": "string",
+              "description": "The type of exception if an exception was thrown."
+            },
+            "backtrace": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The stacktrace/backtrace of the exception if one occurred."
+            }
+          },
+          "examples": [
+            {
+              "status": "passed",
+              "codeDesc": "File /etc/ssh/sshd_config content is expected to match /Protocol\\s+2/",
+              "startTime": "2025-06-15T10:30:00Z",
+              "runTime": 0.015
+            },
+            {
+              "status": "failed",
+              "codeDesc": "Service 'telnet' is expected not to be enabled",
+              "startTime": "2025-06-15T10:30:01Z",
+              "runTime": 0.008,
+              "message": "expected that 'Service telnet' is not enabled"
+            },
+            {
+              "status": "error",
+              "codeDesc": "File /etc/audit/auditd.conf content is expected to include 'max_log_file'",
+              "startTime": "2025-06-15T10:30:02Z",
+              "exception": "Errno::ENOENT",
+              "backtrace": [
+                "/opt/inspec/lib/resources/file.rb:42:in 'read'",
+                "/opt/inspec/lib/resources/file.rb:15:in 'content'"
+              ]
+            }
+          ],
+          "description": "A test within a requirement and its results and findings such as how long it took to run.",
+          "title": "Requirement Result"
+        },
+        "Requirement_Description": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "label",
+            "data"
+          ],
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "The type of description. Examples: 'fix', 'check', 'rationale'."
+            },
+            "data": {
+              "type": "string",
+              "description": "The text of the description."
+            }
+          },
+          "examples": [
+            {
+              "label": "default",
+              "data": "Verify the SSH daemon is configured to only use FIPS-validated key exchange algorithms."
+            },
+            {
+              "label": "check",
+              "data": "Run 'sshd -T | grep kexalgorithms' and verify only FIPS-compliant algorithms are listed."
+            },
+            {
+              "label": "fix",
+              "data": "Add 'KexAlgorithms ecdh-sha2-nistp256,ecdh-sha2-nistp384' to /etc/ssh/sshd_config and restart sshd."
+            }
+          ],
+          "description": "A labeled description for a requirement, such as fix text or check instructions.",
+          "title": "Requirement Description"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0",
+      "title": "HDF Extension Primitives",
+      "description": "Extension types for waivers, attestations, generators, and integrity.",
+      "$defs": {
+        "Status_Override": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "type",
+            "status",
+            "reason",
+            "appliedBy",
+            "appliedAt",
+            "expiresAt"
+          ],
+          "properties": {
+            "type": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v2.0.0#/$defs/Override_Type",
+              "description": "The type of status override applied to this requirement."
+            },
+            "status": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Result_Status",
+              "description": "The new status this override sets for the requirement. This intentionally changes the compliance status."
+            },
+            "reason": {
+              "type": "string",
+              "description": "Explanation for why this status override was applied."
+            },
+            "appliedBy": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+              "description": "Identity of who applied this status override. For simple cases, use type 'simple' with just an identifier."
+            },
+            "appliedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp when this status override was applied. ISO 8601 format."
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp when this status override expires and must be reviewed/renewed. REQUIRED - no permanent status overrides allowed. ISO 8601 format."
+            },
+            "signature": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature",
+              "description": "Optional digital signature for enhanced trust and non-repudiation. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing methods."
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
+              },
+              "description": "Supporting evidence for this status override, such as screenshots demonstrating manual verification for attestations."
+            },
+            "previousChecksum": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
+              "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
+            }
+          },
+          "examples": [
+            {
+              "type": "waiver",
+              "status": "notApplicable",
+              "reason": "This control does not apply to containerized environments as the application runs in ephemeral containers without persistent storage",
+              "appliedBy": {
+                "identifier": "security-team@example.com",
+                "type": "email"
+              },
+              "appliedAt": "2025-12-01T10:00:00Z",
+              "expiresAt": "2026-12-01T00:00:00Z"
+            },
+            {
+              "type": "attestation",
+              "status": "passed",
+              "reason": "Manual verification completed: Reviewed firewall rules and confirmed all required ports are properly restricted per security policy",
+              "appliedBy": {
+                "identifier": "john.doe",
+                "type": "username",
+                "description": "Senior Security Engineer"
+              },
+              "appliedAt": "2025-11-30T14:30:00Z",
+              "expiresAt": "2026-05-30T00:00:00Z",
+              "evidence": [
+                {
+                  "type": "screenshot",
+                  "data": "base64-encoded-screenshot-data-here",
+                  "description": "Screenshot showing firewall configuration",
+                  "mimeType": "image/png",
+                  "encoding": "base64",
+                  "capturedAt": "2025-11-30T14:25:00Z",
+                  "capturedBy": {
+                    "identifier": "john.doe",
+                    "type": "username"
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "An intentional change to a requirement's compliance status (waiver or attestation). Status overrides change the effectiveStatus of the requirement. All status overrides must have an expiration date to enforce periodic review.",
+          "title": "Status Override"
+        },
+        "POAM": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "type",
+            "explanation",
+            "appliedBy",
+            "appliedAt"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "remediation",
+                "mitigation",
+                "riskAcceptance"
+              ],
+              "description": "The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via compensating controls. 'riskAcceptance' documents decision to accept risk."
+            },
+            "explanation": {
+              "type": "string",
+              "description": "Detailed explanation of the plan, including what actions will be taken."
+            },
+            "appliedBy": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+              "description": "Identity of who created this POA&M. For simple cases, use type 'simple' with just an identifier."
+            },
+            "appliedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp when this POA&M was created. ISO 8601 format."
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Optional expiration date for this POA&M requiring review/renewal. ISO 8601 format."
+            },
+            "milestones": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone"
+              },
+              "description": "Optional array of milestones tracking progress toward completion."
+            },
+            "signature": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature",
+              "description": "Optional digital signature for enhanced trust and non-repudiation."
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
+              },
+              "description": "Supporting evidence for this POA&M, such as documentation of compensating controls or mitigation implementation."
+            },
+            "previousChecksum": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
+              "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
+            }
+          },
+          "examples": [
+            {
+              "type": "remediation",
+              "explanation": "Upgrade OpenSSL to version 3.0.x to address CVE-2024-XXXXX vulnerability. Root cause: outdated dependency version in base image.",
+              "appliedBy": {
+                "identifier": "devops-team@example.com",
+                "type": "email"
+              },
+              "appliedAt": "2025-12-01T09:00:00Z",
+              "milestones": [
+                {
+                  "description": "Update base Docker image to use OpenSSL 3.0.x",
+                  "estimatedCompletion": "2025-12-15T00:00:00Z",
+                  "status": "completed",
+                  "completedAt": "2025-12-10T16:30:00Z",
+                  "completedBy": {
+                    "identifier": "alice.smith",
+                    "type": "username"
+                  }
+                },
+                {
+                  "description": "Deploy updated image to production",
+                  "estimatedCompletion": "2025-12-20T00:00:00Z",
+                  "status": "inProgress"
+                },
+                {
+                  "description": "Verify vulnerability no longer present via security scan",
+                  "estimatedCompletion": "2025-12-22T00:00:00Z",
+                  "status": "pending"
+                }
+              ]
+            },
+            {
+              "type": "mitigation",
+              "explanation": "Implement network segmentation as compensating control while awaiting vendor patch for database vulnerability. Traffic to vulnerable database server is restricted to internal management VLAN only.",
+              "appliedBy": {
+                "identifier": "security-architect",
+                "type": "system",
+                "description": "Automated POA&M creation from vulnerability scan"
+              },
+              "appliedAt": "2025-11-28T14:00:00Z",
+              "expiresAt": "2026-02-28T00:00:00Z",
+              "milestones": [
+                {
+                  "description": "Configure firewall rules to restrict database access to management VLAN",
+                  "estimatedCompletion": "2025-12-02T00:00:00Z",
+                  "status": "completed",
+                  "completedAt": "2025-11-29T11:15:00Z",
+                  "completedBy": {
+                    "identifier": "network-ops@example.com",
+                    "type": "email"
+                  }
+                },
+                {
+                  "description": "Monitor for vendor security patch release",
+                  "estimatedCompletion": "2026-02-28T00:00:00Z",
+                  "status": "inProgress"
+                }
+              ],
+              "evidence": [
+                {
+                  "type": "code",
+                  "data": "# Firewall rule configuration\niptables -A INPUT -s 10.0.1.0/24 -p tcp --dport 5432 -j ACCEPT\niptables -A INPUT -p tcp --dport 5432 -j DROP",
+                  "description": "Firewall rules restricting database access",
+                  "mimeType": "text/plain"
+                }
+              ]
+            },
+            {
+              "type": "riskAcceptance",
+              "explanation": "Risk accepted for legacy system scheduled for decommissioning in Q1 2026. Cost of remediation ($50K for emergency upgrade) exceeds residual risk given 3-month remaining lifespan. Compensating controls: isolated network segment, enhanced monitoring.",
+              "appliedBy": {
+                "identifier": "ciso@example.com",
+                "type": "email"
+              },
+              "appliedAt": "2025-12-05T10:00:00Z",
+              "expiresAt": "2026-04-01T00:00:00Z",
+              "milestones": [
+                {
+                  "description": "Complete migration to replacement system",
+                  "estimatedCompletion": "2026-03-15T00:00:00Z",
+                  "status": "inProgress"
+                },
+                {
+                  "description": "Decommission legacy system",
+                  "estimatedCompletion": "2026-03-31T00:00:00Z",
+                  "status": "pending"
+                }
+              ]
+            }
+          ],
+          "description": "Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance. POAMs do NOT change the effectiveStatus - the requirement remains in its current state while the POA&M tracks remediation efforts.",
+          "title": "POAM"
+        },
+        "Generator": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "name",
+            "version"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the software that produced this HDF file. Example: 'gosec-to-hdf'."
+            },
+            "version": {
+              "type": "string",
+              "description": "The version of the tool. Example: '5.22.3'."
+            }
+          },
+          "description": "Information about the tool that generated this HDF file.",
+          "title": "Generator"
+        },
+        "Tool": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the security tool that produced the data. Examples: 'gosec', 'Semgrep', 'OpenSCAP', 'AWS Config', 'Nessus'. Omit if the tool cannot be identified."
+            },
+            "version": {
+              "type": "string",
+              "description": "Version of the source tool, if available in the tool's output. Example: '5.22.3'."
+            },
+            "format": {
+              "type": "string",
+              "description": "The file format, if it is a recognized named format shared by multiple tools. Examples: 'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the format (Nessus XML, gosec JSON)."
+            }
+          },
+          "description": "The security tool that produced the assessment data represented in this HDF file. Aligns with SARIF, OSCAL, and CycloneDX terminology.",
+          "title": "Tool"
+        },
+        "Integrity": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "dependentRequired": {
+            "algorithm": [
+              "checksum"
+            ],
+            "checksum": [
+              "algorithm"
+            ]
+          },
+          "properties": {
+            "algorithm": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Hash_Algorithm",
+              "description": "The hash algorithm used for the checksum."
+            },
+            "checksum": {
+              "type": "string",
+              "description": "The checksum value."
+            },
+            "signature": {
+              "type": "string",
+              "description": "Optional cryptographic signature."
+            },
+            "signedBy": {
+              "type": "string",
+              "description": "Identifier of who signed this file."
+            }
+          },
+          "examples": [
+            {
+              "algorithm": "sha256",
+              "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "algorithm": "sha512",
+              "checksum": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
+              "signature": "MEUCIQDx1y2hKl3mN8vP9qRz4tJ2sW5nX6cY8bD9aE3fG4hI5wIgK7mN8oP9qR0zS1tU2vW3xY4zA5bC6dD7eE8fG9hI0jK=",
+              "signedBy": "security-automation@example.com"
+            }
+          ],
+          "description": "Cryptographic integrity information for verifying the HDF file has not been tampered with. If algorithm is provided, checksum must also be provided, and vice versa.",
+          "title": "Integrity"
+        }
+      }
+    }
+  }
+}

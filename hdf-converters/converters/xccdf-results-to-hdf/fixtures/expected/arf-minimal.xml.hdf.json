@@ -1,0 +1,59 @@
+{
+  "baselines": [
+    {
+      "name": "Test Benchmark",
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Description",
+              "label": "default"
+            }
+          ],
+          "id": "xccdf_com.example.www_rule_test-fail",
+          "impact": 0.5,
+          "results": [
+            {
+              "codeDesc": "XCCDF rule xccdf_com.example.www_rule_test-fail",
+              "startTime": "2021-11-30T13:51:50+01:00",
+              "status": "failed"
+            }
+          ],
+          "tags": {
+            "nist": []
+          },
+          "title": "This rule always fail"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "335e09e9188d2e0206c42f5f5d0fc967f6dac20fda98408871c987601024a64d"
+      },
+      "status": "loaded",
+      "summary": "Description",
+      "title": "Test Benchmark",
+      "version": "1.0"
+    }
+  ],
+  "components": [
+    {
+      "fqdn": "rh-hony",
+      "ipAddress": "127.0.0.1",
+      "macAddress": "00:2B:67:04:65:C0",
+      "name": "rh-hony",
+      "type": "host"
+    }
+  ],
+  "generator": {
+    "name": "hdf-converters",
+    "version": "0.1.0"
+  },
+  "statistics": {
+    "duration": 0
+  },
+  "timestamp": "2021-11-30T13:51:50+01:00",
+  "tool": {
+    "format": "ARF",
+    "name": "ARF"
+  }
+}

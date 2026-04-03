@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertSnykToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { DEFAULT_MAX_INPUT_SIZE } from '../../../shared/typescript/converterutil.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
@@ -13,16 +14,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'snyk-to-hdf',
+  convertFn: convertSnykToHdf,
+  minimalFixture: 'minimal.json',
+});
+
 describe('snyk to HDF converter', async () => {
   describe('input validation', async () => {
-    it('should throw on invalid JSON', async () => {
-      await expect(convertSnykToHdf('not json')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertSnykToHdf('')).rejects.toThrow();
-    });
-
     it('should throw on oversized input', async () => {
       const big = '{' + 'x'.repeat(DEFAULT_MAX_INPUT_SIZE + 1) + '}';
       await expect(convertSnykToHdf(big)).rejects.toThrow('exceeds maximum');
@@ -72,10 +71,10 @@ describe('snyk to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource name to "Snyk" and format to "JSON"', async () => {
+    it('should set tool name to "Snyk" and format to "JSON"', async () => {
       const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('Snyk');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('Snyk');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 
@@ -177,8 +176,8 @@ describe('snyk to HDF converter', async () => {
   describe('target', async () => {
     it('should include project name as target', async () => {
       const hdf = JSON.parse(await convertSnykToHdf(loadFixture('minimal.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.name).toBe('goof');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.name).toBe('goof');
     });
   });
 

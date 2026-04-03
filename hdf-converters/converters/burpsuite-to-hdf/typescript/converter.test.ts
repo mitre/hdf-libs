@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertBurpsuiteToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -24,16 +25,14 @@ function findRequirement(baselines: Array<Record<string, unknown>>, id: string) 
   return undefined;
 }
 
+runConverterContractTests({
+  converterName: 'burpsuite-to-hdf',
+  convertFn: convertBurpsuiteToHdf,
+  minimalFixture: 'zero.webappsecurity.com.xml',
+});
+
 describe('BurpSuite to HDF Converter', () => {
   // --- Validation tests ---
-
-  it('should reject empty input', async () => {
-    await expect(convertBurpsuiteToHdf('')).rejects.toThrow('empty input');
-  });
-
-  it('should reject invalid XML', async () => {
-    await expect(convertBurpsuiteToHdf('not valid xml')).rejects.toThrow();
-  });
 
   it('should handle empty issues element', async () => {
     const xml = '<?xml version="1.0"?><issues burpVersion="2020.1" exportTime="Thu Feb 27 09:28:17 EST 2020"></issues>';
@@ -80,10 +79,10 @@ describe('BurpSuite to HDF Converter', () => {
       expect(gen.version).toBe('1.0.0');
     });
 
-    it('should set dataSource correctly', async () => {
+    it('should set tool correctly', async () => {
       const xml = loadFixture('input/zero.webappsecurity.com.xml');
       const out = parseOutput(await convertBurpsuiteToHdf(xml));
-      const ds = out.dataSource as Record<string, unknown>;
+      const ds = out.tool as Record<string, unknown>;
       expect(ds.name).toBe('BurpSuite');
       expect(ds.format).toBe('XML');
       expect(ds.version).toBe('2020.1');
@@ -124,7 +123,7 @@ describe('BurpSuite to HDF Converter', () => {
     it('should set target as Application type', async () => {
       const xml = loadFixture('input/zero.webappsecurity.com.xml');
       const out = parseOutput(await convertBurpsuiteToHdf(xml));
-      const targets = out.targets as Array<Record<string, unknown>>;
+      const targets = out.components as Array<Record<string, unknown>>;
       expect(targets).toHaveLength(1);
       expect(targets[0]!.name).toBe('http://zero.webappsecurity.com');
       expect(targets[0]!.type).toBe('application');
@@ -352,7 +351,7 @@ describe('BurpSuite to HDF Converter', () => {
       const reqs = bl[0]!.requirements as unknown[];
       expect(reqs).toHaveLength(0);
       // Target should be 'Unknown' with no issues
-      const targets = out.targets as Array<Record<string, unknown>>;
+      const targets = out.components as Array<Record<string, unknown>>;
       expect(targets[0]!.name).toBe('Unknown');
     });
 
@@ -367,7 +366,7 @@ describe('BurpSuite to HDF Converter', () => {
   </issue>
 </issues>`;
       const out = parseOutput(await convertBurpsuiteToHdf(xml));
-      const ds = out.dataSource as Record<string, unknown>;
+      const ds = out.tool as Record<string, unknown>;
       // No version field when burpVersion is empty
       expect(ds.version).toBeUndefined();
     });

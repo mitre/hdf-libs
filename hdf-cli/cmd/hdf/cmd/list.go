@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
 
@@ -16,71 +17,274 @@ var (
 )
 
 // NewListCmd creates a new list command with fresh state.
-func NewListCmd() *cobra.Command { //nolint:dupl // Cobra command setup; flags and args differ per command
-	// Local flag variables for this command instance
+func NewListCmd() *cobra.Command {
 	var (
 		localStatusFilter string
 		localShowAll      bool
+		detailSection     string
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list <what> <file>",
-		Short: "List controls, profiles, or targets from an HDF file",
-		Long: `List items from an HDF results file.
+		Use:     "list <file> [file...] [--detail <section>]",
+		Aliases: []string{"ls"},
+		Short:   "Show contents of any HDF document",
+		Long: `Show a summary of any HDF document. Auto-detects the document type
+(results, baseline, system, plan, amendments, evidence-package).
 
-Available list types:
-  controls   List all controls/requirements with their status
-  profiles   List all profiles/baselines
-  targets    List all scan targets
+Multiple files and glob patterns are supported:
+  hdf list file1.json file2.json
+  hdf list "scans/*.json"
+
+Use --detail to expand a specific section to item-level detail.
+
+Detail sections by document type:
+  results:          requirements, baselines, components
+  baseline:         requirements, groups
+  system:           components, interconnections
+  plan:             assessments
+  amendments:       overrides
+  evidence-package: contents
+
+Short aliases for --detail: r (requirements), b (baselines), t (components),
+  c (components), g (groups), a (assessments), o (overrides)
 
 Examples:
-  hdf list controls results.json
-  hdf list controls results.json --status failed
-  hdf list profiles results.json
-  hdf list targets results.json --json`,
-		Args: cobra.ExactArgs(2),
+  hdf list results.json                                Summary of a results file
+  hdf list results.json --detail requirements          List individual requirements
+  hdf list results.json --detail requirements -s failed
+  hdf list file1.json file2.json                       Summary of multiple files
+  hdf list system.json                                 Summary of a system document
+  hdf list system.json --detail components             List components
+  hdf list amendments.json --detail overrides          List amendments`,
+		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Sync local flags to global variables for runList
 			statusFilter = localStatusFilter
 			showAll = localShowAll
-			return runList(cmd, args)
+			return runListBulk(cmd, args, detailSection)
 		},
 	}
 
+	cmd.Flags().StringVar(&detailSection, "detail", "", "Section to expand (requirements, baselines, components, ...)")
 	cmd.Flags().StringVarP(&localStatusFilter, "status", "s", "", "Filter by status (passed, failed, error, not_applicable, not_reviewed)")
 	cmd.Flags().BoolVarP(&localShowAll, "all", "a", false, "Show all details")
 
 	return cmd
 }
 
-func runList(_ *cobra.Command, args []string) error {
-	listType := strings.ToLower(args[0])
-	filename := args[1]
+// resolveDetailAlias maps short aliases to canonical detail section names.
+func resolveDetailAlias(s string) string {
+	aliases := map[string]string{
+		"r": "requirements", "requirement": "requirements",
+		"b": "baselines", "baseline": "baselines",
+		"t": "components",
+		"c": "components", "component": "components",
+		"g": "groups", "group": "groups",
+		"a": "assessments", "assessment": "assessments",
+		"o": "amendments", "override": "amendments", "overrides": "amendments", "amendment": "amendments",
+		"d": "dataFlows", "dataflow": "dataFlows", "dataflows": "dataFlows",
+		"p": "baselines", // legacy alias
+	}
+	if canonical, ok := aliases[s]; ok {
+		return canonical
+	}
+	return s
+}
 
+func runList(_ *cobra.Command, filename, detail string) error {
 	data, err := readInputFile(filename)
 	if err != nil {
-		printError(err.Error())
 		return err
+	}
+
+	// Detect and validate document type
+	docType, typeErr := requireDocumentType(data, []string{"results", "system"}, "hdf list")
+	if typeErr != nil {
+		return typeErr
+	}
+
+	if docType == string(validators.TypeSystem) {
+		return runListSystem(data, detail)
 	}
 
 	results, err := parseHDFResults(data)
 	if err != nil {
-		printError(fmt.Sprintf("Failed to parse HDF file: %v", err))
-		return err
+		return fmt.Errorf("failed to parse HDF file: %w", err)
 	}
 
-	switch listType {
-	case "controls", "control", "c":
-		return listControls(results)
-	case "profiles", "profile", "p":
-		return listProfiles(results)
-	case "targets", "target", "t":
-		return listTargets(results)
-	default:
-		printError(fmt.Sprintf("Unknown list type: %s", listType),
-			"Valid types: controls, profiles, targets")
-		return fmt.Errorf("unknown list type: %s", listType)
+	if detail == "" {
+		return listSummary(results)
 	}
+
+	section := resolveDetailAlias(strings.ToLower(detail))
+	switch section {
+	case "requirements":
+		return listControls(results)
+	case "baselines":
+		return listProfiles(results)
+	case "components":
+		return listComponents(results)
+	case "amendments":
+		return listAppliedAmendments(results)
+	default:
+		return fmt.Errorf("unknown detail section: %s\nValid sections for results: requirements, baselines, components, amendments", detail)
+	}
+}
+
+func runListSystem(data []byte, detail string) error {
+	var doc map[string]interface{}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return fmt.Errorf("failed to parse system document: %w", err)
+	}
+
+	if detail == "" {
+		return listSystemSummary(doc)
+	}
+
+	section := resolveDetailAlias(strings.ToLower(detail))
+	switch section {
+	case "components":
+		return listSystemComponents(doc)
+	case "dataFlows":
+		return listSystemDataFlows(doc)
+	default:
+		return fmt.Errorf("unknown detail section: %s\nValid sections for system: components, dataFlows", detail)
+	}
+}
+
+func listSystemSummary(doc map[string]interface{}) error {
+	name, _ := doc["name"].(string)
+	components, _ := doc["components"].([]interface{})
+	flows, _ := doc["dataFlows"].([]interface{})
+
+	if jsonOutput {
+		summary := map[string]interface{}{
+			"name":       name,
+			"components": len(components),
+			"dataFlows":  len(flows),
+		}
+		if owner, ok := doc["owner"].(map[string]interface{}); ok {
+			summary["owner"] = owner
+		}
+		output, _ := json.MarshalIndent(summary, "", "  ")
+		fmt.Println(string(output))
+		return nil
+	}
+
+	fmt.Printf("System: %s\n", sanitizeOutput(name))
+	fmt.Printf("Components:   %d\n", len(components))
+	fmt.Printf("Data Flows:   %d\n", len(flows))
+	if owner, ok := doc["owner"].(map[string]interface{}); ok {
+		if id, ok := owner["identifier"].(string); ok {
+			fmt.Printf("Owner:        %s\n", sanitizeOutput(id))
+		}
+	}
+	return nil
+}
+
+func listSystemComponents(doc map[string]interface{}) error {
+	components, _ := doc["components"].([]interface{})
+
+	if jsonOutput {
+		output, _ := json.MarshalIndent(components, "", "  ")
+		fmt.Println(string(output))
+		return nil
+	}
+
+	if len(components) == 0 {
+		fmt.Println("No components defined in this system document.")
+		return nil
+	}
+
+	fmt.Printf("Components: %d\n\n", len(components))
+	for _, cRaw := range components {
+		comp, ok := cRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name, _ := comp["name"].(string)
+		compType, _ := comp["type"].(string)
+		fmt.Printf("  [%s] %s\n", sanitizeOutput(compType), sanitizeOutput(name))
+	}
+	return nil
+}
+
+func listSystemDataFlows(doc map[string]interface{}) error {
+	flows, _ := doc["dataFlows"].([]interface{})
+
+	if jsonOutput {
+		output, _ := json.MarshalIndent(flows, "", "  ")
+		fmt.Println(string(output))
+		return nil
+	}
+
+	if len(flows) == 0 {
+		fmt.Println("No data flows defined in this system document.")
+		return nil
+	}
+
+	fmt.Printf("Data Flows: %d\n\n", len(flows))
+	printDataFlowList(flows)
+	return nil
+}
+
+func listSummary(results hdf.HdfResults) error {
+	if jsonOutput {
+		summary := struct {
+			Baselines     int `json:"baselines"`
+			Requirements  int `json:"requirements"`
+			Components    int `json:"components"`
+			Passed        int `json:"passed"`
+			Failed        int `json:"failed"`
+			Error         int `json:"error"`
+			NotApplicable int `json:"not_applicable"`
+			NotReviewed   int `json:"not_reviewed"`
+		}{
+			Baselines:  len(results.Baselines),
+			Components: len(results.Components),
+		}
+		for _, b := range results.Baselines {
+			summary.Requirements += len(b.Requirements)
+			for _, r := range b.Requirements {
+				switch determineControlStatus(r) {
+				case StatusPassed:
+					summary.Passed++
+				case StatusFailed:
+					summary.Failed++
+				case StatusError:
+					summary.Error++
+				case StatusNotApplicable:
+					summary.NotApplicable++
+				case StatusNotReviewed:
+					summary.NotReviewed++
+				}
+			}
+		}
+		output, _ := json.MarshalIndent(summary, "", "  ")
+		fmt.Println(string(output))
+		return nil
+	}
+
+	totalReqs := 0
+	counts := make(map[string]int)
+	for _, b := range results.Baselines {
+		totalReqs += len(b.Requirements)
+		for _, r := range b.Requirements {
+			counts[determineControlStatus(r)]++
+		}
+	}
+
+	fmt.Printf("Baselines:    %d\n", len(results.Baselines))
+	fmt.Printf("Requirements: %d\n", totalReqs)
+	fmt.Printf("Components:   %d\n", len(results.Components))
+	fmt.Println()
+
+	for _, status := range []string{StatusPassed, StatusFailed, StatusError, StatusNotApplicable, StatusNotReviewed} {
+		if c := counts[status]; c > 0 {
+			fmt.Printf("  %s %-15s %d\n", statusToSymbol(status), status, c)
+		}
+	}
+
+	return nil
 }
 
 type controlInfo struct {
@@ -88,7 +292,7 @@ type controlInfo struct {
 	Title   string  `json:"title,omitempty"`
 	Status  string  `json:"status"`
 	Impact  float64 `json:"impact"`
-	Profile string  `json:"profile"`
+	Profile string  `json:"baseline"`
 }
 
 func listControls(results hdf.HdfResults) error {
@@ -98,7 +302,7 @@ func listControls(results hdf.HdfResults) error {
 		return printControlsJSON(controls)
 	}
 
-	fmt.Printf("Controls: %d\n\n", len(controls))
+	fmt.Printf("Requirements: %d\n\n", len(controls))
 
 	if statusFilter == "" && !showAll {
 		printControlsSummary(controls)
@@ -164,11 +368,15 @@ func printControlsSummary(controls []controlInfo) {
 }
 
 func printControlsFlat(controls []controlInfo) {
+	tbl := NewTable(
+		Column{Header: "ID"},
+		Column{Header: "Status"},
+		Column{Header: "Title"},
+	)
 	for _, c := range controls {
-		statusSymbol := statusToSymbol(c.Status)
-		title := truncateTitle(c.Title, 60)
-		fmt.Printf("%s %-15s %s\n", statusSymbol, sanitizeOutput(c.ID), title)
+		tbl.AddRow(sanitizeOutput(c.ID), c.Status, truncateTitle(c.Title, 60))
 	}
+	tbl.Render()
 }
 
 func truncateTitle(title string, maxLen int) string {
@@ -232,27 +440,27 @@ func listProfiles(results hdf.HdfResults) error {
 	return nil
 }
 
-func listTargets(results hdf.HdfResults) error {
-	if len(results.Targets) == 0 {
+func listComponents(results hdf.HdfResults) error {
+	if len(results.Components) == 0 {
 		if jsonOutput {
 			fmt.Println("[]")
 		} else {
-			fmt.Println("No targets defined in this HDF file.")
+			fmt.Println("No components defined in this HDF file.")
 		}
 		return nil
 	}
 
-	type targetInfo struct {
+	type componentInfo struct {
 		Name string `json:"name"`
 		Type string `json:"type"`
 		FQDN string `json:"fqdn,omitempty"`
 		IP   string `json:"ip_address,omitempty"`
 	}
 
-	var targets []targetInfo
+	var components []componentInfo
 
-	for _, t := range results.Targets {
-		info := targetInfo{
+	for _, t := range results.Components {
+		info := componentInfo{
 			Name: t.Name,
 			Type: string(t.Type),
 		}
@@ -262,29 +470,110 @@ func listTargets(results hdf.HdfResults) error {
 		if t.IPAddress != nil {
 			info.IP = *t.IPAddress
 		}
-		targets = append(targets, info)
+		components = append(components, info)
 	}
 
 	if jsonOutput {
-		output, _ := json.MarshalIndent(targets, "", "  ")
+		output, _ := json.MarshalIndent(components, "", "  ")
 		fmt.Println(string(output))
 		return nil
 	}
 
-	fmt.Printf("Targets: %d\n\n", len(targets))
-	for _, t := range targets {
-		details := ""
-		if t.FQDN != "" {
-			details = sanitizeOutput(t.FQDN)
-		} else if t.IP != "" {
-			details = sanitizeOutput(t.IP)
+	if !noHeaders {
+		fmt.Printf("Components: %d\n\n", len(components))
+	}
+	tbl := NewTable(
+		Column{Header: "Type"},
+		Column{Header: "Name"},
+		Column{Header: "FQDN / IP"},
+	)
+	for _, c := range components {
+		addr := ""
+		if c.FQDN != "" {
+			addr = sanitizeOutput(c.FQDN)
+		} else if c.IP != "" {
+			addr = sanitizeOutput(c.IP)
 		}
-		if details != "" {
-			details = fmt.Sprintf(" (%s)", details)
-		}
-		fmt.Printf("  [%s] %s%s\n", t.Type, sanitizeOutput(t.Name), details)
+		tbl.AddRow(c.Type, sanitizeOutput(c.Name), addr)
+	}
+	tbl.Render()
+
+	return nil
+}
+
+// runListBulk dispatches to single-file or multi-file mode.
+func runListBulk(cmd *cobra.Command, args []string, detail string) error {
+	files, err := expandGlobs(args)
+	if err != nil {
+		return err
 	}
 
+	if len(files) == 1 {
+		return runList(cmd, files[0], detail)
+	}
+
+	return runBulk(files, "list", "listed", func(file string) error {
+		return runList(cmd, file, detail)
+	})
+}
+
+// listAppliedAmendments shows statusOverrides from within a results file.
+func listAppliedAmendments(results hdf.HdfResults) error {
+	type appliedAmendment struct {
+		RequirementID string `json:"requirementId"`
+		Baseline      string `json:"baseline"`
+		Type          string `json:"type"`
+		Status        string `json:"status"`
+		Reason        string `json:"reason"`
+		ExpiresAt     string `json:"expiresAt,omitempty"`
+	}
+
+	var amendments []appliedAmendment
+	for _, baseline := range results.Baselines {
+		for _, req := range baseline.Requirements {
+			for _, ov := range req.StatusOverrides {
+				amendments = append(amendments, appliedAmendment{
+					RequirementID: req.ID,
+					Baseline:      baseline.Name,
+					Type:          string(ov.Type),
+					Status:        string(ov.Status),
+					Reason:        ov.Reason,
+					ExpiresAt:     ov.ExpiresAt.Format("2006-01-02"),
+				})
+			}
+		}
+	}
+
+	if jsonOutput {
+		output, _ := json.MarshalIndent(amendments, "", "  ")
+		fmt.Println(string(output))
+		return nil
+	}
+
+	if len(amendments) == 0 {
+		fmt.Println("No amendments applied to this results file.")
+		return nil
+	}
+
+	if !noHeaders {
+		fmt.Printf("Applied Amendments (%d):\n\n", len(amendments))
+	}
+	tbl := NewTable(
+		Column{Header: "Requirement"},
+		Column{Header: "Baseline"},
+		Column{Header: "Type"},
+		Column{Header: "Status"},
+		Column{Header: "Expires"},
+		Column{Header: "Reason"},
+	)
+	for _, am := range amendments {
+		expires := ""
+		if am.ExpiresAt != "" && len(am.ExpiresAt) >= 10 { //nolint:mnd // date prefix length
+			expires = am.ExpiresAt[:10]
+		}
+		tbl.AddRow(am.RequirementID, am.Baseline, am.Type, am.Status, expires, am.Reason)
+	}
+	tbl.Render()
 	return nil
 }
 

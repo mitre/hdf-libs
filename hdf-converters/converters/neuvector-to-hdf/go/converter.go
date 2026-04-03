@@ -49,8 +49,8 @@ type NeuVectorVuln struct {
 	Link                  string   `json:"link"`
 	ScoreV3               float64  `json:"score_v3"`
 	VectorsV3             string   `json:"vectors_v3"`
-	PublishedTimestamp     int64    `json:"published_timestamp"`
-	LastModifiedTimestamp  int64    `json:"last_modified_timestamp"`
+	PublishedTimestamp    int64    `json:"published_timestamp"`
+	LastModifiedTimestamp int64    `json:"last_modified_timestamp"`
 	Cpes                  []string `json:"cpes"`
 	Cves                  []string `json:"cves"`
 	FeedRating            string   `json:"feed_rating"`
@@ -171,6 +171,9 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	if len(input) == 0 {
 		return nil, fmt.Errorf("neuvector: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "neuvector", 0); err != nil {
+		return nil, fmt.Errorf("neuvector: %w", err)
+	}
 
 	var scan NeuVectorScan
 	if err := json.Unmarshal(input, &scan); err != nil {
@@ -210,11 +213,18 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "neuvector-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "NeuVector",
-		DataSourceFormat: "JSON",
+		ToolName:   "NeuVector",
+		ToolFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
-			{Name: targetName(scan.Report), Type: hdf.ContainerImage},
+		Components: []hdf.Component{
+			{
+				Name: targetName(scan.Report),
+				Type: hdf.ContainerImage,
+				Labels: map[string]string{
+					"image":    fmt.Sprintf("%s/%s:%s", scan.Report.Registry, scan.Report.Repository, scan.Report.Tag),
+					"registry": scan.Report.Registry,
+				},
+			},
 		},
 		Timestamp: &now,
 	}), nil

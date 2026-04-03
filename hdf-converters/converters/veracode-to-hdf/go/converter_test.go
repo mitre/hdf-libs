@@ -33,10 +33,10 @@ func TestConvertVeracodeToHDF_Sample(t *testing.T) {
 	assert.Equal(t, "veracode-to-hdf", result.Generator.Name)
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 
-	// Verify data source
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Veracode", *result.DataSource.Name)
+	// Verify tool
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Veracode", *result.Tool.Name)
 
 	// Should have exactly 1 baseline
 	require.Len(t, result.Baselines, 1, "Should have 1 baseline")
@@ -44,8 +44,8 @@ func TestConvertVeracodeToHDF_Sample(t *testing.T) {
 	assert.Equal(t, "Veracode Scan", baseline.Name)
 
 	// Should have target
-	require.Len(t, result.Targets, 1)
-	assert.Equal(t, hdf.Application, result.Targets[0].Type)
+	require.Len(t, result.Components, 1)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
 
 	// CWE-based controls: 14 categories (categoryid 12 appears at both severity 3 and 2)
 	// CVE-based controls: 39 unique CVEs = 53 total
@@ -151,17 +151,13 @@ func TestConvertVeracodeToHDF_SeverityImpactMapping(t *testing.T) {
 	}
 }
 
-func TestConvertVeracodeToHDF_InvalidXML(t *testing.T) {
-	result, err := ConvertVeracodeToHDF([]byte("not valid xml"), testConverterVersion)
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "veracode")
-}
-
-func TestConvertVeracodeToHDF_EmptyInput(t *testing.T) {
-	result, err := ConvertVeracodeToHDF([]byte{}, testConverterVersion)
-	assert.Error(t, err)
-	assert.Nil(t, result)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "veracode-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertVeracodeToHDF(input, testConverterVersion) },
+		MinimalFixture: "veracode.xml",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 func TestConvertVeracodeToHDF_SummaryReport(t *testing.T) {
@@ -240,4 +236,10 @@ func TestConvertVeracodeToHDF_EntityExpansion(t *testing.T) {
 	_, err := ConvertVeracodeToHDF(input, testConverterVersion)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "veracode-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertVeracodeToHDF(input, "0.1.0")
+	})
 }

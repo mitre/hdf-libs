@@ -24,7 +24,7 @@ func TestValidateResults_ValidDocuments(t *testing.T) {
 					}]
 				}]
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -33,14 +33,20 @@ func TestValidateResults_ValidDocuments(t *testing.T) {
 		assert.Empty(t, result.Errors)
 	})
 
-	t.Run("should validate results with targets and statistics", func(t *testing.T) {
+	t.Run("should validate results with components and statistics", func(t *testing.T) {
 		validResults := []byte(`{
 			"baselines": [{
 				"name": "Test Baseline",
 				"checksum": { "algorithm": "sha256", "value": "abc123" },
-				"requirements": []
+				"requirements": [{
+					"id": "REQ-001",
+					"descriptions": [{ "label": "default", "data": "Test" }],
+					"impact": 0.5,
+					"tags": {},
+					"results": [{ "status": "passed", "codeDesc": "OK", "startTime": "2025-01-01T00:00:00Z" }]
+				}]
 			}],
-			"targets": [{
+			"components": [{
 				"name": "web-server-01",
 				"type": "host"
 			}],
@@ -50,6 +56,9 @@ func TestValidateResults_ValidDocuments(t *testing.T) {
 		}`)
 
 		result := ValidateResults(validResults)
+		if !result.Valid {
+			t.Logf("Validation errors: %s", result.Error())
+		}
 		assert.True(t, result.Valid)
 	})
 }
@@ -57,7 +66,7 @@ func TestValidateResults_ValidDocuments(t *testing.T) {
 func TestValidateResults_InvalidDocuments(t *testing.T) {
 	t.Run("should reject results missing baselines field", func(t *testing.T) {
 		invalid := []byte(`{
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -70,7 +79,7 @@ func TestValidateResults_InvalidDocuments(t *testing.T) {
 	t.Run("should reject results with invalid baselines type", func(t *testing.T) {
 		invalid := []byte(`{
 			"baselines": "not an array",
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -85,7 +94,7 @@ func TestValidateResults_InvalidDocuments(t *testing.T) {
 				"checksum": { "algorithm": "sha256", "value": "abc123" },
 				"requirements": []
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 
@@ -166,22 +175,16 @@ func TestValidateBaseline_InvalidDocuments(t *testing.T) {
 		assert.Contains(t, result.Error(), "name")
 	})
 
-	t.Run("should reject baseline missing checksum", func(t *testing.T) {
+	t.Run("should reject baseline missing requirements", func(t *testing.T) {
 		invalid := []byte(`{
 			"name": "Test",
 			"title": "Test",
-			"version": "1.0.0",
-			"requirements": [{
-				"id": "REQ-001",
-				"descriptions": [{ "label": "default", "data": "Test" }],
-				"impact": 0.5,
-				"tags": {}
-			}]
+			"version": "1.0.0"
 		}`)
 
 		result := ValidateBaseline(invalid)
 		assert.False(t, result.Valid)
-		assert.Contains(t, result.Error(), "checksum")
+		assert.Contains(t, result.Error(), "requirements")
 	})
 }
 
@@ -227,9 +230,9 @@ func TestSetSchemaDir(t *testing.T) {
 			"baselines": [{
 				"name": "Test",
 				"checksum": { "algorithm": "sha256", "value": "abc" },
-				"requirements": []
+				"requirements": [{"id": "SV-1", "impact": 0.5, "tags": {}, "descriptions": [{"label": "default", "data": "Test"}], "results": [{"status": "passed", "codeDesc": "Test", "startTime": "2025-01-01T00:00:00Z"}]}]
 			}],
-			"targets": [],
+			"components": [],
 			"statistics": {}
 		}`)
 

@@ -52,8 +52,8 @@ func TestConvertFortifyToHDF_Sample(t *testing.T) {
 	assert.Len(t, baseline.Requirements, 5, "Should have 5 requirements (one per Description classID)")
 
 	// Verify targets
-	require.Len(t, result.Targets, 1, "Should have 1 target")
-	assert.Equal(t, hdf.Repository, result.Targets[0].Type)
+	require.Len(t, result.Components, 1, "Should have 1 target")
+	assert.Equal(t, hdf.Repository, result.Components[0].Type)
 
 	// Write output for differential testing
 	shared.WriteOutput(t, "fortify-to-hdf", "fortify_webgoat_results.json", result)
@@ -85,17 +85,17 @@ func TestConvertFortifyToHDF_BaselineMetadata(t *testing.T) {
 	assert.Len(t, baseline.ResultsChecksum.Value, 64, "SHA-256 hash should be 64 hex chars")
 }
 
-func TestConvertFortifyToHDF_DataSource(t *testing.T) {
+func TestConvertFortifyToHDF_Tool(t *testing.T) {
 	inputData := loadFixture(t, "fortify_webgoat_results.fvdl")
 
 	result, err := ConvertFortifyToHDF(inputData, converterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Fortify", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "FVDL", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Fortify", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "FVDL", *result.Tool.Format)
 }
 
 func TestConvertFortifyToHDF_RequirementFields(t *testing.T) {
@@ -199,18 +199,13 @@ func TestConvertFortifyToHDF_Timestamp(t *testing.T) {
 	assert.Equal(t, 2, result.Timestamp.Day())
 }
 
-func TestConvertFortifyToHDF_InvalidXML(t *testing.T) {
-	result, err := ConvertFortifyToHDF([]byte("not valid xml"), converterVersion)
-	assert.Error(t, err, "Should fail on invalid XML")
-	assert.Nil(t, result, "Result should be nil on error")
-	assert.Contains(t, err.Error(), "failed to parse Fortify FVDL")
-}
-
-func TestConvertFortifyToHDF_EmptyInput(t *testing.T) {
-	result, err := ConvertFortifyToHDF([]byte{}, converterVersion)
-	assert.Error(t, err, "Should fail on empty input")
-	assert.Nil(t, result, "Result should be nil on error")
-	assert.Contains(t, err.Error(), "empty input")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "fortify-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertFortifyToHDF(input, converterVersion) },
+		MinimalFixture: "fortify_webgoat_results.fvdl",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 func TestConvertFortifyToHDF_MinimalFVDL(t *testing.T) {
@@ -258,4 +253,10 @@ func TestConvertFortifyToHDF_EntityExpansion(t *testing.T) {
 	_, err := ConvertFortifyToHDF(input, converterVersion)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "fortify-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertFortifyToHDF(input, "0.1.0")
+	})
 }

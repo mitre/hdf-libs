@@ -3,7 +3,6 @@ package twistlock
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -22,14 +21,14 @@ type TwistlockReport struct {
 
 // TwistlockResult represents a single scan result (one image or repository).
 type TwistlockResult struct {
-	ID                          string                    `json:"id"`
-	Name                        string                    `json:"name"`
-	Repository                  string                    `json:"repository"`
-	Distro                      string                    `json:"distro"`
-	Collections                 []string                  `json:"collections"`
-	Vulnerabilities             []TwistlockVuln           `json:"vulnerabilities"`
-	VulnerabilityDistribution   *TwistlockDistribution    `json:"vulnerabilityDistribution"`
-	ComplianceDistribution      *TwistlockDistribution    `json:"complianceDistribution"`
+	ID                        string                 `json:"id"`
+	Name                      string                 `json:"name"`
+	Repository                string                 `json:"repository"`
+	Distro                    string                 `json:"distro"`
+	Collections               []string               `json:"collections"`
+	Vulnerabilities           []TwistlockVuln        `json:"vulnerabilities"`
+	VulnerabilityDistribution *TwistlockDistribution `json:"vulnerabilityDistribution"`
+	ComplianceDistribution    *TwistlockDistribution `json:"complianceDistribution"`
 }
 
 // TwistlockVuln represents a single vulnerability entry.
@@ -159,11 +158,7 @@ func convertSingleResult(result TwistlockResult, checksum *hdf.Checksum) hdf.Eva
 		vulns = []TwistlockVuln{}
 	}
 
-	limitedVulns, truncatedVulns := shared.LimitSlice(vulns, 0)
-	if truncatedVulns {
-		log.Printf("WARNING: Input truncated at %d vulnerability items (original: %d)",
-			len(limitedVulns), len(vulns))
-	}
+	limitedVulns := shared.LimitSliceWithWarning(vulns, 0, "vulnerability")
 
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedVulns))
 	for i, vuln := range limitedVulns {
@@ -191,6 +186,9 @@ func convertSingleResult(result TwistlockResult, checksum *hdf.Checksum) hdf.Eva
 func ConvertTwistlockToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("twistlock: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "twistlock", 0); err != nil {
+		return nil, fmt.Errorf("twistlock: %w", err)
 	}
 
 	checksum := shared.InputChecksum(input)
@@ -230,11 +228,15 @@ func ConvertTwistlockToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "twistlock-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Twistlock",
-		DataSourceFormat: "JSON",
+		ToolName:   "Twistlock",
+		ToolFormat: "JSON",
 		Baselines:        baselines,
-		Targets: []hdf.Target{
-			{Name: targetName, Type: hdf.ContainerImage},
+		Components: []hdf.Component{
+			{
+				Name:   targetName,
+				Type:   hdf.ContainerImage,
+				Labels: map[string]string{"image": report.Results[0].ID},
+			},
 		},
 		Timestamp: &now,
 	}), nil

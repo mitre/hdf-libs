@@ -44,8 +44,8 @@ func NewQueryCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "query <file>",
-		Short: "Search and filter controls in an HDF file",
-		Long: `Search and filter controls based on status, severity, tags, and text.
+		Short: "Search and filter requirements in an HDF document",
+		Long: `Search and filter requirements based on status, severity, tags, and text.
 
 Filters can be combined (AND logic). Use multiple flags to narrow results.
 
@@ -54,12 +54,13 @@ Examples:
   hdf query results.json --status failed --severity high
   hdf query results.json --cci CCI-000366
   hdf query results.json --nist "AC-2"
-  hdf query results.json --stig-id V-230221
+  hdf query results.json --id V-230221
   hdf query results.json --tag "severity:high"
   hdf query results.json --search "password"
   hdf query results.json --impact ">0.5" --status failed
+  hdf query results.json --baseline "RHEL9-STIG"
   hdf query results.json --status failed --count`,
-		Args: cobra.MaximumNArgs(1),
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Sync local flags to global variables for runQuery
 			queryStatus = localQueryStatus
@@ -73,6 +74,13 @@ Examples:
 			queryProfile = localQueryProfile
 			queryCount = localQueryCount
 			queryLimit = localQueryLimit
+			files, err := expandGlobs(args)
+			if err != nil {
+				return err
+			}
+			if len(files) > 1 {
+				return runQueryBulk(cmd, files)
+			}
 			return runQuery(cmd, args)
 		},
 	}
@@ -82,11 +90,11 @@ Examples:
 	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by impact (e.g., \">0.5\", \">=0.7\", \"0.5\")")
 	cmd.Flags().StringVar(&localQueryCCI, "cci", "", "Filter by CCI identifier (e.g., CCI-000366)")
 	cmd.Flags().StringVar(&localQueryNIST, "nist", "", "Filter by NIST control (e.g., AC-2, CM-6*)")
-	cmd.Flags().StringVar(&localQuerySTIGID, "stig-id", "", "Filter by STIG ID (e.g., V-230221)")
+	cmd.Flags().StringVar(&localQuerySTIGID, "id", "", "Filter by requirement ID, STIG ID, GID, or group title")
 	cmd.Flags().StringVarP(&localQueryTag, "tag", "t", "", "Filter by tag key:value (e.g., severity:high)")
 	cmd.Flags().StringVar(&localQuerySearch, "search", "", "Search in title and description")
-	cmd.Flags().StringVarP(&localQueryProfile, "profile", "p", "", "Filter by profile name")
-	cmd.Flags().BoolVarP(&localQueryCount, "count", "c", false, "Show only the count of matching controls")
+	cmd.Flags().StringVarP(&localQueryProfile, "baseline", "p", "", "Filter by profile name")
+	cmd.Flags().BoolVarP(&localQueryCount, "count", "c", false, "Show only the count of matching requirements")
 	cmd.Flags().IntVarP(&localQueryLimit, "limit", "l", 0, "Limit number of results (0 = unlimited)")
 
 	return cmd
@@ -98,7 +106,7 @@ type queryResult struct {
 	Status   string  `json:"status"`
 	Impact   float64 `json:"impact"`
 	Severity string  `json:"severity"`
-	Profile  string  `json:"profile"`
+	Profile  string  `json:"baseline"`
 }
 
 func runQuery(_ *cobra.Command, args []string) error {
@@ -111,14 +119,16 @@ func runQuery(_ *cobra.Command, args []string) error {
 
 	data, err := readInputFile(filename)
 	if err != nil {
-		printError(err.Error())
 		return err
+	}
+
+	if _, typeErr := requireDocumentType(data, []string{"results"}, "hdf query"); typeErr != nil {
+		return typeErr
 	}
 
 	results, err := parseHDFResults(data)
 	if err != nil {
-		printError(fmt.Sprintf("Failed to parse HDF file: %v", err))
-		return err
+		return fmt.Errorf("failed to parse HDF file: %w", err)
 	}
 
 	// Build filter chain and find matches
@@ -187,29 +197,39 @@ func outputQueryResults(matches []queryResult) error {
 	if jsonOutput {
 		output, _ := json.MarshalIndent(matches, "", "  ")
 		fmt.Println(string(output))
+		if len(matches) == 0 {
+			return &exitCodeError{code: 1, message: "no matching requirements"}
+		}
 		return nil
 	}
 
 	// Human-readable output
 	if len(matches) == 0 {
-		fmt.Println("No matching controls found.")
-		return nil
+		fmt.Println("No matching requirements found.")
+		return &exitCodeError{code: 1, message: "no matching requirements"}
 	}
 
-	fmt.Printf("Found %d matching control(s):\n\n", len(matches))
+	if !noHeaders {
+		fmt.Printf("Found %d matching requirement(s):\n\n", len(matches))
+	}
 
+	tbl := NewTable(
+		Column{Header: "ID"},
+		Column{Header: "Status"},
+		Column{Header: "Severity"},
+		Column{Header: "Title"},
+	)
 	for _, m := range matches {
-		symbol := statusToSymbol(m.Status)
-		severityLabel := severityToLabel(m.Severity)
 		title := sanitizeOutput(m.Title)
-		if len(title) > 55 {
+		if len(title) > 55 { //nolint:mnd // truncate long titles for table display
 			title = title[:52] + "..."
 		}
 		if title == "" {
 			title = "(no title)"
 		}
-		fmt.Printf("%s %-15s [%s] %s\n", symbol, sanitizeOutput(m.ID), severityLabel, title)
+		tbl.AddRow(sanitizeOutput(m.ID), m.Status, severityToLabel(m.Severity), title)
 	}
+	tbl.Render()
 
 	return nil
 }
@@ -480,4 +500,10 @@ func globToRegex(glob string) string {
 	result = strings.ReplaceAll(result, "*", ".*")
 	result = strings.ReplaceAll(result, "?", ".")
 	return "^" + result + "$"
+}
+
+func runQueryBulk(cmd *cobra.Command, files []string) error {
+	return runBulk(files, "query", "queried", func(file string) error {
+		return runQuery(cmd, []string{file})
+	})
 }

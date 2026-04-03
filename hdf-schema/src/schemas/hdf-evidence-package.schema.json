@@ -1,0 +1,227 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v2.0.0",
+  "title": "HDF Evidence Package",
+  "description": "Bundles references to all HDF documents for audit, authorization, and compliance review. Each content entry references a document by type, URI, and checksum for integrity verification.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "name",
+    "contents"
+  ],
+  "properties": {
+    "packageId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this evidence package. Optional in casual use, expected in production ATO submissions. Auto-generated if omitted during creation."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name for this evidence package. Example: 'Enterprise Portal ATO Evidence - Q1 2026'."
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the evidence package's purpose and scope."
+    },
+    "systemRef": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "URI to the hdf-system document this evidence package covers."
+    },
+    "planRef": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "URI to the hdf-plan document that drove this assessment. Used for completeness verification — every baseline in the plan should have a corresponding results document in this package."
+    },
+    "preparedBy": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+      "description": "Identity of who prepared this evidence package."
+    },
+    "preparedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this evidence package was prepared. ISO 8601 format."
+    },
+    "contents": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Content_Reference"
+      },
+      "description": "References to HDF documents included in this evidence package."
+    },
+    "completenessCheck": {
+      "$ref": "#/$defs/Completeness_Check",
+      "description": "Summary of assessment completeness and compliance status."
+    },
+    "signature": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature",
+      "description": "Digital signature covering the entire evidence package."
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Optional key-value labels for grouping and querying evidence packages."
+    },
+    "integrity": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
+      "description": "Cryptographic integrity information for verifying this evidence package has not been tampered with."
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of this evidence package."
+    },
+    "generator": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
+      "description": "Information about the tool that generated this document."
+    }
+  },
+  "$defs": {
+    "Content_Type": {
+      "type": "string",
+      "enum": [
+        "hdf-system",
+        "hdf-baseline",
+        "hdf-plan",
+        "hdf-results",
+        "hdf-amendments",
+        "hdf-comparison",
+        "sbom"
+      ],
+      "description": "The type of document referenced in the evidence package.",
+      "title": "Content Type"
+    },
+    "Content_Reference": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "type",
+        "uri"
+      ],
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/Content_Type",
+          "description": "The type of HDF document being referenced."
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "URI to the document. Can be a relative path or absolute URL."
+        },
+        "checksum": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
+          "description": "Cryptographic checksum for verifying the referenced document's integrity."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description of this content entry."
+        },
+        "componentRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "componentId of the component this content entry relates to. Use to link SBOMs, results, or other documents to a specific system component."
+        }
+      },
+      "examples": [
+        {
+          "type": "hdf-system",
+          "uri": "portal-prod.hdf-system.json",
+          "checksum": { "algorithm": "sha256", "value": "aaa111..." }
+        },
+        {
+          "type": "hdf-results",
+          "uri": "portal-scan-march-2026.json",
+          "checksum": { "algorithm": "sha256", "value": "ddd444..." },
+          "description": "March 2026 monthly scan results"
+        },
+        {
+          "type": "sbom",
+          "uri": "https://artifacts.agency.gov/sbom/webtier.cdx.json",
+          "description": "WebTier CycloneDX SBOM"
+        }
+      ],
+      "description": "A reference to an HDF document or SBOM included in the evidence package.",
+      "title": "Content Reference"
+    },
+    "SBOM_Coverage": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "properties": {
+        "componentsWithSbom": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of system components that have an associated SBOM."
+        },
+        "totalComponents": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of components in the system."
+        }
+      },
+      "description": "SBOM coverage statistics for the system.",
+      "title": "SBOM Coverage"
+    },
+    "Completeness_Check": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "properties": {
+        "allBaselinesAssessed": {
+          "type": "boolean",
+          "description": "Whether all baselines referenced by system components have assessment results."
+        },
+        "allComponentsCovered": {
+          "type": "boolean",
+          "description": "Whether all system components have at least one matching target in the results."
+        },
+        "expiredWaivers": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of waivers/amendments that have expired."
+        },
+        "unresolvedPoams": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of POA&M items that are still open (not completed)."
+        },
+        "compliancePercent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Overall compliance percentage across all assessments."
+        },
+        "sbomCoverage": {
+          "$ref": "#/$defs/SBOM_Coverage",
+          "description": "SBOM coverage across system components."
+        }
+      },
+      "description": "Informational summary of assessment completeness. Not authoritative — tools should compute these from the referenced documents.",
+      "title": "Completeness Check"
+    }
+  },
+  "examples": [
+    {
+      "name": "Enterprise Portal ATO Evidence - Q1 2026",
+      "systemRef": "portal-prod.hdf-system.json",
+      "preparedBy": { "type": "email", "identifier": "compliance@agency.gov" },
+      "preparedAt": "2026-03-31T12:00:00Z",
+      "contents": [
+        { "type": "hdf-system", "uri": "portal-prod.hdf-system.json", "checksum": { "algorithm": "sha256", "value": "aaa111" } },
+        { "type": "hdf-baseline", "uri": "rhel9-stig.hdf-baseline.json", "checksum": { "algorithm": "sha256", "value": "bbb222" } },
+        { "type": "hdf-plan", "uri": "portal-monthly-scan.hdf-plan.json", "checksum": { "algorithm": "sha256", "value": "ccc333" } },
+        { "type": "hdf-results", "uri": "portal-scan-march.json", "checksum": { "algorithm": "sha256", "value": "ddd444" } },
+        { "type": "hdf-amendments", "uri": "portal-waivers-q1.json", "checksum": { "algorithm": "sha256", "value": "eee555" } },
+        { "type": "hdf-comparison", "uri": "portal-diff-feb-mar.json", "checksum": { "algorithm": "sha256", "value": "fff666" } }
+      ],
+      "completenessCheck": {
+        "allBaselinesAssessed": true,
+        "allComponentsCovered": true,
+        "expiredWaivers": 0,
+        "unresolvedPoams": 2,
+        "compliancePercent": 95.8,
+        "sbomCoverage": { "componentsWithSbom": 3, "totalComponents": 5 }
+      }
+    }
+  ]
+}

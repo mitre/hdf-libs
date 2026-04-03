@@ -1,6 +1,6 @@
 import { mkdirSync, existsSync, writeFileSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import {
   quicktype,
   InputData,
@@ -19,6 +19,10 @@ const SCHEMAS = [
   { file: 'hdf-results.schema.json', name: 'HdfResults' },
   { file: 'hdf-baseline.schema.json', name: 'HdfBaseline' },
   { file: 'hdf-comparison.schema.json', name: 'HdfComparison' },
+  { file: 'hdf-system.schema.json', name: 'HdfSystem' },
+  { file: 'hdf-plan.schema.json', name: 'HdfPlan' },
+  { file: 'hdf-amendments.schema.json', name: 'HdfAmendments' },
+  { file: 'hdf-evidence-package.schema.json', name: 'HdfEvidencePackage' },
 ];
 
 // Language configurations
@@ -41,6 +45,54 @@ function toOutputFilename(schemaFile: string, ext: string): string {
 }
 
 /**
+ * Preprocess a JSON Schema to work around quicktype-core 23.x bugs:
+ * 1. Replace bare primitive types in oneOf with a wrapper object so quicktype
+ *    can generate a name for the variant (avoids codePointAt crash).
+ * 2. Remove `const: true` boolean properties (quicktype can't handle const).
+ */
+function preprocessSchemaForQuicktype(schemaJson: string): string {
+  const schema = JSON.parse(schemaJson);
+
+  function walk(node: unknown): unknown {
+    if (node === null || typeof node !== 'object') return node;
+    if (Array.isArray(node)) return node.map(walk);
+
+    const obj = node as Record<string, unknown>;
+
+    // Remove const from boolean properties (quicktype chokes on const: true)
+    if (obj['type'] === 'boolean' && 'const' in obj) {
+      const { const: _, ...rest } = obj;
+      void _;
+      return walk(rest);
+    }
+
+    // Simplify oneOf containing a bare primitive alongside $ref objects:
+    // Replace the entire oneOf with a permissive type so quicktype can proceed.
+    if (Array.isArray(obj['oneOf'])) {
+      const items = obj['oneOf'] as Array<Record<string, unknown>>;
+      const hasBare = items.some(
+        (i) => typeof i['type'] === 'string' && !i['$ref']
+      );
+      const hasRef = items.some((i) => '$ref' in i);
+      if (hasBare && hasRef) {
+        // Collapse to a permissive union — quicktype will generate an "any" variant
+        const { oneOf: __, ...rest } = obj;
+        void __;
+        return walk({ ...rest, description: obj['description'] });
+      }
+    }
+
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = walk(value);
+    }
+    return result;
+  }
+
+  return JSON.stringify(walk(schema));
+}
+
+/**
  * Generate types for a single schema in a single language.
  */
 async function generateForLanguage(
@@ -49,7 +101,7 @@ async function generateForLanguage(
   language: string,
   options: Record<string, unknown>
 ): Promise<string> {
-  const schemaContent = readFileSync(schemaPath, 'utf-8');
+  const schemaContent = preprocessSchemaForQuicktype(readFileSync(schemaPath, 'utf-8'));
 
   const schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
   await schemaInput.addSource({ name: typeName, schema: schemaContent });
@@ -78,7 +130,7 @@ async function generateCombinedForLanguage(
   const schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
 
   for (const schema of schemas) {
-    const schemaContent = readFileSync(schema.path, 'utf-8');
+    const schemaContent = preprocessSchemaForQuicktype(readFileSync(schema.path, 'utf-8'));
     await schemaInput.addSource({ name: schema.name, schema: schemaContent });
   }
 
@@ -95,15 +147,46 @@ async function generateCombinedForLanguage(
 }
 
 /**
+ * Add backward-compatible aliases for Go enum constants whose names changed
+ * when quicktype regenerated with a different schema set.
+ * These aliases let existing converter code compile without changes.
+ */
+function addGoEnumAliases(code: string): string {
+  const aliases: Array<{ constant: string; alias: string; type: string }> = [];
+
+  // Check which constants exist and add aliases for the old names
+  const aliasMap: Record<string, { old: string; type: string }> = {
+    'Application': { old: 'CopyrightApplication', type: 'Copyright' },
+  };
+
+  for (const [newName, { old, type }] of Object.entries(aliasMap)) {
+    // Only add alias if the new name exists and the old name doesn't
+    const constRegex = new RegExp(`\\b${newName}\\s+${type}\\s*=`);
+    const oldRegex = new RegExp(`\\b${old}\\s+${type}\\s*=`);
+    if (constRegex.test(code) && !oldRegex.test(code)) {
+      aliases.push({ constant: newName, alias: old, type });
+    }
+  }
+
+  if (aliases.length === 0) return code;
+
+  const block = aliases
+    .map((a) => `\t${a.alias} = ${a.constant}`)
+    .join('\n');
+
+  return code + `\n// Backward-compatible aliases for renamed constants.\nconst (\n${block}\n)\n`;
+}
+
+/**
  * Add omitempty tags to optional pointer fields in generated Go code.
  * This ensures that nil/null fields are omitted from JSON output, matching
  * the discriminated union semantics of the schema.
  */
 function addOmitemptyToGoCode(code: string): string {
-  // Pattern matches Go struct fields with pointer types and json tags
-  // Example: FQDN *string `json:"fqdn"`
-  // Captures: field name, type, json tag name, and closing backtick
-  const fieldPattern = /(\w+)\s+(\*\w+(?:<[^>]+>)?|\*time\.Time)\s+`json:"([^"]+)"`/g;
+  // Pattern matches Go struct fields with pointer types or interface{} and json tags
+  // Example: FQDN *string `json:"fqdn"` or Sbom interface{} `json:"sbom"`
+  // Captures: field name, type, json tag name
+  const fieldPattern = /(\w+)\s+(\*\w+(?:<[^>]+>)?|\*time\.Time|interface\{\})\s+`json:"([^"]+)"`/g;
 
   return code.replace(fieldPattern, (match, fieldName, fieldType, jsonTag) => {
     // Only add omitempty if not already present
@@ -166,18 +249,52 @@ export async function generateTypes(): Promise<void> {
       }
 
       if (schemasToGenerate.length > 0) {
-        let code = await generateCombinedForLanguage(
-          schemasToGenerate,
-          lang.name,
-          lang.options
-        );
+        try {
+          let code = await generateCombinedForLanguage(
+            schemasToGenerate,
+            lang.name,
+            lang.options
+          );
 
-        // Add omitempty tags to optional fields for discriminated union support
-        code = addOmitemptyToGoCode(code);
+          // Add omitempty tags to optional fields for discriminated union support
+          code = addOmitemptyToGoCode(code);
+          // Add backward-compatible aliases for renamed enum constants
+          code = addGoEnumAliases(code);
 
-        const outputPath = join(outputDir, 'hdf.go');
-        writeFileSync(outputPath, code);
-        console.log(`  → ${outputPath}`);
+          const outputPath = join(outputDir, 'hdf.go');
+          writeFileSync(outputPath, code);
+          console.log(`  → ${outputPath}`);
+        } catch (err) {
+          console.warn(`  Combined Go generation failed: ${(err as Error).message}`);
+          console.warn('  Retrying with individually-validated schemas...');
+
+          // Probe each schema individually to find which ones quicktype can handle
+          const validSchemas: Array<{ path: string; name: string }> = [];
+          for (const schema of schemasToGenerate) {
+            try {
+              await generateForLanguage(schema.path, schema.name, lang.name, lang.options);
+              validSchemas.push(schema);
+            } catch (probeErr) {
+              console.warn(`  Excluding ${schema.name} (quicktype error: ${(probeErr as Error).message})`);
+            }
+          }
+
+          // Re-combine only the schemas that passed probing
+          if (validSchemas.length > 0) {
+            let code = await generateCombinedForLanguage(
+              validSchemas,
+              lang.name,
+              lang.options
+            );
+
+            code = addOmitemptyToGoCode(code);
+            code = addGoEnumAliases(code);
+
+            const outputPath = join(outputDir, 'hdf.go');
+            writeFileSync(outputPath, code);
+            console.log(`  → ${outputPath} (${validSchemas.length}/${schemasToGenerate.length} schemas)`);
+          }
+        }
       }
 
       generateGoMod(outputDir);
@@ -195,15 +312,19 @@ export async function generateTypes(): Promise<void> {
         continue;
       }
 
-      const code = await generateForLanguage(
-        schemaPath,
-        schema.name,
-        lang.name,
-        lang.options
-      );
+      try {
+        const code = await generateForLanguage(
+          schemaPath,
+          schema.name,
+          lang.name,
+          lang.options
+        );
 
-      writeFileSync(outputPath, code);
-      console.log(`  → ${outputPath}`);
+        writeFileSync(outputPath, code);
+        console.log(`  → ${outputPath}`);
+      } catch (err) {
+        console.warn(`  Skipping ${schema.file} (quicktype error: ${(err as Error).message})`);
+      }
     }
   }
 
@@ -212,7 +333,7 @@ export async function generateTypes(): Promise<void> {
 
 // Run if called directly
 /* c8 ignore start */
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   generateTypes().catch((err) => {
     console.error('Type generation failed:', err);
     process.exit(1);

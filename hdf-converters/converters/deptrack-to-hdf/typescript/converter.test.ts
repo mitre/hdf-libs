@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertDeptrackToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,17 +13,13 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'deptrack-to-hdf',
+  convertFn: convertDeptrackToHdf,
+  minimalFixture: 'fpf-default.json',
+});
+
 describe('Dependency-Track to HDF converter', async () => {
-  describe('input validation', async () => {
-    it('should throw on invalid JSON', async () => {
-      await expect(convertDeptrackToHdf('not json')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertDeptrackToHdf('')).rejects.toThrow();
-    });
-  });
-
   describe('conversion basics', async () => {
     it('should produce valid HDF from default fixture', async () => {
       const output = await convertDeptrackToHdf(loadFixture('fpf-default.json'));
@@ -61,19 +58,19 @@ describe('Dependency-Track to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource name to "Dependency-Track" and format to "JSON"', async () => {
+    it('should set tool name to "Dependency-Track" and format to "JSON"', async () => {
       const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('Dependency-Track');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('Dependency-Track');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 
   describe('target', async () => {
     it('should include project name as target', async () => {
       const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.name).toBe('Acme Example');
-      expect(hdf.targets![0]!.type).toBe('application');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.name).toBe('Acme Example');
+      expect(hdf.components![0]!.type).toBe('application');
     });
   });
 
@@ -175,7 +172,7 @@ describe('Dependency-Track to HDF converter', async () => {
     it('should handle empty findings array', async () => {
       const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-no-vulnerabilities.json'))) as HdfResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(0);
-      expect(hdf.targets![0]!.name).toBe('laravel');
+      expect(hdf.components![0]!.name).toBe('laravel');
     });
   });
 
@@ -294,7 +291,7 @@ describe('Dependency-Track to HDF converter', async () => {
         findings: [],
       });
       const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
-      expect(hdf.targets![0]!.name).toBe('uuid-123');
+      expect(hdf.components![0]!.name).toBe('uuid-123');
     });
 
     it('should handle missing findings/project/meta gracefully', async () => {

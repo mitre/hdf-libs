@@ -1,0 +1,95 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "This detector identifies URLs with embedded credentials, which can be used to access web resources without explicit user interaction.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "{\"Data\":{\"Filesystem\":{\"file\":\".git/config\",\"line\":13}}}",
+              "message": "{\"Redacted\":\"https://gitlab-ci-token:********@gitlab.my_domain.dev\",\"VerificationError\":\"dialing local IP addresses is not allowed\",\"Verified\":false}",
+              "startTime": "2026-04-03T17:18:04.03196Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 13,
+            "ref": ".git/config"
+          },
+          "id": "URI PLAIN",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000202",
+              "CCI-000203",
+              "CCI-002367"
+            ],
+            "nist": [
+              "IA-5 (7)"
+            ]
+          },
+          "title": "Found URI secret using PLAIN decoder"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Postgres connection string containing credentials",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "{\"Data\":{\"Filesystem\":{\"file\":\"github.com/jackc/pgx/v5/pgxpool/pool.go\",\"line\":297}}}",
+              "message": "{\"ExtraData\":{\"sslmode\":\"verify-ca\"},\"Redacted\":\"\",\"VerificationError\":\"lookup pg.example.com on 10.96.0.10:53: server misbehaving\",\"Verified\":false}",
+              "startTime": "2026-04-03T17:18:04.03196Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "{\"Data\":{\"Filesystem\":{\"file\":\"github.com/jackc/pgx/v5/pgconn/config.go\",\"line\":1}}}",
+              "message": "{\"ExtraData\":{\"sslmode\":\"\\u003cunset\\u003e\"},\"Redacted\":\"\",\"VerificationError\":\"lookup foo.example.com:5432,bar.example.com:5432: no such host\",\"Verified\":false}",
+              "startTime": "2026-04-03T17:18:04.03196Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 297,
+            "ref": "github.com/jackc/pgx/v5/pgxpool/pool.go"
+          },
+          "id": "Postgres PLAIN",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000202",
+              "CCI-000203",
+              "CCI-002367"
+            ],
+            "nist": [
+              "IA-5 (7)"
+            ]
+          },
+          "title": "Found Postgres secret using PLAIN decoder"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "787c5a26556b56961fe959f604ab9850edd9a8a176fd3f9e18e3e5dededa72f0"
+      },
+      "name": "TruffleHog Scan",
+      "title": "TruffleHog Scan (trufflehog - filesystem)"
+    }
+  ],
+  "generator": {
+    "name": "hdf-converters",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:18:04.03196Z",
+  "tool": {
+    "format": "JSON",
+    "name": "TruffleHog"
+  }
+}

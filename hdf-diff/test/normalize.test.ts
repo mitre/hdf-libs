@@ -37,7 +37,7 @@ describe('normalizeToV2', () => {
           controls: [],
           groups: [],
           supports: [],
-          attributes: [],
+          inputs: [],
         },
       ],
       statistics: { duration: 1.5 },

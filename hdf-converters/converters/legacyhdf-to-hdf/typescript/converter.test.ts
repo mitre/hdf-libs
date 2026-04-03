@@ -21,15 +21,15 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
       expect(v2.baselines).toEqual([]);
       expect(v2.statistics).toEqual({});
-      expect(v2.targets).toHaveLength(1);
-      expect(v2.targets![0]).toMatchObject({
+      expect(v2.components).toHaveLength(1);
+      expect(v2.components![0]).toMatchObject({
         type: 'host',
         name: 'ubuntu',
         release: '20.04',
       });
-      expect(v2.dataSource?.name).toBe('Heimdall Data Format v1');
-      expect(v2.dataSource?.version).toBeUndefined();
-      expect(v2.dataSource?.format).toBeUndefined();
+      expect(v2.tool?.name).toBe('Heimdall Data Format v1');
+      expect(v2.tool?.version).toBeUndefined();
+      expect(v2.tool?.format).toBeUndefined();
     });
 
     it('should rename profiles to baselines', () => {
@@ -61,12 +61,13 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
       const v2 = convertV1ToV2(v1);
 
-      expect(v2.targets).toHaveLength(1);
-      expect(v2.targets![0]).toEqual({
+      expect(v2.components).toHaveLength(1);
+      expect(v2.components![0]).toEqual({
         type: 'host',
         id: 'server-123',
         name: 'redhat',
         release: '8.5',
+        labels: {},
       });
     });
 
@@ -80,7 +81,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
       const v2 = convertV1ToV2(v1);
 
-      expect(v2.targets![0].id).toBe('debian');
+      expect(v2.components![0].id).toBe('debian');
     });
 
     it('should preserve generator information', () => {
@@ -168,12 +169,13 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
       const v2 = convertV1ToV2(v1);
 
-      expect(v2.targets![0]).toEqual({
+      expect(v2.components![0]).toEqual({
         type: 'host',
         id: 'test-system',
         name: 'test-system',
+        labels: {},
       });
-      expect(v2.targets![0]).not.toHaveProperty('release');
+      expect(v2.components![0]).not.toHaveProperty('release');
     });
 
     it('should handle complex statistics object', () => {
@@ -460,9 +462,9 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(baseline.copyright).toBe('Copyright 2024');
       expect(baseline.copyright_email).toBe('test@example.com');
       expect(baseline.supports).toEqual([{ platform: 'ubuntu' }]);
-      expect(baseline.attributes).toEqual([{ name: 'attr1', options: {} }]);
+      expect(baseline.inputs).toEqual([{ name: 'attr1', options: {} }]);
       expect(baseline.status).toBe('loaded');
-      expect(baseline.checksum).toEqual({ algorithm: 'sha256', value: 'abc123' });
+      expect(baseline.integrity).toEqual({ algorithm: 'sha256', checksum: 'abc123' });
       expect(baseline.parentBaseline).toBe('parent-profile');
       expect(baseline.statusMessage).toBe('Status message');
       expect(baseline.skipMessage).toBe('Skip message');
@@ -598,8 +600,8 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
     it('should map platform to target', () => {
       const v2 = convertV1ToV2(v1);
-      expect(v2.targets).toHaveLength(1);
-      expect(v2.targets![0]).toMatchObject({
+      expect(v2.components).toHaveLength(1);
+      expect(v2.components![0]).toMatchObject({
         type: 'host',
         name: 'redhat',
         release: '9.7',
@@ -632,11 +634,11 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(withNist.length).toBeGreaterThan(0);
     });
 
-    it('should preserve sha256 as checksum', () => {
+    it('should preserve sha256 as integrity', () => {
       const v2 = convertV1ToV2(v1);
-      expect(v2.baselines[0].checksum).toEqual({
+      expect(v2.baselines[0].integrity).toEqual({
         algorithm: 'sha256',
-        value: expect.stringMatching(/^[a-f0-9]{64}$/),
+        checksum: expect.stringMatching(/^[a-f0-9]{64}$/),
       });
     });
   });

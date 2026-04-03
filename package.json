@@ -11,18 +11,20 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "pnpm run build:ts && pnpm run build:go",
-    "build:ts": "pnpm -r --filter=hdf-schema run build && pnpm -r --filter=!hdf-schema --filter=!hdf-cli run build",
+    "build:ts": "pnpm -r --filter=!hdf-cli run build",
     "build:go": "pnpm --filter hdf-cli run build",
     "pretest": "pnpm run build:ts",
     "test": "pnpm run test:ts && pnpm run test:go",
-    "check": "pnpm run build:ts && pnpm run lint && pnpm run test && pnpm run security",
+    "check": "pnpm run build:ts && pnpm run lint && pnpm run lint:go && pnpm run typecheck && pnpm run test && pnpm run security",
     "test:ts": "pnpm -r run test:ts",
     "test:go": "pnpm -r run test:go",
     "test:coverage": "pnpm -r run test:coverage",
-    "security": "pnpm run security:ts; pnpm run security:go",
-    "security:ts": "pnpm audit --audit-level=high || true",
-    "security:go": "pnpm --filter hdf-cli run security:vuln",
+    "typecheck": "pnpm -r --filter=!hdf-cli run type-check",
+    "security": "pnpm run security:ts && pnpm run security:go",
+    "security:ts": "echo '── prod deps (fail on moderate+) ──' && pnpm audit --prod --audit-level=moderate && echo '── dev deps (fail on high+) ──' && pnpm audit --dev --audit-level=high",
+    "security:go": "pnpm --filter hdf-cli run security:vuln && pnpm --filter hdf-cli run security:sast",
     "lint": "pnpm -r run lint",
+    "lint:go": "pnpm --filter hdf-cli run lint && pnpm --filter @mitre/hdf-converters run lint:go",
     "lint:fix": "pnpm -r run lint:fix",
     "clean": "pnpm -r run clean",
     "prepare": "husky"
@@ -53,11 +55,15 @@
       "rollup@>=4.0.0 <4.59.0": "4.59.0",
       "esbuild@<0.25.0": "0.25.0",
       "underscore@<1.13.8": "1.13.8",
-      "lodash@>=4.0.0 <4.17.23": "4.17.23",
+      "lodash@>=4.0.0 <4.18.0": "4.18.1",
       "ajv@>=6.0.0 <6.14.0": "6.14.0",
       "ajv@>=8.0.0 <8.18.0": "8.18.0",
       "qs@<6.14.2": "6.14.2",
-      "flatted@<3.4.0": "3.4.0"
+      "flatted@<3.4.2": "3.4.2",
+      "picomatch@<2.3.2": "2.3.2",
+      "picomatch@>=4.0.0 <4.0.4": "4.0.4",
+      "yaml@>=2.0.0 <2.8.3": "2.8.3",
+      "brace-expansion@>=5.0.0 <5.0.5": "5.0.5"
     }
   }
 }

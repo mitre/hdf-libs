@@ -1,0 +1,64 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "The application reflects user input in the response without proper encoding, enabling reflected XSS attacks.",
+              "label": "default"
+            },
+            {
+              "data": "Encode all user input before including it in HTML responses.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL: https://app.example.com/search | Method: GET | Param: q",
+              "startTime": "2024-02-20T14:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "d4e5f6a7-b8c9-0123-4567-890abcdef012",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "79"
+            ],
+            "nist": [
+              "SI-10"
+            ]
+          },
+          "title": "Cross-Site Scripting (Reflected)"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "4c1a8302a8f8160f65d9a491fc0ba901afa203ee35b4916ed9cde4eb74be61ce"
+      },
+      "name": "GitLab Security Scan",
+      "summary": "Scanner: ZAProxy v2.14.0",
+      "title": "GitLab DAST Security Scan"
+    }
+  ],
+  "components": [
+    {
+      "name": "ZAProxy",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "gitlab-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2024-02-20T14:15:00Z",
+  "tool": {
+    "format": "JSON",
+    "name": "ZAProxy",
+    "version": "2.14.0"
+  }
+}

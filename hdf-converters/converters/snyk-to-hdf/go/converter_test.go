@@ -40,14 +40,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertSnyk_InvalidJSON(t *testing.T) {
-	_, err := ConvertSnykToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertSnyk_EmptyInput(t *testing.T) {
-	_, err := ConvertSnykToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "snyk-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertSnykToHDF(input, testVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 // ---- Minimal fixture: baseline structure ----
@@ -110,18 +108,18 @@ func TestConvertSnyk_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertSnyk_DataSource(t *testing.T) {
+func TestConvertSnyk_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertSnykToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Snyk", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Snyk", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- Severity → Impact mapping ----
@@ -295,8 +293,8 @@ func TestConvertSnyk_Target(t *testing.T) {
 	result, err := ConvertSnykToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets)
-	assert.Equal(t, "goof", result.Targets[0].Name)
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, "goof", result.Components[0].Name)
 }
 
 // ---- SARIF routing ----
@@ -395,4 +393,10 @@ func TestSeverityToImpact(t *testing.T) {
 			assert.InDelta(t, tc.expected, getImpact(tc.severity), 0.001)
 		})
 	}
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "snyk-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertSnykToHDF(input, "0.1.0")
+	})
 }

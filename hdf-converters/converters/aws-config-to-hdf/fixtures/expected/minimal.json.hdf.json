@@ -1,0 +1,75 @@
+{
+  "baselines": [
+    {
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "c8f8953253ae08be2bdf89e75b2d3fc6af1361b5028f4d3ec6b937a6b5b65219"
+      },
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Checks whether the active access keys are rotated within the number of days specified in maxAccessKeyAge.",
+              "label": "default"
+            },
+            {
+              "data": "ARN: arn:aws:config:us-east-1:123456789012:config-rule/config-rule-7hytm9\u003cbr/\u003eSource Identifier: ACCESS_KEYS_ROTATED\u003cbr/\u003emaxAccessKeyAge:90",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "config_rule_name: access-keys-rotated, resource_type: AWS::IAM::User, resource_id: AIDAQ4IUA7UM4QUIM3AGQ",
+              "runTime": 30.614,
+              "startTime": "2021-04-09T14:39:21Z",
+              "status": "passed"
+            },
+            {
+              "codeDesc": "config_rule_name: access-keys-rotated, resource_type: AWS::IAM::User, resource_id: AIDAQ4IUA7UMXLY36QZXA",
+              "message": "(config_rule_name: access-keys-rotated, resource_type: AWS::IAM::User, resource_id: AIDAQ4IUA7UMXLY36QZXA): Rule does not pass rule compliance",
+              "runTime": 30.631,
+              "startTime": "2021-04-09T14:39:21Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 1,
+            "ref": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-7hytm9"
+          },
+          "id": "config-rule-7hytm9",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "AC-2(1)",
+              "AC-2(j)"
+            ]
+          },
+          "title": "123456789012 - access-keys-rotated"
+        }
+      ],
+      "name": "AWS Config",
+      "maintainer": "Amazon Web Services",
+      "title": "AWS Config Compliance Results",
+      "version": "1.0.0"
+    }
+  ],
+  "components": [
+    {
+      "labels": {
+        "account": "123456789012",
+        "provider": "aws",
+        "region": "us-east-1"
+      },
+      "name": "AWS Account 123456789012",
+      "type": "cloudAccount"
+    }
+  ],
+  "generator": {
+    "name": "aws-config-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:50.983582Z",
+  "tool": {
+    "name": "AWS Config"
+  }
+}

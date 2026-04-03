@@ -13,9 +13,9 @@ import (
 
 // DeptrackReport is the top-level Dependency-Track Finding Packaging Format (FPF) structure.
 type DeptrackReport struct {
-	Version  string           `json:"version"`
-	Meta     DeptrackMeta     `json:"meta"`
-	Project  DeptrackProject  `json:"project"`
+	Version  string            `json:"version"`
+	Meta     DeptrackMeta      `json:"meta"`
+	Project  DeptrackProject   `json:"project"`
 	Findings []DeptrackFinding `json:"findings"`
 }
 
@@ -198,6 +198,9 @@ func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	if len(input) == 0 {
 		return nil, fmt.Errorf("deptrack: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "deptrack", 0); err != nil {
+		return nil, fmt.Errorf("deptrack: %w", err)
+	}
 
 	var report DeptrackReport
 	if err := json.Unmarshal(input, &report); err != nil {
@@ -240,11 +243,11 @@ func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "deptrack-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Dependency-Track",
-		DataSourceFormat: "JSON",
+		ToolName:   "Dependency-Track",
+		ToolFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
-			{Name: targetName, Type: hdf.Application},
+		Components: []hdf.Component{
+			{Name: targetName, Type: hdf.CopyrightApplication},
 		},
 		Timestamp: &now,
 	}), nil

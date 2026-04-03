@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -39,16 +38,16 @@ func isXccdfNS(ns string) bool {
 
 // Benchmark is the root element of an XCCDF document.
 type Benchmark struct {
-	XMLName     xml.Name     `xml:"Benchmark"`
-	ID          string       `xml:"id,attr"`
-	Status      string       `xml:"status"`
-	Title       string       `xml:"title"`
-	Description string       `xml:"description"`
-	Version     string       `xml:"version"`
-	Platforms   []Platform   `xml:"platform"`
-	Groups      []Group      `xml:"Group"`
-	Rules       []Rule       `xml:"Rule"`
-	TestResult  TestResult   `xml:"TestResult"`
+	XMLName     xml.Name   `xml:"Benchmark"`
+	ID          string     `xml:"id,attr"`
+	Status      string     `xml:"status"`
+	Title       string     `xml:"title"`
+	Description string     `xml:"description"`
+	Version     string     `xml:"version"`
+	Platforms   []Platform `xml:"platform"`
+	Groups      []Group    `xml:"Group"`
+	Rules       []Rule     `xml:"Rule"`
+	TestResult  TestResult `xml:"TestResult"`
 }
 
 // Platform represents an XCCDF platform element.
@@ -420,10 +419,7 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 	ruleMap := buildRuleMap(&benchmark)
 	startTime, duration := calculateTiming(&benchmark.TestResult)
 
-	limitedRuleResults, truncatedRR := shared.LimitSlice(benchmark.TestResult.RuleResults, 0)
-	if truncatedRR {
-		log.Printf("WARNING: Input truncated at %d rule-result items (original: %d)", len(limitedRuleResults), len(benchmark.TestResult.RuleResults))
-	}
+	limitedRuleResults := shared.LimitSliceWithWarning(benchmark.TestResult.RuleResults, 0, "rule result")
 	var requirements []hdf.EvaluatedRequirement
 	for i := range limitedRuleResults {
 		rr := &limitedRuleResults[i]
@@ -452,10 +448,10 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "hdf-converters",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "XCCDF",
-		DataSourceFormat: "XCCDF",
+		ToolName:         "XCCDF",
+		ToolFormat:       "XCCDF",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets:          []hdf.Target{target},
+		Components:          []hdf.Component{target},
 		Timestamp:        &startTime,
 		Statistics: &hdf.Statistics{
 			Duration: &duration,
@@ -468,7 +464,7 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 // ---------------------------------------------------------------------------
 
 func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVersion string) (*hdf.HDFBaseline, error) {
-	checksum := shared.InputChecksum(input)
+	integrity := shared.InputIntegrity(input)
 
 	var requirements []hdf.BaselineRequirement
 	var groups []hdf.RequirementGroup
@@ -506,7 +502,7 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 		Version:      shared.Ptr(benchmark.Version),
 		Status:       &status,
 		Summary:      shared.Ptr(shared.StripHTML(benchmark.Description)),
-		Checksum:     checksum,
+		Integrity:    integrity,
 		Requirements: requirements,
 		Groups:       groups,
 		Generator: &hdf.Generator{
@@ -521,9 +517,9 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 // convertRuleToBaselineRequirement converts a single XCCDF Rule into an HDF
 // BaselineRequirement for benchmark-to-baseline conversion.
 func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequirement {
-	id := rule.Version
+	id := extractRuleID(rule.ID)
 	if id == "" {
-		id = rule.ID
+		id = rule.Version
 	}
 
 	severity := strings.ToLower(rule.Severity)
@@ -627,6 +623,37 @@ func kebabCase(s string) string {
 	return strings.ToLower(strings.ReplaceAll(s, "_", "-"))
 }
 
+// extractRuleID extracts the vulnerability ID from an XCCDF Rule ID.
+// Handles two formats:
+//   - Bare: "SV-254238r991589_rule" → "SV-254238"
+//   - Qualified: "xccdf_mil.disa.stig_rule_SV-204393r603261_rule" → "SV-204393"
+//
+// The revision suffix (e.g. "r991589_rule") is stripped by splitting on the
+// first lowercase 'r' after the SV- digits. Non-SV IDs are returned unchanged.
+func extractRuleID(ruleID string) string {
+	if ruleID == "" {
+		return ""
+	}
+
+	// Check for embedded SV- in qualified XCCDF IDs (e.g. "xccdf_..._SV-12345r...")
+	svIdx := strings.Index(strings.ToUpper(ruleID), "SV-")
+	if svIdx < 0 {
+		return ruleID
+	}
+
+	// Extract from "SV-" onward
+	svPart := "SV-" + ruleID[svIdx+3:]
+
+	// Strip revision suffix: split on first lowercase 'r' after digits
+	digits := svPart[3:] // everything after "SV-"
+	for i, ch := range digits {
+		if ch == 'r' && i > 0 {
+			return "SV-" + digits[:i]
+		}
+	}
+	return svPart
+}
+
 // ---------------------------------------------------------------------------
 // ARF conversion
 // ---------------------------------------------------------------------------
@@ -660,7 +687,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 
 	// Process each report, collecting baselines and targets
 	var baselines []hdf.EvaluatedBaseline
-	var targets []hdf.Target
+	var targets []hdf.Component
 	var firstTimestamp time.Time
 	var totalDuration float64
 
@@ -681,10 +708,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		totalDuration += duration
 
 		// Convert rule-results
-		limitedARFRuleResults, truncatedARFRR := shared.LimitSlice(tr.RuleResults, 0)
-		if truncatedARFRR {
-			log.Printf("WARNING: Input truncated at %d rule-result items (original: %d)", len(limitedARFRuleResults), len(tr.RuleResults))
-		}
+		limitedARFRuleResults := shared.LimitSliceWithWarning(tr.RuleResults, 0, "rule result")
 		var requirements []hdf.EvaluatedRequirement
 		for j := range limitedARFRuleResults {
 			rr := &limitedARFRuleResults[j]
@@ -745,10 +769,10 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "hdf-converters",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "ARF",
-		DataSourceFormat: "ARF",
+		ToolName:         "ARF",
+		ToolFormat:       "ARF",
 		Baselines:        baselines,
-		Targets:          targets,
+		Components:          targets,
 		Timestamp:        &firstTimestamp,
 		Statistics: &hdf.Statistics{
 			Duration: &totalDuration,
@@ -785,7 +809,7 @@ func buildReportAssetMap(rels *ArfRelationships) map[string][]string {
 
 // enrichTargetWithAsset adds ARF asset metadata (FQDN, hostname, MAC, IP)
 // to an HDF Target.
-func enrichTargetWithAsset(target *hdf.Target, asset *ArfAsset) {
+func enrichTargetWithAsset(target *hdf.Component, asset *ArfAsset) {
 	cd := &asset.ComputingDevice
 
 	if cd.FQDN != "" {
@@ -880,11 +904,12 @@ func convertRuleResult(rr *RuleResult, rule *Rule) hdf.EvaluatedRequirement {
 	}
 }
 
-// determineID returns the requirement ID. Prefers the Rule version text
-// (e.g. "RHEL-07-010030"), falling back to the rule-result idref.
+// determineID returns the requirement ID. Prefers the Rule ID extracted
+// as a vulnerability ID (e.g. "SV-254238" from "SV-254238r991589_rule"),
+// falling back to the rule-result idref.
 func determineID(rr *RuleResult, rule *Rule) string {
-	if rule != nil && rule.Version != "" {
-		return rule.Version
+	if rule != nil && rule.ID != "" {
+		return extractRuleID(rule.ID)
 	}
 	return rr.IDRef
 }
@@ -1040,10 +1065,10 @@ func mapResultStatus(result string) hdf.ResultStatus {
 }
 
 // buildTarget constructs an HDF Target from the TestResult metadata.
-func buildTarget(tr *TestResult) hdf.Target {
-	target := hdf.Target{
-		Name: tr.Target,
-		Type: hdf.Host,
+func buildTarget(tr *TestResult) hdf.Component {
+	target := hdf.Component{
+		Name:   tr.Target,
+		Type:   hdf.Host,
 	}
 
 	// Use the first target-address as the IP address

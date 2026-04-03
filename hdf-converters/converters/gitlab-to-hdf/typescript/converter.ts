@@ -2,12 +2,12 @@ import {
   type Checksum,
   createMinimalBaseline,
   Copyright,
-  type DataSource,
+  type Tool,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
   type HdfResults,
-  type Target,
+  type Component,
   ResultStatus,
   severityToImpact,
 } from '@mitre/hdf-schema';
@@ -304,27 +304,27 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
     summary: `Scanner: ${scannerName}${scannerVersion ? ` v${scannerVersion}` : ''}`,
   }) as EvaluatedBaseline;
 
-  const dataSource: DataSource = {
+  const tool: Tool = {
     name: scannerName,
     format: 'JSON',
   };
   if (scannerVersion) {
-    dataSource.version = scannerVersion;
+    tool.version = scannerVersion;
   }
 
-  // Build targets based on scan type
-  const targets: Target[] = [];
+  // Build components based on scan type
+  const components: Component[] = [];
   const targetType = scanTypeToTargetType(scanType);
-  targets.push({name: scannerName, type: targetType});
+  components.push({name: scannerName, type: targetType});
 
   const hdf: HdfResults = {
     baselines: [baseline],
-    targets,
+    components,
     generator: {
       name: 'gitlab-to-hdf',
       version: 'unknown',
     },
-    dataSource,
+    tool,
   };
 
   if (report.scan?.end_time) {

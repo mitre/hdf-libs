@@ -24,7 +24,7 @@ describe('HDF Results Parsing', () => {
             }]
           }]
         }],
-        targets: [],
+        components: [],
         statistics: {}
       });
 
@@ -38,13 +38,14 @@ describe('HDF Results Parsing', () => {
     });
 
     it('should parse HDF results from bytes', () => {
+      const minReq = { id: 'SV-1', impact: 0.5, tags: {}, descriptions: [{ label: 'default', data: 'Test' }], results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }] };
       const validJson = JSON.stringify({
         baselines: [{
           name: 'Test',
           checksum: { algorithm: 'sha256', value: 'test' },
-          requirements: []
+          requirements: [minReq]
         }],
-        targets: [],
+        components: [],
         statistics: {}
       });
 
@@ -90,7 +91,7 @@ describe('HDF Results Parsing', () => {
             }]
           }
         ],
-        targets: [],
+        components: [],
         statistics: {}
       });
 
@@ -117,7 +118,7 @@ describe('HDF Results Parsing', () => {
 
     it('should reject results missing baselines field', () => {
       const invalidJson = JSON.stringify({
-        targets: [],
+        components: [],
         statistics: {}
       });
 
@@ -135,7 +136,7 @@ describe('HDF Results Parsing', () => {
           checksum: { algorithm: 'sha256', value: 'test' },
           requirements: []
         }],
-        targets: [],
+        components: [],
         statistics: {}
       });
 
@@ -158,7 +159,7 @@ describe('HDF Results Parsing', () => {
             results: []
           }]
         }],
-        targets: [],
+        components: [],
         statistics: {}
       });
 
@@ -171,7 +172,7 @@ describe('HDF Results Parsing', () => {
     it('should reject results with wrong type for baselines', () => {
       const invalidJson = JSON.stringify({
         baselines: 'not an array',
-        targets: [],
+        components: [],
         statistics: {}
       });
 
@@ -182,7 +183,7 @@ describe('HDF Results Parsing', () => {
     });
 
     it('should detect trailing garbage after valid JSON', () => {
-      const invalidJson = '{"baselines":[],"targets":[],"statistics":{}}garbage';
+      const invalidJson = '{"baselines":[],"components":[],"statistics":{}}garbage';
 
       const result = parseResults(invalidJson);
 
@@ -293,13 +294,14 @@ describe('HDF Baseline Parsing', () => {
 
 describe('Auto-Detection Parsing', () => {
   it('should auto-detect and parse HDF Results', () => {
+    const minReq = { id: 'SV-1', impact: 0.5, tags: {}, descriptions: [{ label: 'default', data: 'Test' }], results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }] };
     const resultsJson = JSON.stringify({
       baselines: [{
         name: 'Test',
         checksum: { algorithm: 'sha256', value: 'test' },
-        requirements: []
+        requirements: [minReq]
       }],
-      targets: [],
+      components: [],
       statistics: {}
     });
 
@@ -369,7 +371,7 @@ describe('Whitespace-equivalent JSON (isWhitespaceEquivalent path)', () => {
         }]
       }]
     }],
-    targets: [],
+    components: [],
     statistics: {}
   };
 
@@ -430,7 +432,7 @@ describe('Trailing garbage detection (parseBaseline and parse)', () => {
   });
 
   it('parse rejects trailing garbage after valid JSON', () => {
-    const validJson = '{"baselines":[],"targets":[],"statistics":{}}extraGarbage';
+    const validJson = '{"baselines":[],"components":[],"statistics":{}}extraGarbage';
 
     const result = parse(validJson);
 
@@ -469,7 +471,7 @@ describe('Error Messages', () => {
         // Missing required fields
         name: 'Test'
       }],
-      targets: [],
+      components: [],
       statistics: {}
     });
 

@@ -3,7 +3,6 @@ package fortify
 import (
 	"encoding/xml"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -49,10 +48,7 @@ func ConvertFortifyToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 	vulnsByClassID := groupVulnsByClassID(fvdl.Vulnerabilities.Vulnerability)
 
 	// Build requirements — one per Description classID
-	limitedDescs, truncatedDescs := shared.LimitSlice(fvdl.Descriptions, 0)
-	if truncatedDescs {
-		log.Printf("WARNING: Input truncated at %d Description items (original: %d)", len(limitedDescs), len(fvdl.Descriptions))
-	}
+	limitedDescs := shared.LimitSliceWithWarning(fvdl.Descriptions, 0, "description")
 
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedDescs))
 	for i, desc := range limitedDescs {
@@ -87,10 +83,10 @@ func ConvertFortifyToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "fortify-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Fortify",
-		DataSourceFormat: "FVDL",
+		ToolName:   "Fortify",
+		ToolFormat: "FVDL",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
+		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Repository},
 		},
 		Timestamp: &timestamp,
@@ -167,10 +163,7 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 
 // buildResults creates one RequirementResult per vulnerability instance.
 func buildResults(vulns []Vulnerability, snippetMap map[string]*Snippet, fvdl *FVDL) []hdf.RequirementResult {
-	limitedVulns, truncated := shared.LimitSlice(vulns, 0)
-	if truncated {
-		log.Printf("WARNING: Input truncated at %d vulnerability items (original: %d)", len(limitedVulns), len(vulns))
-	}
+	limitedVulns := shared.LimitSliceWithWarning(vulns, 0, "vulnerability")
 
 	results := make([]hdf.RequirementResult, 0, len(limitedVulns))
 	for _, vuln := range limitedVulns {

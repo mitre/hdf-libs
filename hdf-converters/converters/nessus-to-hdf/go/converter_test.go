@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	hdf "github.com/mitre/hdf-schema"
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,7 +28,7 @@ func TestConvertNessusToHDF_Sample(t *testing.T) {
 	assert.Equal(t, "nessus-to-hdf", result.Generator.Name)
 	assert.Equal(t, converterVersion, result.Generator.Version)
 	assert.Len(t, result.Baselines, 3, "Should have 3 baselines (one per scanned host)")
-	assert.Len(t, result.Targets, 3, "Should have 3 targets (3 scanned hosts)")
+	assert.Len(t, result.Components, 3, "Should have 3 targets (3 scanned hosts)")
 
 	// Verify each baseline has requirements
 	for _, baseline := range result.Baselines {
@@ -40,7 +40,7 @@ func TestConvertNessusToHDF_Sample(t *testing.T) {
 	shared.WriteOutput(t, "nessus-to-hdf", "sample.json", result)
 }
 
-func TestConvertNessusToHDF_DataSource(t *testing.T) {
+func TestConvertNessusToHDF_Tool(t *testing.T) {
 	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
@@ -48,11 +48,11 @@ func TestConvertNessusToHDF_DataSource(t *testing.T) {
 	result, err := ConvertNessusToHDF(inputData, converterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "Nessus", *result.DataSource.Name)
-	assert.Nil(t, result.DataSource.Version)
-	assert.Nil(t, result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "Nessus", *result.Tool.Name)
+	assert.Nil(t, result.Tool.Version)
+	assert.Nil(t, result.Tool.Format)
 }
 
 func TestConvertNessusToHDF_Compliance(t *testing.T) {
@@ -110,13 +110,13 @@ func TestConvertNessusToHDF_Compliance(t *testing.T) {
 	shared.WriteOutput(t, "nessus-to-hdf", "compliance.json", result)
 }
 
-func TestConvertNessusToHDF_InvalidXML(t *testing.T) {
-	invalidXML := []byte("not valid xml")
-
-	result, err := ConvertNessusToHDF(invalidXML, converterVersion)
-	assert.Error(t, err, "Should fail on invalid XML")
-	assert.Nil(t, result, "Result should be nil on error")
-	assert.Contains(t, err.Error(), "failed to parse Nessus XML")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "nessus-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertNessusToHDF(input, converterVersion) },
+		MinimalFixture: "compliance.nessus",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 func TestConvertNessusToHDF_EmptyHosts(t *testing.T) {
@@ -136,7 +136,7 @@ func TestConvertNessusToHDF_EmptyHosts(t *testing.T) {
 	require.NotNil(t, result, "Result should not be nil")
 
 	assert.Len(t, result.Baselines, 0, "Should have no baselines")
-	assert.Len(t, result.Targets, 0, "Should have no targets")
+	assert.Len(t, result.Components, 0, "Should have no targets")
 	assert.Equal(t, 0.0, *result.Statistics.Duration, "Duration should be 0")
 }
 
@@ -320,8 +320,8 @@ func TestConvertNessusToHDF_EntityExpansion(t *testing.T) {
 	assert.Contains(t, err.Error(), "entity declarations")
 }
 
-func TestConvertNessusToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertNessusToHDF([]byte{}, converterVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "empty input")
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "nessus-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertNessusToHDF(input, converterVersion)
+	})
 }

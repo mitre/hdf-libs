@@ -24,7 +24,16 @@ func mustUnmarshalSonarqube(t *testing.T, data []byte) sonarqubeconv.IssuesRespo
 
 func sonarqubeServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	t.Helper()
-	srv := httptest.NewServer(handler)
+	// Wrap handler to intercept /api/server/version (needed for version
+	// auto-detection) and delegate everything else to the test handler.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/server/version" {
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = fmt.Fprint(w, "10.8.1")
+			return
+		}
+		handler(w, r)
+	}))
 	t.Cleanup(srv.Close)
 	return srv
 }
@@ -663,4 +672,130 @@ func TestSonarqubeFetcher_FetchAndConvert_WithEnrichment(t *testing.T) {
 	nistSlice, ok := nistVal.([]string)
 	require.True(t, ok, "nist should be []string")
 	assert.NotEmpty(t, nistSlice, "NIST controls should be derived from CWE mappings")
+}
+
+// ---- 10K limit component tree tests ----
+
+func TestSonarqubeFetcher_ComponentTreeWhenOverLimit(t *testing.T) {
+	// Simulate the 10K Elasticsearch limit: the project has 12000 issues total.
+	// The project-level query hits the cap at page 21 (p*ps > 10000).
+	// The fetcher should detect this and fetch by sub-component instead.
+	//
+	// Project structure:
+	//   test-project (12000 issues total)
+	//     ├─ test-project:src/main (8000 issues)
+	//     └─ test-project:src/test (4000 issues)
+
+	srv := sonarqubeServer(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/issues/search":
+			component := r.URL.Query().Get("componentKeys")
+			page := r.URL.Query().Get("p")
+			pageNum := 1
+			if page != "" {
+				_, _ = fmt.Sscanf(page, "%d", &pageNum)
+			}
+
+			var total int
+			switch component {
+			case "test-project":
+				total = 12000
+			case "test-project:src/main":
+				total = 8000
+			case "test-project:src/test":
+				total = 4000
+			default:
+				writeIssuesPage(w, nil, nil, nil, 0, 1)
+				return
+			}
+
+			// Simulate 10K cap
+			if pageNum*sonarqubePageSize > 10000 {
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = fmt.Fprint(w, `{"errors":[{"msg":"Can return only the first 10000 results."}]}`)
+				return
+			}
+
+			start := (pageNum - 1) * sonarqubePageSize
+			remaining := total - start
+			if remaining <= 0 {
+				writeIssuesPage(w, nil, nil, nil, total, pageNum)
+				return
+			}
+			if remaining > sonarqubePageSize {
+				remaining = sonarqubePageSize
+			}
+
+			issues := make([]sonarqubeconv.Issue, remaining)
+			for i := range issues {
+				issues[i] = sonarqubeconv.Issue{
+					Key: fmt.Sprintf("%s-%d-%d", component, pageNum, i), Rule: "java:S001",
+					Severity: "MAJOR", Component: component + ":File.java", Project: "test-project",
+					Status: "OPEN", Message: "m",
+					CreationDate: "2026-01-01T00:00:00+0000",
+					UpdateDate:   "2026-01-01T00:00:00+0000", Type: "BUG",
+				}
+			}
+			writeIssuesPage(w, issues, nil, nil, total, pageNum)
+
+		case "/api/components/tree":
+			// Return two child components for the project
+			component := r.URL.Query().Get("component")
+			if component == "test-project" {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `{"paging":{"pageIndex":1,"pageSize":500,"total":2},"components":[{"key":"test-project:src/main","name":"src/main","qualifier":"DIR","path":"src/main"},{"key":"test-project:src/test","name":"src/test","qualifier":"DIR","path":"src/test"}]}`)
+			} else {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `{"paging":{"pageIndex":1,"pageSize":500,"total":0},"components":[]}`)
+			}
+
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	f := newTestFetcher(t, srv.URL)
+	t.Setenv("SONARQUBE_TOKEN", "tok")
+
+	data, err := f.Fetch(context.Background())
+	require.NoError(t, err)
+
+	result := mustUnmarshalSonarqube(t, data)
+
+	// Should have fetched all 12000 issues via component tree (8000 + 4000)
+	assert.Equal(t, 12000, len(result.Issues), "should fetch all issues via component tree traversal")
+
+	// Verify keys are unique (no duplicates)
+	seen := make(map[string]bool)
+	for _, issue := range result.Issues {
+		assert.False(t, seen[issue.Key], "duplicate issue key: %s", issue.Key)
+		seen[issue.Key] = true
+	}
+}
+
+func TestSonarqubeFetcher_NoComponentTreeWhenUnderLimit(t *testing.T) {
+	// When total < 10K, normal pagination should work without component tree
+	var componentTreeSeen bool
+	srv := sonarqubeServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/components/tree" {
+			componentTreeSeen = true
+		}
+		issues := []sonarqubeconv.Issue{
+			{Key: "i1", Rule: "java:S001", Severity: "MAJOR", Component: "p:f",
+				Project: "p", Status: "OPEN", Message: "m",
+				CreationDate: "2026-01-01T00:00:00+0000",
+				UpdateDate:   "2026-01-01T00:00:00+0000", Type: "BUG"},
+		}
+		writeIssuesPage(w, issues, nil, nil, 1, 1)
+	})
+
+	f := newTestFetcher(t, srv.URL)
+	t.Setenv("SONARQUBE_TOKEN", "tok")
+
+	data, err := f.Fetch(context.Background())
+	require.NoError(t, err)
+
+	result := mustUnmarshalSonarqube(t, data)
+	assert.Len(t, result.Issues, 1)
+	assert.False(t, componentTreeSeen, "should not use component tree when under 10K limit")
 }

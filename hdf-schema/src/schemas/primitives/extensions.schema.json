@@ -17,12 +17,8 @@
       ],
       "properties": {
         "type": {
-          "type": "string",
-          "enum": [
-            "waiver",
-            "attestation"
-          ],
-          "description": "The type of status override. 'waiver' indicates risk acceptance. 'attestation' indicates manual verification."
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v2.0.0#/$defs/Override_Type",
+          "description": "The type of status override applied to this requirement."
         },
         "status": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Result_Status",
@@ -278,13 +274,13 @@
       "description": "Information about the tool that generated this HDF file.",
       "title": "Generator"
     },
-    "DataSource": {
+    "Tool": {
       "type": "object",
       "unevaluatedProperties": false,
       "properties": {
         "name": {
           "type": "string",
-          "description": "The name of the tool or service that produced the data, if known. Examples: 'gosec', 'Semgrep', 'OpenSCAP', 'AWS Config'. Omit if the tool cannot be identified."
+          "description": "The name of the security tool that produced the data. Examples: 'gosec', 'Semgrep', 'OpenSCAP', 'AWS Config', 'Nessus'. Omit if the tool cannot be identified."
         },
         "version": {
           "type": "string",
@@ -295,8 +291,8 @@
           "description": "The file format, if it is a recognized named format shared by multiple tools. Examples: 'SARIF', 'XCCDF'. Omit for tool-specific formats where the tool name already implies the format (Nessus XML, gosec JSON)."
         }
       },
-      "description": "The tool or service that produced the security data represented in this HDF file.",
-      "title": "DataSource"
+      "description": "The security tool that produced the assessment data represented in this HDF file. Aligns with SARIF, OSCAL, and CycloneDX terminology.",
+      "title": "Tool"
     },
     "Integrity": {
       "type": "object",

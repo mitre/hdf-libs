@@ -2,6 +2,7 @@ import type {
   HdfComparison,
   RequirementDiff,
   BaselineDiff,
+  ComponentDiff,
   FieldChange,
   Source,
 } from './types.js';
@@ -11,6 +12,8 @@ import { normalizeToV2 } from './normalize.js';
 import { matchRequirements } from './matching/index.js';
 import type { MatchOptions } from './matching/index.js';
 import { validateComparison } from './validate.js';
+import { diffSboms } from './sbom.js';
+import type { PackageDiff } from './sbom.js';
 
 /**
  * Options for configuring the diff behavior.
@@ -19,7 +22,7 @@ export interface DiffOptions {
   /** Fields to track for field-level diffs (default: ['impact', 'severity', 'tags']) */
   trackedFields?: string[];
   /** Comparison mode (default: 'temporal') */
-  comparisonMode?: 'temporal' | 'baseline' | 'fleet' | 'multiSource';
+  comparisonMode?: 'temporal' | 'baseline' | 'fleet' | 'multiSource' | 'baselineEvolution' | 'systemDrift';
   /** Primary matching strategy name (default: 'exactId') */
   matchStrategy?: string;
   /** Fallback strategy names, applied in order to remaining unmatched requirements */
@@ -93,8 +96,18 @@ export function diffHdf(
   options?: DiffOptions,
 ): HdfComparison {
   const trackedFields = options?.trackedFields ?? DEFAULT_TRACKED_FIELDS;
-  const comparisonMode = options?.comparisonMode ?? 'temporal';
+  let comparisonMode = options?.comparisonMode ?? 'temporal';
   const matchOpts = buildMatchOptions(options);
+
+  // Auto-detect baseline evolution mode when both inputs are baseline documents
+  // (have requirements[] but no baselines[], targets[], or statistics[])
+  if (!options?.comparisonMode && !Array.isArray(newResults)) {
+    if (isBaselineDocument(oldResults) && isBaselineDocument(newResults)) {
+      comparisonMode = 'baselineEvolution';
+    } else if (isSystemDocument(oldResults) && isSystemDocument(newResults)) {
+      comparisonMode = 'systemDrift';
+    }
+  }
 
   // Validate array inputs up front (applies to all modes)
   if (Array.isArray(newResults)) {
@@ -106,6 +119,18 @@ export function diffHdf(
         `Mode '${comparisonMode}' expects a single document, got ${newResults.length}. Use 'fleet' mode for multiple documents.`
       );
     }
+  }
+
+  // Baseline evolution mode: compare two baseline documents
+  if (comparisonMode === 'baselineEvolution') {
+    const newDoc = Array.isArray(newResults) ? newResults[0]! : newResults;
+    return diffBaselines(oldResults, newDoc, options);
+  }
+
+  // System drift mode: compare two system documents
+  if (comparisonMode === 'systemDrift') {
+    const newDoc = Array.isArray(newResults) ? newResults[0]! : newResults;
+    return diffSystems(oldResults, newDoc, options);
   }
 
   // Fleet mode: compare reference against each system
@@ -504,6 +529,474 @@ function computeFieldChanges(
           oldValue: oldVal,
           newValue: newVal,
         });
+      }
+    }
+  }
+
+  return changes;
+}
+
+/**
+ * Detect whether a document is a baseline (not results).
+ * Baselines have `requirements` at the top level and lack `baselines`, `targets`, and `statistics`.
+ */
+function isBaselineDocument(doc: Record<string, unknown>): boolean {
+  return (
+    Array.isArray(doc['requirements']) &&
+    !Array.isArray(doc['baselines']) &&
+    !Array.isArray(doc['targets']) &&
+    doc['statistics'] === undefined
+  );
+}
+
+/** Default tracked fields for baseline evolution comparisons. */
+const BASELINE_TRACKED_FIELDS = ['title', 'impact', 'descriptions', 'tags'];
+
+/**
+ * Compare two HDF baseline documents and produce a structured comparison
+ * showing requirement changes between baseline versions.
+ *
+ * Unlike diffHdf (which compares results/evaluations), this compares baseline
+ * definitions — requirements without results. There is no status-based classification
+ * (fixed/regressed); only metadata changes (title, impact, descriptions, tags) are tracked.
+ */
+export function diffBaselines(
+  oldBaseline: Record<string, unknown>,
+  newBaseline: Record<string, unknown>,
+  options?: DiffOptions,
+): HdfComparison {
+  const trackedFields = options?.trackedFields ?? BASELINE_TRACKED_FIELDS;
+  const matchOpts = buildMatchOptions(options);
+
+  // Extract requirements from baseline documents
+  const oldReqs = (oldBaseline['requirements'] as RequirementLike[] | undefined) ?? [];
+  const newReqs = (newBaseline['requirements'] as RequirementLike[] | undefined) ?? [];
+
+  // Use the matching system to pair requirements
+  const matchResult = matchRequirements(
+    oldReqs as unknown as Record<string, unknown>[],
+    newReqs as unknown as Record<string, unknown>[],
+    matchOpts,
+  );
+
+  // Build requirement diffs from match results
+  const requirementDiffs: RequirementDiff[] = [];
+
+  // Matched pairs
+  for (const pair of matchResult.matched) {
+    const oldReq = pair.oldReq as RequirementLike;
+    const newReq = pair.newReq as RequirementLike;
+    const id = (newReq.id ?? oldReq.id) as string;
+
+    const fieldChanges = computeFieldChanges(oldReq, newReq, trackedFields);
+
+    // For baseline evolution, state is determined by metadata changes only
+    const state: 'unchanged' | 'updated' = fieldChanges.length > 0 ? 'updated' : 'unchanged';
+
+    // Determine change reasons for baseline evolution
+    const changeReasons: Array<'impactChanged' | 'metadataChanged'> = [];
+    if (oldReq.impact !== newReq.impact) {
+      changeReasons.push('impactChanged');
+    }
+    const oldTags = JSON.stringify(oldReq['tags'] ?? {});
+    const newTags = JSON.stringify(newReq['tags'] ?? {});
+    const oldDescs = JSON.stringify(oldReq['descriptions'] ?? []);
+    const newDescs = JSON.stringify(newReq['descriptions'] ?? []);
+    const oldTitle = oldReq['title'] as string | undefined;
+    const newTitle = newReq['title'] as string | undefined;
+    if (oldTags !== newTags || oldDescs !== newDescs || oldTitle !== newTitle) {
+      changeReasons.push('metadataChanged');
+    }
+
+    requirementDiffs.push({
+      id,
+      title: newReq.title ?? oldReq.title,
+      state,
+      changeReasons,
+      oldImpact: oldReq.impact,
+      newImpact: newReq.impact,
+      fieldChanges,
+      before: oldReq as unknown as Record<string, unknown>,
+      after: newReq as unknown as Record<string, unknown>,
+      matchStrategy: pair.strategy,
+      matchConfidence: pair.confidence,
+    });
+  }
+
+  // Unmatched old requirements (absent)
+  for (const req of matchResult.unmatchedOld) {
+    const oldReq = req as RequirementLike;
+    requirementDiffs.push({
+      id: oldReq.id,
+      title: oldReq.title,
+      state: 'absent',
+      changeReasons: [],
+      oldImpact: oldReq.impact,
+      fieldChanges: [],
+      before: oldReq as unknown as Record<string, unknown>,
+      after: null,
+    });
+  }
+
+  // Unmatched new requirements (new)
+  for (const req of matchResult.unmatchedNew) {
+    const newReq = req as RequirementLike;
+    requirementDiffs.push({
+      id: newReq.id,
+      title: newReq.title,
+      state: 'new',
+      changeReasons: [],
+      newImpact: newReq.impact,
+      fieldChanges: [],
+      before: null,
+      after: newReq as unknown as Record<string, unknown>,
+    });
+  }
+
+  // Sort by id
+  requirementDiffs.sort((a, b) => a.id.localeCompare(b.id));
+
+  // Build baseline diff from top-level baseline metadata
+  const oldName = oldBaseline['name'] as string | undefined ?? '';
+  const newName = newBaseline['name'] as string | undefined ?? '';
+  const oldVersion = oldBaseline['version'] as string | undefined;
+  const newVersion = newBaseline['version'] as string | undefined;
+
+  const baselineDiffs: BaselineDiff[] = [];
+  const baselineName = newName || oldName;
+  if (baselineName) {
+    const versionChanged = oldVersion !== newVersion;
+    baselineDiffs.push({
+      name: baselineName,
+      oldVersion,
+      newVersion,
+      state: versionChanged ? 'updated' : 'unchanged',
+    });
+  }
+
+  // Build sources
+  const sources: Source[] = [
+    { role: 'old', label: oldVersion ? `${baselineName} ${oldVersion}` : baselineName || 'Old baseline' },
+    { role: 'new', label: newVersion ? `${baselineName} ${newVersion}` : baselineName || 'New baseline' },
+  ];
+
+  const comparison: HdfComparison = {
+    formatVersion: '1.0.0',
+    comparisonMode: 'baselineEvolution',
+    timestamp: new Date().toISOString(),
+    sources,
+    matching: {
+      primaryStrategy: resolveStrategyName(options),
+    },
+    summary: computeSummary(requirementDiffs),
+    baselineDiffs,
+    requirementDiffs,
+  };
+
+  if (options?.validateOutput) {
+    const result = validateComparison(comparison);
+    /* c8 ignore start */
+    if (!result.valid) {
+      throw new Error(`Output validation failed: ${result.errors?.join(', ')}`);
+    }
+    /* c8 ignore stop */
+  }
+
+  return comparison;
+}
+
+/**
+ * Detect whether a document is a system document (has components[] but no baselines/requirements).
+ */
+function isSystemDocument(doc: Record<string, unknown>): boolean {
+  return (
+    Array.isArray(doc['components']) &&
+    !Array.isArray(doc['baselines']) &&
+    !Array.isArray(doc['requirements']) &&
+    doc['statistics'] === undefined
+  );
+}
+
+/** Fields tracked for system-level field changes. */
+const SYSTEM_TOP_LEVEL_FIELDS = ['authorizationStatus', 'categorizationLevel', 'description'];
+
+/** Fields tracked for component-level field changes. */
+const COMPONENT_TRACKED_FIELDS = [
+  'type', 'description', 'baselineRefs', 'inputOverrides', 'sbomRef', 'targetSelector',
+];
+
+/**
+ * Compare two HDF system documents and produce a structured comparison
+ * showing component-level changes between system versions.
+ *
+ * Components are matched by componentId (UUID) when available, falling back
+ * to exact name matching. Top-level system fields, data flows, and embedded
+ * SBOMs are also compared.
+ */
+export function diffSystems(
+  oldSystem: Record<string, unknown>,
+  newSystem: Record<string, unknown>,
+  options?: DiffOptions,
+): HdfComparison {
+  const oldComponents = (oldSystem['components'] as Record<string, unknown>[] | undefined) ?? [];
+  const newComponents = (newSystem['components'] as Record<string, unknown>[] | undefined) ?? [];
+
+  // Match components: prefer componentId, fall back to name
+  const pairs = matchComponents(oldComponents, newComponents);
+  const componentDiffs: ComponentDiff[] = [];
+
+  for (const { oldComp, newComp, name } of pairs) {
+    if (oldComp && newComp) {
+      const fieldChanges = computeComponentFieldChanges(oldComp, newComp, COMPONENT_TRACKED_FIELDS);
+      const state = fieldChanges.length > 0 ? 'updated' : 'unchanged';
+      componentDiffs.push({ name, state, before: oldComp, after: newComp, fieldChanges });
+    } else if (oldComp && !newComp) {
+      componentDiffs.push({ name, state: 'absent', before: oldComp, after: null, fieldChanges: [] });
+    } else if (!oldComp && newComp) {
+      componentDiffs.push({ name, state: 'new', before: null, after: newComp, fieldChanges: [] });
+    }
+  }
+
+  componentDiffs.sort((a, b) => a.name.localeCompare(b.name));
+
+  // Compare top-level system fields
+  const systemFieldChanges = computeComponentFieldChanges(
+    oldSystem, newSystem, SYSTEM_TOP_LEVEL_FIELDS,
+  );
+
+  // Build summary counts based on component diffs
+  const counts = { new: 0, absent: 0, unchanged: 0, updated: 0 };
+  for (const cd of componentDiffs) {
+    counts[cd.state]++;
+  }
+
+  const oldName = oldSystem['name'] as string | undefined ?? '';
+  const newName = newSystem['name'] as string | undefined ?? '';
+  const systemName = newName || oldName;
+
+  const sources: Source[] = [
+    { role: 'old', label: systemName ? `${systemName} (old)` : 'Old system' },
+    { role: 'new', label: systemName ? `${systemName} (new)` : 'New system' },
+  ];
+
+  const comparison: HdfComparison = {
+    formatVersion: '1.0.0',
+    comparisonMode: 'systemDrift',
+    timestamp: new Date().toISOString(),
+    sources,
+    summary: {
+      total: pairs.length,
+      matchedCount: counts.unchanged + counts.updated,
+      unmatchedOldCount: counts.absent,
+      unmatchedNewCount: counts.new,
+      new: counts.new,
+      absent: counts.absent,
+      unchanged: counts.unchanged,
+      updated: counts.updated,
+      fixed: 0,
+      regressed: 0,
+    },
+    baselineDiffs: [],
+    requirementDiffs: [],
+    componentDiffs,
+  };
+
+  // Extensions: system field changes + data flow changes
+  const extensions: Record<string, unknown> = {};
+  if (systemFieldChanges.length > 0) {
+    extensions['systemFieldChanges'] = systemFieldChanges;
+  }
+  const dataFlowChanges = diffDataFlows(oldSystem, newSystem);
+  if (dataFlowChanges.length > 0) {
+    extensions['dataFlowChanges'] = dataFlowChanges;
+  }
+  if (Object.keys(extensions).length > 0) {
+    comparison.extensions = extensions;
+  }
+
+  // Diff embedded SBOMs across matched components
+  const allPackageDiffs = diffEmbeddedSboms(pairs);
+  if (allPackageDiffs.length > 0) {
+    comparison.packageDiffs = allPackageDiffs;
+  }
+
+  if (options?.validateOutput) {
+    const result = validateComparison(comparison);
+    /* c8 ignore start */
+    if (!result.valid) {
+      throw new Error(`Output validation failed: ${result.errors?.join(', ')}`);
+    }
+    /* c8 ignore stop */
+  }
+
+  return comparison;
+}
+
+interface ComponentPair {
+  name: string;
+  oldComp: Record<string, unknown> | undefined;
+  newComp: Record<string, unknown> | undefined;
+}
+
+/**
+ * Match old and new components by componentId (when available) or name.
+ */
+function matchComponents(
+  oldComponents: Record<string, unknown>[],
+  newComponents: Record<string, unknown>[],
+): ComponentPair[] {
+  const matched = new Set<number>(); // indices of matched new components
+  const pairs: ComponentPair[] = [];
+
+  // First pass: match by componentId
+  const newById = new Map<string, number>();
+  for (let i = 0; i < newComponents.length; i++) {
+    const id = newComponents[i]!['componentId'] as string | undefined;
+    if (id) newById.set(id, i);
+  }
+
+  const oldMatched = new Set<number>();
+  for (let i = 0; i < oldComponents.length; i++) {
+    const oldId = oldComponents[i]!['componentId'] as string | undefined;
+    if (oldId && newById.has(oldId)) {
+      const ni = newById.get(oldId)!;
+      const newComp = newComponents[ni]!;
+      pairs.push({
+        name: (newComp['name'] as string) || (oldComponents[i]!['name'] as string) || oldId,
+        oldComp: oldComponents[i],
+        newComp,
+      });
+      matched.add(ni);
+      oldMatched.add(i);
+    }
+  }
+
+  // Second pass: match remaining by name
+  const newByName = new Map<string, number>();
+  for (let i = 0; i < newComponents.length; i++) {
+    if (matched.has(i)) continue;
+    const name = newComponents[i]!['name'] as string;
+    if (name) newByName.set(name, i);
+  }
+
+  for (let i = 0; i < oldComponents.length; i++) {
+    if (oldMatched.has(i)) continue;
+    const name = oldComponents[i]!['name'] as string;
+    if (name && newByName.has(name)) {
+      const ni = newByName.get(name)!;
+      pairs.push({ name, oldComp: oldComponents[i], newComp: newComponents[ni] });
+      matched.add(ni);
+      oldMatched.add(i);
+      newByName.delete(name);
+    }
+  }
+
+  // Unmatched old → absent
+  for (let i = 0; i < oldComponents.length; i++) {
+    if (oldMatched.has(i)) continue;
+    const name = (oldComponents[i]!['name'] as string) || `component-${i}`;
+    pairs.push({ name, oldComp: oldComponents[i], newComp: undefined });
+  }
+
+  // Unmatched new → new
+  for (let i = 0; i < newComponents.length; i++) {
+    if (matched.has(i)) continue;
+    const name = (newComponents[i]!['name'] as string) || `component-${i}`;
+    pairs.push({ name, oldComp: undefined, newComp: newComponents[i] });
+  }
+
+  return pairs;
+}
+
+/**
+ * Diff data flows between two system documents. Flows are keyed by from+to.
+ */
+function diffDataFlows(
+  oldSystem: Record<string, unknown>,
+  newSystem: Record<string, unknown>,
+): Array<{ state: string; flow: Record<string, unknown> }> {
+  const oldFlows = (oldSystem['dataFlows'] as Record<string, unknown>[] | undefined) ?? [];
+  const newFlows = (newSystem['dataFlows'] as Record<string, unknown>[] | undefined) ?? [];
+
+  if (oldFlows.length === 0 && newFlows.length === 0) return [];
+
+  const flowKey = (f: Record<string, unknown>): string => {
+    const from = f['from'] as string ?? '';
+    const to = typeof f['to'] === 'string' ? f['to'] as string : JSON.stringify(f['to']);
+    return `${from}→${to}`;
+  };
+
+  const oldMap = new Map<string, Record<string, unknown>>();
+  for (const f of oldFlows) oldMap.set(flowKey(f), f);
+  const newMap = new Map<string, Record<string, unknown>>();
+  for (const f of newFlows) newMap.set(flowKey(f), f);
+
+  const allKeys = new Set([...oldMap.keys(), ...newMap.keys()]);
+  const changes: Array<{ state: string; flow: Record<string, unknown> }> = [];
+
+  for (const key of allKeys) {
+    const oldF = oldMap.get(key);
+    const newF = newMap.get(key);
+    if (oldF && newF) {
+      if (JSON.stringify(oldF) !== JSON.stringify(newF)) {
+        changes.push({ state: 'updated', flow: newF });
+      }
+    } else if (oldF && !newF) {
+      changes.push({ state: 'removed', flow: oldF });
+    } else if (!oldF && newF) {
+      changes.push({ state: 'added', flow: newF });
+    }
+  }
+
+  return changes;
+}
+
+/**
+ * Diff embedded SBOMs across matched component pairs.
+ */
+function diffEmbeddedSboms(pairs: ComponentPair[]): PackageDiff[] {
+  const allDiffs: PackageDiff[] = [];
+
+  for (const { oldComp, newComp } of pairs) {
+    if (!oldComp || !newComp) continue;
+    const oldSbom = oldComp['sbom'];
+    const newSbom = newComp['sbom'];
+    if (!oldSbom || !newSbom) continue;
+    if (typeof oldSbom !== 'object' || typeof newSbom !== 'object') continue;
+
+    try {
+      const result = diffSboms(JSON.stringify(oldSbom), JSON.stringify(newSbom));
+      allDiffs.push(...result.packageDiffs);
+    } catch {
+      // Skip SBOM diff if formats are incompatible
+    }
+  }
+
+  return allDiffs;
+}
+
+/**
+ * Compute field-level changes for component or system fields.
+ * Uses JSON Patch-like op/path format.
+ */
+function computeComponentFieldChanges(
+  oldObj: Record<string, unknown>,
+  newObj: Record<string, unknown>,
+  trackedFields: string[],
+): FieldChange[] {
+  const changes: FieldChange[] = [];
+
+  for (const field of trackedFields) {
+    const oldVal = oldObj[field];
+    const newVal = newObj[field];
+
+    if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+      if (oldVal === undefined && newVal !== undefined) {
+        changes.push({ op: 'add', path: field, newValue: newVal });
+      } else if (oldVal !== undefined && newVal === undefined) {
+        changes.push({ op: 'remove', path: field, oldValue: oldVal });
+      } else {
+        changes.push({ op: 'replace', path: field, oldValue: oldVal, newValue: newVal });
       }
     }
   }

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,15 +34,13 @@ func findRequirement(reqs []hdf.EvaluatedRequirement, id string) *hdf.EvaluatedR
 
 // --- Validation tests ---
 
-func TestConvertBurpsuiteToHDF_InvalidXML(t *testing.T) {
-	_, err := ConvertBurpsuiteToHDF([]byte("not valid xml"), testConverterVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse BurpSuite XML")
-}
-
-func TestConvertBurpsuiteToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertBurpsuiteToHDF([]byte(""), testConverterVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "burpsuite-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertBurpsuiteToHDF(input, testConverterVersion) },
+		MinimalFixture: "zero.webappsecurity.com.xml",
+		InvalidInput:   "<not valid xml",
+	})
 }
 
 func TestConvertBurpsuiteToHDF_EmptyIssues(t *testing.T) {
@@ -74,15 +73,15 @@ func TestConvertBurpsuiteToHDF_Generator(t *testing.T) {
 	assert.Equal(t, testConverterVersion, result.Generator.Version)
 }
 
-func TestConvertBurpsuiteToHDF_DataSource(t *testing.T) {
+func TestConvertBurpsuiteToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/zero.webappsecurity.com.xml")
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	assert.Equal(t, "BurpSuite", *result.DataSource.Name)
-	assert.Equal(t, "XML", *result.DataSource.Format)
-	assert.Equal(t, "2020.1", *result.DataSource.Version)
+	require.NotNil(t, result.Tool)
+	assert.Equal(t, "BurpSuite", *result.Tool.Name)
+	assert.Equal(t, "XML", *result.Tool.Format)
+	assert.Equal(t, "2020.1", *result.Tool.Version)
 }
 
 func TestConvertBurpsuiteToHDF_BaselineName(t *testing.T) {
@@ -129,9 +128,9 @@ func TestConvertBurpsuiteToHDF_Target(t *testing.T) {
 	result, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 
-	require.Len(t, result.Targets, 1)
-	assert.Equal(t, "http://zero.webappsecurity.com", result.Targets[0].Name)
-	assert.Equal(t, hdf.Application, result.Targets[0].Type)
+	require.Len(t, result.Components, 1)
+	assert.Equal(t, "http://zero.webappsecurity.com", result.Components[0].Name)
+	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
 }
 
 // --- Impact mapping ---
@@ -451,4 +450,10 @@ func TestConvertBurpsuiteToHDF_EntityExpansion(t *testing.T) {
 	_, err := ConvertBurpsuiteToHDF(input, testConverterVersion)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "burpsuite-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertBurpsuiteToHDF(input, "0.1.0")
+	})
 }

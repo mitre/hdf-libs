@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertJfrogXrayToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,17 +13,13 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'jfrog-xray-to-hdf',
+  convertFn: convertJfrogXrayToHdf,
+  minimalFixture: 'jfrog_xray_sample.json',
+});
+
 describe('jfrog-xray to HDF converter', async () => {
-  describe('input validation', async () => {
-    it('should throw on invalid JSON', async () => {
-      await expect(convertJfrogXrayToHdf('not json')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertJfrogXrayToHdf('')).rejects.toThrow();
-    });
-  });
-
   describe('conversion basics', async () => {
     it('should produce valid HDF from fixture', async () => {
       const output = await convertJfrogXrayToHdf(loadFixture('jfrog_xray_sample.json'));
@@ -59,19 +56,19 @@ describe('jfrog-xray to HDF converter', async () => {
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
-    it('should set dataSource name to "JFrog Xray" and format to "JSON"', async () => {
+    it('should set tool name to "JFrog Xray" and format to "JSON"', async () => {
       const hdf = JSON.parse(await convertJfrogXrayToHdf(loadFixture('jfrog_xray_sample.json'))) as HdfResults;
-      expect(hdf.dataSource?.name).toBe('JFrog Xray');
-      expect(hdf.dataSource?.format).toBe('JSON');
+      expect(hdf.tool?.name).toBe('JFrog Xray');
+      expect(hdf.tool?.format).toBe('JSON');
     });
   });
 
   describe('target', async () => {
     it('should include target with Application type', async () => {
       const hdf = JSON.parse(await convertJfrogXrayToHdf(loadFixture('jfrog_xray_sample.json'))) as HdfResults;
-      expect(hdf.targets).toBeDefined();
-      expect(hdf.targets![0]!.name).toBe('JFrog Xray Scan');
-      expect(hdf.targets![0]!.type).toBe('application');
+      expect(hdf.components).toBeDefined();
+      expect(hdf.components![0]!.name).toBe('JFrog Xray Scan');
+      expect(hdf.components![0]!.type).toBe('application');
     });
   });
 

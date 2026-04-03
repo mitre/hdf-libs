@@ -3,13 +3,11 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, buildNistCciTags, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, buildNistCciTags, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
-  DataSource,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -240,18 +238,17 @@ export async function convertTwistlockToHdf(input: string): Promise<string> {
   // Use the first result's name or repository as target name
   const targetName = results[0]!.name ?? results[0]!.repository ?? '';
 
-  const dataSource: DataSource = { name: 'Twistlock', format: 'JSON' };
-
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'twistlock-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'Twistlock',
+    toolFormat: 'JSON',
     baselines,
-    generator: {
-      name: 'twistlock-to-hdf',
-      version: '1.0.0',
-    },
-    dataSource,
-    targets: [{ name: targetName, type: Copyright.ContainerImage }],
+    components: [{
+      name: targetName,
+      type: Copyright.ContainerImage,
+      labels: { image: results[0]?.id ?? targetName },
+    }],
     timestamp: new Date(),
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }

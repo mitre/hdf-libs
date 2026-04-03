@@ -1,0 +1,293 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Results",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "title_text:Results\nbody:\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\nheuristic_heur_id:CLAMAV.0\nheuristic_score:0\nheuristic_name:Analysis",
+              "startTime": "2023-08-28T12:23:54.164548Z",
+              "status": "passed"
+            }
+          ],
+          "id": "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Capa.stigma"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Results",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "title_text:Results\nbody:\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\nheuristic_heur_id:CLAMAV.0\nheuristic_score:0\nheuristic_name:Analysis",
+              "startTime": "2023-08-28T12:23:53.163875Z",
+              "status": "passed"
+            }
+          ],
+          "id": "03d3a4e7fd27f8cc617b226911a452ab725c42417da5880b928d35d1b1e0fbc6",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Capa.hipcheck"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "a2b6580232f78c63578b9e7e91247311d082efefe7bdc96bd49deb0286cebb9a"
+      },
+      "name": "Conveyor Scan",
+      "title": "Conveyor Scan (Clamav)"
+    },
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Findings",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "body:File Type Not Supported.\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\ntitle_text:Findings",
+              "startTime": "2023-08-28T12:23:56.65559Z",
+              "status": "passed"
+            }
+          ],
+          "id": "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Capa.stigma"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Findings",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "body:File Type Not Supported.\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\ntitle_text:Findings",
+              "startTime": "2023-08-28T12:23:55.747943Z",
+              "status": "passed"
+            }
+          ],
+          "id": "03d3a4e7fd27f8cc617b226911a452ab725c42417da5880b928d35d1b1e0fbc6",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Capa.hipcheck"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "a2b6580232f78c63578b9e7e91247311d082efefe7bdc96bd49deb0286cebb9a"
+      },
+      "name": "Conveyor Scan",
+      "title": "Conveyor Scan (CodeQuality)"
+    },
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Major Version",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "title_text:Major Version\nbody:\tGitHub Repository: https://github.com/fireeye/capa.git, version: 1.2.0\nThe package fireeye capa, version 1.2.0 is 5 Major versions behind the latest version v6.1.0 on GitHub.\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\nheuristic_heur_id:MOLDY.3\nheuristic_score:1000\nheuristic_name:Fail",
+              "startTime": "2023-08-28T12:23:53.457023Z",
+              "status": "failed"
+            }
+          ],
+          "id": "60586f9814358e1850b7e0cbe7f891a29f24233f853d00788f6ef8108e19692c",
+          "impact": 1,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Capa.moldy"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Conveyor scan result for 60e5941e7c34e77decf4d079ae18b531d35326ae8bd26d1dbca7ce23de548634",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "No sections reported by Moldy",
+              "startTime": "2023-08-28T12:38:41.769914Z",
+              "status": "passed"
+            }
+          ],
+          "id": "60e5941e7c34e77decf4d079ae18b531d35326ae8bd26d1dbca7ce23de548634",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Notepad++.moldy"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "a2b6580232f78c63578b9e7e91247311d082efefe7bdc96bd49deb0286cebb9a"
+      },
+      "name": "Conveyor Scan",
+      "title": "Conveyor Scan (Moldy)"
+    },
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Package Info; No Vulnerability",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "title_text:Package Info\nbody:Package Name: Capa\nVersion: 1.2.0\nbody_format:TEXT\nclassification:TLP:C\ndepth:0",
+              "startTime": "2023-08-28T12:24:04.715274Z",
+              "status": "passed"
+            },
+            {
+              "codeDesc": "title_text:No Vulnerability\nbody:No vulnerabilities were found\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\nheuristic_heur_id:STIGMA.0\nheuristic_score:0\nheuristic_name:Pass",
+              "startTime": "2023-08-28T12:24:04.715274Z",
+              "status": "passed"
+            }
+          ],
+          "id": "033ecf8f77772375c638c1874f881a2aa300aae7073c23280554edf007174602",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Capa.stigma"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Package Info; No Vulnerability",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "title_text:Package Info\nbody:Package Name: Geographical-Adventures\nVersion: NOASSERTION\nbody_format:TEXT\nclassification:TLP:C\ndepth:0",
+              "startTime": "2023-08-28T12:23:53.215873Z",
+              "status": "passed"
+            },
+            {
+              "codeDesc": "title_text:No Vulnerability\nbody:No vulnerabilities were found\nbody_format:TEXT\nclassification:TLP:C\ndepth:0\nheuristic_heur_id:STIGMA.0\nheuristic_score:0\nheuristic_name:Pass",
+              "startTime": "2023-08-28T12:23:53.215873Z",
+              "status": "passed"
+            }
+          ],
+          "id": "595f54e8ea1b2f44c698365520242300f6d2ab1afa69be52d25a9d02443c34cd",
+          "impact": 0,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Geographical-Adventures.stigma"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "a2b6580232f78c63578b9e7e91247311d082efefe7bdc96bd49deb0286cebb9a"
+      },
+      "name": "Conveyor Scan",
+      "title": "Conveyor Scan (Stigma)"
+    }
+  ],
+  "components": [
+    {
+      "name": "Inspection of file: submissions/rbb_test_dir.zip",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "conveyor-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:51.7705273Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Conveyor"
+  }
+}

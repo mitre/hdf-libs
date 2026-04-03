@@ -1,0 +1,41 @@
+name: 'Setup hdf-libs'
+description: 'Setup Node/pnpm, install dependencies, optionally setup Go. Repo must be checked out first.'
+inputs:
+  go:
+    description: 'Setup Go toolchain'
+    required: false
+    default: 'false'
+  go-version:
+    description: 'Go version'
+    required: false
+    default: '1.26.1'
+  node-version:
+    description: 'Node version'
+    required: false
+    default: '20'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+
+    - name: Cache pnpm store
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ~/.local/share/pnpm/store
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: ${{ runner.os }}-pnpm-
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+      if: inputs.go == 'true'
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache-dependency-path: '**/go.sum'

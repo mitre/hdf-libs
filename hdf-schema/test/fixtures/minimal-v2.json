@@ -4,10 +4,10 @@
       "name": "test-baseline",
       "title": "Test Baseline",
       "version": "1.0.0",
-      "attributes": [],
-      "checksum": {
+      "inputs": [],
+      "integrity": {
         "algorithm": "sha256",
-        "value": "abc123"
+        "checksum": "abc123"
       },
       "depends": [],
       "groups": [

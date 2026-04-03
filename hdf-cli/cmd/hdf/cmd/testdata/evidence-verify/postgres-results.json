@@ -1,0 +1,20 @@
+{
+  "baselines": [{
+    "name": "PostgreSQL-STIG",
+    "requirements": [
+      {
+        "id": "SV-233512",
+        "title": "PostgreSQL must enforce authorized access",
+        "descriptions": [{"label": "default", "data": "Verify access controls"}],
+        "impact": 0.5,
+        "tags": {},
+        "results": [{"status": "passed", "codeDesc": "check pg_hba.conf", "startTime": "2026-03-30T00:00:00Z"}]
+      }
+    ],
+    "supports": [],
+    "groups": []
+  }],
+  "platform": {"name": "postgresql", "release": "15.4"},
+  "statistics": {"duration": 8.2},
+  "version": "2.0.0"
+}

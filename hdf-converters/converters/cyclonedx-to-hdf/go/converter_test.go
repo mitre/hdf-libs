@@ -40,14 +40,12 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- Input validation ----
 
-func TestConvertCycloneDX_EmptyInput(t *testing.T) {
-	_, err := ConvertCycloneDXToHDF([]byte(""), testVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertCycloneDX_InvalidJSON(t *testing.T) {
-	_, err := ConvertCycloneDXToHDF([]byte("not json"), testVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "cyclonedx-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertCycloneDXToHDF(input, testVersion) },
+		MinimalFixture: "minimal-vulns.json",
+	})
 }
 
 func TestConvertCycloneDX_MissingBomFormat(t *testing.T) {
@@ -104,18 +102,18 @@ func TestConvertCycloneDX_Generator(t *testing.T) {
 	assert.Equal(t, testVersion, result.Generator.Version)
 }
 
-// ---- DataSource ----
+// ---- Tool ----
 
-func TestConvertCycloneDX_DataSource(t *testing.T) {
+func TestConvertCycloneDX_Tool(t *testing.T) {
 	input := loadFixture(t, "input/minimal-vulns.json")
 	result, err := ConvertCycloneDXToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "CycloneDX", *result.DataSource.Name)
-	require.NotNil(t, result.DataSource.Format)
-	assert.Equal(t, "JSON", *result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "CycloneDX", *result.Tool.Name)
+	require.NotNil(t, result.Tool.Format)
+	assert.Equal(t, "JSON", *result.Tool.Format)
 }
 
 // ---- Impact from CVSS score ----
@@ -273,9 +271,9 @@ func TestConvertCycloneDX_AllResultsFailed(t *testing.T) {
 	}
 }
 
-// ---- Info/unknown severity skip ----
+// ---- Info/unknown severity — still Failed ----
 
-func TestConvertCycloneDX_InfoUnknownSkip(t *testing.T) {
+func TestConvertCycloneDX_InfoUnknownStillFailed(t *testing.T) {
 	input := []byte(`{
 		"bomFormat": "CycloneDX",
 		"specVersion": "1.5",
@@ -288,11 +286,11 @@ func TestConvertCycloneDX_InfoUnknownSkip(t *testing.T) {
 	result, err := ConvertCycloneDXToHDF(input, testVersion)
 	require.NoError(t, err)
 
+	// Info/unknown severity vulns are still Failed — a vuln is a finding
+	// regardless of severity confidence. Impact reflects the severity.
 	for _, req := range result.Baselines[0].Requirements {
 		for _, r := range req.Results {
-			assert.Equal(t, hdf.NotReviewed, r.Status)
-			require.NotNil(t, r.Message)
-			assert.Contains(t, *r.Message, "Manual review required")
+			assert.Equal(t, hdf.Failed, r.Status)
 		}
 	}
 }
@@ -314,14 +312,14 @@ func TestConvertCycloneDX_MixedSeverityNotSkipped(t *testing.T) {
 	assert.Equal(t, hdf.Failed, result.Baselines[0].Requirements[0].Results[0].Status)
 }
 
-// ---- No-vuln SBOM ----
+// ---- No-vuln SBOM: rejected with helpful message ----
 
-func TestConvertCycloneDX_NoVulnSBOM(t *testing.T) {
+func TestConvertCycloneDX_NoVulnSBOM_Rejected(t *testing.T) {
 	input := loadFixture(t, "input/spdx-to-cyclonedx.json")
-	result, err := ConvertCycloneDXToHDF(input, testVersion)
-	require.NoError(t, err)
-
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+	_, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "SBOM inventory with no vulnerabilities")
+	assert.Contains(t, err.Error(), "hdf system create")
 }
 
 // ---- VEX format ----
@@ -416,4 +414,10 @@ func TestSeverityToImpact(t *testing.T) {
 			assert.InDelta(t, tc.expected, severityToImpact(tc.severity), 0.001)
 		})
 	}
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "cyclonedx-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertCycloneDXToHDF(input, "0.1.0")
+	})
 }

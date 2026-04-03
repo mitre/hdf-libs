@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v2.0.0",
+  "title": "HDF Plan Primitives",
+  "description": "Types for defining assessment plans — what to scan, how to configure it, and when to run.",
+  "$defs": {
+    "Plan_Type": {
+      "type": "string",
+      "enum": [
+        "automated",
+        "manual",
+        "hybrid"
+      ],
+      "description": "The type of assessment. 'automated' for scanner-driven, 'manual' for human-performed, 'hybrid' for both.",
+      "title": "Plan Type"
+    },
+    "Runner_Config": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the assessment runner. Example: 'cinc-auditor', 'inspec', 'openscap'."
+        },
+        "version": {
+          "type": "string",
+          "description": "Version of the runner."
+        }
+      },
+      "description": "Configuration for the assessment runner/scanner.",
+      "title": "Runner Config"
+    },
+    "Assessment": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "baselineRef"
+      ],
+      "properties": {
+        "baselineRef": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "Reference to the baseline to evaluate. May be a baseline name (e.g. 'RHEL9-STIG'), a relative path to an HDF Baseline document (e.g. 'rhel9-stig.hdf-baseline.json'), or an absolute URI."
+        },
+        "componentRef": {
+          "type": "string",
+          "format": "uuid",
+          "description": "componentId of the system component this assessment targets. Use for direct component binding. Alternative to targetSelector."
+        },
+        "targetSelector": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Target_Selector",
+          "description": "Label selector to match targets for this assessment. Overrides the system component's targetSelector if provided."
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Resolved input values for this assessment. Keys are input names, values are the final resolved values (after baseline defaults + system overrides)."
+        },
+        "runner": {
+          "$ref": "#/$defs/Runner_Config",
+          "description": "Runner/scanner configuration for this assessment."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of this assessment's purpose."
+        }
+      },
+      "examples": [
+        {
+          "baselineRef": "RHEL9-STIG",
+          "targetSelector": { "labels.component": "WebTier" },
+          "inputs": {
+            "max_concurrent_sessions": 5,
+            "password_min_length": 15
+          },
+          "runner": {
+            "name": "cinc-auditor",
+            "version": "6.8.1"
+          }
+        }
+      ],
+      "description": "A single assessment within a plan — defines which baseline to run against which targets with what configuration.",
+      "title": "Assessment"
+    },
+    "Schedule": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "properties": {
+        "cron": {
+          "type": "string",
+          "description": "Cron expression for recurring assessments. Example: '0 2 1 * *' (2 AM on the 1st of each month)."
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Earliest date to begin assessments. ISO 8601 format."
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date after which assessments should no longer run. ISO 8601 format."
+        },
+        "notifyOnRegression": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Email addresses or notification endpoints to alert when regressions are detected."
+        },
+        "notifyOnCompletion": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Email addresses or notification endpoints to alert when assessments complete."
+        }
+      },
+      "examples": [
+        {
+          "cron": "0 2 1 * *",
+          "notifyOnRegression": ["security-team@agency.gov"]
+        }
+      ],
+      "description": "Scheduling configuration for recurring assessments.",
+      "title": "Schedule"
+    }
+  }
+}

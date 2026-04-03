@@ -1,0 +1,191 @@
+{
+  "_provenance": "Constructed from Microsoft Azure REST API documentation (Microsoft.Security/assessments, api-version 2021-06-01). Structure validated against official Swagger spec at github.com/Azure/azure-rest-api-specs. Not real tool output — replace with actual Azure export when available.",
+  "value": [
+    {
+      "id": "/subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Storage/storageAccounts/mystorageacct/providers/Microsoft.Security/assessments/11111111-1111-1111-1111-111111111111",
+      "name": "11111111-1111-1111-1111-111111111111",
+      "type": "Microsoft.Security/assessments",
+      "properties": {
+        "displayName": "Storage account should use a private link connection",
+        "resourceDetails": {
+          "source": "Azure",
+          "id": "/subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Storage/storageAccounts/mystorageacct"
+        },
+        "status": {
+          "code": "Healthy",
+          "cause": "",
+          "description": ""
+        },
+        "metadata": {
+          "displayName": "Storage account should use a private link connection",
+          "assessmentType": "BuiltIn",
+          "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/aaaa1111-bbbb-2222-cccc-3333dddd4444",
+          "description": "Private links enforce secure communication by providing private connectivity to the storage account.",
+          "remediationDescription": "To add a private endpoint connection: 1. Go to the Azure portal. 2. Select Networking. 3. Select Private endpoint connections. 4. Select + Private endpoint.",
+          "categories": ["Networking"],
+          "severity": "Medium",
+          "userImpact": "Low",
+          "implementationEffort": "Moderate",
+          "threats": ["dataExfiltration", "dataSpillage"],
+          "tactics": ["Discovery", "Exfiltration"],
+          "techniques": ["T1046", "T1530"]
+        }
+      }
+    },
+    {
+      "id": "/subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Compute/virtualMachines/myvm/providers/Microsoft.Security/assessments/22222222-2222-2222-2222-222222222222",
+      "name": "22222222-2222-2222-2222-222222222222",
+      "type": "Microsoft.Security/assessments",
+      "properties": {
+        "displayName": "Virtual machines should encrypt temp disks, caches, and data flows",
+        "resourceDetails": {
+          "source": "Azure",
+          "id": "/subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Compute/virtualMachines/myvm"
+        },
+        "status": {
+          "code": "Unhealthy",
+          "cause": "DiskEncryptionNotEnabled",
+          "description": "Azure Disk Encryption is not enabled on the virtual machine."
+        },
+        "metadata": {
+          "displayName": "Virtual machines should encrypt temp disks, caches, and data flows",
+          "assessmentType": "BuiltIn",
+          "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/bbbb2222-cccc-3333-dddd-4444eeee5555",
+          "description": "By default, a virtual machine's OS and data disks are encrypted at rest using platform-managed keys. Temp disks and data caches aren't encrypted, and data isn't encrypted when flowing between compute and storage resources.",
+          "remediationDescription": "To enable disk encryption: 1. Go to the Azure portal. 2. Select the VM. 3. Under Settings, select Disks. 4. Enable encryption.",
+          "categories": ["Compute"],
+          "severity": "High",
+          "userImpact": "Low",
+          "implementationEffort": "Low",
+          "threats": ["dataExfiltration", "dataSpillage", "maliciousInsider"],
+          "tactics": ["Collection"],
+          "techniques": ["T1005"]
+        }
+      }
+    },
+    {
+      "id": "/subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-database/providers/Microsoft.Sql/servers/mysqlserver/providers/Microsoft.Security/assessments/33333333-3333-3333-3333-333333333333",
+      "name": "33333333-3333-3333-3333-333333333333",
+      "type": "Microsoft.Security/assessments",
+      "properties": {
+        "displayName": "SQL servers should have an Azure Active Directory administrator provisioned",
+        "resourceDetails": {
+          "source": "Azure",
+          "id": "/subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-database/providers/Microsoft.Sql/servers/mysqlserver"
+        },
+        "status": {
+          "code": "Unhealthy",
+          "cause": "NoAADAdmin",
+          "description": "An Azure Active Directory administrator has not been provisioned for this SQL server."
+        },
+        "metadata": {
+          "displayName": "SQL servers should have an Azure Active Directory administrator provisioned",
+          "assessmentType": "BuiltIn",
+          "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/cccc3333-dddd-4444-eeee-5555ffff6666",
+          "description": "Provision an Azure AD administrator for your SQL server to enable Azure AD authentication. Azure AD authentication enables simplified permission management and centralized identity management.",
+          "remediationDescription": "To set an Azure AD admin for your SQL server: 1. Go to the Azure portal. 2. Navigate to your SQL server. 3. Under Settings, select Azure Active Directory. 4. Set admin.",
+          "categories": ["Data"],
+          "severity": "High",
+          "userImpact": "High",
+          "implementationEffort": "Low",
+          "threats": ["accountBreach", "elevationOfPrivilege"],
+          "tactics": ["InitialAccess", "PrivilegeEscalation"],
+          "techniques": ["T1078", "T1548"]
+        }
+      }
+    },
+    {
+      "id": "/subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Web/sites/mywebapp/providers/Microsoft.Security/assessments/44444444-4444-4444-4444-444444444444",
+      "name": "44444444-4444-4444-4444-444444444444",
+      "type": "Microsoft.Security/assessments",
+      "properties": {
+        "displayName": "Web Application should only be accessible over HTTPS",
+        "resourceDetails": {
+          "source": "Azure",
+          "id": "/subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Web/sites/mywebapp"
+        },
+        "status": {
+          "code": "Healthy",
+          "cause": "",
+          "description": ""
+        },
+        "metadata": {
+          "displayName": "Web Application should only be accessible over HTTPS",
+          "assessmentType": "BuiltIn",
+          "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/dddd4444-eeee-5555-ffff-6666aaaa7777",
+          "description": "Use of HTTPS ensures server/service authentication and protects data in transit from network layer eavesdropping attacks.",
+          "remediationDescription": "To enforce HTTPS: 1. Go to your App Service. 2. Select TLS/SSL settings. 3. Set HTTPS Only to On.",
+          "categories": ["Networking"],
+          "severity": "Medium",
+          "userImpact": "Low",
+          "implementationEffort": "Low",
+          "threats": ["dataExfiltration", "threatResistance"],
+          "tactics": ["CredentialAccess"],
+          "techniques": ["T1557"]
+        }
+      }
+    },
+    {
+      "id": "/subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.KeyVault/vaults/mykeyvault/providers/Microsoft.Security/assessments/55555555-5555-5555-5555-555555555555",
+      "name": "55555555-5555-5555-5555-555555555555",
+      "type": "Microsoft.Security/assessments",
+      "properties": {
+        "displayName": "Key Vault should use a virtual network service endpoint",
+        "resourceDetails": {
+          "source": "Azure",
+          "id": "/subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.KeyVault/vaults/mykeyvault"
+        },
+        "status": {
+          "code": "NotApplicable",
+          "cause": "VNetServiceEndpointNotSupported",
+          "description": "Resource does not support virtual network service endpoints."
+        },
+        "metadata": {
+          "displayName": "Key Vault should use a virtual network service endpoint",
+          "assessmentType": "BuiltIn",
+          "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/eeee5555-ffff-6666-aaaa-7777bbbb8888",
+          "description": "This policy audits any Key Vault not configured to use a virtual network service endpoint.",
+          "remediationDescription": "To configure a virtual network service endpoint: 1. Open Key Vault in the portal. 2. Select Networking. 3. Add a virtual network.",
+          "categories": ["Networking"],
+          "severity": "Low",
+          "userImpact": "Low",
+          "implementationEffort": "Moderate",
+          "threats": ["dataExfiltration"],
+          "tactics": ["Exfiltration"],
+          "techniques": ["T1048"]
+        }
+      }
+    },
+    {
+      "id": "/subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-monitoring/providers/Microsoft.OperationalInsights/workspaces/myworkspace/providers/Microsoft.Security/assessments/66666666-6666-6666-6666-666666666666",
+      "name": "66666666-6666-6666-6666-666666666666",
+      "type": "Microsoft.Security/assessments",
+      "properties": {
+        "displayName": "Log Analytics agent should be installed on virtual machines",
+        "resourceDetails": {
+          "source": "Azure",
+          "id": "/subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-monitoring/providers/Microsoft.OperationalInsights/workspaces/myworkspace"
+        },
+        "status": {
+          "code": "Unhealthy",
+          "cause": "AgentNotInstalled",
+          "description": "The Log Analytics agent is not installed on this resource."
+        },
+        "metadata": {
+          "displayName": "Log Analytics agent should be installed on virtual machines",
+          "assessmentType": "BuiltIn",
+          "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/ffff6666-aaaa-7777-bbbb-8888cccc9999",
+          "description": "This policy audits any Windows/Linux virtual machines if the Log Analytics agent is not installed.",
+          "remediationDescription": "To install the Log Analytics agent: 1. Go to the VM in the Azure portal. 2. Under Settings, select Extensions. 3. Add Log Analytics agent.",
+          "categories": ["Compute"],
+          "severity": "High",
+          "userImpact": "Low",
+          "implementationEffort": "Low",
+          "threats": ["missingCoverage"],
+          "tactics": ["DefenseEvasion"],
+          "techniques": ["T1562"]
+        }
+      }
+    }
+  ]
+}

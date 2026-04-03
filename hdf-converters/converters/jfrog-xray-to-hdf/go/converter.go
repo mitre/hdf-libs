@@ -198,6 +198,9 @@ func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	if len(input) == 0 {
 		return nil, fmt.Errorf("jfrog-xray: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "jfrog-xray", 0); err != nil {
+		return nil, fmt.Errorf("jfrog-xray: %w", err)
+	}
 
 	var report XrayReport
 	if err := json.Unmarshal(input, &report); err != nil {
@@ -206,10 +209,7 @@ func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 	checksum := shared.InputChecksum(input)
 
-	limitedEntries, truncated := shared.LimitSlice(report.Data, 0)
-	if truncated {
-		fmt.Printf("WARNING: Input truncated at %d entries (original: %d)\n", len(limitedEntries), len(report.Data))
-	}
+	limitedEntries := shared.LimitSliceWithWarning(report.Data, 0, "entry")
 
 	order, groups := groupByID(limitedEntries)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
@@ -228,11 +228,11 @@ func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "jfrog-xray-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "JFrog Xray",
-		DataSourceFormat: "JSON",
+		ToolName:   "JFrog Xray",
+		ToolFormat: "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
-			{Name: "JFrog Xray Scan", Type: hdf.Application},
+		Components: []hdf.Component{
+			{Name: "JFrog Xray Scan", Type: hdf.CopyrightApplication},
 		},
 		Timestamp: &now,
 	}), nil

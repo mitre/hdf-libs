@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	shared "github.com/mitre/hdf-converters/shared/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -55,24 +56,24 @@ func TestConvertGrypeToHDF(t *testing.T) {
 	}
 }
 
-func TestConvertGrypeToHDF_DataSource(t *testing.T) {
+func TestConvertGrypeToHDF_Tool(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
 	result, err := ConvertGrypeToHDF(input, testConverterVersion)
 	if err != nil {
 		t.Fatalf("Conversion failed: %v", err)
 	}
 
-	if result.DataSource == nil {
-		t.Fatal("Expected DataSource to be set")
+	if result.Tool == nil {
+		t.Fatal("Expected Tool to be set")
 	}
-	if result.DataSource.Name == nil || *result.DataSource.Name != "Grype" {
-		t.Errorf("Expected DataSource.Name to be 'Grype', got %v", result.DataSource.Name)
+	if result.Tool.Name == nil || *result.Tool.Name != "Grype" {
+		t.Errorf("Expected Tool.Name to be 'Grype', got %v", result.Tool.Name)
 	}
-	if result.DataSource.Version == nil || *result.DataSource.Version != "0.79.3" {
-		t.Errorf("Expected DataSource.Version to be '0.79.3', got %v", result.DataSource.Version)
+	if result.Tool.Version == nil || *result.Tool.Version != "0.79.3" {
+		t.Errorf("Expected Tool.Version to be '0.79.3', got %v", result.Tool.Version)
 	}
-	if result.DataSource.Format != nil {
-		t.Errorf("Expected DataSource.Format to be nil, got %v", *result.DataSource.Format)
+	if result.Tool.Format != nil {
+		t.Errorf("Expected Tool.Format to be nil, got %v", *result.Tool.Format)
 	}
 }
 
@@ -324,22 +325,12 @@ func TestChecksumCalculation(t *testing.T) {
 	}
 }
 
-func TestInvalidJSON(t *testing.T) {
-	input := []byte("not valid json")
-	_, err := ConvertGrypeToHDF(input, testConverterVersion)
-
-	if err == nil {
-		t.Error("Expected error for invalid JSON")
-	}
-}
-
-func TestEmptyInput(t *testing.T) {
-	input := []byte("")
-	_, err := ConvertGrypeToHDF(input, testConverterVersion)
-
-	if err == nil {
-		t.Error("Expected error for empty input")
-	}
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "grype-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertGrypeToHDF(input, testConverterVersion) },
+		MinimalFixture: "amazon.json",
+	})
 }
 
 func TestGetVulnDescription_RelatedFallback(t *testing.T) {
@@ -487,4 +478,10 @@ func TestMinimalReport(t *testing.T) {
 	if len(hdfResults.Baselines[0].Requirements) != 0 {
 		t.Errorf("Expected 0 requirements, got %d", len(hdfResults.Baselines[0].Requirements))
 	}
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "grype-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertGrypeToHDF(input, "0.1.0")
+	})
 }

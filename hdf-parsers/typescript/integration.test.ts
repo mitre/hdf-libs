@@ -49,7 +49,7 @@ describe('Integration Tests - Real HDF Files', () => {
         // Missing required fields
         name: 'Test'
       }],
-      targets: [],
+      components: [],
       statistics: {}
     });
 

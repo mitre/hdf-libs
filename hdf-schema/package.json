@@ -2,7 +2,12 @@
   "name": "@mitre/hdf-schema",
   "version": "0.1.0",
   "description": "JSON schemas and multi-language type definitions for Heimdall Data Format (HDF)",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -19,6 +24,22 @@
     "./hdf-comparison": {
       "import": "./dist/ts/hdf-comparison.js",
       "types": "./dist/ts/hdf-comparison.d.ts"
+    },
+    "./hdf-system": {
+      "import": "./dist/ts/hdf-system.js",
+      "types": "./dist/ts/hdf-system.d.ts"
+    },
+    "./hdf-plan": {
+      "import": "./dist/ts/hdf-plan.js",
+      "types": "./dist/ts/hdf-plan.d.ts"
+    },
+    "./hdf-amendments": {
+      "import": "./dist/ts/hdf-amendments.js",
+      "types": "./dist/ts/hdf-amendments.d.ts"
+    },
+    "./hdf-evidence-package": {
+      "import": "./dist/ts/hdf-evidence-package.js",
+      "types": "./dist/ts/hdf-evidence-package.d.ts"
     },
     "./schemas/*": "./src/schemas/*"
   },

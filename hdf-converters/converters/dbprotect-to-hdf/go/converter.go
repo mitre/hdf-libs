@@ -255,10 +255,10 @@ func ConvertDbprotectToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "dbprotect-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "DBProtect",
-		DataSourceFormat: "XML",
+		ToolName:   "DBProtect",
+		ToolFormat: "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
+		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Host},
 		},
 		Timestamp: &now,

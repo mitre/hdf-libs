@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	hdf "github.com/mitre/hdf-schema"
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -60,15 +60,12 @@ func TestConvertSplunkToHDF_Minimal(t *testing.T) {
 
 // ---- Error tests ----
 
-func TestConvertSplunkToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertSplunkToHDF([]byte(""), testConverterVersion)
-	assert.Error(t, err, "Should fail on empty input")
-}
-
-func TestConvertSplunkToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertSplunkToHDF([]byte("not valid json"), testConverterVersion)
-	assert.Error(t, err, "Should fail on invalid JSON")
-	assert.Contains(t, err.Error(), "invalid Splunk JSON")
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "splunk-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertSplunkToHDF(input, testConverterVersion) },
+		MinimalFixture: "splunk-events.json",
+	})
 }
 
 func TestConvertSplunkToHDF_EmptyArray(t *testing.T) {
@@ -161,8 +158,8 @@ func TestConvertSplunkToHDF_Target(t *testing.T) {
 	result, err := ConvertSplunkToHDF(loadEventsFixture(t), testConverterVersion)
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Targets, "Should have at least one target")
-	target := result.Targets[0]
+	require.NotEmpty(t, result.Components, "Should have at least one target")
+	target := result.Components[0]
 	assert.Equal(t, "centos", target.Name, "Target name should come from platform.name")
 	assert.Equal(t, hdf.Host, target.Type, "Target type should be Host")
 }
@@ -281,6 +278,12 @@ func TestConvertSplunkToHDF_JSONRoundTrip(t *testing.T) {
 
 	// Verify expected top-level keys
 	assert.Contains(t, parsed, "baselines")
-	assert.Contains(t, parsed, "targets")
+	assert.Contains(t, parsed, "components")
 	assert.Contains(t, parsed, "generator")
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "splunk-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertSplunkToHDF(input, "0.1.0")
+	})
 }

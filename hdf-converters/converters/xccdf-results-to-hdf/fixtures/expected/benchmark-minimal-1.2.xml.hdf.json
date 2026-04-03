@@ -1,0 +1,153 @@
+{
+  "generator": {
+    "name": "hdf-converters",
+    "version": "0.1.0"
+  },
+  "groups": [
+    {
+      "id": "V-254238",
+      "requirements": [
+        "SV-254238"
+      ],
+      "title": "SRG-OS-000480-GPOS-00227"
+    },
+    {
+      "id": "V-254239",
+      "requirements": [
+        "SV-254239"
+      ],
+      "title": "SRG-OS-000076-GPOS-00044"
+    },
+    {
+      "id": "V-254240",
+      "requirements": [
+        "SV-254240"
+      ],
+      "title": "SRG-OS-000480-GPOS-00227"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "be54def75a5c76c4b0a7cca8ff46255123f31d4d89523bdc315b1ee6d0cf8e1a"
+  },
+  "name": "ms-windows-server-2022-stig",
+  "requirements": [
+    {
+      "descriptions": [
+        {
+          "data": "Using a privileged account to perform routine functions makes the computer vulnerable to malicious software inadvertently introduced during a session that has been granted full privileges.",
+          "label": "default"
+        },
+        {
+          "data": "Verify each user with administrative privileges has been assigned a unique administrative account separate from their standard user account.",
+          "label": "check"
+        },
+        {
+          "data": "Ensure each user with administrative privileges has a separate account for user duties and one for privileged duties.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-254238",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-000366"
+        ],
+        "check_id": "C-57723r848528_chk",
+        "fix_id": "F-57674r848529_fix",
+        "gid": "V-254238",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)"
+        ],
+        "rid": "SV-254238r991589_rule",
+        "severity": "medium",
+        "stig_id": "WN22-00-000010"
+      },
+      "title": "Windows Server 2022 users with Administrative privileges must have separate accounts for administrative duties and normal operational tasks."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "The longer a password is in use, the greater the opportunity for someone to gain unauthorized knowledge of the password.",
+          "label": "default"
+        },
+        {
+          "data": "If there are no enabled local Administrator accounts, this is Not Applicable. Review the password last set date for the enabled local Administrator account.",
+          "label": "check"
+        },
+        {
+          "data": "Change the enabled local Administrator account password at least every 60 days.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-254239",
+      "impact": 0.5,
+      "severity": "medium",
+      "tags": {
+        "cci": [
+          "CCI-004066",
+          "CCI-000199"
+        ],
+        "check_id": "C-57724r1153438_chk",
+        "fix_id": "F-57675r1153439_fix",
+        "gid": "V-254239",
+        "gtitle": "SRG-OS-000076-GPOS-00044",
+        "nist": [
+          "IA-5 (1) (d)",
+          "IA-5 (1).1 (v)"
+        ],
+        "rid": "SV-254239r1153440_rule",
+        "severity": "medium",
+        "stig_id": "WN22-00-000020"
+      },
+      "title": "Windows Server 2022 passwords for the built-in Administrator account must be changed at least every 60 days."
+    },
+    {
+      "descriptions": [
+        {
+          "data": "Using applications that access the internet or have potential internet sources using administrative privileges exposes a system to compromise.",
+          "label": "default"
+        },
+        {
+          "data": "Determine whether organization policy prohibits administrative accounts from using applications that access the internet.",
+          "label": "check"
+        },
+        {
+          "data": "Establish a policy, at minimum, to prohibit administrative accounts from using applications that access the internet.",
+          "label": "fix"
+        }
+      ],
+      "id": "SV-254240",
+      "impact": 0.7,
+      "severity": "high",
+      "tags": {
+        "cci": [
+          "CCI-000366",
+          "CCI-001312"
+        ],
+        "check_id": "C-57725r848534_chk",
+        "fix_id": "F-57676r848535_fix",
+        "gid": "V-254240",
+        "gtitle": "SRG-OS-000480-GPOS-00227",
+        "nist": [
+          "CM-6 b",
+          "CM-6.1 (iv)",
+          "SI-11 a",
+          "SI-11 b",
+          "SI-11.1 (iii)"
+        ],
+        "rid": "SV-254240r991589_rule",
+        "severity": "high",
+        "stig_id": "WN22-00-000030"
+      },
+      "title": "Windows Server 2022 administrative accounts must not be used with applications that access the internet."
+    }
+  ],
+  "status": "loaded",
+  "summary": "This Security Technical Implementation Guide is published as a tool to improve the security of Department of Defense (DOD) information systems.",
+  "title": "Microsoft Windows Server 2022 Security Technical Implementation Guide",
+  "version": "2"
+}

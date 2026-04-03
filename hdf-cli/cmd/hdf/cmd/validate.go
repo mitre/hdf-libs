@@ -3,13 +3,15 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
+	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
 
 // Global flag variables for validate command (used by runValidate).
 var (
-	schemaType string // "results" or "baseline"
+	schemaType string // "results", "baseline", "comparison", "system", "plan", or "amendments"
 	quiet      bool
 )
 
@@ -24,26 +26,41 @@ func NewValidateCmd() *cobra.Command { //nolint:dupl // Cobra command setup; fla
 	cmd := &cobra.Command{
 		Use:   "validate <file>",
 		Short: "Validate an HDF file against the schema",
-		Long: `Validate an HDF results or baseline file against the JSON schema.
+		Long: `Validate an HDF document against its JSON schema.
+
+Supported types: results, baseline, comparison, system, plan, amendments.
 
 Reads from stdin if file is '-' or omitted.
 
 Examples:
   hdf validate results.json
   hdf validate baseline.json --type baseline
-  cat results.json | hdf validate -
-  curl -s https://example.com/scan.json | hdf validate`,
-		Args: cobra.MaximumNArgs(1),
+  hdf validate my-system.json --type system
+  hdf validate scan-plan.json --type plan
+  hdf validate waivers.json --type amendments
+  hdf validate evidence.json --type evidence-package
+  cat results.json | hdf validate -`,
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Sync local flags to global variables for runValidate
 			schemaType = localSchemaType
 			quiet = localQuiet
+
+			files, err := expandGlobs(args)
+			if err != nil {
+				return err
+			}
+			if len(files) > 1 {
+				return runValidateBulk(cmd, files)
+			}
 			return runValidate(cmd, args)
 		},
 	}
 
-	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "results", "Schema type: 'results' or 'baseline'")
+	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "", "Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package")
 	cmd.Flags().BoolVarP(&localQuiet, "quiet", "q", false, "Suppress output on success (exit code only)")
+
+	cmd.AddCommand(newValidateThresholdCmd())
 
 	return cmd
 }
@@ -59,11 +76,16 @@ func runValidate(_ *cobra.Command, args []string) error {
 	printDebug("Reading input")
 	data, err := readInputFile(filename)
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
 	printDebug("Read %d bytes", len(data))
+
+	// Auto-detect document type if --type not provided
+	if schemaType == "" {
+		schemaType = detectHDFDocumentType(data)
+		printDebug("Auto-detected document type: %s", schemaType)
+	}
 
 	// Determine display name for output
 	displayName := filename
@@ -71,35 +93,33 @@ func runValidate(_ *cobra.Command, args []string) error {
 		displayName = "<stdin>"
 	}
 
-	// Validate based on type
-	var validationErr error
-	switch schemaType {
-	case "results":
-		_, validationErr = parseHDFResults(data)
-	case "baseline":
-		_, validationErr = parseHDFBaseline(data)
-	default:
-		printError(fmt.Sprintf("Unknown schema type: %s", schemaType),
-			"Use --type=results or --type=baseline")
-		return fmt.Errorf("unknown schema type: %s", schemaType)
+	// Validate against schema — use the validator directly for structured errors
+	validType := validators.SchemaType(schemaType)
+	if !isKnownSchemaType(validType) {
+		fmt.Fprintf(os.Stderr, "Unknown schema type: %s\n", schemaType)
+		fmt.Fprintf(os.Stderr, "  Use --type=results|baseline|comparison|system|plan|amendments|evidence-package\n")
+		return &exitCodeError{code: 1, message: fmt.Sprintf("unknown schema type: %s", schemaType)}
 	}
 
-	if validationErr != nil {
-		if jsonOutput {
-			result := map[string]interface{}{
-				"valid": false,
-				"file":  displayName,
-				"type":  schemaType,
-				"error": validationErr.Error(),
-			}
-			output, _ := json.MarshalIndent(result, "", "  ")
-			fmt.Println(string(output))
-		} else {
-			printError(fmt.Sprintf("Validation failed for %s", displayName),
-				fmt.Sprintf("Error: %v", validationErr),
-				"Ensure the file conforms to the HDF schema")
+	result := validators.Validate(data, validType)
+	var validationResult *validators.ValidationResult
+	if !result.Valid {
+		validationResult = &result
+	}
+
+	if validationResult != nil && !validationResult.Valid {
+		// Build line map for file inputs (not stdin) to annotate errors
+		var lineMap map[string]int
+		if filename != "-" {
+			lineMap = jsonPathLineMap(data)
 		}
-		return validationErr
+
+		if jsonOutput {
+			outputValidationJSON(displayName, schemaType, validationResult, lineMap)
+		} else {
+			outputValidationHuman(displayName, schemaType, validationResult, lineMap)
+		}
+		return &exitCodeError{code: 1, message: fmt.Sprintf("validation failed for %s", displayName)}
 	}
 
 	// Success
@@ -116,4 +136,73 @@ func runValidate(_ *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func runValidateBulk(cmd *cobra.Command, files []string) error {
+	return runBulk(files, "validation", "validated", func(file string) error {
+		return runValidate(cmd, []string{file})
+	})
+}
+
+// isKnownSchemaType returns true if the schema type is one we can validate.
+func isKnownSchemaType(st validators.SchemaType) bool {
+	switch st {
+	case validators.TypeResults, validators.TypeBaseline, validators.TypeComparison,
+		validators.TypeSystem, validators.TypePlan, validators.TypeAmendments,
+		validators.TypeEvidencePackage:
+		return true
+	default:
+		return false
+	}
+}
+
+// outputValidationHuman prints validation errors in human-readable format,
+// annotating with line numbers when a line map is available.
+func outputValidationHuman(displayName, schemaType string, vr *validators.ValidationResult, lineMap map[string]int) {
+	fmt.Fprintf(os.Stderr, "✗ %s — not a valid HDF %s document\n", displayName, schemaType)
+	fmt.Fprintf(os.Stderr, "\n  Errors:\n")
+	for _, e := range vr.Errors {
+		line := 0
+		if lineMap != nil {
+			line = lookupLineNumber(lineMap, e.Field)
+		}
+
+		switch {
+		case line > 0 && e.Field != "" && e.Field != fieldRoot:
+			fmt.Fprintf(os.Stderr, "    line %d: %s: %s\n", line, e.Field, e.Description)
+		case e.Field != "" && e.Field != fieldRoot:
+			fmt.Fprintf(os.Stderr, "    %s: %s\n", e.Field, e.Description)
+		default:
+			fmt.Fprintf(os.Stderr, "    %s\n", e.Description)
+		}
+	}
+	fmt.Fprintf(os.Stderr, "\n  Hint: ensure the file conforms to the HDF %s schema\n", schemaType)
+}
+
+// outputValidationJSON prints validation errors in JSON format,
+// including line numbers when a line map is available.
+func outputValidationJSON(displayName, schemaType string, vr *validators.ValidationResult, lineMap map[string]int) {
+	type errorWithLine struct {
+		Field       string `json:"field"`
+		Description string `json:"description"`
+		Line        int    `json:"line,omitempty"`
+	}
+
+	errors := make([]errorWithLine, 0, len(vr.Errors))
+	for _, e := range vr.Errors {
+		ewl := errorWithLine{Field: e.Field, Description: e.Description}
+		if lineMap != nil {
+			ewl.Line = lookupLineNumber(lineMap, e.Field)
+		}
+		errors = append(errors, ewl)
+	}
+
+	result := map[string]interface{}{
+		"valid":  false,
+		"file":   displayName,
+		"type":   schemaType,
+		"errors": errors,
+	}
+	output, _ := json.MarshalIndent(result, "", "  ")
+	fmt.Println(string(output))
 }

@@ -3,6 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -28,7 +30,7 @@ func syntheticHDFBefore() map[string]interface{} {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 }
@@ -54,7 +56,7 @@ func syntheticHDFAfter() map[string]interface{} {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 }
@@ -72,7 +74,7 @@ func syntheticHDFUpdated() map[string]interface{} {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 }
@@ -89,7 +91,7 @@ func syntheticHDFSingleFailed() map[string]interface{} {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 }
@@ -106,7 +108,7 @@ func syntheticHDFSinglePassed() map[string]interface{} {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 }
@@ -118,9 +120,7 @@ func TestDiffCommand_BasicComparison(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should contain summary with correct counts
 	if !strings.Contains(stdout, "1 fixed") {
@@ -146,9 +146,7 @@ func TestDiffCommand_IdenticalFiles(t *testing.T) {
 	path := writeHDFFixture(t, syntheticHDFBefore())
 
 	stdout, stderr, err := executeCommand("diff", path, path)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// All 4 requirements should be unchanged
 	if !strings.Contains(stdout, "4 unchanged") {
@@ -161,15 +159,52 @@ func TestDiffCommand_IdenticalFiles(t *testing.T) {
 	}
 }
 
+// TestDiffCommand_HidesUnchangedByDefault verifies unchanged requirements are
+// not shown in table output unless --all is passed.
+func TestDiffCommand_HidesUnchangedByDefault(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFBefore())
+	newPath := writeHDFFixture(t, syntheticHDFAfter())
+
+	stdout, stderr, err := executeCommand("diff", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	// REQ-003 is unchanged (passed→passed) — should NOT appear in table output
+	if strings.Contains(stdout, "REQ-003") {
+		t.Errorf("unchanged REQ-003 should be hidden by default, got:\n%s", stdout)
+	}
+
+	// But changed requirements should appear
+	if !strings.Contains(stdout, "REQ-001") {
+		t.Errorf("expected REQ-001 (fixed) in output, got:\n%s", stdout)
+	}
+
+	// Summary should still show unchanged count
+	if !strings.Contains(stdout, "1 unchanged") {
+		t.Errorf("summary should include unchanged count, got:\n%s", stdout)
+	}
+}
+
+// TestDiffCommand_AllFlag verifies --all includes unchanged requirements.
+func TestDiffCommand_AllFlag(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFBefore())
+	newPath := writeHDFFixture(t, syntheticHDFAfter())
+
+	stdout, stderr, err := executeCommand("diff", "--all", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	// REQ-003 is unchanged — should appear with --all
+	if !strings.Contains(stdout, "REQ-003") {
+		t.Errorf("expected REQ-003 in --all output, got:\n%s", stdout)
+	}
+}
+
 // TestDiffCommand_JSONOutput verifies that --json produces valid JSON with the correct structure.
 func TestDiffCommand_JSONOutput(t *testing.T) {
 	oldPath := writeHDFFixture(t, syntheticHDFBefore())
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--json", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	var output map[string]interface{}
 	if err := json.Unmarshal([]byte(stdout), &output); err != nil {
@@ -236,9 +271,7 @@ func TestDiffCommand_FilterFixed(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--fixed", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should show REQ-001 (fixed)
 	if !strings.Contains(stdout, "REQ-001") {
@@ -260,9 +293,7 @@ func TestDiffCommand_FilterRegressed(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--regressed", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should show REQ-002 (regressed)
 	if !strings.Contains(stdout, "REQ-002") {
@@ -272,6 +303,18 @@ func TestDiffCommand_FilterRegressed(t *testing.T) {
 	// Should NOT show fixed
 	if strings.Contains(stdout, "REQ-001") {
 		t.Errorf("--regressed should not show REQ-001 (fixed), got:\n%s", stdout)
+	}
+}
+
+// allowExitCode tolerates exitCodeError (expected for diff returning 1 on differences).
+func allowExitCode(t *testing.T, err error, stderr string) {
+	t.Helper()
+	if err == nil {
+		return
+	}
+	var exitErr *exitCodeError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("unexpected error: %v (stderr: %s)", err, stderr)
 	}
 }
 
@@ -291,8 +334,29 @@ func requireExitCode(t *testing.T, err error, wantCode int) {
 	}
 }
 
-// TestDiffCommand_ExitCode_Differences verifies that --exit-code returns exit code 1
-// when any differences exist (GNU diff compatible behavior).
+// TestDiffCommand_DefaultExitCode_Differences verifies exit code 1 by default
+// when differences exist (GNU diff convention).
+func TestDiffCommand_DefaultExitCode_Differences(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFBefore())
+	newPath := writeHDFFixture(t, syntheticHDFAfter())
+
+	_, _, err := executeCommand("diff", oldPath, newPath)
+	requireExitCode(t, err, exitDifferences)
+}
+
+// TestDiffCommand_DefaultExitCode_Identical verifies exit code 0 by default
+// when files are identical.
+func TestDiffCommand_DefaultExitCode_Identical(t *testing.T) {
+	path := writeHDFFixture(t, syntheticHDFBefore())
+
+	_, _, err := executeCommand("diff", path, path)
+	if err != nil {
+		t.Errorf("expected exit 0 for identical files, got: %v", err)
+	}
+}
+
+// TestDiffCommand_ExitCode_Differences verifies --exit-code flag (now a no-op,
+// basic exit codes are always on).
 func TestDiffCommand_ExitCode_Differences(t *testing.T) {
 	oldPath := writeHDFFixture(t, syntheticHDFBefore())
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
@@ -378,7 +442,7 @@ func TestDiffCommand_DetailedExitCode_BaselineChanged(t *testing.T) {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 	newFixture := map[string]interface{}{
@@ -391,7 +455,7 @@ func TestDiffCommand_DetailedExitCode_BaselineChanged(t *testing.T) {
 				},
 			},
 		},
-		"targets":    []interface{}{},
+		"components": []interface{}{},
 		"statistics": map[string]interface{}{},
 	}
 
@@ -457,9 +521,7 @@ func TestDiffCommand_MarkdownOutput(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--format", "markdown", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command with --format markdown failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Markdown tables have | delimiters and --- header separators
 	if !strings.Contains(stdout, "|") {
@@ -477,9 +539,7 @@ func TestDiffCommand_UpdatedState(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFUpdated())
 
 	stdout, stderr, err := executeCommand("diff", "--json", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	var output map[string]interface{}
 	if err := json.Unmarshal([]byte(stdout), &output); err != nil {
@@ -498,9 +558,7 @@ func TestDiffCommand_FilterNew(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--new", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should show REQ-005 (new)
 	if !strings.Contains(stdout, "REQ-005") {
@@ -519,9 +577,7 @@ func TestDiffCommand_FilterAbsent(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	stdout, stderr, err := executeCommand("diff", "--absent", oldPath, newPath)
-	if err != nil {
-		t.Fatalf("diff command failed: %v (stderr: %s)", err, stderr)
-	}
+	allowExitCode(t, err, stderr)
 
 	// Should show REQ-004 (absent)
 	if !strings.Contains(stdout, "REQ-004") {
@@ -604,5 +660,566 @@ func TestDiffCommand_HelpOutput(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "old-file") {
 		t.Errorf("expected 'old-file' in help output, got:\n%s", stdout)
+	}
+}
+
+// --- System-aware diff tests ---
+
+// makeTwoBaselineFixture builds an HDF fixture with two baselines (RHEL9-STIG, PostgreSQL-STIG).
+// Parameters control the checksum and per-requirement statuses.
+func makeTwoBaselineFixture(
+	checksum1, checksum2 string,
+	req1Status, req2Status, req3Status, req4Status string,
+) map[string]interface{} {
+	return map[string]interface{}{
+		"baselines": []interface{}{
+			map[string]interface{}{
+				"name":     "RHEL9-STIG",
+				"checksum": map[string]interface{}{"algorithm": "sha256", "value": checksum1},
+				"requirements": []interface{}{
+					makeRequirementWithResultStatus("REQ-001", req1Status),
+					makeRequirementWithResultStatus("REQ-002", req2Status),
+				},
+			},
+			map[string]interface{}{
+				"name":     "PostgreSQL-STIG",
+				"checksum": map[string]interface{}{"algorithm": "sha256", "value": checksum2},
+				"requirements": []interface{}{
+					makeRequirementWithResultStatus("REQ-003", req3Status),
+					makeRequirementWithResultStatus("REQ-004", req4Status),
+				},
+			},
+		},
+		"components": []interface{}{},
+		"statistics": map[string]interface{}{},
+	}
+}
+
+// syntheticHDFTwoBaselinesOld builds a fixture with two baselines for system-aware testing.
+// RHEL9-STIG: REQ-001 (failed), REQ-002 (passed). PostgreSQL-STIG: REQ-003 (passed), REQ-004 (failed).
+func syntheticHDFTwoBaselinesOld() map[string]interface{} {
+	return makeTwoBaselineFixture("aaa111", "bbb222", "failed", "passed", "passed", "failed")
+}
+
+// syntheticHDFTwoBaselinesNew builds a "new" fixture with the same two baselines.
+// RHEL9-STIG: REQ-001 now passed (fixed), REQ-002 still passed (unchanged).
+// PostgreSQL-STIG: REQ-003 still passed (unchanged), REQ-004 still failed (unchanged).
+func syntheticHDFTwoBaselinesNew() map[string]interface{} {
+	return makeTwoBaselineFixture("ccc333", "ddd444", "passed", "passed", "passed", "failed")
+}
+
+// syntheticSystemDoc builds a minimal system document with two components.
+func syntheticSystemDoc() map[string]interface{} {
+	return map[string]interface{}{
+		"name": "TestSystem",
+		"components": []interface{}{
+			map[string]interface{}{
+				"name":         "WebTier",
+				"type":         "software",
+				"baselineRefs": []interface{}{"RHEL9-STIG"},
+			},
+			map[string]interface{}{
+				"name":         "DatabaseTier",
+				"type":         "software",
+				"baselineRefs": []interface{}{"PostgreSQL-STIG"},
+			},
+		},
+	}
+}
+
+// writeJSONFixture writes arbitrary JSON data to a temp file and returns the path.
+func writeJSONFixture(t *testing.T, data interface{}) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "fixture.json")
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		t.Fatalf("failed to marshal fixture: %v", err)
+	}
+	if err := os.WriteFile(path, jsonData, 0o600); err != nil {
+		t.Fatalf("failed to write fixture: %v", err)
+	}
+	return path
+}
+
+// TestDiffCommand_SystemFlag verifies that --system produces component-grouped output.
+func TestDiffCommand_SystemFlag(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
+	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
+	sysPath := writeJSONFixture(t, syntheticSystemDoc())
+
+	stdout, stderr, err := executeCommand("diff", "--system", sysPath, oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	// Should contain component names
+	if !strings.Contains(stdout, "WebTier") {
+		t.Errorf("expected 'WebTier' in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "DatabaseTier") {
+		t.Errorf("expected 'DatabaseTier' in output, got:\n%s", stdout)
+	}
+
+	// Should contain compliance info
+	if !strings.Contains(stdout, "Old Compliance") {
+		t.Errorf("expected 'Old Compliance' header in output, got:\n%s", stdout)
+	}
+}
+
+// TestDiffCommand_SystemFlag_JSON verifies that --system with --json includes componentSummaries.
+func TestDiffCommand_SystemFlag_JSON(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
+	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
+	sysPath := writeJSONFixture(t, syntheticSystemDoc())
+
+	stdout, stderr, err := executeCommand("diff", "--json", "--system", sysPath, oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	var output map[string]interface{}
+	if err := json.Unmarshal([]byte(stdout), &output); err != nil {
+		t.Fatalf("invalid JSON: %v\noutput: %s", err, stdout)
+	}
+
+	// Should have componentSummaries
+	cs, ok := output["componentSummaries"].([]interface{})
+	if !ok {
+		t.Fatalf("expected 'componentSummaries' array in JSON output, got: %v", output["componentSummaries"])
+	}
+	if len(cs) != 2 {
+		t.Errorf("expected 2 component summaries, got %d", len(cs))
+	}
+
+	// Verify first component has expected fields
+	first, ok := cs[0].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected component summary to be a map")
+	}
+	for _, key := range []string{"name", "baselineRefs", "summary", "oldCompliance", "newCompliance", "complianceDelta"} {
+		if _, exists := first[key]; !exists {
+			t.Errorf("expected key %q in component summary", key)
+		}
+	}
+}
+
+// TestDiffCommand_SystemFlag_MissingFile verifies error when system file doesn't exist.
+func TestDiffCommand_SystemFlag_MissingFile(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
+	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
+
+	_, _, err := executeCommand("diff", "--system", "nonexistent-system.json", oldPath, newPath)
+	if err == nil {
+		t.Error("expected error for missing system file")
+	}
+}
+
+// TestDiffCommand_GroupByBaseline verifies --group-by baseline groups by baseline name.
+func TestDiffCommand_GroupByBaseline(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
+	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
+
+	stdout, stderr, err := executeCommand("diff", "--group-by", "baseline", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	// Should show baseline names as group labels
+	if !strings.Contains(stdout, "RHEL9-STIG") {
+		t.Errorf("expected 'RHEL9-STIG' in grouped output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "PostgreSQL-STIG") {
+		t.Errorf("expected 'PostgreSQL-STIG' in grouped output, got:\n%s", stdout)
+	}
+}
+
+// TestDiffCommand_SystemAndGroupByMutuallyExclusive verifies that --system and --group-by
+// cannot be used together.
+func TestDiffCommand_SystemAndGroupByMutuallyExclusive(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
+	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
+	sysPath := writeJSONFixture(t, syntheticSystemDoc())
+
+	_, _, err := executeCommand("diff", "--system", sysPath, "--group-by", "baseline", oldPath, newPath)
+	if err == nil {
+		t.Error("expected error when both --system and --group-by are provided")
+	}
+}
+
+// TestDiffCommand_SystemFlag_ComplianceValues verifies compliance percentages are correct.
+func TestDiffCommand_SystemFlag_ComplianceValues(t *testing.T) {
+	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
+	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
+	sysPath := writeJSONFixture(t, syntheticSystemDoc())
+
+	stdout, stderr, err := executeCommand("diff", "--json", "--system", sysPath, oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	var output struct {
+		ComponentSummaries []struct {
+			Name            string  `json:"name"`
+			OldCompliance   float64 `json:"oldCompliance"`
+			NewCompliance   float64 `json:"newCompliance"`
+			ComplianceDelta float64 `json:"complianceDelta"`
+		} `json:"componentSummaries"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &output); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+
+	// WebTier (RHEL9-STIG): old = 1/2 passed = 50%, new = 2/2 passed = 100%
+	for _, cs := range output.ComponentSummaries {
+		switch cs.Name {
+		case "WebTier":
+			if cs.OldCompliance != 50 {
+				t.Errorf("WebTier old compliance: got %.0f%%, want 50%%", cs.OldCompliance)
+			}
+			if cs.NewCompliance != 100 {
+				t.Errorf("WebTier new compliance: got %.0f%%, want 100%%", cs.NewCompliance)
+			}
+			if cs.ComplianceDelta != 50 {
+				t.Errorf("WebTier compliance delta: got %.0f%%, want 50%%", cs.ComplianceDelta)
+			}
+		case "DatabaseTier":
+			// PostgreSQL-STIG: old = 1/2 passed = 50%, new = 1/2 passed = 50%
+			if cs.OldCompliance != 50 {
+				t.Errorf("DatabaseTier old compliance: got %.0f%%, want 50%%", cs.OldCompliance)
+			}
+			if cs.NewCompliance != 50 {
+				t.Errorf("DatabaseTier new compliance: got %.0f%%, want 50%%", cs.NewCompliance)
+			}
+			if cs.ComplianceDelta != 0 {
+				t.Errorf("DatabaseTier compliance delta: got %.0f%%, want 0%%", cs.ComplianceDelta)
+			}
+		}
+	}
+}
+
+// TestDiffCommand_HelpOutput_SystemFlag verifies --system appears in help.
+func TestDiffCommand_HelpOutput_SystemFlag(t *testing.T) {
+	stdout, _, _ := executeCommand("diff", "--help")
+
+	if !strings.Contains(stdout, "--system") {
+		t.Errorf("expected '--system' in help output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "--group-by") {
+		t.Errorf("expected '--group-by' in help output, got:\n%s", stdout)
+	}
+}
+
+// --- System document diff tests (systemDrift mode) ---
+
+// UUIDs for system diff test fixtures.
+const (
+	testUUIDWebTier  = "aaaaaaaa-1111-4000-a000-000000000001"
+	testUUIDDatabase = "bbbbbbbb-2222-4000-a000-000000000002"
+	testUUIDCache    = "cccccccc-3333-4000-a000-000000000003"
+	testUUIDSameID   = "dddddddd-4444-4000-a000-000000000004"
+)
+
+// syntheticSystemOld builds a system document with two components and one data flow.
+func syntheticSystemOld() map[string]interface{} {
+	return map[string]interface{}{
+		"name": "Portal-Prod",
+		"components": []interface{}{
+			map[string]interface{}{
+				"name":        "WebTier",
+				"type":        "application",
+				"componentId": testUUIDWebTier,
+				"description": "Frontend web server",
+			},
+			map[string]interface{}{
+				"name":        "Database",
+				"type":        "database",
+				"componentId": testUUIDDatabase,
+				"description": "PostgreSQL primary",
+			},
+		},
+		"dataFlows": []interface{}{
+			map[string]interface{}{
+				"from":     testUUIDWebTier,
+				"to":       testUUIDDatabase,
+				"protocol": "JDBC",
+				"port":     5432,
+			},
+		},
+	}
+}
+
+// syntheticSystemNew builds a modified system document:
+//   - WebTier: description changed (updated)
+//   - Database: removed (absent)
+//   - CacheLayer: added (new)
+//   - Data flow changed: port updated, new flow added
+func syntheticSystemNew() map[string]interface{} {
+	return map[string]interface{}{
+		"name": "Portal-Prod",
+		"components": []interface{}{
+			map[string]interface{}{
+				"name":        "WebTier",
+				"type":        "application",
+				"componentId": testUUIDWebTier,
+				"description": "Frontend web server (updated)",
+			},
+			map[string]interface{}{
+				"name":        "CacheLayer",
+				"type":        "application",
+				"componentId": testUUIDCache,
+				"description": "Redis cache tier",
+			},
+		},
+		"dataFlows": []interface{}{
+			map[string]interface{}{
+				"from":     testUUIDWebTier,
+				"to":       testUUIDDatabase,
+				"protocol": "JDBC",
+				"port":     5433,
+			},
+			map[string]interface{}{
+				"from":     testUUIDWebTier,
+				"to":       testUUIDCache,
+				"protocol": "TCP",
+				"port":     6379,
+			},
+		},
+	}
+}
+
+// TestDiffCommand_SystemDrift_BasicComparison verifies that diffing two system
+// documents auto-detects systemDrift mode and classifies components.
+func TestDiffCommand_SystemDrift_BasicComparison(t *testing.T) {
+	oldPath := writeJSONFixture(t, syntheticSystemOld())
+	newPath := writeJSONFixture(t, syntheticSystemNew())
+
+	stdout, stderr, err := executeCommand("diff", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	// Should contain component names
+	if !strings.Contains(stdout, "WebTier") {
+		t.Errorf("expected 'WebTier' in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "Database") {
+		t.Errorf("expected 'Database' in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "CacheLayer") {
+		t.Errorf("expected 'CacheLayer' in output, got:\n%s", stdout)
+	}
+
+	// Should indicate systemDrift mode
+	if !strings.Contains(stdout, "System") {
+		t.Errorf("expected system-related label in output, got:\n%s", stdout)
+	}
+}
+
+// TestDiffCommand_SystemDrift_JSON verifies JSON output for system document diffs.
+func TestDiffCommand_SystemDrift_JSON(t *testing.T) {
+	oldPath := writeJSONFixture(t, syntheticSystemOld())
+	newPath := writeJSONFixture(t, syntheticSystemNew())
+
+	stdout, stderr, err := executeCommand("diff", "--json", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	var output map[string]interface{}
+	if jsonErr := json.Unmarshal([]byte(stdout), &output); jsonErr != nil {
+		t.Fatalf("diff --json output is not valid JSON: %v\noutput: %s", jsonErr, stdout)
+	}
+
+	// Check comparison mode
+	if mode, ok := output["comparisonMode"].(string); !ok || mode != "systemDrift" {
+		t.Errorf("expected comparisonMode='systemDrift', got %v", output["comparisonMode"])
+	}
+
+	// Check component diffs
+	diffs, ok := output["componentDiffs"].([]interface{})
+	if !ok {
+		t.Fatalf("expected 'componentDiffs' array, got: %v", output["componentDiffs"])
+	}
+	if len(diffs) != 3 {
+		t.Errorf("expected 3 component diffs, got %d", len(diffs))
+	}
+
+	// Check summary
+	summary, ok := output["summary"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected 'summary' to be a map")
+	}
+	if total, ok := summary["total"].(float64); !ok || int(total) != 3 {
+		t.Errorf("expected total=3, got %v", summary["total"])
+	}
+
+	// Check data flow changes in extensions
+	extensions, _ := output["extensions"].(map[string]interface{})
+	if extensions == nil {
+		t.Fatal("expected 'extensions' with data flow changes")
+	}
+	dataFlowChanges, _ := extensions["dataFlowChanges"].([]interface{})
+	if len(dataFlowChanges) == 0 {
+		t.Error("expected non-empty dataFlowChanges")
+	}
+}
+
+// TestDiffCommand_SystemDrift_MatchByComponentId verifies that components are
+// matched by componentId even when names differ.
+func TestDiffCommand_SystemDrift_MatchByComponentId(t *testing.T) {
+	oldSys := map[string]interface{}{
+		"name": "Test",
+		"components": []interface{}{
+			map[string]interface{}{
+				"name":        "OldName",
+				"type":        "application",
+				"componentId": testUUIDSameID,
+			},
+		},
+	}
+	newSys := map[string]interface{}{
+		"name": "Test",
+		"components": []interface{}{
+			map[string]interface{}{
+				"name":        "NewName",
+				"type":        "application",
+				"componentId": testUUIDSameID,
+			},
+		},
+	}
+
+	oldPath := writeJSONFixture(t, oldSys)
+	newPath := writeJSONFixture(t, newSys)
+
+	stdout, stderr, err := executeCommand("diff", "--json", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	var output map[string]interface{}
+	if jsonErr := json.Unmarshal([]byte(stdout), &output); jsonErr != nil {
+		t.Fatalf("invalid JSON: %v", jsonErr)
+	}
+
+	diffs, _ := output["componentDiffs"].([]interface{})
+	if len(diffs) != 1 {
+		t.Fatalf("expected 1 component diff (matched by ID), got %d", len(diffs))
+	}
+
+	// Should use the new name
+	first, _ := diffs[0].(map[string]interface{})
+	if name, ok := first["name"].(string); !ok || name != "NewName" {
+		t.Errorf("expected name='NewName', got %v", first["name"])
+	}
+}
+
+// TestDiffCommand_SystemDrift_Identical verifies exit code 0 for identical system docs.
+func TestDiffCommand_SystemDrift_Identical(t *testing.T) {
+	path := writeJSONFixture(t, syntheticSystemOld())
+
+	_, _, err := executeCommand("diff", path, path)
+	if err != nil {
+		t.Errorf("expected exit 0 for identical system docs, got: %v", err)
+	}
+}
+
+// TestDiffCommand_SystemDrift_ExitCode verifies exit code 1 when system docs differ.
+func TestDiffCommand_SystemDrift_ExitCode(t *testing.T) {
+	oldPath := writeJSONFixture(t, syntheticSystemOld())
+	newPath := writeJSONFixture(t, syntheticSystemNew())
+
+	_, _, err := executeCommand("diff", oldPath, newPath)
+	requireExitCode(t, err, exitDifferences)
+}
+
+// TestDiffCommand_SystemDrift_DataFlowChanges verifies data flow diffs are reported.
+func TestDiffCommand_SystemDrift_DataFlowChanges(t *testing.T) {
+	oldPath := writeJSONFixture(t, syntheticSystemOld())
+	newPath := writeJSONFixture(t, syntheticSystemNew())
+
+	stdout, stderr, err := executeCommand("diff", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	// Should show data flow detail section
+	if !strings.Contains(stdout, "Data Flows:") {
+		t.Errorf("expected 'Data Flows:' section in output, got:\n%s", stdout)
+	}
+	// Should show the updated flow (port changed) and new flow (to cache)
+	if !strings.Contains(stdout, testUUIDDatabase) || !strings.Contains(stdout, testUUIDCache) {
+		t.Errorf("expected flow endpoints in output, got:\n%s", stdout)
+	}
+	// Summary should show flow counts
+	if !strings.Contains(stdout, "added") {
+		t.Errorf("expected 'added' data flow count in output, got:\n%s", stdout)
+	}
+}
+
+// TestDiffCommand_SystemDrift_NameOnly verifies --name-only shows changed component names.
+func TestDiffCommand_SystemDrift_NameOnly(t *testing.T) {
+	oldPath := writeJSONFixture(t, syntheticSystemOld())
+	newPath := writeJSONFixture(t, syntheticSystemNew())
+
+	stdout, stderr, err := executeCommand("diff", "--name-only", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	// WebTier is updated, Database is absent, CacheLayer is new — all should appear
+	if !strings.Contains(stdout, "WebTier") {
+		t.Errorf("expected 'WebTier' in --name-only output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "Database") {
+		t.Errorf("expected 'Database' in --name-only output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "CacheLayer") {
+		t.Errorf("expected 'CacheLayer' in --name-only output, got:\n%s", stdout)
+	}
+}
+
+// TestDiffCommand_SystemDrift_Stat verifies --stat shows summary counts for system diffs.
+func TestDiffCommand_SystemDrift_Stat(t *testing.T) {
+	oldPath := writeJSONFixture(t, syntheticSystemOld())
+	newPath := writeJSONFixture(t, syntheticSystemNew())
+
+	stdout, stderr, err := executeCommand("diff", "--stat", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
+	if !strings.Contains(stdout, "1 new") {
+		t.Errorf("expected '1 new' in --stat output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "1 absent") {
+		t.Errorf("expected '1 absent' in --stat output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "1 updated") {
+		t.Errorf("expected '1 updated' in --stat output, got:\n%s", stdout)
+	}
+}
+
+// --- Mixed document type error tests ---
+
+// TestDiffCommand_MismatchedTypes rejects diffing a results doc against a system doc.
+func TestDiffCommand_MismatchedTypes(t *testing.T) {
+	resultsPath := writeHDFFixture(t, syntheticHDFBefore())
+	systemPath := writeJSONFixture(t, syntheticSystemOld())
+
+	_, _, err := executeCommand("diff", resultsPath, systemPath)
+	if err == nil {
+		t.Fatal("expected error when diffing results against system document")
+	}
+	if !strings.Contains(err.Error(), "cannot diff") {
+		t.Errorf("expected 'cannot diff' error, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "same type") {
+		t.Errorf("expected 'same type' hint, got: %v", err)
+	}
+}
+
+// TestDiffCommand_UnsupportedType rejects diffing baseline documents (not yet supported).
+func TestDiffCommand_UnsupportedType(t *testing.T) {
+	baseline := map[string]interface{}{
+		"name":     "test-baseline",
+		"checksum": map[string]interface{}{"algorithm": "sha256", "value": "abc"},
+		"requirements": []interface{}{
+			map[string]interface{}{
+				"id": "REQ-1", "impact": 0.5,
+				"descriptions": []interface{}{map[string]interface{}{"label": "default", "data": "test"}},
+				"tags":         map[string]interface{}{}, "code": "", "refs": []interface{}{},
+				"sourceLocation": map[string]interface{}{"line": 1, "ref": "test.rb"},
+			},
+		},
+	}
+	path := writeJSONFixture(t, baseline)
+
+	_, _, err := executeCommand("diff", path, path)
+	if err == nil {
+		t.Fatal("expected error when diffing baseline documents")
+	}
+	if !strings.Contains(err.Error(), "does not support") {
+		t.Errorf("expected 'does not support' error, got: %v", err)
 	}
 }

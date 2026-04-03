@@ -48,7 +48,7 @@ func TestConvertAWSConfigToHDF_Minimal(t *testing.T) {
 	assert.NotEmpty(t, nistSlice)
 }
 
-func TestConvertAWSConfigToHDF_DataSource(t *testing.T) {
+func TestConvertAWSConfigToHDF_Tool(t *testing.T) {
 	inputPath := filepath.Join(shared.GetConvertersDir(), "aws-config-to-hdf", "fixtures", "input", "minimal.json")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
@@ -56,11 +56,11 @@ func TestConvertAWSConfigToHDF_DataSource(t *testing.T) {
 	result, err := ConvertAWSConfigToHDF(inputData, converterVersion)
 	require.NoError(t, err)
 
-	require.NotNil(t, result.DataSource)
-	require.NotNil(t, result.DataSource.Name)
-	assert.Equal(t, "AWS Config", *result.DataSource.Name)
-	assert.Nil(t, result.DataSource.Version)
-	assert.Nil(t, result.DataSource.Format)
+	require.NotNil(t, result.Tool)
+	require.NotNil(t, result.Tool.Name)
+	assert.Equal(t, "AWS Config", *result.Tool.Name)
+	assert.Nil(t, result.Tool.Version)
+	assert.Nil(t, result.Tool.Format)
 }
 
 func TestConvertAWSConfigToHDF_MultiRule(t *testing.T) {
@@ -85,14 +85,12 @@ func TestConvertAWSConfigToHDF_MultiRule(t *testing.T) {
 	assert.True(t, ruleIDs["config-rule-jkl012"])
 }
 
-func TestConvertAWSConfigToHDF_InvalidJSON(t *testing.T) {
-	_, err := ConvertAWSConfigToHDF([]byte("not valid json"), converterVersion)
-	assert.Error(t, err)
-}
-
-func TestConvertAWSConfigToHDF_EmptyInput(t *testing.T) {
-	_, err := ConvertAWSConfigToHDF([]byte(""), converterVersion)
-	assert.Error(t, err)
+func TestConverterContract(t *testing.T) {
+	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
+		ConverterName:  "aws-config-to-hdf",
+		ConvertFn:      func(input []byte) (interface{}, error) { return ConvertAWSConfigToHDF(input, converterVersion) },
+		MinimalFixture: "minimal.json",
+	})
 }
 
 func TestConvertAWSConfigToHDF_EmptyRules(t *testing.T) {
@@ -185,8 +183,8 @@ func TestGetAccountID_EmptyARN(t *testing.T) {
 
 func TestBuildCheckText_WithParams(t *testing.T) {
 	rule := ConfigRule{
-		ConfigRuleArn: "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-7hytm9",
-		Source:        ConfigRuleSource{SourceIdentifier: "ACCESS_KEYS_ROTATED"},
+		ConfigRuleArn:   "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-7hytm9",
+		Source:          ConfigRuleSource{SourceIdentifier: "ACCESS_KEYS_ROTATED"},
 		InputParameters: `{"maxAccessKeyAge":"90"}`,
 	}
 	text := buildCheckText(rule)
@@ -418,6 +416,12 @@ func TestConvertAWSConfigToHDF_ChecksumIsSet(t *testing.T) {
 	input := []byte(`{"ConfigRules": []}`)
 	result, err := ConvertAWSConfigToHDF(input, converterVersion)
 	require.NoError(t, err)
-	require.NotNil(t, result.Baselines[0].Checksum)
-	assert.NotEmpty(t, result.Baselines[0].Checksum.Value)
+	require.NotNil(t, result.Baselines[0].Integrity)
+	assert.NotEmpty(t, *result.Baselines[0].Integrity.Checksum)
+}
+
+func TestSnapshots(t *testing.T) {
+	shared.RunSnapshotTests(t, "aws-config-to-hdf", func(input []byte) (interface{}, error) {
+		return ConvertAWSConfigToHDF(input, "0.1.0")
+	})
 }

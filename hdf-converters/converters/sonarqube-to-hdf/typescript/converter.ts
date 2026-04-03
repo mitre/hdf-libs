@@ -2,16 +2,15 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import {
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
   Checksum,
-  DataSource,
 } from '@mitre/hdf-schema';
 import {
+  Copyright,
   ResultStatus,
   createMinimalBaseline,
   createRequirement,
@@ -195,21 +194,21 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
     baselines.push(baseline);
   }
 
-  const dataSource: DataSource = { name: 'SonarQube' };
+  // Build components from project keys
+  const components = Array.from(issuesByProject.keys()).map(projectKey => ({
+    type: Copyright.Application,
+    name: projectKey,
+  }));
 
   // Build HDF
-  const hdf: HdfResults = {
-    timestamp: new Date(),
+  return buildHdfResults({
+    generatorName: 'sonarqube-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'SonarQube',
     baselines,
-    targets: [],
-    generator: {
-      name: 'sonarqube-to-hdf',
-      version: '1.0.0',
-    },
-    dataSource,
-  };
-
-  return JSON.stringify(hdf, null, 2);
+    components,
+    timestamp: new Date(),
+  });
 }
 
 function convertProjectToBaseline(

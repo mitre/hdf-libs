@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -48,16 +47,13 @@ func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResu
 	version := extractVersion(&nessus)
 	reportHosts := nessus.Report.ReportHosts
 
-	limitedHosts, truncatedHosts := shared.LimitSlice(reportHosts, 0)
-	if truncatedHosts {
-		log.Printf("WARNING: Input truncated at %d ReportHost items (original: %d)", len(limitedHosts), len(reportHosts))
-	}
+	limitedHosts := shared.LimitSliceWithWarning(reportHosts, 0, "host")
 
 	// Calculate timing from first and last host
 	startTime, duration := calculateTiming(limitedHosts)
 
 	var baselines []hdf.EvaluatedBaseline
-	var targets []hdf.Target
+	var targets []hdf.Component
 
 	// Process each ReportHost
 	for _, host := range limitedHosts {
@@ -71,9 +67,9 @@ func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResu
 	result := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "nessus-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Nessus",
+		ToolName:         "Nessus",
 		Baselines:        baselines,
-		Targets:          targets,
+		Components:          targets,
 		Statistics: &hdf.Statistics{
 			Duration: &duration,
 		},
@@ -138,10 +134,7 @@ func getHostPropertyValue(host *ReportHost, name string) string {
 func convertReportHostToBaseline(host *ReportHost, policyName, version string, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
 	var requirements []hdf.EvaluatedRequirement
 
-	limitedItems, truncatedItems := shared.LimitSlice(host.ReportItems, 0)
-	if truncatedItems {
-		log.Printf("WARNING: Input truncated at %d ReportItem items (original: %d)", len(limitedItems), len(host.ReportItems))
-	}
+	limitedItems := shared.LimitSliceWithWarning(host.ReportItems, 0, "report item")
 	for _, item := range limitedItems {
 		req := convertReportItemToRequirement(&item, host)
 		requirements = append(requirements, req)
@@ -405,7 +398,7 @@ func parseHTML(html string) string {
 	return shared.StripHTML(html)
 }
 
-func convertReportHostToTarget(host *ReportHost) hdf.Target {
+func convertReportHostToTarget(host *ReportHost) hdf.Component {
 	hostName := host.Name
 
 	// Extract host properties
@@ -433,7 +426,7 @@ func convertReportHostToTarget(host *ReportHost) hdf.Target {
 		osVersion = &osVer
 	}
 
-	return hdf.Target{
+	return hdf.Component{
 		Name:      hostName,
 		Type:      hdf.Host,
 		FQDN:      fqdn,

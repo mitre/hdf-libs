@@ -1,9 +1,12 @@
 package oscal
 
 import (
+	"strings"
 	"testing"
 
+	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestControlIDToNistTag(t *testing.T) {
@@ -63,8 +66,8 @@ func TestOscalStatusToHDF(t *testing.T) {
 		{"not-satisfied", "failed", true},
 		{"closed", "passed", true},
 		{"open", "failed", true},
-		{"Satisfied", "passed", true},      // case-insensitive
-		{" open ", "failed", true},          // trimmed
+		{"Satisfied", "passed", true}, // case-insensitive
+		{" open ", "failed", true},    // trimmed
 		{"unknown", "", false},
 		{"", "", false},
 	}
@@ -187,4 +190,113 @@ func TestExtractMetadata(t *testing.T) {
 	assert.Equal(t, "5.2.0", info.Version)
 	assert.Equal(t, "1.1.3", info.OscalVersion)
 	assert.Equal(t, "2025-08-26T15:10:16Z", info.LastModified)
+}
+
+func TestToKebabCase(t *testing.T) {
+	tests := []struct {
+		title    string
+		fallback string
+		expected string
+	}{
+		{"NIST SP 800-53 Rev 5", "oscal-catalog", "nist-sp-800-53-rev-5"},
+		{"My Component!!", "oscal-component", "my-component"},
+		{"", "oscal-catalog", "oscal-catalog"},
+		{"simple", "fallback", "simple"},
+		{strings.Repeat("a", 100), "fallback", strings.Repeat("a", 80)},
+		{"---leading---trailing---", "fallback", "leading-trailing"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.expected, func(t *testing.T) {
+			assert.Equal(t, tt.expected, ToKebabCase(tt.title, tt.fallback))
+		})
+	}
+}
+
+func TestNistTagToControlID(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"AC-1", "ac-1"},
+		{"AC-2 (3)", "ac-2.3"},
+		{"SI-7 (1)", "si-7.1"},
+		{"  AC-1 ", "ac-1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			assert.Equal(t, tt.expected, NistTagToControlID(tt.input))
+		})
+	}
+}
+
+func TestParseOscalDocument(t *testing.T) {
+	t.Run("valid catalog", func(t *testing.T) {
+		input := `{"catalog":{"uuid":"test","metadata":{"title":"Test","version":"1.0","oscal-version":"1.1.2","last-modified":"2025-01-01T00:00:00Z"}}}`
+		doc, err := ParseOscalDocument([]byte(input), "catalog", "test")
+		require.NoError(t, err)
+		assert.NotNil(t, doc.Catalog)
+	})
+
+	t.Run("empty input", func(t *testing.T) {
+		_, err := ParseOscalDocument(nil, "catalog", "test")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "empty input")
+	})
+
+	t.Run("invalid JSON", func(t *testing.T) {
+		_, err := ParseOscalDocument([]byte("not json"), "catalog", "test")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse JSON")
+	})
+
+	t.Run("wrong document type", func(t *testing.T) {
+		input := `{"profile":{"uuid":"test","metadata":{"title":"Test","version":"1.0","oscal-version":"1.1.2","last-modified":"2025-01-01T00:00:00Z"}}}`
+		_, err := ParseOscalDocument([]byte(input), "catalog", "test")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expected catalog document, got profile")
+	})
+}
+
+func TestGenerateUUID(t *testing.T) {
+	uuid := GenerateUUID()
+	assert.Len(t, uuid, 36) // standard UUID length with dashes
+	// version 4 indicator at position 14
+	assert.Equal(t, byte('4'), uuid[14])
+
+	// Two UUIDs should be different
+	uuid2 := GenerateUUID()
+	assert.NotEqual(t, uuid, uuid2)
+}
+
+func TestImpactToSeverity(t *testing.T) {
+	tests := []struct {
+		impact   float64
+		expected string
+	}{
+		{0.9, "critical"},
+		{1.0, "critical"},
+		{0.7, "high"},
+		{0.8, "high"},
+		{0.5, "moderate"},
+		{0.4, "moderate"},
+		{0.3, "low"},
+		{0.1, "low"},
+		{0.0, "info"},
+		{0.05, "info"},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, ImpactToSeverity(tt.impact))
+	}
+}
+
+func TestHDFStatusToOSCALRiskStatus(t *testing.T) {
+	assert.Equal(t, "closed", HDFStatusToOSCALRiskStatus(hdf.Passed))
+	assert.Equal(t, "closed", HDFStatusToOSCALRiskStatus(hdf.NotApplicable))
+	assert.Equal(t, "open", HDFStatusToOSCALRiskStatus(hdf.Failed))
+	assert.Equal(t, "open", HDFStatusToOSCALRiskStatus(hdf.Error))
+	assert.Equal(t, "open", HDFStatusToOSCALRiskStatus(hdf.NotReviewed))
+}
+
+func TestOscalVersion(t *testing.T) {
+	assert.Equal(t, "1.1.2", OscalVersion)
 }

@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertGosecToHdf } from './converter.js';
+import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import type { HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,16 +13,14 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
+runConverterContractTests({
+  converterName: 'gosec-to-hdf',
+  convertFn: convertGosecToHdf,
+  minimalFixture: 'ethereum.json',
+});
+
 describe('gosec to HDF converter', async () => {
   describe('convertGosecToHdf', async () => {
-    it('should throw on invalid JSON', async () => {
-      await expect(convertGosecToHdf('not json')).rejects.toThrow();
-    });
-
-    it('should throw on empty input', async () => {
-      await expect(convertGosecToHdf('')).rejects.toThrow();
-    });
-
     it('should throw when Issues field is missing', async () => {
       await expect(convertGosecToHdf(JSON.stringify({ GosecVersion: '2.18.0' }))).rejects.toThrow(
         'missing or invalid Issues field'
@@ -35,9 +34,9 @@ describe('gosec to HDF converter', async () => {
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('gosec-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
-      expect(hdf.dataSource?.name).toBe('gosec');
-      expect(hdf.dataSource?.version).toBe('dev');
-      expect(hdf.dataSource?.format).toBeUndefined();
+      expect(hdf.tool?.name).toBe('gosec');
+      expect(hdf.tool?.version).toBe('dev');
+      expect(hdf.tool?.format).toBeUndefined();
       expect(hdf.baselines).toHaveLength(1);
     });
 
@@ -248,8 +247,8 @@ describe('gosec to HDF converter', async () => {
       const hdf = JSON.parse(await convertGosecToHdf(input)) as HdfResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.message).toContain('false positive');
-      // No GosecVersion → no version on dataSource
-      expect(hdf.dataSource?.version).toBeUndefined();
+      // No GosecVersion → no version on tool
+      expect(hdf.tool?.version).toBeUndefined();
     });
 
     it('should handle empty suppressions list', async () => {

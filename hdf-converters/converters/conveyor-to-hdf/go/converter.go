@@ -24,10 +24,10 @@ type ConveyorData struct {
 
 // ConveyorAPIResp is the api_response block in Conveyor output.
 type ConveyorAPIResp struct {
-	FileTree map[string]FileTreeNode            `json:"file_tree"`
-	Results  map[string]ConveyorResult          `json:"results"`
-	Params   map[string]interface{}             `json:"params"`
-	MaxScore float64                            `json:"max_score"`
+	FileTree map[string]FileTreeNode   `json:"file_tree"`
+	Results  map[string]ConveyorResult `json:"results"`
+	Params   map[string]interface{}    `json:"params"`
+	MaxScore float64                   `json:"max_score"`
 }
 
 // FileTreeNode represents a node in the Conveyor file tree.
@@ -42,24 +42,24 @@ type FileTreeNode struct {
 
 // ConveyorResult represents a single result entry from Conveyor output.
 type ConveyorResult struct {
-	SHA256         string          `json:"sha256"`
-	Classification string          `json:"classification"`
-	Created        string          `json:"created"`
-	Response       ConveyorResp    `json:"response"`
-	Result         ConveyorScore   `json:"result"`
-	Size           interface{}     `json:"size"`
-	Type           interface{}     `json:"type"`
+	SHA256         string        `json:"sha256"`
+	Classification string        `json:"classification"`
+	Created        string        `json:"created"`
+	Response       ConveyorResp  `json:"response"`
+	Result         ConveyorScore `json:"result"`
+	Size           interface{}   `json:"size"`
+	Type           interface{}   `json:"type"`
 }
 
 // ConveyorResp is the response metadata for a result.
 type ConveyorResp struct {
-	ServiceName       string            `json:"service_name"`
-	ServiceVersion    string            `json:"service_version"`
-	ServiceContext    interface{}       `json:"service_context"`
-	ServiceDebugInfo  interface{}       `json:"service_debug_info"`
-	ServiceToolVer    interface{}       `json:"service_tool_version"`
-	Supplementary     interface{}       `json:"supplementary"`
-	Milestones        ConveyorMilestone `json:"milestones"`
+	ServiceName      string            `json:"service_name"`
+	ServiceVersion   string            `json:"service_version"`
+	ServiceContext   interface{}       `json:"service_context"`
+	ServiceDebugInfo interface{}       `json:"service_debug_info"`
+	ServiceToolVer   interface{}       `json:"service_tool_version"`
+	Supplementary    interface{}       `json:"supplementary"`
+	Milestones       ConveyorMilestone `json:"milestones"`
 }
 
 // ConveyorMilestone holds timing data for a service run.
@@ -171,9 +171,19 @@ func buildCodeDesc(section ConveyorSection, scannerName string) string {
 
 // groupResultsByScanner groups Conveyor results by their service (scanner) name.
 // Returns scanner names in sorted order and a map from scanner name to results.
+// Results within each group are sorted by SHA256 for deterministic output.
 func groupResultsByScanner(results map[string]ConveyorResult) ([]string, map[string][]ConveyorResult) {
 	groups := make(map[string][]ConveyorResult)
-	for _, result := range results {
+
+	// Sort map keys for deterministic iteration order
+	keys := make([]string, 0, len(results))
+	for k := range results {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		result := results[k]
 		name := result.Response.ServiceName
 		groups[name] = append(groups[name], result)
 	}
@@ -274,6 +284,9 @@ func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	if len(input) == 0 {
 		return nil, fmt.Errorf("conveyor: empty input")
 	}
+	if err := shared.ValidateJSONSize(input, "conveyor", 0); err != nil {
+		return nil, fmt.Errorf("conveyor: %w", err)
+	}
 
 	var data ConveyorData
 	if err := json.Unmarshal(input, &data); err != nil {
@@ -314,11 +327,11 @@ func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "conveyor-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   "Conveyor",
-		DataSourceFormat: "JSON",
+		ToolName:   "Conveyor",
+		ToolFormat: "JSON",
 		Baselines:        baselines,
-		Targets: []hdf.Target{
-			{Name: targetName, Type: hdf.Application},
+		Components: []hdf.Component{
+			{Name: targetName, Type: hdf.CopyrightApplication},
 		},
 		Timestamp: &now,
 	}), nil

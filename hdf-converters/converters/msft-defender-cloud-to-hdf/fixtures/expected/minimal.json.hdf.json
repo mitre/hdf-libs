@@ -1,0 +1,120 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Private links enforce secure communication by providing private connectivity to the storage account.",
+              "label": "default"
+            },
+            {
+              "data": "To add a private endpoint connection to your storage account: 1. Go to your storage account in the Azure portal. 2. Select Networking. 3. Select Private endpoint connections. 4. Select + Private endpoint.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Storage/storageAccounts/mystorageacct",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "11111111-1111-1111-1111-111111111111",
+          "impact": 0.5,
+          "tags": {
+            "assessmentType": "BuiltIn",
+            "categories": [
+              "Networking"
+            ],
+            "implementationEffort": "Moderate",
+            "severity": "Medium",
+            "tactics": [
+              "Discovery",
+              "Exfiltration"
+            ],
+            "techniques": [
+              "T1046",
+              "T1530"
+            ],
+            "threats": [
+              "dataExfiltration",
+              "dataSpillage"
+            ],
+            "userImpact": "Low"
+          },
+          "title": "Storage account should use a private link connection"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "By default, a virtual machine's OS and data disks are encrypted at rest using platform-managed keys. Temp disks and data caches aren't encrypted, and data isn't encrypted when flowing between compute and storage resources.",
+              "label": "default"
+            },
+            {
+              "data": "To enable disk encryption on your virtual machine: 1. Go to the Azure portal. 2. Select the virtual machine. 3. Under Settings, select Disks. 4. Enable encryption.",
+              "label": "fix"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: /subscriptions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/resourceGroups/rg-production/providers/Microsoft.Compute/virtualMachines/myvm",
+              "message": "Azure Disk Encryption is not enabled on the virtual machine.",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "22222222-2222-2222-2222-222222222222",
+          "impact": 0.7,
+          "tags": {
+            "assessmentType": "BuiltIn",
+            "categories": [
+              "Compute"
+            ],
+            "implementationEffort": "Low",
+            "severity": "High",
+            "tactics": [
+              "Collection"
+            ],
+            "techniques": [
+              "T1005"
+            ],
+            "threats": [
+              "dataExfiltration",
+              "dataSpillage",
+              "maliciousInsider"
+            ],
+            "userImpact": "Low"
+          },
+          "title": "Virtual machines should encrypt temp disks, caches, and data flows"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "fc73a14f4912ea2fb588b25b4d6b30a0ce1cbb5c4920b708e2ef860873e48af0"
+      },
+      "name": "Microsoft Defender for Cloud Assessments"
+    }
+  ],
+  "components": [
+    {
+      "labels": {
+        "account": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "provider": "azure"
+      },
+      "name": "Azure Subscription a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "type": "cloudAccount",
+      "accountId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "provider": "azure"
+    }
+  ],
+  "generator": {
+    "name": "msft-defender-cloud-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-03T17:17:57.0072545Z",
+  "tool": {
+    "format": "JSON",
+    "name": "Microsoft Defender for Cloud"
+  }
+}

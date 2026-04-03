@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0",
+  "title": "HDF System Primitives",
+  "description": "Types for describing system architecture, authorization boundaries, and components.",
+  "$defs": {
+    "Authorization_Status": {
+      "type": "string",
+      "enum": [
+        "authorized",
+        "denied",
+        "pendingAuthorization",
+        "conditionallyAuthorized",
+        "notYetRequested",
+        "revoked"
+      ],
+      "description": "Authorization to Operate (ATO) status for the system.",
+      "title": "Authorization Status"
+    },
+    "Categorization_Level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high"
+      ],
+      "description": "FIPS 199 security categorization level (impact level).",
+      "title": "Categorization Level"
+    },
+    "Input_Override": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "inputName",
+        "value"
+      ],
+      "properties": {
+        "baselineRef": {
+          "type": "string",
+          "description": "Name of the baseline this override applies to. If omitted, applies to all baselines that define this input."
+        },
+        "inputName": {
+          "type": "string",
+          "description": "Name of the input being overridden. Must match an Input.name in the referenced baseline."
+        },
+        "value": {
+          "description": "The overridden value. Should match the type of the original input."
+        },
+        "justification": {
+          "type": "string",
+          "description": "Rationale for why this override is needed."
+        },
+        "approvedBy": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+          "description": "Identity of the person or system that approved this override."
+        }
+      },
+      "description": "An override of a baseline input value for a specific component. Enables system-specific tailoring of baseline parameters.",
+      "title": "Input Override"
+    },
+    "Target_Selector": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "A label selector that matches targets by label key-value pairs. All specified labels must match (AND logic). Example: { \"labels.component\": \"WebTier\" } matches targets with labels.component = \"WebTier\".",
+      "title": "Target Selector"
+    },
+    "Control_Designation": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "controlId",
+        "designation",
+        "description"
+      ],
+      "properties": {
+        "controlId": {
+          "type": "string",
+          "description": "The control identifier (e.g., 'SC-7', 'AC-2 (1)'). Must match a NIST tag in a baseline requirement's tags."
+        },
+        "designation": {
+          "type": "string",
+          "enum": [
+            "common",
+            "system-specific",
+            "hybrid"
+          ],
+          "description": "NIST SP 800-53 control designation. 'common': fully provided by another component or system. 'system-specific': implemented by the inheriting component(s) only. 'hybrid': shared responsibility between provider and inheritor."
+        },
+        "providedBy": {
+          "type": "string",
+          "format": "uuid",
+          "description": "componentId of a local component that provides this control. Omit when the provider is an external system."
+        },
+        "systemRef": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "Reference to another hdf-system document whose component provides this control. Use when the provider is in a different system. Omit when the provider is local."
+        },
+        "inheritedBy": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "componentIds that inherit this control. If omitted, all components in the system inherit it."
+        },
+        "description": {
+          "type": "string",
+          "description": "Justification for this designation — who provides the control, why it's inherited, and any relevant authorization references."
+        }
+      },
+      "examples": [
+        {
+          "controlId": "IA-2",
+          "designation": "common",
+          "providedBy": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "inheritedBy": ["11111111-2222-3333-4444-555555555555"],
+          "description": "User identification and authentication provided by Keycloak SSO via SAML 2.0."
+        },
+        {
+          "controlId": "PE-2",
+          "designation": "common",
+          "description": "Physical access authorizations provided by AWS GovCloud per FedRAMP High authorization."
+        }
+      ],
+      "description": "Declares a control's designation within a system — whether it is common (provided by another component or system), system-specific (implemented locally), or hybrid (shared responsibility). Maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP by-component provided/inherited semantics.",
+      "title": "Control Designation"
+    }
+  }
+}

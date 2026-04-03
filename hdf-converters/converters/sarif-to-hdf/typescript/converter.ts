@@ -3,8 +3,8 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize } from '../../../shared/typescript/converterutil.js';
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, DataSource, Description } from '@mitre/hdf-schema';
+import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description } from '@mitre/hdf-schema';
 import { ResultStatus, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 // --- SARIF 2.1.0 type definitions ---
@@ -164,37 +164,25 @@ export async function convertSarifToHdf(input: string): Promise<string> {
     throw new Error('Invalid SARIF structure: missing or invalid runs field');
   }
 
-  const dataSource: DataSource = { format: 'SARIF' };
   const firstDriver = sarif.runs[0]?.tool?.driver;
-  if (firstDriver) {
-    if (firstDriver.name) {
-      dataSource.name = firstDriver.name;
-    }
-    if (firstDriver.version) {
-      dataSource.version = firstDriver.version;
-    }
+
+  const { items: limitedRuns, truncated: truncatedRuns } = limitArray(sarif.runs);
+  /* v8 ignore next -- truncation only triggers with >100K items */
+  if (truncatedRuns) {
+    // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedRuns.length} run items (original: ${sarif.runs.length})`);
   }
 
-  const hdf: HdfResults = {
+  return buildHdfResults({
+    generatorName: 'sarif-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: firstDriver?.name,
+    toolVersion: firstDriver?.version,
+    toolFormat: 'SARIF',
+    baselines: limitedRuns.map(run => convertRun(run, sarif.version, resultsChecksum)),
+    components: [],
     timestamp: new Date(),
-    baselines: (() => {
-      const { items: limitedRuns, truncated: truncatedRuns } = limitArray(sarif.runs);
-      /* v8 ignore next -- truncation only triggers with >100K items */
-      if (truncatedRuns) {
-        // eslint-disable-next-line no-console
-        console.warn(`WARNING: Input truncated at ${limitedRuns.length} run items (original: ${sarif.runs.length})`);
-      }
-      return limitedRuns.map(run => convertRun(run, sarif.version, resultsChecksum));
-    })(),
-    targets: [],
-    generator: {
-      name: 'sarif-to-hdf',
-      version: '1.0.0',
-    },
-    dataSource,
-  };
-
-  return JSON.stringify(hdf, null, 2);
+  });
 }
 
 // --- Run-level conversion ---

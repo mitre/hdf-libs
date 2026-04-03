@@ -4,6 +4,7 @@ export type {
   RequirementState,
   FieldChange,
   RequirementDiff,
+  ComponentDiff,
   ComparisonSummary,
   BaselineDiff,
   Source,
@@ -20,7 +21,7 @@ export type {
 } from './types.js';
 
 // Diff engine
-export { diffHdf } from './diff.js';
+export { diffHdf, diffBaselines, diffSystems } from './diff.js';
 export type { DiffOptions } from './diff.js';
 
 // Status utilities
@@ -76,3 +77,7 @@ export {
 // Renderers
 export { render, renderJson, renderMarkdown, renderTerminal, renderCsv } from './renderers/index.js';
 export type { DetailLevel, RenderOptions } from './renderers/types.js';
+
+// SBOM comparison
+export { diffSboms } from './sbom.js';
+export type { PackageDiff, SbomDiffResult } from './sbom.js';

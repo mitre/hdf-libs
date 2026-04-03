@@ -3,7 +3,6 @@ package netsparker
 import (
 	"encoding/xml"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"time"
@@ -21,7 +20,7 @@ import (
 // <invicti-enterprise> root elements. We use xml.Decoder manually rather than
 // xml.Unmarshal so we can detect which root element is used.
 type NetsparkerXML struct {
-	Generated       string          `xml:"generated,attr"`
+	Generated       string           `xml:"generated,attr"`
 	Target          NetsparkerTarget `xml:"target"`
 	Vulnerabilities struct {
 		Vulnerability []NetsparkerVuln `xml:"vulnerability"`
@@ -38,27 +37,27 @@ type NetsparkerTarget struct {
 
 // NetsparkerVuln represents a single <vulnerability> element.
 type NetsparkerVuln struct {
-	LookupID       string                    `xml:"LookupId"`
-	URL            string                    `xml:"url"`
-	Type           string                    `xml:"type"`
-	Name           string                    `xml:"name"`
-	Severity       string                    `xml:"severity"`
-	Certainty      string                    `xml:"certainty"`
-	Confirmed      string                    `xml:"confirmed"`
-	State          string                    `xml:"state"`
-	FirstSeenDate  string                    `xml:"FirstSeenDate"`
-	LastSeenDate   string                    `xml:"LastSeenDate"`
-	Classification NetsparkerClassification  `xml:"classification"`
-	HTTPRequest    NetsparkerHTTPRequest     `xml:"http-request"`
-	HTTPResponse   NetsparkerHTTPResponse    `xml:"http-response"`
-	Description    string                    `xml:"description"`
-	Impact         string                    `xml:"impact"`
-	RemedialActions   string                 `xml:"remedial-actions"`
-	ExploitationSkills string               `xml:"exploitation-skills"`
-	RemedialProcedure  string               `xml:"remedial-procedure"`
-	RemedyReferences   string               `xml:"remedy-references"`
-	ExternalReferences string               `xml:"external-references"`
-	ProofOfConcept     string               `xml:"proof-of-concept"`
+	LookupID           string                   `xml:"LookupId"`
+	URL                string                   `xml:"url"`
+	Type               string                   `xml:"type"`
+	Name               string                   `xml:"name"`
+	Severity           string                   `xml:"severity"`
+	Certainty          string                   `xml:"certainty"`
+	Confirmed          string                   `xml:"confirmed"`
+	State              string                   `xml:"state"`
+	FirstSeenDate      string                   `xml:"FirstSeenDate"`
+	LastSeenDate       string                   `xml:"LastSeenDate"`
+	Classification     NetsparkerClassification `xml:"classification"`
+	HTTPRequest        NetsparkerHTTPRequest    `xml:"http-request"`
+	HTTPResponse       NetsparkerHTTPResponse   `xml:"http-response"`
+	Description        string                   `xml:"description"`
+	Impact             string                   `xml:"impact"`
+	RemedialActions    string                   `xml:"remedial-actions"`
+	ExploitationSkills string                   `xml:"exploitation-skills"`
+	RemedialProcedure  string                   `xml:"remedial-procedure"`
+	RemedyReferences   string                   `xml:"remedy-references"`
+	ExternalReferences string                   `xml:"external-references"`
+	ProofOfConcept     string                   `xml:"proof-of-concept"`
 }
 
 // NetsparkerClassification represents the <classification> element.
@@ -339,10 +338,7 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	}
 
 	vulns := netsparkerData.Vulnerabilities.Vulnerability
-	limitedVulns, truncated := shared.LimitSlice(vulns, 0)
-	if truncated {
-		log.Printf("WARNING: Input truncated at %d vulnerability items (original: %d)", len(limitedVulns), len(vulns))
-	}
+	limitedVulns := shared.LimitSliceWithWarning(vulns, 0, "vulnerability")
 
 	// Build one requirement per vulnerability
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedVulns))
@@ -371,13 +367,13 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "netsparker-to-hdf",
 		ConverterVersion: converterVersion,
-		DataSourceName:   toolName,
-		DataSourceFormat: "XML",
+		ToolName:         toolName,
+		ToolFormat:       "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Targets: []hdf.Target{
+		Components: []hdf.Component{
 			{
-				Name: targetName,
-				Type: hdf.Application,
+				Name:   targetName,
+				Type:   hdf.CopyrightApplication,
 			},
 		},
 	}), nil

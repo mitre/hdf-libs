@@ -62,7 +62,7 @@ func makeBaseline(name, version string, reqs ...hdf.EvaluatedRequirement) hdf.Ev
 		Supports:     []hdf.SupportedPlatform{},
 		Checksum:     hdf.Checksum{Algorithm: "sha256", Value: "abc123"},
 		Depends:      []hdf.Dependency{},
-		Attributes:   []map[string]any{},
+		Inputs:       []map[string]any{},
 	}
 }
 

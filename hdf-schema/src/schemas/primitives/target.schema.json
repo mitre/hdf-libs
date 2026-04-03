@@ -19,6 +19,13 @@
         "name": {
           "type": "string",
           "description": "Human-readable name for this target."
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional key-value labels for flexible grouping. Well-known keys: system, component, environment, region, team. Values must be strings."
         }
       },
       "description": "Base properties shared by all target types.",
@@ -259,15 +266,7 @@
               "const": "cloudAccount"
             },
             "provider": {
-              "type": "string",
-              "enum": [
-                "aws",
-                "azure",
-                "gcp",
-                "oci",
-                "other",
-                null
-              ],
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Cloud_Provider",
               "description": "Cloud provider."
             },
             "accountId": {
@@ -296,15 +295,7 @@
               "const": "cloudResource"
             },
             "provider": {
-              "type": "string",
-              "enum": [
-                "aws",
-                "azure",
-                "gcp",
-                "oci",
-                "other",
-                null
-              ],
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Cloud_Provider",
               "description": "Cloud provider."
             },
             "resourceType": {
