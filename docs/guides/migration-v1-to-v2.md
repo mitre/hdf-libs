@@ -168,19 +168,19 @@ These fields and concepts are new in v2 and have no v1 equivalent:
 ### CLI
 
 ```bash
-hdf convert legacyhdf to hdf old-results.json new-results.json
+hdf convert --from legacyhdf old-results.json -o new-results.json
 ```
 
 The `inspec` alias also works:
 
 ```bash
-hdf convert inspec to hdf old-results.json new-results.json
+hdf convert --from inspec old-results.json -o new-results.json
 ```
 
 The converter reads from stdin if the input is `-`:
 
 ```bash
-cat old-results.json | hdf convert legacyhdf to hdf - new-results.json
+cat old-results.json | hdf convert --from legacyhdf - -o new-results.json
 ```
 
 ### Programmatic (Go)

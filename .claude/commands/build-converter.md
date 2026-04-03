@@ -292,12 +292,12 @@ func Convert<Name>(input []byte, converterVersion string) (*hdf.HDFResults, erro
             Name:    "hdf-converters",
             Version: converterVersion,
         },
-        DataSource: &hdf.DataSource{
+        Tool: &hdf.Tool{
             Name:   shared.Ptr("<Source Tool Name>"),
             Format: shared.Ptr("<Format>"), // e.g. "XML", "JSON", "CSV"
         },
         Baselines:  baselines,
-        Targets:    targets,
+        Components: components,
         Statistics: hdf.Statistics{Duration: duration},
         Timestamp:  &now,
     }, nil
@@ -311,7 +311,7 @@ hdf.HDFResults           // Top-level: Generator, Baselines, Targets, Statistics
 hdf.EvaluatedBaseline    // Name, Version, Title, Maintainer, Requirements, Checksum, Groups, Supports, Attributes
 hdf.EvaluatedRequirement // ID, Title, Descriptions, Impact, Tags, SourceLocation, Results
 hdf.RequirementResult    // Status (*hdf.ResultStatus), CodeDesc, StartTime, Message, RunTime
-hdf.Target               // Name, Type, FQDN, IPAddresses, MACAddresses, CloudProvider
+hdf.Component               // Name, Type, FQDN, IPAddresses, MACAddresses, CloudProvider
 
 // Result status constants
 hdf.Passed        hdf.ResultStatus = "passed"
@@ -350,13 +350,13 @@ createMinimalBaseline('Nessus Scan', requirements, {
 })
 ```
 
-### Targets Convention
+### Components Convention
 
-Every converter that scans a specific target (host, URL, repo, cloud account) MUST populate `Targets`. The `Type` field uses the `Copyright` enum (Go: `hdf.Application`, TS: `Copyright.Application`).
+Every converter that scans a specific target (host, URL, repo, cloud account) MUST populate `Components`. The `Type` field uses the `Copyright` enum (Go: `hdf.Application`, TS: `Copyright.Application`).
 
 Choose the target type based on what the tool scans:
 
-| Tool category | Target type | Example converters |
+| Tool category | Component type | Example converters |
 |---------------|-------------|-------------------|
 | DAST (web scanners) | `Application` | ZAP, Burp, Nikto |
 | SAST (code scanners) | `Repository` | gosec, Snyk, CodeQL, Semgrep |
@@ -367,7 +367,7 @@ Choose the target type based on what the tool scans:
 
 **Go:**
 ```go
-targets := []hdf.Target{
+targets := []hdf.Component{
     {Name: targetName, Type: hdf.Application, URL: &siteURL},
 }
 ```
@@ -375,16 +375,16 @@ targets := []hdf.Target{
 **TypeScript:**
 ```typescript
 import { Copyright } from '@mitre/hdf-schema';
-targets: [{ name: targetName, type: Copyright.Application, url: siteURL }],
+components: [{ name: targetName, type: Copyright.Application, url: siteURL }],
 ```
 
-Set `URL` for DAST targets, `FQDN`/`IPAddress` for host targets, and `Digest`/`ImageID` for container targets, when the source data provides them. If the source provides no identifiable target (e.g., empty input or missing host), omit `Targets` entirely rather than creating an "Unknown" target.
+Set `URL` for DAST targets, `FQDN`/`IPAddress` for host targets, and `Digest`/`ImageID` for container targets, when the source data provides them. If the source provides no identifiable target (e.g., empty input or missing host), omit `Components` entirely rather than creating an "Unknown" target.
 
 ### Standard Impact Mapping (use heimdall2 values)
 
 ```go
 var impactMap = map[string]float64{
-    "critical": 1.0,
+    "critical": 0.9,
     "high":     0.7,
     "medium":   0.5,
     "low":      0.3,
@@ -587,7 +587,7 @@ export async function convert<Name>ToHdf(input: string): Promise<string> {
   const hdf: HdfResults = {
     baselines: [baseline],
     generator: { name: 'hdf-converters', version: '1.0.0' },
-    dataSource: { name: '<Source Tool Name>', format: '<Format>' },
+    tool: { name: '<Source Tool Name>', format: '<Format>' },
     timestamp: new Date(),
   };
 
@@ -904,7 +904,7 @@ cd /path/to/hdf-libs && pnpm lint && pnpm test
 
 # Spot check real output via CLI binary
 cd hdf-cli && go build -o hdf ./cmd/hdf
-./hdf convert <source> to hdf path/to/input.ext output.json
+./hdf convert --from <source> path/to/input.ext -o output.json
 cat output.json | head -40
 ```
 
@@ -953,12 +953,12 @@ cat output.json | head -40
 - [ ] Native format test: native input is NOT routed to shared converter
 - [ ] SARIF fixture exists in `sarif-to-hdf/fixtures/input/` for the tool (or reuses existing one)
 
-**All converters — Baseline.Name and Targets (review HDF Type Reference):**
+**All converters — Baseline.Name and Components (review HDF Type Reference):**
 - [ ] `Baseline.Name` is a fixed scan label (e.g., `"Nessus Scan"`), NOT dynamic data like a hostname or project name
 - [ ] `Baseline.Title` contains dynamic context (e.g., `"Nessus Scan of 192.168.1.0/24"`)
-- [ ] `Targets` populated when the source tool scans an identifiable target (URL, host, repo, cloud account)
-- [ ] Target `Type` matches tool category (`Application` for DAST, `Repository` for SAST, `Host` for host scanners, etc.)
-- [ ] Target omitted (not set to "Unknown") when no identifiable target exists
+- [ ] `Components` populated when the source tool scans an identifiable target (URL, host, repo, cloud account)
+- [ ] Component `Type` matches tool category (`Application` for DAST, `Repository` for SAST, `Host` for host scanners, etc.)
+- [ ] Component omitted (not set to "Unknown") when no identifiable target exists
 
 **All converters — library usage check (review Step 4b):**
 - [ ] NIST/CCI lookups delegate to `hdf-mappings` — no hardcoded lookup tables in converter code

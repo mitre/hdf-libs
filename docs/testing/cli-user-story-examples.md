@@ -44,7 +44,7 @@ hdf convert $NESSUS -o /tmp/example-hdf-nessus.json
 hdf validate /tmp/example-hdf-nessus.json
 ```
 
-**Expected**: Each conversion produces valid HDF with `components[]` (not `targets[]`), embedded SBOM for CycloneDX, and labels/componentId when flags are used.
+**Expected**: Each conversion produces valid HDF with `components[]`, embedded SBOM for CycloneDX, and labels/componentId when flags are used.
 
 ---
 
@@ -272,7 +272,7 @@ cinc-auditor check /tmp/example-hdf-profile/
 # hdf generate inspec-profile benchmark.xml /tmp/example-hdf-profile/ --maintainer "MITRE SAF" --license Apache-2.0
 ```
 
-**Expected**: Profile directory with controls/ (named SV-xxx.rb) and inspec.yml. cinc-auditor reports Valid: true.
+**Expected**: Profile directory with controls/ (named SV-xxx.rb) and inspec.yml. cinc-auditor reports Valid: true. (Note that cinc-auditor will print warnings for each requirement in the baseline, since the InSpec testfiles it generates only contain baseline metadata, and no actual executable test code.)
 
 ---
 

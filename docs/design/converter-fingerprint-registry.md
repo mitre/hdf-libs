@@ -378,7 +378,7 @@ type ConverterFingerprint struct {
 Each Go converter calls `registry.Register()` in `init()`.
 New Go registry package provides a clean import path separate from `package shared`.
 
-CLI integration: `hdf convert auto to hdf input.json` calls `registry.Detect()`.
+CLI integration: `hdf convert input.json` (auto-detect) calls `registry.Detect()`.
 Existing `FormatPair` registry is unchanged — `auto` is a new source format
 that delegates to the fingerprint registry.
 

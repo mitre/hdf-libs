@@ -104,7 +104,7 @@ All other converters produce results without labels. Labels can be added after c
 The `--labels` flag on `hdf convert` applies labels to all components in the output:
 
 ```bash
-hdf convert nessus to hdf scan.nessus results.json \
+hdf convert --from nessus scan.nessus -o results.json \
   --labels system=Portal,environment=production,region=us-east-1
 ```
 
@@ -153,7 +153,7 @@ This example shows labels flowing from scan through conversion, labeling, and sy
 ### 1. Convert a Nessus scan
 
 ```bash
-hdf convert nessus to hdf scan.nessus results.json \
+hdf convert --from nessus scan.nessus -o results.json \
   --labels system="Enterprise Portal",environment=production,region=us-gov-west-1
 ```
 

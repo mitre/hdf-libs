@@ -10,20 +10,20 @@ For full architecture details, see [hdf-v2-document-ecosystem.md](../architectur
 
 | OSCAL Document | HDF Document | CLI (OSCAL to HDF) | CLI (HDF to OSCAL) | Notes |
 |---|---|---|---|---|
-| Catalog | Baseline | `hdf convert oscal-catalog to hdf` | -- | Controls become requirements |
-| Profile | Baseline | `hdf convert oscal-profile to hdf --catalog <file>` | -- | Filtered + resolved controls |
-| Component Definition | Baseline | `hdf convert oscal-component-definition to hdf` | -- | Implemented requirements |
-| System Security Plan (SSP) | System | `hdf convert oscal-ssp to hdf` | -- | System boundary + components |
-| Assessment Plan (SAP) | Plan | `hdf convert oscal-assessment-plan to hdf` | -- | Assessment schedule |
-| Assessment Results (SAR) | Results | `hdf convert oscal-assessment-results to hdf` | `hdf convert hdf to oscal-sar` | Findings map to requirements |
-| POA&M | Amendments | `hdf convert oscal-poam to hdf` | `hdf convert hdf-amendments to oscal-poam` | Remediation tracking |
+| Catalog | Baseline | `hdf convert --from oscal-catalog` | -- | Controls become requirements |
+| Profile | Baseline | `hdf convert --from oscal-profile --catalog <file>` | -- | Filtered + resolved controls |
+| Component Definition | Baseline | `hdf convert --from oscal-component-definition` | -- | Implemented requirements |
+| System Security Plan (SSP) | System | `hdf convert --from oscal-ssp` | -- | System boundary + components |
+| Assessment Plan (SAP) | Plan | `hdf convert --from oscal-assessment-plan` | -- | Assessment schedule |
+| Assessment Results (SAR) | Results | `hdf convert --from oscal-assessment-results` | `hdf convert --from hdf --to oscal-sar` | Findings map to requirements |
+| POA&M | Amendments | `hdf convert --from oscal-poam` | `hdf convert --from hdf-amendments --to oscal-poam` | Remediation tracking |
 
 ### Auto-detection
 
 The CLI can auto-detect any OSCAL document type and delegate to the correct converter:
 
 ```bash
-hdf convert oscal to hdf any-oscal-file.json output.json
+hdf convert any-oscal-file.json -o output.json
 ```
 
 This inspects the root JSON key (`catalog`, `profile`, `system-security-plan`, etc.) and routes to the matching converter. Profile auto-detection still requires the `--catalog` flag.
@@ -32,7 +32,7 @@ This inspects the root JSON key (`catalog`, `profile`, `system-security-plan`, e
 
 ### Catalog to Baseline
 
-**CLI:** `hdf convert oscal-catalog to hdf catalog.json baseline.json`
+**CLI:** `hdf convert --from oscal-catalog catalog.json -o baseline.json`
 
 Key field correspondences:
 - OSCAL `group[].controls[]` map to HDF `requirements[]`
@@ -44,7 +44,7 @@ Key field correspondences:
 
 ### Profile to Baseline
 
-**CLI:** `hdf convert oscal-profile to hdf profile.json --catalog catalog.json baseline.json`
+**CLI:** `hdf convert --from oscal-profile --catalog catalog.json profile.json -o baseline.json`
 
 Key field correspondences:
 - The profile's `imports[].include-controls` select which catalog controls to include
@@ -56,7 +56,7 @@ Key field correspondences:
 
 ### Component Definition to Baseline
 
-**CLI:** `hdf convert oscal-component-definition to hdf compdef.json baseline.json`
+**CLI:** `hdf convert --from oscal-component-definition compdef.json -o baseline.json`
 
 Key field correspondences:
 - Each `component.control-implementations[].implemented-requirements[]` becomes an HDF requirement
@@ -65,7 +65,7 @@ Key field correspondences:
 
 ### SSP to System
 
-**CLI:** `hdf convert oscal-ssp to hdf ssp.json system.json`
+**CLI:** `hdf convert --from oscal-ssp ssp.json -o system.json`
 
 Key field correspondences:
 - OSCAL `system-characteristics.system-name` maps to HDF `name`
@@ -77,7 +77,7 @@ Key field correspondences:
 
 ### Assessment Plan (SAP) to Plan
 
-**CLI:** `hdf convert oscal-assessment-plan to hdf sap.json plan.json`
+**CLI:** `hdf convert --from oscal-assessment-plan sap.json -o plan.json`
 
 Key field correspondences:
 - OSCAL assessment activities map to HDF `assessments[]`
@@ -87,7 +87,7 @@ Key field correspondences:
 
 ### Assessment Results (SAR) to Results
 
-**CLI:** `hdf convert oscal-assessment-results to hdf sar.json results.json`
+**CLI:** `hdf convert --from oscal-assessment-results sar.json -o results.json`
 
 Aliases: `oscal-sar` is accepted as an alias for `oscal-assessment-results`.
 
@@ -102,7 +102,7 @@ Key field correspondences:
 
 ### Results to SAR (reverse)
 
-**CLI:** `hdf convert hdf to oscal-sar results.json sar.json`
+**CLI:** `hdf convert --from hdf --to oscal-sar results.json -o sar.json`
 
 Key field correspondences:
 - HDF `baselines[]` map to OSCAL `results[]`
@@ -111,7 +111,7 @@ Key field correspondences:
 
 ### POA&M to Amendments
 
-**CLI:** `hdf convert oscal-poam to hdf poam.json amendments.json`
+**CLI:** `hdf convert --from oscal-poam poam.json -o amendments.json`
 
 Key field correspondences:
 - OSCAL `poam-items[]` map to HDF `overrides[]`
@@ -120,7 +120,7 @@ Key field correspondences:
 
 ### Amendments to POA&M (reverse)
 
-**CLI:** `hdf convert hdf-amendments to oscal-poam amendments.json poam.json`
+**CLI:** `hdf convert --from hdf-amendments --to oscal-poam amendments.json -o poam.json`
 
 Key field correspondences:
 - HDF `overrides[]` map to OSCAL `poam-items[]`

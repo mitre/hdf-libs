@@ -31,7 +31,7 @@ Initial public release of the HDF Libraries monorepo. This is a ground-up rewrit
 ### CLI (`hdf`)
 
 - **Validate**: schema validation with line-number error reporting
-- **Convert**: `hdf convert <source> to <dest> <input> [output]` with 33+ source formats
+- **Convert**: `hdf convert <file> -o <output>` with auto-detection, `--from`/`--to` flags, and 33+ source formats
 - **Query**: filter requirements by status, severity, impact, NIST, CCI, STIG ID, tags, text search
 - **Generate**: `hdf generate inspec-profile` from HDF Baseline JSON or XCCDF benchmark XML; `hdf generate threshold` for CI/CD compliance gates
 - **Threshold**: `hdf validate threshold` with YAML templates or inline expressions, SAF CLI compatible
