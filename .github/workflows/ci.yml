@@ -30,12 +30,9 @@ env:
 #                                 ├── test-go
 #                                 └── coverage
 #
-# All jobs run on ubuntu-latest.
-# Windows excluded: pnpm workspace resolution broken (tracked separately).
-#
-# Gate phase: lint + typecheck + security (2 parallel jobs, one TS build each).
-# Build phase: build once, upload artifacts.
-# Test phase: download artifacts, no rebuild.
+# Gate phase: lint + typecheck + security (2 parallel jobs).
+# Build phase: build once, upload artifacts (ubuntu).
+# Test phase: test on ubuntu + windows matrix.
 
 jobs:
   # ── Gate: TypeScript checks ──────────────────────────────────────────────
@@ -122,10 +119,14 @@ jobs:
 
   # ── Test TypeScript ──────────────────────────────────────────────────────
   test-ts:
-    name: Test TypeScript
-    runs-on: ubuntu-latest
+    name: Test TypeScript (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -139,10 +140,14 @@ jobs:
 
   # ── Test Go ──────────────────────────────────────────────────────────────
   test-go:
-    name: Test Go
-    runs-on: ubuntu-latest
+    name: Test Go (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -158,6 +163,7 @@ jobs:
       - name: Test hdf-cli
         run: cd hdf-cli && go test ./...
       - name: Race detector
+        if: matrix.os == 'ubuntu-latest'
         run: cd hdf-cli && go test -race ./...
 
   # ── Coverage ─────────────────────────────────────────────────────────────
