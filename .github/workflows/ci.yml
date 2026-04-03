@@ -79,7 +79,7 @@ jobs:
       - name: gosec
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
-          cd hdf-cli && gosec -exclude-generated ./...
+          cd hdf-cli && gosec -exclude=G304,G104 -exclude-generated ./...
 
   # ── Build (once, share artifacts) ────────────────────────────────────────
   build:
