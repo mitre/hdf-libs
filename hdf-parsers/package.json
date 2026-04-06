@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-parsers",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "description": "Parse and load HDF documents with validation",
   "publishConfig": {
     "access": "public"

@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-diff",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "description": "Structured comparison of HDF evaluation results — tracks what changed, why, and by how much",
   "publishConfig": {
     "access": "public"
