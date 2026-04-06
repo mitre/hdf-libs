@@ -1,5 +1,13 @@
 # Contributing to HDF Libraries
 
+## Project scope
+
+HDF Libraries is a **data format and converter library**. Its purpose is to define the HDF schema, provide converters that normalize security tool outputs into HDF format, and offer utilities for working with HDF documents.
+
+Contributions should align with the library's core purpose: **schema definitions, format converters, parsing utilities, validation, and CLI tooling.** New scanner converters are especially welcome.
+
+Features beyond data format and conversion — such as application-level capabilities — are built by downstream projects that consume hdf-libs. If you're unsure whether your idea fits this repo, open a discussion first and we'll help find the right home for it.
+
 ## Getting started
 
 1. Fork the repository on GitHub and clone your fork.
