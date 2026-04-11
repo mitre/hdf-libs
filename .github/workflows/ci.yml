@@ -23,7 +23,7 @@ concurrency:
 
 env:
   NODE_VERSION: '20'
-  GO_VERSION: '1.26.1'
+  GO_VERSION: '1.26.2'
   GOLANGCI_LINT_VERSION: 'v2.11.3'
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────

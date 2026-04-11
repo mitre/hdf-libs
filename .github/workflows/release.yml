@@ -14,7 +14,7 @@ concurrency:
 
 env:
   NODE_VERSION: '20'
-  GO_VERSION: '1.26.1'
+  GO_VERSION: '1.26.2'
 
 jobs:
   publish-npm:
@@ -39,7 +39,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Ensure npm >= 11.5.1 (required for trusted publishing)
+      - name: Ensure npm >= 10.9.2 (required for --provenance)
         run: npm install -g npm@latest
 
       - name: Build TypeScript
@@ -52,16 +52,11 @@ jobs:
           pnpm -r exec -- npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Publish packages
-        # TODO: After initial release, switch to trusted publishing:
-        # 1. Configure Trusted Publisher on npmjs.com for each @mitre/* package
-        #    (Settings → Trusted Publishers → GitHub Actions → mitre/hdf-libs/release.yml)
-        # 2. Remove NPM_TOKEN secret from repo
-        # 3. Remove the NODE_AUTH_TOKEN env var below
-        # 4. Add --provenance flag to pnpm publish
-        # OIDC trusted publishing requires NO NODE_AUTH_TOKEN set — remove the env block
-        # once all packages have trusted publishers configured.
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # Uses npm Trusted Publishing (OIDC) — no secrets needed.
+        # Each @mitre/* package must have a Trusted Publisher configured on npmjs.com
+        # pointing to mitre/hdf-libs with workflow file release.yml.
+        # The id-token: write permission (above) enables the OIDC exchange.
+        # NOTE: NODE_AUTH_TOKEN must NOT be set — it would override OIDC auth.
         run: |
           # Publish order matters: dependencies first
           PACKAGES=(
@@ -76,7 +71,7 @@ jobs:
             hdf-extension-graph
           )
 
-          # Pre-release tags (v2.0.0-rc.1) publish with --tag next
+          # Pre-release tags (v3.0.0-rc.1) publish with --tag next
           TAG_FLAG=""
           if [[ "$VERSION" == *"-"* ]]; then
             TAG_FLAG="--tag next"
@@ -85,7 +80,7 @@ jobs:
           for pkg in "${PACKAGES[@]}"; do
             echo "Publishing $pkg@$VERSION..."
             cd "$pkg"
-            pnpm publish --no-git-checks $TAG_FLAG
+            npm publish --provenance --access public $TAG_FLAG
             cd ..
           done
 
