@@ -1,3 +1,97 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:4925b57ec519fe44e3f4d012e77085ddd8e726f2bac8af8af0d73c5b76c08a29
-size 4712
+<?xml version="1.0" encoding="utf-8"?>
+<dataset  xmlns="http://developer.cognos.com/schemas/xmldata/1/"  xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
+<!--
+<dataset
+    xmlns="http://developer.cognos.com/schemas/xmldata/1/"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
+    xs:schemaLocation="http://developer.cognos.com/schemas/xmldata/1/ xmldata.xsd"
+>
+-->
+    <metadata>
+          <item name="Organization" type="xs:string" length="202"/>
+          <item name="Task" type="xs:string" length="802"/>
+          <item name="Asset Type" type="xs:string" length="66"/>
+          <item name="Asset" type="xs:string" length="1026"/>
+          <item name="IP Address, Port, Instance" type="xs:string" length="532"/>
+          <item name="Job Name" type="xs:string" length="258"/>
+          <item name="Start Date" type="xs:string" length="38"/>
+          <item name="End Date" type="xs:string" length="38"/>
+          <item name="Policy" type="xs:string" length="130"/>
+          <item name="Check Category" type="xs:string" length="802"/>
+          <item name="Risk DV" type="xs:string" length="802"/>
+          <item name="Check ID" type="xs:int" precision="1"/>
+          <item name="Check" type="xs:string" length="1026"/>
+          <item name="Details" type="xs:string" length="8002"/>
+          <item name="Date" type="xs:string" length="54"/>
+    </metadata>
+    <data>
+        <row>
+            <value>Sample Organization Server</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>HOST1</value>
+            <value>192.168.1.200, 1433, MSSQLSERVER</value>
+            <value>Sample scan report generation</value>
+            <value>2021-02-18 15:55</value>
+            <value xs:nil="true" />
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Improper Access Controls</value>
+            <value>Informational</value>
+            <value>2801</value>
+            <value>Protection of DBMS asymmetric encryption keys</value>
+            <value>Key=MS_SQLEnableSystemAssemblyLoadingKey;Private key encryption type=NO_PRIVATE_KEY;Database containing key=master</value>
+            <value>Feb 18 2021 15:57</value>
+        </row>
+        <row>
+            <value>Sample Organization Server</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>HOST1</value>
+            <value>192.168.1.200, 1433, MSSQLSERVER</value>
+            <value>Sample scan report generation</value>
+            <value>2021-02-18 15:55</value>
+            <value xs:nil="true" />
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Improper Access Controls</value>
+            <value>Informational</value>
+            <value>2801</value>
+            <value>Protection of DBMS asymmetric encryption keys</value>
+            <value>Owner of the key=sa;Is SYSADMIN=Yes;Key=MS_SQLEnableSystemAssemblyLoadingKey;Database containing key=master</value>
+            <value>Feb 18 2021 15:57</value>
+        </row>
+        <row>
+            <value>Sample Organization Server</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>HOST1</value>
+            <value>192.168.1.200, 1433, MSSQLSERVER</value>
+            <value>Sample scan report generation</value>
+            <value>2021-02-18 15:55</value>
+            <value xs:nil="true" />
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Improper Access Controls</value>
+            <value>Informational</value>
+            <value>2830</value>
+            <value>System Table Permissions</value>
+            <value>Grantee=db_ssisadmin;State=GRANT;Database=msdb;Object Name=sysssislog;Permission=DELETE;Object Type=Table</value>
+            <value>Feb 18 2021 15:57</value>
+        </row>
+        <row>
+            <value>Sample Organization Server</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>HOST1</value>
+            <value>192.168.1.200, 1433, MSSQLSERVER</value>
+            <value>Sample scan report generation</value>
+            <value>2021-02-18 15:55</value>
+            <value xs:nil="true" />
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Misconfigurations</value>
+            <value>High</value>
+            <value>2903</value>
+            <value>Symmetric encryption keys</value>
+            <value>Key=##MS_ServiceMasterKey##;Database=master;Algorithm=AES_256</value>
+            <value>Feb 18 2021 15:57</value>
+        </row>
+    </data>
+</dataset>

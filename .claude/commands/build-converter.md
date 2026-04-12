@@ -151,6 +151,14 @@ See "Step 5b — Live Fetch Mode" below for details.
 
 Copy or adapt real samples. Keep them small by truncating arrays, but preserve the real field names, types, and nesting. Name them descriptively (`minimal.<ext>`, `real.<ext>`, `edge-case.<ext>`).
 
+### Fixture size policy
+
+**Committed fixtures should be small** (under ~1 MB per file). Full-size real-world scan outputs (e.g., complete DISA STIG scans, entire NIST 800-53 catalogs) should NOT be committed to the repo — they bloat the git history and caused LFS bandwidth issues.
+
+**During development, test against full-size real data locally.** Download or generate realistic full-scale fixtures (hundreds of controls, real scan output) and use them to validate your converter handles real-world volume, field diversity, and edge cases. Keep these outside the repo (e.g., in a gitignored `fixtures/local/` directory or a shared team drive).
+
+**Committed fixtures should be representative subsets**: trim real data to 3-10 rules/findings that exercise all code paths (different severity levels, various field combinations, edge cases like empty arrays or missing optional fields). The goal is coverage of parsing logic, not volume testing.
+
 ---
 
 ## Step 3 — Write Unit Tests First (TDD)
