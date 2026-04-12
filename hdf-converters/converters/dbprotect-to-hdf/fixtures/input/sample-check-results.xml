@@ -1,3 +1,157 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:65aeadc64024beee0d5392d598f1b70314332353911111f3ff82dc05c27e5b40
-size 7573
+<?xml version="1.0" encoding="utf-8"?>
+<dataset  xmlns="http://developer.cognos.com/schemas/xmldata/1/"  xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
+<!--
+<dataset
+    xmlns="http://developer.cognos.com/schemas/xmldata/1/"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
+    xs:schemaLocation="http://developer.cognos.com/schemas/xmldata/1/ xmldata.xsd"
+>
+-->
+    <metadata>
+          <item name="Organization" type="xs:string" length="202"/>
+          <item name="Task" type="xs:string" length="802"/>
+          <item name="Asset Type" type="xs:string" length="66"/>
+          <item name="Asset" type="xs:string" length="1026"/>
+          <item name="IP Address, Port, Instance" type="xs:string" length="532"/>
+          <item name="Job Name" type="xs:string" length="258"/>
+          <item name="Policy" type="xs:string" length="130"/>
+          <item name="Result Status" type="xs:string" length="802"/>
+          <item name="Check Category" type="xs:string" length="802"/>
+          <item name="Risk DV" type="xs:string" length="802"/>
+          <item name="Check ID" type="xs:int" precision="1"/>
+          <item name="Check" type="xs:string" length="1026"/>
+          <item name="Details" type="xs:string" length="8002"/>
+          <item name="Date" type="xs:string" length="54"/>
+    </metadata>
+    <data>
+        <row>
+            <value>TEST ORGANIZATION (Local DBP server)</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>CONDS181</value>
+            <value>10.0.10.204, 1433, MSSQLSERVER</value>
+            <value>Heimdal Test scan report generation</value>
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Fact</value>
+            <value>Improper Access Controls</value>
+            <value>Medium</value>
+            <value>2986</value>
+            <value>Schema ownership</value>
+            <value>Schema name=DatabaseMailUserRole;Database=msdb;Owner name=DatabaseMailUserRole</value>
+            <value>Feb 18 2021 15:57</value>
+        </row>
+        <row>
+            <value>TEST ORGANIZATION (Local DBP server)</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>CONDS181</value>
+            <value>10.0.10.204, 1433, MSSQLSERVER</value>
+            <value>Heimdal Test scan report generation</value>
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Fact</value>
+            <value>Improper Access Controls</value>
+            <value>Medium</value>
+            <value>2986</value>
+            <value>Schema ownership</value>
+            <value>Schema name=db_accessadmin;Database=AppDetective;Owner name=db_accessadmin</value>
+            <value>Feb 18 2021 15:57</value>
+        </row>
+        <row>
+            <value>TEST ORGANIZATION (Local DBP server)</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>CONDS181</value>
+            <value>10.0.10.204, 1433, MSSQLSERVER</value>
+            <value>Heimdal Test scan report generation</value>
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Fact</value>
+            <value>Misconfigurations</value>
+            <value>High</value>
+            <value>2903</value>
+            <value>Symmetric encryption keys</value>
+            <value>Key=##MS_ServiceMasterKey##;Database=master;Algorithm=AES_256</value>
+            <value>Feb 18 2021 15:57</value>
+        </row>
+        <row>
+            <value>TEST ORGANIZATION (Local DBP server)</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>CONDS181</value>
+            <value>10.0.10.204, 1433, MSSQLSERVER</value>
+            <value>Heimdal Test scan report generation</value>
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Failed</value>
+            <value>Misconfigurations</value>
+            <value>Low</value>
+            <value>2841</value>
+            <value>Browser Service enabled</value>
+            <value>Check &quot;Browser Service enabled&quot; execution failed since we are unable to get the required data:
+User credentials cannot be used for local connections </value>
+            <value>Feb 18 2021 15:57</value>
+        </row>
+        <row>
+            <value>TEST ORGANIZATION (Local DBP server)</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>CONDS181</value>
+            <value>10.0.10.204, 1433, MSSQLSERVER</value>
+            <value>Heimdal Test scan report generation</value>
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Finding</value>
+            <value>Improper Access Controls</value>
+            <value>Informational</value>
+            <value>2801</value>
+            <value>Protection of DBMS asymmetric encryption keys</value>
+            <value>Key=MS_SQLEnableSystemAssemblyLoadingKey;Private key encryption type=NO_PRIVATE_KEY;Database containing key=master</value>
+            <value>Feb 18 2021 15:57</value>
+        </row>
+        <row>
+            <value>TEST ORGANIZATION (Local DBP server)</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>CONDS181</value>
+            <value>10.0.10.204, 1433, MSSQLSERVER</value>
+            <value>Heimdal Test scan report generation</value>
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Finding</value>
+            <value>Improper Access Controls</value>
+            <value>Informational</value>
+            <value>2801</value>
+            <value>Protection of DBMS asymmetric encryption keys</value>
+            <value>Owner of the key=sa;Is SYSADMIN=Yes;Key=MS_SQLEnableSystemAssemblyLoadingKey;Database containing key=master</value>
+            <value>Feb 18 2021 15:57</value>
+        </row>
+        <row>
+            <value>TEST ORGANIZATION (Local DBP server)</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>CONDS181</value>
+            <value>10.0.10.204, 1433, MSSQLSERVER</value>
+            <value>Heimdal Test scan report generation</value>
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Not A Finding</value>
+            <value>Improper Access Controls</value>
+            <value>Informational</value>
+            <value>2942</value>
+            <value>Permission to configure Server Audit to audit at the server level</value>
+            <value>None</value>
+            <value>Feb 18 2021 15:57</value>
+        </row>
+        <row>
+            <value>TEST ORGANIZATION (Local DBP server)</value>
+            <value>Audit</value>
+            <value>Microsoft SQL Server</value>
+            <value>CONDS181</value>
+            <value>10.0.10.204, 1433, MSSQLSERVER</value>
+            <value>Heimdal Test scan report generation</value>
+            <value>DISA-STIG SQL Server 2016 V2R1-1 Audit (Built-In)</value>
+            <value>Skipped</value>
+            <value>Misconfigurations</value>
+            <value>Medium</value>
+            <value>2976</value>
+            <value>SQL Server Usage and Error Reporting Auditing</value>
+            <value>Microsoft Analysis Services (OLAP) has not been found.</value>
+            <value>Feb 18 2021 15:57</value>
+        </row>
+    </data>
+</dataset>

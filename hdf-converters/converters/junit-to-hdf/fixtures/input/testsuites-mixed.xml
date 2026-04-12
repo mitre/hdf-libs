@@ -1,3 +1,36 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f569adfeaf37dae5cfe6259784f595258f9410439bdc4fefb4ab18a171d75dc5
-size 1739
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="MathTest" package="com.example.math" id="0"
+             tests="3" failures="1" errors="0" skipped="1"
+             time="0.045" timestamp="2024-11-15T10:30:00" hostname="ci-runner-01">
+    <properties>
+      <property name="java.version" value="17.0.9"/>
+    </properties>
+    <testcase name="testAddition" classname="com.example.math.MathTest" time="0.012"/>
+    <testcase name="testDivisionByZero" classname="com.example.math.MathTest" time="0.021">
+      <failure message="Expected exception was not thrown" type="java.lang.AssertionError">java.lang.AssertionError: Expected exception was not thrown
+	at com.example.math.MathTest.testDivisionByZero(MathTest.java:28)
+</failure>
+    </testcase>
+    <testcase name="testSquareRoot" classname="com.example.math.MathTest" time="0.001">
+      <skipped message="Requires math library upgrade"/>
+    </testcase>
+    <system-out/>
+    <system-err/>
+  </testsuite>
+  <testsuite name="StringTest" package="com.example.string" id="1"
+             tests="2" failures="0" errors="1" skipped="0"
+             time="0.033" timestamp="2024-11-15T10:30:01" hostname="ci-runner-01">
+    <properties>
+      <property name="java.version" value="17.0.9"/>
+    </properties>
+    <testcase name="testConcat" classname="com.example.string.StringTest" time="0.008"/>
+    <testcase name="testParseInt" classname="com.example.string.StringTest" time="0.025">
+      <error message="Unexpected null" type="java.lang.NullPointerException">java.lang.NullPointerException: Unexpected null
+	at com.example.string.StringTest.testParseInt(StringTest.java:42)
+</error>
+    </testcase>
+    <system-out/>
+    <system-err/>
+  </testsuite>
+</testsuites>

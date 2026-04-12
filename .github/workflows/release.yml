@@ -14,20 +14,18 @@ concurrency:
 
 env:
   NODE_VERSION: '20'
-  GO_VERSION: '1.26.1'
+  GO_VERSION: '1.26.2'
 
 jobs:
   publish-npm:
     name: Publish npm packages
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: npm-publish
     permissions:
       contents: read
-      id-token: write  # required for npm trusted publishing (OIDC)
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          lfs: true
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -39,9 +37,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Ensure npm >= 11.5.1 (required for trusted publishing)
-        run: npm install -g npm@latest
-
       - name: Build TypeScript
         run: pnpm build:ts
 
@@ -52,14 +47,14 @@ jobs:
           pnpm -r exec -- npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Publish packages
-        # TODO: After initial release, switch to trusted publishing:
-        # 1. Configure Trusted Publisher on npmjs.com for each @mitre/* package
-        #    (Settings → Trusted Publishers → GitHub Actions → mitre/hdf-libs/release.yml)
-        # 2. Remove NPM_TOKEN secret from repo
-        # 3. Remove the NODE_AUTH_TOKEN env var below
-        # 4. Add --provenance flag to pnpm publish
-        # OIDC trusted publishing requires NO NODE_AUTH_TOKEN set — remove the env block
-        # once all packages have trusted publishers configured.
+        # Uses a granular access token scoped to the 9 @mitre/hdf-* packages.
+        # Token is stored as NPM_TOKEN in the repo's GitHub Actions secrets.
+        # Granular tokens have a 90-day max lifetime — rotate before expiry.
+        #
+        # We use token auth instead of Trusted Publishing (OIDC) because
+        # @mitre/hdf-converters has its Trusted Publisher configured for
+        # mitre/heimdall2 (which still publishes v2.x patches), and npm
+        # only allows one Trusted Publisher per package.
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -76,7 +71,7 @@ jobs:
             hdf-extension-graph
           )
 
-          # Pre-release tags (v2.0.0-rc.1) publish with --tag next
+          # Pre-release tags (v3.0.0-rc.1) publish with --tag next
           TAG_FLAG=""
           if [[ "$VERSION" == *"-"* ]]; then
             TAG_FLAG="--tag next"
@@ -85,7 +80,7 @@ jobs:
           for pkg in "${PACKAGES[@]}"; do
             echo "Publishing $pkg@$VERSION..."
             cd "$pkg"
-            pnpm publish --no-git-checks $TAG_FLAG
+            npm publish --access public $TAG_FLAG
             cd ..
           done
 
@@ -98,7 +93,6 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          lfs: true
           fetch-depth: 0
 
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
@@ -109,7 +103,7 @@ jobs:
       - uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6
         with:
           distribution: goreleaser
-          version: "~> v2"
+          version: "v2.15.2"
           args: release --clean --skip=publish
           workdir: hdf-cli
         env:
@@ -130,8 +124,6 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          lfs: true
 
       - uses: ./.github/actions/setup
 
