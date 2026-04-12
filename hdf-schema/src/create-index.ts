@@ -88,14 +88,14 @@ export function createIndex(options: CreateIndexOptions = {}): void {
 // No export * from hdf-comparison — shared types duplicate hdf-results.
 export type {
   HdfComparison, RequirementDiff, ComparisonSummary, Source,
-  Annotation, BaselineDiff, BaselineRef, FieldChange, MatchingConfig,
-  ScannerConflict, SeverityBreakdown, StateCounts, PerSourceSummary,
-  DescriptionElement, Value,
+  Annotation, BaselineDiff, BaselineRef, ComponentDiff, FieldChange, MatchingConfig,
+  PackageDiff, ScannerConflict, SeverityBreakdown, StateCounts, PerSourceSummary,
+  Value,
 } from './ts/hdf-comparison.js';
 export {
-  AnnotationCategory, CapturedByType, ChangeReason, ComparisonMode,
+  AnnotationCategory, BaselineDiffState, ChangeReason, ComparisonMode,
   ConflictResolution, FormatVersion, MatchStrategy, Op, OriginalFormat,
-  RequirementState, SourceRole, State, TypeEnum,
+  PackageDiffState, RequirementState, SourceRole, Type,
 } from './ts/hdf-comparison.js';
 `
     : '';
@@ -158,9 +158,9 @@ export * from './helpers.js';
     ? `
 // Re-export comparison-specific enums (runtime values not in hdf-results)
 export {
-  AnnotationCategory, CapturedByType, ChangeReason, ComparisonMode,
+  AnnotationCategory, BaselineDiffState, ChangeReason, ComparisonMode,
   ConflictResolution, FormatVersion, MatchStrategy, Op, OriginalFormat,
-  RequirementState, SourceRole, State, TypeEnum,
+  PackageDiffState, RequirementState, SourceRole, Type,
 } from './ts/hdf-comparison.js';
 `
     : '';

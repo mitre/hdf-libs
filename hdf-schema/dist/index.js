@@ -8,9 +8,9 @@ export * from './ts/hdf-results.js';
 
 // Re-export comparison-specific enums (runtime values not in hdf-results)
 export {
-  AnnotationCategory, CapturedByType, ChangeReason, ComparisonMode,
+  AnnotationCategory, BaselineDiffState, ChangeReason, ComparisonMode,
   ConflictResolution, FormatVersion, MatchStrategy, Op, OriginalFormat,
-  RequirementState, SourceRole, State, TypeEnum,
+  PackageDiffState, RequirementState, SourceRole, Type,
 } from './ts/hdf-comparison.js';
 
 // Re-export system enums (runtime values)
