@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0",
   "title": "HDF Target Primitives",
   "description": "Polymorphic target system supporting diverse scan targets from 35+ security tools.",
   "$defs": {
@@ -266,7 +266,7 @@
               "const": "cloudAccount"
             },
             "provider": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Cloud_Provider",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Cloud_Provider",
               "description": "Cloud provider."
             },
             "accountId": {
@@ -295,7 +295,7 @@
               "const": "cloudResource"
             },
             "provider": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Cloud_Provider",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Cloud_Provider",
               "description": "Cloud provider."
             },
             "resourceType": {

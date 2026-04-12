@@ -135,7 +135,7 @@ describe('amendments.schema.json — Standalone_Override', () => {
   ajv.addSchema(amendmentsSchema);
 
   const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v2.0.0#/$defs/Standalone_Override',
+    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.0.0#/$defs/Standalone_Override',
   });
 
   const valid = {

@@ -12,7 +12,7 @@ describe('parameter.schema.json — Input primitive', () => {
   ajv.addSchema(parameterSchema);
 
   const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v2.0.0#/$defs/Input',
+    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.0.0#/$defs/Input',
   });
 
   describe('valid inputs', () => {

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.0.0",
   "title": "HDF System Primitives",
   "description": "Types for describing system architecture, authorization boundaries, and components.",
   "$defs": {
@@ -51,7 +51,7 @@
           "description": "Rationale for why this override is needed."
         },
         "approvedBy": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Identity",
           "description": "Identity of the person or system that approved this override."
         }
       },

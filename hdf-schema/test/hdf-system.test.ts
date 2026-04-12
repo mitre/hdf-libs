@@ -289,7 +289,7 @@ describe('system.schema.json — Input_Override', () => {
   ajv.addSchema(systemSchema);
 
   const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Input_Override',
+    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.0.0#/$defs/Input_Override',
   });
 
   it('should validate a minimal override', () => {
@@ -333,7 +333,7 @@ describe('system.schema.json — Control_Designation', () => {
   ajv.addSchema(systemSchema);
 
   const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Control_Designation',
+    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.0.0#/$defs/Control_Designation',
   });
 
   const minimal = {

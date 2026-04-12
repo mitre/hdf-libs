@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v2.0.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.0.0",
   "type": "object",
   "unevaluatedProperties": false,
   "required": [
@@ -9,7 +9,7 @@
   ],
   "allOf": [
     {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Baseline_Metadata"
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Baseline_Metadata"
     }
   ],
   "properties": {
@@ -24,34 +24,34 @@
     "groups": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Requirement_Group"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Requirement_Group"
       },
       "description": "A set of descriptions for the requirement groups."
     },
     "inputs": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v2.0.0#/$defs/Input"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.0.0#/$defs/Input"
       },
       "description": "The input(s) or attribute(s) to be used in the run."
     },
     "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this baseline has not been tampered with."
     },
     "remediation": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Remediation",
       "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for implementing the security controls defined in this baseline."
     },
     "depends": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Dependency"
       },
       "description": "The set of dependencies this baseline depends on."
     },
     "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Generator",
       "description": "The tool that generated this file."
     }
   },
@@ -135,7 +135,7 @@
       ],
       "allOf": [
         {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Requirement_Core"
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Requirement_Core"
         }
       ],
       "properties": {
@@ -144,7 +144,7 @@
           "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
         },
         "severity": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Severity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Severity",
           "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
         }
       },

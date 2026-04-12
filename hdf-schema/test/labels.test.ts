@@ -15,7 +15,7 @@ describe('Labels — optional Record<string, string> on components and baselines
 
   describe('Base_Target labels', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Base_Target',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0#/$defs/Base_Target',
     });
 
     it('should validate a target without labels (backward compatible)', () => {
@@ -71,7 +71,7 @@ describe('Labels — optional Record<string, string> on components and baselines
 
   describe('Host_Target labels (inherited via allOf)', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Host_Target',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0#/$defs/Host_Target',
     });
 
     it('should validate a Host_Target with labels', () => {
@@ -92,7 +92,7 @@ describe('Labels — optional Record<string, string> on components and baselines
 
   describe('Cloud_Account_Target labels (inherited via allOf)', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Cloud_Account_Target',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0#/$defs/Cloud_Account_Target',
     });
 
     it('should validate a Cloud_Account_Target with labels', () => {
@@ -109,7 +109,7 @@ describe('Labels — optional Record<string, string> on components and baselines
 
   describe('Baseline_Metadata labels', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Baseline_Metadata',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Baseline_Metadata',
     });
 
     it('should validate Baseline_Metadata without labels (backward compatible)', () => {

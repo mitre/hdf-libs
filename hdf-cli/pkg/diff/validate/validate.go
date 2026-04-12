@@ -22,7 +22,7 @@ type ValidationResult struct {
 }
 
 // comparisonSchemaID is the $id of the hdf-comparison schema.
-const comparisonSchemaID = "https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v1.0.0"
+const comparisonSchemaID = "https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.0.0"
 
 // Cached compiled schema (initialized once).
 var (
@@ -77,20 +77,20 @@ func buildSchema() (*jsonschema.Schema, error) {
 	}
 
 	entries := []schemaEntry{
-		{"primitives/common.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0"},
-		{"primitives/platform.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/platform/v2.0.0"},
-		{"primitives/target.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0"},
-		{"primitives/runner.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v2.0.0"},
-		{"primitives/statistics.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0"},
-		{"primitives/result.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0"},
-		{"primitives/amendments.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v2.0.0"},
-		{"primitives/extensions.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0"},
-		{"primitives/parameter.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v2.0.0"},
-		{"primitives/component.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0"},
-		{"primitives/data-flow.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0"},
-		{"primitives/system.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0"},
-		{"primitives/comparison.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v1.0.0"},
-		{"hdf-results.schema.json", "https://mitre.github.io/hdf-libs/schemas/hdf-results/v2.0.0"},
+		{"primitives/common.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0"},
+		{"primitives/platform.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/platform/v3.0.0"},
+		{"primitives/target.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0"},
+		{"primitives/runner.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.0.0"},
+		{"primitives/statistics.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.0.0"},
+		{"primitives/result.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0"},
+		{"primitives/amendments.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.0.0"},
+		{"primitives/extensions.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0"},
+		{"primitives/parameter.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.0.0"},
+		{"primitives/component.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.0.0"},
+		{"primitives/data-flow.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.0.0"},
+		{"primitives/system.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.0.0"},
+		{"primitives/comparison.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.0.0"},
+		{"hdf-results.schema.json", "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.0.0"},
 		{"hdf-comparison.schema.json", comparisonSchemaID},
 	}
 

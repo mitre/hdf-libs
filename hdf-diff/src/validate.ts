@@ -18,7 +18,7 @@ export interface ValidationResult {
 }
 
 /** Schema ID for the hdf-comparison schema */
-const COMPARISON_SCHEMA_ID = 'https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v1.0.0';
+const COMPARISON_SCHEMA_ID = 'https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.0.0';
 
 /**
  * Resolve the path to the hdf-schema package's schemas directory.

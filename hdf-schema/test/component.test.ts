@@ -19,7 +19,7 @@ describe('component.schema.json', () => {
 
   describe('Base_Component', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0#/$defs/Base_Component',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.0.0#/$defs/Base_Component',
     });
 
     it('should validate a minimal component (name + type only)', () => {
@@ -153,7 +153,7 @@ describe('component.schema.json', () => {
 
   describe('SBOM embedding', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0#/$defs/Base_Component',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.0.0#/$defs/Base_Component',
     });
 
     it('should validate a component with CycloneDX SBOM', () => {
@@ -291,7 +291,7 @@ describe('component.schema.json', () => {
 
   describe('Component (oneOf union)', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/component/v2.0.0#/$defs/Component',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.0.0#/$defs/Component',
     });
 
     it('should validate a Host_Component', () => {

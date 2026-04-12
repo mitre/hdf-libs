@@ -27,7 +27,7 @@ describe('Primitive Schema Validation', () => {
   describe('common.schema.json', () => {
     describe('Requirement_Group', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Requirement_Group',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Requirement_Group',
       });
 
       it('should validate a valid Requirement_Group', () => {
@@ -77,7 +77,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Dependency', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Dependency',
       });
 
       it('should validate a valid Dependency with git URL', () => {
@@ -107,7 +107,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Reference', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Reference',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Reference',
       });
 
       it('should validate Reference with ref string', () => {
@@ -143,7 +143,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Source_Location', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Source_Location',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Source_Location',
       });
 
       it('should validate a valid Source_Location', () => {
@@ -170,7 +170,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Supported_Platform', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Supported_Platform',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Supported_Platform',
       });
 
       it('should validate a valid Supported_Platform', () => {
@@ -198,7 +198,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Identity', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Identity',
       });
 
       it('should validate identity with email', () => {
@@ -268,7 +268,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Verification_Method', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Verification_Method',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Verification_Method',
       });
 
       it('should validate verification method with JWK public key', () => {
@@ -357,7 +357,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Signature', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Signature',
       });
 
       it('should validate complete signature with all required fields', () => {
@@ -599,7 +599,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Evidence', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Evidence',
       });
 
       it('should validate screenshot evidence with all fields', () => {
@@ -734,7 +734,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Milestone', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Milestone',
       });
 
       it('should validate minimal pending milestone', () => {
@@ -828,7 +828,7 @@ describe('Primitive Schema Validation', () => {
   describe('platform.schema.json', () => {
     describe('Platform', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/platform/v2.0.0#/$defs/Platform',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/platform/v3.0.0#/$defs/Platform',
       });
 
       it('should validate a valid Platform', () => {
@@ -875,7 +875,7 @@ describe('Primitive Schema Validation', () => {
 
   describe('target.schema.json', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Target',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0#/$defs/Target',
     });
 
     describe('Host_Target', () => {
@@ -1089,7 +1089,7 @@ describe('Primitive Schema Validation', () => {
 
   describe('runner.schema.json', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/runner/v2.0.0#/$defs/Runner',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.0.0#/$defs/Runner',
     });
 
     it('should validate a minimal runner with only name', () => {
@@ -1220,7 +1220,7 @@ describe('Primitive Schema Validation', () => {
   describe('statistics.schema.json', () => {
     describe('Statistic_Block', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0#/$defs/Statistic_Block',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.0.0#/$defs/Statistic_Block',
       });
 
       it('should validate a valid Statistic_Block', () => {
@@ -1241,7 +1241,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Statistic_Hash', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0#/$defs/Statistic_Hash',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.0.0#/$defs/Statistic_Hash',
       });
 
       it('should validate a full Statistic_Hash', () => {
@@ -1291,7 +1291,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Statistics', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0#/$defs/Statistics',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.0.0#/$defs/Statistics',
       });
 
       it('should validate a full Statistics object', () => {
@@ -1343,7 +1343,7 @@ describe('Primitive Schema Validation', () => {
   describe('result.schema.json', () => {
     describe('Result_Status', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Result_Status',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0#/$defs/Result_Status',
       });
 
       it('should validate "passed" status', () => {
@@ -1377,7 +1377,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Requirement_Result', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Requirement_Result',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0#/$defs/Requirement_Result',
       });
 
       it('should validate a full Requirement_Result', () => {
@@ -1520,7 +1520,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Requirement_Description', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Requirement_Description',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0#/$defs/Requirement_Description',
       });
 
       it('should validate a valid Requirement_Description', () => {
@@ -1558,7 +1558,7 @@ describe('Primitive Schema Validation', () => {
   describe('extensions.schema.json', () => {
     describe('Status_Override', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Status_Override',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Status_Override',
       });
 
       it('should validate a waiver status override with all required fields', () => {
@@ -1985,7 +1985,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Generator', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Generator',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Generator',
       });
 
       it('should validate a valid Generator', () => {
@@ -2021,7 +2021,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('POAM', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/POAM',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/POAM',
       });
 
       it('should validate minimal remediation POAM', () => {
@@ -2262,7 +2262,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Integrity', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Integrity',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Integrity',
       });
 
       it('should validate Integrity with sha256', () => {
@@ -2325,7 +2325,7 @@ describe('Primitive Schema Validation', () => {
   describe('Date-Time Format Validation', () => {
     describe('Milestone timestamps', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Milestone',
       });
 
       it('should accept valid ISO 8601 date-time for estimatedCompletion', () => {
@@ -2396,7 +2396,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Status_Override timestamps', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/Status_Override',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Status_Override',
       });
 
       it('should accept valid ISO 8601 timestamps', () => {
@@ -2438,7 +2438,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('POAM timestamps', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0#/$defs/POAM',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/POAM',
       });
 
       it('should accept valid ISO 8601 timestamps', () => {
@@ -2498,7 +2498,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Signature created timestamp', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Signature',
       });
 
       it('should accept valid ISO 8601 created timestamp', () => {
@@ -2536,7 +2536,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Evidence capturedAt timestamp', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Evidence',
       });
 
       it('should accept valid ISO 8601 capturedAt timestamp', () => {
@@ -2574,7 +2574,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Statistics numeric constraints', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v2.0.0#/$defs/Statistics',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.0.0#/$defs/Statistics',
       });
 
       it('should accept valid statistics with positive duration', () => {
@@ -2641,7 +2641,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Requirement_Result runTime constraint', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Requirement_Result',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0#/$defs/Requirement_Result',
       });
 
       it('should accept positive runTime', () => {
@@ -2682,7 +2682,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Database_Target port constraint', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Database_Target',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0#/$defs/Database_Target',
       });
 
       it('should accept valid port number', () => {
@@ -2750,7 +2750,7 @@ describe('Primitive Schema Validation', () => {
   describe('Format Pattern Validation', () => {
     describe('Container digest patterns', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Container_Image_Target',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0#/$defs/Container_Image_Target',
       });
 
       it('should accept valid sha256 digest', () => {
@@ -2815,7 +2815,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('MAC address pattern', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Host_Target',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0#/$defs/Host_Target',
       });
 
       it('should accept valid MAC address (uppercase)', () => {
@@ -2871,7 +2871,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('IP address format', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Host_Target',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0#/$defs/Host_Target',
       });
 
       it('should accept valid IPv4 address', () => {
@@ -2927,7 +2927,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Git URI format', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Dependency',
       });
 
       it('should accept valid HTTPS git URL', () => {
@@ -3019,7 +3019,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Dependency url format validation', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Dependency',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Dependency',
       });
 
       it('should accept valid HTTP URL', () => {
@@ -3054,7 +3054,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Remediation uri format validation', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Remediation',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Remediation',
       });
 
       it('should accept valid HTTPS URI', () => {
@@ -3087,7 +3087,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Host_Target fqdn format validation', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Host_Target',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0#/$defs/Host_Target',
       });
 
       it('should accept valid FQDN', () => {
@@ -3126,7 +3126,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Repository_Target url format validation', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Repository_Target',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0#/$defs/Repository_Target',
       });
 
       it('should accept valid HTTPS repository URL', () => {
@@ -3165,7 +3165,7 @@ describe('Primitive Schema Validation', () => {
 
     describe('Application_Target url format validation', () => {
       const validate = ajv.compile({
-        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v2.0.0#/$defs/Application_Target',
+        $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0#/$defs/Application_Target',
       });
 
       it('should accept valid HTTPS application URL', () => {

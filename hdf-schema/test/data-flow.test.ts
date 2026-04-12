@@ -15,7 +15,7 @@ describe('data-flow.schema.json', () => {
 
   describe('Data_Flow', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0#/$defs/Data_Flow',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.0.0#/$defs/Data_Flow',
     });
 
     it('should validate a minimal data flow (from + to as local componentIds)', () => {
@@ -167,7 +167,7 @@ describe('data-flow.schema.json', () => {
 
   describe('Cross_System_Reference', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0#/$defs/Cross_System_Reference',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.0.0#/$defs/Cross_System_Reference',
     });
 
     it('should validate a cross-system reference with URI', () => {
@@ -213,7 +213,7 @@ describe('data-flow.schema.json', () => {
 
   describe('External_Endpoint', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0#/$defs/External_Endpoint',
+      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.0.0#/$defs/External_Endpoint',
     });
 
     it('should validate a valid external endpoint', () => {
