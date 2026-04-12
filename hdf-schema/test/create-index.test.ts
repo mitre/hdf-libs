@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { existsSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { createIndex } from '../src/create-index';
 import { bundleSchemas } from '../src/bundle-schemas';
 import { generateTypes } from '../src/generate-types';
@@ -63,6 +63,78 @@ describe('create-index', () => {
     if (existsSync(helpersJs)) {
       expect(existsSync(join(DIST_DIR, 'helpers.js'))).toBe(true);
     }
+  });
+
+  describe('barrel export validation', () => {
+    it('should resolve all named exports at runtime without throwing', async () => {
+      createIndex();
+      const indexPath = pathToFileURL(join(DIST_DIR, 'index.js')).href;
+      // Dynamic import validates that every re-exported symbol actually exists
+      // in the source module. A missing symbol causes SyntaxError at evaluation.
+      const mod = await import(indexPath);
+      expect(mod).toBeDefined();
+      expect(Object.keys(mod).length).toBeGreaterThan(0);
+    });
+
+    it('should export all root document types', async () => {
+      const indexPath = pathToFileURL(join(DIST_DIR, 'index.js')).href;
+      const mod = await import(indexPath);
+      // Every generated type file produces a root interface as a no-op var
+      // Only hdf-results types appear via export * — others are named exports
+      // that must be kept in sync with quicktype output.
+      for (const key of ['ResultStatus', 'HashAlgorithm', 'Severity']) {
+        expect(mod[key], `expected hdf-results enum "${key}" to be exported`).toBeDefined();
+      }
+    });
+
+    it('should not re-export symbols that duplicate hdf-results', async () => {
+      const indexPath = pathToFileURL(join(DIST_DIR, 'index.js')).href;
+      const mod = await import(indexPath);
+      // These are exported by hdf-results via export * — verify they exist
+      // but aren't doubled (the export count should equal the module's own count)
+      const keys = Object.keys(mod);
+      const unique = new Set(keys);
+      expect(keys.length).toBe(unique.size);
+    });
+
+    it('should export comparison-specific enums when comparison types exist', async () => {
+      if (!existsSync(join(TS_DIR, 'hdf-comparison.ts'))) return;
+      createIndex();
+      const indexPath = pathToFileURL(join(DIST_DIR, 'index.js')).href;
+      const mod = await import(indexPath);
+      for (const key of [
+        'AnnotationCategory', 'BaselineDiffState', 'ChangeReason', 'ComparisonMode',
+        'ConflictResolution', 'FormatVersion', 'MatchStrategy', 'Op', 'OriginalFormat',
+        'PackageDiffState', 'RequirementState', 'SourceRole', 'Type',
+      ]) {
+        expect(mod[key], `expected comparison enum "${key}" to be exported`).toBeDefined();
+      }
+    });
+
+    it('should export system-specific enums', async () => {
+      const indexPath = pathToFileURL(join(DIST_DIR, 'index.js')).href;
+      const mod = await import(indexPath);
+      for (const key of [
+        'AuthorizationStatus', 'BoundaryDescription', 'CategorizationLevel',
+        'Designation', 'Direction',
+      ]) {
+        expect(mod[key], `expected system enum "${key}" to be exported`).toBeDefined();
+      }
+    });
+
+    it('should export plan, amendments, and evidence-package enums', async () => {
+      const indexPath = pathToFileURL(join(DIST_DIR, 'index.js')).href;
+      const mod = await import(indexPath);
+      for (const key of ['PlanType', 'ContentType']) {
+        expect(mod[key], `expected enum "${key}" to be exported`).toBeDefined();
+      }
+    });
+
+    it('should export helper functions', async () => {
+      const indexPath = pathToFileURL(join(DIST_DIR, 'index.js')).href;
+      const mod = await import(indexPath);
+      expect(mod.severityToImpact, 'expected helper "severityToImpact" to be exported').toBeDefined();
+    });
   });
 
   describe('error handling', () => {

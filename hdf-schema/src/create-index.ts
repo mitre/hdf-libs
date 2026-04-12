@@ -131,11 +131,9 @@ export {
 } from './ts/hdf-plan.js';
 
 // Re-export amendments types
+// No OverrideType enum — already exported by hdf-results via export *.
 export type {
   HdfAmendments, StandaloneOverride,
-} from './ts/hdf-amendments.js';
-export {
-  OverrideType,
 } from './ts/hdf-amendments.js';
 
 // Re-export evidence-package types
@@ -183,10 +181,7 @@ export {
   PlanType,
 } from './ts/hdf-plan.js';
 
-// Re-export amendments enums (runtime values)
-export {
-  OverrideType,
-} from './ts/hdf-amendments.js';
+// No amendments enum re-export — OverrideType already from hdf-results via export *.
 
 // Re-export evidence-package enums (runtime values)
 export {

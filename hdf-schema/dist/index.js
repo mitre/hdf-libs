@@ -23,10 +23,7 @@ export {
   PlanType,
 } from './ts/hdf-plan.js';
 
-// Re-export amendments enums (runtime values)
-export {
-  OverrideType,
-} from './ts/hdf-amendments.js';
+// No amendments enum re-export — OverrideType already from hdf-results via export *.
 
 // Re-export evidence-package enums (runtime values)
 export {
