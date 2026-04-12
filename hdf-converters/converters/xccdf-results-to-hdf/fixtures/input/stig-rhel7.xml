@@ -1,3 +1,548 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:117c4b883a1b2a5d6787b68b8e3f48524f0de19cb06a70318e292138bd9fa7a8
-size 36416
+<?xml version='1.0' encoding='utf-8'?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" xmlns:dc="http://purl.org/dc/elements/1.1/" id="xccdf_mil.disa.stig_benchmark_RHEL_7_STIG" resolved="1" xml:lang="en" style="SCAP_1.2">
+  <status date="2021-08-18">accepted</status>
+  <title xml:lang="en">Red Hat Enterprise Linux 7 Security Technical Implementation Guide</title>
+  <description xml:lang="en">This Security Technical Implementation Guide is published as a tool to improve the security of Department of Defense (DoD) information systems. The requirements are derived from the National Institute of Standards and Technology (NIST) 800-53 and related documents. Comments or proposed revisions to this document should be sent via email to the following address: disa.stig_spt@mail.mil.</description>
+  <notice xml:lang="en" id="terms-of-use" />
+  <front-matter xml:lang="en" />
+  <rear-matter xml:lang="en" />
+  <reference href="https://cyber.mil">
+    <dc:publisher>DISA</dc:publisher>
+    <dc:source>STIG.DOD.MIL</dc:source>
+  </reference>
+  <plain-text id="release-info">Release: 3.5 Benchmark Date: 27 Oct 2021</plain-text>
+  <plain-text id="generator">3.2.2.36079</plain-text>
+  <plain-text id="conventionsVersion">1.10.0</plain-text>
+  <platform idref="cpe:/o:redhat:enterprise_linux:7" />
+  <version update="http://iase.disa.mil/stigs">003.005</version>
+  <metadata>
+        <dc:creator>DISA</dc:creator>
+        <dc:publisher>DISA</dc:publisher>
+        <dc:contributor>DISA</dc:contributor>
+        <dc:source>STIG.DOD.MIL</dc:source>
+      </metadata>
+  <model system="urn:xccdf:scoring:default" />
+  <Value id="xccdf_mil.disa.stig_value_var_password_pam_unix_remember" operator="equals" type="number">
+    <title xml:lang="en-US">remember</title>
+    <description xml:lang="en-US">The last n passwords for each user are saved in /etc/security/opasswd in order to force password change history and keep the user from alternating between the same password too frequently.</description>
+    <value>5</value>
+    <value selector="0">0</value>
+    <value selector="4">4</value>
+    <value selector="5">5</value>
+    <value selector="10">10</value>
+    <value selector="24">24</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_password_pam_ucredit" operator="equals" type="number">
+    <title xml:lang="en-US">ucredit</title>
+    <description xml:lang="en-US">Minimum number of upper case in password</description>
+    <value>-1</value>
+    <value selector="2">-2</value>
+    <value selector="1">-1</value>
+    <value selector="0">0</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_password_pam_ocredit" operator="equals" type="number">
+    <title xml:lang="en-US">ocredit</title>
+    <description xml:lang="en-US">Minimum number of other (special characters) in
+password</description>
+    <value>-1</value>
+    <value selector="2">-2</value>
+    <value selector="1">-1</value>
+    <value selector="0">0</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_password_pam_minlen" operator="equals" type="number">
+    <title xml:lang="en-US">minlen</title>
+    <description xml:lang="en-US">Minimum number of characters in password</description>
+    <value>15</value>
+    <value selector="6">6</value>
+    <value selector="7">7</value>
+    <value selector="8">8</value>
+    <value selector="10">10</value>
+    <value selector="12">12</value>
+    <value selector="14">14</value>
+    <value selector="15">15</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_password_pam_minclass" operator="equals" type="number">
+    <title xml:lang="en-US">minclass</title>
+    <description xml:lang="en-US">Minimum number of categories of characters that must exist in a password</description>
+    <value>4</value>
+    <value selector="1">1</value>
+    <value selector="2">2</value>
+    <value selector="3">3</value>
+    <value selector="4">4</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_password_pam_maxrepeat" operator="equals" type="number">
+    <title xml:lang="en-US">maxrepeat</title>
+    <description xml:lang="en-US">Maximum Number of Consecutive Repeating Characters in a Password</description>
+    <value>3</value>
+    <value selector="1">1</value>
+    <value selector="2">2</value>
+    <value selector="3">3</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_password_pam_maxclassrepeat" operator="equals" type="number">
+    <title xml:lang="en-US">maxclassrepeat</title>
+    <description xml:lang="en-US">Maximum Number of Consecutive Repeating Characters in a Password From the Same Character Class</description>
+    <value>4</value>
+    <value selector="1">1</value>
+    <value selector="2">2</value>
+    <value selector="3">3</value>
+    <value selector="4">4</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_password_pam_lcredit" operator="equals" type="number">
+    <title xml:lang="en-US">lcredit</title>
+    <description xml:lang="en-US">Minimum number of lower case in password</description>
+    <value>-1</value>
+    <value selector="2">-2</value>
+    <value selector="1">-1</value>
+    <value selector="0">0</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_password_pam_difok" operator="equals" type="number">
+    <title xml:lang="en-US">difok</title>
+    <description xml:lang="en-US">Minimum number of characters not present in old
+password</description>
+    <warning xml:lang="en-US" category="general">Keep this high for short passwords</warning>
+    <value>8</value>
+    <value selector="2">2</value>
+    <value selector="3">3</value>
+    <value selector="4">4</value>
+    <value selector="5">5</value>
+    <value selector="6">6</value>
+    <value selector="7">7</value>
+    <value selector="8">8</value>
+    <value selector="15">15</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_password_pam_dcredit" operator="equals" type="number">
+    <title xml:lang="en-US">dcredit</title>
+    <description xml:lang="en-US">Minimum number of digits in password</description>
+    <value>-1</value>
+    <value selector="2">-2</value>
+    <value selector="1">-1</value>
+    <value selector="0">0</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_auditd_action_mail_acct" type="string">
+    <title xml:lang="en-US">Account for auditd to send email when actions occurs</title>
+    <description xml:lang="en-US">The setting for action_mail_acct in /etc/audit/auditd.conf</description>
+    <value>root</value>
+    <value selector="root">root</value>
+    <value selector="admin">admin</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_accounts_user_umask" operator="equals" type="string">
+    <title xml:lang="en-US">Sensible umask</title>
+    <description xml:lang="en-US">Enter default user umask</description>
+    <value>077</value>
+    <value selector="007">007</value>
+    <value selector="022">022</value>
+    <value selector="027">027</value>
+    <value selector="077">077</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_accounts_minimum_age_login_defs" type="number">
+    <title xml:lang="en-US">minimum password age</title>
+    <description xml:lang="en-US">Minimum age of password in days</description>
+    <warning xml:lang="en-US" category="general">This will only apply to newly created accounts</warning>
+    <value>1</value>
+    <value selector="7">7</value>
+    <value selector="5">5</value>
+    <value selector="2">2</value>
+    <value selector="1">1</value>
+    <value selector="0">0</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_accounts_maximum_age_login_defs" type="number">
+    <title xml:lang="en-US">maximum password age</title>
+    <description xml:lang="en-US">Maximum age of password in days</description>
+    <warning xml:lang="en-US" category="general">This will only apply to newly created accounts</warning>
+    <value>60</value>
+    <value selector="60">60</value>
+    <value selector="90">90</value>
+    <value selector="120">120</value>
+    <value selector="180">180</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_accounts_max_concurrent_login_sessions" operator="equals" type="number">
+    <title xml:lang="en-US">Maximum concurrent login sessions</title>
+    <description xml:lang="en-US">Maximum number of concurrent sessions by a user</description>
+    <value>10</value>
+    <value selector="1">1</value>
+    <value selector="3">3</value>
+    <value selector="5">5</value>
+    <value selector="10">10</value>
+    <value selector="15">15</value>
+    <value selector="20">20</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_accounts_fail_delay" operator="equals" type="number">
+    <title xml:lang="en-US">Maximum login attempts delay</title>
+    <description xml:lang="en-US">Maximum time in seconds between fail login attempts before re-prompting.</description>
+    <value>4</value>
+    <value selector="1">1</value>
+    <value selector="2">2</value>
+    <value selector="3">3</value>
+    <value selector="4">4</value>
+    <value selector="5">5</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_var_account_disable_post_pw_expiration" type="number">
+    <title xml:lang="en-US">number of days after a password expires until the account is permanently disabled</title>
+    <description xml:lang="en-US">The number of days to wait after a password expires, until the account will be permanently disabled.</description>
+    <warning xml:lang="en-US" category="general">This will only apply to newly created accounts</warning>
+    <value>0</value>
+    <value selector="0">0</value>
+    <value selector="30">30</value>
+    <value selector="35">35</value>
+    <value selector="40">40</value>
+    <value selector="60">60</value>
+    <value selector="90">90</value>
+    <value selector="180">180</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_sysctl_net_ipv6_conf_all_accept_source_route_value" operator="equals" type="number">
+    <title xml:lang="en-US">net.ipv6.conf.all.accept_source_route</title>
+    <description xml:lang="en-US">Trackers could be using source-routed packets to
+generate traffic that seems to be intra-net, but actually was
+created outside and has been redirected.</description>
+    <value>0</value>
+    <value selector="enabled">1</value>
+    <value selector="disabled">0</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_sysctl_net_ipv4_icmp_echo_ignore_broadcasts_value" operator="equals" type="number">
+    <title xml:lang="en-US">net.ipv4.icmp_echo_ignore_broadcasts</title>
+    <description xml:lang="en-US">Ignore all ICMP ECHO and TIMESTAMP requests sent to it via broadcast/multicast</description>
+    <value>1</value>
+    <value selector="enabled">1</value>
+    <value selector="disabled">0</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_sysctl_net_ipv4_conf_default_accept_source_route_value" operator="equals" type="number">
+    <title xml:lang="en-US">net.ipv4.conf.default.accept_source_route</title>
+    <description xml:lang="en-US">Disable IP source routing?</description>
+    <value>0</value>
+    <value selector="enabled">1</value>
+    <value selector="disabled">0</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_sysctl_net_ipv4_conf_default_accept_redirects_value" operator="equals" type="number">
+    <title xml:lang="en-US">net.ipv4.conf.default.accept_redirects</title>
+    <description xml:lang="en-US">Disable ICMP Redirect Acceptance?</description>
+    <value>0</value>
+    <value selector="enabled">1</value>
+    <value selector="disabled">0</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_sysctl_net_ipv4_conf_all_accept_source_route_value" operator="equals" type="number">
+    <title xml:lang="en-US">net.ipv4.conf.all.accept_source_route</title>
+    <description xml:lang="en-US">Trackers could be using source-routed packets to
+generate traffic that seems to be intra-net, but actually was
+created outside and has been redirected.</description>
+    <value>0</value>
+    <value selector="enabled">1</value>
+    <value selector="disabled">0</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_sysctl_net_ipv4_conf_all_accept_redirects_value" operator="equals" type="number">
+    <title xml:lang="en-US">net.ipv4.conf.all.accept_redirects</title>
+    <description xml:lang="en-US">Disable ICMP Redirect Acceptance</description>
+    <value>0</value>
+    <value selector="enabled">1</value>
+    <value selector="disabled">0</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_sshd_idle_timeout_value" operator="equals" type="number">
+    <title xml:lang="en-US">SSH session Idle time</title>
+    <description xml:lang="en-US">Specify duration of allowed idle time.</description>
+    <value>600</value>
+    <value selector="5_minutes">300</value>
+    <value selector="10_minutes">600</value>
+    <value selector="15_minutes">900</value>
+    <value selector="60_minutes">3600</value>
+    <value selector="120_minutes">7200</value>
+  </Value>
+  <Value id="xccdf_mil.disa.stig_value_inactivity_timeout_value" operator="equals" type="number">
+    <title xml:lang="en-US">Inactivity timeout</title>
+    <description xml:lang="en-US">Choose allowed duration of inactive SSH connections, shells, and X sessions</description>
+    <value>900</value>
+    <value selector="5_minutes">300</value>
+    <value selector="10_minutes">600</value>
+    <value selector="15_minutes">900</value>
+  </Value>
+  <Group id="xccdf_mil.disa.stig_group_V-204393">
+    <title xml:lang="en">SRG-OS-000023-GPOS-00006</title>
+    <description xml:lang="en">&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="xccdf_mil.disa.stig_rule_SV-204393r603261_rule" selected="true" weight="10.000000" severity="medium">
+      <version update="http://iase.disa.mil/stigs">RHEL-07-010030</version>
+      <title xml:lang="en">The Red Hat Enterprise Linux operating system must display the Standard Mandatory DoD Notice and Consent Banner before granting local or remote access to the system via a graphical user logon.</title>
+      <description xml:lang="en">&lt;VulnDiscussion&gt;Display of a standardized and approved use notification before granting access to the operating system ensures privacy and security notification verbiage used is consistent with applicable federal laws, Executive Orders, directives, policies, regulations, standards, and guidance.
+
+System use notifications are required only for access via logon interfaces with human users and are not required when such human interfaces do not exist.
+
+The banner must be formatted in accordance with applicable DoD policy. Use the following verbiage for operating systems that can accommodate banners of 1300 characters:
+
+"You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.
+
+By using this IS (which includes any device attached to this IS), you consent to the following conditions:
+
+-The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.
+
+-At any time, the USG may inspect and seize data stored on this IS.
+
+-Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.
+
+-This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy.
+
+-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details."
+
+
+Satisfies: SRG-OS-000023-GPOS-00006, SRG-OS-000024-GPOS-00007, SRG-OS-000228-GPOS-00088&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <reference>
+        <dc:title>DPMS Target Red Hat Enterprise Linux 7</dc:title>
+        <dc:subject>Red Hat Enterprise Linux 7</dc:subject>
+        <dc:publisher>DISA</dc:publisher>
+        <dc:type>DPMS Target</dc:type>
+        <dc:identifier>2899</dc:identifier>
+      </reference>
+      <ident system="http://cce.mitre.org">CCE-26970-4</ident>
+      <ident system="http://cyber.mil/legacy">V-71859</ident>
+      <ident system="http://cyber.mil/legacy">SV-86483</ident>
+      <ident system="http://cyber.mil/cci">CCI-000048</ident>
+      <fixtext xml:lang="en" fixref="F-4517r88372_fix">Configure the operating system to display the Standard Mandatory DoD Notice and Consent Banner before granting access to the system.
+
+Note: If the system does not have GNOME installed, this requirement is Not Applicable.
+
+Create a database to contain the system-wide graphical user logon settings (if it does not already exist) with the following command:
+
+# touch /etc/dconf/db/local.d/01-banner-message
+
+Add the following line to the [org/gnome/login-screen] section of the "/etc/dconf/db/local.d/01-banner-message":
+
+[org/gnome/login-screen]
+banner-message-enable=true
+
+Update the system databases:
+
+# dconf update
+
+Users must log out and back in again before the system-wide settings take effect.</fixtext>
+      <fix id="F-4517r88372_fix" />
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:mil.disa.stig.rhel7:def:922" href="U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml" />
+      </check>
+    </Rule>
+  </Group>
+  <Group id="xccdf_mil.disa.stig_group_V-204396">
+    <title xml:lang="en">SRG-OS-000028-GPOS-00009</title>
+    <description xml:lang="en">&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="xccdf_mil.disa.stig_rule_SV-204396r603261_rule" selected="true" weight="10.000000" severity="medium">
+      <version update="http://iase.disa.mil/stigs">RHEL-07-010060</version>
+      <title xml:lang="en">The Red Hat Enterprise Linux operating system must enable a user session lock until that user re-establishes access using established identification and authentication procedures.</title>
+      <description xml:lang="en">&lt;VulnDiscussion&gt;A session lock is a temporary action taken when a user stops work and moves away from the immediate physical vicinity of the information system but does not want to log out because of the temporary nature of the absence.
+
+The session lock is implemented at the point where session activity can be determined.
+
+Regardless of where the session lock is determined and implemented, once invoked, the session lock must remain in place until the user reauthenticates. No other activity aside from reauthentication must unlock the system.
+
+Satisfies: SRG-OS-000028-GPOS-00009, SRG-OS-000030-GPOS-00011&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <reference>
+        <dc:title>DPMS Target Red Hat Enterprise Linux 7</dc:title>
+        <dc:subject>Red Hat Enterprise Linux 7</dc:subject>
+        <dc:publisher>DISA</dc:publisher>
+        <dc:type>DPMS Target</dc:type>
+        <dc:identifier>2899</dc:identifier>
+      </reference>
+      <ident system="http://cce.mitre.org">CCE-80112-6</ident>
+      <ident system="http://cyber.mil/legacy">SV-86515</ident>
+      <ident system="http://cyber.mil/legacy">V-71891</ident>
+      <ident system="http://cyber.mil/cci">CCI-000056</ident>
+      <fixtext xml:lang="en" fixref="F-4520r88381_fix">Configure the operating system to enable a user's session lock until that user re-establishes access using established identification and authentication procedures.
+
+Create a database to contain the system-wide screensaver settings (if it does not already exist) with the following example:
+
+# touch /etc/dconf/db/local.d/00-screensaver
+
+Edit the "[org/gnome/desktop/screensaver]" section of the database file and add or update the following lines:
+
+# Set this to true to lock the screen when the screensaver activates
+lock-enabled=true
+
+Update the system databases:
+
+# dconf update
+
+Users must log out and back in again before the system-wide settings take effect.</fixtext>
+      <fix id="F-4520r88381_fix" />
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:mil.disa.stig.rhel7:def:988" href="U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml" />
+      </check>
+    </Rule>
+  </Group>
+  <Group id="xccdf_mil.disa.stig_group_V-204405">
+    <title xml:lang="en">SRG-OS-000069-GPOS-00037</title>
+    <description xml:lang="en">&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="xccdf_mil.disa.stig_rule_SV-204405r603261_rule" selected="true" weight="10.000000" severity="medium">
+      <version update="http://iase.disa.mil/stigs">RHEL-07-010118</version>
+      <title xml:lang="en">The Red Hat Enterprise Linux operating system must be configured so that /etc/pam.d/passwd implements /etc/pam.d/system-auth when changing passwords.</title>
+      <description xml:lang="en">&lt;VulnDiscussion&gt;Pluggable authentication modules (PAM) allow for a modular approach to integrating authentication methods. PAM operates in a top-down processing model and if the modules are not listed in the correct order, an important security function could be bypassed if stack entries are not centralized.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <reference>
+        <dc:title>DPMS Target Red Hat Enterprise Linux 7</dc:title>
+        <dc:subject>Red Hat Enterprise Linux 7</dc:subject>
+        <dc:publisher>DISA</dc:publisher>
+        <dc:type>DPMS Target</dc:type>
+        <dc:identifier>2899</dc:identifier>
+      </reference>
+      <ident system="http://cyber.mil/legacy">SV-95715</ident>
+      <ident system="http://cyber.mil/legacy">V-81003</ident>
+      <ident system="http://cyber.mil/cci">CCI-000192</ident>
+      <fixtext xml:lang="en" fixref="F-4529r88408_fix">Configure PAM to utilize /etc/pam.d/system-auth when changing passwords.
+
+Add the following line to "/etc/pam.d/passwd" (or modify the line to have the required value):
+
+password     substack    system-auth</fixtext>
+      <fix id="F-4529r88408_fix" />
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:mil.disa.stig.rhel7:def:95715" href="U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml" />
+      </check>
+    </Rule>
+  </Group>
+  <Group id="xccdf_mil.disa.stig_group_V-204424">
+    <title xml:lang="en">SRG-OS-000480-GPOS-00227</title>
+    <description xml:lang="en">&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="xccdf_mil.disa.stig_rule_SV-204424r603261_rule" selected="true" weight="10.000000" severity="high">
+      <version update="http://iase.disa.mil/stigs">RHEL-07-010290</version>
+      <title xml:lang="en">The Red Hat Enterprise Linux operating system must not have accounts configured with blank or null passwords.</title>
+      <description xml:lang="en">&lt;VulnDiscussion&gt;If an account has an empty password, anyone could log on and run commands with the privileges of that account. Accounts with empty passwords should never be used in operational environments.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <reference>
+        <dc:title>DPMS Target Red Hat Enterprise Linux 7</dc:title>
+        <dc:subject>Red Hat Enterprise Linux 7</dc:subject>
+        <dc:publisher>DISA</dc:publisher>
+        <dc:type>DPMS Target</dc:type>
+        <dc:identifier>2899</dc:identifier>
+      </reference>
+      <ident system="http://cce.mitre.org">CCE-27286-4</ident>
+      <ident system="http://cyber.mil/legacy">V-71937</ident>
+      <ident system="http://cyber.mil/legacy">SV-86561</ident>
+      <ident system="http://cyber.mil/cci">CCI-000366</ident>
+      <fixtext xml:lang="en" fixref="F-4548r88465_fix">If an account is configured for password authentication but does not have an assigned password, it may be possible to log on to the account without authenticating.
+
+Remove any instances of the "nullok" option in "/etc/pam.d/system-auth" and "/etc/pam.d/password-auth" to prevent logons with empty passwords.
+
+Note: Manual changes to the listed files may be overwritten by the "authconfig" program. The "authconfig" program should not be used to update the configurations listed in this requirement.</fixtext>
+      <fix id="F-4548r88465_fix" />
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:mil.disa.stig.rhel7:def:1229" href="U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml" />
+      </check>
+    </Rule>
+  </Group>
+  <Group id="xccdf_mil.disa.stig_group_V-204452">
+    <title xml:lang="en">SRG-OS-000437-GPOS-00194</title>
+    <description xml:lang="en">&lt;GroupDescription&gt;&lt;/GroupDescription&gt;</description>
+    <Rule id="xccdf_mil.disa.stig_rule_SV-204452r603261_rule" selected="true" weight="10.000000" severity="low">
+      <version update="http://iase.disa.mil/stigs">RHEL-07-020200</version>
+      <title xml:lang="en">The Red Hat Enterprise Linux operating system must remove all software components after updated versions have been installed.</title>
+      <description xml:lang="en">&lt;VulnDiscussion&gt;Previous versions of software components that are not removed from the information system after updates have been installed may be exploited by adversaries. Some information technology products may remove older versions of software automatically from the information system.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SeverityOverrideGuidance&gt;&lt;/SeverityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <reference>
+        <dc:title>DPMS Target Red Hat Enterprise Linux 7</dc:title>
+        <dc:subject>Red Hat Enterprise Linux 7</dc:subject>
+        <dc:publisher>DISA</dc:publisher>
+        <dc:type>DPMS Target</dc:type>
+        <dc:identifier>2899</dc:identifier>
+      </reference>
+      <ident system="http://cce.mitre.org">CCE-80346-0</ident>
+      <ident system="http://cyber.mil/legacy">V-71987</ident>
+      <ident system="http://cyber.mil/legacy">SV-86611</ident>
+      <ident system="http://cyber.mil/cci">CCI-002617</ident>
+      <fixtext xml:lang="en" fixref="F-4576r88549_fix">Configure the operating system to remove all software components after updated versions have been installed.
+
+Set the "clean_requirements_on_remove" option to "1" in the "/etc/yum.conf" file:
+
+clean_requirements_on_remove=1</fixtext>
+      <fix id="F-4576r88549_fix" />
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:mil.disa.stig.rhel7:def:108" href="U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml" />
+      </check>
+    </Rule>
+  </Group>
+  <TestResult id="xccdf_org.open-scap_testresult_xccdf_mil.disa.stig_profile_MAC-1_Sensitive" start-time="2021-12-17T10:39:29" end-time="2021-12-17T10:40:58" version="003.005" test-system="cpe:/a:redhat:openscap:1.2.17">
+    <benchmark href="/home/general_george/Desktop/U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark.xml" id="xccdf_mil.disa.stig_benchmark_RHEL_7_STIG" />
+    <title>OSCAP Scan Result</title>
+    <identity authenticated="false" privileged="false">general_george</identity>
+    <profile idref="xccdf_mil.disa.stig_profile_MAC-1_Sensitive" />
+    <target>localhost.localdomain</target>
+    <target-address>127.0.0.1</target-address>
+    <target-address>192.168.158.31</target-address>
+    <target-address>192.168.122.1</target-address>
+    <target-address>0:0:0:0:0:0:0:1</target-address>
+    <target-address>fe80:0:0:0:4f4f:8b1f:3f2f:2426</target-address>
+    <target-facts>
+      <fact name="urn:xccdf:fact:scanner:name" type="string">OpenSCAP</fact>
+      <fact name="urn:xccdf:fact:scanner:version" type="string">1.2.17</fact>
+      <fact name="urn:xccdf:fact:ethernet:MAC" type="string">00:00:00:00:00:00</fact>
+      <fact name="urn:xccdf:fact:ethernet:MAC" type="string">00:15:5D:0E:92:0D</fact>
+      <fact name="urn:xccdf:fact:ethernet:MAC" type="string">52:54:00:8E:DA:2B</fact>
+      <fact name="urn:xccdf:fact:ethernet:MAC" type="string">00:00:00:00:00:00</fact>
+      <fact name="urn:xccdf:fact:ethernet:MAC" type="string">00:15:5D:0E:92:0D</fact>
+    </target-facts>
+    <platform idref="cpe:/o:redhat:enterprise_linux:7" />
+    <set-value idref="xccdf_mil.disa.stig_value_var_password_pam_unix_remember">5</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_password_pam_ucredit">-1</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_password_pam_ocredit">-1</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_password_pam_minlen">15</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_password_pam_minclass">4</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_password_pam_maxrepeat">3</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_password_pam_maxclassrepeat">4</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_password_pam_lcredit">-1</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_password_pam_difok">8</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_password_pam_dcredit">-1</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_auditd_action_mail_acct">root</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_accounts_user_umask">077</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_accounts_minimum_age_login_defs">1</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_accounts_maximum_age_login_defs">60</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_accounts_max_concurrent_login_sessions">10</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_accounts_fail_delay">4</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_var_account_disable_post_pw_expiration">0</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_sysctl_net_ipv6_conf_all_accept_source_route_value">0</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_sysctl_net_ipv4_icmp_echo_ignore_broadcasts_value">1</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_sysctl_net_ipv4_conf_default_accept_source_route_value">0</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_sysctl_net_ipv4_conf_default_accept_redirects_value">0</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_sysctl_net_ipv4_conf_all_accept_source_route_value">0</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_sysctl_net_ipv4_conf_all_accept_redirects_value">0</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_sshd_idle_timeout_value">600</set-value>
+    <set-value idref="xccdf_mil.disa.stig_value_inactivity_timeout_value">900</set-value>
+    <rule-result idref="xccdf_mil.disa.stig_rule_SV-204393r603261_rule" time="2021-12-17T10:39:30" severity="medium" version="RHEL-07-010030" weight="10.000000">
+      <result>fail</result>
+      <ident system="http://cce.mitre.org">CCE-26970-4</ident>
+      <ident system="http://cyber.mil/legacy">V-71859</ident>
+      <ident system="http://cyber.mil/legacy">SV-86483</ident>
+      <ident system="http://cyber.mil/cci">CCI-000048</ident>
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:mil.disa.stig.rhel7:def:922" href="U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml" />
+      </check>
+    </rule-result>
+    <rule-result idref="xccdf_mil.disa.stig_rule_SV-204396r603261_rule" time="2021-12-17T10:39:30" severity="medium" version="RHEL-07-010060" weight="10.000000">
+      <result>fail</result>
+      <ident system="http://cce.mitre.org">CCE-80112-6</ident>
+      <ident system="http://cyber.mil/legacy">SV-86515</ident>
+      <ident system="http://cyber.mil/legacy">V-71891</ident>
+      <ident system="http://cyber.mil/cci">CCI-000056</ident>
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:mil.disa.stig.rhel7:def:988" href="U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml" />
+      </check>
+    </rule-result>
+    <rule-result idref="xccdf_mil.disa.stig_rule_SV-204405r603261_rule" time="2021-12-17T10:39:30" severity="medium" version="RHEL-07-010118" weight="10.000000">
+      <result>pass</result>
+      <ident system="http://cyber.mil/legacy">SV-95715</ident>
+      <ident system="http://cyber.mil/legacy">V-81003</ident>
+      <ident system="http://cyber.mil/cci">CCI-000192</ident>
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:mil.disa.stig.rhel7:def:95715" href="U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml" />
+      </check>
+    </rule-result>
+    <rule-result idref="xccdf_mil.disa.stig_rule_SV-204424r603261_rule" time="2021-12-17T10:39:30" severity="high" version="RHEL-07-010290" weight="10.000000">
+      <result>fail</result>
+      <ident system="http://cce.mitre.org">CCE-27286-4</ident>
+      <ident system="http://cyber.mil/legacy">V-71937</ident>
+      <ident system="http://cyber.mil/legacy">SV-86561</ident>
+      <ident system="http://cyber.mil/cci">CCI-000366</ident>
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:mil.disa.stig.rhel7:def:1229" href="U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml" />
+      </check>
+    </rule-result>
+    <rule-result idref="xccdf_mil.disa.stig_rule_SV-204452r603261_rule" time="2021-12-17T10:39:31" severity="low" version="RHEL-07-020200" weight="10.000000">
+      <result>fail</result>
+      <ident system="http://cce.mitre.org">CCE-80346-0</ident>
+      <ident system="http://cyber.mil/legacy">V-71987</ident>
+      <ident system="http://cyber.mil/legacy">SV-86611</ident>
+      <ident system="http://cyber.mil/cci">CCI-002617</ident>
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:mil.disa.stig.rhel7:def:108" href="U_RHEL_7_V3R5_STIG_SCAP_1-2_Benchmark-oval.xml" />
+      </check>
+    </rule-result>
+    <score system="urn:xccdf:scoring:default" maximum="100.000000">23.888889</score>
+  </TestResult>
+</Benchmark>

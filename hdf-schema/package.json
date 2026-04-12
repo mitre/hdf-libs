@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-schema",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "JSON schemas and multi-language type definitions for Heimdall Data Format (HDF)",
   "publishConfig": {
     "access": "public"
@@ -12,6 +12,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./helpers": {
+      "import": "./dist/helpers.js",
+      "types": "./dist/helpers.d.ts"
     },
     "./hdf-results": {
       "import": "./dist/ts/hdf-results.js",

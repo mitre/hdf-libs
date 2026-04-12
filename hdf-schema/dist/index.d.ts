@@ -15,14 +15,14 @@ export type { HdfBaseline, BaselineRequirement } from './ts/hdf-baseline.js';
 // No export * from hdf-comparison — shared types duplicate hdf-results.
 export type {
   HdfComparison, RequirementDiff, ComparisonSummary, Source,
-  Annotation, BaselineDiff, BaselineRef, FieldChange, MatchingConfig,
-  ScannerConflict, SeverityBreakdown, StateCounts, PerSourceSummary,
-  DescriptionElement, Value,
+  Annotation, BaselineDiff, BaselineRef, ComponentDiff, FieldChange, MatchingConfig,
+  PackageDiff, ScannerConflict, SeverityBreakdown, StateCounts, PerSourceSummary,
+  Value,
 } from './ts/hdf-comparison.js';
 export {
-  AnnotationCategory, CapturedByType, ChangeReason, ComparisonMode,
+  AnnotationCategory, BaselineDiffState, ChangeReason, ComparisonMode,
   ConflictResolution, FormatVersion, MatchStrategy, Op, OriginalFormat,
-  RequirementState, SourceRole, State, TypeEnum,
+  PackageDiffState, RequirementState, SourceRole, Type,
 } from './ts/hdf-comparison.js';
 
 // Re-export system types
@@ -43,11 +43,9 @@ export {
 } from './ts/hdf-plan.js';
 
 // Re-export amendments types
+// No OverrideType enum — already exported by hdf-results via export *.
 export type {
   HdfAmendments, StandaloneOverride,
-} from './ts/hdf-amendments.js';
-export {
-  OverrideType,
 } from './ts/hdf-amendments.js';
 
 // Re-export evidence-package types

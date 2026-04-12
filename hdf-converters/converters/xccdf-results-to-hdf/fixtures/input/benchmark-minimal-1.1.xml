@@ -1,3 +1,54 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:7b0f8843229f2bcfe062b1d60ef86dd677a0fe361c367f5cdb0297b70bba090b
-size 4180
+<?xml version="1.0" encoding="utf-8"?>
+<Benchmark xmlns:dc="http://purl.org/dc/elements/1.1/"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:dsig="http://www.w3.org/2000/09/xmldsig#"
+           xsi:schemaLocation="http://checklists.nist.gov/xccdf/1.1 http://nvd.nist.gov/schema/xccdf-1.1.4.xsd"
+           id="MS_Windows_Server_2022_STIG"
+           xml:lang="en"
+           xmlns="http://checklists.nist.gov/xccdf/1.1">
+  <status date="2025-11-19">accepted</status>
+  <title>Microsoft Windows Server 2022 Security Technical Implementation Guide</title>
+  <description>This Security Technical Implementation Guide is published as a tool to improve the security of Department of Defense (DOD) information systems.</description>
+  <version>2</version>
+  <Group id="V-254238">
+    <title>SRG-OS-000480-GPOS-00227</title>
+    <Rule id="SV-254238r991589_rule" severity="medium" weight="10.0">
+      <version>WN22-00-000010</version>
+      <title>Windows Server 2022 users with Administrative privileges must have separate accounts for administrative duties and normal operational tasks.</title>
+      <description>&lt;VulnDiscussion&gt;Using a privileged account to perform routine functions makes the computer vulnerable to malicious software inadvertently introduced during a session that has been granted full privileges.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;</description>
+      <fixtext fixref="F-57674r848529_fix">Ensure each user with administrative privileges has a separate account for user duties and one for privileged duties.</fixtext>
+      <check system="C-57723r848528_chk">
+        <check-content>Verify each user with administrative privileges has been assigned a unique administrative account separate from their standard user account.</check-content>
+      </check>
+      <ident system="http://cyber.mil/cci">CCI-000366</ident>
+    </Rule>
+  </Group>
+  <Group id="V-254239">
+    <title>SRG-OS-000076-GPOS-00044</title>
+    <Rule id="SV-254239r1153440_rule" severity="medium" weight="10.0">
+      <version>WN22-00-000020</version>
+      <title>Windows Server 2022 passwords for the built-in Administrator account must be changed at least every 60 days.</title>
+      <description>&lt;VulnDiscussion&gt;The longer a password is in use, the greater the opportunity for someone to gain unauthorized knowledge of the password.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;</description>
+      <fixtext fixref="F-57675r1153439_fix">Change the enabled local Administrator account password at least every 60 days.</fixtext>
+      <check system="C-57724r1153438_chk">
+        <check-content>If there are no enabled local Administrator accounts, this is Not Applicable. Review the password last set date for the enabled local Administrator account.</check-content>
+      </check>
+      <ident system="http://cyber.mil/cci">CCI-004066</ident>
+      <ident system="http://cyber.mil/cci">CCI-000199</ident>
+    </Rule>
+  </Group>
+  <Group id="V-254240">
+    <title>SRG-OS-000480-GPOS-00227</title>
+    <Rule id="SV-254240r991589_rule" severity="high" weight="10.0">
+      <version>WN22-00-000030</version>
+      <title>Windows Server 2022 administrative accounts must not be used with applications that access the internet.</title>
+      <description>&lt;VulnDiscussion&gt;Using applications that access the internet or have potential internet sources using administrative privileges exposes a system to compromise.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;</description>
+      <fixtext fixref="F-57676r848535_fix">Establish a policy, at minimum, to prohibit administrative accounts from using applications that access the internet.</fixtext>
+      <check system="C-57725r848534_chk">
+        <check-content>Determine whether organization policy prohibits administrative accounts from using applications that access the internet.</check-content>
+      </check>
+      <ident system="http://cyber.mil/cci">CCI-000366</ident>
+      <ident system="http://cyber.mil/cci">CCI-001312</ident>
+    </Rule>
+  </Group>
+</Benchmark>
