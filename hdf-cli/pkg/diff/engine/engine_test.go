@@ -1657,3 +1657,25 @@ func TestRequirementDiff_BaselineField_FleetMode(t *testing.T) {
 		t.Errorf("SV-001: expected baseline 'stig-baseline', got %q", sv001.Baseline)
 	}
 }
+
+func TestRequirementDiff_BaselineField_DuplicateIDsAcrossBaselines(t *testing.T) {
+	// Same requirement ID in two baselines → Baseline should be "(multiple)"
+	baselineA := makeBaseline("rhel9-stig", version100,
+		makeRequirement("SV-001", hdf.Failed, 0.7),
+	)
+	baselineB := makeBaseline("container-stig", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	)
+	oldResults := makeResults(baselineA, baselineB)
+	newResults := makeResults(baselineA, baselineB)
+
+	comp := mustDiffHdf(t, oldResults, []hdf.HdfResults{newResults}, defaultOpts())
+
+	sv001 := findReq(comp.RequirementDiffs, "SV-001")
+	if sv001 == nil {
+		t.Fatal("SV-001 not found")
+	}
+	if sv001.Baseline != baselineMultiple {
+		t.Errorf("SV-001: expected baseline %q for duplicate ID, got %q", baselineMultiple, sv001.Baseline)
+	}
+}

@@ -537,4 +537,16 @@ func TestExtractXMLRootElement(t *testing.T) {
 	t.Run("handles other markup declarations", func(t *testing.T) {
 		assert.Equal(t, "root", ExtractXMLRootElement("<!NOTATION foo SYSTEM \"bar\">\n<root/>"))
 	})
+
+	t.Run("handles mixed-case DOCTYPE", func(t *testing.T) {
+		assert.Equal(t, "root", ExtractXMLRootElement("<!DocType root>\n<root/>"))
+	})
+
+	t.Run("handles mixed-case DOCTYPE with internal subset", func(t *testing.T) {
+		input := `<!Doctype issues [
+<!ELEMENT issues (issue*)>
+]>
+<issues/>`
+		assert.Equal(t, "issues", ExtractXMLRootElement(input))
+	})
 }

@@ -727,14 +727,22 @@ func classifyBaselineChangeReasons(oldReq, newReq hdf.EvaluatedRequirement) []ty
 	return reasons
 }
 
+// baselineMultiple is the sentinel value used when a requirement ID appears
+// in more than one baseline, to avoid implying a single correct baseline.
+const baselineMultiple = "(multiple)"
+
 // requirementBaselineMap returns a map from requirement ID to the name of the
 // baseline that contains it. If the same ID appears in multiple baselines,
-// the first occurrence wins.
+// the value is set to "(multiple)" to avoid implying a single correct baseline.
 func requirementBaselineMap(doc hdf.HdfResults) map[string]string {
 	m := make(map[string]string)
 	for _, baseline := range doc.Baselines {
 		for _, req := range baseline.Requirements {
-			if _, exists := m[req.ID]; !exists {
+			if existing, exists := m[req.ID]; exists {
+				if existing != baseline.Name && existing != baselineMultiple {
+					m[req.ID] = baselineMultiple
+				}
+			} else {
 				m[req.ID] = baseline.Name
 			}
 		}

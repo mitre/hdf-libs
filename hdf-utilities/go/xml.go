@@ -44,7 +44,7 @@ func ExtractXMLRootElement(input string) string {
 				return ""
 			}
 			s = s[end+3:]
-		case strings.HasPrefix(s, "<!DOCTYPE") || strings.HasPrefix(s, "<!doctype"):
+		case len(s) >= 9 && strings.EqualFold(s[:9], "<!DOCTYPE"):
 			bracket := strings.Index(s, "[")
 			gt := strings.Index(s, ">")
 			if gt == -1 {
