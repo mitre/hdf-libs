@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -70,24 +71,89 @@ const (
 )
 
 // diffRequirement holds the comparison result for a single requirement.
+// JSON field names match the hdf-comparison schema's Requirement_Diff type.
 type diffRequirement struct {
-	ID        string    `json:"id"`
-	State     diffState `json:"state"`
-	OldStatus string    `json:"oldStatus,omitempty"`
-	NewStatus string    `json:"newStatus,omitempty"`
-	Title     string    `json:"title,omitempty"`
-	Baseline  string    `json:"baseline,omitempty"` // baseline name this requirement belongs to
+	ID             string    `json:"id"`
+	State          diffState `json:"state"`
+	ChangeReasons  []string  `json:"changeReasons"`
+	Before         any       `json:"before"`
+	After          any       `json:"after"`
+	FieldChanges   []any     `json:"fieldChanges"`
+	OldStatus      string    `json:"oldEffectiveStatus,omitempty"`
+	NewStatus      string    `json:"newEffectiveStatus,omitempty"`
+	Title          string    `json:"title,omitempty"`
+	Baseline       string    `json:"baseline,omitempty"`
+}
+
+// toCleanJSON converts a Go struct to a map[string]any with nil values stripped.
+// Go's encoding/json serializes nil slices/pointers as null, but JSON Schema
+// 2020-12 with unevaluatedProperties rejects unexpected nulls. This mirrors
+// the JS behavior of omitting undefined fields.
+func toCleanJSON(v any) any {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	var m any
+	if err := json.Unmarshal(data, &m); err != nil {
+		return nil
+	}
+	return stripNulls(m)
+}
+
+// stripNulls recursively removes null values from JSON-compatible structures.
+func stripNulls(v any) any {
+	switch val := v.(type) {
+	case map[string]any:
+		cleaned := make(map[string]any, len(val))
+		for k, inner := range val {
+			if inner != nil {
+				cleaned[k] = stripNulls(inner)
+			}
+		}
+		return cleaned
+	case []any:
+		cleaned := make([]any, 0, len(val))
+		for _, item := range val {
+			cleaned = append(cleaned, stripNulls(item))
+		}
+		return cleaned
+	default:
+		return v
+	}
+}
+
+// diffStateToChangeReason maps diff states to schema-compliant change reason enum values.
+func diffStateToChangeReason(state diffState) string {
+	switch state {
+	case diffFixed, diffRegressed:
+		return "resultChanged"
+	case diffUpdated:
+		return "metadataChanged"
+	default:
+		return "resultChanged"
+	}
 }
 
 // diffSummary holds the aggregate counts for a comparison.
 type diffSummary struct {
-	Total     int `json:"total"`
-	Fixed     int `json:"fixed"`
-	Regressed int `json:"regressed"`
-	New       int `json:"new"`
-	Absent    int `json:"absent"`
-	Unchanged int `json:"unchanged"`
-	Updated   int `json:"updated"`
+	Total             int `json:"total"`
+	Fixed             int `json:"fixed"`
+	Regressed         int `json:"regressed"`
+	New               int `json:"new"`
+	Absent            int `json:"absent"`
+	Unchanged         int `json:"unchanged"`
+	Updated           int `json:"updated"`
+	MatchedCount      int `json:"matchedCount"`
+	UnmatchedOldCount int `json:"unmatchedOldCount"`
+	UnmatchedNewCount int `json:"unmatchedNewCount"`
+}
+
+// diffSource identifies an input to the comparison.
+type diffSource struct {
+	Role  string `json:"role"`
+	Label string `json:"label"`
+	URI   string `json:"uri,omitempty"`
 }
 
 // componentSummary holds per-component compliance information for system-aware diffs.
@@ -101,12 +167,15 @@ type componentSummary struct {
 }
 
 // diffResult is the full output of a diff operation.
+// JSON field names match the hdf-comparison schema for validation compliance.
 type diffResult struct {
-	FormatVersion      string             `json:"formatVersion"`
-	ComparisonMode     string             `json:"comparisonMode"`
-	Summary            diffSummary        `json:"summary"`
-	Requirements       []diffRequirement  `json:"requirements"`
-	ComponentSummaries []componentSummary `json:"componentSummaries,omitempty"`
+	FormatVersion    string             `json:"formatVersion"`
+	ComparisonMode   string             `json:"comparisonMode"`
+	Sources          []diffSource       `json:"sources"`
+	Summary          diffSummary        `json:"summary"`
+	RequirementDiffs []diffRequirement  `json:"requirementDiffs"`
+	BaselineDiffs    []any              `json:"baselineDiffs"`
+	ComponentDiffs   []componentSummary `json:"componentDiffs,omitempty"`
 }
 
 // diffFlags holds the local flags for the diff command.
@@ -249,7 +318,7 @@ func runDiff(_ *cobra.Command, args []string, flags *diffFlags) error {
 		return err
 	}
 
-	result := compareHDFResults(oldResults, newResults)
+	result := compareHDFResults(oldResults, newResults, oldFile, newFile)
 
 	if err := applyComponentGrouping(flags, oldResults, newResults, &result); err != nil {
 		printError(err.Error())
@@ -322,10 +391,10 @@ func renderDiffOutput(filtered diffResult, flags *diffFlags, oldFile, newFile st
 		}
 	case flags.format == "markdown":
 		outputDiffMarkdown(display, oldFile, newFile)
-		outputComponentSummariesIfPresent(filtered.ComponentSummaries)
+		outputComponentSummariesIfPresent(filtered.ComponentDiffs)
 	default:
 		outputDiffTable(display, oldFile, newFile)
-		outputComponentSummariesIfPresent(filtered.ComponentSummaries)
+		outputComponentSummariesIfPresent(filtered.ComponentDiffs)
 	}
 	return nil
 }
@@ -334,17 +403,19 @@ func renderDiffOutput(filtered diffResult, flags *diffFlags, oldFile, newFile st
 // The summary is preserved from the original (full counts).
 func stripUnchanged(result diffResult) diffResult {
 	var changed []diffRequirement
-	for _, req := range result.Requirements {
+	for _, req := range result.RequirementDiffs {
 		if req.State != diffUnchanged {
 			changed = append(changed, req)
 		}
 	}
 	return diffResult{
-		FormatVersion:      result.FormatVersion,
-		ComparisonMode:     result.ComparisonMode,
-		Summary:            result.Summary, // keep full summary
-		Requirements:       changed,
-		ComponentSummaries: result.ComponentSummaries,
+		FormatVersion:    result.FormatVersion,
+		ComparisonMode:   result.ComparisonMode,
+		Sources:          result.Sources,
+		Summary:          result.Summary, // keep full summary
+		RequirementDiffs: changed,
+		BaselineDiffs:    result.BaselineDiffs,
+		ComponentDiffs:   result.ComponentDiffs,
 	}
 }
 
@@ -376,7 +447,7 @@ func computeDiffExitCode(summary diffSummary, flags *diffFlags) error {
 
 // compareHDFResults compares two HDF results documents using temporal mode
 // with exact-ID matching.
-func compareHDFResults(oldResults, newResults hdf.HdfResults) diffResult {
+func compareHDFResults(oldResults, newResults hdf.HdfResults, oldFile, newFile string) diffResult {
 	// Build maps of requirement ID → requirement
 	oldMap := buildRequirementMap(oldResults)
 	newMap := buildRequirementMap(newResults)
@@ -407,8 +478,11 @@ func compareHDFResults(oldResults, newResults hdf.HdfResults) diffResult {
 		oldReq, inOld := oldMap[id]
 		newReq, inNew := newMap[id]
 
-		var dr diffRequirement
-		dr.ID = id
+		dr := diffRequirement{
+			ID:            id,
+			ChangeReasons: []string{},
+			FieldChanges:  []any{},
+		}
 
 		// Resolve baseline name: prefer new, fall back to old
 		if b, ok := newBaselineMap[id]; ok {
@@ -423,12 +497,16 @@ func compareHDFResults(oldResults, newResults hdf.HdfResults) diffResult {
 			dr.State = diffAbsent
 			dr.OldStatus = determineControlStatus(oldReq)
 			dr.Title = getRequirementTitle(oldReq)
+			dr.Before = toCleanJSON(oldReq)
+			dr.ChangeReasons = []string{"resultChanged"}
 
 		case !inOld && inNew:
 			// New - only in new
 			dr.State = diffNew
 			dr.NewStatus = determineControlStatus(newReq)
 			dr.Title = getRequirementTitle(newReq)
+			dr.After = toCleanJSON(newReq)
+			dr.ChangeReasons = []string{"resultChanged"}
 
 		default:
 			// Present in both - classify the change
@@ -438,16 +516,31 @@ func compareHDFResults(oldResults, newResults hdf.HdfResults) diffResult {
 			dr.NewStatus = newStatus
 			dr.Title = getRequirementTitle(newReq)
 			dr.State = classifyChange(oldStatus, newStatus)
+			dr.Before = toCleanJSON(oldReq)
+			dr.After = toCleanJSON(newReq)
+			if dr.State != diffUnchanged {
+				dr.ChangeReasons = []string{diffStateToChangeReason(dr.State)}
+			}
 		}
 
 		requirements = append(requirements, dr)
 	}
 
+	summary := buildDiffSummary(requirements)
+	summary.MatchedCount = summary.Fixed + summary.Regressed + summary.Unchanged + summary.Updated
+	summary.UnmatchedOldCount = summary.Absent
+	summary.UnmatchedNewCount = summary.New
+
 	return diffResult{
 		FormatVersion:  "1.0.0",
 		ComparisonMode: "temporal",
-		Summary:        buildDiffSummary(requirements),
-		Requirements:   requirements,
+		Sources: []diffSource{
+			{Role: "old", Label: filepath.Base(oldFile)},
+			{Role: "new", Label: filepath.Base(newFile)},
+		},
+		Summary:          summary,
+		RequirementDiffs: requirements,
+		BaselineDiffs:    []any{},
 	}
 }
 
@@ -548,18 +641,20 @@ func applyDiffFilters(result diffResult, flags *diffFlags) diffResult {
 	}
 
 	var filtered []diffRequirement
-	for _, req := range result.Requirements {
+	for _, req := range result.RequirementDiffs {
 		if allowed[req.State] {
 			filtered = append(filtered, req)
 		}
 	}
 
 	return diffResult{
-		FormatVersion:      result.FormatVersion,
-		ComparisonMode:     result.ComparisonMode,
-		Summary:            buildDiffSummary(filtered),
-		Requirements:       filtered,
-		ComponentSummaries: result.ComponentSummaries,
+		FormatVersion:    result.FormatVersion,
+		ComparisonMode:   result.ComparisonMode,
+		Sources:          result.Sources,
+		Summary:          buildDiffSummary(filtered),
+		RequirementDiffs: filtered,
+		BaselineDiffs:    result.BaselineDiffs,
+		ComponentDiffs:   result.ComponentDiffs,
 	}
 }
 
@@ -629,7 +724,7 @@ func outputDiffTable(result diffResult, oldFile, newFile string) {
 		Column{Header: "New Status"},
 		Column{Header: "State"},
 	)
-	for _, req := range result.Requirements {
+	for _, req := range result.RequirementDiffs {
 		oldStatus := req.OldStatus
 		newStatus := req.NewStatus
 		if oldStatus == "" {
@@ -661,7 +756,7 @@ func outputDiffMarkdown(result diffResult, oldFile, newFile string) {
 	fmt.Println("| ID | Title | Old Status | New Status | State |")
 	fmt.Println("|----|-------|------------|------------|-------|")
 
-	for _, req := range result.Requirements {
+	for _, req := range result.RequirementDiffs {
 		title := sanitizeOutput(truncate(req.Title, 40))
 		oldStatus := req.OldStatus
 		newStatus := req.NewStatus
@@ -692,7 +787,7 @@ func outputDiffSummary(summary diffSummary) {
 }
 
 func outputDiffNameOnly(result diffResult) {
-	for _, req := range result.Requirements {
+	for _, req := range result.RequirementDiffs {
 		if req.State != diffUnchanged {
 			fmt.Println(sanitizeOutput(req.ID))
 		}
@@ -744,10 +839,10 @@ func applyComponentGrouping(flags *diffFlags, oldResults, newResults hdf.HdfResu
 		if err != nil {
 			return err
 		}
-		result.ComponentSummaries = summaries
+		result.ComponentDiffs = summaries
 	}
 	if flags.groupBy != "" {
-		result.ComponentSummaries = applyGroupBy(flags.groupBy, oldResults, newResults, *result)
+		result.ComponentDiffs = applyGroupBy(flags.groupBy, oldResults, newResults, *result)
 	}
 	return nil
 }
@@ -786,7 +881,7 @@ func buildComponentSummaries(
 
 		// Filter requirements belonging to this component's baselines
 		var compReqs []diffRequirement
-		for _, req := range result.Requirements {
+		for _, req := range result.RequirementDiffs {
 			if baselineSet[req.Baseline] {
 				compReqs = append(compReqs, req)
 			}
@@ -862,7 +957,7 @@ func groupByBaselineName(
 ) []componentSummary {
 	// Collect unique baseline names
 	groups := make(map[string][]diffRequirement)
-	for _, req := range result.Requirements {
+	for _, req := range result.RequirementDiffs {
 		if req.Baseline == "" {
 			continue
 		}
@@ -921,7 +1016,7 @@ func groupByLabel(
 
 	// Group requirements by their baseline's label value
 	groups := make(map[string][]diffRequirement)
-	for _, req := range result.Requirements {
+	for _, req := range result.RequirementDiffs {
 		labelVal, ok := baselineLabelMap[req.Baseline]
 		if !ok {
 			labelVal = "(unlabeled)"

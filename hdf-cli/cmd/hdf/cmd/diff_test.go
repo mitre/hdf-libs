@@ -221,8 +221,8 @@ func TestDiffCommand_JSONOutput(t *testing.T) {
 	if _, ok := output["summary"]; !ok {
 		t.Error("expected 'summary' key in JSON output")
 	}
-	if _, ok := output["requirements"]; !ok {
-		t.Error("expected 'requirements' key in JSON output")
+	if _, ok := output["requirementDiffs"]; !ok {
+		t.Error("expected 'requirementDiffs' key in JSON output")
 	}
 
 	// Check summary counts
@@ -245,9 +245,9 @@ func TestDiffCommand_JSONOutput(t *testing.T) {
 	}
 
 	// Check requirements array
-	reqs, ok := output["requirements"].([]interface{})
+	reqs, ok := output["requirementDiffs"].([]interface{})
 	if !ok {
-		t.Fatal("expected 'requirements' to be an array")
+		t.Fatal("expected 'requirementDiffs' to be an array")
 	}
 	if len(reqs) == 0 {
 		t.Error("expected non-empty requirements array")
@@ -780,9 +780,9 @@ func TestDiffCommand_SystemFlag_JSON(t *testing.T) {
 	}
 
 	// Should have componentSummaries
-	cs, ok := output["componentSummaries"].([]interface{})
+	cs, ok := output["componentDiffs"].([]interface{})
 	if !ok {
-		t.Fatalf("expected 'componentSummaries' array in JSON output, got: %v", output["componentSummaries"])
+		t.Fatalf("expected 'componentDiffs' array in JSON output, got: %v", output["componentDiffs"])
 	}
 	if len(cs) != 2 {
 		t.Errorf("expected 2 component summaries, got %d", len(cs))

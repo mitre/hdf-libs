@@ -68,7 +68,7 @@ func TestDiffCoverage_GetRequirementTitle(t *testing.T) {
 
 func TestDiffCoverage_OutputDiffNameOnly(t *testing.T) {
 	result := diffResult{
-		Requirements: []diffRequirement{
+		RequirementDiffs: []diffRequirement{
 			{ID: "REQ-001", State: diffFixed},
 			{ID: "REQ-002", State: diffUnchanged},
 			{ID: "REQ-003", State: diffRegressed},
@@ -137,7 +137,7 @@ func TestDiffCoverage_GroupByLabel(t *testing.T) {
 		}
 
 		result := diffResult{
-			Requirements: []diffRequirement{
+			RequirementDiffs: []diffRequirement{
 				{ID: "REQ-001", State: diffUnchanged, Baseline: "baseline-a"},
 			},
 		}
@@ -167,7 +167,7 @@ func TestDiffCoverage_GroupByLabel(t *testing.T) {
 		}
 
 		result := diffResult{
-			Requirements: []diffRequirement{
+			RequirementDiffs: []diffRequirement{
 				{ID: "REQ-001", State: diffUnchanged, Baseline: "baseline-a"},
 			},
 		}
@@ -232,7 +232,7 @@ func TestDiffCoverage_GroupByLabel(t *testing.T) {
 		}
 
 		result := diffResult{
-			Requirements: []diffRequirement{
+			RequirementDiffs: []diffRequirement{
 				{ID: "REQ-001", State: diffFixed, Baseline: "baseline-z"},
 				{ID: "REQ-002", State: diffUnchanged, Baseline: "baseline-a"},
 			},
@@ -266,7 +266,7 @@ func TestDiffCoverage_ApplyGroupBy(t *testing.T) {
 	newResults := oldResults
 
 	result := diffResult{
-		Requirements: []diffRequirement{
+		RequirementDiffs: []diffRequirement{
 			{ID: "REQ-001", State: diffUnchanged, Baseline: "baseline-a"},
 		},
 	}
@@ -303,7 +303,7 @@ func TestDiffCoverage_RenderDiffOutput(t *testing.T) {
 		FormatVersion:  "1.0.0",
 		ComparisonMode: "temporal",
 		Summary:        diffSummary{Total: 1, Fixed: 1},
-		Requirements: []diffRequirement{
+		RequirementDiffs: []diffRequirement{
 			{ID: "REQ-001", State: diffFixed, OldStatus: "failed", NewStatus: "passed", Title: "Test Requirement"},
 		},
 	}
@@ -748,11 +748,11 @@ func TestDiffCoverage_RenderDiffOutput_WithComponentSummaries(t *testing.T) {
 		FormatVersion:  "1.0.0",
 		ComparisonMode: "temporal",
 		Summary:        diffSummary{Total: 2, Fixed: 1, Unchanged: 1},
-		Requirements: []diffRequirement{
+		RequirementDiffs: []diffRequirement{
 			{ID: "REQ-001", State: diffFixed, OldStatus: "failed", NewStatus: "passed", Baseline: "baseline-a"},
 			{ID: "REQ-002", State: diffUnchanged, OldStatus: "passed", NewStatus: "passed", Baseline: "baseline-a"},
 		},
-		ComponentSummaries: []componentSummary{
+		ComponentDiffs: []componentSummary{
 			{
 				Name:            "WebTier",
 				BaselineRefs:    []string{"baseline-a"},
