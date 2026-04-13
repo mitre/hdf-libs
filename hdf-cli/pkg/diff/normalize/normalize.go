@@ -7,10 +7,9 @@ package normalize
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-	"time"
 
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 )
 
 // IsV1Format detects whether a JSON document is v1 InSpec exec-json format.
@@ -79,7 +78,7 @@ func convertV1ToV2(raw map[string]any) (hdf.HdfResults, []string, error) {
 
 	// Preserve timestamp
 	if ts, ok := raw["timestamp"].(string); ok && ts != "" {
-		parsed := parseTimestamp(ts)
+		parsed := hdfutil.ParseTimestamp(ts)
 		if !parsed.IsZero() {
 			result.Timestamp = &parsed
 		}
@@ -201,7 +200,7 @@ func normalizeResult(result map[string]any) hdf.RequirementResult {
 	// start_time or startTime -> parsed time
 	rawStartTime := getStringFallback(result, "start_time", "startTime")
 	if rawStartTime != "" {
-		r.StartTime = parseTimestamp(rawStartTime)
+		r.StartTime = hdfutil.ParseTimestamp(rawStartTime)
 	}
 	// If empty or missing, StartTime stays as zero value
 
@@ -228,43 +227,6 @@ func normalizeResultStatus(status string) string {
 	default:
 		return status
 	}
-}
-
-// parseTimestamp normalizes a timestamp string to a time.Time.
-// Supports ISO 8601 (with 'T') and InSpec format "YYYY-MM-DD HH:MM:SS +HHMM".
-// Returns zero time if unparseable.
-func parseTimestamp(ts string) time.Time {
-	if ts == "" {
-		return time.Time{}
-	}
-
-	// Already ISO 8601 with T
-	if strings.Contains(ts, "T") {
-		t, err := time.Parse(time.RFC3339, ts)
-		if err == nil {
-			return t
-		}
-		// Try RFC3339Nano
-		t, err = time.Parse(time.RFC3339Nano, ts)
-		if err == nil {
-			return t
-		}
-	}
-
-	// Try InSpec format: "2017-09-22 14:12:15 -0400"
-	t, err := time.Parse("2006-01-02 15:04:05 -0700", ts)
-	if err == nil {
-		return t
-	}
-
-	// Try other common formats
-	t, err = time.Parse("2006-01-02 15:04:05", ts)
-	if err == nil {
-		return t
-	}
-
-	// Unparseable: return zero time
-	return time.Time{}
 }
 
 func normalizeSourceLocation(control map[string]any) hdf.SourceLocation {

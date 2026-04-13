@@ -347,8 +347,6 @@ const (
 	SeverityInformational = "informational"
 )
 
-// impactToSeverity is provided by hdfutil.ImpactToSeverity from hdf-utilities/go.
-
 func severityToLabel(severity string) string {
 	switch severity {
 	case SeverityCritical:
