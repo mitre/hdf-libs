@@ -8,6 +8,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -184,13 +185,13 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	timestamp := time.Now()
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:     "sonarqube-to-hdf",
-		ConverterVersion:  converterVersion,
-		ToolName:          "SonarQube",
-		ToolVersion:       sonarData.ServerVersion,
-		Baselines:         baselines,
-		Components:           targets,
-		Timestamp:         &timestamp,
+		GeneratorName:    "sonarqube-to-hdf",
+		ConverterVersion: converterVersion,
+		ToolName:         "SonarQube",
+		ToolVersion:      sonarData.ServerVersion,
+		Baselines:        baselines,
+		Components:       targets,
+		Timestamp:        &timestamp,
 	}), nil
 }
 
@@ -217,7 +218,7 @@ func convertProjectToBaseline(
 
 	return hdf.EvaluatedBaseline{
 		Name:            projectKey,
-		Title:           shared.Ptr(fmt.Sprintf("SonarQube Analysis for %s", projectKey)),
+		Title:           hdfutil.Ptr(fmt.Sprintf("SonarQube Analysis for %s", projectKey)),
 		Requirements:    requirements,
 		ResultsChecksum: resultsChecksum,
 	}
@@ -240,7 +241,7 @@ func convertRuleToRequirement(
 
 	// Get impact from first issue
 	firstIssue := issues[0]
-	impact := shared.SeverityToImpactWithAliases(firstIssue.Severity, sonarqubeAliases, 0.5)
+	impact := hdfutil.SeverityToImpactWithAliases(firstIssue.Severity, sonarqubeAliases, 0.5)
 
 	// Extract tags and mappings
 	cweIds, owaspTags, allTags := extractTags(&rule, hasRule, issues)
@@ -311,7 +312,7 @@ func extractDescription(rule *Rule, hasRule bool) string {
 
 	// Strip HTML tags for plain text description
 	if rule.HTMLDesc != "" {
-		return shared.StripHTML(rule.HTMLDesc)
+		return hdfutil.StripHTML(rule.HTMLDesc)
 	}
 
 	// Fall back to descriptionSections (SonarQube 26+ format)
@@ -319,13 +320,13 @@ func extractDescription(rule *Rule, hasRule bool) string {
 		// Prefer root_cause section (closest to the old monolithic description)
 		for _, section := range rule.DescriptionSections {
 			if section.Key == "root_cause" {
-				return shared.StripHTML(section.Content)
+				return hdfutil.StripHTML(section.Content)
 			}
 		}
 		// If no root_cause, concatenate all sections
 		var parts []string
 		for _, section := range rule.DescriptionSections {
-			stripped := shared.StripHTML(section.Content)
+			stripped := hdfutil.StripHTML(section.Content)
 			if stripped != "" {
 				parts = append(parts, stripped)
 			}
@@ -352,7 +353,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 
 			// Check for CWE tags
 			if strings.HasPrefix(lowerTag, "cwe-") || strings.Contains(lowerTag, "cwe") {
-				if match := shared.CWEPattern.FindStringSubmatch(tag); match != nil {
+				if match := hdfutil.CWEPattern.FindStringSubmatch(tag); match != nil {
 					cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 				}
 			}
@@ -381,7 +382,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 			lowerTag := strings.ToLower(tag)
 
 			if strings.HasPrefix(lowerTag, "cwe-") {
-				if match := shared.CWEPattern.FindStringSubmatch(tag); match != nil {
+				if match := hdfutil.CWEPattern.FindStringSubmatch(tag); match != nil {
 					cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 				}
 			}
@@ -395,7 +396,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 	// Parse CWE from rule description (htmlDesc / mdDesc)
 	if hasRule && rule != nil {
 		desc := rule.HTMLDesc + rule.MDDesc
-		matches := shared.CWEPattern.FindAllStringSubmatch(desc, -1)
+		matches := hdfutil.CWEPattern.FindAllStringSubmatch(desc, -1)
 		for _, match := range matches {
 			cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 		}
@@ -404,7 +405,7 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 	// Parse CWE from descriptionSections (SonarQube 26+ format)
 	if hasRule && rule != nil {
 		for _, section := range rule.DescriptionSections {
-			matches := shared.CWEPattern.FindAllStringSubmatch(section.Content, -1)
+			matches := hdfutil.CWEPattern.FindAllStringSubmatch(section.Content, -1)
 			for _, match := range matches {
 				cweSet[fmt.Sprintf("CWE-%s", match[1])] = true
 			}

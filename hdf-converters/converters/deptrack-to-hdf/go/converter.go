@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -106,7 +107,7 @@ var deptrackAliases = map[string]float64{
 }
 
 func getImpact(severity string) float64 {
-	return shared.SeverityToImpactWithAliases(severity, deptrackAliases, 0.5)
+	return hdfutil.SeverityToImpactWithAliases(severity, deptrackAliases, 0.5)
 }
 
 // getTitle builds the requirement title from component purl and vulnerability title,
@@ -140,7 +141,7 @@ func buildRequirement(finding DeptrackFinding, timestamp string) hdf.EvaluatedRe
 
 	extras := map[string]interface{}{}
 	if len(cweIDs) > 0 {
-		extras["cweIds"] = shared.StringsToInterfaces(cweIDs)
+		extras["cweIds"] = hdfutil.StringsToInterfaces(cweIDs)
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
@@ -176,7 +177,7 @@ func buildRequirement(finding DeptrackFinding, timestamp string) hdf.EvaluatedRe
 
 	// Add startTime from meta.timestamp if available
 	if timestamp != "" {
-		t := shared.ParseTimestamp(timestamp)
+		t := hdfutil.ParseTimestamp(timestamp)
 		if !t.IsZero() {
 			results[0].StartTime = t
 		}
@@ -243,8 +244,8 @@ func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "deptrack-to-hdf",
 		ConverterVersion: converterVersion,
-		ToolName:   "Dependency-Track",
-		ToolFormat: "JSON",
+		ToolName:         "Dependency-Track",
+		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.CopyrightApplication},

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,11 +83,11 @@ func TestConvertTrufflehogToHDF_Tags(t *testing.T) {
 	require.NoError(t, err)
 
 	req := result.Baselines[0].Requirements[0]
-	nist := shared.SafeStringSlice(req.Tags["nist"])
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist)
 	assert.Equal(t, []string{"IA-5 (7)"}, nist)
 
-	cci := shared.SafeStringSlice(req.Tags["cci"])
+	cci := hdfutil.SafeStringSlice(req.Tags["cci"])
 	require.NotNil(t, cci)
 	assert.Contains(t, cci, "CCI-000202")
 	assert.Contains(t, cci, "CCI-000203")

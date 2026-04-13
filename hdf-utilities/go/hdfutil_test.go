@@ -384,62 +384,62 @@ func TestCWEPattern(t *testing.T) {
 
 func TestParseTimestamp(t *testing.T) {
 	t.Run("parses RFC3339", func(t *testing.T) {
-		result, err := ParseTimestamp("2024-01-15T10:30:00Z")
-		require.NoError(t, err)
+		result := ParseTimestamp("2024-01-15T10:30:00Z")
+
 		expected := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
 		assert.True(t, result.Equal(expected))
 	})
 
 	t.Run("parses RFC3339Nano", func(t *testing.T) {
-		result, err := ParseTimestamp("2024-01-15T10:30:00.123456789Z")
-		require.NoError(t, err)
+		result := ParseTimestamp("2024-01-15T10:30:00.123456789Z")
+
 		assert.False(t, result.IsZero())
 		assert.Equal(t, 2024, result.Year())
 	})
 
 	t.Run("parses RFC1123", func(t *testing.T) {
-		result, err := ParseTimestamp("Mon, 15 Jan 2024 10:30:00 UTC")
-		require.NoError(t, err)
+		result := ParseTimestamp("Mon, 15 Jan 2024 10:30:00 UTC")
+
 		assert.False(t, result.IsZero())
 		assert.Equal(t, 2024, result.Year())
 	})
 
 	t.Run("parses RFC1123Z", func(t *testing.T) {
-		result, err := ParseTimestamp("Mon, 15 Jan 2024 10:30:00 +0000")
-		require.NoError(t, err)
+		result := ParseTimestamp("Mon, 15 Jan 2024 10:30:00 +0000")
+
 		assert.False(t, result.IsZero())
 		assert.Equal(t, 2024, result.Year())
 	})
 
 	t.Run("parses ISO 8601 without timezone", func(t *testing.T) {
-		result, err := ParseTimestamp("2024-01-15T10:30:00")
-		require.NoError(t, err)
+		result := ParseTimestamp("2024-01-15T10:30:00")
+
 		assert.False(t, result.IsZero())
 		assert.Equal(t, 2024, result.Year())
 	})
 
 	t.Run("parses Nessus format", func(t *testing.T) {
-		result, err := ParseTimestamp("Mon Jan 15 10:30:00 2024")
-		require.NoError(t, err)
+		result := ParseTimestamp("Mon Jan 15 10:30:00 2024")
+
 		assert.False(t, result.IsZero())
 		assert.Equal(t, 2024, result.Year())
 	})
 
 	t.Run("returns zero time for empty string", func(t *testing.T) {
-		result, err := ParseTimestamp("")
-		require.NoError(t, err)
+		result := ParseTimestamp("")
+
 		assert.True(t, result.IsZero())
 	})
 
 	t.Run("returns zero time for unparseable string", func(t *testing.T) {
-		result, err := ParseTimestamp("not a timestamp")
-		require.NoError(t, err)
+		result := ParseTimestamp("not a timestamp")
+
 		assert.True(t, result.IsZero())
 	})
 
 	t.Run("parses RFC3339 with timezone offset", func(t *testing.T) {
-		result, err := ParseTimestamp("2024-01-15T10:30:00+05:00")
-		require.NoError(t, err)
+		result := ParseTimestamp("2024-01-15T10:30:00+05:00")
+
 		assert.False(t, result.IsZero())
 		assert.Equal(t, 2024, result.Year())
 	})

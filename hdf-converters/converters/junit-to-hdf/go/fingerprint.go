@@ -2,7 +2,7 @@ package junit
 
 import (
 	"github.com/mitre/hdf-converters/registry"
-	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 )
 
 func init() {
@@ -17,7 +17,7 @@ func init() {
 			if !ok {
 				return 0
 			}
-			root := shared.ExtractXMLRootElement(s)
+			root := hdfutil.ExtractXMLRootElement(s)
 			if root == "testsuites" || root == "testsuite" {
 				return 1.0
 			}

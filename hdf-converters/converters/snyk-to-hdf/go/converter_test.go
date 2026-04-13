@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -164,7 +165,7 @@ func TestConvertSnyk_CweToNist(t *testing.T) {
 	req := findRequirement(reqs, "SNYK-JS-ADMZIP-1065796")
 	require.NotNil(t, req)
 
-	nist := shared.SafeStringSlice(req.Tags["nist"])
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist tag should be present")
 	assert.NotEmpty(t, nist)
 }
@@ -230,12 +231,12 @@ func TestConvertSnyk_Tags(t *testing.T) {
 	assert.Contains(t, ghsaid, "GHSA-3v6h-hqm4-2rg6")
 
 	// nist
-	nist := shared.SafeStringSlice(req.Tags["nist"])
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist should be present")
 	assert.NotEmpty(t, nist)
 
 	// cci
-	cciSlice := shared.SafeStringSlice(req.Tags["cci"])
+	cciSlice := hdfutil.SafeStringSlice(req.Tags["cci"])
 	require.NotNil(t, cciSlice, "cci should be present")
 	assert.NotEmpty(t, cciSlice)
 }

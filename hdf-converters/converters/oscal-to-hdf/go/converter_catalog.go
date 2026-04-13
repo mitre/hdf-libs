@@ -2,6 +2,7 @@ package oscal
 
 import (
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -50,7 +51,7 @@ func catalogToBaseline(catalog *Catalog, rawInput []byte, converterVersion strin
 		if len(reqIDs) > 0 {
 			groups = append(groups, hdf.RequirementGroup{
 				ID:           group.ID,
-				Title:        shared.Ptr(group.Title),
+				Title:        hdfutil.Ptr(group.Title),
 				Requirements: reqIDs,
 			})
 		}
@@ -73,8 +74,8 @@ func catalogToBaseline(catalog *Catalog, rawInput []byte, converterVersion strin
 
 	baseline := &hdf.HDFBaseline{
 		Name:         ToKebabCase(catalog.Metadata.Title, "oscal-catalog"),
-		Title:        shared.Ptr(meta.Title),
-		Version:      shared.Ptr(meta.Version),
+		Title:        hdfutil.Ptr(meta.Title),
+		Version:      hdfutil.Ptr(meta.Version),
 		Status:       &status,
 		Integrity:    integrity,
 		Requirements: requirements,
@@ -100,7 +101,7 @@ func controlToBaselineRequirement(ctrl *Control) hdf.BaselineRequirement {
 
 	return hdf.BaselineRequirement{
 		ID:           nistTag,
-		Title:        shared.Ptr(ctrl.Title),
+		Title:        hdfutil.Ptr(ctrl.Title),
 		Impact:       impact,
 		Descriptions: descriptions,
 		Tags:         tags,

@@ -9,6 +9,7 @@ import (
 	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
 	"github.com/mitre/hdf-converters/registry"
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -53,7 +54,7 @@ type SnykIdentifiers struct {
 
 // getImpact maps Snyk severity strings to HDF impact values.
 func getImpact(severity string) float64 {
-	return shared.SeverityToImpact(severity, 0.5)
+	return hdfutil.SeverityToImpact(severity, 0.5)
 }
 
 // formatDependencyPath formats the "from" array as a human-readable dependency path.

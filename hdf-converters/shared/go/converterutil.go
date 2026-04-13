@@ -1,4 +1,8 @@
-// Package testing provides shared utilities for Go converters.
+// Package shared provides converter-specific utilities for Go converters.
+// General-purpose utilities (severity mapping, string manipulation, CWE
+// extraction, etc.) live in hdfutil (github.com/mitre/hdf-libs/hdf-utilities/go).
+// This package contains only converter-specific logic that depends on
+// hdf-schema types, hdf-mappings, or converter-domain constants.
 package shared
 
 import (
@@ -39,41 +43,6 @@ func InputIntegrity(input []byte) *hdf.Integrity {
 	}
 }
 
-// Ptr returns a pointer to the given value. Replaces per-converter stringPtr,
-// floatPtr, and ptr[T] helpers.
-func Ptr[T any](v T) *T { return hdfutil.Ptr(v) }
-
-// StripHTML removes HTML tags from a string and normalizes whitespace.
-// Returns the trimmed plain-text result.
-func StripHTML(html string) string {
-	return hdfutil.StripHTML(html)
-}
-
-// SeverityToImpact maps a standard severity string to an HDF impact value.
-// Case-insensitive. Returns defaultVal if severity is not recognized.
-// Standard mappings: critical=0.9, high=0.7, medium=0.5, low=0.3,
-// info/none/informational/information=0.0.
-func SeverityToImpact(severity string, defaultVal float64) float64 {
-	return hdfutil.SeverityToImpact(severity, defaultVal)
-}
-
-// SeverityToImpactWithAliases maps severity to impact, checking custom aliases
-// first, then falling back to standard mappings. Use for tools with non-standard
-// severity labels (e.g., sonarqube BLOCKER, veracode numeric levels, grype
-// critical=0.9). Aliases are matched case-insensitively.
-func SeverityToImpactWithAliases(severity string, aliases map[string]float64, defaultVal float64) float64 {
-	return hdfutil.SeverityToImpactWithAliases(severity, aliases, defaultVal)
-}
-
-// ImpactToSeverity maps an HDF impact score (0.0–1.0) to a severity string.
-// This is the inverse of SeverityToImpact. Bands align with CVSS 3.x:
-//
-//	0.9–1.0 = critical, 0.7–0.8 = high, 0.4–0.6 = medium,
-//	0.1–0.3 = low, 0.0 = informational
-func ImpactToSeverity(impact float64) string {
-	return hdfutil.ImpactToSeverity(impact)
-}
-
 // DefaultStaticAnalysisNIST is the canonical NIST 800-53 fallback for static
 // analysis and vulnerability scanning tools (SA-11: Developer Security Testing
 // and Evaluation, RA-5: Vulnerability Monitoring and Scanning).
@@ -89,22 +58,15 @@ var DefaultRemediationNIST = []string{"SI-2", "RA-5"}
 // dependency/inventory management tools (CM-8: System Component Inventory).
 var DefaultComponentManagementNIST = []string{"CM-8"}
 
-// StringsToInterfaces converts a string slice to an interface slice.
-// This is needed because Go's type system does not allow direct assignment
-// of []string to []interface{} in JSON-serializable map values.
-func StringsToInterfaces(ss []string) []interface{} {
-	return hdfutil.StringsToInterfaces(ss)
-}
-
 // BuildNISTCCITags creates a tags map with NIST and optional CCI string slices
 // converted to []interface{} for JSON serialization. If cci is empty, the "cci"
 // key is omitted.
 func BuildNISTCCITags(nist, cci []string) map[string]interface{} {
 	tags := map[string]interface{}{
-		"nist": StringsToInterfaces(nist),
+		"nist": hdfutil.StringsToInterfaces(nist),
 	}
 	if len(cci) > 0 {
-		tags["cci"] = StringsToInterfaces(cci)
+		tags["cci"] = hdfutil.StringsToInterfaces(cci)
 	}
 	return tags
 }
@@ -118,31 +80,6 @@ func BuildNISTCCITagsWithExtras(nist, cci []string, extras map[string]interface{
 		tags[k] = v
 	}
 	return tags
-}
-
-// SafeString extracts a string from an interface{} value.
-// Returns the zero string if v is nil or not a string.
-func SafeString(v interface{}) string {
-	return hdfutil.SafeString(v)
-}
-
-// SafeStringSlice extracts a string slice from an interface{} value.
-// Returns nil if v is nil or not a []interface{} containing strings.
-// Non-string elements within the slice are skipped.
-func SafeStringSlice(v interface{}) []string {
-	return hdfutil.SafeStringSlice(v)
-}
-
-// DefaultMaxItems is the maximum number of items processed from any single
-// input array. Truncation is silent (returns partial results with a boolean
-// flag) to avoid breaking legitimate large scans while capping memory usage.
-const DefaultMaxItems = hdfutil.DefaultMaxItems
-
-// LimitSlice returns at most maxItems elements from items. The second return
-// value is true if the slice was truncated. If maxItems <= 0, DefaultMaxItems
-// is used.
-func LimitSlice[T any](items []T, maxItems int) ([]T, bool) {
-	return hdfutil.LimitSlice(items, maxItems)
 }
 
 // MapCWEToNIST looks up NIST 800-53 controls for the given CWE identifiers,
@@ -172,31 +109,11 @@ func MapCWEToNIST(cweIDs []string, fallback []string) []string {
 // a warning if the slice was truncated. The label parameter identifies the item
 // type in the warning message (e.g., "issue", "vulnerability").
 func LimitSliceWithWarning[T any](items []T, maxItems int, label string) []T {
-	limited, truncated := LimitSlice(items, maxItems)
+	limited, truncated := hdfutil.LimitSlice(items, maxItems)
 	if truncated {
 		log.Printf("WARNING: Input truncated at %d %s items (original: %d)", len(limited), label, len(items))
 	}
 	return limited
-}
-
-// CWEPattern matches CWE identifiers like "CWE-79", "CWE 79", "cwe79".
-// Pre-compiled at package level to avoid per-call overhead.
-var CWEPattern = hdfutil.CWEPattern
-
-// ExtractCWEIDs extracts all numeric CWE IDs from a text string.
-// Returns deduplicated sorted list of numeric ID strings (e.g., ["79", "89"]).
-func ExtractCWEIDs(text string) []string {
-	return hdfutil.ExtractCWEIDs(text)
-}
-
-// ParseTimestamp tries multiple common timestamp formats and returns the first
-// successful parse. Returns zero time if none match.
-//
-// Supported formats: RFC3339Nano, RFC3339, RFC1123Z, RFC1123, and the
-// Nessus-specific "Mon Jan 02 15:04:05 2006" format.
-func ParseTimestamp(s string) time.Time {
-	t, _ := hdfutil.ParseTimestamp(s)
-	return t
 }
 
 // HDFResultsOptions configures the fields for building an HDFResults struct.
@@ -280,14 +197,6 @@ func ValidateXMLSize(input []byte, maxSize int) error {
 	return nil
 }
 
-// ContainsXMLEntityDeclarations checks if XML input contains DOCTYPE entity
-// declarations which could be used for entity expansion DoS attacks (billion
-// laughs). Returns true if entities are found. Only inspects the first 4 KB
-// of the input since DOCTYPE declarations must appear before the root element.
-func ContainsXMLEntityDeclarations(input []byte) bool {
-	return hdfutil.ContainsXMLEntityDeclarations(input)
-}
-
 // ValidateXMLInput performs safety checks on XML input:
 //  1. Size limit check (default 50 MB)
 //  2. Entity declaration detection (billion-laughs prevention)
@@ -298,16 +207,8 @@ func ValidateXMLInput(input []byte, maxSize int) error {
 	if err := ValidateXMLSize(input, maxSize); err != nil {
 		return err
 	}
-	if ContainsXMLEntityDeclarations(input) {
+	if hdfutil.ContainsXMLEntityDeclarations(input) {
 		return fmt.Errorf("XML input contains entity declarations which are not supported (potential entity expansion attack)")
 	}
 	return nil
-}
-
-// ExtractXMLRootElement extracts the root element local name from an XML string.
-// It skips XML processing instructions (<?...?>), comments (<!--...-->),
-// and DOCTYPE declarations (<!DOCTYPE ... [...]>), and strips namespace prefixes.
-// Returns "" if no element is found.
-func ExtractXMLRootElement(input string) string {
-	return hdfutil.ExtractXMLRootElement(input)
 }
