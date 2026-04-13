@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/mitre/hdf-cli/pkg/diff/engine"
@@ -60,6 +59,9 @@ type diffRequirement struct {
 	NewStatus     string                     `json:"newEffectiveStatus,omitempty"`
 	Title         string                     `json:"title,omitempty"`
 	Baseline      string                     `json:"baseline,omitempty"`
+
+	// groupValue is the resolved value for --group-by (presentation-only, not serialized).
+	groupValue string
 }
 
 // toCleanJSON converts a Go struct to a map[string]any with nil values stripped.
@@ -422,10 +424,14 @@ func renderDiffOutput(filtered diffResult, flags *diffFlags, oldFile, newFile st
 		}
 	case flags.format == "markdown":
 		outputDiffMarkdown(display, oldFile, newFile)
-		outputComponentSummariesIfPresent(filtered)
+		if flags.groupBy == "" {
+			outputComponentSummariesIfPresent(filtered)
+		}
 	default:
 		outputDiffTable(display, oldFile, newFile)
-		outputComponentSummariesIfPresent(filtered)
+		if flags.groupBy == "" {
+			outputComponentSummariesIfPresent(filtered)
+		}
 	}
 	return nil
 }
@@ -557,13 +563,19 @@ func outputDiffTable(result diffResult, oldFile, newFile string) {
 		fmt.Println()
 	}
 
-	tbl := NewTable(
-		Column{Header: "ID"},
-		Column{Header: "Title"},
-		Column{Header: "Old Status"},
-		Column{Header: "New Status"},
-		Column{Header: "State"},
-	)
+	columns := []Column{
+		{Header: "ID"},
+		{Header: "Title"},
+		{Header: "Old Status"},
+		{Header: "New Status"},
+		{Header: "State"},
+	}
+	hasGroupBy := result.groupLabel != ""
+	if hasGroupBy {
+		columns = append(columns, Column{Header: result.groupLabel})
+	}
+
+	tbl := NewTable(columns...)
 	for _, req := range result.RequirementDiffs {
 		oldStatus := req.OldStatus
 		newStatus := req.NewStatus
@@ -573,13 +585,17 @@ func outputDiffTable(result diffResult, oldFile, newFile string) {
 		if newStatus == "" {
 			newStatus = "-"
 		}
-		tbl.AddRow(
+		row := []string{
 			sanitizeOutput(req.ID),
 			sanitizeOutput(truncate(req.Title, 40)),
 			oldStatus,
 			newStatus,
 			string(req.State),
-		)
+		}
+		if hasGroupBy {
+			row = append(row, sanitizeOutput(req.groupValue))
+		}
+		tbl.AddRow(row...)
 	}
 	tbl.Render()
 
@@ -593,8 +609,14 @@ func outputDiffMarkdown(result diffResult, oldFile, newFile string) {
 	fmt.Printf("## HDF Comparison: %s → %s\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
 	fmt.Println()
 
-	fmt.Println("| ID | Title | Old Status | New Status | State |")
-	fmt.Println("|----|-------|------------|------------|-------|")
+	hasGroupBy := result.groupLabel != ""
+	if hasGroupBy {
+		fmt.Printf("| ID | Title | Old Status | New Status | State | %s |\n", result.groupLabel)
+		fmt.Printf("|----|-------|------------|------------|-------|%s|\n", strings.Repeat("-", len(result.groupLabel)+2))
+	} else {
+		fmt.Println("| ID | Title | Old Status | New Status | State |")
+		fmt.Println("|----|-------|------------|------------|-------|")
+	}
 
 	for _, req := range result.RequirementDiffs {
 		title := sanitizeOutput(truncate(req.Title, 40))
@@ -606,8 +628,13 @@ func outputDiffMarkdown(result diffResult, oldFile, newFile string) {
 		if newStatus == "" {
 			newStatus = "-"
 		}
-		fmt.Printf("| %s | %s | %s | %s | %s |\n",
-			sanitizeOutput(req.ID), title, oldStatus, newStatus, req.State)
+		if hasGroupBy {
+			fmt.Printf("| %s | %s | %s | %s | %s | %s |\n",
+				sanitizeOutput(req.ID), title, oldStatus, newStatus, req.State, sanitizeOutput(req.groupValue))
+		} else {
+			fmt.Printf("| %s | %s | %s | %s | %s |\n",
+				sanitizeOutput(req.ID), title, oldStatus, newStatus, req.State)
+		}
 	}
 
 	fmt.Println()
@@ -680,7 +707,9 @@ func parseSystemDocument(path string) (systemDocument, error) {
 	return doc, nil
 }
 
-// applyComponentGrouping applies either system-aware or label-based grouping to the diff result.
+// applyComponentGrouping applies either system-aware or group-by column to the diff result.
+// --system produces a separate component summary table with compliance percentages.
+// --group-by adds a column to the main diff table showing the group value per requirement.
 func applyComponentGrouping(flags *diffFlags, oldResults, newResults hdf.HdfResults, result *diffResult) error {
 	if flags.system != "" {
 		summaries, err := applySystemGrouping(flags.system, oldResults, newResults, *result)
@@ -691,10 +720,57 @@ func applyComponentGrouping(flags *diffFlags, oldResults, newResults hdf.HdfResu
 		result.groupLabel = "Component"
 	}
 	if flags.groupBy != "" {
-		result.ComponentDiffs = applyGroupBy(flags.groupBy, oldResults, newResults, *result)
-		result.groupLabel = titleCase(flags.groupBy)
+		resolveGroupValues(flags.groupBy, oldResults, newResults, result)
+		result.groupLabel = titleCase(strings.TrimPrefix(flags.groupBy, "labels."))
 	}
 	return nil
+}
+
+// resolveGroupValues populates the groupValue field on each requirement based on the group key.
+// Recognized requirement-level fields: "baseline", "id", "status".
+// Other keys look up baseline extensions.labels.
+func resolveGroupValues(groupKey string, oldResults, newResults hdf.HdfResults, result *diffResult) {
+	groupKey = strings.TrimPrefix(groupKey, "labels.")
+
+	switch groupKey {
+	case groupByBaselineKey:
+		for i := range result.RequirementDiffs {
+			result.RequirementDiffs[i].groupValue = result.RequirementDiffs[i].Baseline
+		}
+	case "id":
+		for i := range result.RequirementDiffs {
+			result.RequirementDiffs[i].groupValue = result.RequirementDiffs[i].ID
+		}
+	case "status":
+		for i := range result.RequirementDiffs {
+			req := &result.RequirementDiffs[i]
+			if req.NewStatus != "" {
+				req.groupValue = req.NewStatus
+			} else {
+				req.groupValue = req.OldStatus
+			}
+		}
+	default:
+		// Label key: look up in baseline extensions.labels
+		baselineGroupMap := make(map[string]string)
+		for _, results := range []hdf.HdfResults{oldResults, newResults} {
+			for _, baseline := range results.Baselines {
+				if baseline.Extensions != nil {
+					if labels, ok := baseline.Extensions["labels"].(map[string]interface{}); ok {
+						if val, ok := labels[groupKey].(string); ok {
+							baselineGroupMap[baseline.Name] = val
+						}
+					}
+				}
+			}
+		}
+		for i := range result.RequirementDiffs {
+			req := &result.RequirementDiffs[i]
+			if val, ok := baselineGroupMap[req.Baseline]; ok {
+				req.groupValue = val
+			}
+		}
+	}
 }
 
 // applySystemGrouping reads the system document and groups diff requirements by component.
@@ -778,101 +854,6 @@ func computeBaselineCompliance(results hdf.HdfResults, baselineSet map[string]bo
 		return 0
 	}
 	return float64(passed) / float64(total) * 100 //nolint:mnd // percentage conversion
-}
-
-// applyGroupBy groups diff requirements by a key. "baseline" groups by
-// baseline name directly; other keys look up baseline extensions.labels.
-func applyGroupBy(
-	groupKey string,
-	oldResults, newResults hdf.HdfResults,
-	result diffResult,
-) []componentSummary {
-	groupKey = strings.TrimPrefix(groupKey, "labels.")
-	return groupByKey(groupKey, oldResults, newResults, result)
-}
-
-// groupByKey groups requirements by a key. For "baseline", uses the
-// requirement's Baseline field directly. For other keys, looks up the
-// value in baseline extensions.labels.
-func groupByKey(
-	groupKey string,
-	oldResults, newResults hdf.HdfResults,
-	result diffResult,
-) []componentSummary {
-	// Build a map from baseline name → group value
-	baselineGroupMap := make(map[string]string)
-	if groupKey == groupByBaselineKey {
-		// "baseline" key: use baseline name directly as the group value
-		for _, results := range []hdf.HdfResults{oldResults, newResults} {
-			for _, baseline := range results.Baselines {
-				baselineGroupMap[baseline.Name] = baseline.Name
-			}
-		}
-	} else {
-		// Label key: look up in baseline extensions.labels
-		for _, results := range []hdf.HdfResults{oldResults, newResults} {
-			for _, baseline := range results.Baselines {
-				if baseline.Extensions != nil {
-					if labels, ok := baseline.Extensions["labels"].(map[string]interface{}); ok {
-						if val, ok := labels[groupKey].(string); ok {
-							baselineGroupMap[baseline.Name] = val
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// Group requirements by their resolved group value
-	groups := make(map[string][]diffRequirement)
-	for _, req := range result.RequirementDiffs {
-		groupVal, ok := baselineGroupMap[req.Baseline]
-		if !ok {
-			groupVal = "(unlabeled)"
-		}
-		groups[groupVal] = append(groups[groupVal], req)
-	}
-
-	// Sort group names
-	names := make([]string, 0, len(groups))
-	for name := range groups {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	var summaries []componentSummary
-	for _, name := range names {
-		reqs := groups[name]
-		compSummary := buildDiffSummary(reqs)
-
-		// Collect baselines for this group
-		baselineSet := make(map[string]bool)
-		for _, req := range reqs {
-			if req.Baseline != "" {
-				baselineSet[req.Baseline] = true
-			}
-		}
-
-		refs := make([]string, 0, len(baselineSet))
-		for b := range baselineSet {
-			refs = append(refs, b)
-		}
-		sort.Strings(refs)
-
-		oldCompliance := computeBaselineCompliance(oldResults, baselineSet)
-		newCompliance := computeBaselineCompliance(newResults, baselineSet)
-
-		summaries = append(summaries, componentSummary{
-			Name:            name,
-			BaselineRefs:    refs,
-			Summary:         compSummary,
-			OldCompliance:   oldCompliance,
-			NewCompliance:   newCompliance,
-			ComplianceDelta: newCompliance - oldCompliance,
-		})
-	}
-
-	return summaries
 }
 
 // runSbomDiff handles the --sbom flag: reads two SBOM files and outputs a package diff.

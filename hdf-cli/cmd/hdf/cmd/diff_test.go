@@ -814,20 +814,30 @@ func TestDiffCommand_SystemFlag_MissingFile(t *testing.T) {
 	}
 }
 
-// TestDiffCommand_GroupByBaseline verifies --group-by baseline groups by baseline name.
+// TestDiffCommand_GroupByBaseline verifies --group-by baseline adds a Baseline column.
 func TestDiffCommand_GroupByBaseline(t *testing.T) {
 	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
 	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
 
+	// Without --all, only changed requirements are shown
 	stdout, stderr, err := executeCommand("diff", "--group-by", "baseline", oldPath, newPath)
 	allowExitCode(t, err, stderr)
 
-	// Should show baseline names as group labels
+	// Should have a Baseline column header
+	if !strings.Contains(stdout, "Baseline") {
+		t.Errorf("expected 'Baseline' column header, got:\n%s", stdout)
+	}
+	// Changed requirement should show its baseline
 	if !strings.Contains(stdout, "RHEL9-STIG") {
 		t.Errorf("expected 'RHEL9-STIG' in grouped output, got:\n%s", stdout)
 	}
+
+	// With --all, unchanged requirements (including PostgreSQL-STIG) are shown
+	stdout, stderr, err = executeCommand("diff", "--group-by", "baseline", "--all", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
 	if !strings.Contains(stdout, "PostgreSQL-STIG") {
-		t.Errorf("expected 'PostgreSQL-STIG' in grouped output, got:\n%s", stdout)
+		t.Errorf("expected 'PostgreSQL-STIG' in --all grouped output, got:\n%s", stdout)
 	}
 }
 
