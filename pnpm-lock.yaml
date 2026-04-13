@@ -121,6 +121,9 @@ importers:
 
   hdf-schema:
     dependencies:
+      '@mitre/hdf-utilities':
+        specifier: workspace:*
+        version: link:../hdf-utilities
       ajv:
         specifier: 8.18.0
         version: 8.18.0

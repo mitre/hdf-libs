@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 )
 
 func TestImpactToSeverity(t *testing.T) {
@@ -34,9 +36,9 @@ func TestImpactToSeverity(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := impactToSeverity(tt.impact)
+			result := hdfutil.ImpactToSeverity(tt.impact)
 			if result != tt.expected {
-				t.Errorf("impactToSeverity(%v) = %v, want %v", tt.impact, result, tt.expected)
+				t.Errorf("ImpactToSeverity(%v) = %v, want %v", tt.impact, result, tt.expected)
 			}
 		})
 	}

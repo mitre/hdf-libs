@@ -147,19 +147,10 @@ func tagSeverityToSeverity(raw interface{}) *hdf.Severity {
 }
 
 // impactToSeverity derives severity from numeric impact score.
+// Uses the canonical CVSS-aligned bands from shared.ImpactToSeverity
+// and converts the string result to the hdf.Severity enum.
 func impactToSeverity(impact float64) hdf.Severity {
-	switch {
-	case impact >= 0.9:
-		return hdf.Critical
-	case impact >= 0.7:
-		return hdf.SeverityHigh
-	case impact >= 0.5:
-		return hdf.Medium
-	case impact > 0:
-		return hdf.SeverityLow
-	default:
-		return hdf.Informational // impact=0, no tags.severity
-	}
+	return hdf.Severity(shared.ImpactToSeverity(impact))
 }
 
 // convertControl converts a v1.0 control to v2.0 EvaluatedRequirement.

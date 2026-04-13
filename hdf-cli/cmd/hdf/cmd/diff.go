@@ -73,16 +73,16 @@ const (
 // diffRequirement holds the comparison result for a single requirement.
 // JSON field names match the hdf-comparison schema's Requirement_Diff type.
 type diffRequirement struct {
-	ID             string    `json:"id"`
-	State          diffState `json:"state"`
-	ChangeReasons  []string  `json:"changeReasons"`
-	Before         any       `json:"before"`
-	After          any       `json:"after"`
-	FieldChanges   []any     `json:"fieldChanges"`
-	OldStatus      string    `json:"oldEffectiveStatus,omitempty"`
-	NewStatus      string    `json:"newEffectiveStatus,omitempty"`
-	Title          string    `json:"title,omitempty"`
-	Baseline       string    `json:"baseline,omitempty"`
+	ID            string    `json:"id"`
+	State         diffState `json:"state"`
+	ChangeReasons []string  `json:"changeReasons"`
+	Before        any       `json:"before"`
+	After         any       `json:"after"`
+	FieldChanges  []any     `json:"fieldChanges"`
+	OldStatus     string    `json:"oldEffectiveStatus,omitempty"`
+	NewStatus     string    `json:"newEffectiveStatus,omitempty"`
+	Title         string    `json:"title,omitempty"`
+	Baseline      string    `json:"baseline,omitempty"`
 }
 
 // toCleanJSON converts a Go struct to a map[string]any with nil values stripped.
@@ -124,15 +124,18 @@ func stripNulls(v any) any {
 }
 
 // diffStateToChangeReason maps diff states to schema-compliant change reason enum values.
+const changeReasonResult = "resultChanged"
+
 func diffStateToChangeReason(state diffState) string {
 	switch state {
 	case diffFixed, diffRegressed:
-		return "resultChanged"
+		return changeReasonResult
 	case diffUpdated:
 		return "metadataChanged"
-	default:
-		return "resultChanged"
+	case diffUnchanged, diffNew, diffAbsent:
+		return changeReasonResult
 	}
+	return changeReasonResult
 }
 
 // diffSummary holds the aggregate counts for a comparison.

@@ -509,6 +509,37 @@ func TestSeverityToImpactWithAliases(t *testing.T) {
 	})
 }
 
+func TestImpactToSeverity(t *testing.T) {
+	tests := []struct {
+		impact   float64
+		expected string
+	}{
+		{1.0, "critical"},
+		{0.9, "critical"},
+		{0.89, "high"},
+		{0.7, "high"},
+		{0.69, "medium"},
+		{0.5, "medium"},
+		{0.4, "medium"},
+		{0.39, "low"},
+		{0.1, "low"},
+		{0.01, "low"},
+		{0.0, "informational"},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, ImpactToSeverity(tt.impact), "ImpactToSeverity(%v)", tt.impact)
+	}
+}
+
+func TestImpactToSeverity_RoundTrip(t *testing.T) {
+	// SeverityToImpact → ImpactToSeverity should return the original label
+	for _, sev := range []string{"critical", "high", "medium", "low", "informational"} {
+		impact := SeverityToImpact(sev, 0.5)
+		got := ImpactToSeverity(impact)
+		assert.Equal(t, sev, got, "round-trip for %q (impact=%v)", sev, impact)
+	}
+}
+
 func TestValidateXMLSize_Normal(t *testing.T) {
 	err := ValidateXMLSize([]byte("<root/>"), 0)
 	assert.NoError(t, err)
