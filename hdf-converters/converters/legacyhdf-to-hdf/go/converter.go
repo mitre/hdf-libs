@@ -3,7 +3,7 @@ package legacyhdf
 import (
 	"time"
 
-	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdfparsers "github.com/mitre/hdf-parsers/go"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -74,7 +74,7 @@ func normalizeStatus(status string) hdf.ResultStatus {
 
 // parseTime parses a v1.0 timestamp string to time.Time.
 func parseTime(ts string) time.Time {
-	return shared.ParseTimestamp(ts)
+	return hdfutil.ParseTimestamp(ts)
 }
 
 // convertResult converts a v1.0 result to v2.0 RequirementResult.
@@ -147,19 +147,10 @@ func tagSeverityToSeverity(raw interface{}) *hdf.Severity {
 }
 
 // impactToSeverity derives severity from numeric impact score.
+// Uses the canonical CVSS-aligned bands from hdfutil.ImpactToSeverity
+// and converts the string result to the hdf.Severity enum.
 func impactToSeverity(impact float64) hdf.Severity {
-	switch {
-	case impact >= 0.9:
-		return hdf.Critical
-	case impact >= 0.7:
-		return hdf.SeverityHigh
-	case impact >= 0.5:
-		return hdf.Medium
-	case impact > 0:
-		return hdf.SeverityLow
-	default:
-		return hdf.Informational // impact=0, no tags.severity
-	}
+	return hdf.Severity(hdfutil.ImpactToSeverity(impact))
 }
 
 // convertControl converts a v1.0 control to v2.0 EvaluatedRequirement.

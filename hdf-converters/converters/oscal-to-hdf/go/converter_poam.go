@@ -4,6 +4,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -38,7 +39,7 @@ func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, conve
 	// Extract systemRef from import-ssp
 	var systemRef *string
 	if poam.ImportSSP != nil && poam.ImportSSP.Href != "" {
-		systemRef = shared.Ptr(poam.ImportSSP.Href)
+		systemRef = hdfutil.Ptr(poam.ImportSSP.Href)
 	}
 
 	// Build appliedBy from metadata responsible-parties
@@ -50,7 +51,7 @@ func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, conve
 		Overrides: overrides,
 		Integrity: integrity,
 		SystemRef: systemRef,
-		Version:   shared.Ptr(meta.Version),
+		Version:   hdfutil.Ptr(meta.Version),
 		AppliedBy: appliedBy,
 		Generator: &hdf.Generator{
 			Name:    genName,

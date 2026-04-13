@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -92,10 +93,10 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "hdf-converters",
 		ConverterVersion: converterVersion,
-		ToolName:   "JUnit XML",
-		ToolFormat: "XML",
+		ToolName:         "JUnit XML",
+		ToolFormat:       "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components:          []hdf.Component{target},
+		Components:       []hdf.Component{target},
 		Timestamp:        &now,
 	}), nil
 }
@@ -159,7 +160,7 @@ func testCaseToRequirement(tc junitTestCase, suiteTimestamp string) hdf.Evaluate
 	}
 
 	if suiteTimestamp != "" {
-		if t := shared.ParseTimestamp(suiteTimestamp); !t.IsZero() {
+		if t := hdfutil.ParseTimestamp(suiteTimestamp); !t.IsZero() {
 			result.StartTime = t
 		}
 	}
@@ -177,7 +178,7 @@ func testCaseToRequirement(tc junitTestCase, suiteTimestamp string) hdf.Evaluate
 
 	return hdf.EvaluatedRequirement{
 		ID:           id,
-		Title:        shared.Ptr(tc.Name),
+		Title:        hdfutil.Ptr(tc.Name),
 		Descriptions: descriptions,
 		Impact:       0.5,
 		Tags:         tags,

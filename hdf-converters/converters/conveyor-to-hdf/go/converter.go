@@ -8,6 +8,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -221,7 +222,7 @@ func buildRequirement(result ConveyorResult, filename string) hdf.EvaluatedRequi
 
 	// Build results from sections
 	scannerName := result.Response.ServiceName
-	startTime := shared.ParseTimestamp(result.Response.Milestones.ServiceStarted)
+	startTime := hdfutil.ParseTimestamp(result.Response.Milestones.ServiceStarted)
 	score := result.Result.Score
 	status := determineStatus(score)
 
@@ -327,8 +328,8 @@ func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "conveyor-to-hdf",
 		ConverterVersion: converterVersion,
-		ToolName:   "Conveyor",
-		ToolFormat: "JSON",
+		ToolName:         "Conveyor",
+		ToolFormat:       "JSON",
 		Baselines:        baselines,
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.CopyrightApplication},

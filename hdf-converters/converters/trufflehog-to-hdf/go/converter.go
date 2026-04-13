@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -160,7 +161,7 @@ func buildCodeDesc(f TrufflehogFinding) string {
 // getTimestamp extracts a timestamp from a finding's Git source metadata.
 func getTimestamp(f TrufflehogFinding) time.Time {
 	if f.SourceMetadata.Data.Git != nil && f.SourceMetadata.Data.Git.Timestamp != "" {
-		ts := shared.ParseTimestamp(f.SourceMetadata.Data.Git.Timestamp)
+		ts := hdfutil.ParseTimestamp(f.SourceMetadata.Data.Git.Timestamp)
 		if !ts.IsZero() {
 			return ts
 		}
@@ -322,7 +323,7 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		ToolName:         "TruffleHog",
 		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components:          targets,
+		Components:       targets,
 		Timestamp:        &now,
 	}), nil
 }

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -30,7 +31,7 @@ func assessmentPlanToHDFPlan(ap *AssessmentPlan, rawInput []byte, converterVersi
 	// Extract systemRef from import-ssp
 	var systemRef *string
 	if ap.ImportSSP != nil && ap.ImportSSP.Href != "" {
-		systemRef = shared.Ptr(ap.ImportSSP.Href)
+		systemRef = hdfutil.Ptr(ap.ImportSSP.Href)
 	}
 
 	// Determine plan type from assessment-assets/tasks
@@ -45,7 +46,7 @@ func assessmentPlanToHDFPlan(ap *AssessmentPlan, rawInput []byte, converterVersi
 		Assessments: assessments,
 		Integrity:   integrity,
 		SystemRef:   systemRef,
-		Version:     shared.Ptr(meta.Version),
+		Version:     hdfutil.Ptr(meta.Version),
 		Type:        planType,
 		Description: description,
 		Generator: &hdf.Generator{
@@ -74,7 +75,7 @@ func buildAssessments(ap *AssessmentPlan) []hdf.Assessment {
 
 		// Add description from control selection
 		if cs.Description != "" {
-			assessment.Description = shared.Ptr(cs.Description)
+			assessment.Description = hdfutil.Ptr(cs.Description)
 		}
 
 		// Extract runner info from assessment-assets
@@ -95,7 +96,7 @@ func buildAssessments(ap *AssessmentPlan) []hdf.Assessment {
 				Runner:      extractRunnerConfig(ap),
 			}
 			if co.Description != "" {
-				assessment.Description = shared.Ptr(co.Description)
+				assessment.Description = hdfutil.Ptr(co.Description)
 			}
 			assessments = append(assessments, assessment)
 		}
@@ -169,7 +170,7 @@ func extractRunnerConfig(ap *AssessmentPlan) *hdf.RunnerConfig {
 		platform := ap.AssessmentAssets.AssessmentPlatforms[0]
 		config := &hdf.RunnerConfig{}
 		if platform.Title != "" {
-			config.Name = shared.Ptr(platform.Title)
+			config.Name = hdfutil.Ptr(platform.Title)
 		}
 		return config
 	}
@@ -178,9 +179,9 @@ func extractRunnerConfig(ap *AssessmentPlan) *hdf.RunnerConfig {
 	if len(ap.AssessmentAssets.Components) > 0 {
 		comp := ap.AssessmentAssets.Components[0]
 		config := &hdf.RunnerConfig{}
-		config.Name = shared.Ptr(comp.Title)
+		config.Name = hdfutil.Ptr(comp.Title)
 		if v, ok := ExtractPropValue(comp.Props, "version", ""); ok {
-			config.Version = shared.Ptr(v)
+			config.Version = hdfutil.Ptr(v)
 		}
 		return config
 	}

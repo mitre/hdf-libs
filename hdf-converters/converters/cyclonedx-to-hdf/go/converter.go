@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -89,7 +90,7 @@ type CDXAnalysis struct {
 // Standard mappings cover critical, high, medium, low, info, none.
 // "unknown" and unrecognized values default to 0.5.
 func severityToImpact(severity string) float64 {
-	return shared.SeverityToImpact(severity, 0.5)
+	return hdfutil.SeverityToImpact(severity, 0.5)
 }
 
 var cvssMethods = map[string]bool{
@@ -345,8 +346,8 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "cyclonedx-to-hdf",
 		ConverterVersion: converterVersion,
-		ToolName:   "CycloneDX",
-		ToolFormat: "JSON",
+		ToolName:         "CycloneDX",
+		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components:       []hdf.Component{comp},
 		Timestamp:        &now,

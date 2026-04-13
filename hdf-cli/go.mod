@@ -7,16 +7,18 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.41.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.9
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.61.0
+	github.com/charmbracelet/bubbles v0.21.1-0.20250623103423-23b8fd6302d7
 	github.com/charmbracelet/huh v1.0.0
 	github.com/dlclark/regexp2 v1.11.5
+	github.com/google/uuid v1.6.0
 	github.com/mitre/hdf-converters v0.0.0
 	github.com/mitre/hdf-generators/go v0.0.0
+	github.com/mitre/hdf-libs/hdf-utilities/go v0.0.0
 	github.com/mitre/hdf-schema v0.0.0
 	github.com/mitre/hdf-validators/go v0.0.0
 	github.com/protobom/protobom v0.5.4
-	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/spf13/cobra v1.9.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/term v0.41.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -40,7 +42,6 @@ require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/catppuccin/go v0.3.0 // indirect
-	github.com/charmbracelet/bubbles v0.21.1-0.20250623103423-23b8fd6302d7 // indirect
 	github.com/charmbracelet/bubbletea v1.3.6 // indirect
 	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
@@ -53,7 +54,6 @@ require (
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -96,3 +96,5 @@ replace github.com/mitre/hdf-mappings/go => ../hdf-mappings/go
 replace github.com/mitre/hdf-generators/go => ../hdf-generators/go
 
 replace github.com/mitre/hdf-validators/go => ../hdf-validators/go
+
+replace github.com/mitre/hdf-libs/hdf-utilities/go => ../hdf-utilities/go

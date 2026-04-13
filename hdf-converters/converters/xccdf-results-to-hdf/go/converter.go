@@ -9,6 +9,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -251,7 +252,7 @@ type ArfReportContent struct {
 // Severity and status mappings
 // ---------------------------------------------------------------------------
 
-// severityToImpact was formerly a local map; now uses shared.SeverityToImpact.
+// severityToImpact was formerly a local map; now uses hdfutil.SeverityToImpact.
 // XCCDF defines three severity levels (high, medium, low) which are all
 // covered by the standard mapping. Default for unknown severity is 0.5.
 
@@ -435,10 +436,10 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 	status := "loaded"
 	baseline := hdf.EvaluatedBaseline{
 		Name:            baselineName,
-		Title:           shared.Ptr(baselineName),
-		Version:         shared.Ptr(benchmark.Version),
+		Title:           hdfutil.Ptr(baselineName),
+		Version:         hdfutil.Ptr(benchmark.Version),
 		Status:          &status,
-		Summary:         shared.Ptr(shared.StripHTML(benchmark.Description)),
+		Summary:         hdfutil.Ptr(hdfutil.StripHTML(benchmark.Description)),
 		ResultsChecksum: resultsChecksum,
 		Requirements:    requirements,
 	}
@@ -451,7 +452,7 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 		ToolName:         "XCCDF",
 		ToolFormat:       "XCCDF",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components:          []hdf.Component{target},
+		Components:       []hdf.Component{target},
 		Timestamp:        &startTime,
 		Statistics: &hdf.Statistics{
 			Duration: &duration,
@@ -479,7 +480,7 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 		requirements = append(requirements, req)
 		groups = append(groups, hdf.RequirementGroup{
 			ID:           group.ID,
-			Title:        shared.Ptr(group.Title),
+			Title:        hdfutil.Ptr(group.Title),
 			Requirements: []string{req.ID},
 		})
 	}
@@ -498,10 +499,10 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 
 	baseline := &hdf.HDFBaseline{
 		Name:         baselineName,
-		Title:        shared.Ptr(benchmark.Title),
-		Version:      shared.Ptr(benchmark.Version),
+		Title:        hdfutil.Ptr(benchmark.Title),
+		Version:      hdfutil.Ptr(benchmark.Version),
 		Status:       &status,
-		Summary:      shared.Ptr(shared.StripHTML(benchmark.Description)),
+		Summary:      hdfutil.Ptr(hdfutil.StripHTML(benchmark.Description)),
 		Integrity:    integrity,
 		Requirements: requirements,
 		Groups:       groups,
@@ -523,7 +524,7 @@ func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequ
 	}
 
 	severity := strings.ToLower(rule.Severity)
-	impact := shared.SeverityToImpact(severity, 0.5)
+	impact := hdfutil.SeverityToImpact(severity, 0.5)
 
 	descriptions := buildBaselineDescriptions(rule)
 	tags := buildBaselineTags(rule, group)
@@ -536,7 +537,7 @@ func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequ
 
 	return hdf.BaselineRequirement{
 		ID:           id,
-		Title:        shared.Ptr(rule.Title),
+		Title:        hdfutil.Ptr(rule.Title),
 		Impact:       impact,
 		Severity:     severityPtr,
 		Descriptions: descriptions,
@@ -552,7 +553,7 @@ func buildBaselineDescriptions(rule *Rule) []hdf.Description {
 		descText := extractVulnDiscussion(rule.Description)
 		descriptions = append(descriptions, hdf.Description{
 			Label: "default",
-			Data:  shared.StripHTML(descText),
+			Data:  hdfutil.StripHTML(descText),
 		})
 	} else {
 		descriptions = append(descriptions, hdf.Description{
@@ -564,14 +565,14 @@ func buildBaselineDescriptions(rule *Rule) []hdf.Description {
 	if rule.Check.CheckContent != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "check",
-			Data:  shared.StripHTML(rule.Check.CheckContent),
+			Data:  hdfutil.StripHTML(rule.Check.CheckContent),
 		})
 	}
 
 	if rule.Fixtext.Text != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
-			Data:  shared.StripHTML(rule.Fixtext.Text),
+			Data:  hdfutil.StripHTML(rule.Fixtext.Text),
 		})
 	}
 
@@ -735,14 +736,14 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		status := "loaded"
 		baseline := hdf.EvaluatedBaseline{
 			Name:            baselineName,
-			Title:           shared.Ptr(baselineName),
+			Title:           hdfutil.Ptr(baselineName),
 			Status:          &status,
 			ResultsChecksum: resultsChecksum,
 			Requirements:    requirements,
 		}
 		if benchmark != nil {
-			baseline.Version = shared.Ptr(benchmark.Version)
-			baseline.Summary = shared.Ptr(shared.StripHTML(benchmark.Description))
+			baseline.Version = hdfutil.Ptr(benchmark.Version)
+			baseline.Summary = hdfutil.Ptr(hdfutil.StripHTML(benchmark.Description))
 		}
 		baselines = append(baselines, baseline)
 
@@ -772,7 +773,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		ToolName:         "ARF",
 		ToolFormat:       "ARF",
 		Baselines:        baselines,
-		Components:          targets,
+		Components:       targets,
 		Timestamp:        &firstTimestamp,
 		Statistics: &hdf.Statistics{
 			Duration: &totalDuration,
@@ -813,14 +814,14 @@ func enrichTargetWithAsset(target *hdf.Component, asset *ArfAsset) {
 	cd := &asset.ComputingDevice
 
 	if cd.FQDN != "" {
-		target.FQDN = shared.Ptr(cd.FQDN)
+		target.FQDN = hdfutil.Ptr(cd.FQDN)
 	}
 
 	// Extract first non-loopback MAC address
 	for _, conn := range cd.Connections.Connections {
 		mac := conn.MACAddress
 		if mac != "" && mac != "00:00:00:00:00:00" {
-			target.MACAddress = shared.Ptr(mac)
+			target.MACAddress = hdfutil.Ptr(mac)
 			break
 		}
 	}
@@ -829,11 +830,11 @@ func enrichTargetWithAsset(target *hdf.Component, asset *ArfAsset) {
 	if target.IPAddress == nil {
 		for _, conn := range cd.Connections.Connections {
 			if conn.IPAddress.IPv4 != "" {
-				target.IPAddress = shared.Ptr(conn.IPAddress.IPv4)
+				target.IPAddress = hdfutil.Ptr(conn.IPAddress.IPv4)
 				break
 			}
 			if conn.IPAddress.IPv6 != "" {
-				target.IPAddress = shared.Ptr(conn.IPAddress.IPv6)
+				target.IPAddress = hdfutil.Ptr(conn.IPAddress.IPv6)
 				break
 			}
 		}
@@ -866,8 +867,8 @@ func buildRuleMap(benchmark *Benchmark) map[string]*Rule {
 // calculateTiming computes the start time and duration in seconds from the
 // TestResult start-time and end-time attributes.
 func calculateTiming(tr *TestResult) (time.Time, float64) {
-	startTime := shared.ParseTimestamp(tr.StartTime)
-	endTime := shared.ParseTimestamp(tr.EndTime)
+	startTime := hdfutil.ParseTimestamp(tr.StartTime)
+	endTime := hdfutil.ParseTimestamp(tr.EndTime)
 
 	if startTime.IsZero() {
 		startTime = time.Now()
@@ -896,7 +897,7 @@ func convertRuleResult(rr *RuleResult, rule *Rule) hdf.EvaluatedRequirement {
 
 	return hdf.EvaluatedRequirement{
 		ID:           id,
-		Title:        shared.Ptr(title),
+		Title:        hdfutil.Ptr(title),
 		Descriptions: descriptions,
 		Impact:       impact,
 		Tags:         tags,
@@ -930,7 +931,7 @@ func determineImpact(rr *RuleResult, rule *Rule) float64 {
 	if severity == "" && rule != nil {
 		severity = strings.ToLower(rule.Severity)
 	}
-	return shared.SeverityToImpact(severity, 0.5)
+	return hdfutil.SeverityToImpact(severity, 0.5)
 }
 
 // buildDescriptions creates HDF Description entries from the Rule definition.
@@ -941,7 +942,7 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 		descText := extractVulnDiscussion(rule.Description)
 		descriptions = append(descriptions, hdf.Description{
 			Label: "default",
-			Data:  shared.StripHTML(descText),
+			Data:  hdfutil.StripHTML(descText),
 		})
 	} else {
 		descriptions = append(descriptions, hdf.Description{
@@ -953,7 +954,7 @@ func buildDescriptions(rule *Rule) []hdf.Description {
 	if rule != nil && rule.Fixtext.Text != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
-			Data:  shared.StripHTML(rule.Fixtext.Text),
+			Data:  hdfutil.StripHTML(rule.Fixtext.Text),
 		})
 	}
 
@@ -1043,7 +1044,7 @@ func dedup(items []string) []string {
 func buildResult(rr *RuleResult) hdf.RequirementResult {
 	status := mapResultStatus(rr.Result)
 
-	startTime := shared.ParseTimestamp(rr.Time)
+	startTime := hdfutil.ParseTimestamp(rr.Time)
 	if startTime.IsZero() {
 		startTime = time.Now()
 	}
@@ -1067,13 +1068,13 @@ func mapResultStatus(result string) hdf.ResultStatus {
 // buildTarget constructs an HDF Target from the TestResult metadata.
 func buildTarget(tr *TestResult) hdf.Component {
 	target := hdf.Component{
-		Name:   tr.Target,
-		Type:   hdf.Host,
+		Name: tr.Target,
+		Type: hdf.Host,
 	}
 
 	// Use the first target-address as the IP address
 	if len(tr.TargetAddresses) > 0 {
-		target.IPAddress = shared.Ptr(tr.TargetAddresses[0])
+		target.IPAddress = hdfutil.Ptr(tr.TargetAddresses[0])
 	}
 
 	return target

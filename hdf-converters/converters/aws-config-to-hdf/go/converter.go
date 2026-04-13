@@ -9,6 +9,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	awsconfigmap "github.com/mitre/hdf-mappings/go/awsconfig"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -108,7 +109,7 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ConverterVersion: converterVersion,
 		ToolName:         "AWS Config",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components:          []hdf.Component{target},
+		Components:       []hdf.Component{target},
 		Timestamp:        &now,
 	}), nil
 }
@@ -123,9 +124,9 @@ func buildBaseline(rules []ConfigRule, integrity *hdf.Integrity) hdf.EvaluatedBa
 
 	return hdf.EvaluatedBaseline{
 		Name:         "AWS Config",
-		Title:        shared.Ptr("AWS Config Compliance Results"),
-		Version:      shared.Ptr("1.0.0"),
-		Maintainer:   shared.Ptr("Amazon Web Services"),
+		Title:        hdfutil.Ptr("AWS Config Compliance Results"),
+		Version:      hdfutil.Ptr("1.0.0"),
+		Maintainer:   hdfutil.Ptr("Amazon Web Services"),
 		Integrity:    integrity,
 		Requirements: requirements,
 	}
@@ -154,7 +155,7 @@ func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 
 	return hdf.EvaluatedRequirement{
 		ID:           rule.ConfigRuleID,
-		Title:        shared.Ptr(buildTitle(rule)),
+		Title:        hdfutil.Ptr(buildTitle(rule)),
 		Descriptions: descriptions,
 		Impact:       0.5,
 		Tags:         tags,
@@ -171,7 +172,7 @@ func buildResult(r EvaluationResult) hdf.RequirementResult {
 	q := r.EvaluationResultIdentifier.EvaluationResultQualifier
 	status := mapComplianceStatus(r.ComplianceType)
 	codeDesc := buildCodeDesc(q)
-	startTime := shared.ParseTimestamp(r.ConfigRuleInvokedTime)
+	startTime := hdfutil.ParseTimestamp(r.ConfigRuleInvokedTime)
 	runTime := computeRunTime(r.ConfigRuleInvokedTime, r.ResultRecordedTime)
 
 	return hdf.RequirementResult{
@@ -272,8 +273,8 @@ func buildMessage(codeDesc, annotation string, status hdf.ResultStatus) *string 
 
 // computeRunTime calculates elapsed seconds between two ISO timestamps.
 func computeRunTime(invokedStr, recordedStr string) *float64 {
-	invoked := shared.ParseTimestamp(invokedStr)
-	recorded := shared.ParseTimestamp(recordedStr)
+	invoked := hdfutil.ParseTimestamp(invokedStr)
+	recorded := hdfutil.ParseTimestamp(recordedStr)
 	if invoked.IsZero() || recorded.IsZero() {
 		return nil
 	}

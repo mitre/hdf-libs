@@ -6,6 +6,7 @@ import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
 import resultSchema from '../src/schemas/primitives/result.schema.json';
 import amendmentsSchema from '../src/schemas/primitives/amendments.schema.json';
 import hdfAmendmentsSchema from '../src/schemas/hdf-amendments.schema.json';
+import { schemaRef } from './schema-ref';
 
 describe('hdf-amendments.schema.json', () => {
   const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
@@ -135,7 +136,7 @@ describe('amendments.schema.json — Standalone_Override', () => {
   ajv.addSchema(amendmentsSchema);
 
   const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v2.0.0#/$defs/Standalone_Override',
+    ...schemaRef(amendmentsSchema, 'Standalone_Override'),
   });
 
   const valid = {

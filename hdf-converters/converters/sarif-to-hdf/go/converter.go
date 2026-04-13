@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -249,9 +250,9 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 		ToolName:         toolName,
 		ToolVersion:      toolVersion,
 		ToolFormat:       "SARIF",
-		Baselines:         baselines,
-		Components:           []hdf.Component{},
-		Timestamp:         &timestamp,
+		Baselines:        baselines,
+		Components:       []hdf.Component{},
+		Timestamp:        &timestamp,
 	})
 
 	return hdfResult, nil
@@ -393,7 +394,7 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 	return hdf.EvaluatedBaseline{
 		Name:            baselineName,
 		Version:         &version,
-		Title:           shared.Ptr("Static Analysis Results Interchange Format"),
+		Title:           hdfutil.Ptr("Static Analysis Results Interchange Format"),
 		Maintainer:      maintainer,
 		Requirements:    requirements,
 		ResultsChecksum: resultsChecksum,
@@ -437,7 +438,7 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 	// Use the rule's defaultConfiguration.level, falling back to the first result's level,
 	// then to the SARIF default "warning".
 	ruleLevel := resolveRuleLevel(rule, sarifResults)
-	impact := shared.SeverityToImpactWithAliases(ruleLevel, sarifAliases, 0.0)
+	impact := hdfutil.SeverityToImpactWithAliases(ruleLevel, sarifAliases, 0.0)
 	if impact == 0 {
 		impact = 0.1
 	}
@@ -611,7 +612,7 @@ func extractCweFromRule(rule *ReportingDescriptor) []string {
 		if tagSlice, ok := tags.([]interface{}); ok {
 			for _, tag := range tagSlice {
 				if tagStr, ok := tag.(string); ok {
-					if ids := shared.ExtractCWEIDs(tagStr); len(ids) > 0 {
+					if ids := hdfutil.ExtractCWEIDs(tagStr); len(ids) > 0 {
 						for _, id := range ids {
 							cweIds = append(cweIds, "CWE-"+id)
 						}
@@ -628,7 +629,7 @@ func extractCweFromRule(rule *ReportingDescriptor) []string {
 }
 
 func extractCweIds(text string) []string {
-	ids := shared.ExtractCWEIDs(text)
+	ids := hdfutil.ExtractCWEIDs(text)
 	if len(ids) == 0 {
 		return []string{}
 	}

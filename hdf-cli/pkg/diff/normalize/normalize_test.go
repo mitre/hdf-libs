@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -498,7 +499,7 @@ func TestParseTimestamp_TableDriven(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result := parseTimestamp(tc.input)
+			result := hdfutil.ParseTimestamp(tc.input)
 			if tc.wantZero {
 				assert.True(t, result.IsZero(), "expected zero time for %q", tc.input)
 			} else {

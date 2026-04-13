@@ -10,6 +10,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	"github.com/mitre/hdf-mappings/go/scoutsuite"
 	hdf "github.com/mitre/hdf-schema"
@@ -191,7 +192,7 @@ func buildRequirement(ruleID string, finding Finding, startTime string) hdf.Eval
 	message := getMessage(finding.CheckedItems, finding.FlaggedItems, finding.Items)
 
 	// Parse start time
-	parsedTime := shared.ParseTimestamp(startTime)
+	parsedTime := hdfutil.ParseTimestamp(startTime)
 	if parsedTime.IsZero() {
 		// Try ScoutSuite-specific format: "2021-02-19 19:16:10+0000"
 		t, err := time.Parse("2006-01-02 15:04:05-0700", startTime)
@@ -271,7 +272,7 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 
 	// Parse timestamp
 	var timestamp *time.Time
-	parsedTime := shared.ParseTimestamp(report.LastRun.Time)
+	parsedTime := hdfutil.ParseTimestamp(report.LastRun.Time)
 	if parsedTime.IsZero() {
 		// Try ScoutSuite format: "2021-02-19 19:16:10+0000"
 		t, err := time.Parse("2006-01-02 15:04:05-0700", report.LastRun.Time)
@@ -284,12 +285,12 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:     "scoutsuite-to-hdf",
-		ConverterVersion:  converterVersion,
-		ToolName:          "ScoutSuite",
-		ToolFormat:        "JSON",
-		ToolVersion:       report.LastRun.Version,
-		Baselines:         []hdf.EvaluatedBaseline{baseline},
+		GeneratorName:    "scoutsuite-to-hdf",
+		ConverterVersion: converterVersion,
+		ToolName:         "ScoutSuite",
+		ToolFormat:       "JSON",
+		ToolVersion:      report.LastRun.Version,
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{
 				Name: targetName,

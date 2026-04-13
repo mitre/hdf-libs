@@ -336,3 +336,250 @@ func TestDiffSystems_ComponentDiffsSortedByName(t *testing.T) {
 		}
 	}
 }
+
+// -- ComponentId matching tests -----------------------------------------------
+
+func TestDiffSystems_MatchByComponentId(t *testing.T) {
+	// Components renamed but same componentId → should match as updated, not absent+new
+	oldSys := map[string]any{
+		"name": "Test-System",
+		"components": []any{
+			map[string]any{
+				"componentId": "uuid-web-001",
+				"name":        "WebTier-Old",
+				"type":        "application",
+				"description": "Web servers v1",
+			},
+		},
+	}
+	newSys := map[string]any{
+		"name": "Test-System",
+		"components": []any{
+			map[string]any{
+				"componentId": "uuid-web-001",
+				"name":        "WebTier-New",
+				"type":        "application",
+				"description": "Web servers v2",
+			},
+		},
+	}
+
+	result, err := DiffSystems(oldSys, newSys)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(result.ComponentDiffs) != 1 {
+		t.Fatalf("expected 1 component diff, got %d", len(result.ComponentDiffs))
+	}
+
+	cd := result.ComponentDiffs[0]
+	// Should use the new name when componentId matches
+	if cd.Name != "WebTier-New" {
+		t.Errorf("expected component name 'WebTier-New', got %q", cd.Name)
+	}
+	if cd.State != types.StateUpdated {
+		t.Errorf("expected state 'updated' (description changed), got %q", cd.State)
+	}
+
+	// Should NOT have absent + new (which would happen with name-only matching)
+	for _, d := range result.ComponentDiffs {
+		if d.State == types.StateAbsent || d.State == types.StateNew {
+			t.Errorf("unexpected state %q for %q — componentId should have matched", d.State, d.Name)
+		}
+	}
+}
+
+func TestDiffSystems_ComponentIdTakesPrecedenceOverName(t *testing.T) {
+	// Two components: one matched by componentId (renamed), one by name
+	oldSys := map[string]any{
+		"name": "Test-System",
+		"components": []any{
+			map[string]any{
+				"componentId": "uuid-001",
+				"name":        "OldName",
+				"type":        "application",
+			},
+			map[string]any{
+				"name":        "SharedName",
+				"type":        "database",
+				"description": "Matched by name",
+			},
+		},
+	}
+	newSys := map[string]any{
+		"name": "Test-System",
+		"components": []any{
+			map[string]any{
+				"componentId": "uuid-001",
+				"name":        "NewName",
+				"type":        "application",
+			},
+			map[string]any{
+				"name":        "SharedName",
+				"type":        "database",
+				"description": "Matched by name",
+			},
+		},
+	}
+
+	result, err := DiffSystems(oldSys, newSys)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Should have exactly 2 component diffs (not 3 from absent OldName + new NewName + matched SharedName)
+	if len(result.ComponentDiffs) != 2 {
+		t.Fatalf("expected 2 component diffs, got %d", len(result.ComponentDiffs))
+	}
+
+	// Verify no absent or new states
+	for _, cd := range result.ComponentDiffs {
+		if cd.State == types.StateAbsent || cd.State == types.StateNew {
+			t.Errorf("unexpected state %q for %q", cd.State, cd.Name)
+		}
+	}
+}
+
+// -- Data flow diffing tests --------------------------------------------------
+
+func TestDiffSystems_DataFlowAdded(t *testing.T) {
+	oldSys := map[string]any{
+		"name":       "Test-System",
+		"components": []any{},
+	}
+	newSys := map[string]any{
+		"name":       "Test-System",
+		"components": []any{},
+		"dataFlows": []any{
+			map[string]any{
+				"from":     "web-001",
+				"to":       "db-001",
+				"protocol": "tcp",
+			},
+		},
+	}
+
+	result, err := DiffSystems(oldSys, newSys)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Extensions == nil {
+		t.Fatal("expected extensions with dataFlowChanges")
+	}
+	dfChanges, ok := result.Extensions["dataFlowChanges"]
+	if !ok {
+		t.Fatal("expected dataFlowChanges in extensions")
+	}
+	changes, ok := dfChanges.([]DataFlowChange)
+	if !ok {
+		t.Fatalf("expected []DataFlowChange, got %T", dfChanges)
+	}
+	if len(changes) != 1 {
+		t.Fatalf("expected 1 data flow change, got %d", len(changes))
+	}
+	if changes[0].State != "added" {
+		t.Errorf("expected state 'added', got %q", changes[0].State)
+	}
+}
+
+func TestDiffSystems_DataFlowRemoved(t *testing.T) {
+	oldSys := map[string]any{
+		"name":       "Test-System",
+		"components": []any{},
+		"dataFlows": []any{
+			map[string]any{
+				"from":     "web-001",
+				"to":       "db-001",
+				"protocol": "tcp",
+			},
+		},
+	}
+	newSys := map[string]any{
+		"name":       "Test-System",
+		"components": []any{},
+	}
+
+	result, err := DiffSystems(oldSys, newSys)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Extensions == nil {
+		t.Fatal("expected extensions with dataFlowChanges")
+	}
+	changes := result.Extensions["dataFlowChanges"].([]DataFlowChange)
+	if len(changes) != 1 {
+		t.Fatalf("expected 1 data flow change, got %d", len(changes))
+	}
+	if changes[0].State != "removed" {
+		t.Errorf("expected state 'removed', got %q", changes[0].State)
+	}
+}
+
+func TestDiffSystems_DataFlowUpdated(t *testing.T) {
+	oldSys := map[string]any{
+		"name":       "Test-System",
+		"components": []any{},
+		"dataFlows": []any{
+			map[string]any{
+				"from":     "web-001",
+				"to":       "db-001",
+				"protocol": "tcp",
+			},
+		},
+	}
+	newSys := map[string]any{
+		"name":       "Test-System",
+		"components": []any{},
+		"dataFlows": []any{
+			map[string]any{
+				"from":     "web-001",
+				"to":       "db-001",
+				"protocol": "tls",
+			},
+		},
+	}
+
+	result, err := DiffSystems(oldSys, newSys)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Extensions == nil {
+		t.Fatal("expected extensions with dataFlowChanges")
+	}
+	changes := result.Extensions["dataFlowChanges"].([]DataFlowChange)
+	if len(changes) != 1 {
+		t.Fatalf("expected 1 data flow change, got %d", len(changes))
+	}
+	if changes[0].State != "updated" {
+		t.Errorf("expected state 'updated', got %q", changes[0].State)
+	}
+}
+
+func TestDiffSystems_NoDataFlowChanges_NoExtension(t *testing.T) {
+	oldSys := map[string]any{
+		"name":       "Test-System",
+		"components": []any{},
+		"dataFlows": []any{
+			map[string]any{
+				"from":     "web-001",
+				"to":       "db-001",
+				"protocol": "tcp",
+			},
+		},
+	}
+
+	result, err := DiffSystems(oldSys, oldSys)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Extensions != nil {
+		if _, ok := result.Extensions["dataFlowChanges"]; ok {
+			t.Error("expected no dataFlowChanges extension when flows are identical")
+		}
+	}
+}

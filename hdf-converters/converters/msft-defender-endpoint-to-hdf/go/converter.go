@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -47,7 +48,7 @@ type mdeAlert struct {
 
 // severityToImpact maps MDE severity strings to HDF impact values.
 func severityToImpact(severity string) float64 {
-	return shared.SeverityToImpact(severity, 0.5)
+	return hdfutil.SeverityToImpact(severity, 0.5)
 }
 
 // statusToResult maps MDE alert status and classification to HDF result status.
@@ -127,10 +128,10 @@ func extractDeviceTarget(alert mdeAlert) hdf.Component {
 				Labels: map[string]string{"provider": "azure"},
 			}
 			if deviceName != "" {
-				target.FQDN = shared.Ptr(deviceName)
+				target.FQDN = hdfutil.Ptr(deviceName)
 			}
 			if osPlatform != "" {
-				target.OSName = shared.Ptr(osPlatform)
+				target.OSName = hdfutil.Ptr(osPlatform)
 			}
 			return target
 		}
@@ -139,7 +140,7 @@ func extractDeviceTarget(alert mdeAlert) hdf.Component {
 	return hdf.Component{
 		Name:      alert.TenantID,
 		Type:      hdf.CloudAccount,
-		AccountID: shared.Ptr(alert.TenantID),
+		AccountID: hdfutil.Ptr(alert.TenantID),
 		Labels:    map[string]string{"account": alert.TenantID, "provider": "azure"},
 	}
 }
@@ -147,7 +148,7 @@ func extractDeviceTarget(alert mdeAlert) hdf.Component {
 // buildTags creates the tags map for a requirement.
 func buildTags(alert mdeAlert) map[string]interface{} {
 	tags := map[string]interface{}{
-		"nist": shared.StringsToInterfaces(shared.DefaultStaticAnalysisNIST),
+		"nist": hdfutil.StringsToInterfaces(shared.DefaultStaticAnalysisNIST),
 	}
 
 	if alert.Category != "" {
@@ -155,7 +156,7 @@ func buildTags(alert mdeAlert) map[string]interface{} {
 	}
 
 	if len(alert.MitreTechniques) > 0 {
-		tags["mitre"] = shared.StringsToInterfaces(alert.MitreTechniques)
+		tags["mitre"] = hdfutil.StringsToInterfaces(alert.MitreTechniques)
 	}
 
 	if alert.Classification != nil && *alert.Classification != "" {
@@ -182,7 +183,7 @@ func alertToRequirement(alert mdeAlert) hdf.EvaluatedRequirement {
 		Message:  &msg,
 	}
 
-	startTime := shared.ParseTimestamp(alert.FirstActivityDateTime)
+	startTime := hdfutil.ParseTimestamp(alert.FirstActivityDateTime)
 	if !startTime.IsZero() {
 		result.StartTime = startTime
 	}
@@ -261,7 +262,7 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 		ConverterVersion: converterVersion,
 		ToolName:         "Microsoft Defender for Endpoint",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components:          targets,
+		Components:       targets,
 		Timestamp:        &now,
 	}), nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -48,8 +49,8 @@ func ConvertComponentDefinitionToHDF(input []byte, converterVersion string) (*hd
 
 	baseline := &hdf.HDFBaseline{
 		Name:         baselineName,
-		Title:        shared.Ptr(meta.Title),
-		Version:      shared.Ptr(meta.Version),
+		Title:        hdfutil.Ptr(meta.Title),
+		Version:      hdfutil.Ptr(meta.Version),
 		Status:       &status,
 		Integrity:    integrity,
 		Requirements: requirements,
@@ -104,7 +105,7 @@ func implementedRequirementToBaselineRequirement(ir *ImplementedRequirement) hdf
 
 	return hdf.BaselineRequirement{
 		ID:           nistTag,
-		Title:        shared.Ptr(nistTag),
+		Title:        hdfutil.Ptr(nistTag),
 		Impact:       0.5,
 		Descriptions: descriptions,
 		Tags:         tags,

@@ -78,12 +78,9 @@ importers:
 
   hdf-diff:
     dependencies:
-      ajv:
-        specifier: 8.18.0
-        version: 8.18.0
-      ajv-formats:
-        specifier: ^3.0.0
-        version: 3.0.1(ajv@8.18.0)
+      '@mitre/hdf-validators':
+        specifier: workspace:*
+        version: link:../hdf-validators
 
   hdf-extension-graph:
     dependencies:
@@ -124,6 +121,9 @@ importers:
 
   hdf-schema:
     dependencies:
+      '@mitre/hdf-utilities':
+        specifier: workspace:*
+        version: link:../hdf-utilities
       ajv:
         specifier: 8.18.0
         version: 8.18.0

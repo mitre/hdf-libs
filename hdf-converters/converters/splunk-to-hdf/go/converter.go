@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -216,11 +217,11 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 
 		// Build target from header platform info.
 		target := hdf.Component{
-			Name:   header.Platform.Name,
-			Type:   hdf.Host,
+			Name: header.Platform.Name,
+			Type: hdf.Host,
 		}
 		if header.Platform.Release != "" {
-			target.OSVersion = shared.Ptr(header.Platform.Release)
+			target.OSVersion = hdfutil.Ptr(header.Platform.Release)
 		}
 		allTargets = append(allTargets, target)
 	}
@@ -236,7 +237,7 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		ConverterVersion: converterVersion,
 		ToolName:         "Splunk",
 		Baselines:        allBaselines,
-		Components:          allTargets,
+		Components:       allTargets,
 		Statistics:       stats,
 		Timestamp:        &timestamp,
 	})
@@ -278,12 +279,12 @@ func convertProfileToBaseline(
 
 	baseline := hdf.EvaluatedBaseline{
 		Name:            profile.Name,
-		Title:           shared.Ptr(profile.Title),
-		Version:         shared.Ptr(profile.Version),
-		Summary:         shared.Ptr(profile.Summary),
-		Maintainer:      shared.Ptr(profile.Maintainer),
-		Copyright:       shared.Ptr(profile.Copyright),
-		License:         shared.Ptr(profile.License),
+		Title:           hdfutil.Ptr(profile.Title),
+		Version:         hdfutil.Ptr(profile.Version),
+		Summary:         hdfutil.Ptr(profile.Summary),
+		Maintainer:      hdfutil.Ptr(profile.Maintainer),
+		Copyright:       hdfutil.Ptr(profile.Copyright),
+		License:         hdfutil.Ptr(profile.License),
 		Groups:          groups,
 		Supports:        supports,
 		Requirements:    requirements,
@@ -347,9 +348,9 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 
 	req := hdf.EvaluatedRequirement{
 		ID:             ctrl.ID,
-		Title:          shared.Ptr(ctrl.Title),
+		Title:          hdfutil.Ptr(ctrl.Title),
 		Impact:         ctrl.Impact,
-		Code:           shared.Ptr(ctrl.Code),
+		Code:           hdfutil.Ptr(ctrl.Code),
 		Tags:           ctrl.Tags,
 		Descriptions:   descriptions,
 		Results:        results,
@@ -362,7 +363,7 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 // convertSplunkResult maps a SplunkResult to an HDF RequirementResult.
 func convertSplunkResult(r SplunkResult) hdf.RequirementResult {
 	status := mapStatus(r.Status)
-	startTime := shared.ParseTimestamp(r.StartTime)
+	startTime := hdfutil.ParseTimestamp(r.StartTime)
 
 	result := hdf.RequirementResult{
 		Status:    status,
@@ -371,22 +372,22 @@ func convertSplunkResult(r SplunkResult) hdf.RequirementResult {
 	}
 
 	if r.Message != "" {
-		result.Message = shared.Ptr(r.Message)
+		result.Message = hdfutil.Ptr(r.Message)
 	}
 	if r.RunTime != nil {
 		result.RunTime = r.RunTime
 	}
 	if r.SkipMessage != "" {
-		result.Message = shared.Ptr(r.SkipMessage)
+		result.Message = hdfutil.Ptr(r.SkipMessage)
 	}
 	if r.Exception != "" {
-		result.Exception = shared.Ptr(r.Exception)
+		result.Exception = hdfutil.Ptr(r.Exception)
 	}
 	if len(r.Backtrace) > 0 {
 		result.Backtrace = r.Backtrace
 	}
 	if r.Resource != "" {
-		result.Resource = shared.Ptr(r.Resource)
+		result.Resource = hdfutil.Ptr(r.Resource)
 	}
 
 	return result
