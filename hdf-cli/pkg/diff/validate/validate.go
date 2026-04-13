@@ -21,9 +21,6 @@ type ValidationResult struct {
 	Errors []string
 }
 
-// comparisonSchemaID is the $id of the hdf-comparison schema.
-const comparisonSchemaID = "https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.0.0"
-
 // Cached compiled schema (initialized once).
 var (
 	cachedSchema *jsonschema.Schema
@@ -57,10 +54,27 @@ func loadSchemaFile(baseDir, relativePath string) (any, error) {
 	return schema, nil
 }
 
+// extractSchemaID reads the $id field from a parsed JSON schema document.
+func extractSchemaID(doc any) (string, error) {
+	m, ok := doc.(map[string]any)
+	if !ok {
+		return "", fmt.Errorf("schema is not a JSON object")
+	}
+	id, ok := m["$id"].(string)
+	if !ok || id == "" {
+		return "", fmt.Errorf("schema has no $id field")
+	}
+	return id, nil
+}
+
 // buildSchema loads all schemas and compiles the comparison schema.
 //
-// Schema loading order (mirrors TypeScript):
-//  1. All primitive schemas (common, platform, target, runner, statistics, result, extensions, component, data-flow, system, comparison).
+// Each schema's $id is read from the file at runtime so that version
+// changes in the schema files propagate automatically without updating
+// constants in this code.
+//
+// Schema loading order:
+//  1. All primitive schemas (dependency order for $ref resolution).
 //  2. hdf-results schema (defines Evaluated_Requirement referenced by comparison).
 //  3. hdf-comparison schema (top-level validation target).
 func buildSchema() (*jsonschema.Schema, error) {
@@ -70,40 +84,41 @@ func buildSchema() (*jsonschema.Schema, error) {
 	}
 
 	// Schema files to load in dependency order.
-	// Each entry is {relative path, expected $id}.
-	type schemaEntry struct {
-		path string
-		id   string
-	}
-
-	entries := []schemaEntry{
-		{"primitives/common.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0"},
-		{"primitives/platform.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/platform/v3.0.0"},
-		{"primitives/target.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/target/v3.0.0"},
-		{"primitives/runner.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.0.0"},
-		{"primitives/statistics.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.0.0"},
-		{"primitives/result.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0"},
-		{"primitives/amendments.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.0.0"},
-		{"primitives/extensions.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0"},
-		{"primitives/parameter.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.0.0"},
-		{"primitives/component.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.0.0"},
-		{"primitives/data-flow.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.0.0"},
-		{"primitives/system.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.0.0"},
-		{"primitives/comparison.schema.json", "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.0.0"},
-		{"hdf-results.schema.json", "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.0.0"},
-		{"hdf-comparison.schema.json", comparisonSchemaID},
+	schemaFiles := []string{
+		"primitives/common.schema.json",
+		"primitives/platform.schema.json",
+		"primitives/target.schema.json",
+		"primitives/runner.schema.json",
+		"primitives/statistics.schema.json",
+		"primitives/result.schema.json",
+		"primitives/amendments.schema.json",
+		"primitives/extensions.schema.json",
+		"primitives/parameter.schema.json",
+		"primitives/component.schema.json",
+		"primitives/data-flow.schema.json",
+		"primitives/system.schema.json",
+		"primitives/comparison.schema.json",
+		"hdf-results.schema.json",
+		"hdf-comparison.schema.json",
 	}
 
 	c := jsonschema.NewCompiler()
+	var comparisonSchemaID string
 
-	for _, entry := range entries {
-		doc, loadErr := loadSchemaFile(dir, entry.path)
+	for _, file := range schemaFiles {
+		doc, loadErr := loadSchemaFile(dir, file)
 		if loadErr != nil {
 			return nil, loadErr
 		}
-		if addErr := c.AddResource(entry.id, doc); addErr != nil {
-			return nil, fmt.Errorf("failed to add schema %s (id=%s): %w", entry.path, entry.id, addErr)
+		id, idErr := extractSchemaID(doc)
+		if idErr != nil {
+			return nil, fmt.Errorf("schema %s: %w", file, idErr)
 		}
+		if addErr := c.AddResource(id, doc); addErr != nil {
+			return nil, fmt.Errorf("failed to add schema %s (id=%s): %w", file, id, addErr)
+		}
+		// Remember the last schema's $id — that's hdf-comparison, the validation target
+		comparisonSchemaID = id
 	}
 
 	compiled, err := c.Compile(comparisonSchemaID)

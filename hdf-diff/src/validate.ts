@@ -17,9 +17,6 @@ export interface ValidationResult {
   errors?: string[];
 }
 
-/** Schema ID for the hdf-comparison schema */
-const COMPARISON_SCHEMA_ID = 'https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.0.0';
-
 /**
  * Resolve the path to the hdf-schema package's schemas directory.
  *
@@ -45,12 +42,9 @@ let cachedValidator: ValidateFunction | null = null;
 /**
  * Build and cache an Ajv 2020-12 validator for the hdf-comparison schema.
  *
- * Loads schemas in dependency order:
- * 1. All primitive schemas (common, platform, target, runner, statistics, result, extensions, comparison)
- * 2. hdf-results schema (defines Evaluated_Requirement, referenced by comparison)
- * 3. hdf-comparison schema (the top-level schema we validate against)
- *
- * The validator is compiled once and cached for all subsequent calls.
+ * Loads schemas in dependency order and reads each schema's $id at runtime
+ * so that version changes in the schema files propagate automatically
+ * without updating constants in this code.
  */
 function getValidator(): ValidateFunction {
   if (cachedValidator) return cachedValidator;
@@ -62,7 +56,8 @@ function getValidator(): ValidateFunction {
   });
   addFormats(ajv);
 
-  // Load all primitive schemas first (order matters for $ref resolution)
+  // Load all primitive schemas first (order matters for $ref resolution).
+  // Ajv registers each schema by its $id automatically.
   const primitiveFiles = [
     'primitives/common.schema.json',
     'primitives/platform.schema.json',
@@ -86,11 +81,14 @@ function getValidator(): ValidateFunction {
   // Load hdf-results (defines Evaluated_Requirement referenced by comparison)
   ajv.addSchema(loadSchema('hdf-results.schema.json'));
 
-  // Load and compile hdf-comparison (the top-level schema we validate against)
-  ajv.addSchema(loadSchema('hdf-comparison.schema.json'));
+  // Load hdf-comparison and read its $id to compile the validator.
+  // Reading $id from the schema file means version bumps propagate
+  // without changing this code.
+  const comparisonSchema = loadSchema('hdf-comparison.schema.json');
+  ajv.addSchema(comparisonSchema);
+  const comparisonId = comparisonSchema.$id as string;
 
-  // getSchema compiles on first access; the schema was just added so this always succeeds
-  cachedValidator = ajv.getSchema(COMPARISON_SCHEMA_ID)!;
+  cachedValidator = ajv.getSchema(comparisonId)!;
   return cachedValidator;
 }
 
