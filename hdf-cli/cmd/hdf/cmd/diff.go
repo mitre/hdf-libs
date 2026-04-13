@@ -1077,16 +1077,6 @@ type systemDiffResult struct {
 	Extensions     map[string]interface{} `json:"extensions,omitempty"`
 }
 
-// systemComponentTrackedFields are the fields tracked for component-level changes.
-var systemComponentTrackedFields = []string{
-	"type", "description", "baselineRefs", "inputOverrides", "sbomRef", "targetSelector",
-}
-
-// systemTopLevelFields are the fields tracked for system-level changes.
-var systemTopLevelFields = []string{
-	"authorizationStatus", "categorizationLevel", "description",
-}
-
 // runSystemDiff compares two system documents in systemDrift mode.
 func runSystemDiff(oldData, newData []byte, flags *diffFlags, oldFile, newFile string) error {
 	// Parse into generic maps (no schema validation — system docs don't need
@@ -1099,7 +1089,11 @@ func runSystemDiff(oldData, newData []byte, flags *diffFlags, oldFile, newFile s
 		return fmt.Errorf("failed to parse new system document: %w", err)
 	}
 
-	result := compareSystemDocuments(oldSys, newSys)
+	comp, err := engine.DiffSystems(oldSys, newSys)
+	if err != nil {
+		return fmt.Errorf("system comparison failed: %w", err)
+	}
+	result := engineSystemResultToSystemDiffResult(comp)
 
 	if flags.quiet {
 		flags.exitCode = true
@@ -1113,301 +1107,95 @@ func runSystemDiff(oldData, newData []byte, flags *diffFlags, oldFile, newFile s
 	return computeSystemDiffExitCode(result.Summary, flags)
 }
 
-// compareSystemDocuments compares two system documents and produces a systemDiffResult.
-func compareSystemDocuments(oldSys, newSys map[string]interface{}) systemDiffResult {
-	oldComponents := toMapSlice(oldSys["components"])
-	newComponents := toMapSlice(newSys["components"])
-
-	// Match components: componentId first, then name
-	pairs := matchSystemComponents(oldComponents, newComponents)
-	var componentDiffs []systemDiffComponent
-
-	for _, p := range pairs {
-		switch {
-		case p.oldComp != nil && p.newComp != nil:
-			changes := computeFieldChanges(p.oldComp, p.newComp, systemComponentTrackedFields)
-			state := diffUnchanged
-			if len(changes) > 0 {
-				state = diffUpdated
-			}
-			componentDiffs = append(componentDiffs, systemDiffComponent{
-				Name: p.name, State: state, FieldChanges: changes,
-			})
-		case p.oldComp != nil:
-			componentDiffs = append(componentDiffs, systemDiffComponent{
-				Name: p.name, State: diffAbsent,
-			})
-		case p.newComp != nil:
-			componentDiffs = append(componentDiffs, systemDiffComponent{
-				Name: p.name, State: diffNew,
-			})
+// engineSystemResultToSystemDiffResult converts the engine's HdfComparison to the CLI's
+// systemDiffResult for rendering.
+func engineSystemResultToSystemDiffResult(comp diffTypes.HdfComparison) systemDiffResult {
+	// Convert component diffs
+	componentDiffs := make([]systemDiffComponent, 0, len(comp.ComponentDiffs))
+	for _, cd := range comp.ComponentDiffs {
+		sdc := systemDiffComponent{
+			Name:  cd.Name,
+			State: diffState(cd.State),
 		}
+		// Convert field changes
+		if len(cd.FieldChanges) > 0 {
+			changes := make([]systemDiffFieldChange, 0, len(cd.FieldChanges))
+			for _, fc := range cd.FieldChanges {
+				changes = append(changes, systemDiffFieldChange{
+					Op:       string(fc.Op),
+					Path:     fc.Path,
+					OldValue: fc.OldValue,
+					NewValue: fc.NewValue,
+				})
+			}
+			sdc.FieldChanges = changes
+		}
+		componentDiffs = append(componentDiffs, sdc)
 	}
 
-	sort.Slice(componentDiffs, func(i, j int) bool {
-		return componentDiffs[i].Name < componentDiffs[j].Name
-	})
-
-	// Build summary
-	summary := buildSystemDiffSummary(componentDiffs)
-
-	// Extensions: system field changes + data flow changes
-	extensions := make(map[string]interface{})
-
-	sysFieldChanges := computeFieldChanges(oldSys, newSys, systemTopLevelFields)
-	if len(sysFieldChanges) > 0 {
-		extensions["systemFieldChanges"] = sysFieldChanges
+	// Convert summary
+	summary := diffSummary{
+		Total:             comp.Summary.Total,
+		New:               comp.Summary.New,
+		Absent:            comp.Summary.Absent,
+		Unchanged:         comp.Summary.Unchanged,
+		Updated:           comp.Summary.Updated,
+		MatchedCount:      comp.Summary.MatchedCount,
+		UnmatchedOldCount: comp.Summary.UnmatchedOldCount,
+		UnmatchedNewCount: comp.Summary.UnmatchedNewCount,
 	}
 
-	dataFlowChanges := diffSystemDataFlows(oldSys, newSys)
-	if len(dataFlowChanges) > 0 {
-		extensions["dataFlowChanges"] = dataFlowChanges
-	}
+	// Convert extensions — preserve systemFieldChanges and dataFlowChanges
+	var extensions map[string]interface{}
+	if comp.Extensions != nil {
+		extensions = make(map[string]interface{})
 
-	var ext map[string]interface{}
-	if len(extensions) > 0 {
-		ext = extensions
+		// Convert systemFieldChanges ([]types.FieldChange → []systemDiffFieldChange)
+		if sfc, ok := comp.Extensions["systemFieldChanges"]; ok {
+			if typedChanges, ok := sfc.([]diffTypes.FieldChange); ok {
+				converted := make([]systemDiffFieldChange, 0, len(typedChanges))
+				for _, fc := range typedChanges {
+					converted = append(converted, systemDiffFieldChange{
+						Op:       string(fc.Op),
+						Path:     fc.Path,
+						OldValue: fc.OldValue,
+						NewValue: fc.NewValue,
+					})
+				}
+				extensions["systemFieldChanges"] = converted
+			} else {
+				extensions["systemFieldChanges"] = sfc
+			}
+		}
+
+		// Convert dataFlowChanges ([]engine.DataFlowChange → []systemDiffDataFlow)
+		if dfc, ok := comp.Extensions["dataFlowChanges"]; ok {
+			if typedChanges, ok := dfc.([]engine.DataFlowChange); ok {
+				converted := make([]systemDiffDataFlow, 0, len(typedChanges))
+				for _, df := range typedChanges {
+					converted = append(converted, systemDiffDataFlow{
+						State: df.State,
+						Flow:  df.Flow,
+					})
+				}
+				extensions["dataFlowChanges"] = converted
+			} else {
+				extensions["dataFlowChanges"] = dfc
+			}
+		}
+
+		if len(extensions) == 0 {
+			extensions = nil
+		}
 	}
 
 	return systemDiffResult{
-		FormatVersion:  "1.0.0",
-		ComparisonMode: "systemDrift",
+		FormatVersion:  comp.FormatVersion,
+		ComparisonMode: string(comp.ComparisonMode),
 		Summary:        summary,
 		ComponentDiffs: componentDiffs,
-		Extensions:     ext,
+		Extensions:     extensions,
 	}
-}
-
-// systemComponentPair holds a matched pair of old/new components.
-type systemComponentPair struct {
-	name    string
-	oldComp map[string]interface{}
-	newComp map[string]interface{}
-}
-
-// matchSystemComponents matches components by componentId first, then by name.
-func matchSystemComponents(
-	oldComponents, newComponents []map[string]interface{},
-) []systemComponentPair {
-	matched := make(map[int]bool)    // indices of matched new components
-	oldMatched := make(map[int]bool) // indices of matched old components
-	var pairs []systemComponentPair
-
-	// First pass: match by componentId
-	matchByComponentID(oldComponents, newComponents, &pairs, oldMatched, matched)
-
-	// Second pass: match remaining by name
-	matchByName(oldComponents, newComponents, &pairs, oldMatched, matched)
-
-	// Collect unmatched as absent/new
-	collectUnmatched(oldComponents, newComponents, &pairs, oldMatched, matched)
-
-	return pairs
-}
-
-// matchByComponentID matches old and new components by their componentId field.
-func matchByComponentID(
-	oldComponents, newComponents []map[string]interface{},
-	pairs *[]systemComponentPair, oldMatched, newMatched map[int]bool,
-) {
-	newByID := make(map[string]int)
-	for i, c := range newComponents {
-		if id, ok := c["componentId"].(string); ok && id != "" {
-			newByID[id] = i
-		}
-	}
-
-	for i, oldC := range oldComponents {
-		oldID, _ := oldC["componentId"].(string)
-		if oldID == "" {
-			continue
-		}
-		if ni, ok := newByID[oldID]; ok {
-			newC := newComponents[ni]
-			name := stringVal(newC, "name")
-			if name == "" {
-				name = stringVal(oldC, "name")
-			}
-			if name == "" {
-				name = oldID
-			}
-			*pairs = append(*pairs, systemComponentPair{name: name, oldComp: oldC, newComp: newC})
-			newMatched[ni] = true
-			oldMatched[i] = true
-		}
-	}
-}
-
-// matchByName matches remaining unmatched components by name.
-func matchByName(
-	oldComponents, newComponents []map[string]interface{},
-	pairs *[]systemComponentPair, oldMatched, newMatched map[int]bool,
-) {
-	newByName := make(map[string]int)
-	for i, c := range newComponents {
-		if newMatched[i] {
-			continue
-		}
-		if name, ok := c["name"].(string); ok && name != "" {
-			newByName[name] = i
-		}
-	}
-
-	for i, oldC := range oldComponents {
-		if oldMatched[i] {
-			continue
-		}
-		name := stringVal(oldC, "name")
-		if name == "" {
-			continue
-		}
-		if ni, ok := newByName[name]; ok {
-			*pairs = append(*pairs, systemComponentPair{name: name, oldComp: oldC, newComp: newComponents[ni]})
-			newMatched[ni] = true
-			oldMatched[i] = true
-			delete(newByName, name)
-		}
-	}
-}
-
-// collectUnmatched adds unmatched old components (absent) and new components (new) to pairs.
-func collectUnmatched(
-	oldComponents, newComponents []map[string]interface{},
-	pairs *[]systemComponentPair, oldMatched, newMatched map[int]bool,
-) {
-	for i, oldC := range oldComponents {
-		if oldMatched[i] {
-			continue
-		}
-		name := stringVal(oldC, "name")
-		if name == "" {
-			name = fmt.Sprintf("component-%d", i)
-		}
-		*pairs = append(*pairs, systemComponentPair{name: name, oldComp: oldC})
-	}
-
-	for i, newC := range newComponents {
-		if newMatched[i] {
-			continue
-		}
-		name := stringVal(newC, "name")
-		if name == "" {
-			name = fmt.Sprintf("component-%d", i)
-		}
-		*pairs = append(*pairs, systemComponentPair{name: name, newComp: newC})
-	}
-}
-
-// computeFieldChanges computes field-level diffs for tracked fields using JSON comparison.
-func computeFieldChanges(
-	oldObj, newObj map[string]interface{},
-	trackedFields []string,
-) []systemDiffFieldChange {
-	var changes []systemDiffFieldChange
-
-	for _, field := range trackedFields {
-		oldVal, oldOK := oldObj[field]
-		newVal, newOK := newObj[field]
-
-		oldJSON, _ := json.Marshal(oldVal)
-		newJSON, _ := json.Marshal(newVal)
-
-		if string(oldJSON) != string(newJSON) {
-			switch {
-			case !oldOK && newOK:
-				changes = append(changes, systemDiffFieldChange{Op: "add", Path: field, NewValue: newVal})
-			case oldOK && !newOK:
-				changes = append(changes, systemDiffFieldChange{Op: "remove", Path: field, OldValue: oldVal})
-			default:
-				changes = append(changes, systemDiffFieldChange{Op: "replace", Path: field, OldValue: oldVal, NewValue: newVal})
-			}
-		}
-	}
-
-	return changes
-}
-
-// diffSystemDataFlows diffs data flows between two system documents.
-// Flows are keyed by from→to.
-func diffSystemDataFlows(oldSys, newSys map[string]interface{}) []systemDiffDataFlow {
-	oldFlows := toMapSlice(oldSys["dataFlows"])
-	newFlows := toMapSlice(newSys["dataFlows"])
-
-	if len(oldFlows) == 0 && len(newFlows) == 0 {
-		return nil
-	}
-
-	flowKey := func(f map[string]interface{}) string {
-		from, _ := f["from"].(string)
-		to, _ := f["to"].(string)
-		if to == "" {
-			toJSON, _ := json.Marshal(f["to"])
-			to = string(toJSON)
-		}
-		return from + "→" + to
-	}
-
-	oldMap := make(map[string]map[string]interface{})
-	for _, f := range oldFlows {
-		oldMap[flowKey(f)] = f
-	}
-	newMap := make(map[string]map[string]interface{})
-	for _, f := range newFlows {
-		newMap[flowKey(f)] = f
-	}
-
-	allKeys := make(map[string]bool)
-	for k := range oldMap {
-		allKeys[k] = true
-	}
-	for k := range newMap {
-		allKeys[k] = true
-	}
-
-	sortedKeys := make([]string, 0, len(allKeys))
-	for k := range allKeys {
-		sortedKeys = append(sortedKeys, k)
-	}
-	sort.Strings(sortedKeys)
-
-	var changes []systemDiffDataFlow
-	for _, key := range sortedKeys {
-		oldF, inOld := oldMap[key]
-		newF, inNew := newMap[key]
-
-		switch {
-		case inOld && inNew:
-			oldJSON, _ := json.Marshal(oldF)
-			newJSON, _ := json.Marshal(newF)
-			if string(oldJSON) != string(newJSON) {
-				changes = append(changes, systemDiffDataFlow{State: stateUpdated, Flow: newF})
-			}
-		case inOld:
-			changes = append(changes, systemDiffDataFlow{State: stateRemoved, Flow: oldF})
-		case inNew:
-			changes = append(changes, systemDiffDataFlow{State: stateAdded, Flow: newF})
-		}
-	}
-
-	return changes
-}
-
-// buildSystemDiffSummary computes summary counts from component diffs.
-func buildSystemDiffSummary(diffs []systemDiffComponent) diffSummary {
-	summary := diffSummary{Total: len(diffs)}
-	for _, d := range diffs {
-		switch d.State { //nolint:exhaustive // system diffs only produce new/absent/unchanged/updated
-		case diffNew:
-			summary.New++
-		case diffAbsent:
-			summary.Absent++
-		case diffUnchanged:
-			summary.Unchanged++
-		case diffUpdated:
-			summary.Updated++
-		}
-	}
-	return summary
 }
 
 // computeSystemDiffExitCode returns an exit code for system diffs.
@@ -1584,32 +1372,6 @@ func outputSystemDiffNameOnly(result systemDiffResult) {
 			fmt.Println(sanitizeOutput(cd.Name))
 		}
 	}
-}
-
-// toMapSlice safely converts an interface{} to []map[string]interface{}.
-func toMapSlice(v interface{}) []map[string]interface{} {
-	arr, ok := v.([]interface{})
-	if !ok {
-		return nil
-	}
-	result := make([]map[string]interface{}, 0, len(arr))
-	for _, item := range arr {
-		if m, ok := item.(map[string]interface{}); ok {
-			result = append(result, m)
-		}
-	}
-	return result
-}
-
-// stringVal extracts a string value from a map, returning "" if not present or not a string.
-//
-//nolint:unparam // key varies by call site intent; extracting only "name" is incidental
-func stringVal(m map[string]interface{}, key string) string {
-	v, ok := m[key].(string)
-	if !ok {
-		return ""
-	}
-	return v
 }
 
 // outputComponentSummaries prints component summaries in human-readable format.
