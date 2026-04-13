@@ -2,7 +2,7 @@ package xccdf
 
 import (
 	"github.com/mitre/hdf-converters/registry"
-	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 )
 
 func init() {
@@ -19,7 +19,7 @@ func init() {
 			}
 			// XCCDF Benchmark or ARF asset-report-collection root element.
 			// ExtractXMLRootElement strips namespace prefixes automatically.
-			root := shared.ExtractXMLRootElement(s)
+			root := hdfutil.ExtractXMLRootElement(s)
 			if root == "Benchmark" || root == "asset-report-collection" {
 				return 1.0
 			}

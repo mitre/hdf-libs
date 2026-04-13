@@ -269,7 +269,10 @@ func comparePair(
 		}
 	}
 
-	// Collect all requirements across all baselines
+	// Build requirement ID → baseline name maps for populating RequirementDiff.Baseline
+	oldReqBaselineMap := requirementBaselineMap(oldDoc)
+	newReqBaselineMap := requirementBaselineMap(newDoc)
+
 	var oldReqs []hdf.EvaluatedRequirement
 	for _, baseline := range oldDoc.Baselines {
 		oldReqs = append(oldReqs, baseline.Requirements...)
@@ -316,6 +319,7 @@ func comparePair(
 		requirementDiffs = append(requirementDiffs, types.RequirementDiff{
 			ID:                 id,
 			Title:              title,
+			Baseline:           resolveBaseline(id, newReqBaselineMap, oldReqBaselineMap),
 			State:              diffState,
 			OldEffectiveStatus: oldStatus,
 			NewEffectiveStatus: newStatus,
@@ -340,6 +344,7 @@ func comparePair(
 		requirementDiffs = append(requirementDiffs, types.RequirementDiff{
 			ID:                 oldReq.ID,
 			Title:              title,
+			Baseline:           resolveBaseline(oldReq.ID, newReqBaselineMap, oldReqBaselineMap),
 			State:              types.StateAbsent,
 			OldEffectiveStatus: oldStatus,
 			ChangeReasons:      []types.ChangeReason{},
@@ -360,6 +365,7 @@ func comparePair(
 		requirementDiffs = append(requirementDiffs, types.RequirementDiff{
 			ID:                 newReq.ID,
 			Title:              title,
+			Baseline:           resolveBaseline(newReq.ID, newReqBaselineMap, oldReqBaselineMap),
 			State:              types.StateNew,
 			NewEffectiveStatus: newStatus,
 			ChangeReasons:      []types.ChangeReason{},
@@ -719,4 +725,39 @@ func classifyBaselineChangeReasons(oldReq, newReq hdf.EvaluatedRequirement) []ty
 	}
 
 	return reasons
+}
+
+// baselineMultiple is the sentinel value used when a requirement ID appears
+// in more than one baseline, to avoid implying a single correct baseline.
+const baselineMultiple = "(multiple)"
+
+// requirementBaselineMap returns a map from requirement ID to the name of the
+// baseline that contains it. If the same ID appears in multiple baselines,
+// the value is set to "(multiple)" to avoid implying a single correct baseline.
+func requirementBaselineMap(doc hdf.HdfResults) map[string]string {
+	m := make(map[string]string)
+	for _, baseline := range doc.Baselines {
+		for _, req := range baseline.Requirements {
+			if existing, exists := m[req.ID]; exists {
+				if existing != baseline.Name && existing != baselineMultiple {
+					m[req.ID] = baselineMultiple
+				}
+			} else {
+				m[req.ID] = baseline.Name
+			}
+		}
+	}
+	return m
+}
+
+// resolveBaseline returns the baseline name for a requirement ID, preferring
+// the new document's mapping (the requirement may have moved between baselines).
+func resolveBaseline(id string, newMap, oldMap map[string]string) string {
+	if name, ok := newMap[id]; ok {
+		return name
+	}
+	if name, ok := oldMap[id]; ok {
+		return name
+	}
+	return ""
 }

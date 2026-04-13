@@ -1542,3 +1542,140 @@ func TestFieldChanges_KeyOrderIndependentMaps(t *testing.T) {
 			len(r.FieldChanges), r.FieldChanges)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Baseline field on RequirementDiff
+// ---------------------------------------------------------------------------
+
+func TestRequirementDiff_BaselineField_SingleBaseline(t *testing.T) {
+	baseline := makeBaseline("rhel9-stig", version100,
+		makeRequirement("SV-001", hdf.Failed, 0.7),
+		makeRequirement("SV-002", hdf.Passed, 0.5),
+	)
+	oldResults := makeResults(baseline)
+	newResults := makeResults(baseline)
+
+	comp := mustDiffHdf(t, oldResults, []hdf.HdfResults{newResults}, defaultOpts())
+
+	for _, req := range comp.RequirementDiffs {
+		if req.Baseline != "rhel9-stig" {
+			t.Errorf("requirement %s: expected baseline 'rhel9-stig', got %q", req.ID, req.Baseline)
+		}
+	}
+}
+
+func TestRequirementDiff_BaselineField_MultipleBaselines(t *testing.T) {
+	baselineA := makeBaseline("rhel9-stig", version100,
+		makeRequirement("SV-001", hdf.Failed, 0.7),
+	)
+	baselineB := makeBaseline("windows-stig", version100,
+		makeRequirement("WIN-001", hdf.Passed, 0.5),
+	)
+	oldResults := makeResults(baselineA, baselineB)
+	newResults := makeResults(baselineA, baselineB)
+
+	comp := mustDiffHdf(t, oldResults, []hdf.HdfResults{newResults}, defaultOpts())
+
+	sv001 := findReq(comp.RequirementDiffs, "SV-001")
+	if sv001 == nil {
+		t.Fatal("SV-001 not found")
+	}
+	if sv001.Baseline != "rhel9-stig" {
+		t.Errorf("SV-001: expected baseline 'rhel9-stig', got %q", sv001.Baseline)
+	}
+
+	win001 := findReq(comp.RequirementDiffs, "WIN-001")
+	if win001 == nil {
+		t.Fatal("WIN-001 not found")
+	}
+	if win001.Baseline != "windows-stig" {
+		t.Errorf("WIN-001: expected baseline 'windows-stig', got %q", win001.Baseline)
+	}
+}
+
+func TestRequirementDiff_BaselineField_NewRequirement(t *testing.T) {
+	oldBaseline := makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	)
+	newBaseline := makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+		makeRequirement("SV-002", hdf.Passed, 0.5),
+	)
+
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+
+	newReq := findReq(comp.RequirementDiffs, "SV-002")
+	if newReq == nil {
+		t.Fatal("SV-002 not found")
+	}
+	if newReq.Baseline != "test-baseline" {
+		t.Errorf("SV-002: expected baseline 'test-baseline', got %q", newReq.Baseline)
+	}
+}
+
+func TestRequirementDiff_BaselineField_AbsentRequirement(t *testing.T) {
+	oldBaseline := makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+		makeRequirement("SV-002", hdf.Passed, 0.5),
+	)
+	newBaseline := makeBaseline("test-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	)
+
+	comp := mustDiffHdf(t, makeResults(oldBaseline), []hdf.HdfResults{makeResults(newBaseline)}, defaultOpts())
+
+	absent := findReq(comp.RequirementDiffs, "SV-002")
+	if absent == nil {
+		t.Fatal("SV-002 not found")
+	}
+	if absent.Baseline != "test-baseline" {
+		t.Errorf("SV-002: expected baseline 'test-baseline', got %q", absent.Baseline)
+	}
+}
+
+func TestRequirementDiff_BaselineField_FleetMode(t *testing.T) {
+	reference := makeResults(makeBaseline("stig-baseline", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	))
+	system1 := makeResults(makeBaseline("stig-baseline", version100,
+		makeRequirement("SV-001", hdf.Failed, 0.7),
+	))
+
+	opts := Options{
+		TrackedFields:  []string{fieldImpact, fieldSeverity, "tags"},
+		ComparisonMode: types.ModeFleet,
+		MatchStrategy:  stratExactID,
+	}
+
+	comp := mustDiffHdf(t, reference, []hdf.HdfResults{system1}, opts)
+
+	sv001 := findReq(comp.RequirementDiffs, "SV-001")
+	if sv001 == nil {
+		t.Fatal("SV-001 not found")
+	}
+	if sv001.Baseline != "stig-baseline" {
+		t.Errorf("SV-001: expected baseline 'stig-baseline', got %q", sv001.Baseline)
+	}
+}
+
+func TestRequirementDiff_BaselineField_DuplicateIDsAcrossBaselines(t *testing.T) {
+	// Same requirement ID in two baselines → Baseline should be "(multiple)"
+	baselineA := makeBaseline("rhel9-stig", version100,
+		makeRequirement("SV-001", hdf.Failed, 0.7),
+	)
+	baselineB := makeBaseline("container-stig", version100,
+		makeRequirement("SV-001", hdf.Passed, 0.7),
+	)
+	oldResults := makeResults(baselineA, baselineB)
+	newResults := makeResults(baselineA, baselineB)
+
+	comp := mustDiffHdf(t, oldResults, []hdf.HdfResults{newResults}, defaultOpts())
+
+	sv001 := findReq(comp.RequirementDiffs, "SV-001")
+	if sv001 == nil {
+		t.Fatal("SV-001 not found")
+	}
+	if sv001.Baseline != baselineMultiple {
+		t.Errorf("SV-001: expected baseline %q for duplicate ID, got %q", baselineMultiple, sv001.Baseline)
+	}
+}

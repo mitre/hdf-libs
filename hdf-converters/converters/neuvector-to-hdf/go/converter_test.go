@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -193,7 +194,7 @@ func TestConvertNeuVector_CweExtraction(t *testing.T) {
 	req := findRequirement(reqs, "CVE-2020-25613/ruby:webrick/1.4.2")
 	require.NotNil(t, req, "expected vuln CVE-2020-25613/ruby:webrick/1.4.2")
 
-	nist := shared.SafeStringSlice(req.Tags["nist"])
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist tag should be present")
 	assert.NotEmpty(t, nist)
 }
@@ -209,14 +210,14 @@ func TestConvertNeuVector_CweToNist(t *testing.T) {
 	req := findRequirement(reqs, "CVE-2018-25032/ruby:nokogiri/1.10.9")
 	require.NotNil(t, req, "expected vuln CVE-2018-25032/ruby:nokogiri/1.10.9")
 
-	nist := shared.SafeStringSlice(req.Tags["nist"])
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist tag should be present")
 	assert.NotEmpty(t, nist)
 
 	// CWE tag should also be set
 	cweTags, ok := req.Tags["cwe"]
 	require.True(t, ok, "cwe tag should be present")
-	cweStrings := shared.SafeStringSlice(cweTags)
+	cweStrings := hdfutil.SafeStringSlice(cweTags)
 	assert.Contains(t, cweStrings, "CWE-787")
 }
 
@@ -231,7 +232,7 @@ func TestConvertNeuVector_NistFallback(t *testing.T) {
 	req := findRequirement(reqs, "CVE-2021-36159/apk-tools/2.10.5-r1")
 	require.NotNil(t, req)
 
-	nist := shared.SafeStringSlice(req.Tags["nist"])
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist fallback should be present")
 	assert.Contains(t, nist, "SI-2")
 	assert.Contains(t, nist, "RA-5")
@@ -358,12 +359,12 @@ func TestConvertNeuVector_Tags(t *testing.T) {
 	require.NotNil(t, req)
 
 	// nist should be present
-	nist := shared.SafeStringSlice(req.Tags["nist"])
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist should be present")
 	assert.NotEmpty(t, nist)
 
 	// cci should be present
-	cciSlice := shared.SafeStringSlice(req.Tags["cci"])
+	cciSlice := hdfutil.SafeStringSlice(req.Tags["cci"])
 	require.NotNil(t, cciSlice, "cci should be present")
 	assert.NotEmpty(t, cciSlice)
 }

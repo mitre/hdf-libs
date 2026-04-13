@@ -13,6 +13,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -45,7 +46,7 @@ var prismaAliases = map[string]float64{
 }
 
 func getImpact(severity string) float64 {
-	return shared.SeverityToImpactWithAliases(severity, prismaAliases, 0.5)
+	return hdfutil.SeverityToImpactWithAliases(severity, prismaAliases, 0.5)
 }
 
 // nistTags returns the appropriate NIST 800-53 controls for a finding.
@@ -199,7 +200,7 @@ func buildRequirement(rec prismaRecord) hdf.EvaluatedRequirement {
 	var extras map[string]interface{}
 	if rec.CVEID != "" {
 		extras = map[string]interface{}{
-			"cve": shared.StringsToInterfaces([]string{rec.CVEID}),
+			"cve": hdfutil.StringsToInterfaces([]string{rec.CVEID}),
 		}
 	}
 
@@ -276,8 +277,8 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	for i, hostname := range hostOrder {
 		baselines[i] = buildBaseline(hostname, hostGroups[hostname], checksum)
 		targets[i] = hdf.Component{
-			Name:   hostname,
-			Type:   hdf.Host,
+			Name: hostname,
+			Type: hdf.Host,
 		}
 	}
 
@@ -289,7 +290,7 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		ToolName:         "Prisma Cloud",
 		ToolFormat:       "CSV",
 		Baselines:        baselines,
-		Components:          targets,
+		Components:       targets,
 		Timestamp:        &now,
 	}), nil
 }

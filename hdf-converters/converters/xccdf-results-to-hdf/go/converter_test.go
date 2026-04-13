@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -448,7 +449,7 @@ func TestExtractVulnDiscussion(t *testing.T) {
 }
 
 func TestSeverityToImpactMapping(t *testing.T) {
-	// XCCDF uses standard severity levels via shared.SeverityToImpact with default 0.5.
+	// XCCDF uses standard severity levels via hdfutil.SeverityToImpact with default 0.5.
 	tests := []struct {
 		severity string
 		expected float64
@@ -462,7 +463,7 @@ func TestSeverityToImpactMapping(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.severity, func(t *testing.T) {
-			assert.Equal(t, tt.expected, shared.SeverityToImpact(tt.severity, 0.5))
+			assert.Equal(t, tt.expected, hdfutil.SeverityToImpact(tt.severity, 0.5))
 		})
 	}
 }

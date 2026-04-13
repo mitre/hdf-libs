@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -69,7 +70,7 @@ type NeuVectorScanModule struct {
 // extractCWEs parses CWE identifiers from a vulnerability description string.
 // Returns CWE-prefixed IDs (e.g., ["CWE-444"]) for use in tags and MapCWEToNIST.
 func extractCWEs(description string) []string {
-	ids := shared.ExtractCWEIDs(description)
+	ids := hdfutil.ExtractCWEIDs(description)
 	if len(ids) == 0 {
 		return nil
 	}
@@ -123,7 +124,7 @@ func buildRequirement(vuln NeuVectorVuln) hdf.EvaluatedRequirement {
 
 	extras := map[string]interface{}{}
 	if len(cweIDs) > 0 {
-		extras["cwe"] = shared.StringsToInterfaces(cweIDs)
+		extras["cwe"] = hdfutil.StringsToInterfaces(cweIDs)
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
@@ -213,8 +214,8 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "neuvector-to-hdf",
 		ConverterVersion: converterVersion,
-		ToolName:   "NeuVector",
-		ToolFormat: "JSON",
+		ToolName:         "NeuVector",
+		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{

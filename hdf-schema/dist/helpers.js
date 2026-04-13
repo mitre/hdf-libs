@@ -142,50 +142,10 @@ export function createSourceLocation(ref, line) {
   return { ref, line };
 }
 
-/**
- * Map a severity string to an impact score.
- *
- * Impact bands align with CVSS 3.x severity ratings normalized to 0-1:
- *   critical=0.9 (CVSS 9.0), high=0.7 (CVSS 7.0), medium=0.5 (CVSS 5.0),
- *   low=0.3 (CVSS 3.0), informational=0.0 (CVSS 0.0)
- *
- * Each value is the floor of its band, preserving sub-band precision:
- *   0.9-1.0=critical, 0.7-0.8=high, 0.4-0.6=medium, 0.1-0.3=low, 0.0=informational
- *
- * @param {string} severity - Severity level
- * @returns {number} Impact score between 0.0 and 1.0
- */
-export function severityToImpact(severity) {
-  const normalized = severity.toLowerCase();
-  switch (normalized) {
-    case 'critical':
-      return 0.9;
-    case 'high':
-      return 0.7;
-    case 'medium':
-      return 0.5;
-    case 'low':
-      return 0.3;
-    case 'informational':
-    case 'info':
-      return 0.0;
-    default:
-      return 0.5;
-  }
-}
-
-/**
- * Map an impact score to a severity string
- * @param {number} impact - Impact score (0.0 to 1.0)
- * @returns {string} Severity level
- */
-export function impactToSeverity(impact) {
-  if (impact >= 0.9) return 'critical';
-  if (impact >= 0.7) return 'high';
-  if (impact >= 0.4) return 'medium';
-  if (impact > 0.0) return 'low';
-  return 'informational';
-}
+// Re-export severity mapping from @mitre/hdf-utilities (canonical location).
+// Kept here for backwards compatibility — consumers importing from
+// @mitre/hdf-schema/helpers still get these functions.
+export { severityToImpact, impactToSeverity } from '@mitre/hdf-utilities';
 
 /**
  * Compute the effective status of a requirement from its results and impact.

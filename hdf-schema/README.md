@@ -138,6 +138,18 @@ pnpm build:schemas
 pnpm build:types
 ```
 
-## Schema Version
+## Versioning
 
-This package uses **JSON Schema draft/2020-12**.
+This package has two version numbers that serve different purposes:
+
+- **Package version** (`package.json` `version`): Follows npm semver. Bumped on every release — bug fixes, new helpers, type generation improvements, dependency updates. This is what consumers see in `npm install @mitre/hdf-schema@3.0.1`.
+
+- **Schema version** (`$id` URL in each `.schema.json`): Identifies the schema structure itself. Only changes when the schema structure changes — new fields, removed fields, type changes, constraint changes. Example: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.0.0`.
+
+These versions are aligned at major boundaries (both are 3.x to signal this is the successor to the heimdall2 v2.x ecosystem) but can diverge at minor/patch levels. A package patch release (e.g., 3.0.1 → 3.0.2) that only fixes a converter bug or updates a helper function does not change the schema `$id`. A schema structural change (e.g., adding a new required field) bumps the schema version in the `$id` URL regardless of where the package version stands.
+
+The `$id` URLs are also the canonical hosted location for each schema: `https://mitre.github.io/hdf-libs/schemas/`.
+
+### JSON Schema dialect
+
+All schemas use **JSON Schema draft/2020-12**.

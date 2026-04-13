@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -237,7 +238,7 @@ func TestConvertPrisma_NistTags(t *testing.T) {
 	// CVE finding should get remediation NIST tags (SI-2, RA-5)
 	req := findRequirement(host1.Requirements, "46-CVE-2021-44142")
 	require.NotNil(t, req)
-	nist := shared.SafeStringSlice(req.Tags["nist"])
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist)
 	assert.Contains(t, nist, "SI-2")
 	assert.Contains(t, nist, "RA-5")
@@ -245,7 +246,7 @@ func TestConvertPrisma_NistTags(t *testing.T) {
 	// Non-CVE compliance finding should get static analysis NIST tags (SA-11, RA-5)
 	req = findRequirement(host1.Requirements, "60522-redhat-RHEL7-high")
 	require.NotNil(t, req)
-	nist = shared.SafeStringSlice(req.Tags["nist"])
+	nist = hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist)
 	assert.Contains(t, nist, "SA-11")
 	assert.Contains(t, nist, "RA-5")
@@ -320,7 +321,7 @@ func TestConvertPrisma_CveTags(t *testing.T) {
 
 	req := findRequirement(host1.Requirements, "46-CVE-2021-44142")
 	require.NotNil(t, req)
-	cve := shared.SafeStringSlice(req.Tags["cve"])
+	cve := hdfutil.SafeStringSlice(req.Tags["cve"])
 	require.NotNil(t, cve)
 	assert.Contains(t, cve, "CVE-2021-44142")
 }

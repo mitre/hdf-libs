@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
@@ -107,7 +108,7 @@ type GitLabFix struct {
 // --- Severity to impact ---
 
 func severityToImpact(severity string) float64 {
-	return shared.SeverityToImpact(severity, 0.5)
+	return hdfutil.SeverityToImpact(severity, 0.5)
 }
 
 // --- Scan type to target type ---
@@ -173,7 +174,7 @@ func collectIdentifierExtras(identifiers []GitLabIdentifier) map[string]interfac
 	}
 	extras := make(map[string]interface{})
 	for k, v := range result {
-		extras[k] = shared.StringsToInterfaces(v)
+		extras[k] = hdfutil.StringsToInterfaces(v)
 	}
 	return extras
 }
@@ -344,7 +345,7 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 			CodeDesc: buildCodeDesc(scanType, vuln.Location),
 		}
 		if startTime != "" {
-			ts := shared.ParseTimestamp(startTime)
+			ts := hdfutil.ParseTimestamp(startTime)
 			if !ts.IsZero() {
 				result.StartTime = ts
 			}
@@ -394,21 +395,21 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	// Compute timestamp before building results
 	var timestamp *time.Time
 	if report.Scan != nil && report.Scan.EndTime != "" {
-		ts := shared.ParseTimestamp(report.Scan.EndTime)
+		ts := hdfutil.ParseTimestamp(report.Scan.EndTime)
 		if !ts.IsZero() {
 			timestamp = &ts
 		}
 	}
 
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:     "gitlab-to-hdf",
-		ConverterVersion:  converterVersion,
-		ToolName:    scannerName,
-		ToolVersion: scannerVersion,
-		ToolFormat:  "JSON",
-		Baselines:         []hdf.EvaluatedBaseline{baseline},
-		Components:           targets,
-		Timestamp:         timestamp,
+		GeneratorName:    "gitlab-to-hdf",
+		ConverterVersion: converterVersion,
+		ToolName:         scannerName,
+		ToolVersion:      scannerVersion,
+		ToolFormat:       "JSON",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Components:       targets,
+		Timestamp:        timestamp,
 	})
 
 	return hdfResult, nil

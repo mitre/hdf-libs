@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -254,25 +255,25 @@ func TestBuildMessage_NotApplicable(t *testing.T) {
 // ---- ParseTimestamp (via shared) ----
 
 func TestParseTimestamp_ValidRFC3339(t *testing.T) {
-	ts := shared.ParseTimestamp("2021-04-09T14:39:21Z")
+	ts := hdfutil.ParseTimestamp("2021-04-09T14:39:21Z")
 	assert.False(t, ts.IsZero())
 	assert.Equal(t, 2021, ts.Year())
 	assert.Equal(t, 14, ts.Hour())
 }
 
 func TestParseTimestamp_ValidRFC3339Nano(t *testing.T) {
-	ts := shared.ParseTimestamp("2021-04-09T14:39:51.614Z")
+	ts := hdfutil.ParseTimestamp("2021-04-09T14:39:51.614Z")
 	assert.False(t, ts.IsZero())
 	assert.Equal(t, 51, ts.Second())
 }
 
 func TestParseTimestamp_Empty(t *testing.T) {
-	ts := shared.ParseTimestamp("")
+	ts := hdfutil.ParseTimestamp("")
 	assert.True(t, ts.IsZero())
 }
 
 func TestParseTimestamp_Invalid(t *testing.T) {
-	ts := shared.ParseTimestamp("not-a-date")
+	ts := hdfutil.ParseTimestamp("not-a-date")
 	assert.True(t, ts.IsZero())
 }
 

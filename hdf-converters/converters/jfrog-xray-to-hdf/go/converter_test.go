@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -244,7 +245,7 @@ func TestConvertJfrogXray_CweToNist(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 	// All requirements should have nist tags (either mapped or fallback)
 	for _, req := range reqs {
-		nist := shared.SafeStringSlice(req.Tags["nist"])
+		nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 		require.NotNil(t, nist, "nist tag should be present for requirement %s", req.ID)
 		assert.NotEmpty(t, nist, "nist tag should not be empty for requirement %s", req.ID)
 	}

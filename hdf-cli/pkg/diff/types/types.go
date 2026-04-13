@@ -112,6 +112,7 @@ type RequirementDiff struct {
 	Before             *hdf.EvaluatedRequirement `json:"before"`
 	After              *hdf.EvaluatedRequirement `json:"after"`
 	Title              string                    `json:"title,omitempty"`
+	Baseline           string                    `json:"baseline,omitempty"`
 	OldEffectiveStatus string                    `json:"oldEffectiveStatus,omitempty"`
 	NewEffectiveStatus string                    `json:"newEffectiveStatus,omitempty"`
 	OldImpact          *float64                  `json:"oldImpact,omitempty"`

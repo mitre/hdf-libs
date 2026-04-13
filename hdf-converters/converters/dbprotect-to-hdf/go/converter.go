@@ -7,11 +7,12 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
 
-// Impact mapping was formerly a local map; now uses shared.SeverityToImpact.
+// Impact mapping was formerly a local map; now uses hdfutil.SeverityToImpact.
 // DBProtect uses standard severity levels: high, medium, low, informational.
 
 // Dataset represents the root DBProtect Cognos XML dataset structure.
@@ -85,7 +86,7 @@ func getStatus(status string) hdf.ResultStatus {
 
 // getImpact maps DBProtect risk levels to HDF impact values.
 func getImpact(riskDV string) float64 {
-	return shared.SeverityToImpact(riskDV, 0.5)
+	return hdfutil.SeverityToImpact(riskDV, 0.5)
 }
 
 // formatDesc creates a description string from the finding's task and check category.
@@ -255,8 +256,8 @@ func ConvertDbprotectToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "dbprotect-to-hdf",
 		ConverterVersion: converterVersion,
-		ToolName:   "DBProtect",
-		ToolFormat: "XML",
+		ToolName:         "DBProtect",
+		ToolFormat:       "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Host},

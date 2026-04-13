@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v2.0.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0",
   "title": "HDF Extension Primitives",
   "description": "Extension types for waivers, attestations, generators, and integrity.",
   "$defs": {
@@ -17,11 +17,11 @@
       ],
       "properties": {
         "type": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v2.0.0#/$defs/Override_Type",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.0.0#/$defs/Override_Type",
           "description": "The type of status override applied to this requirement."
         },
         "status": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v2.0.0#/$defs/Result_Status",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0#/$defs/Result_Status",
           "description": "The new status this override sets for the requirement. This intentionally changes the compliance status."
         },
         "reason": {
@@ -29,7 +29,7 @@
           "description": "Explanation for why this status override was applied."
         },
         "appliedBy": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Identity",
           "description": "Identity of who applied this status override. For simple cases, use type 'simple' with just an identifier."
         },
         "appliedAt": {
@@ -43,18 +43,18 @@
           "description": "Timestamp when this status override expires and must be reviewed/renewed. REQUIRED - no permanent status overrides allowed. ISO 8601 format."
         },
         "signature": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Signature",
           "description": "Optional digital signature for enhanced trust and non-repudiation. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing methods."
         },
         "evidence": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Evidence"
           },
           "description": "Supporting evidence for this status override, such as screenshots demonstrating manual verification for attestations."
         },
         "previousChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
         }
       },
@@ -124,7 +124,7 @@
           "description": "Detailed explanation of the plan, including what actions will be taken."
         },
         "appliedBy": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Identity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Identity",
           "description": "Identity of who created this POA&M. For simple cases, use type 'simple' with just an identifier."
         },
         "appliedAt": {
@@ -140,23 +140,23 @@
         "milestones": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Milestone"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Milestone"
           },
           "description": "Optional array of milestones tracking progress toward completion."
         },
         "signature": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Signature",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Signature",
           "description": "Optional digital signature for enhanced trust and non-repudiation."
         },
         "evidence": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Evidence"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Evidence"
           },
           "description": "Supporting evidence for this POA&M, such as documentation of compensating controls or mitigation implementation."
         },
         "previousChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
         }
       },
@@ -307,7 +307,7 @@
       },
       "properties": {
         "algorithm": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v2.0.0#/$defs/Hash_Algorithm",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Hash_Algorithm",
           "description": "The hash algorithm used for the checksum."
         },
         "checksum": {

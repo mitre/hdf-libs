@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/spf13/cobra"
 )
 
@@ -129,7 +129,7 @@ func runPlanCreateFromSystem(systemFile, planID, outputPath string) error {
 	if planID == "" {
 		planID = uuid.New().String()
 	}
-	planName := toKebabCase(sysName) + "-assessment-plan"
+	planName := hdfutil.ToKebabCase(sysName) + "-assessment-plan"
 	plan := map[string]interface{}{
 		"planId":      planID,
 		"name":        planName,
@@ -163,23 +163,4 @@ func writePlanOutput(plan map[string]interface{}, outputPath string) error {
 	assessments, _ := plan["assessments"].([]map[string]interface{})
 	fmt.Fprintf(os.Stderr, "Plan written to %s (%d assessments)\n", outputPath, len(assessments))
 	return nil
-}
-
-// toKebabCase converts a title to a kebab-case slug.
-func toKebabCase(s string) string {
-	s = strings.ToLower(s)
-	s = strings.Map(func(r rune) rune {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
-			return r
-		}
-		return '-'
-	}, s)
-	for strings.Contains(s, "--") {
-		s = strings.ReplaceAll(s, "--", "-")
-	}
-	s = strings.Trim(s, "-")
-	if len(s) > 80 {
-		s = s[:80]
-	}
-	return s
 }

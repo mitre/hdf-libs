@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/mitre/hdf-converters/registry"
-	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 )
 
 func init() {
@@ -19,7 +19,7 @@ func init() {
 			if !ok {
 				return 0
 			}
-			if shared.ExtractXMLRootElement(s) != "issues" {
+			if hdfutil.ExtractXMLRootElement(s) != "issues" {
 				return 0
 			}
 			// burpVersion attribute is a strong signal

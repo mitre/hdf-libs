@@ -17,6 +17,7 @@ import (
 	"unicode/utf8"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
@@ -35,7 +36,7 @@ var veracodeAliases = map[string]float64{
 }
 
 func veracodeSeverityToImpact(severity string) float64 {
-	return shared.SeverityToImpactWithAliases(severity, veracodeAliases, 0.1)
+	return hdfutil.SeverityToImpactWithAliases(severity, veracodeAliases, 0.1)
 }
 
 // XML structures for Veracode DetailedReport
@@ -763,7 +764,7 @@ func parseVeracodeTimestamp(s string) time.Time {
 	}
 
 	// Fall back to shared parser
-	return shared.ParseTimestamp(s)
+	return hdfutil.ParseTimestamp(s)
 }
 
 // cweNISTControls wraps the cwe.NISTControls function for use in this package.

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -117,7 +118,7 @@ var grypeAliases = map[string]float64{
 }
 
 func getImpact(severity string) float64 {
-	return shared.SeverityToImpactWithAliases(severity, grypeAliases, 0.5)
+	return hdfutil.SeverityToImpactWithAliases(severity, grypeAliases, 0.5)
 }
 
 func isNegligibleOrUnknown(severity string) bool {
@@ -388,13 +389,13 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 	// Build HDF results
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:     "grype-to-hdf",
-		ConverterVersion:  converterVersion,
-		ToolName:    "Grype",
-		ToolVersion: grypeData.Descriptor.Version,
-		Baselines:         []hdf.EvaluatedBaseline{baseline},
-		Components:           []hdf.Component{target},
-		Timestamp:         timestamp,
+		GeneratorName:    "grype-to-hdf",
+		ConverterVersion: converterVersion,
+		ToolName:         "Grype",
+		ToolVersion:      grypeData.Descriptor.Version,
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Components:       []hdf.Component{target},
+		Timestamp:        timestamp,
 	})
 
 	return hdfResult, nil

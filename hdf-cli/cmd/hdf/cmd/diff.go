@@ -4,31 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sort"
+	"path/filepath"
 	"strings"
 
+	"github.com/mitre/hdf-cli/pkg/diff/engine"
+	"github.com/mitre/hdf-cli/pkg/diff/exitcodes"
 	"github.com/mitre/hdf-cli/pkg/diff/sbom"
+	diffTypes "github.com/mitre/hdf-cli/pkg/diff/types"
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
 	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
-)
-
-// Exit code constants for diff command.
-//
-// Basic mode (--exit-code): GNU diff compatible.
-const (
-	exitIdentical   = 0
-	exitDifferences = 1
-	exitError       = 2
-)
-
-// Detailed mode (--detailed-exitcode): nuanced security outcomes.
-const (
-	exitFixesOnly       = 10
-	exitRegressionsOnly = 11
-	exitMixed           = 12
-	exitBaselineChanged = 13
-	exitDriftOnly       = 14
 )
 
 // ExitCoder is implemented by errors that carry a specific process exit code.
@@ -51,18 +36,8 @@ func (e *exitCodeError) ExitCode() int { return e.code }
 // groupByBaseline is the key value for grouping by baseline name.
 const groupByBaselineKey = "baseline"
 
-// diffState represents the classification of a requirement between two scans.
-type diffState string
-
+// Output format and SBOM state constants.
 const (
-	diffFixed     diffState = "fixed"
-	diffRegressed diffState = "regressed"
-	diffUnchanged diffState = "unchanged"
-	diffUpdated   diffState = "updated"
-	diffNew       diffState = "new"
-	diffAbsent    diffState = "absent"
-
-	// Output format and SBOM state constants.
 	formatJSON   = "json"
 	stateAdded   = "added"
 	stateRemoved = "removed"
@@ -70,43 +45,87 @@ const (
 )
 
 // diffRequirement holds the comparison result for a single requirement.
+// JSON field names match the hdf-comparison schema's Requirement_Diff type.
+// Before/After are serialized as clean JSON (any) for schema compliance,
+// unlike types.RequirementDiff which holds typed pointers.
 type diffRequirement struct {
-	ID        string    `json:"id"`
-	State     diffState `json:"state"`
-	OldStatus string    `json:"oldStatus,omitempty"`
-	NewStatus string    `json:"newStatus,omitempty"`
-	Title     string    `json:"title,omitempty"`
-	Baseline  string    `json:"baseline,omitempty"` // baseline name this requirement belongs to
+	ID            string                     `json:"id"`
+	State         diffTypes.RequirementState `json:"state"`
+	ChangeReasons []string                   `json:"changeReasons"`
+	Before        any                        `json:"before"`
+	After         any                        `json:"after"`
+	FieldChanges  []any                      `json:"fieldChanges"`
+	OldStatus     string                     `json:"oldEffectiveStatus,omitempty"`
+	NewStatus     string                     `json:"newEffectiveStatus,omitempty"`
+	Title         string                     `json:"title,omitempty"`
+	Baseline      string                     `json:"baseline,omitempty"`
+
+	// groupValue is the resolved value for --group-by (presentation-only, not serialized).
+	groupValue string
 }
 
-// diffSummary holds the aggregate counts for a comparison.
-type diffSummary struct {
-	Total     int `json:"total"`
-	Fixed     int `json:"fixed"`
-	Regressed int `json:"regressed"`
-	New       int `json:"new"`
-	Absent    int `json:"absent"`
-	Unchanged int `json:"unchanged"`
-	Updated   int `json:"updated"`
+// toCleanJSON converts a Go struct to a map[string]any with nil values stripped.
+// Go's encoding/json serializes nil slices/pointers as null, but JSON Schema
+// 2020-12 with unevaluatedProperties rejects unexpected nulls. This mirrors
+// the JS behavior of omitting undefined fields.
+func toCleanJSON(v any) any {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	var m any
+	if err := json.Unmarshal(data, &m); err != nil {
+		return nil
+	}
+	return stripNulls(m)
+}
+
+// stripNulls recursively removes null values from JSON-compatible structures.
+func stripNulls(v any) any {
+	switch val := v.(type) {
+	case map[string]any:
+		cleaned := make(map[string]any, len(val))
+		for k, inner := range val {
+			if inner != nil {
+				cleaned[k] = stripNulls(inner)
+			}
+		}
+		return cleaned
+	case []any:
+		cleaned := make([]any, 0, len(val))
+		for _, item := range val {
+			cleaned = append(cleaned, stripNulls(item))
+		}
+		return cleaned
+	default:
+		return v
+	}
 }
 
 // componentSummary holds per-component compliance information for system-aware diffs.
 type componentSummary struct {
-	Name            string      `json:"name"`
-	BaselineRefs    []string    `json:"baselineRefs"`
-	Summary         diffSummary `json:"summary"`
-	OldCompliance   float64     `json:"oldCompliance"`
-	NewCompliance   float64     `json:"newCompliance"`
-	ComplianceDelta float64     `json:"complianceDelta"`
+	Name            string                      `json:"name"`
+	BaselineRefs    []string                    `json:"baselineRefs"`
+	Summary         diffTypes.ComparisonSummary `json:"summary"`
+	OldCompliance   float64                     `json:"oldCompliance"`
+	NewCompliance   float64                     `json:"newCompliance"`
+	ComplianceDelta float64                     `json:"complianceDelta"`
 }
 
 // diffResult is the full output of a diff operation.
+// JSON field names match the hdf-comparison schema for validation compliance.
 type diffResult struct {
-	FormatVersion      string             `json:"formatVersion"`
-	ComparisonMode     string             `json:"comparisonMode"`
-	Summary            diffSummary        `json:"summary"`
-	Requirements       []diffRequirement  `json:"requirements"`
-	ComponentSummaries []componentSummary `json:"componentSummaries,omitempty"`
+	FormatVersion    string                      `json:"formatVersion"`
+	ComparisonMode   string                      `json:"comparisonMode"`
+	Sources          []diffTypes.Source          `json:"sources"`
+	Summary          diffTypes.ComparisonSummary `json:"summary"`
+	RequirementDiffs []diffRequirement           `json:"requirementDiffs"`
+	BaselineDiffs    []any                       `json:"baselineDiffs"`
+	ComponentDiffs   []componentSummary          `json:"componentDiffs,omitempty"`
+
+	// groupLabel is the column header for the grouping table (presentation-only, not serialized).
+	// Set to "Component" for --system, or the group-by key for --group-by.
+	groupLabel string
 }
 
 // diffFlags holds the local flags for the diff command.
@@ -249,7 +268,11 @@ func runDiff(_ *cobra.Command, args []string, flags *diffFlags) error {
 		return err
 	}
 
-	result := compareHDFResults(oldResults, newResults)
+	comp, err := engine.DiffHdf(oldResults, []hdf.HdfResults{newResults}, engine.Options{})
+	if err != nil {
+		return fmt.Errorf("comparison failed: %w", err)
+	}
+	result := engineResultToDiffResult(comp, oldFile, newFile)
 
 	if err := applyComponentGrouping(flags, oldResults, newResults, &result); err != nil {
 		printError(err.Error())
@@ -302,6 +325,85 @@ func loadDiffInputsFromData(oldData, newData []byte, oldFile, newFile string) (h
 	return oldResults, newResults, nil
 }
 
+// engineResultToDiffResult converts the engine's typed HdfComparison to the CLI's
+// diffResult for rendering. This is the bridge between pkg/diff and the CLI layer.
+func engineResultToDiffResult(comp diffTypes.HdfComparison, oldFile, newFile string) diffResult {
+	// Convert requirement diffs
+	reqs := make([]diffRequirement, 0, len(comp.RequirementDiffs))
+	for _, rd := range comp.RequirementDiffs {
+		dr := diffRequirement{
+			ID:        rd.ID,
+			State:     rd.State,
+			Title:     rd.Title,
+			Baseline:  rd.Baseline,
+			OldStatus: rd.OldEffectiveStatus,
+			NewStatus: rd.NewEffectiveStatus,
+		}
+
+		// Convert change reasons (typed enum → string)
+		reasons := make([]string, 0, len(rd.ChangeReasons))
+		for _, cr := range rd.ChangeReasons {
+			reasons = append(reasons, string(cr))
+		}
+		dr.ChangeReasons = reasons
+
+		// Convert field changes (typed struct → any)
+		fieldChanges := make([]any, 0, len(rd.FieldChanges))
+		for _, fc := range rd.FieldChanges {
+			fieldChanges = append(fieldChanges, fc)
+		}
+		dr.FieldChanges = fieldChanges
+
+		// Convert before/after: serialize to clean JSON (strips Go nil→null)
+		if rd.Before != nil {
+			dr.Before = toCleanJSON(rd.Before)
+		}
+		if rd.After != nil {
+			dr.After = toCleanJSON(rd.After)
+		}
+
+		reqs = append(reqs, dr)
+	}
+
+	// Convert summary
+	summary := diffTypes.ComparisonSummary{
+		Total:             comp.Summary.Total,
+		Fixed:             comp.Summary.Fixed,
+		Regressed:         comp.Summary.Regressed,
+		New:               comp.Summary.New,
+		Absent:            comp.Summary.Absent,
+		Unchanged:         comp.Summary.Unchanged,
+		Updated:           comp.Summary.Updated,
+		MatchedCount:      comp.Summary.MatchedCount,
+		UnmatchedOldCount: comp.Summary.UnmatchedOldCount,
+		UnmatchedNewCount: comp.Summary.UnmatchedNewCount,
+	}
+
+	// Convert sources — use file paths as labels (matches old behavior)
+	sources := []diffTypes.Source{
+		{Role: "old", Label: filepath.Base(oldFile)},
+		{Role: "new", Label: filepath.Base(newFile)},
+	}
+
+	// Convert baseline diffs
+	baselineDiffs := make([]any, 0, len(comp.BaselineDiffs))
+	for _, bd := range comp.BaselineDiffs {
+		baselineDiffs = append(baselineDiffs, bd)
+	}
+	if len(baselineDiffs) == 0 {
+		baselineDiffs = []any{}
+	}
+
+	return diffResult{
+		FormatVersion:    comp.FormatVersion,
+		ComparisonMode:   string(comp.ComparisonMode),
+		Sources:          sources,
+		Summary:          summary,
+		RequirementDiffs: reqs,
+		BaselineDiffs:    baselineDiffs,
+	}
+}
+
 // renderDiffOutput writes the diff output in the requested format.
 func renderDiffOutput(filtered diffResult, flags *diffFlags, oldFile, newFile string) error {
 	// For table and markdown output, hide unchanged unless --all is set.
@@ -322,10 +424,14 @@ func renderDiffOutput(filtered diffResult, flags *diffFlags, oldFile, newFile st
 		}
 	case flags.format == "markdown":
 		outputDiffMarkdown(display, oldFile, newFile)
-		outputComponentSummariesIfPresent(filtered.ComponentSummaries)
+		if flags.groupBy == "" {
+			outputComponentSummariesIfPresent(filtered)
+		}
 	default:
 		outputDiffTable(display, oldFile, newFile)
-		outputComponentSummariesIfPresent(filtered.ComponentSummaries)
+		if flags.groupBy == "" {
+			outputComponentSummariesIfPresent(filtered)
+		}
 	}
 	return nil
 }
@@ -334,32 +440,39 @@ func renderDiffOutput(filtered diffResult, flags *diffFlags, oldFile, newFile st
 // The summary is preserved from the original (full counts).
 func stripUnchanged(result diffResult) diffResult {
 	var changed []diffRequirement
-	for _, req := range result.Requirements {
-		if req.State != diffUnchanged {
+	for _, req := range result.RequirementDiffs {
+		if req.State != diffTypes.StateUnchanged {
 			changed = append(changed, req)
 		}
 	}
 	return diffResult{
-		FormatVersion:      result.FormatVersion,
-		ComparisonMode:     result.ComparisonMode,
-		Summary:            result.Summary, // keep full summary
-		Requirements:       changed,
-		ComponentSummaries: result.ComponentSummaries,
+		FormatVersion:    result.FormatVersion,
+		ComparisonMode:   result.ComparisonMode,
+		Sources:          result.Sources,
+		Summary:          result.Summary, // keep full summary
+		RequirementDiffs: changed,
+		BaselineDiffs:    result.BaselineDiffs,
+		ComponentDiffs:   result.ComponentDiffs,
+		groupLabel:       result.groupLabel,
 	}
 }
 
-// outputComponentSummariesIfPresent prints component summaries when they exist.
-func outputComponentSummariesIfPresent(summaries []componentSummary) {
-	if len(summaries) > 0 {
+// outputComponentSummariesIfPresent prints component/group summaries when they exist.
+func outputComponentSummariesIfPresent(result diffResult) {
+	if len(result.ComponentDiffs) > 0 {
 		fmt.Println()
-		outputComponentSummaries(summaries)
+		label := result.groupLabel
+		if label == "" {
+			label = "Component"
+		}
+		outputComponentSummaries(result.ComponentDiffs, label)
 	}
 }
 
 // computeDiffExitCode returns an exit code error if --exit-code or --detailed-exitcode is set.
-func computeDiffExitCode(summary diffSummary, flags *diffFlags) error {
+func computeDiffExitCode(summary diffTypes.ComparisonSummary, flags *diffFlags) error {
 	if flags.detailedExitCode {
-		code := computeDetailedExitCode(summary)
+		code := exitcodes.ComputeDetailedExitCode(summary)
 		if code != 0 {
 			return &exitCodeError{code: code, message: fmt.Sprintf("detailed exit code: %d", code)}
 		}
@@ -367,136 +480,11 @@ func computeDiffExitCode(summary diffSummary, flags *diffFlags) error {
 	}
 	// Basic exit codes are always active (GNU diff convention):
 	// 0 = identical, 1 = differences found
-	code := computeBasicExitCode(summary)
+	code := exitcodes.ComputeBasicExitCode(summary)
 	if code != 0 {
 		return &exitCodeError{code: code, message: "differences found"}
 	}
 	return nil
-}
-
-// compareHDFResults compares two HDF results documents using temporal mode
-// with exact-ID matching.
-func compareHDFResults(oldResults, newResults hdf.HdfResults) diffResult {
-	// Build maps of requirement ID → requirement
-	oldMap := buildRequirementMap(oldResults)
-	newMap := buildRequirementMap(newResults)
-
-	// Build baseline membership maps (requirement ID → baseline name)
-	oldBaselineMap := buildRequirementBaselineMap(oldResults)
-	newBaselineMap := buildRequirementBaselineMap(newResults)
-
-	var requirements []diffRequirement
-
-	// Track all IDs seen
-	allIDs := make(map[string]bool)
-	for id := range oldMap {
-		allIDs[id] = true
-	}
-	for id := range newMap {
-		allIDs[id] = true
-	}
-
-	// Sort IDs for deterministic output
-	sortedIDs := make([]string, 0, len(allIDs))
-	for id := range allIDs {
-		sortedIDs = append(sortedIDs, id)
-	}
-	sort.Strings(sortedIDs)
-
-	for _, id := range sortedIDs {
-		oldReq, inOld := oldMap[id]
-		newReq, inNew := newMap[id]
-
-		var dr diffRequirement
-		dr.ID = id
-
-		// Resolve baseline name: prefer new, fall back to old
-		if b, ok := newBaselineMap[id]; ok {
-			dr.Baseline = b
-		} else if b, ok := oldBaselineMap[id]; ok {
-			dr.Baseline = b
-		}
-
-		switch {
-		case inOld && !inNew:
-			// Absent - only in old
-			dr.State = diffAbsent
-			dr.OldStatus = determineControlStatus(oldReq)
-			dr.Title = getRequirementTitle(oldReq)
-
-		case !inOld && inNew:
-			// New - only in new
-			dr.State = diffNew
-			dr.NewStatus = determineControlStatus(newReq)
-			dr.Title = getRequirementTitle(newReq)
-
-		default:
-			// Present in both - classify the change
-			oldStatus := determineControlStatus(oldReq)
-			newStatus := determineControlStatus(newReq)
-			dr.OldStatus = oldStatus
-			dr.NewStatus = newStatus
-			dr.Title = getRequirementTitle(newReq)
-			dr.State = classifyChange(oldStatus, newStatus)
-		}
-
-		requirements = append(requirements, dr)
-	}
-
-	return diffResult{
-		FormatVersion:  "1.0.0",
-		ComparisonMode: "temporal",
-		Summary:        buildDiffSummary(requirements),
-		Requirements:   requirements,
-	}
-}
-
-// buildRequirementMap collects all requirements across baselines into a map keyed by ID.
-func buildRequirementMap(results hdf.HdfResults) map[string]hdf.EvaluatedRequirement {
-	reqMap := make(map[string]hdf.EvaluatedRequirement)
-	for _, baseline := range results.Baselines {
-		for _, req := range baseline.Requirements {
-			reqMap[req.ID] = req
-		}
-	}
-	return reqMap
-}
-
-// buildRequirementBaselineMap returns a map from requirement ID to baseline name.
-func buildRequirementBaselineMap(results hdf.HdfResults) map[string]string {
-	m := make(map[string]string)
-	for _, baseline := range results.Baselines {
-		for _, req := range baseline.Requirements {
-			m[req.ID] = baseline.Name
-		}
-	}
-	return m
-}
-
-// classifyChange determines the diff state based on old and new status values.
-func classifyChange(oldStatus, newStatus string) diffState {
-	if oldStatus == newStatus {
-		return diffUnchanged
-	}
-
-	oldFailing := isFailingStatus(oldStatus)
-	oldPassing := isPassingStatus(oldStatus)
-	newFailing := isFailingStatus(newStatus)
-	newPassing := isPassingStatus(newStatus)
-
-	switch {
-	case oldFailing && newPassing:
-		return diffFixed
-	case oldPassing && newFailing:
-		return diffRegressed
-	default:
-		return diffUpdated
-	}
-}
-
-// isPassingStatus returns true if the status is considered passing.
-func isPassingStatus(status string) bool {
-	return status == StatusPassed
 }
 
 // isFailingStatus returns true if the status is considered failing.
@@ -504,30 +492,22 @@ func isFailingStatus(status string) bool {
 	return status == StatusFailed || status == StatusError || status == StatusNotReviewed
 }
 
-// getRequirementTitle returns the title of a requirement, or empty string if nil.
-func getRequirementTitle(req hdf.EvaluatedRequirement) string {
-	if req.Title != nil {
-		return *req.Title
-	}
-	return ""
-}
-
 // buildDiffSummary computes summary counts from a slice of requirements.
-func buildDiffSummary(requirements []diffRequirement) diffSummary {
-	summary := diffSummary{Total: len(requirements)}
+func buildDiffSummary(requirements []diffRequirement) diffTypes.ComparisonSummary {
+	summary := diffTypes.ComparisonSummary{Total: len(requirements)}
 	for _, req := range requirements {
-		switch req.State {
-		case diffFixed:
+		switch req.State { //nolint:exhaustive // moved/split/merged reserved for v1.1
+		case diffTypes.StateFixed:
 			summary.Fixed++
-		case diffRegressed:
+		case diffTypes.StateRegressed:
 			summary.Regressed++
-		case diffNew:
+		case diffTypes.StateNew:
 			summary.New++
-		case diffAbsent:
+		case diffTypes.StateAbsent:
 			summary.Absent++
-		case diffUnchanged:
+		case diffTypes.StateUnchanged:
 			summary.Unchanged++
-		case diffUpdated:
+		case diffTypes.StateUpdated:
 			summary.Updated++
 		}
 	}
@@ -540,69 +520,30 @@ func applyDiffFilters(result diffResult, flags *diffFlags) diffResult {
 		return result
 	}
 
-	allowed := map[diffState]bool{
-		diffFixed:     flags.fixed,
-		diffRegressed: flags.regressed,
-		diffNew:       flags.newOnly,
-		diffAbsent:    flags.absent,
+	allowed := map[diffTypes.RequirementState]bool{
+		diffTypes.StateFixed:     flags.fixed,
+		diffTypes.StateRegressed: flags.regressed,
+		diffTypes.StateNew:       flags.newOnly,
+		diffTypes.StateAbsent:    flags.absent,
 	}
 
 	var filtered []diffRequirement
-	for _, req := range result.Requirements {
+	for _, req := range result.RequirementDiffs {
 		if allowed[req.State] {
 			filtered = append(filtered, req)
 		}
 	}
 
 	return diffResult{
-		FormatVersion:      result.FormatVersion,
-		ComparisonMode:     result.ComparisonMode,
-		Summary:            buildDiffSummary(filtered),
-		Requirements:       filtered,
-		ComponentSummaries: result.ComponentSummaries,
+		FormatVersion:    result.FormatVersion,
+		ComparisonMode:   result.ComparisonMode,
+		Sources:          result.Sources,
+		Summary:          buildDiffSummary(filtered),
+		RequirementDiffs: filtered,
+		BaselineDiffs:    result.BaselineDiffs,
+		ComponentDiffs:   result.ComponentDiffs,
+		groupLabel:       result.groupLabel,
 	}
-}
-
-// --- Exit code computation ---
-
-// computeBasicExitCode returns 0 for identical, 1 for any differences (GNU diff compatible).
-func computeBasicExitCode(summary diffSummary) int {
-	if summary.Total == summary.Unchanged {
-		return exitIdentical
-	}
-	return exitDifferences
-}
-
-// computeDetailedExitCode returns a nuanced exit code based on what changed.
-//
-// Priority order: mixed(12) > regressions(11) > fixes(10) > baseline(13) > drift(14).
-func computeDetailedExitCode(summary diffSummary) int {
-	if summary.Total == summary.Unchanged {
-		return exitIdentical
-	}
-
-	// Mixed: both fixes and regressions
-	if summary.Regressed > 0 && summary.Fixed > 0 {
-		return exitMixed
-	}
-
-	// Regressions only (no fixes)
-	if summary.Regressed > 0 {
-		return exitRegressionsOnly
-	}
-
-	// Fixes only (no regressions)
-	if summary.Fixed > 0 {
-		return exitFixesOnly
-	}
-
-	// Baseline changes: new or absent controls (but no status changes)
-	if summary.New > 0 || summary.Absent > 0 {
-		return exitBaselineChanged
-	}
-
-	// Everything else is metadata drift
-	return exitDriftOnly
 }
 
 // --- Output formatters ---
@@ -622,14 +563,20 @@ func outputDiffTable(result diffResult, oldFile, newFile string) {
 		fmt.Println()
 	}
 
-	tbl := NewTable(
-		Column{Header: "ID"},
-		Column{Header: "Title"},
-		Column{Header: "Old Status"},
-		Column{Header: "New Status"},
-		Column{Header: "State"},
-	)
-	for _, req := range result.Requirements {
+	columns := []Column{
+		{Header: "ID"},
+		{Header: "Title"},
+		{Header: "Old Status"},
+		{Header: "New Status"},
+		{Header: "State"},
+	}
+	hasGroupBy := result.groupLabel != ""
+	if hasGroupBy {
+		columns = append(columns, Column{Header: result.groupLabel})
+	}
+
+	tbl := NewTable(columns...)
+	for _, req := range result.RequirementDiffs {
 		oldStatus := req.OldStatus
 		newStatus := req.NewStatus
 		if oldStatus == "" {
@@ -638,13 +585,17 @@ func outputDiffTable(result diffResult, oldFile, newFile string) {
 		if newStatus == "" {
 			newStatus = "-"
 		}
-		tbl.AddRow(
+		row := []string{
 			sanitizeOutput(req.ID),
 			sanitizeOutput(truncate(req.Title, 40)),
 			oldStatus,
 			newStatus,
 			string(req.State),
-		)
+		}
+		if hasGroupBy {
+			row = append(row, sanitizeOutput(req.groupValue))
+		}
+		tbl.AddRow(row...)
 	}
 	tbl.Render()
 
@@ -658,10 +609,16 @@ func outputDiffMarkdown(result diffResult, oldFile, newFile string) {
 	fmt.Printf("## HDF Comparison: %s → %s\n", sanitizeOutput(oldFile), sanitizeOutput(newFile))
 	fmt.Println()
 
-	fmt.Println("| ID | Title | Old Status | New Status | State |")
-	fmt.Println("|----|-------|------------|------------|-------|")
+	hasGroupBy := result.groupLabel != ""
+	if hasGroupBy {
+		fmt.Printf("| ID | Title | Old Status | New Status | State | %s |\n", result.groupLabel)
+		fmt.Printf("|----|-------|------------|------------|-------|%s|\n", strings.Repeat("-", len(result.groupLabel)+2))
+	} else {
+		fmt.Println("| ID | Title | Old Status | New Status | State |")
+		fmt.Println("|----|-------|------------|------------|-------|")
+	}
 
-	for _, req := range result.Requirements {
+	for _, req := range result.RequirementDiffs {
 		title := sanitizeOutput(truncate(req.Title, 40))
 		oldStatus := req.OldStatus
 		newStatus := req.NewStatus
@@ -671,15 +628,28 @@ func outputDiffMarkdown(result diffResult, oldFile, newFile string) {
 		if newStatus == "" {
 			newStatus = "-"
 		}
-		fmt.Printf("| %s | %s | %s | %s | %s |\n",
-			sanitizeOutput(req.ID), title, oldStatus, newStatus, req.State)
+		if hasGroupBy {
+			fmt.Printf("| %s | %s | %s | %s | %s | %s |\n",
+				sanitizeOutput(req.ID), title, oldStatus, newStatus, req.State, sanitizeOutput(req.groupValue))
+		} else {
+			fmt.Printf("| %s | %s | %s | %s | %s |\n",
+				sanitizeOutput(req.ID), title, oldStatus, newStatus, req.State)
+		}
 	}
 
 	fmt.Println()
 	outputDiffSummary(result.Summary)
 }
 
-func outputDiffSummary(summary diffSummary) {
+// titleCase uppercases the first letter of a string.
+func titleCase(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+func outputDiffSummary(summary diffTypes.ComparisonSummary) {
 	parts := []string{
 		fmt.Sprintf("%d fixed", summary.Fixed),
 		fmt.Sprintf("%d regressed", summary.Regressed),
@@ -692,8 +662,8 @@ func outputDiffSummary(summary diffSummary) {
 }
 
 func outputDiffNameOnly(result diffResult) {
-	for _, req := range result.Requirements {
-		if req.State != diffUnchanged {
+	for _, req := range result.RequirementDiffs {
+		if req.State != diffTypes.StateUnchanged {
 			fmt.Println(sanitizeOutput(req.ID))
 		}
 	}
@@ -737,19 +707,70 @@ func parseSystemDocument(path string) (systemDocument, error) {
 	return doc, nil
 }
 
-// applyComponentGrouping applies either system-aware or label-based grouping to the diff result.
+// applyComponentGrouping applies either system-aware or group-by column to the diff result.
+// --system produces a separate component summary table with compliance percentages.
+// --group-by adds a column to the main diff table showing the group value per requirement.
 func applyComponentGrouping(flags *diffFlags, oldResults, newResults hdf.HdfResults, result *diffResult) error {
 	if flags.system != "" {
 		summaries, err := applySystemGrouping(flags.system, oldResults, newResults, *result)
 		if err != nil {
 			return err
 		}
-		result.ComponentSummaries = summaries
+		result.ComponentDiffs = summaries
+		result.groupLabel = "Component"
 	}
 	if flags.groupBy != "" {
-		result.ComponentSummaries = applyGroupBy(flags.groupBy, oldResults, newResults, *result)
+		resolveGroupValues(flags.groupBy, oldResults, newResults, result)
+		result.groupLabel = titleCase(strings.TrimPrefix(flags.groupBy, "labels."))
 	}
 	return nil
+}
+
+// resolveGroupValues populates the groupValue field on each requirement based on the group key.
+// Recognized requirement-level fields: "baseline", "id", "status".
+// Other keys look up baseline extensions.labels.
+func resolveGroupValues(groupKey string, oldResults, newResults hdf.HdfResults, result *diffResult) {
+	groupKey = strings.TrimPrefix(groupKey, "labels.")
+
+	switch groupKey {
+	case groupByBaselineKey:
+		for i := range result.RequirementDiffs {
+			result.RequirementDiffs[i].groupValue = result.RequirementDiffs[i].Baseline
+		}
+	case "id":
+		for i := range result.RequirementDiffs {
+			result.RequirementDiffs[i].groupValue = result.RequirementDiffs[i].ID
+		}
+	case "status":
+		for i := range result.RequirementDiffs {
+			req := &result.RequirementDiffs[i]
+			if req.NewStatus != "" {
+				req.groupValue = req.NewStatus
+			} else {
+				req.groupValue = req.OldStatus
+			}
+		}
+	default:
+		// Label key: look up in baseline extensions.labels
+		baselineGroupMap := make(map[string]string)
+		for _, results := range []hdf.HdfResults{oldResults, newResults} {
+			for _, baseline := range results.Baselines {
+				if baseline.Extensions != nil {
+					if labels, ok := baseline.Extensions["labels"].(map[string]interface{}); ok {
+						if val, ok := labels[groupKey].(string); ok {
+							baselineGroupMap[baseline.Name] = val
+						}
+					}
+				}
+			}
+		}
+		for i := range result.RequirementDiffs {
+			req := &result.RequirementDiffs[i]
+			if val, ok := baselineGroupMap[req.Baseline]; ok {
+				req.groupValue = val
+			}
+		}
+	}
 }
 
 // applySystemGrouping reads the system document and groups diff requirements by component.
@@ -786,7 +807,7 @@ func buildComponentSummaries(
 
 		// Filter requirements belonging to this component's baselines
 		var compReqs []diffRequirement
-		for _, req := range result.Requirements {
+		for _, req := range result.RequirementDiffs {
 			if baselineSet[req.Baseline] {
 				compReqs = append(compReqs, req)
 			}
@@ -833,142 +854,6 @@ func computeBaselineCompliance(results hdf.HdfResults, baselineSet map[string]bo
 		return 0
 	}
 	return float64(passed) / float64(total) * 100 //nolint:mnd // percentage conversion
-}
-
-// applyGroupBy groups diff requirements by a label key. Currently supports "baseline"
-// as the group-by key, which groups by the baseline name each requirement belongs to.
-func applyGroupBy(
-	groupKey string,
-	oldResults, newResults hdf.HdfResults,
-	result diffResult,
-) []componentSummary {
-	if groupKey != groupByBaselineKey {
-		// For label-based grouping, prefix "labels." is stripped
-		groupKey = strings.TrimPrefix(groupKey, "labels.")
-	}
-
-	if groupKey == groupByBaselineKey {
-		return groupByBaselineName(oldResults, newResults, result)
-	}
-
-	// For arbitrary label keys, group by baseline labels
-	return groupByLabel(groupKey, oldResults, newResults, result)
-}
-
-// groupByBaselineName groups requirements by their baseline name.
-func groupByBaselineName(
-	oldResults, newResults hdf.HdfResults,
-	result diffResult,
-) []componentSummary {
-	// Collect unique baseline names
-	groups := make(map[string][]diffRequirement)
-	for _, req := range result.Requirements {
-		if req.Baseline == "" {
-			continue
-		}
-		groups[req.Baseline] = append(groups[req.Baseline], req)
-	}
-
-	// Sort group names for deterministic output
-	names := make([]string, 0, len(groups))
-	for name := range groups {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	var summaries []componentSummary
-	for _, name := range names {
-		reqs := groups[name]
-		compSummary := buildDiffSummary(reqs)
-
-		baselineSet := map[string]bool{name: true}
-		oldCompliance := computeBaselineCompliance(oldResults, baselineSet)
-		newCompliance := computeBaselineCompliance(newResults, baselineSet)
-
-		summaries = append(summaries, componentSummary{
-			Name:            name,
-			BaselineRefs:    []string{name},
-			Summary:         compSummary,
-			OldCompliance:   oldCompliance,
-			NewCompliance:   newCompliance,
-			ComplianceDelta: newCompliance - oldCompliance,
-		})
-	}
-
-	return summaries
-}
-
-// groupByLabel groups requirements by a label value found on baselines.
-// It looks for the label key in baseline extensions.labels or top-level baseline metadata.
-func groupByLabel(
-	labelKey string,
-	oldResults, newResults hdf.HdfResults,
-	result diffResult,
-) []componentSummary {
-	// Build a map from baseline name → label value by examining both old and new results
-	baselineLabelMap := make(map[string]string)
-	for _, results := range []hdf.HdfResults{oldResults, newResults} {
-		for _, baseline := range results.Baselines {
-			if baseline.Extensions != nil {
-				if labels, ok := baseline.Extensions["labels"].(map[string]interface{}); ok {
-					if val, ok := labels[labelKey].(string); ok {
-						baselineLabelMap[baseline.Name] = val
-					}
-				}
-			}
-		}
-	}
-
-	// Group requirements by their baseline's label value
-	groups := make(map[string][]diffRequirement)
-	for _, req := range result.Requirements {
-		labelVal, ok := baselineLabelMap[req.Baseline]
-		if !ok {
-			labelVal = "(unlabeled)"
-		}
-		groups[labelVal] = append(groups[labelVal], req)
-	}
-
-	// Sort group names
-	names := make([]string, 0, len(groups))
-	for name := range groups {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	var summaries []componentSummary
-	for _, name := range names {
-		reqs := groups[name]
-		compSummary := buildDiffSummary(reqs)
-
-		// Collect baselines for this group
-		baselineSet := make(map[string]bool)
-		for _, req := range reqs {
-			if req.Baseline != "" {
-				baselineSet[req.Baseline] = true
-			}
-		}
-
-		refs := make([]string, 0, len(baselineSet))
-		for b := range baselineSet {
-			refs = append(refs, b)
-		}
-		sort.Strings(refs)
-
-		oldCompliance := computeBaselineCompliance(oldResults, baselineSet)
-		newCompliance := computeBaselineCompliance(newResults, baselineSet)
-
-		summaries = append(summaries, componentSummary{
-			Name:            name,
-			BaselineRefs:    refs,
-			Summary:         compSummary,
-			OldCompliance:   oldCompliance,
-			NewCompliance:   newCompliance,
-			ComplianceDelta: newCompliance - oldCompliance,
-		})
-	}
-
-	return summaries
 }
 
 // runSbomDiff handles the --sbom flag: reads two SBOM files and outputs a package diff.
@@ -1036,9 +921,9 @@ func outputSbomTable(result *sbom.DiffResult, oldFile, newFile string) {
 
 // systemDiffComponent holds the comparison result for a single component.
 type systemDiffComponent struct {
-	Name         string                  `json:"name"`
-	State        diffState               `json:"state"`
-	FieldChanges []systemDiffFieldChange `json:"fieldChanges,omitempty"`
+	Name         string                     `json:"name"`
+	State        diffTypes.RequirementState `json:"state"`
+	FieldChanges []systemDiffFieldChange    `json:"fieldChanges,omitempty"`
 }
 
 // systemDiffFieldChange represents a single field change on a component or system.
@@ -1057,21 +942,11 @@ type systemDiffDataFlow struct {
 
 // systemDiffResult is the full output of a system diff operation.
 type systemDiffResult struct {
-	FormatVersion  string                 `json:"formatVersion"`
-	ComparisonMode string                 `json:"comparisonMode"`
-	Summary        diffSummary            `json:"summary"`
-	ComponentDiffs []systemDiffComponent  `json:"componentDiffs"`
-	Extensions     map[string]interface{} `json:"extensions,omitempty"`
-}
-
-// systemComponentTrackedFields are the fields tracked for component-level changes.
-var systemComponentTrackedFields = []string{
-	"type", "description", "baselineRefs", "inputOverrides", "sbomRef", "targetSelector",
-}
-
-// systemTopLevelFields are the fields tracked for system-level changes.
-var systemTopLevelFields = []string{
-	"authorizationStatus", "categorizationLevel", "description",
+	FormatVersion  string                      `json:"formatVersion"`
+	ComparisonMode string                      `json:"comparisonMode"`
+	Summary        diffTypes.ComparisonSummary `json:"summary"`
+	ComponentDiffs []systemDiffComponent       `json:"componentDiffs"`
+	Extensions     map[string]interface{}      `json:"extensions,omitempty"`
 }
 
 // runSystemDiff compares two system documents in systemDrift mode.
@@ -1086,7 +961,11 @@ func runSystemDiff(oldData, newData []byte, flags *diffFlags, oldFile, newFile s
 		return fmt.Errorf("failed to parse new system document: %w", err)
 	}
 
-	result := compareSystemDocuments(oldSys, newSys)
+	comp, err := engine.DiffSystems(oldSys, newSys)
+	if err != nil {
+		return fmt.Errorf("system comparison failed: %w", err)
+	}
+	result := engineSystemResultToSystemDiffResult(comp)
 
 	if flags.quiet {
 		flags.exitCode = true
@@ -1100,305 +979,99 @@ func runSystemDiff(oldData, newData []byte, flags *diffFlags, oldFile, newFile s
 	return computeSystemDiffExitCode(result.Summary, flags)
 }
 
-// compareSystemDocuments compares two system documents and produces a systemDiffResult.
-func compareSystemDocuments(oldSys, newSys map[string]interface{}) systemDiffResult {
-	oldComponents := toMapSlice(oldSys["components"])
-	newComponents := toMapSlice(newSys["components"])
-
-	// Match components: componentId first, then name
-	pairs := matchSystemComponents(oldComponents, newComponents)
-	var componentDiffs []systemDiffComponent
-
-	for _, p := range pairs {
-		switch {
-		case p.oldComp != nil && p.newComp != nil:
-			changes := computeFieldChanges(p.oldComp, p.newComp, systemComponentTrackedFields)
-			state := diffUnchanged
-			if len(changes) > 0 {
-				state = diffUpdated
-			}
-			componentDiffs = append(componentDiffs, systemDiffComponent{
-				Name: p.name, State: state, FieldChanges: changes,
-			})
-		case p.oldComp != nil:
-			componentDiffs = append(componentDiffs, systemDiffComponent{
-				Name: p.name, State: diffAbsent,
-			})
-		case p.newComp != nil:
-			componentDiffs = append(componentDiffs, systemDiffComponent{
-				Name: p.name, State: diffNew,
-			})
+// engineSystemResultToSystemDiffResult converts the engine's HdfComparison to the CLI's
+// systemDiffResult for rendering.
+func engineSystemResultToSystemDiffResult(comp diffTypes.HdfComparison) systemDiffResult {
+	// Convert component diffs
+	componentDiffs := make([]systemDiffComponent, 0, len(comp.ComponentDiffs))
+	for _, cd := range comp.ComponentDiffs {
+		sdc := systemDiffComponent{
+			Name:  cd.Name,
+			State: cd.State,
 		}
+		// Convert field changes
+		if len(cd.FieldChanges) > 0 {
+			changes := make([]systemDiffFieldChange, 0, len(cd.FieldChanges))
+			for _, fc := range cd.FieldChanges {
+				changes = append(changes, systemDiffFieldChange{
+					Op:       string(fc.Op),
+					Path:     fc.Path,
+					OldValue: fc.OldValue,
+					NewValue: fc.NewValue,
+				})
+			}
+			sdc.FieldChanges = changes
+		}
+		componentDiffs = append(componentDiffs, sdc)
 	}
 
-	sort.Slice(componentDiffs, func(i, j int) bool {
-		return componentDiffs[i].Name < componentDiffs[j].Name
-	})
-
-	// Build summary
-	summary := buildSystemDiffSummary(componentDiffs)
-
-	// Extensions: system field changes + data flow changes
-	extensions := make(map[string]interface{})
-
-	sysFieldChanges := computeFieldChanges(oldSys, newSys, systemTopLevelFields)
-	if len(sysFieldChanges) > 0 {
-		extensions["systemFieldChanges"] = sysFieldChanges
+	// Convert summary
+	summary := diffTypes.ComparisonSummary{
+		Total:             comp.Summary.Total,
+		New:               comp.Summary.New,
+		Absent:            comp.Summary.Absent,
+		Unchanged:         comp.Summary.Unchanged,
+		Updated:           comp.Summary.Updated,
+		MatchedCount:      comp.Summary.MatchedCount,
+		UnmatchedOldCount: comp.Summary.UnmatchedOldCount,
+		UnmatchedNewCount: comp.Summary.UnmatchedNewCount,
 	}
 
-	dataFlowChanges := diffSystemDataFlows(oldSys, newSys)
-	if len(dataFlowChanges) > 0 {
-		extensions["dataFlowChanges"] = dataFlowChanges
-	}
+	// Convert extensions — preserve systemFieldChanges and dataFlowChanges
+	var extensions map[string]interface{}
+	if comp.Extensions != nil {
+		extensions = make(map[string]interface{})
 
-	var ext map[string]interface{}
-	if len(extensions) > 0 {
-		ext = extensions
+		// Convert systemFieldChanges ([]types.FieldChange → []systemDiffFieldChange)
+		if sfc, ok := comp.Extensions["systemFieldChanges"]; ok {
+			if typedChanges, ok := sfc.([]diffTypes.FieldChange); ok {
+				converted := make([]systemDiffFieldChange, 0, len(typedChanges))
+				for _, fc := range typedChanges {
+					converted = append(converted, systemDiffFieldChange{
+						Op:       string(fc.Op),
+						Path:     fc.Path,
+						OldValue: fc.OldValue,
+						NewValue: fc.NewValue,
+					})
+				}
+				extensions["systemFieldChanges"] = converted
+			} else {
+				extensions["systemFieldChanges"] = sfc
+			}
+		}
+
+		// Convert dataFlowChanges ([]engine.DataFlowChange → []systemDiffDataFlow)
+		if dfc, ok := comp.Extensions["dataFlowChanges"]; ok {
+			if typedChanges, ok := dfc.([]engine.DataFlowChange); ok {
+				converted := make([]systemDiffDataFlow, 0, len(typedChanges))
+				for _, df := range typedChanges {
+					converted = append(converted, systemDiffDataFlow{
+						State: df.State,
+						Flow:  df.Flow,
+					})
+				}
+				extensions["dataFlowChanges"] = converted
+			} else {
+				extensions["dataFlowChanges"] = dfc
+			}
+		}
+
+		if len(extensions) == 0 {
+			extensions = nil
+		}
 	}
 
 	return systemDiffResult{
-		FormatVersion:  "1.0.0",
-		ComparisonMode: "systemDrift",
+		FormatVersion:  comp.FormatVersion,
+		ComparisonMode: string(comp.ComparisonMode),
 		Summary:        summary,
 		ComponentDiffs: componentDiffs,
-		Extensions:     ext,
+		Extensions:     extensions,
 	}
-}
-
-// systemComponentPair holds a matched pair of old/new components.
-type systemComponentPair struct {
-	name    string
-	oldComp map[string]interface{}
-	newComp map[string]interface{}
-}
-
-// matchSystemComponents matches components by componentId first, then by name.
-func matchSystemComponents(
-	oldComponents, newComponents []map[string]interface{},
-) []systemComponentPair {
-	matched := make(map[int]bool)    // indices of matched new components
-	oldMatched := make(map[int]bool) // indices of matched old components
-	var pairs []systemComponentPair
-
-	// First pass: match by componentId
-	matchByComponentID(oldComponents, newComponents, &pairs, oldMatched, matched)
-
-	// Second pass: match remaining by name
-	matchByName(oldComponents, newComponents, &pairs, oldMatched, matched)
-
-	// Collect unmatched as absent/new
-	collectUnmatched(oldComponents, newComponents, &pairs, oldMatched, matched)
-
-	return pairs
-}
-
-// matchByComponentID matches old and new components by their componentId field.
-func matchByComponentID(
-	oldComponents, newComponents []map[string]interface{},
-	pairs *[]systemComponentPair, oldMatched, newMatched map[int]bool,
-) {
-	newByID := make(map[string]int)
-	for i, c := range newComponents {
-		if id, ok := c["componentId"].(string); ok && id != "" {
-			newByID[id] = i
-		}
-	}
-
-	for i, oldC := range oldComponents {
-		oldID, _ := oldC["componentId"].(string)
-		if oldID == "" {
-			continue
-		}
-		if ni, ok := newByID[oldID]; ok {
-			newC := newComponents[ni]
-			name := stringVal(newC, "name")
-			if name == "" {
-				name = stringVal(oldC, "name")
-			}
-			if name == "" {
-				name = oldID
-			}
-			*pairs = append(*pairs, systemComponentPair{name: name, oldComp: oldC, newComp: newC})
-			newMatched[ni] = true
-			oldMatched[i] = true
-		}
-	}
-}
-
-// matchByName matches remaining unmatched components by name.
-func matchByName(
-	oldComponents, newComponents []map[string]interface{},
-	pairs *[]systemComponentPair, oldMatched, newMatched map[int]bool,
-) {
-	newByName := make(map[string]int)
-	for i, c := range newComponents {
-		if newMatched[i] {
-			continue
-		}
-		if name, ok := c["name"].(string); ok && name != "" {
-			newByName[name] = i
-		}
-	}
-
-	for i, oldC := range oldComponents {
-		if oldMatched[i] {
-			continue
-		}
-		name := stringVal(oldC, "name")
-		if name == "" {
-			continue
-		}
-		if ni, ok := newByName[name]; ok {
-			*pairs = append(*pairs, systemComponentPair{name: name, oldComp: oldC, newComp: newComponents[ni]})
-			newMatched[ni] = true
-			oldMatched[i] = true
-			delete(newByName, name)
-		}
-	}
-}
-
-// collectUnmatched adds unmatched old components (absent) and new components (new) to pairs.
-func collectUnmatched(
-	oldComponents, newComponents []map[string]interface{},
-	pairs *[]systemComponentPair, oldMatched, newMatched map[int]bool,
-) {
-	for i, oldC := range oldComponents {
-		if oldMatched[i] {
-			continue
-		}
-		name := stringVal(oldC, "name")
-		if name == "" {
-			name = fmt.Sprintf("component-%d", i)
-		}
-		*pairs = append(*pairs, systemComponentPair{name: name, oldComp: oldC})
-	}
-
-	for i, newC := range newComponents {
-		if newMatched[i] {
-			continue
-		}
-		name := stringVal(newC, "name")
-		if name == "" {
-			name = fmt.Sprintf("component-%d", i)
-		}
-		*pairs = append(*pairs, systemComponentPair{name: name, newComp: newC})
-	}
-}
-
-// computeFieldChanges computes field-level diffs for tracked fields using JSON comparison.
-func computeFieldChanges(
-	oldObj, newObj map[string]interface{},
-	trackedFields []string,
-) []systemDiffFieldChange {
-	var changes []systemDiffFieldChange
-
-	for _, field := range trackedFields {
-		oldVal, oldOK := oldObj[field]
-		newVal, newOK := newObj[field]
-
-		oldJSON, _ := json.Marshal(oldVal)
-		newJSON, _ := json.Marshal(newVal)
-
-		if string(oldJSON) != string(newJSON) {
-			switch {
-			case !oldOK && newOK:
-				changes = append(changes, systemDiffFieldChange{Op: "add", Path: field, NewValue: newVal})
-			case oldOK && !newOK:
-				changes = append(changes, systemDiffFieldChange{Op: "remove", Path: field, OldValue: oldVal})
-			default:
-				changes = append(changes, systemDiffFieldChange{Op: "replace", Path: field, OldValue: oldVal, NewValue: newVal})
-			}
-		}
-	}
-
-	return changes
-}
-
-// diffSystemDataFlows diffs data flows between two system documents.
-// Flows are keyed by from→to.
-func diffSystemDataFlows(oldSys, newSys map[string]interface{}) []systemDiffDataFlow {
-	oldFlows := toMapSlice(oldSys["dataFlows"])
-	newFlows := toMapSlice(newSys["dataFlows"])
-
-	if len(oldFlows) == 0 && len(newFlows) == 0 {
-		return nil
-	}
-
-	flowKey := func(f map[string]interface{}) string {
-		from, _ := f["from"].(string)
-		to, _ := f["to"].(string)
-		if to == "" {
-			toJSON, _ := json.Marshal(f["to"])
-			to = string(toJSON)
-		}
-		return from + "→" + to
-	}
-
-	oldMap := make(map[string]map[string]interface{})
-	for _, f := range oldFlows {
-		oldMap[flowKey(f)] = f
-	}
-	newMap := make(map[string]map[string]interface{})
-	for _, f := range newFlows {
-		newMap[flowKey(f)] = f
-	}
-
-	allKeys := make(map[string]bool)
-	for k := range oldMap {
-		allKeys[k] = true
-	}
-	for k := range newMap {
-		allKeys[k] = true
-	}
-
-	sortedKeys := make([]string, 0, len(allKeys))
-	for k := range allKeys {
-		sortedKeys = append(sortedKeys, k)
-	}
-	sort.Strings(sortedKeys)
-
-	var changes []systemDiffDataFlow
-	for _, key := range sortedKeys {
-		oldF, inOld := oldMap[key]
-		newF, inNew := newMap[key]
-
-		switch {
-		case inOld && inNew:
-			oldJSON, _ := json.Marshal(oldF)
-			newJSON, _ := json.Marshal(newF)
-			if string(oldJSON) != string(newJSON) {
-				changes = append(changes, systemDiffDataFlow{State: stateUpdated, Flow: newF})
-			}
-		case inOld:
-			changes = append(changes, systemDiffDataFlow{State: stateRemoved, Flow: oldF})
-		case inNew:
-			changes = append(changes, systemDiffDataFlow{State: stateAdded, Flow: newF})
-		}
-	}
-
-	return changes
-}
-
-// buildSystemDiffSummary computes summary counts from component diffs.
-func buildSystemDiffSummary(diffs []systemDiffComponent) diffSummary {
-	summary := diffSummary{Total: len(diffs)}
-	for _, d := range diffs {
-		switch d.State { //nolint:exhaustive // system diffs only produce new/absent/unchanged/updated
-		case diffNew:
-			summary.New++
-		case diffAbsent:
-			summary.Absent++
-		case diffUnchanged:
-			summary.Unchanged++
-		case diffUpdated:
-			summary.Updated++
-		}
-	}
-	return summary
 }
 
 // computeSystemDiffExitCode returns an exit code for system diffs.
-func computeSystemDiffExitCode(summary diffSummary, flags *diffFlags) error {
+func computeSystemDiffExitCode(summary diffTypes.ComparisonSummary, flags *diffFlags) error {
 	return computeDiffExitCode(summary, flags)
 }
 
@@ -1430,7 +1103,7 @@ func renderSystemDiffOutput(result systemDiffResult, flags *diffFlags, oldFile, 
 func stripUnchangedComponents(result systemDiffResult) systemDiffResult {
 	var changed []systemDiffComponent
 	for _, cd := range result.ComponentDiffs {
-		if cd.State != diffUnchanged {
+		if cd.State != diffTypes.StateUnchanged {
 			changed = append(changed, cd)
 		}
 	}
@@ -1537,7 +1210,7 @@ func outputSystemDiffMarkdown(result systemDiffResult, oldFile, newFile string) 
 	outputSystemDiffSummary(result.Summary, result.Extensions)
 }
 
-func outputSystemDiffSummary(summary diffSummary, extensions map[string]interface{}) {
+func outputSystemDiffSummary(summary diffTypes.ComparisonSummary, extensions map[string]interface{}) {
 	parts := []string{
 		fmt.Sprintf("%d new", summary.New),
 		fmt.Sprintf("%d absent", summary.Absent),
@@ -1567,42 +1240,17 @@ func outputSystemDiffSummary(summary diffSummary, extensions map[string]interfac
 
 func outputSystemDiffNameOnly(result systemDiffResult) {
 	for _, cd := range result.ComponentDiffs {
-		if cd.State != diffUnchanged {
+		if cd.State != diffTypes.StateUnchanged {
 			fmt.Println(sanitizeOutput(cd.Name))
 		}
 	}
 }
 
-// toMapSlice safely converts an interface{} to []map[string]interface{}.
-func toMapSlice(v interface{}) []map[string]interface{} {
-	arr, ok := v.([]interface{})
-	if !ok {
-		return nil
-	}
-	result := make([]map[string]interface{}, 0, len(arr))
-	for _, item := range arr {
-		if m, ok := item.(map[string]interface{}); ok {
-			result = append(result, m)
-		}
-	}
-	return result
-}
-
-// stringVal extracts a string value from a map, returning "" if not present or not a string.
-//
-//nolint:unparam // key varies by call site intent; extracting only "name" is incidental
-func stringVal(m map[string]interface{}, key string) string {
-	v, ok := m[key].(string)
-	if !ok {
-		return ""
-	}
-	return v
-}
-
-// outputComponentSummaries prints component summaries in human-readable format.
-func outputComponentSummaries(summaries []componentSummary) {
+// outputComponentSummaries prints grouped summaries in human-readable format.
+// headerLabel names the first column (e.g. "Component" for --system, "Baseline" for --group-by baseline).
+func outputComponentSummaries(summaries []componentSummary, headerLabel string) {
 	tbl := NewTable(
-		Column{Header: "Component"},
+		Column{Header: headerLabel},
 		Column{Header: "Baselines"},
 		Column{Header: "Fixed", Align: AlignRight},
 		Column{Header: "Regressed", Align: AlignRight},

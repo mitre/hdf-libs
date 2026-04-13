@@ -57,7 +57,7 @@ function createValidator(): Ajv {
   // Add format validators (date-time, uri, etc.)
   addFormats(ajv);
 
-  // Add all primitive schemas so they can be referenced
+  // Add all primitive schemas so they can be referenced via $ref
   ajv.addSchema(commonSchema);
   ajv.addSchema(platformSchema);
   ajv.addSchema(resultSchema);
@@ -72,6 +72,18 @@ function createValidator(): Ajv {
   ajv.addSchema(comparisonSchema);
   ajv.addSchema(componentSchema);
   ajv.addSchema(dataFlowSchema);
+
+  // Register top-level schemas so cross-schema $refs resolve.
+  // The comparison primitive references hdf-results#/$defs/Evaluated_Requirement,
+  // so hdf-results must be registered before compiling comparison.
+  // Schemas are compiled lazily (in getXxxValidator) for performance.
+  ajv.addSchema(hdfResultsSchema);
+  ajv.addSchema(hdfBaselineSchema);
+  ajv.addSchema(hdfComparisonSchema);
+  ajv.addSchema(hdfSystemSchema);
+  ajv.addSchema(hdfPlanSchema);
+  ajv.addSchema(hdfAmendmentsSchema);
+  ajv.addSchema(hdfEvidencePackageSchema);
 
   return ajv;
 }

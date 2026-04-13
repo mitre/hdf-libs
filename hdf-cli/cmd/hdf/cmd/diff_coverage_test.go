@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mitre/hdf-cli/pkg/diff/sbom"
+	diffTypes "github.com/mitre/hdf-cli/pkg/diff/types"
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,38 +44,17 @@ func TestDiffCoverage_Truncate(t *testing.T) {
 	}
 }
 
-// --- Unit tests for getRequirementTitle ---
-
-func TestDiffCoverage_GetRequirementTitle(t *testing.T) {
-	t.Run("nil title returns empty string", func(t *testing.T) {
-		req := hdf.EvaluatedRequirement{Title: nil}
-		assert.Equal(t, "", getRequirementTitle(req))
-	})
-
-	t.Run("non-nil title returns value", func(t *testing.T) {
-		title := "My Requirement Title"
-		req := hdf.EvaluatedRequirement{Title: &title}
-		assert.Equal(t, "My Requirement Title", getRequirementTitle(req))
-	})
-
-	t.Run("empty string title returns empty", func(t *testing.T) {
-		title := ""
-		req := hdf.EvaluatedRequirement{Title: &title}
-		assert.Equal(t, "", getRequirementTitle(req))
-	})
-}
-
 // --- Unit tests for outputDiffNameOnly ---
 
 func TestDiffCoverage_OutputDiffNameOnly(t *testing.T) {
 	result := diffResult{
-		Requirements: []diffRequirement{
-			{ID: "REQ-001", State: diffFixed},
-			{ID: "REQ-002", State: diffUnchanged},
-			{ID: "REQ-003", State: diffRegressed},
-			{ID: "REQ-004", State: diffNew},
-			{ID: "REQ-005", State: diffAbsent},
-			{ID: "REQ-006", State: diffUpdated},
+		RequirementDiffs: []diffRequirement{
+			{ID: "REQ-001", State: diffTypes.StateFixed},
+			{ID: "REQ-002", State: diffTypes.StateUnchanged},
+			{ID: "REQ-003", State: diffTypes.StateRegressed},
+			{ID: "REQ-004", State: diffTypes.StateNew},
+			{ID: "REQ-005", State: diffTypes.StateAbsent},
+			{ID: "REQ-006", State: diffTypes.StateUpdated},
 		},
 	}
 
@@ -101,153 +81,9 @@ func TestDiffCoverage_OutputDiffNameOnly(t *testing.T) {
 	assert.Contains(t, output, "REQ-006")
 }
 
-// --- Unit tests for groupByLabel ---
+// --- Unit tests for resolveGroupValues ---
 
-func TestDiffCoverage_GroupByLabel(t *testing.T) {
-	t.Run("groups by label from baseline extensions", func(t *testing.T) {
-		oldResults := hdf.HdfResults{
-			Baselines: []hdf.EvaluatedBaseline{
-				{
-					Name: "baseline-a",
-					Extensions: map[string]interface{}{
-						"labels": map[string]interface{}{
-							"env": "production",
-						},
-					},
-					Requirements: []hdf.EvaluatedRequirement{
-						makeMinimalEvalReq("REQ-001", "passed"),
-					},
-				},
-			},
-		}
-		newResults := hdf.HdfResults{
-			Baselines: []hdf.EvaluatedBaseline{
-				{
-					Name: "baseline-a",
-					Extensions: map[string]interface{}{
-						"labels": map[string]interface{}{
-							"env": "production",
-						},
-					},
-					Requirements: []hdf.EvaluatedRequirement{
-						makeMinimalEvalReq("REQ-001", "passed"),
-					},
-				},
-			},
-		}
-
-		result := diffResult{
-			Requirements: []diffRequirement{
-				{ID: "REQ-001", State: diffUnchanged, Baseline: "baseline-a"},
-			},
-		}
-
-		summaries := groupByLabel("env", oldResults, newResults, result)
-		require.Len(t, summaries, 1)
-		assert.Equal(t, "production", summaries[0].Name)
-		assert.Equal(t, []string{"baseline-a"}, summaries[0].BaselineRefs)
-	})
-
-	t.Run("unlabeled baseline grouped as (unlabeled)", func(t *testing.T) {
-		oldResults := hdf.HdfResults{
-			Baselines: []hdf.EvaluatedBaseline{
-				{
-					Name:         "baseline-a",
-					Requirements: []hdf.EvaluatedRequirement{},
-				},
-			},
-		}
-		newResults := hdf.HdfResults{
-			Baselines: []hdf.EvaluatedBaseline{
-				{
-					Name:         "baseline-a",
-					Requirements: []hdf.EvaluatedRequirement{},
-				},
-			},
-		}
-
-		result := diffResult{
-			Requirements: []diffRequirement{
-				{ID: "REQ-001", State: diffUnchanged, Baseline: "baseline-a"},
-			},
-		}
-
-		summaries := groupByLabel("env", oldResults, newResults, result)
-		require.Len(t, summaries, 1)
-		assert.Equal(t, "(unlabeled)", summaries[0].Name)
-	})
-
-	t.Run("multiple groups sorted by name", func(t *testing.T) {
-		oldResults := hdf.HdfResults{
-			Baselines: []hdf.EvaluatedBaseline{
-				{
-					Name: "baseline-z",
-					Extensions: map[string]interface{}{
-						"labels": map[string]interface{}{
-							"tier": "web",
-						},
-					},
-					Requirements: []hdf.EvaluatedRequirement{
-						makeMinimalEvalReq("REQ-001", "failed"),
-					},
-				},
-				{
-					Name: "baseline-a",
-					Extensions: map[string]interface{}{
-						"labels": map[string]interface{}{
-							"tier": "database",
-						},
-					},
-					Requirements: []hdf.EvaluatedRequirement{
-						makeMinimalEvalReq("REQ-002", "passed"),
-					},
-				},
-			},
-		}
-		newResults := hdf.HdfResults{
-			Baselines: []hdf.EvaluatedBaseline{
-				{
-					Name: "baseline-z",
-					Extensions: map[string]interface{}{
-						"labels": map[string]interface{}{
-							"tier": "web",
-						},
-					},
-					Requirements: []hdf.EvaluatedRequirement{
-						makeMinimalEvalReq("REQ-001", "passed"),
-					},
-				},
-				{
-					Name: "baseline-a",
-					Extensions: map[string]interface{}{
-						"labels": map[string]interface{}{
-							"tier": "database",
-						},
-					},
-					Requirements: []hdf.EvaluatedRequirement{
-						makeMinimalEvalReq("REQ-002", "passed"),
-					},
-				},
-			},
-		}
-
-		result := diffResult{
-			Requirements: []diffRequirement{
-				{ID: "REQ-001", State: diffFixed, Baseline: "baseline-z"},
-				{ID: "REQ-002", State: diffUnchanged, Baseline: "baseline-a"},
-			},
-		}
-
-		summaries := groupByLabel("tier", oldResults, newResults, result)
-		require.Len(t, summaries, 2)
-		assert.Equal(t, "database", summaries[0].Name)
-		assert.Equal(t, "web", summaries[1].Name)
-	})
-}
-
-// --- Unit tests for applyGroupBy ---
-
-func TestDiffCoverage_ApplyGroupBy(t *testing.T) {
+func TestDiffCoverage_ResolveGroupValues(t *testing.T) {
 	oldResults := hdf.HdfResults{
 		Baselines: []hdf.EvaluatedBaseline{
 			{
@@ -265,34 +101,64 @@ func TestDiffCoverage_ApplyGroupBy(t *testing.T) {
 	}
 	newResults := oldResults
 
-	result := diffResult{
-		Requirements: []diffRequirement{
-			{ID: "REQ-001", State: diffUnchanged, Baseline: "baseline-a"},
-		},
-	}
-
-	t.Run("group-by baseline", func(t *testing.T) {
-		summaries := applyGroupBy("baseline", oldResults, newResults, result)
-		require.Len(t, summaries, 1)
-		assert.Equal(t, "baseline-a", summaries[0].Name)
+	t.Run("group-by baseline uses Baseline field", func(t *testing.T) {
+		result := diffResult{
+			RequirementDiffs: []diffRequirement{
+				{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
+			},
+		}
+		resolveGroupValues("baseline", oldResults, newResults, &result)
+		assert.Equal(t, "baseline-a", result.RequirementDiffs[0].groupValue)
 	})
 
-	t.Run("group-by label key", func(t *testing.T) {
-		summaries := applyGroupBy("env", oldResults, newResults, result)
-		require.Len(t, summaries, 1)
-		assert.Equal(t, "prod", summaries[0].Name)
+	t.Run("group-by id uses ID field", func(t *testing.T) {
+		result := diffResult{
+			RequirementDiffs: []diffRequirement{
+				{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
+			},
+		}
+		resolveGroupValues("id", oldResults, newResults, &result)
+		assert.Equal(t, "REQ-001", result.RequirementDiffs[0].groupValue)
 	})
 
-	t.Run("group-by labels.env prefix stripped", func(t *testing.T) {
-		summaries := applyGroupBy("labels.env", oldResults, newResults, result)
-		require.Len(t, summaries, 1)
-		assert.Equal(t, "prod", summaries[0].Name)
+	t.Run("group-by status uses effective status", func(t *testing.T) {
+		result := diffResult{
+			RequirementDiffs: []diffRequirement{
+				{ID: "REQ-001", State: diffTypes.StateFixed, OldStatus: "failed", NewStatus: "passed"},
+			},
+		}
+		resolveGroupValues("status", oldResults, newResults, &result)
+		assert.Equal(t, "passed", result.RequirementDiffs[0].groupValue)
 	})
 
-	t.Run("group-by unknown label falls to unlabeled", func(t *testing.T) {
-		summaries := applyGroupBy("nonexistent", oldResults, newResults, result)
-		require.Len(t, summaries, 1)
-		assert.Equal(t, "(unlabeled)", summaries[0].Name)
+	t.Run("group-by label key resolves from extensions", func(t *testing.T) {
+		result := diffResult{
+			RequirementDiffs: []diffRequirement{
+				{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
+			},
+		}
+		resolveGroupValues("env", oldResults, newResults, &result)
+		assert.Equal(t, "prod", result.RequirementDiffs[0].groupValue)
+	})
+
+	t.Run("unknown label key leaves groupValue empty", func(t *testing.T) {
+		result := diffResult{
+			RequirementDiffs: []diffRequirement{
+				{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
+			},
+		}
+		resolveGroupValues("nonexistent", oldResults, newResults, &result)
+		assert.Equal(t, "", result.RequirementDiffs[0].groupValue)
+	})
+
+	t.Run("labels. prefix stripped", func(t *testing.T) {
+		result := diffResult{
+			RequirementDiffs: []diffRequirement{
+				{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
+			},
+		}
+		resolveGroupValues("labels.env", oldResults, newResults, &result)
+		assert.Equal(t, "prod", result.RequirementDiffs[0].groupValue)
 	})
 }
 
@@ -302,9 +168,9 @@ func TestDiffCoverage_RenderDiffOutput(t *testing.T) {
 	filtered := diffResult{
 		FormatVersion:  "1.0.0",
 		ComparisonMode: "temporal",
-		Summary:        diffSummary{Total: 1, Fixed: 1},
-		Requirements: []diffRequirement{
-			{ID: "REQ-001", State: diffFixed, OldStatus: "failed", NewStatus: "passed", Title: "Test Requirement"},
+		Summary:        diffTypes.ComparisonSummary{Total: 1, Fixed: 1},
+		RequirementDiffs: []diffRequirement{
+			{ID: "REQ-001", State: diffTypes.StateFixed, OldStatus: "failed", NewStatus: "passed", Title: "Test Requirement"},
 		},
 	}
 
@@ -724,8 +590,10 @@ func TestDiffCoverage_GroupByLabel_CLI(t *testing.T) {
 	stdout, stderr, err := executeCommand("diff", "--group-by", "env", oldPath, newPath)
 	allowExitCode(t, err, stderr)
 
+	// --group-by adds a column to the main table (no separate summary table)
 	assert.Contains(t, stdout, "production")
-	assert.Contains(t, stdout, "Old Compliance")
+	assert.Contains(t, stdout, "Env")               // column header
+	assert.NotContains(t, stdout, "Old Compliance") // no summary table
 }
 
 // --- Quiet mode tests ---
@@ -747,16 +615,16 @@ func TestDiffCoverage_RenderDiffOutput_WithComponentSummaries(t *testing.T) {
 	filtered := diffResult{
 		FormatVersion:  "1.0.0",
 		ComparisonMode: "temporal",
-		Summary:        diffSummary{Total: 2, Fixed: 1, Unchanged: 1},
-		Requirements: []diffRequirement{
-			{ID: "REQ-001", State: diffFixed, OldStatus: "failed", NewStatus: "passed", Baseline: "baseline-a"},
-			{ID: "REQ-002", State: diffUnchanged, OldStatus: "passed", NewStatus: "passed", Baseline: "baseline-a"},
+		Summary:        diffTypes.ComparisonSummary{Total: 2, Fixed: 1, Unchanged: 1},
+		RequirementDiffs: []diffRequirement{
+			{ID: "REQ-001", State: diffTypes.StateFixed, OldStatus: "failed", NewStatus: "passed", Baseline: "baseline-a"},
+			{ID: "REQ-002", State: diffTypes.StateUnchanged, OldStatus: "passed", NewStatus: "passed", Baseline: "baseline-a"},
 		},
-		ComponentSummaries: []componentSummary{
+		ComponentDiffs: []componentSummary{
 			{
 				Name:            "WebTier",
 				BaselineRefs:    []string{"baseline-a"},
-				Summary:         diffSummary{Total: 2, Fixed: 1, Unchanged: 1},
+				Summary:         diffTypes.ComparisonSummary{Total: 2, Fixed: 1, Unchanged: 1},
 				OldCompliance:   50,
 				NewCompliance:   100,
 				ComplianceDelta: 50,

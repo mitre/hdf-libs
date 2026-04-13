@@ -2,6 +2,7 @@ package engine
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 	"time"
 
@@ -14,74 +15,55 @@ var systemTrackedFields = []string{"type", "description", "baselineRefs", "input
 // systemTopLevelFields are the system-level fields tracked for field changes.
 var systemTopLevelFields = []string{"authorizationStatus", "categorizationLevel", "description"}
 
+// DataFlowChange represents a change to a data flow between system versions.
+type DataFlowChange struct {
+	State string         `json:"state"` // "added", "removed", "updated"
+	Flow  map[string]any `json:"flow"`
+}
+
 // DiffSystems compares two HDF system documents (as generic maps) and produces
 // a structured comparison showing component-level changes between system versions.
 //
-// Components are matched by exact name. Top-level system fields
-// (authorizationStatus, categorizationLevel, description) are also compared.
+// Components are matched by componentId first, then by name (2-pass matching).
+// Top-level system fields (authorizationStatus, categorizationLevel, description)
+// and data flows are also compared.
 func DiffSystems(oldSystem, newSystem map[string]any) (types.HdfComparison, error) {
 	oldComponents := extractComponents(oldSystem)
 	newComponents := extractComponents(newSystem)
 
-	// Build maps by component name
-	oldMap := make(map[string]map[string]any)
-	for _, c := range oldComponents {
-		name, _ := c["name"].(string)
-		if name != "" {
-			oldMap[name] = c
-		}
-	}
-	newMap := make(map[string]map[string]any)
-	for _, c := range newComponents {
-		name, _ := c["name"].(string)
-		if name != "" {
-			newMap[name] = c
-		}
-	}
-
-	// Collect all component names
-	allNames := make(map[string]bool)
-	for name := range oldMap {
-		allNames[name] = true
-	}
-	for name := range newMap {
-		allNames[name] = true
-	}
+	// Match components: componentId first, then name
+	pairs := matchComponents(oldComponents, newComponents)
 
 	var componentDiffs []types.ComponentDiff
-
-	for name := range allNames {
-		oldComp, oldExists := oldMap[name]
-		newComp, newExists := newMap[name]
-
+	for _, p := range pairs {
 		switch {
-		case oldExists && newExists:
-			fieldChanges := computeMapFieldChanges(oldComp, newComp, systemTrackedFields)
+		case p.oldComp != nil && p.newComp != nil:
+			fieldChanges := computeMapFieldChanges(p.oldComp, p.newComp, systemTrackedFields)
 			state := types.StateUnchanged
 			if len(fieldChanges) > 0 {
 				state = types.StateUpdated
 			}
 			componentDiffs = append(componentDiffs, types.ComponentDiff{
-				Name:         name,
+				Name:         p.name,
 				State:        state,
-				Before:       oldComp,
-				After:        newComp,
+				Before:       p.oldComp,
+				After:        p.newComp,
 				FieldChanges: fieldChanges,
 			})
-		case oldExists:
+		case p.oldComp != nil:
 			componentDiffs = append(componentDiffs, types.ComponentDiff{
-				Name:         name,
+				Name:         p.name,
 				State:        types.StateAbsent,
-				Before:       oldComp,
+				Before:       p.oldComp,
 				After:        nil,
 				FieldChanges: []types.FieldChange{},
 			})
-		case newExists:
+		case p.newComp != nil:
 			componentDiffs = append(componentDiffs, types.ComponentDiff{
-				Name:         name,
+				Name:         p.name,
 				State:        types.StateNew,
 				Before:       nil,
-				After:        newComp,
+				After:        p.newComp,
 				FieldChanges: []types.FieldChange{},
 			})
 		}
@@ -126,7 +108,7 @@ func DiffSystems(oldSystem, newSystem map[string]any) (types.HdfComparison, erro
 		Timestamp:      time.Now().UTC().Format(time.RFC3339),
 		Sources:        sources,
 		Summary: types.ComparisonSummary{
-			Total:             len(allNames),
+			Total:             len(componentDiffs),
 			MatchedCount:      counts["unchanged"] + counts["updated"],
 			UnmatchedOldCount: counts["absent"],
 			UnmatchedNewCount: counts["new"],
@@ -142,11 +124,20 @@ func DiffSystems(oldSystem, newSystem map[string]any) (types.HdfComparison, erro
 		ComponentDiffs:   componentDiffs,
 	}
 
-	// Attach system-level field changes as extensions if present
+	// Build extensions map for system-level changes and data flow changes
+	extensions := map[string]any{}
+
 	if len(systemFieldChanges) > 0 {
-		result.Extensions = map[string]any{
-			"systemFieldChanges": systemFieldChanges,
-		}
+		extensions["systemFieldChanges"] = systemFieldChanges
+	}
+
+	dataFlowChanges := diffDataFlows(oldSystem, newSystem)
+	if len(dataFlowChanges) > 0 {
+		extensions["dataFlowChanges"] = dataFlowChanges
+	}
+
+	if len(extensions) > 0 {
+		result.Extensions = extensions
 	}
 
 	return result, nil
@@ -220,4 +211,199 @@ func jsonEqual(a, b any) bool {
 		return false
 	}
 	return string(aj) == string(bj)
+}
+
+// componentPair holds a matched pair of old/new components.
+type componentPair struct {
+	name    string
+	oldComp map[string]any
+	newComp map[string]any
+}
+
+// matchComponents matches components by componentId first, then by name.
+// This 2-pass strategy handles renamed components that retain their UUID.
+func matchComponents(oldComponents, newComponents []map[string]any) []componentPair {
+	oldMatched := make(map[int]bool)
+	newMatched := make(map[int]bool)
+	var pairs []componentPair
+
+	matchComponentsByID(oldComponents, newComponents, &pairs, oldMatched, newMatched)
+	matchComponentsByName(oldComponents, newComponents, &pairs, oldMatched, newMatched)
+	collectUnmatchedComponents(oldComponents, newComponents, &pairs, oldMatched, newMatched)
+
+	return pairs
+}
+
+// matchComponentsByID matches old and new components by their componentId field.
+func matchComponentsByID(
+	oldComponents, newComponents []map[string]any,
+	pairs *[]componentPair, oldMatched, newMatched map[int]bool,
+) {
+	newByID := make(map[string]int)
+	for i, c := range newComponents {
+		if id, ok := c["componentId"].(string); ok && id != "" {
+			newByID[id] = i
+		}
+	}
+	for i, oldC := range oldComponents {
+		oldID, _ := oldC["componentId"].(string)
+		if oldID == "" {
+			continue
+		}
+		if ni, ok := newByID[oldID]; ok {
+			newC := newComponents[ni]
+			name, _ := newC["name"].(string)
+			if name == "" {
+				name, _ = oldC["name"].(string)
+			}
+			if name == "" {
+				name = oldID
+			}
+			*pairs = append(*pairs, componentPair{name: name, oldComp: oldC, newComp: newC})
+			oldMatched[i] = true
+			newMatched[ni] = true
+		}
+	}
+}
+
+// matchComponentsByName matches remaining unmatched components by name.
+func matchComponentsByName(
+	oldComponents, newComponents []map[string]any,
+	pairs *[]componentPair, oldMatched, newMatched map[int]bool,
+) {
+	newByName := make(map[string]int)
+	for i, c := range newComponents {
+		if newMatched[i] {
+			continue
+		}
+		if name, ok := c["name"].(string); ok && name != "" {
+			newByName[name] = i
+		}
+	}
+	for i, oldC := range oldComponents {
+		if oldMatched[i] {
+			continue
+		}
+		name, _ := oldC["name"].(string)
+		if name == "" {
+			continue
+		}
+		if ni, ok := newByName[name]; ok {
+			*pairs = append(*pairs, componentPair{name: name, oldComp: oldC, newComp: newComponents[ni]})
+			oldMatched[i] = true
+			newMatched[ni] = true
+			delete(newByName, name)
+		}
+	}
+}
+
+// collectUnmatchedComponents adds unmatched old components (absent) and new components (new).
+func collectUnmatchedComponents(
+	oldComponents, newComponents []map[string]any,
+	pairs *[]componentPair, oldMatched, newMatched map[int]bool,
+) {
+	for i, oldC := range oldComponents {
+		if oldMatched[i] {
+			continue
+		}
+		name, _ := oldC["name"].(string)
+		if name == "" {
+			name = fmt.Sprintf("component-%d", i)
+		}
+		*pairs = append(*pairs, componentPair{name: name, oldComp: oldC})
+	}
+	for i, newC := range newComponents {
+		if newMatched[i] {
+			continue
+		}
+		name, _ := newC["name"].(string)
+		if name == "" {
+			name = fmt.Sprintf("component-%d", i)
+		}
+		*pairs = append(*pairs, componentPair{name: name, newComp: newC})
+	}
+}
+
+// diffDataFlows compares data flows between two system documents.
+// Flows are keyed by from→to for matching.
+func diffDataFlows(oldSys, newSys map[string]any) []DataFlowChange {
+	oldFlowMaps := extractMapSlice(oldSys["dataFlows"])
+	newFlowMaps := extractMapSlice(newSys["dataFlows"])
+
+	if len(oldFlowMaps) == 0 && len(newFlowMaps) == 0 {
+		return nil
+	}
+
+	flowKey := func(f map[string]any) string {
+		from, _ := f["from"].(string)
+		to, _ := f["to"].(string)
+		if to == "" {
+			toJSON, _ := json.Marshal(f["to"])
+			to = string(toJSON)
+		}
+		return from + "→" + to
+	}
+
+	oldMap := make(map[string]map[string]any)
+	for _, f := range oldFlowMaps {
+		oldMap[flowKey(f)] = f
+	}
+	newMap := make(map[string]map[string]any)
+	for _, f := range newFlowMaps {
+		newMap[flowKey(f)] = f
+	}
+
+	allKeys := make(map[string]bool)
+	for k := range oldMap {
+		allKeys[k] = true
+	}
+	for k := range newMap {
+		allKeys[k] = true
+	}
+
+	sortedKeys := make([]string, 0, len(allKeys))
+	for k := range allKeys {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+
+	var changes []DataFlowChange
+	for _, key := range sortedKeys {
+		oldF, inOld := oldMap[key]
+		newF, inNew := newMap[key]
+
+		switch {
+		case inOld && inNew:
+			if !jsonEqual(oldF, newF) {
+				changes = append(changes, DataFlowChange{State: "updated", Flow: newF})
+			}
+		case inOld:
+			changes = append(changes, DataFlowChange{State: "removed", Flow: oldF})
+		case inNew:
+			changes = append(changes, DataFlowChange{State: "added", Flow: newF})
+		}
+	}
+
+	return changes
+}
+
+// extractMapSlice safely converts an any to []map[string]any.
+func extractMapSlice(v any) []map[string]any {
+	if v == nil {
+		return nil
+	}
+	arr, ok := v.([]any)
+	if !ok {
+		if typed, ok2 := v.([]map[string]any); ok2 {
+			return typed
+		}
+		return nil
+	}
+	result := make([]map[string]any, 0, len(arr))
+	for _, item := range arr {
+		if m, ok := item.(map[string]any); ok {
+			result = append(result, m)
+		}
+	}
+	return result
 }
