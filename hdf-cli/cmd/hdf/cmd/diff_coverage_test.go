@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mitre/hdf-cli/pkg/diff/sbom"
+	diffTypes "github.com/mitre/hdf-cli/pkg/diff/types"
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,12 +49,12 @@ func TestDiffCoverage_Truncate(t *testing.T) {
 func TestDiffCoverage_OutputDiffNameOnly(t *testing.T) {
 	result := diffResult{
 		RequirementDiffs: []diffRequirement{
-			{ID: "REQ-001", State: diffFixed},
-			{ID: "REQ-002", State: diffUnchanged},
-			{ID: "REQ-003", State: diffRegressed},
-			{ID: "REQ-004", State: diffNew},
-			{ID: "REQ-005", State: diffAbsent},
-			{ID: "REQ-006", State: diffUpdated},
+			{ID: "REQ-001", State: diffTypes.StateFixed},
+			{ID: "REQ-002", State: diffTypes.StateUnchanged},
+			{ID: "REQ-003", State: diffTypes.StateRegressed},
+			{ID: "REQ-004", State: diffTypes.StateNew},
+			{ID: "REQ-005", State: diffTypes.StateAbsent},
+			{ID: "REQ-006", State: diffTypes.StateUpdated},
 		},
 	}
 
@@ -117,7 +118,7 @@ func TestDiffCoverage_GroupByLabel(t *testing.T) {
 
 		result := diffResult{
 			RequirementDiffs: []diffRequirement{
-				{ID: "REQ-001", State: diffUnchanged, Baseline: "baseline-a"},
+				{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
 			},
 		}
 
@@ -147,7 +148,7 @@ func TestDiffCoverage_GroupByLabel(t *testing.T) {
 
 		result := diffResult{
 			RequirementDiffs: []diffRequirement{
-				{ID: "REQ-001", State: diffUnchanged, Baseline: "baseline-a"},
+				{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
 			},
 		}
 
@@ -212,8 +213,8 @@ func TestDiffCoverage_GroupByLabel(t *testing.T) {
 
 		result := diffResult{
 			RequirementDiffs: []diffRequirement{
-				{ID: "REQ-001", State: diffFixed, Baseline: "baseline-z"},
-				{ID: "REQ-002", State: diffUnchanged, Baseline: "baseline-a"},
+				{ID: "REQ-001", State: diffTypes.StateFixed, Baseline: "baseline-z"},
+				{ID: "REQ-002", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
 			},
 		}
 
@@ -246,7 +247,7 @@ func TestDiffCoverage_ApplyGroupBy(t *testing.T) {
 
 	result := diffResult{
 		RequirementDiffs: []diffRequirement{
-			{ID: "REQ-001", State: diffUnchanged, Baseline: "baseline-a"},
+			{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
 		},
 	}
 
@@ -281,9 +282,9 @@ func TestDiffCoverage_RenderDiffOutput(t *testing.T) {
 	filtered := diffResult{
 		FormatVersion:  "1.0.0",
 		ComparisonMode: "temporal",
-		Summary:        diffSummary{Total: 1, Fixed: 1},
+		Summary:        diffTypes.ComparisonSummary{Total: 1, Fixed: 1},
 		RequirementDiffs: []diffRequirement{
-			{ID: "REQ-001", State: diffFixed, OldStatus: "failed", NewStatus: "passed", Title: "Test Requirement"},
+			{ID: "REQ-001", State: diffTypes.StateFixed, OldStatus: "failed", NewStatus: "passed", Title: "Test Requirement"},
 		},
 	}
 
@@ -726,16 +727,16 @@ func TestDiffCoverage_RenderDiffOutput_WithComponentSummaries(t *testing.T) {
 	filtered := diffResult{
 		FormatVersion:  "1.0.0",
 		ComparisonMode: "temporal",
-		Summary:        diffSummary{Total: 2, Fixed: 1, Unchanged: 1},
+		Summary:        diffTypes.ComparisonSummary{Total: 2, Fixed: 1, Unchanged: 1},
 		RequirementDiffs: []diffRequirement{
-			{ID: "REQ-001", State: diffFixed, OldStatus: "failed", NewStatus: "passed", Baseline: "baseline-a"},
-			{ID: "REQ-002", State: diffUnchanged, OldStatus: "passed", NewStatus: "passed", Baseline: "baseline-a"},
+			{ID: "REQ-001", State: diffTypes.StateFixed, OldStatus: "failed", NewStatus: "passed", Baseline: "baseline-a"},
+			{ID: "REQ-002", State: diffTypes.StateUnchanged, OldStatus: "passed", NewStatus: "passed", Baseline: "baseline-a"},
 		},
 		ComponentDiffs: []componentSummary{
 			{
 				Name:            "WebTier",
 				BaselineRefs:    []string{"baseline-a"},
-				Summary:         diffSummary{Total: 2, Fixed: 1, Unchanged: 1},
+				Summary:         diffTypes.ComparisonSummary{Total: 2, Fixed: 1, Unchanged: 1},
 				OldCompliance:   50,
 				NewCompliance:   100,
 				ComplianceDelta: 50,

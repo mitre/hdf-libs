@@ -9,29 +9,12 @@ import (
 	"strings"
 
 	"github.com/mitre/hdf-cli/pkg/diff/engine"
+	"github.com/mitre/hdf-cli/pkg/diff/exitcodes"
 	"github.com/mitre/hdf-cli/pkg/diff/sbom"
 	diffTypes "github.com/mitre/hdf-cli/pkg/diff/types"
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
 	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
-)
-
-// Exit code constants for diff command.
-//
-// Basic mode (--exit-code): GNU diff compatible.
-const (
-	exitIdentical   = 0
-	exitDifferences = 1
-	exitError       = 2
-)
-
-// Detailed mode (--detailed-exitcode): nuanced security outcomes.
-const (
-	exitFixesOnly       = 10
-	exitRegressionsOnly = 11
-	exitMixed           = 12
-	exitBaselineChanged = 13
-	exitDriftOnly       = 14
 )
 
 // ExitCoder is implemented by errors that carry a specific process exit code.
@@ -54,18 +37,8 @@ func (e *exitCodeError) ExitCode() int { return e.code }
 // groupByBaseline is the key value for grouping by baseline name.
 const groupByBaselineKey = "baseline"
 
-// diffState represents the classification of a requirement between two scans.
-type diffState string
-
+// Output format and SBOM state constants.
 const (
-	diffFixed     diffState = "fixed"
-	diffRegressed diffState = "regressed"
-	diffUnchanged diffState = "unchanged"
-	diffUpdated   diffState = "updated"
-	diffNew       diffState = "new"
-	diffAbsent    diffState = "absent"
-
-	// Output format and SBOM state constants.
 	formatJSON   = "json"
 	stateAdded   = "added"
 	stateRemoved = "removed"
@@ -74,17 +47,19 @@ const (
 
 // diffRequirement holds the comparison result for a single requirement.
 // JSON field names match the hdf-comparison schema's Requirement_Diff type.
+// Before/After are serialized as clean JSON (any) for schema compliance,
+// unlike types.RequirementDiff which holds typed pointers.
 type diffRequirement struct {
-	ID            string    `json:"id"`
-	State         diffState `json:"state"`
-	ChangeReasons []string  `json:"changeReasons"`
-	Before        any       `json:"before"`
-	After         any       `json:"after"`
-	FieldChanges  []any     `json:"fieldChanges"`
-	OldStatus     string    `json:"oldEffectiveStatus,omitempty"`
-	NewStatus     string    `json:"newEffectiveStatus,omitempty"`
-	Title         string    `json:"title,omitempty"`
-	Baseline      string    `json:"baseline,omitempty"`
+	ID            string                     `json:"id"`
+	State         diffTypes.RequirementState `json:"state"`
+	ChangeReasons []string                   `json:"changeReasons"`
+	Before        any                        `json:"before"`
+	After         any                        `json:"after"`
+	FieldChanges  []any                      `json:"fieldChanges"`
+	OldStatus     string                     `json:"oldEffectiveStatus,omitempty"`
+	NewStatus     string                     `json:"newEffectiveStatus,omitempty"`
+	Title         string                     `json:"title,omitempty"`
+	Baseline      string                     `json:"baseline,omitempty"`
 }
 
 // toCleanJSON converts a Go struct to a map[string]any with nil values stripped.
@@ -125,47 +100,26 @@ func stripNulls(v any) any {
 	}
 }
 
-// diffSummary holds the aggregate counts for a comparison.
-type diffSummary struct {
-	Total             int `json:"total"`
-	Fixed             int `json:"fixed"`
-	Regressed         int `json:"regressed"`
-	New               int `json:"new"`
-	Absent            int `json:"absent"`
-	Unchanged         int `json:"unchanged"`
-	Updated           int `json:"updated"`
-	MatchedCount      int `json:"matchedCount"`
-	UnmatchedOldCount int `json:"unmatchedOldCount"`
-	UnmatchedNewCount int `json:"unmatchedNewCount"`
-}
-
-// diffSource identifies an input to the comparison.
-type diffSource struct {
-	Role  string `json:"role"`
-	Label string `json:"label"`
-	URI   string `json:"uri,omitempty"`
-}
-
 // componentSummary holds per-component compliance information for system-aware diffs.
 type componentSummary struct {
-	Name            string      `json:"name"`
-	BaselineRefs    []string    `json:"baselineRefs"`
-	Summary         diffSummary `json:"summary"`
-	OldCompliance   float64     `json:"oldCompliance"`
-	NewCompliance   float64     `json:"newCompliance"`
-	ComplianceDelta float64     `json:"complianceDelta"`
+	Name            string                      `json:"name"`
+	BaselineRefs    []string                    `json:"baselineRefs"`
+	Summary         diffTypes.ComparisonSummary `json:"summary"`
+	OldCompliance   float64                     `json:"oldCompliance"`
+	NewCompliance   float64                     `json:"newCompliance"`
+	ComplianceDelta float64                     `json:"complianceDelta"`
 }
 
 // diffResult is the full output of a diff operation.
 // JSON field names match the hdf-comparison schema for validation compliance.
 type diffResult struct {
-	FormatVersion    string             `json:"formatVersion"`
-	ComparisonMode   string             `json:"comparisonMode"`
-	Sources          []diffSource       `json:"sources"`
-	Summary          diffSummary        `json:"summary"`
-	RequirementDiffs []diffRequirement  `json:"requirementDiffs"`
-	BaselineDiffs    []any              `json:"baselineDiffs"`
-	ComponentDiffs   []componentSummary `json:"componentDiffs,omitempty"`
+	FormatVersion    string                      `json:"formatVersion"`
+	ComparisonMode   string                      `json:"comparisonMode"`
+	Sources          []diffTypes.Source          `json:"sources"`
+	Summary          diffTypes.ComparisonSummary `json:"summary"`
+	RequirementDiffs []diffRequirement           `json:"requirementDiffs"`
+	BaselineDiffs    []any                       `json:"baselineDiffs"`
+	ComponentDiffs   []componentSummary          `json:"componentDiffs,omitempty"`
 }
 
 // diffFlags holds the local flags for the diff command.
@@ -373,7 +327,7 @@ func engineResultToDiffResult(comp diffTypes.HdfComparison, oldFile, newFile str
 	for _, rd := range comp.RequirementDiffs {
 		dr := diffRequirement{
 			ID:        rd.ID,
-			State:     diffState(rd.State),
+			State:     rd.State,
 			Title:     rd.Title,
 			Baseline:  rd.Baseline,
 			OldStatus: rd.OldEffectiveStatus,
@@ -406,7 +360,7 @@ func engineResultToDiffResult(comp diffTypes.HdfComparison, oldFile, newFile str
 	}
 
 	// Convert summary
-	summary := diffSummary{
+	summary := diffTypes.ComparisonSummary{
 		Total:             comp.Summary.Total,
 		Fixed:             comp.Summary.Fixed,
 		Regressed:         comp.Summary.Regressed,
@@ -420,7 +374,7 @@ func engineResultToDiffResult(comp diffTypes.HdfComparison, oldFile, newFile str
 	}
 
 	// Convert sources — use file paths as labels (matches old behavior)
-	sources := []diffSource{
+	sources := []diffTypes.Source{
 		{Role: "old", Label: filepath.Base(oldFile)},
 		{Role: "new", Label: filepath.Base(newFile)},
 	}
@@ -477,7 +431,7 @@ func renderDiffOutput(filtered diffResult, flags *diffFlags, oldFile, newFile st
 func stripUnchanged(result diffResult) diffResult {
 	var changed []diffRequirement
 	for _, req := range result.RequirementDiffs {
-		if req.State != diffUnchanged {
+		if req.State != diffTypes.StateUnchanged {
 			changed = append(changed, req)
 		}
 	}
@@ -501,9 +455,9 @@ func outputComponentSummariesIfPresent(summaries []componentSummary) {
 }
 
 // computeDiffExitCode returns an exit code error if --exit-code or --detailed-exitcode is set.
-func computeDiffExitCode(summary diffSummary, flags *diffFlags) error {
+func computeDiffExitCode(summary diffTypes.ComparisonSummary, flags *diffFlags) error {
 	if flags.detailedExitCode {
-		code := computeDetailedExitCode(summary)
+		code := exitcodes.ComputeDetailedExitCode(summary)
 		if code != 0 {
 			return &exitCodeError{code: code, message: fmt.Sprintf("detailed exit code: %d", code)}
 		}
@@ -511,7 +465,7 @@ func computeDiffExitCode(summary diffSummary, flags *diffFlags) error {
 	}
 	// Basic exit codes are always active (GNU diff convention):
 	// 0 = identical, 1 = differences found
-	code := computeBasicExitCode(summary)
+	code := exitcodes.ComputeBasicExitCode(summary)
 	if code != 0 {
 		return &exitCodeError{code: code, message: "differences found"}
 	}
@@ -524,21 +478,21 @@ func isFailingStatus(status string) bool {
 }
 
 // buildDiffSummary computes summary counts from a slice of requirements.
-func buildDiffSummary(requirements []diffRequirement) diffSummary {
-	summary := diffSummary{Total: len(requirements)}
+func buildDiffSummary(requirements []diffRequirement) diffTypes.ComparisonSummary {
+	summary := diffTypes.ComparisonSummary{Total: len(requirements)}
 	for _, req := range requirements {
-		switch req.State {
-		case diffFixed:
+		switch req.State { //nolint:exhaustive // moved/split/merged reserved for v1.1
+		case diffTypes.StateFixed:
 			summary.Fixed++
-		case diffRegressed:
+		case diffTypes.StateRegressed:
 			summary.Regressed++
-		case diffNew:
+		case diffTypes.StateNew:
 			summary.New++
-		case diffAbsent:
+		case diffTypes.StateAbsent:
 			summary.Absent++
-		case diffUnchanged:
+		case diffTypes.StateUnchanged:
 			summary.Unchanged++
-		case diffUpdated:
+		case diffTypes.StateUpdated:
 			summary.Updated++
 		}
 	}
@@ -551,11 +505,11 @@ func applyDiffFilters(result diffResult, flags *diffFlags) diffResult {
 		return result
 	}
 
-	allowed := map[diffState]bool{
-		diffFixed:     flags.fixed,
-		diffRegressed: flags.regressed,
-		diffNew:       flags.newOnly,
-		diffAbsent:    flags.absent,
+	allowed := map[diffTypes.RequirementState]bool{
+		diffTypes.StateFixed:     flags.fixed,
+		diffTypes.StateRegressed: flags.regressed,
+		diffTypes.StateNew:       flags.newOnly,
+		diffTypes.StateAbsent:    flags.absent,
 	}
 
 	var filtered []diffRequirement
@@ -574,48 +528,6 @@ func applyDiffFilters(result diffResult, flags *diffFlags) diffResult {
 		BaselineDiffs:    result.BaselineDiffs,
 		ComponentDiffs:   result.ComponentDiffs,
 	}
-}
-
-// --- Exit code computation ---
-
-// computeBasicExitCode returns 0 for identical, 1 for any differences (GNU diff compatible).
-func computeBasicExitCode(summary diffSummary) int {
-	if summary.Total == summary.Unchanged {
-		return exitIdentical
-	}
-	return exitDifferences
-}
-
-// computeDetailedExitCode returns a nuanced exit code based on what changed.
-//
-// Priority order: mixed(12) > regressions(11) > fixes(10) > baseline(13) > drift(14).
-func computeDetailedExitCode(summary diffSummary) int {
-	if summary.Total == summary.Unchanged {
-		return exitIdentical
-	}
-
-	// Mixed: both fixes and regressions
-	if summary.Regressed > 0 && summary.Fixed > 0 {
-		return exitMixed
-	}
-
-	// Regressions only (no fixes)
-	if summary.Regressed > 0 {
-		return exitRegressionsOnly
-	}
-
-	// Fixes only (no regressions)
-	if summary.Fixed > 0 {
-		return exitFixesOnly
-	}
-
-	// Baseline changes: new or absent controls (but no status changes)
-	if summary.New > 0 || summary.Absent > 0 {
-		return exitBaselineChanged
-	}
-
-	// Everything else is metadata drift
-	return exitDriftOnly
 }
 
 // --- Output formatters ---
@@ -692,7 +604,7 @@ func outputDiffMarkdown(result diffResult, oldFile, newFile string) {
 	outputDiffSummary(result.Summary)
 }
 
-func outputDiffSummary(summary diffSummary) {
+func outputDiffSummary(summary diffTypes.ComparisonSummary) {
 	parts := []string{
 		fmt.Sprintf("%d fixed", summary.Fixed),
 		fmt.Sprintf("%d regressed", summary.Regressed),
@@ -706,7 +618,7 @@ func outputDiffSummary(summary diffSummary) {
 
 func outputDiffNameOnly(result diffResult) {
 	for _, req := range result.RequirementDiffs {
-		if req.State != diffUnchanged {
+		if req.State != diffTypes.StateUnchanged {
 			fmt.Println(sanitizeOutput(req.ID))
 		}
 	}
@@ -1049,9 +961,9 @@ func outputSbomTable(result *sbom.DiffResult, oldFile, newFile string) {
 
 // systemDiffComponent holds the comparison result for a single component.
 type systemDiffComponent struct {
-	Name         string                  `json:"name"`
-	State        diffState               `json:"state"`
-	FieldChanges []systemDiffFieldChange `json:"fieldChanges,omitempty"`
+	Name         string                     `json:"name"`
+	State        diffTypes.RequirementState `json:"state"`
+	FieldChanges []systemDiffFieldChange    `json:"fieldChanges,omitempty"`
 }
 
 // systemDiffFieldChange represents a single field change on a component or system.
@@ -1070,11 +982,11 @@ type systemDiffDataFlow struct {
 
 // systemDiffResult is the full output of a system diff operation.
 type systemDiffResult struct {
-	FormatVersion  string                 `json:"formatVersion"`
-	ComparisonMode string                 `json:"comparisonMode"`
-	Summary        diffSummary            `json:"summary"`
-	ComponentDiffs []systemDiffComponent  `json:"componentDiffs"`
-	Extensions     map[string]interface{} `json:"extensions,omitempty"`
+	FormatVersion  string                      `json:"formatVersion"`
+	ComparisonMode string                      `json:"comparisonMode"`
+	Summary        diffTypes.ComparisonSummary `json:"summary"`
+	ComponentDiffs []systemDiffComponent       `json:"componentDiffs"`
+	Extensions     map[string]interface{}      `json:"extensions,omitempty"`
 }
 
 // runSystemDiff compares two system documents in systemDrift mode.
@@ -1115,7 +1027,7 @@ func engineSystemResultToSystemDiffResult(comp diffTypes.HdfComparison) systemDi
 	for _, cd := range comp.ComponentDiffs {
 		sdc := systemDiffComponent{
 			Name:  cd.Name,
-			State: diffState(cd.State),
+			State: cd.State,
 		}
 		// Convert field changes
 		if len(cd.FieldChanges) > 0 {
@@ -1134,7 +1046,7 @@ func engineSystemResultToSystemDiffResult(comp diffTypes.HdfComparison) systemDi
 	}
 
 	// Convert summary
-	summary := diffSummary{
+	summary := diffTypes.ComparisonSummary{
 		Total:             comp.Summary.Total,
 		New:               comp.Summary.New,
 		Absent:            comp.Summary.Absent,
@@ -1199,7 +1111,7 @@ func engineSystemResultToSystemDiffResult(comp diffTypes.HdfComparison) systemDi
 }
 
 // computeSystemDiffExitCode returns an exit code for system diffs.
-func computeSystemDiffExitCode(summary diffSummary, flags *diffFlags) error {
+func computeSystemDiffExitCode(summary diffTypes.ComparisonSummary, flags *diffFlags) error {
 	return computeDiffExitCode(summary, flags)
 }
 
@@ -1231,7 +1143,7 @@ func renderSystemDiffOutput(result systemDiffResult, flags *diffFlags, oldFile, 
 func stripUnchangedComponents(result systemDiffResult) systemDiffResult {
 	var changed []systemDiffComponent
 	for _, cd := range result.ComponentDiffs {
-		if cd.State != diffUnchanged {
+		if cd.State != diffTypes.StateUnchanged {
 			changed = append(changed, cd)
 		}
 	}
@@ -1338,7 +1250,7 @@ func outputSystemDiffMarkdown(result systemDiffResult, oldFile, newFile string) 
 	outputSystemDiffSummary(result.Summary, result.Extensions)
 }
 
-func outputSystemDiffSummary(summary diffSummary, extensions map[string]interface{}) {
+func outputSystemDiffSummary(summary diffTypes.ComparisonSummary, extensions map[string]interface{}) {
 	parts := []string{
 		fmt.Sprintf("%d new", summary.New),
 		fmt.Sprintf("%d absent", summary.Absent),
@@ -1368,7 +1280,7 @@ func outputSystemDiffSummary(summary diffSummary, extensions map[string]interfac
 
 func outputSystemDiffNameOnly(result systemDiffResult) {
 	for _, cd := range result.ComponentDiffs {
-		if cd.State != diffUnchanged {
+		if cd.State != diffTypes.StateUnchanged {
 			fmt.Println(sanitizeOutput(cd.Name))
 		}
 	}
