@@ -5,9 +5,9 @@ import "strings"
 
 // standardSeverityMap defines the canonical severity-to-impact mappings used
 // across most HDF converters, aligned with CVSS 3.x bands normalized to 0-1.
-// Each value is the floor of its band: 0.9-1.0=critical, 0.7-0.8=high,
-// 0.4-0.6=medium, 0.1-0.3=low, 0.0=informational.
-// Case-insensitive lookup is handled by the caller.
+// Each value is the floor of its band. The inverse (ImpactToSeverity) uses
+// these thresholds: >=0.9 critical, [0.7,0.9) high, [0.4,0.7) medium,
+// (0,0.4) low, 0.0 informational. Case-insensitive lookup handled by caller.
 var standardSeverityMap = map[string]float64{
 	"critical":      0.9,
 	"high":          0.7,
@@ -46,10 +46,10 @@ func SeverityToImpactWithAliases(severity string, aliases map[string]float64, de
 }
 
 // ImpactToSeverity maps an HDF impact score (0.0–1.0) to a severity string.
-// This is the inverse of SeverityToImpact. Bands align with CVSS 3.x:
+// This is the inverse of SeverityToImpact. Threshold ranges:
 //
-//	0.9–1.0 = critical, 0.7–0.8 = high, 0.4–0.6 = medium,
-//	0.1–0.3 = low, 0.0 = informational
+//	>=0.9 = critical, [0.7,0.9) = high, [0.4,0.7) = medium,
+//	(0,0.4) = low, 0.0 = informational
 func ImpactToSeverity(impact float64) string {
 	switch {
 	case impact >= 0.9:

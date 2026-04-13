@@ -5,12 +5,12 @@
  * (critical, high, medium, low, informational) and HDF impact scores (0.0–1.0),
  * aligned with CVSS 3.x severity bands normalized to 0–1.
  *
- * Band definitions:
- *   0.9–1.0 = critical (CVSS 9.0–10.0)
- *   0.7–0.8 = high     (CVSS 7.0–8.9)
- *   0.4–0.6 = medium   (CVSS 4.0–6.9)
- *   0.1–0.3 = low      (CVSS 0.1–3.9)
- *   0.0     = informational (CVSS 0.0)
+ * Threshold ranges (used by impactToSeverity):
+ *   >=0.9       = critical (CVSS 9.0–10.0)
+ *   [0.7, 0.9)  = high     (CVSS 7.0–8.9)
+ *   [0.4, 0.7)  = medium   (CVSS 4.0–6.9)
+ *   (0.0, 0.4)  = low      (CVSS 0.1–3.9)
+ *   0.0         = informational (CVSS 0.0)
  */
 
 const severityMap: Record<string, number> = {
