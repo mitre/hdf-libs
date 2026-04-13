@@ -1,9 +1,10 @@
-// Package legacyhdf converts HDF v1.0 (legacy) to HDF v2.0 format.
+// Package legacyhdf converts legacy InSpec exec-json (profiles/controls format)
+// to the current HDF format (baselines/requirements).
 //
-// V1 types are defined here manually. The official v1.0 schema (exec-json.json)
+// Legacy types are defined here manually. The official exec-json schema
 // exists in heimdall2/libs/inspecjs/schemas/ but is not yet integrated into
 // hdf-libs' type generation pipeline.
-// V2 types are imported from github.com/mitre/hdf-schema.
+// Current HDF types are imported from github.com/mitre/hdf-schema.
 package legacyhdf
 
 // V1Result represents a test result in HDF v1.0 format.

@@ -1,7 +1,7 @@
-// Package normalize provides v1 InSpec exec-json to HDF v2 normalization.
+// Package normalize provides legacy InSpec exec-json to HDF normalization.
 //
-// V1 format uses profiles[].controls[] with snake_case fields.
-// V2 format uses baselines[].requirements[] with camelCase fields.
+// Legacy format uses profiles[].controls[] with snake_case fields.
+// Current HDF format uses baselines[].requirements[] with camelCase fields.
 package normalize
 
 import (
@@ -12,8 +12,8 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 )
 
-// IsV1Format detects whether a JSON document is v1 InSpec exec-json format.
-// V1 has "profiles" at top level; v2 has "baselines".
+// IsV1Format detects whether a JSON document is legacy InSpec exec-json format.
+// Legacy format has "profiles" at top level; current HDF has "baselines".
 func IsV1Format(data map[string]any) bool {
 	_, hasProfiles := data["profiles"]
 	_, hasBaselines := data["baselines"]
@@ -30,11 +30,11 @@ func IsV1Format(data map[string]any) bool {
 	return !hasBaselines
 }
 
-// ToV2 converts a v1 document to an HdfResults struct.
-// If already v2, parses directly. If v1, converts profiles->baselines,
-// controls->requirements, snake_case->camelCase.
+// ToV2 converts a legacy InSpec exec-json document to an HdfResults struct.
+// If the input is already current HDF format, parses directly. If legacy,
+// converts profiles→baselines, controls→requirements, snake_case→camelCase.
 // The returned warnings slice contains messages for skipped profiles/controls
-// during v1 conversion. For v2 passthrough, warnings is nil.
+// during legacy conversion. For current-format passthrough, warnings is nil.
 func ToV2(data []byte) (hdf.HdfResults, []string, error) {
 	// First, parse into a generic map to detect format
 	var raw map[string]any
@@ -43,12 +43,12 @@ func ToV2(data []byte) (hdf.HdfResults, []string, error) {
 	}
 
 	if !IsV1Format(raw) {
-		// V2 format: parse directly into typed struct
+		// Current HDF format: parse directly into typed struct
 		result, err := hdf.UnmarshalHdfResults(data)
 		return result, nil, err
 	}
 
-	// V1 format: convert to v2 structure
+	// Legacy format: convert to current HDF structure
 	return convertV1ToV2(raw)
 }
 
@@ -114,7 +114,7 @@ func normalizeProfile(profile map[string]any) (hdf.EvaluatedBaseline, []string) 
 	// Supports
 	baseline.Supports = normalizeSupports(profile)
 
-	// Inputs (v1 "attributes" → v2 "inputs")
+	// Inputs (legacy "attributes" → "inputs")
 	baseline.Inputs = normalizeInputs(profile)
 
 	// Controls -> Requirements
@@ -219,7 +219,7 @@ func normalizeResult(result map[string]any) hdf.RequirementResult {
 	return r
 }
 
-// normalizeResultStatus maps InSpec v1 status values to HDF v2 ResultStatus values.
+// normalizeResultStatus maps legacy InSpec status values to HDF ResultStatus values.
 func normalizeResultStatus(status string) string {
 	switch status {
 	case "skipped":
