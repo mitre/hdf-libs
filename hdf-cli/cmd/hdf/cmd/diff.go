@@ -120,6 +120,10 @@ type diffResult struct {
 	RequirementDiffs []diffRequirement           `json:"requirementDiffs"`
 	BaselineDiffs    []any                       `json:"baselineDiffs"`
 	ComponentDiffs   []componentSummary          `json:"componentDiffs,omitempty"`
+
+	// groupLabel is the column header for the grouping table (presentation-only, not serialized).
+	// Set to "Component" for --system, or the group-by key for --group-by.
+	groupLabel string
 }
 
 // diffFlags holds the local flags for the diff command.
@@ -418,10 +422,10 @@ func renderDiffOutput(filtered diffResult, flags *diffFlags, oldFile, newFile st
 		}
 	case flags.format == "markdown":
 		outputDiffMarkdown(display, oldFile, newFile)
-		outputComponentSummariesIfPresent(filtered.ComponentDiffs)
+		outputComponentSummariesIfPresent(filtered)
 	default:
 		outputDiffTable(display, oldFile, newFile)
-		outputComponentSummariesIfPresent(filtered.ComponentDiffs)
+		outputComponentSummariesIfPresent(filtered)
 	}
 	return nil
 }
@@ -443,14 +447,19 @@ func stripUnchanged(result diffResult) diffResult {
 		RequirementDiffs: changed,
 		BaselineDiffs:    result.BaselineDiffs,
 		ComponentDiffs:   result.ComponentDiffs,
+		groupLabel:       result.groupLabel,
 	}
 }
 
-// outputComponentSummariesIfPresent prints component summaries when they exist.
-func outputComponentSummariesIfPresent(summaries []componentSummary) {
-	if len(summaries) > 0 {
+// outputComponentSummariesIfPresent prints component/group summaries when they exist.
+func outputComponentSummariesIfPresent(result diffResult) {
+	if len(result.ComponentDiffs) > 0 {
 		fmt.Println()
-		outputComponentSummaries(summaries)
+		label := result.groupLabel
+		if label == "" {
+			label = "Component"
+		}
+		outputComponentSummaries(result.ComponentDiffs, label)
 	}
 }
 
@@ -527,6 +536,7 @@ func applyDiffFilters(result diffResult, flags *diffFlags) diffResult {
 		RequirementDiffs: filtered,
 		BaselineDiffs:    result.BaselineDiffs,
 		ComponentDiffs:   result.ComponentDiffs,
+		groupLabel:       result.groupLabel,
 	}
 }
 
@@ -604,6 +614,14 @@ func outputDiffMarkdown(result diffResult, oldFile, newFile string) {
 	outputDiffSummary(result.Summary)
 }
 
+// titleCase uppercases the first letter of a string.
+func titleCase(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
 func outputDiffSummary(summary diffTypes.ComparisonSummary) {
 	parts := []string{
 		fmt.Sprintf("%d fixed", summary.Fixed),
@@ -670,9 +688,11 @@ func applyComponentGrouping(flags *diffFlags, oldResults, newResults hdf.HdfResu
 			return err
 		}
 		result.ComponentDiffs = summaries
+		result.groupLabel = "Component"
 	}
 	if flags.groupBy != "" {
 		result.ComponentDiffs = applyGroupBy(flags.groupBy, oldResults, newResults, *result)
+		result.groupLabel = titleCase(flags.groupBy)
 	}
 	return nil
 }
@@ -760,98 +780,57 @@ func computeBaselineCompliance(results hdf.HdfResults, baselineSet map[string]bo
 	return float64(passed) / float64(total) * 100 //nolint:mnd // percentage conversion
 }
 
-// applyGroupBy groups diff requirements by a label key. Currently supports "baseline"
-// as the group-by key, which groups by the baseline name each requirement belongs to.
+// applyGroupBy groups diff requirements by a key. "baseline" groups by
+// baseline name directly; other keys look up baseline extensions.labels.
 func applyGroupBy(
 	groupKey string,
 	oldResults, newResults hdf.HdfResults,
 	result diffResult,
 ) []componentSummary {
-	if groupKey != groupByBaselineKey {
-		// For label-based grouping, prefix "labels." is stripped
-		groupKey = strings.TrimPrefix(groupKey, "labels.")
-	}
+	groupKey = strings.TrimPrefix(groupKey, "labels.")
+	return groupByKey(groupKey, oldResults, newResults, result)
+}
 
+// groupByKey groups requirements by a key. For "baseline", uses the
+// requirement's Baseline field directly. For other keys, looks up the
+// value in baseline extensions.labels.
+func groupByKey(
+	groupKey string,
+	oldResults, newResults hdf.HdfResults,
+	result diffResult,
+) []componentSummary {
+	// Build a map from baseline name → group value
+	baselineGroupMap := make(map[string]string)
 	if groupKey == groupByBaselineKey {
-		return groupByBaselineName(oldResults, newResults, result)
-	}
-
-	// For arbitrary label keys, group by baseline labels
-	return groupByLabel(groupKey, oldResults, newResults, result)
-}
-
-// groupByBaselineName groups requirements by their baseline name.
-func groupByBaselineName(
-	oldResults, newResults hdf.HdfResults,
-	result diffResult,
-) []componentSummary {
-	// Collect unique baseline names
-	groups := make(map[string][]diffRequirement)
-	for _, req := range result.RequirementDiffs {
-		if req.Baseline == "" {
-			continue
+		// "baseline" key: use baseline name directly as the group value
+		for _, results := range []hdf.HdfResults{oldResults, newResults} {
+			for _, baseline := range results.Baselines {
+				baselineGroupMap[baseline.Name] = baseline.Name
+			}
 		}
-		groups[req.Baseline] = append(groups[req.Baseline], req)
-	}
-
-	// Sort group names for deterministic output
-	names := make([]string, 0, len(groups))
-	for name := range groups {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	var summaries []componentSummary
-	for _, name := range names {
-		reqs := groups[name]
-		compSummary := buildDiffSummary(reqs)
-
-		baselineSet := map[string]bool{name: true}
-		oldCompliance := computeBaselineCompliance(oldResults, baselineSet)
-		newCompliance := computeBaselineCompliance(newResults, baselineSet)
-
-		summaries = append(summaries, componentSummary{
-			Name:            name,
-			BaselineRefs:    []string{name},
-			Summary:         compSummary,
-			OldCompliance:   oldCompliance,
-			NewCompliance:   newCompliance,
-			ComplianceDelta: newCompliance - oldCompliance,
-		})
-	}
-
-	return summaries
-}
-
-// groupByLabel groups requirements by a label value found on baselines.
-// It looks for the label key in baseline extensions.labels or top-level baseline metadata.
-func groupByLabel(
-	labelKey string,
-	oldResults, newResults hdf.HdfResults,
-	result diffResult,
-) []componentSummary {
-	// Build a map from baseline name → label value by examining both old and new results
-	baselineLabelMap := make(map[string]string)
-	for _, results := range []hdf.HdfResults{oldResults, newResults} {
-		for _, baseline := range results.Baselines {
-			if baseline.Extensions != nil {
-				if labels, ok := baseline.Extensions["labels"].(map[string]interface{}); ok {
-					if val, ok := labels[labelKey].(string); ok {
-						baselineLabelMap[baseline.Name] = val
+	} else {
+		// Label key: look up in baseline extensions.labels
+		for _, results := range []hdf.HdfResults{oldResults, newResults} {
+			for _, baseline := range results.Baselines {
+				if baseline.Extensions != nil {
+					if labels, ok := baseline.Extensions["labels"].(map[string]interface{}); ok {
+						if val, ok := labels[groupKey].(string); ok {
+							baselineGroupMap[baseline.Name] = val
+						}
 					}
 				}
 			}
 		}
 	}
 
-	// Group requirements by their baseline's label value
+	// Group requirements by their resolved group value
 	groups := make(map[string][]diffRequirement)
 	for _, req := range result.RequirementDiffs {
-		labelVal, ok := baselineLabelMap[req.Baseline]
+		groupVal, ok := baselineGroupMap[req.Baseline]
 		if !ok {
-			labelVal = "(unlabeled)"
+			groupVal = "(unlabeled)"
 		}
-		groups[labelVal] = append(groups[labelVal], req)
+		groups[groupVal] = append(groups[groupVal], req)
 	}
 
 	// Sort group names
@@ -1286,10 +1265,11 @@ func outputSystemDiffNameOnly(result systemDiffResult) {
 	}
 }
 
-// outputComponentSummaries prints component summaries in human-readable format.
-func outputComponentSummaries(summaries []componentSummary) {
+// outputComponentSummaries prints grouped summaries in human-readable format.
+// headerLabel names the first column (e.g. "Component" for --system, "Baseline" for --group-by baseline).
+func outputComponentSummaries(summaries []componentSummary, headerLabel string) {
 	tbl := NewTable(
-		Column{Header: "Component"},
+		Column{Header: headerLabel},
 		Column{Header: "Baselines"},
 		Column{Header: "Fixed", Align: AlignRight},
 		Column{Header: "Regressed", Align: AlignRight},

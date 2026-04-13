@@ -81,7 +81,7 @@ func TestDiffCoverage_OutputDiffNameOnly(t *testing.T) {
 	assert.Contains(t, output, "REQ-006")
 }
 
-// --- Unit tests for groupByLabel ---
+// --- Unit tests for groupByKey ---
 
 func TestDiffCoverage_GroupByLabel(t *testing.T) {
 	t.Run("groups by label from baseline extensions", func(t *testing.T) {
@@ -122,7 +122,7 @@ func TestDiffCoverage_GroupByLabel(t *testing.T) {
 			},
 		}
 
-		summaries := groupByLabel("env", oldResults, newResults, result)
+		summaries := groupByKey("env", oldResults, newResults, result)
 		require.Len(t, summaries, 1)
 		assert.Equal(t, "production", summaries[0].Name)
 		assert.Equal(t, []string{"baseline-a"}, summaries[0].BaselineRefs)
@@ -152,7 +152,7 @@ func TestDiffCoverage_GroupByLabel(t *testing.T) {
 			},
 		}
 
-		summaries := groupByLabel("env", oldResults, newResults, result)
+		summaries := groupByKey("env", oldResults, newResults, result)
 		require.Len(t, summaries, 1)
 		assert.Equal(t, "(unlabeled)", summaries[0].Name)
 	})
@@ -218,7 +218,7 @@ func TestDiffCoverage_GroupByLabel(t *testing.T) {
 			},
 		}
 
-		summaries := groupByLabel("tier", oldResults, newResults, result)
+		summaries := groupByKey("tier", oldResults, newResults, result)
 		require.Len(t, summaries, 2)
 		assert.Equal(t, "database", summaries[0].Name)
 		assert.Equal(t, "web", summaries[1].Name)
