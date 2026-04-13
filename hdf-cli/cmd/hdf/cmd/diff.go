@@ -8,7 +8,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mitre/hdf-cli/pkg/diff/engine"
 	"github.com/mitre/hdf-cli/pkg/diff/sbom"
+	diffTypes "github.com/mitre/hdf-cli/pkg/diff/types"
 	hdf "github.com/mitre/hdf-cli/pkg/hdf"
 	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
@@ -121,21 +123,6 @@ func stripNulls(v any) any {
 	default:
 		return v
 	}
-}
-
-// diffStateToChangeReason maps diff states to schema-compliant change reason enum values.
-const changeReasonResult = "resultChanged"
-
-func diffStateToChangeReason(state diffState) string {
-	switch state {
-	case diffFixed, diffRegressed:
-		return changeReasonResult
-	case diffUpdated:
-		return "metadataChanged"
-	case diffUnchanged, diffNew, diffAbsent:
-		return changeReasonResult
-	}
-	return changeReasonResult
 }
 
 // diffSummary holds the aggregate counts for a comparison.
@@ -321,7 +308,11 @@ func runDiff(_ *cobra.Command, args []string, flags *diffFlags) error {
 		return err
 	}
 
-	result := compareHDFResults(oldResults, newResults, oldFile, newFile)
+	comp, err := engine.DiffHdf(oldResults, []hdf.HdfResults{newResults}, engine.Options{})
+	if err != nil {
+		return fmt.Errorf("comparison failed: %w", err)
+	}
+	result := engineResultToDiffResult(comp, oldFile, newFile)
 
 	if err := applyComponentGrouping(flags, oldResults, newResults, &result); err != nil {
 		printError(err.Error())
@@ -372,6 +363,85 @@ func loadDiffInputsFromData(oldData, newData []byte, oldFile, newFile string) (h
 		return hdf.HdfResults{}, hdf.HdfResults{}, err
 	}
 	return oldResults, newResults, nil
+}
+
+// engineResultToDiffResult converts the engine's typed HdfComparison to the CLI's
+// diffResult for rendering. This is the bridge between pkg/diff and the CLI layer.
+func engineResultToDiffResult(comp diffTypes.HdfComparison, oldFile, newFile string) diffResult {
+	// Convert requirement diffs
+	reqs := make([]diffRequirement, 0, len(comp.RequirementDiffs))
+	for _, rd := range comp.RequirementDiffs {
+		dr := diffRequirement{
+			ID:        rd.ID,
+			State:     diffState(rd.State),
+			Title:     rd.Title,
+			Baseline:  rd.Baseline,
+			OldStatus: rd.OldEffectiveStatus,
+			NewStatus: rd.NewEffectiveStatus,
+		}
+
+		// Convert change reasons (typed enum → string)
+		reasons := make([]string, 0, len(rd.ChangeReasons))
+		for _, cr := range rd.ChangeReasons {
+			reasons = append(reasons, string(cr))
+		}
+		dr.ChangeReasons = reasons
+
+		// Convert field changes (typed struct → any)
+		fieldChanges := make([]any, 0, len(rd.FieldChanges))
+		for _, fc := range rd.FieldChanges {
+			fieldChanges = append(fieldChanges, fc)
+		}
+		dr.FieldChanges = fieldChanges
+
+		// Convert before/after: serialize to clean JSON (strips Go nil→null)
+		if rd.Before != nil {
+			dr.Before = toCleanJSON(rd.Before)
+		}
+		if rd.After != nil {
+			dr.After = toCleanJSON(rd.After)
+		}
+
+		reqs = append(reqs, dr)
+	}
+
+	// Convert summary
+	summary := diffSummary{
+		Total:             comp.Summary.Total,
+		Fixed:             comp.Summary.Fixed,
+		Regressed:         comp.Summary.Regressed,
+		New:               comp.Summary.New,
+		Absent:            comp.Summary.Absent,
+		Unchanged:         comp.Summary.Unchanged,
+		Updated:           comp.Summary.Updated,
+		MatchedCount:      comp.Summary.MatchedCount,
+		UnmatchedOldCount: comp.Summary.UnmatchedOldCount,
+		UnmatchedNewCount: comp.Summary.UnmatchedNewCount,
+	}
+
+	// Convert sources — use file paths as labels (matches old behavior)
+	sources := []diffSource{
+		{Role: "old", Label: filepath.Base(oldFile)},
+		{Role: "new", Label: filepath.Base(newFile)},
+	}
+
+	// Convert baseline diffs
+	baselineDiffs := make([]any, 0, len(comp.BaselineDiffs))
+	for _, bd := range comp.BaselineDiffs {
+		baselineDiffs = append(baselineDiffs, bd)
+	}
+	if len(baselineDiffs) == 0 {
+		baselineDiffs = []any{}
+	}
+
+	return diffResult{
+		FormatVersion:    comp.FormatVersion,
+		ComparisonMode:   string(comp.ComparisonMode),
+		Sources:          sources,
+		Summary:          summary,
+		RequirementDiffs: reqs,
+		BaselineDiffs:    baselineDiffs,
+	}
 }
 
 // renderDiffOutput writes the diff output in the requested format.
@@ -448,164 +518,9 @@ func computeDiffExitCode(summary diffSummary, flags *diffFlags) error {
 	return nil
 }
 
-// compareHDFResults compares two HDF results documents using temporal mode
-// with exact-ID matching.
-func compareHDFResults(oldResults, newResults hdf.HdfResults, oldFile, newFile string) diffResult {
-	// Build maps of requirement ID → requirement
-	oldMap := buildRequirementMap(oldResults)
-	newMap := buildRequirementMap(newResults)
-
-	// Build baseline membership maps (requirement ID → baseline name)
-	oldBaselineMap := buildRequirementBaselineMap(oldResults)
-	newBaselineMap := buildRequirementBaselineMap(newResults)
-
-	var requirements []diffRequirement
-
-	// Track all IDs seen
-	allIDs := make(map[string]bool)
-	for id := range oldMap {
-		allIDs[id] = true
-	}
-	for id := range newMap {
-		allIDs[id] = true
-	}
-
-	// Sort IDs for deterministic output
-	sortedIDs := make([]string, 0, len(allIDs))
-	for id := range allIDs {
-		sortedIDs = append(sortedIDs, id)
-	}
-	sort.Strings(sortedIDs)
-
-	for _, id := range sortedIDs {
-		oldReq, inOld := oldMap[id]
-		newReq, inNew := newMap[id]
-
-		dr := diffRequirement{
-			ID:            id,
-			ChangeReasons: []string{},
-			FieldChanges:  []any{},
-		}
-
-		// Resolve baseline name: prefer new, fall back to old
-		if b, ok := newBaselineMap[id]; ok {
-			dr.Baseline = b
-		} else if b, ok := oldBaselineMap[id]; ok {
-			dr.Baseline = b
-		}
-
-		switch {
-		case inOld && !inNew:
-			// Absent - only in old
-			dr.State = diffAbsent
-			dr.OldStatus = determineControlStatus(oldReq)
-			dr.Title = getRequirementTitle(oldReq)
-			dr.Before = toCleanJSON(oldReq)
-			dr.ChangeReasons = []string{"resultChanged"}
-
-		case !inOld && inNew:
-			// New - only in new
-			dr.State = diffNew
-			dr.NewStatus = determineControlStatus(newReq)
-			dr.Title = getRequirementTitle(newReq)
-			dr.After = toCleanJSON(newReq)
-			dr.ChangeReasons = []string{"resultChanged"}
-
-		default:
-			// Present in both - classify the change
-			oldStatus := determineControlStatus(oldReq)
-			newStatus := determineControlStatus(newReq)
-			dr.OldStatus = oldStatus
-			dr.NewStatus = newStatus
-			dr.Title = getRequirementTitle(newReq)
-			dr.State = classifyChange(oldStatus, newStatus)
-			dr.Before = toCleanJSON(oldReq)
-			dr.After = toCleanJSON(newReq)
-			if dr.State != diffUnchanged {
-				dr.ChangeReasons = []string{diffStateToChangeReason(dr.State)}
-			}
-		}
-
-		requirements = append(requirements, dr)
-	}
-
-	summary := buildDiffSummary(requirements)
-	summary.MatchedCount = summary.Fixed + summary.Regressed + summary.Unchanged + summary.Updated
-	summary.UnmatchedOldCount = summary.Absent
-	summary.UnmatchedNewCount = summary.New
-
-	return diffResult{
-		FormatVersion:  "1.0.0",
-		ComparisonMode: "temporal",
-		Sources: []diffSource{
-			{Role: "old", Label: filepath.Base(oldFile)},
-			{Role: "new", Label: filepath.Base(newFile)},
-		},
-		Summary:          summary,
-		RequirementDiffs: requirements,
-		BaselineDiffs:    []any{},
-	}
-}
-
-// buildRequirementMap collects all requirements across baselines into a map keyed by ID.
-func buildRequirementMap(results hdf.HdfResults) map[string]hdf.EvaluatedRequirement {
-	reqMap := make(map[string]hdf.EvaluatedRequirement)
-	for _, baseline := range results.Baselines {
-		for _, req := range baseline.Requirements {
-			reqMap[req.ID] = req
-		}
-	}
-	return reqMap
-}
-
-// buildRequirementBaselineMap returns a map from requirement ID to baseline name.
-func buildRequirementBaselineMap(results hdf.HdfResults) map[string]string {
-	m := make(map[string]string)
-	for _, baseline := range results.Baselines {
-		for _, req := range baseline.Requirements {
-			m[req.ID] = baseline.Name
-		}
-	}
-	return m
-}
-
-// classifyChange determines the diff state based on old and new status values.
-func classifyChange(oldStatus, newStatus string) diffState {
-	if oldStatus == newStatus {
-		return diffUnchanged
-	}
-
-	oldFailing := isFailingStatus(oldStatus)
-	oldPassing := isPassingStatus(oldStatus)
-	newFailing := isFailingStatus(newStatus)
-	newPassing := isPassingStatus(newStatus)
-
-	switch {
-	case oldFailing && newPassing:
-		return diffFixed
-	case oldPassing && newFailing:
-		return diffRegressed
-	default:
-		return diffUpdated
-	}
-}
-
-// isPassingStatus returns true if the status is considered passing.
-func isPassingStatus(status string) bool {
-	return status == StatusPassed
-}
-
 // isFailingStatus returns true if the status is considered failing.
 func isFailingStatus(status string) bool {
 	return status == StatusFailed || status == StatusError || status == StatusNotReviewed
-}
-
-// getRequirementTitle returns the title of a requirement, or empty string if nil.
-func getRequirementTitle(req hdf.EvaluatedRequirement) string {
-	if req.Title != nil {
-		return *req.Title
-	}
-	return ""
 }
 
 // buildDiffSummary computes summary counts from a slice of requirements.

@@ -43,27 +43,6 @@ func TestDiffCoverage_Truncate(t *testing.T) {
 	}
 }
 
-// --- Unit tests for getRequirementTitle ---
-
-func TestDiffCoverage_GetRequirementTitle(t *testing.T) {
-	t.Run("nil title returns empty string", func(t *testing.T) {
-		req := hdf.EvaluatedRequirement{Title: nil}
-		assert.Equal(t, "", getRequirementTitle(req))
-	})
-
-	t.Run("non-nil title returns value", func(t *testing.T) {
-		title := "My Requirement Title"
-		req := hdf.EvaluatedRequirement{Title: &title}
-		assert.Equal(t, "My Requirement Title", getRequirementTitle(req))
-	})
-
-	t.Run("empty string title returns empty", func(t *testing.T) {
-		title := ""
-		req := hdf.EvaluatedRequirement{Title: &title}
-		assert.Equal(t, "", getRequirementTitle(req))
-	})
-}
-
 // --- Unit tests for outputDiffNameOnly ---
 
 func TestDiffCoverage_OutputDiffNameOnly(t *testing.T) {
