@@ -342,8 +342,17 @@ type EvaluatedRequirement struct {
 	// present. Convention: place default description first. Common labels: 'default', 'check',                        
 	// 'fix', 'rationale'.                                                                                             
 	Descriptions                                                                                []Description          `json:"descriptions"`
-	// The current effective status of this requirement after applying the most recent                                 
-	// non-expired override, or computed from results if no overrides exist.                                           
+	// The type of the most recent non-expired override governing this requirement. Indicates                          
+	// why the requirement is in its current state (e.g., waiver, falsePositive,                                       
+	// riskAdjustment). Absent when no overrides apply.                                                                
+	Disposition                                                                                 *OverrideType          `json:"disposition,omitempty"`
+	// The current effective impact score (0.0–1.0) after applying the most recent non-expired                         
+	// override with an impact field. Absent when no impact overrides apply; consumers should                          
+	// use the requirement's impact field in that case.                                                                
+	EffectiveImpact                                                                             *float64               `json:"effectiveImpact,omitempty"`
+	// The current effective compliance status of this requirement after applying the most                             
+	// recent non-expired override with a status field, or computed from results (worst-wins) if                       
+	// no status-bearing overrides exist.                                                                              
 	EffectiveStatus                                                                             *ResultStatus          `json:"effectiveStatus,omitempty"`
 	// Supporting evidence for this requirement's findings, such as screenshots, code samples,                         
 	// or log excerpts.                                                                                                
@@ -359,9 +368,10 @@ type EvaluatedRequirement struct {
 	Severity                                                                                    *Severity              `json:"severity,omitempty"`
 	// The explicit location of the requirement within the source code.                                                
 	SourceLocation                                                                              *SourceLocation        `json:"sourceLocation,omitempty"`
-	// Chronological history of all status overrides applied to this requirement. Status                               
-	// overrides are intentional changes to the compliance status (waivers, attestations). Most                        
-	// recent override should be first in array. Preserves full audit trail.                                           
+	// Chronological history of all overrides applied to this requirement. Overrides are                               
+	// intentional changes to the compliance status and/or impact score (waivers, attestations,                        
+	// false positives, risk adjustments). Most recent override should be first in array.                              
+	// Preserves full audit trail.                                                                                     
 	StatusOverrides                                                                             []StatusOverride       `json:"statusOverrides,omitempty"`
 	// The requirement identifier. Example: 'SV-238196'.                                                               
 	ID                                                                                          string                 `json:"id"`
@@ -421,8 +431,8 @@ type Evidence struct {
 //
 // The identity that created this signature.
 //
-// Identity of who applied this status override. For simple cases, use type 'simple' with
-// just an identifier.
+// Identity of who applied this override. For simple cases, use type 'simple' with just an
+// identifier.
 //
 // Identity of the person or system that approved this override.
 //
@@ -482,6 +492,7 @@ type PoamElement struct {
 	Signature                                                                                  *Signature  `json:"signature,omitempty"`
 	// The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via                    
 	// compensating controls. 'riskAcceptance' documents decision to accept risk.                          
+	// 'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update.               
 	Type                                                                                       PoamType    `json:"type"`
 }
 
@@ -603,36 +614,48 @@ type SourceLocation struct {
 	Ref                                                       *string  `json:"ref,omitempty"`
 }
 
-// An intentional change to a requirement's compliance status (waiver or attestation).
-// Status overrides change the effectiveStatus of the requirement. All status overrides must
-// have an expiration date to enforce periodic review.
+// An intentional change to a requirement's compliance status and/or impact score. At least
+// one of status or impact must be set. Overrides change the effectiveStatus or impact of
+// the requirement. All overrides must have an expiration date to enforce periodic review.
 type StatusOverride struct {
-	// Timestamp when this status override was applied. ISO 8601 format.                                    
-	AppliedAt                                                                                  time.Time    `json:"appliedAt"`
-	// Identity of who applied this status override. For simple cases, use type 'simple' with               
-	// just an identifier.                                                                                  
-	AppliedBy                                                                                  Identity     `json:"appliedBy"`
-	// Supporting evidence for this status override, such as screenshots demonstrating manual               
-	// verification for attestations.                                                                       
-	Evidence                                                                                   []Evidence   `json:"evidence,omitempty"`
-	// Timestamp when this status override expires and must be reviewed/renewed. REQUIRED - no              
-	// permanent status overrides allowed. ISO 8601 format.                                                 
-	ExpiresAt                                                                                  time.Time    `json:"expiresAt"`
-	// SHA-256 checksum of the previous amendment in chronological order. Creates a                         
-	// tamper-evident chain of amendments (similar to blockchain). Null for the first amendment             
-	// on a requirement.                                                                                    
-	PreviousChecksum                                                                           *Checksum    `json:"previousChecksum,omitempty"`
-	// Explanation for why this status override was applied.                                                
-	Reason                                                                                     string       `json:"reason"`
-	// Optional digital signature for enhanced trust and non-repudiation. Supports hardware                 
-	// security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing                   
-	// methods.                                                                                             
-	Signature                                                                                  *Signature   `json:"signature,omitempty"`
-	// The new status this override sets for the requirement. This intentionally changes the                
-	// compliance status.                                                                                   
-	Status                                                                                     ResultStatus `json:"status"`
-	// The type of status override applied to this requirement.                                             
-	Type                                                                                       OverrideType `json:"type"`
+	// Timestamp when this override was applied. ISO 8601 format.                                               
+	AppliedAt                                                                                   time.Time       `json:"appliedAt"`
+	// Identity of who applied this override. For simple cases, use type 'simple' with just an                  
+	// identifier.                                                                                              
+	AppliedBy                                                                                   Identity        `json:"appliedBy"`
+	// Supporting evidence for this override, such as screenshots demonstrating manual                          
+	// verification for attestations.                                                                           
+	Evidence                                                                                    []Evidence      `json:"evidence,omitempty"`
+	// Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no                         
+	// permanent overrides allowed. ISO 8601 format.                                                            
+	ExpiresAt                                                                                   time.Time       `json:"expiresAt"`
+	// Override to the requirement's impact score. At least one of status or impact must be set.                
+	Impact                                                                                      *ImpactOverride `json:"impact,omitempty"`
+	// SHA-256 checksum of the previous amendment in chronological order. Creates a                             
+	// tamper-evident chain of amendments (similar to blockchain). Null for the first amendment                 
+	// on a requirement.                                                                                        
+	PreviousChecksum                                                                            *Checksum       `json:"previousChecksum,omitempty"`
+	// Explanation for why this override was applied.                                                           
+	Reason                                                                                      string          `json:"reason"`
+	// Optional digital signature for enhanced trust and non-repudiation. Supports hardware                     
+	// security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing                       
+	// methods.                                                                                                 
+	Signature                                                                                   *Signature      `json:"signature,omitempty"`
+	// The new status this override sets for the requirement. Optional when only impact is being                
+	// overridden.                                                                                              
+	Status                                                                                      *ResultStatus   `json:"status,omitempty"`
+	// The type of override applied to this requirement.                                                        
+	Type                                                                                        OverrideType    `json:"type"`
+}
+
+// Override to the requirement's impact score. At least one of status or impact must be
+// set.
+//
+// An override to the requirement's impact score. The prior impact is the original result
+// value or the preceding override in the chain.
+type ImpactOverride struct {
+	// The overridden impact score (0.0–1.0).        
+	Value                                    float64 `json:"value"`
 }
 
 // A supported platform target. Example: the platform name being 'ubuntu'.
@@ -1546,46 +1569,47 @@ type HDFAmendments struct {
 	Version                                                                                   *string              `json:"version,omitempty"`
 }
 
-// A standalone amendment that modifies a requirement's compliance status. Extends the
-// inline Status_Override concept with requirementId and baselineRef for use outside of
-// results documents.
+// A standalone amendment that modifies a requirement's compliance status and/or impact
+// score. At least one of status or impact must be set. Extends the inline Override concept
+// with requirementId and baselineRef for use outside of results documents.
 type StandaloneOverride struct {
-	// When this amendment was applied. ISO 8601 format.                                                    
-	AppliedAt                                                                                  time.Time    `json:"appliedAt"`
-	// Identity of who applied this amendment.                                                              
-	AppliedBy                                                                                  Identity     `json:"appliedBy"`
-	// Name of the baseline containing the requirement. Required when the system has multiple               
-	// baselines with potentially overlapping requirement IDs.                                              
-	BaselineRef                                                                                *string      `json:"baselineRef,omitempty"`
-	// componentId of the component this amendment is scoped to. When set, the amendment only               
-	// applies to the specified component. When omitted, the amendment applies system-wide.                 
-	ComponentRef                                                                               *string      `json:"componentRef,omitempty"`
-	// Supporting evidence (screenshots, logs, URLs, documents).                                            
-	Evidence                                                                                   []Evidence   `json:"evidence,omitempty"`
-	// When this amendment expires and must be reviewed. No permanent amendments. ISO 8601                  
-	// format.                                                                                              
-	ExpiresAt                                                                                  time.Time    `json:"expiresAt"`
-	// componentId of the local component that provides this control. Set when the provider is              
-	// in the same system. Omit for external or cross-system providers; the reason field                    
-	// explains the source. Primarily used with type 'inherited'.                                           
-	InheritedFrom                                                                              *string      `json:"inheritedFrom,omitempty"`
-	// Remediation milestones (primarily for POA&M type amendments).                                        
-	Milestones                                                                                 []Milestone  `json:"milestones,omitempty"`
-	// Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null             
-	// for the first amendment.                                                                             
-	PreviousChecksum                                                                           *Checksum    `json:"previousChecksum,omitempty"`
-	// Justification for this amendment.                                                                    
-	Reason                                                                                     string       `json:"reason"`
-	// The ID of the requirement being amended. Must match a requirement ID in the referenced               
-	// baseline.                                                                                            
-	RequirementID                                                                              string       `json:"requirementId"`
-	// Digital signature for non-repudiation.                                                               
-	Signature                                                                                  *Signature   `json:"signature,omitempty"`
-	// The new status this amendment sets. For POA&Ms, this is the current status (POA&Ms track             
-	// work, they don't change status).                                                                     
-	Status                                                                                     ResultStatus `json:"status"`
-	// The type of amendment.                                                                               
-	Type                                                                                       OverrideType `json:"type"`
+	// When this amendment was applied. ISO 8601 format.                                                        
+	AppliedAt                                                                                   time.Time       `json:"appliedAt"`
+	// Identity of who applied this amendment.                                                                  
+	AppliedBy                                                                                   Identity        `json:"appliedBy"`
+	// Name of the baseline containing the requirement. Required when the system has multiple                   
+	// baselines with potentially overlapping requirement IDs.                                                  
+	BaselineRef                                                                                 *string         `json:"baselineRef,omitempty"`
+	// componentId of the component this amendment is scoped to. When set, the amendment only                   
+	// applies to the specified component. When omitted, the amendment applies system-wide.                     
+	ComponentRef                                                                                *string         `json:"componentRef,omitempty"`
+	// Supporting evidence (screenshots, logs, URLs, documents).                                                
+	Evidence                                                                                    []Evidence      `json:"evidence,omitempty"`
+	// When this amendment expires and must be reviewed. No permanent amendments. ISO 8601                      
+	// format.                                                                                                  
+	ExpiresAt                                                                                   time.Time       `json:"expiresAt"`
+	// Override to the requirement's impact score. At least one of status or impact must be set.                
+	Impact                                                                                      *ImpactOverride `json:"impact,omitempty"`
+	// componentId of the local component that provides this control. Set when the provider is                  
+	// in the same system. Omit for external or cross-system providers; the reason field                        
+	// explains the source. Primarily used with type 'inherited'.                                               
+	InheritedFrom                                                                               *string         `json:"inheritedFrom,omitempty"`
+	// Remediation milestones (primarily for POA&M type amendments).                                            
+	Milestones                                                                                  []Milestone     `json:"milestones,omitempty"`
+	// Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null                 
+	// for the first amendment.                                                                                 
+	PreviousChecksum                                                                            *Checksum       `json:"previousChecksum,omitempty"`
+	// Justification for this amendment.                                                                        
+	Reason                                                                                      string          `json:"reason"`
+	// The ID of the requirement being amended. Must match a requirement ID in the referenced                   
+	// baseline.                                                                                                
+	RequirementID                                                                               string          `json:"requirementId"`
+	// Digital signature for non-repudiation.                                                                   
+	Signature                                                                                   *Signature      `json:"signature,omitempty"`
+	// The new status this amendment sets. Optional when only impact is being overridden.                       
+	Status                                                                                      *ResultStatus   `json:"status,omitempty"`
+	// The type of amendment.                                                                                   
+	Type                                                                                        OverrideType    `json:"type"`
 }
 
 // Bundles references to all HDF documents for audit, authorization, and compliance review.
@@ -1715,8 +1739,42 @@ const (
 	Sha512 HashAlgorithm = "sha512"
 )
 
-// The current effective status of this requirement after applying the most recent
-// non-expired override, or computed from results if no overrides exist.
+// The type of the most recent non-expired override governing this requirement. Indicates
+// why the requirement is in its current state (e.g., waiver, falsePositive,
+// riskAdjustment). Absent when no overrides apply.
+//
+// The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk
+// accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam':
+// remediation tracked (no status change). 'inherited': control provided by another
+// component or system. 'falsePositive': scanner incorrectly identified a finding — for
+// compliance scans (STIG, CIS), the check actually passes, so status is typically set to
+// 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to
+// this system, so status is typically set to 'notApplicable'. The disposition field on the
+// requirement distinguishes false positives from genuinely not-applicable findings.
+// 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk
+// Adjustment); does not change pass/fail status, only impact via the impact field.
+// 'operationalRequirement': deviation required by operational constraints (FedRAMP
+// Operational Requirement); the finding cannot be remediated because the system requires
+// the affected functionality. Remains an open risk.
+//
+// The type of override applied to this requirement.
+//
+// The type of amendment.
+type OverrideType string
+
+const (
+	Attestation            OverrideType = "attestation"
+	FalsePositive          OverrideType = "falsePositive"
+	Inherited              OverrideType = "inherited"
+	OperationalRequirement OverrideType = "operationalRequirement"
+	OverrideTypeWaiver     OverrideType = "waiver"
+	Poam                   OverrideType = "poam"
+	RiskAdjustment         OverrideType = "riskAdjustment"
+)
+
+// The current effective compliance status of this requirement after applying the most
+// recent non-expired override with a status field, or computed from results (worst-wins) if
+// no status-bearing overrides exist.
 //
 // The status of an individual test result. 'notApplicable' indicates the requirement does
 // not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g.,
@@ -1724,11 +1782,10 @@ const (
 //
 // The status of this test within the requirement. Example: 'failed'.
 //
-// The new status this override sets for the requirement. This intentionally changes the
-// compliance status.
+// The new status this override sets for the requirement. Optional when only impact is being
+// overridden.
 //
-// The new status this amendment sets. For POA&Ms, this is the current status (POA&Ms track
-// work, they don't change status).
+// The new status this amendment sets. Optional when only impact is being overridden.
 type ResultStatus string
 
 const (
@@ -1775,12 +1832,14 @@ const (
 
 // The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via
 // compensating controls. 'riskAcceptance' documents decision to accept risk.
+// 'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update.
 type PoamType string
 
 const (
-	Mitigation      PoamType = "mitigation"
-	RiskAcceptance  PoamType = "riskAcceptance"
-	TypeRemediation PoamType = "remediation"
+	Mitigation       PoamType = "mitigation"
+	RiskAcceptance   PoamType = "riskAcceptance"
+	TypeRemediation  PoamType = "remediation"
+	VendorDependency PoamType = "vendorDependency"
 )
 
 // Explicit severity rating. Typically derived from impact score but provided explicitly for
@@ -1795,24 +1854,6 @@ const (
 	Medium        Severity = "medium"
 	SeverityHigh  Severity = "high"
 	SeverityLow   Severity = "low"
-)
-
-// The type of status override applied to this requirement.
-//
-// The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified
-// (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked
-// (no status change). 'inherited': control provided by another component or system
-// (overrides to notApplicable/passed).
-//
-// The type of amendment.
-type OverrideType string
-
-const (
-	Attestation        OverrideType = "attestation"
-	Exception          OverrideType = "exception"
-	Inherited          OverrideType = "inherited"
-	OverrideTypeWaiver OverrideType = "waiver"
-	Poam               OverrideType = "poam"
 )
 
 type CloudProvider string

@@ -92,6 +92,7 @@ type amendOverride struct {
 	Reason        string
 	ExpiresAt     string // absolute YYYY-MM-DD
 	Approver      string
+	Impact        *float64 // for riskAdjustment or combined overrides
 }
 
 func runAmendCreate(resultsPath, outputPath string) error {
@@ -280,9 +281,11 @@ func collectAmendmentDetails(reqID string) (*amendOverride, error) {
 			huh.NewSelect[string]().
 				Title(fmt.Sprintf("Amendment type for %s", reqID)).
 				Options(
-					huh.NewOption("Waiver — risk accepted", "waiver"),
-					huh.NewOption("Attestation — manually verified", "attestation"),
-					huh.NewOption("Exception — not applicable", "exception"),
+					huh.NewOption("Waiver — risk accepted by AO", "waiver"),
+					huh.NewOption("Attestation — manually verified by assessor", "attestation"),
+					huh.NewOption("False Positive — scanner incorrectly identified finding", "falsePositive"),
+					huh.NewOption("Risk Adjustment — impact score adjusted (prompts for value)", "riskAdjustment"),
+					huh.NewOption("Operational Requirement — cannot remediate due to mission need", "operationalRequirement"),
 					huh.NewOption("POA&M — remediation planned (no status change)", "poam"),
 					huh.NewOption("Inherited — control provided by another component/system", "inherited"),
 				).
@@ -324,13 +327,60 @@ func collectAmendmentDetails(reqID string) (*amendOverride, error) {
 
 	expiresDate, _ := parseExpiryInput(expiresInput) // already validated
 
-	return &amendOverride{
+	ov := &amendOverride{
 		RequirementID: reqID,
 		AmendType:     amendType,
 		Reason:        reason,
 		ExpiresAt:     expiresDate,
 		Approver:      approverEmail,
-	}, nil
+	}
+
+	// Prompt for impact value when riskAdjustment is selected
+	if amendType == "riskAdjustment" {
+		impactVal, err := collectImpactValue(reqID)
+		if err != nil {
+			return nil, err
+		}
+		if impactVal == nil {
+			return nil, nil // user cancelled
+		}
+		ov.Impact = impactVal
+	}
+
+	return ov, nil
+}
+
+// collectImpactValue prompts for an impact override value (0.0–1.0).
+func collectImpactValue(reqID string) (*float64, error) {
+	var impactInput string
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().
+				Title(fmt.Sprintf("Adjusted impact score for %s (0.0–1.0)", reqID)).
+				Placeholder("0.3").
+				Value(&impactInput).
+				Validate(func(s string) error {
+					v, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+					if err != nil {
+						return fmt.Errorf("must be a number between 0.0 and 1.0")
+					}
+					if v < 0 || v > 1 {
+						return fmt.Errorf("must be between 0.0 and 1.0")
+					}
+					return nil
+				}),
+		),
+	).WithKeyMap(amendKeyMap())
+
+	if err := form.Run(); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("form cancelled: %w", err)
+	}
+
+	val, _ := strconv.ParseFloat(strings.TrimSpace(impactInput), 64) // already validated
+	return &val, nil
 }
 
 // askAddAnother prompts whether to add another amendment.
@@ -504,10 +554,9 @@ func buildAmendmentsFromOverrides(overrides []amendOverride) map[string]interfac
 
 	docs := make([]map[string]interface{}, len(overrides))
 	for i, ov := range overrides {
-		docs[i] = map[string]interface{}{
+		doc := map[string]interface{}{
 			"type":          ov.AmendType,
 			"requirementId": ov.RequirementID,
-			"status":        amendTypeToStatus(ov.AmendType),
 			"reason":        ov.Reason,
 			"appliedBy": map[string]interface{}{
 				"type":       identityType(ov.Approver),
@@ -516,6 +565,15 @@ func buildAmendmentsFromOverrides(overrides []amendOverride) map[string]interfac
 			"appliedAt": now,
 			"expiresAt": ov.ExpiresAt + "T23:59:59Z",
 		}
+		// Only set status if the amendment type changes status
+		if status := amendTypeToStatus(ov.AmendType); status != "" {
+			doc["status"] = status
+		}
+		// Set impact override if provided
+		if ov.Impact != nil {
+			doc["impact"] = map[string]interface{}{"value": *ov.Impact}
+		}
+		docs[i] = doc
 	}
 
 	// Derive name from most common amendment type
@@ -544,16 +602,21 @@ func identityType(s string) string {
 	return identitySimple
 }
 
+// amendTypeToStatus returns the default status for an amendment type.
+// Returns empty string only for riskAdjustment (impact-only, satisfies anyOf via impact field).
+// poam and operationalRequirement emit the current status (failed) to satisfy the schema anyOf.
 func amendTypeToStatus(amendType string) string {
 	switch amendType {
 	case "waiver", "attestation":
 		return "passed"
-	case "exception", "inherited":
+	case "falsePositive", "inherited":
 		return statusNotApplicable
-	case "poam":
-		return "failed" // POA&M acknowledges the failure, doesn't change status
+	case "poam", "operationalRequirement":
+		return "failed" // Acknowledges current state; finding remains open
+	case "riskAdjustment":
+		return "" // Impact-only; anyOf satisfied via impact field
 	default:
-		return statusNotReviewed
+		return ""
 	}
 }
 

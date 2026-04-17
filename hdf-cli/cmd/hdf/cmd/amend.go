@@ -185,6 +185,7 @@ func runAmendList(_ *cobra.Command, args []string) error {
 		Column{Header: "Requirement"},
 		Column{Header: "Type"},
 		Column{Header: "Status"},
+		Column{Header: "Impact"},
 		Column{Header: "Expires"},
 		Column{Header: "Reason"},
 	)
@@ -193,7 +194,11 @@ func runAmendList(_ *cobra.Command, args []string) error {
 		if ov.ExpiresAt != nil {
 			expires = truncateToDate(*ov.ExpiresAt)
 		}
-		tbl.AddRow(ov.RequirementID, ov.Type, ov.Status, expires, ov.Reason)
+		impactStr := ""
+		if ov.Impact != nil {
+			impactStr = fmt.Sprintf("%.1f", *ov.Impact)
+		}
+		tbl.AddRow(ov.RequirementID, ov.Type, ov.Status, impactStr, expires, ov.Reason)
 	}
 	tbl.Render()
 

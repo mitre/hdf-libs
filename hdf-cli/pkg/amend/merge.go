@@ -108,26 +108,41 @@ func applyOverrideToDoc(doc, override map[string]interface{}, reqID, baselineRef
 				continue
 			}
 
-			// Set effectiveStatus from the override's status, validating it first.
-			if statusRaw, ok := override["status"]; ok {
-				validStatuses := map[string]bool{
-					"passed": true, "failed": true, "notApplicable": true,
-					"notReviewed": true, "error": true,
-				}
-				status, isString := statusRaw.(string)
-				if isString && validStatuses[status] {
-					req["effectiveStatus"] = status
-				}
-			}
-
-			// Build a statusOverride entry from the standalone override fields.
-			statusOverride := buildStatusOverride(override)
-
-			// Append to statusOverrides array.
-			existing, _ := req["statusOverrides"].([]interface{})
-			req["statusOverrides"] = append(existing, statusOverride)
+			applyOverrideToReq(req, override)
 		}
 	}
+}
+
+// applyOverrideToReq applies a single override to a matched requirement.
+func applyOverrideToReq(req, override map[string]interface{}) {
+	// Set effectiveStatus from the override's status, validating it first.
+	if statusRaw, ok := override["status"]; ok {
+		validStatuses := map[string]bool{
+			"passed": true, "failed": true, "notApplicable": true,
+			"notReviewed": true, "error": true,
+		}
+		status, isString := statusRaw.(string)
+		if isString && validStatuses[status] {
+			req["effectiveStatus"] = status
+		}
+	}
+
+	// Set effectiveImpact from the override's impact field.
+	if impactObj, ok := override["impact"].(map[string]interface{}); ok {
+		if val, ok := impactObj["value"].(float64); ok {
+			req["effectiveImpact"] = val
+		}
+	}
+
+	// Set disposition from the override's type.
+	if ovType, ok := override["type"].(string); ok && ovType != "" {
+		req["disposition"] = ovType
+	}
+
+	// Build a statusOverride entry and append to the array.
+	statusOverride := buildStatusOverride(override)
+	existing, _ := req["statusOverrides"].([]interface{})
+	req["statusOverrides"] = append(existing, statusOverride)
 }
 
 // buildStatusOverride creates a statusOverride map from a standalone override.
@@ -135,7 +150,7 @@ func buildStatusOverride(override map[string]interface{}) map[string]interface{}
 	so := make(map[string]interface{})
 
 	// Copy relevant fields from the standalone override into the inline format.
-	for _, key := range []string{"type", "status", "reason", "appliedAt", "appliedBy", "expiresAt", "evidence", "previousChecksum", "signature"} {
+	for _, key := range []string{"type", "status", "impact", "reason", "appliedAt", "appliedBy", "expiresAt", "evidence", "previousChecksum", "signature"} {
 		if v, ok := override[key]; ok {
 			so[key] = v
 		}
@@ -152,13 +167,14 @@ func computeSHA256(data []byte) string {
 
 // ParsedOverride holds a parsed standalone override for display purposes.
 type ParsedOverride struct {
-	RequirementID string  `json:"requirementId"`
-	Type          string  `json:"type"`
-	Status        string  `json:"status"`
-	Reason        string  `json:"reason"`
-	ExpiresAt     *string `json:"expiresAt,omitempty"`
-	AppliedAt     *string `json:"appliedAt,omitempty"`
-	BaselineRef   *string `json:"baselineRef,omitempty"`
+	RequirementID string   `json:"requirementId"`
+	Type          string   `json:"type"`
+	Status        string   `json:"status,omitempty"`
+	Impact        *float64 `json:"impact,omitempty"`
+	Reason        string   `json:"reason"`
+	ExpiresAt     *string  `json:"expiresAt,omitempty"`
+	AppliedAt     *string  `json:"appliedAt,omitempty"`
+	BaselineRef   *string  `json:"baselineRef,omitempty"`
 }
 
 // ListOverrides parses an amendments document and returns the overrides for display.
@@ -191,6 +207,11 @@ func ListOverrides(amendments []byte) (name, systemRef string, overrides []Parse
 		p.RequirementID, _ = ov["requirementId"].(string)
 		p.Type, _ = ov["type"].(string)
 		p.Status, _ = ov["status"].(string)
+		if impactObj, ok := ov["impact"].(map[string]interface{}); ok {
+			if val, ok := impactObj["value"].(float64); ok {
+				p.Impact = &val
+			}
+		}
 		p.Reason, _ = ov["reason"].(string)
 		if v, ok := ov["expiresAt"].(string); ok {
 			p.ExpiresAt = &v

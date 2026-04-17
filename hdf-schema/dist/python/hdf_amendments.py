@@ -274,6 +274,29 @@ class Evidence:
         return result
 
 
+@dataclass
+class ImpactOverride:
+    """Override to the requirement's impact score. At least one of status or impact must be
+    set.
+    
+    An override to the requirement's impact score. The prior impact is the original result
+    value or the preceding override in the chain.
+    """
+    value: float
+    """The overridden impact score (0.0–1.0)."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'ImpactOverride':
+        assert isinstance(obj, dict)
+        value = from_float(obj.get("value"))
+        return ImpactOverride(value)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["value"] = to_float(self.value)
+        return result
+
+
 class Status(Enum):
     """Current status of this milestone."""
 
@@ -469,8 +492,7 @@ class Signature:
 
 
 class ResultStatus(Enum):
-    """The new status this amendment sets. For POA&Ms, this is the current status (POA&Ms track
-    work, they don't change status).
+    """The new status this amendment sets. Optional when only impact is being overridden.
     
     The status of an individual test result. 'notApplicable' indicates the requirement does
     not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g.,
@@ -486,23 +508,34 @@ class ResultStatus(Enum):
 class OverrideType(Enum):
     """The type of amendment.
     
-    The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified
-    (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked
-    (no status change). 'inherited': control provided by another component or system
-    (overrides to notApplicable/passed).
+    The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk
+    accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam':
+    remediation tracked (no status change). 'inherited': control provided by another
+    component or system. 'falsePositive': scanner incorrectly identified a finding — for
+    compliance scans (STIG, CIS), the check actually passes, so status is typically set to
+    'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to
+    this system, so status is typically set to 'notApplicable'. The disposition field on the
+    requirement distinguishes false positives from genuinely not-applicable findings.
+    'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk
+    Adjustment); does not change pass/fail status, only impact via the impact field.
+    'operationalRequirement': deviation required by operational constraints (FedRAMP
+    Operational Requirement); the finding cannot be remediated because the system requires
+    the affected functionality. Remains an open risk.
     """
     ATTESTATION = "attestation"
-    EXCEPTION = "exception"
+    FALSE_POSITIVE = "falsePositive"
     INHERITED = "inherited"
+    OPERATIONAL_REQUIREMENT = "operationalRequirement"
     POAM = "poam"
+    RISK_ADJUSTMENT = "riskAdjustment"
     WAIVER = "waiver"
 
 
 @dataclass
 class StandaloneOverride:
-    """A standalone amendment that modifies a requirement's compliance status. Extends the
-    inline Status_Override concept with requirementId and baselineRef for use outside of
-    results documents.
+    """A standalone amendment that modifies a requirement's compliance status and/or impact
+    score. At least one of status or impact must be set. Extends the inline Override concept
+    with requirementId and baselineRef for use outside of results documents.
     """
     applied_at: datetime
     """When this amendment was applied. ISO 8601 format."""
@@ -521,10 +554,6 @@ class StandaloneOverride:
     """The ID of the requirement being amended. Must match a requirement ID in the referenced
     baseline.
     """
-    status: ResultStatus
-    """The new status this amendment sets. For POA&Ms, this is the current status (POA&Ms track
-    work, they don't change status).
-    """
     type: OverrideType
     """The type of amendment."""
 
@@ -538,6 +567,9 @@ class StandaloneOverride:
     """
     evidence: Optional[List[Evidence]] = None
     """Supporting evidence (screenshots, logs, URLs, documents)."""
+
+    impact: Optional[ImpactOverride] = None
+    """Override to the requirement's impact score. At least one of status or impact must be set."""
 
     inherited_from: Optional[UUID] = None
     """componentId of the local component that provides this control. Set when the provider is
@@ -554,6 +586,9 @@ class StandaloneOverride:
     signature: Optional[Signature] = None
     """Digital signature for non-repudiation."""
 
+    status: Optional[ResultStatus] = None
+    """The new status this amendment sets. Optional when only impact is being overridden."""
+
     @staticmethod
     def from_dict(obj: Any) -> 'StandaloneOverride':
         assert isinstance(obj, dict)
@@ -562,16 +597,17 @@ class StandaloneOverride:
         expires_at = from_datetime(obj.get("expiresAt"))
         reason = from_str(obj.get("reason"))
         requirement_id = from_str(obj.get("requirementId"))
-        status = ResultStatus(obj.get("status"))
         type = OverrideType(obj.get("type"))
         baseline_ref = from_union([from_str, from_none], obj.get("baselineRef"))
         component_ref = from_union([lambda x: UUID(x), from_none], obj.get("componentRef"))
         evidence = from_union([lambda x: from_list(Evidence.from_dict, x), from_none], obj.get("evidence"))
+        impact = from_union([ImpactOverride.from_dict, from_none], obj.get("impact"))
         inherited_from = from_union([lambda x: UUID(x), from_none], obj.get("inheritedFrom"))
         milestones = from_union([lambda x: from_list(Milestone.from_dict, x), from_none], obj.get("milestones"))
         previous_checksum = from_union([Checksum.from_dict, from_none], obj.get("previousChecksum"))
         signature = from_union([Signature.from_dict, from_none], obj.get("signature"))
-        return StandaloneOverride(applied_at, applied_by, expires_at, reason, requirement_id, status, type, baseline_ref, component_ref, evidence, inherited_from, milestones, previous_checksum, signature)
+        status = from_union([ResultStatus, from_none], obj.get("status"))
+        return StandaloneOverride(applied_at, applied_by, expires_at, reason, requirement_id, type, baseline_ref, component_ref, evidence, impact, inherited_from, milestones, previous_checksum, signature, status)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -580,7 +616,6 @@ class StandaloneOverride:
         result["expiresAt"] = self.expires_at.isoformat()
         result["reason"] = from_str(self.reason)
         result["requirementId"] = from_str(self.requirement_id)
-        result["status"] = to_enum(ResultStatus, self.status)
         result["type"] = to_enum(OverrideType, self.type)
         if self.baseline_ref is not None:
             result["baselineRef"] = from_union([from_str, from_none], self.baseline_ref)
@@ -588,6 +623,8 @@ class StandaloneOverride:
             result["componentRef"] = from_union([lambda x: str(x), from_none], self.component_ref)
         if self.evidence is not None:
             result["evidence"] = from_union([lambda x: from_list(lambda x: to_class(Evidence, x), x), from_none], self.evidence)
+        if self.impact is not None:
+            result["impact"] = from_union([lambda x: to_class(ImpactOverride, x), from_none], self.impact)
         if self.inherited_from is not None:
             result["inheritedFrom"] = from_union([lambda x: str(x), from_none], self.inherited_from)
         if self.milestones is not None:
@@ -596,6 +633,8 @@ class StandaloneOverride:
             result["previousChecksum"] = from_union([lambda x: to_class(Checksum, x), from_none], self.previous_checksum)
         if self.signature is not None:
             result["signature"] = from_union([lambda x: to_class(Signature, x), from_none], self.signature)
+        if self.status is not None:
+            result["status"] = from_union([lambda x: to_enum(ResultStatus, x), from_none], self.status)
         return result
 
 

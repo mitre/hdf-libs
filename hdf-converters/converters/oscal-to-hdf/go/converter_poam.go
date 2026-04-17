@@ -73,11 +73,12 @@ func buildRiskMap(risks []Risk) map[string]*Risk {
 
 // poamItemToOverride converts a single POAMItem to a StandaloneOverride.
 func poamItemToOverride(item *POAMItem, riskMap map[string]*Risk, poam *PlanOfActionAndMilestones) hdf.StandaloneOverride {
+	status := poamItemStatus(item, riskMap)
 	override := hdf.StandaloneOverride{
 		Type:          hdf.Poam,
 		RequirementID: extractRequirementIDFromPOAMItem(item, riskMap),
 		Reason:        poamItemReason(item),
-		Status:        poamItemStatus(item, riskMap),
+		Status:        &status,
 		AppliedBy:     poamItemAppliedBy(poam),
 		AppliedAt:     poamItemAppliedAt(poam),
 		ExpiresAt:     poamItemExpiresAt(item, riskMap),

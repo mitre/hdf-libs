@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.0.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.1.0",
   "type": "object",
   "unevaluatedProperties": false,
   "required": [
@@ -20,7 +20,7 @@
     "components": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.0.0#/$defs/Component"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.1.0#/$defs/Component"
       },
       "description": "The components that were assessed. Each component describes a system element (host, container, cloud resource, application, etc.) with optional identity, SBOM, and external references."
     },
@@ -32,27 +32,27 @@
       "description": "Information on the baselines that were evaluated, including findings."
     },
     "statistics": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.0.0#/$defs/Statistics",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.1.0#/$defs/Statistics",
       "description": "Statistics for the assessment run, including duration and result counts."
     },
     "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Generator",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0#/$defs/Generator",
       "description": "Information about the tool that generated this file."
     },
     "tool": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Tool",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0#/$defs/Tool",
       "description": "The security tool that produced the assessment data in this file."
     },
     "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Integrity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this file."
     },
     "runner": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.0.0#/$defs/Runner",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.1.0#/$defs/Runner",
       "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
     },
     "remediation": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Remediation",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Remediation",
       "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for fixing failing requirements found in this assessment."
     },
     "systemRef": {
@@ -154,14 +154,14 @@
       ],
       "allOf": [
         {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Baseline_Metadata"
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Baseline_Metadata"
         }
       ],
       "properties": {
         "depends": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Dependency"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Dependency"
           },
           "description": "The set of dependencies this baseline depends on."
         },
@@ -174,15 +174,15 @@
           "description": "The description - should be more detailed than the summary."
         },
         "integrity": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Integrity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0#/$defs/Integrity",
           "description": "Cryptographic integrity information for verifying this baseline has not been tampered with."
         },
         "originalChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the original baseline definition file (before execution). This is an immutable reference to the baseline as defined, used to detect tampering with baseline requirements or metadata."
         },
         "resultsChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Checksum",
           "description": "SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs). Used to detect tampering with test results. Compare with currentChecksum to verify amendment integrity."
         },
         "statusMessage": {
@@ -200,14 +200,14 @@
         "groups": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Requirement_Group"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Requirement_Group"
           },
           "description": "A set of descriptions for the requirement groups."
         },
         "inputs": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.0.0#/$defs/Input"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.1.0#/$defs/Input"
           },
           "description": "Typed inputs used to parameterize this baseline at execution time. See the Input primitive for the full schema."
         },
@@ -232,7 +232,7 @@
       ],
       "allOf": [
         {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Requirement_Core"
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Requirement_Core"
         }
       ],
       "properties": {
@@ -240,7 +240,7 @@
           "type": "array",
           "minItems": 1,
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0#/$defs/Requirement_Description"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.1.0#/$defs/Requirement_Description"
           },
           "contains": {
             "type": "object",
@@ -256,47 +256,211 @@
           "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
         },
         "severity": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Severity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Severity",
           "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
         },
         "sourceLocation": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Source_Location",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Source_Location",
           "description": "The explicit location of the requirement within the source code."
         },
         "results": {
           "type": "array",
           "minItems": 1,
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0#/$defs/Requirement_Result"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.1.0#/$defs/Requirement_Result"
           },
           "description": "The set of all tests within the requirement and their results."
         },
         "statusOverrides": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Status_Override"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0#/$defs/Status_Override"
           },
-          "description": "Chronological history of all status overrides applied to this requirement. Status overrides are intentional changes to the compliance status (waivers, attestations). Most recent override should be first in array. Preserves full audit trail."
+          "description": "Chronological history of all overrides applied to this requirement. Overrides are intentional changes to the compliance status and/or impact score (waivers, attestations, false positives, risk adjustments). Most recent override should be first in array. Preserves full audit trail."
         },
         "poams": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/POAM"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0#/$defs/POAM"
           },
           "description": "Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance. POAMs do NOT change effectiveStatus - they track the work being done to address a failure. Separate from statusOverrides which DO change status."
         },
         "effectiveStatus": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0#/$defs/Result_Status",
-          "description": "The current effective status of this requirement after applying the most recent non-expired override, or computed from results if no overrides exist."
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.1.0#/$defs/Result_Status",
+          "description": "The current effective compliance status of this requirement after applying the most recent non-expired override with a status field, or computed from results (worst-wins) if no status-bearing overrides exist."
+        },
+        "effectiveImpact": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "The current effective impact score (0.0–1.0) after applying the most recent non-expired override with an impact field. Absent when no impact overrides apply; consumers should use the requirement's impact field in that case."
+        },
+        "disposition": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.1.0#/$defs/Override_Type",
+          "description": "The type of the most recent non-expired override governing this requirement. Indicates why the requirement is in its current state (e.g., waiver, falsePositive, riskAdjustment). Absent when no overrides apply."
         },
         "evidence": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Evidence"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Evidence"
           },
           "description": "Supporting evidence for this requirement's findings, such as screenshots, code samples, or log excerpts."
         }
       },
+      "examples": [
+        {
+          "$comment": "Passing requirement — no overrides, no disposition",
+          "id": "SV-230222",
+          "title": "RHEL 9 must use SSH protocol version 2",
+          "impact": 0.7,
+          "tags": { "nist": ["SC-8"] },
+          "descriptions": [{ "label": "default", "data": "SSH must use protocol version 2." }],
+          "results": [
+            { "status": "passed", "codeDesc": "sshd_config Protocol is expected to eq 2", "startTime": "2026-01-15T10:00:00Z" }
+          ],
+          "effectiveStatus": "passed"
+        },
+        {
+          "$comment": "Waiver — AO accepted risk, status overridden to passed",
+          "id": "SV-230300",
+          "title": "RHEL 9 must enforce password complexity",
+          "impact": 0.5,
+          "tags": { "nist": ["IA-5 (1)"] },
+          "descriptions": [{ "label": "default", "data": "Passwords must meet complexity requirements." }],
+          "results": [
+            { "status": "failed", "codeDesc": "pwquality.conf minlen is expected to be >= 15", "startTime": "2026-01-15T10:00:00Z", "message": "expected 8 to be >= 15" }
+          ],
+          "statusOverrides": [
+            {
+              "type": "waiver",
+              "status": "passed",
+              "reason": "Compensating control: PIV/CAC smart card authentication enforced for all users, password login disabled",
+              "appliedBy": { "type": "email", "identifier": "ao@agency.gov" },
+              "appliedAt": "2026-01-20T10:00:00Z",
+              "expiresAt": "2026-07-20T00:00:00Z"
+            }
+          ],
+          "effectiveStatus": "passed",
+          "disposition": "waiver"
+        },
+        {
+          "$comment": "False positive (compliance scan) — STIG check was wrong, requirement actually passes",
+          "id": "SV-230410",
+          "title": "RHEL 9 must have sshd PermitRootLogin disabled",
+          "impact": 0.7,
+          "tags": { "nist": ["AC-6"] },
+          "descriptions": [{ "label": "default", "data": "Direct root login via SSH must be disabled." }],
+          "results": [
+            { "status": "failed", "codeDesc": "sshd_config PermitRootLogin is expected to eq 'no'", "startTime": "2026-01-15T10:00:00Z", "message": "expected 'prohibit-password' to eq 'no'" }
+          ],
+          "statusOverrides": [
+            {
+              "type": "falsePositive",
+              "status": "passed",
+              "reason": "Scanner requires literal 'no' but 'prohibit-password' is equally restrictive (disables password-based root login). Manual review confirms root cannot authenticate via SSH.",
+              "appliedBy": { "type": "email", "identifier": "assessor@agency.gov" },
+              "appliedAt": "2026-01-16T14:00:00Z",
+              "expiresAt": "2026-07-16T00:00:00Z"
+            }
+          ],
+          "effectiveStatus": "passed",
+          "disposition": "falsePositive"
+        },
+        {
+          "$comment": "False positive (CVE scan) — vulnerability does not apply to this build",
+          "id": "CVE-2026-12345",
+          "title": "libxml2 buffer overflow in xmlParseEntityDecl",
+          "impact": 0.9,
+          "tags": { "nist": ["SI-2", "RA-5"] },
+          "descriptions": [{ "label": "default", "data": "Buffer overflow in libxml2 entity parsing allows remote code execution." }],
+          "results": [
+            { "status": "failed", "codeDesc": "libxml2 >= 2.9.0 is expected to be patched for CVE-2026-12345", "startTime": "2026-01-15T10:00:00Z" }
+          ],
+          "statusOverrides": [
+            {
+              "type": "falsePositive",
+              "status": "notApplicable",
+              "reason": "CVE scanner matched libxml2 version signature, but the vulnerable entity parsing module is compiled out of our build (--without-legacy flag). The affected code path does not exist in the binary.",
+              "appliedBy": { "type": "email", "identifier": "dev@org.gov" },
+              "appliedAt": "2026-01-16T09:00:00Z",
+              "expiresAt": "2026-07-16T00:00:00Z"
+            }
+          ],
+          "effectiveStatus": "notApplicable",
+          "disposition": "falsePositive"
+        },
+        {
+          "$comment": "Risk adjustment — impact lowered, pass/fail unchanged",
+          "id": "CVE-2026-67890",
+          "title": "OpenSSL timing side-channel in RSA decryption",
+          "impact": 0.7,
+          "tags": { "nist": ["SI-2", "RA-5"] },
+          "descriptions": [{ "label": "default", "data": "Timing side-channel may allow RSA private key recovery." }],
+          "results": [
+            { "status": "failed", "codeDesc": "openssl >= 3.1.0 is expected to be patched for CVE-2026-67890", "startTime": "2026-01-15T10:00:00Z" }
+          ],
+          "statusOverrides": [
+            {
+              "type": "riskAdjustment",
+              "impact": { "value": 0.3 },
+              "reason": "The RSA key exchange path is unreachable in our deployment — all TLS connections use ECDHE. Attack requires local network access to the TLS terminator, which is in an isolated VLAN.",
+              "appliedBy": { "type": "email", "identifier": "security-architect@org.gov" },
+              "appliedAt": "2026-01-17T10:00:00Z",
+              "expiresAt": "2026-07-17T00:00:00Z"
+            }
+          ],
+          "effectiveStatus": "failed",
+          "effectiveImpact": 0.3,
+          "disposition": "riskAdjustment"
+        },
+        {
+          "$comment": "Operational requirement — cannot remediate, remains open risk",
+          "id": "SV-230500",
+          "title": "RHEL 9 must disable USB mass storage",
+          "impact": 0.5,
+          "tags": { "nist": ["MP-7"] },
+          "descriptions": [{ "label": "default", "data": "USB mass storage kernel module must be disabled." }],
+          "results": [
+            { "status": "failed", "codeDesc": "Kernel module 'usb-storage' is expected to be disabled", "startTime": "2026-01-15T10:00:00Z", "message": "usb-storage module is loaded" }
+          ],
+          "statusOverrides": [
+            {
+              "type": "operationalRequirement",
+              "reason": "Air-gapped system requires USB transfer for classified data ingestion per operational procedure OP-2026-003. Compensating controls: USB ports are physically secured, all transfers are logged and require two-person integrity.",
+              "appliedBy": { "type": "email", "identifier": "system-owner@agency.gov" },
+              "appliedAt": "2026-01-20T10:00:00Z",
+              "expiresAt": "2026-07-20T00:00:00Z"
+            }
+          ],
+          "effectiveStatus": "failed",
+          "disposition": "operationalRequirement"
+        },
+        {
+          "$comment": "POAM — remediation tracked, status unchanged",
+          "id": "SV-230350",
+          "title": "RHEL 9 must be patched within 30 days of release",
+          "impact": 0.7,
+          "tags": { "nist": ["SI-2"] },
+          "descriptions": [{ "label": "default", "data": "Security patches must be applied within 30 days." }],
+          "results": [
+            { "status": "failed", "codeDesc": "Package updates are expected to be current within 30 days", "startTime": "2026-01-15T10:00:00Z", "message": "15 packages have patches older than 30 days" }
+          ],
+          "poams": [
+            {
+              "type": "remediation",
+              "explanation": "Patch deployment blocked by vendor compatibility testing. Vendor confirmed fix for Q2 2026.",
+              "appliedBy": { "type": "email", "identifier": "ops@agency.gov" },
+              "appliedAt": "2026-01-20T10:00:00Z",
+              "milestones": [
+                { "description": "Vendor releases compatible patch", "estimatedCompletion": "2026-04-01T00:00:00Z", "status": "pending" },
+                { "description": "Deploy to production", "estimatedCompletion": "2026-04-15T00:00:00Z", "status": "pending" }
+              ]
+            }
+          ],
+          "effectiveStatus": "failed",
+          "disposition": "poam"
+        }
+      ],
       "description": "A requirement that has been evaluated, including any findings.",
       "title": "Evaluated Requirement"
     }

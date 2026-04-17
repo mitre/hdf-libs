@@ -31,18 +31,20 @@ type ChangeReason string
 
 // ChangeReason values.
 const (
-	ReasonResultChanged    ChangeReason = "resultChanged"
-	ReasonOverrideAdded    ChangeReason = "overrideAdded"
-	ReasonOverrideExpired  ChangeReason = "overrideExpired"
-	ReasonOverrideRemoved  ChangeReason = "overrideRemoved"
-	ReasonOverrideModified ChangeReason = "overrideModified"
-	ReasonImpactChanged    ChangeReason = "impactChanged"
-	ReasonBaselineUpgraded ChangeReason = "baselineUpgraded"
-	ReasonControlMapped    ChangeReason = "controlMapped"
-	ReasonScannerChanged   ChangeReason = "scannerChanged"
-	ReasonTargetChanged    ChangeReason = "targetChanged"
-	ReasonConfigChanged    ChangeReason = "configChanged"
-	ReasonMetadataChanged  ChangeReason = "metadataChanged"
+	ReasonResultChanged          ChangeReason = "resultChanged"
+	ReasonOverrideAdded          ChangeReason = "overrideAdded"
+	ReasonOverrideExpired        ChangeReason = "overrideExpired"
+	ReasonOverrideRemoved        ChangeReason = "overrideRemoved"
+	ReasonOverrideModified       ChangeReason = "overrideModified"
+	ReasonImpactChanged          ChangeReason = "impactChanged"
+	ReasonBaselineUpgraded       ChangeReason = "baselineUpgraded"
+	ReasonControlMapped          ChangeReason = "controlMapped"
+	ReasonScannerChanged         ChangeReason = "scannerChanged"
+	ReasonTargetChanged          ChangeReason = "targetChanged"
+	ReasonConfigChanged          ChangeReason = "configChanged"
+	ReasonMetadataChanged        ChangeReason = "metadataChanged"
+	ReasonDispositionChanged     ChangeReason = "dispositionChanged"
+	ReasonEffectiveImpactChanged ChangeReason = "effectiveImpactChanged"
 )
 
 // ComparisonMode defines how two documents are compared.

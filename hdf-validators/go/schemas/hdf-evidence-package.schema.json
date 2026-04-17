@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.0.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.1.0",
   "title": "HDF Evidence Package",
   "description": "Bundles references to all HDF documents for audit, authorization, and compliance review. Each content entry references a document by type, URI, and checksum for integrity verification.",
   "type": "object",
@@ -34,7 +34,7 @@
       "description": "URI to the hdf-plan document that drove this assessment. Used for completeness verification — every baseline in the plan should have a corresponding results document in this package."
     },
     "preparedBy": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Identity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Identity",
       "description": "Identity of who prepared this evidence package."
     },
     "preparedAt": {
@@ -55,7 +55,7 @@
       "description": "Summary of assessment completeness and compliance status."
     },
     "signature": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Signature",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Signature",
       "description": "Digital signature covering the entire evidence package."
     },
     "labels": {
@@ -66,7 +66,7 @@
       "description": "Optional key-value labels for grouping and querying evidence packages."
     },
     "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Integrity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this evidence package has not been tampered with."
     },
     "version": {
@@ -74,7 +74,7 @@
       "description": "Version of this evidence package."
     },
     "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Generator",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0#/$defs/Generator",
       "description": "Information about the tool that generated this document."
     }
   },
@@ -111,7 +111,7 @@
           "description": "URI to the document. Can be a relative path or absolute URL."
         },
         "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Checksum",
           "description": "Cryptographic checksum for verifying the referenced document's integrity."
         },
         "description": {
@@ -205,9 +205,9 @@
       "description": "Informational summary of assessment completeness. Not authoritative — tools should compute these from the referenced documents.",
       "title": "Completeness Check"
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0",
       "title": "HDF Common Primitives",
       "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
       "$defs": {
@@ -1023,9 +1023,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0",
       "title": "HDF Extension Primitives",
       "description": "Extension types for waivers, attestations, generators, and integrity.",
       "$defs": {
@@ -1034,52 +1034,67 @@
           "unevaluatedProperties": false,
           "required": [
             "type",
-            "status",
             "reason",
             "appliedBy",
             "appliedAt",
             "expiresAt"
           ],
+          "anyOf": [
+            {
+              "required": [
+                "status"
+              ]
+            },
+            {
+              "required": [
+                "impact"
+              ]
+            }
+          ],
           "properties": {
             "type": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.0.0#/$defs/Override_Type",
-              "description": "The type of status override applied to this requirement."
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.1.0#/$defs/Override_Type",
+              "description": "The type of override applied to this requirement."
             },
             "status": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0#/$defs/Result_Status",
-              "description": "The new status this override sets for the requirement. This intentionally changes the compliance status."
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.1.0#/$defs/Result_Status",
+              "description": "The new status this override sets for the requirement. Optional when only impact is being overridden."
+            },
+            "impact": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.1.0#/$defs/Impact_Override",
+              "description": "Override to the requirement's impact score. At least one of status or impact must be set."
             },
             "reason": {
               "type": "string",
-              "description": "Explanation for why this status override was applied."
+              "description": "Explanation for why this override was applied."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Identity",
-              "description": "Identity of who applied this status override. For simple cases, use type 'simple' with just an identifier."
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Identity",
+              "description": "Identity of who applied this override. For simple cases, use type 'simple' with just an identifier."
             },
             "appliedAt": {
               "type": "string",
               "format": "date-time",
-              "description": "Timestamp when this status override was applied. ISO 8601 format."
+              "description": "Timestamp when this override was applied. ISO 8601 format."
             },
             "expiresAt": {
               "type": "string",
               "format": "date-time",
-              "description": "Timestamp when this status override expires and must be reviewed/renewed. REQUIRED - no permanent status overrides allowed. ISO 8601 format."
+              "description": "Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no permanent overrides allowed. ISO 8601 format."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Signature",
               "description": "Optional digital signature for enhanced trust and non-repudiation. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing methods."
             },
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Evidence"
               },
-              "description": "Supporting evidence for this status override, such as screenshots demonstrating manual verification for attestations."
+              "description": "Supporting evidence for this override, such as screenshots demonstrating manual verification for attestations."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
             }
           },
@@ -1094,6 +1109,41 @@
               },
               "appliedAt": "2025-12-01T10:00:00Z",
               "expiresAt": "2026-12-01T00:00:00Z"
+            },
+            {
+              "type": "riskAdjustment",
+              "impact": {
+                "value": 0.3
+              },
+              "reason": "CVE-123 is in a dead code path, unreachable from any entry point",
+              "appliedBy": {
+                "identifier": "dev@org.gov",
+                "type": "email"
+              },
+              "appliedAt": "2026-04-14T10:00:00Z",
+              "expiresAt": "2026-10-14T00:00:00Z"
+            },
+            {
+              "type": "falsePositive",
+              "status": "passed",
+              "reason": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
+              "appliedBy": {
+                "identifier": "assessor@agency.gov",
+                "type": "email"
+              },
+              "appliedAt": "2026-04-14T10:00:00Z",
+              "expiresAt": "2026-10-14T00:00:00Z"
+            },
+            {
+              "type": "falsePositive",
+              "status": "notApplicable",
+              "reason": "CVE scanner matched library signature but the vulnerable code path is not present — dependency compiled with affected module disabled",
+              "appliedBy": {
+                "identifier": "dev@org.gov",
+                "type": "email"
+              },
+              "appliedAt": "2026-04-14T10:00:00Z",
+              "expiresAt": "2026-10-14T00:00:00Z"
             },
             {
               "type": "attestation",
@@ -1122,7 +1172,7 @@
               ]
             }
           ],
-          "description": "An intentional change to a requirement's compliance status (waiver or attestation). Status overrides change the effectiveStatus of the requirement. All status overrides must have an expiration date to enforce periodic review.",
+          "description": "An intentional change to a requirement's compliance status and/or impact score. At least one of status or impact must be set. Overrides change the effectiveStatus or impact of the requirement. All overrides must have an expiration date to enforce periodic review.",
           "title": "Status Override"
         },
         "POAM": {
@@ -1140,16 +1190,17 @@
               "enum": [
                 "remediation",
                 "mitigation",
-                "riskAcceptance"
+                "riskAcceptance",
+                "vendorDependency"
               ],
-              "description": "The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via compensating controls. 'riskAcceptance' documents decision to accept risk."
+              "description": "The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via compensating controls. 'riskAcceptance' documents decision to accept risk. 'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update."
             },
             "explanation": {
               "type": "string",
               "description": "Detailed explanation of the plan, including what actions will be taken."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Identity",
               "description": "Identity of who created this POA&M. For simple cases, use type 'simple' with just an identifier."
             },
             "appliedAt": {
@@ -1165,23 +1216,23 @@
             "milestones": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Milestone"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Milestone"
               },
               "description": "Optional array of milestones tracking progress toward completion."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Signature",
               "description": "Optional digital signature for enhanced trust and non-repudiation."
             },
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Evidence"
               },
               "description": "Supporting evidence for this POA&M, such as documentation of compensating controls or mitigation implementation."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
             }
           },
@@ -1332,7 +1383,7 @@
           },
           "properties": {
             "algorithm": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Hash_Algorithm",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Hash_Algorithm",
               "description": "The hash algorithm used for the checksum."
             },
             "checksum": {
@@ -1365,23 +1416,42 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.0.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.1.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.0.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.1.0",
       "title": "HDF Amendment Primitives",
-      "description": "Types for waivers, attestations, exceptions, and POA&Ms that modify requirement compliance status.",
+      "description": "Types for waivers, attestations, and POA&Ms that modify requirement compliance status.",
       "$defs": {
         "Override_Type": {
           "type": "string",
           "enum": [
             "waiver",
             "attestation",
-            "exception",
             "poam",
-            "inherited"
+            "inherited",
+            "falsePositive",
+            "riskAdjustment",
+            "operationalRequirement"
           ],
-          "description": "The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked (no status change). 'inherited': control provided by another component or system (overrides to notApplicable/passed).",
+          "description": "The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam': remediation tracked (no status change). 'inherited': control provided by another component or system. 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set to 'notApplicable'. The disposition field on the requirement distinguishes false positives from genuinely not-applicable findings. 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field. 'operationalRequirement': deviation required by operational constraints (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires the affected functionality. Remains an open risk.",
           "title": "Override Type"
+        },
+        "Impact_Override": {
+          "type": "object",
+          "required": [
+            "value"
+          ],
+          "unevaluatedProperties": false,
+          "properties": {
+            "value": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "The overridden impact score (0.0–1.0)."
+            }
+          },
+          "description": "An override to the requirement's impact score. The prior impact is the original result value or the preceding override in the chain.",
+          "title": "Impact Override"
         },
         "Standalone_Override": {
           "type": "object",
@@ -1389,11 +1459,22 @@
           "required": [
             "type",
             "requirementId",
-            "status",
             "reason",
             "appliedBy",
             "appliedAt",
             "expiresAt"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "status"
+              ]
+            },
+            {
+              "required": [
+                "impact"
+              ]
+            }
           ],
           "properties": {
             "type": {
@@ -1409,15 +1490,19 @@
               "description": "Name of the baseline containing the requirement. Required when the system has multiple baselines with potentially overlapping requirement IDs."
             },
             "status": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0#/$defs/Result_Status",
-              "description": "The new status this amendment sets. For POA&Ms, this is the current status (POA&Ms track work, they don't change status)."
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.1.0#/$defs/Result_Status",
+              "description": "The new status this amendment sets. Optional when only impact is being overridden."
+            },
+            "impact": {
+              "$ref": "#/$defs/Impact_Override",
+              "description": "Override to the requirement's impact score. At least one of status or impact must be set."
             },
             "reason": {
               "type": "string",
               "description": "Justification for this amendment."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Identity",
               "description": "Identity of who applied this amendment."
             },
             "appliedAt": {
@@ -1433,22 +1518,22 @@
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Evidence"
               },
               "description": "Supporting evidence (screenshots, logs, URLs, documents)."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Signature",
               "description": "Digital signature for non-repudiation."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Checksum",
               "description": "Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null for the first amendment."
             },
             "milestones": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Milestone"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Milestone"
               },
               "description": "Remediation milestones (primarily for POA&M type amendments)."
             },
@@ -1483,6 +1568,46 @@
                   "description": "ISSM approval with compensating control documentation"
                 }
               ]
+            },
+            {
+              "type": "falsePositive",
+              "requirementId": "SV-258010",
+              "baselineRef": "RHEL9-STIG",
+              "status": "passed",
+              "reason": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "assessor@agency.gov"
+              },
+              "appliedAt": "2026-04-14T10:00:00Z",
+              "expiresAt": "2026-10-14T00:00:00Z"
+            },
+            {
+              "type": "falsePositive",
+              "requirementId": "CVE-2026-12345",
+              "status": "notApplicable",
+              "reason": "CVE scanner matched library signature but the vulnerable code path is not present in our build — dependency is compiled with the affected module disabled",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "dev@org.gov"
+              },
+              "appliedAt": "2026-04-14T10:00:00Z",
+              "expiresAt": "2026-10-14T00:00:00Z"
+            },
+            {
+              "type": "riskAdjustment",
+              "requirementId": "SV-258020",
+              "baselineRef": "RHEL9-STIG",
+              "impact": {
+                "value": 0.3
+              },
+              "reason": "CVE-123 is in a dead code path, unreachable from any entry point",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "dev@org.gov"
+              },
+              "appliedAt": "2026-04-14T10:00:00Z",
+              "expiresAt": "2026-10-14T00:00:00Z"
             },
             {
               "type": "poam",
@@ -1524,14 +1649,14 @@
               "expiresAt": "2026-09-26T00:00:00Z"
             }
           ],
-          "description": "A standalone amendment that modifies a requirement's compliance status. Extends the inline Status_Override concept with requirementId and baselineRef for use outside of results documents.",
+          "description": "A standalone amendment that modifies a requirement's compliance status and/or impact score. At least one of status or impact must be set. Extends the inline Override concept with requirementId and baselineRef for use outside of results documents.",
           "title": "Standalone Override"
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.1.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.1.0",
       "title": "HDF Result Primitives",
       "description": "Types for representing assessment results and statuses.",
       "$defs": {

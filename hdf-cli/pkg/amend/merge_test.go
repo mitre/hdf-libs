@@ -417,6 +417,131 @@ func TestVerifyAmendments(t *testing.T) {
 	})
 }
 
+func TestMergeAmendments_ImpactOverride(t *testing.T) {
+	t.Run("risk adjustment sets effectiveImpact and disposition", func(t *testing.T) {
+		amendments := `{
+			"name": "risk-adjustments",
+			"overrides": [{
+				"type": "riskAdjustment",
+				"requirementId": "AC-1",
+				"impact": {"value": 0.3},
+				"reason": "Dead code path",
+				"appliedBy": {"type": "email", "identifier": "dev@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z",
+				"expiresAt": "2026-12-31T00:00:00Z"
+			}]
+		}`
+		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
+		require.NoError(t, err)
+
+		var doc map[string]interface{}
+		require.NoError(t, json.Unmarshal(merged, &doc))
+
+		baselines := doc["baselines"].([]interface{})
+		baseline := baselines[0].(map[string]interface{})
+		reqs := baseline["requirements"].([]interface{})
+		req := reqs[0].(map[string]interface{})
+
+		// effectiveStatus should NOT be set (impact-only override)
+		_, hasEffectiveStatus := req["effectiveStatus"]
+		assert.False(t, hasEffectiveStatus, "impact-only override should not set effectiveStatus")
+
+		// effectiveImpact should be set
+		assert.Equal(t, 0.3, req["effectiveImpact"])
+
+		// disposition should be set
+		assert.Equal(t, "riskAdjustment", req["disposition"])
+
+		// statusOverrides should include the impact field
+		overrides := req["statusOverrides"].([]interface{})
+		require.Len(t, overrides, 1)
+		so := overrides[0].(map[string]interface{})
+		assert.Equal(t, "riskAdjustment", so["type"])
+		impactObj := so["impact"].(map[string]interface{})
+		assert.Equal(t, 0.3, impactObj["value"])
+	})
+
+	t.Run("override with both status and impact sets all three fields", func(t *testing.T) {
+		amendments := `{
+			"name": "combined",
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "AC-1",
+				"status": "passed",
+				"impact": {"value": 0.3},
+				"reason": "AO accepted risk with severity lowered",
+				"appliedBy": {"type": "email", "identifier": "ao@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z",
+				"expiresAt": "2026-12-31T00:00:00Z"
+			}]
+		}`
+		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
+		require.NoError(t, err)
+
+		var doc map[string]interface{}
+		require.NoError(t, json.Unmarshal(merged, &doc))
+
+		baselines := doc["baselines"].([]interface{})
+		baseline := baselines[0].(map[string]interface{})
+		reqs := baseline["requirements"].([]interface{})
+		req := reqs[0].(map[string]interface{})
+
+		assert.Equal(t, "passed", req["effectiveStatus"])
+		assert.Equal(t, 0.3, req["effectiveImpact"])
+		assert.Equal(t, "waiver", req["disposition"])
+	})
+
+	t.Run("falsePositive override sets disposition", func(t *testing.T) {
+		amendments := `{
+			"name": "fp-test",
+			"overrides": [{
+				"type": "falsePositive",
+				"requirementId": "AC-1",
+				"status": "notApplicable",
+				"reason": "Scanner was wrong",
+				"appliedBy": {"type": "email", "identifier": "dev@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z",
+				"expiresAt": "2026-12-31T00:00:00Z"
+			}]
+		}`
+		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
+		require.NoError(t, err)
+
+		var doc map[string]interface{}
+		require.NoError(t, json.Unmarshal(merged, &doc))
+
+		baselines := doc["baselines"].([]interface{})
+		baseline := baselines[0].(map[string]interface{})
+		reqs := baseline["requirements"].([]interface{})
+		req := reqs[0].(map[string]interface{})
+
+		assert.Equal(t, "notApplicable", req["effectiveStatus"])
+		assert.Equal(t, "falsePositive", req["disposition"])
+	})
+}
+
+func TestListOverrides_WithImpact(t *testing.T) {
+	amendments := `{
+		"name": "impact-test",
+		"overrides": [{
+			"type": "riskAdjustment",
+			"requirementId": "AC-1",
+			"impact": {"value": 0.3},
+			"reason": "Dead code path",
+			"appliedBy": {"type": "email", "identifier": "dev@example.com"},
+			"appliedAt": "2026-03-01T00:00:00Z",
+			"expiresAt": "2026-12-31T00:00:00Z"
+		}]
+	}`
+	_, _, overrides, err := ListOverrides([]byte(amendments))
+	require.NoError(t, err)
+	require.Len(t, overrides, 1)
+	assert.Equal(t, "riskAdjustment", overrides[0].Type)
+	assert.Equal(t, "", overrides[0].Status)
+	require.NotNil(t, overrides[0].Impact)
+	assert.Equal(t, 0.3, *overrides[0].Impact)
+}
+
 func TestMergeAmendments_InvalidStatusValues(t *testing.T) {
 	tests := []struct {
 		name       string
