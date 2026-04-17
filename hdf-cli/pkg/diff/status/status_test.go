@@ -523,6 +523,86 @@ func TestClassifyChangeReasons(t *testing.T) {
 			}),
 			mustContain: []types.ChangeReason{types.ReasonMetadataChanged},
 		},
+		{
+			name: "detects dispositionChanged when disposition differs",
+			oldReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+				d := hdf.Waiver
+				r.Disposition = &d
+			}),
+			newReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+				d := hdf.RiskAdjustment
+				r.Disposition = &d
+			}),
+			mustContain: []types.ChangeReason{types.ReasonDispositionChanged},
+		},
+		{
+			name: "detects dispositionChanged when disposition added",
+			oldReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+			}),
+			newReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+				d := hdf.FalsePositive
+				r.Disposition = &d
+			}),
+			mustContain: []types.ChangeReason{types.ReasonDispositionChanged},
+		},
+		{
+			name: "no dispositionChanged when disposition is the same",
+			oldReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+				d := hdf.Waiver
+				r.Disposition = &d
+			}),
+			newReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+				d := hdf.Waiver
+				r.Disposition = &d
+			}),
+			expected: []types.ChangeReason{},
+		},
+		{
+			name: "detects effectiveImpactChanged when effectiveImpact differs",
+			oldReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+				ei := 0.7
+				r.EffectiveImpact = &ei
+			}),
+			newReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+				ei := 0.3
+				r.EffectiveImpact = &ei
+			}),
+			mustContain: []types.ChangeReason{types.ReasonEffectiveImpactChanged},
+		},
+		{
+			name: "detects effectiveImpactChanged when effectiveImpact added",
+			oldReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+			}),
+			newReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+				ei := 0.3
+				r.EffectiveImpact = &ei
+			}),
+			mustContain: []types.ChangeReason{types.ReasonEffectiveImpactChanged},
+		},
+		{
+			name: "no effectiveImpactChanged when effectiveImpact is the same",
+			oldReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+				ei := 0.3
+				r.EffectiveImpact = &ei
+			}),
+			newReq: makeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Results = []hdf.RequirementResult{makeResult(hdf.Failed)}
+				ei := 0.3
+				r.EffectiveImpact = &ei
+			}),
+			expected: []types.ChangeReason{},
+		},
 	}
 
 	for _, tc := range tests {

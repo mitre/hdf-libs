@@ -131,6 +131,20 @@ export function classifyChangeReasons(
     reasons.push('impactChanged');
   }
 
+  // Check disposition changes
+  const oldDisposition = oldReq['disposition'] as string | undefined;
+  const newDisposition = newReq['disposition'] as string | undefined;
+  if (oldDisposition !== newDisposition) {
+    reasons.push('dispositionChanged');
+  }
+
+  // Check effectiveImpact changes
+  const oldEffectiveImpact = oldReq['effectiveImpact'] as number | undefined;
+  const newEffectiveImpact = newReq['effectiveImpact'] as number | undefined;
+  if (oldEffectiveImpact !== newEffectiveImpact) {
+    reasons.push('effectiveImpactChanged');
+  }
+
   // Check baseline metadata changes (tags, descriptions, title)
   const oldTags = JSON.stringify(oldReq['tags'] ?? {});
   const newTags = JSON.stringify(newReq['tags'] ?? {});
