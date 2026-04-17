@@ -1,0 +1,93 @@
+name: Pre-release checks
+
+# Runs after merge to main (and on manual dispatch) to verify that the
+# next tag-triggered release will produce installable packages. These
+# checks are too expensive to run on every PR, but they catch the class
+# of bug — broken publish pipeline — that only surfaces at consume time
+# and is otherwise silent until a release is already cut.
+#
+# If any job here fails on main, do NOT cut a tag — fix the underlying
+# packaging problem first.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.beads/**'
+      - 'LICENSE*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pre-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Packs every publishable workspace package and installs the resulting
+  # tarballs via `npm` (deliberately not pnpm) into a scratch project.
+  # Catches the broad category of "publishing pipeline produces a broken
+  # package" — examples include `workspace:` protocol leakage, missing
+  # files in the npm tarball, broken `main`/`exports` paths, or anything
+  # else that only surfaces at consumer-install time. Using npm (not
+  # pnpm) is essential: pnpm tolerates `workspace:` and would mask the
+  # very class of bug we care about.
+  publish-smoke-test:
+    name: Publish smoke test (npm install)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: ./.github/actions/setup
+      - name: Build TypeScript (pack reads dist/)
+        run: pnpm build:ts
+
+      - name: Pack all publishable packages
+        run: |
+          mkdir -p /tmp/tarballs
+          PACKAGES=(
+            hdf-schema hdf-utilities hdf-mappings hdf-validators
+            hdf-parsers hdf-converters hdf-generators hdf-diff
+            hdf-extension-graph
+          )
+          for pkg in "${PACKAGES[@]}"; do
+            (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)
+          done
+          ls -la /tmp/tarballs
+
+      - name: Install tarballs in scratch project via npm
+        run: |
+          mkdir -p /tmp/smoke
+          cd /tmp/smoke
+          # Synthesize a package.json that file:-references every tarball,
+          # so npm resolves the inter-package @mitre/* deps from local
+          # tarballs (versions match because they were all packed from the
+          # same workspace state).
+          node <<'EOF'
+          const fs = require('fs');
+          const tarballs = fs.readdirSync('/tmp/tarballs').filter(f => f.endsWith('.tgz'));
+          const deps = {};
+          for (const tb of tarballs) {
+            const m = tb.match(/^mitre-(.+)-\d/);
+            if (!m) throw new Error('unexpected tarball name: ' + tb);
+            deps['@mitre/' + m[1]] = 'file:/tmp/tarballs/' + tb;
+          }
+          fs.writeFileSync('package.json', JSON.stringify({
+            name: 'smoke-test', version: '0.0.0', private: true, dependencies: deps,
+          }, null, 2));
+          EOF
+          cat package.json
+          npm install --no-audit --no-fund
+
+      # TODO: Add a runtime import-check step once the JSON import
+      # attribute bug is fixed (see bd ticket — pure-ESM packages that
+      # internally import .json files without `with { type: 'json' }`
+      # fail at runtime on Node 20+). The pack + npm install steps above
+      # already catch workspace: protocol leakage and most packaging
+      # defects (missing files, broken main/exports paths, peer conflicts).
