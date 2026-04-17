@@ -378,10 +378,12 @@ func TestAmendTypeToStatus(t *testing.T) {
 	}{
 		{"waiver", "passed"},
 		{"attestation", "passed"},
-		{"exception", "notApplicable"},
+		{"falsePositive", "notApplicable"},
 		{"inherited", "notApplicable"},
-		{"poam", "failed"},
-		{"unknown", "notReviewed"},
+		{"riskAdjustment", ""},
+		{"operationalRequirement", ""},
+		{"poam", ""},
+		{"unknown", ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.amendType, func(t *testing.T) {
