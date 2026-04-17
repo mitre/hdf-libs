@@ -536,7 +536,7 @@ func listAppliedAmendments(results hdf.HdfResults) error {
 					RequirementID: req.ID,
 					Baseline:      baseline.Name,
 					Type:          string(ov.Type),
-					Status:        string(ov.Status),
+					Status:        derefStatusString(ov.Status),
 					Reason:        ov.Reason,
 					ExpiresAt:     ov.ExpiresAt.Format("2006-01-02"),
 				})
@@ -575,6 +575,13 @@ func listAppliedAmendments(results hdf.HdfResults) error {
 	}
 	tbl.Render()
 	return nil
+}
+
+func derefStatusString(s *hdf.ResultStatus) string {
+	if s == nil {
+		return ""
+	}
+	return string(*s)
 }
 
 const noTitlePlaceholder = "(no title)"

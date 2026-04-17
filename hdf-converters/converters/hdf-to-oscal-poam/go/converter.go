@@ -118,7 +118,11 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride) (oscal.POAMItem, []osc
 	riskUUID := oscal.GenerateUUID()
 
 	// Map HDF status to OSCAL risk status
-	riskStatus := oscal.HDFStatusToOSCALRiskStatus(override.Status)
+	var overrideStatus hdf.ResultStatus
+	if override.Status != nil {
+		overrideStatus = *override.Status
+	}
+	riskStatus := oscal.HDFStatusToOSCALRiskStatus(overrideStatus)
 
 	// Convert requirement ID from NIST notation to OSCAL control ID
 	controlID := oscal.NistTagToControlID(override.RequirementID)

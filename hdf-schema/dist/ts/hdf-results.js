@@ -52,8 +52,8 @@ export var HashAlgorithm;
  *
  * The status of this test within the requirement. Example: 'failed'.
  *
- * The new status this override sets for the requirement. This intentionally changes the
- * compliance status.
+ * The new status this override sets for the requirement. Optional when only impact is being
+ * overridden.
  */
 export var ResultStatus;
 (function (ResultStatus) {
@@ -100,12 +100,14 @@ export var Status;
 /**
  * The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via
  * compensating controls. 'riskAcceptance' documents decision to accept risk.
+ * 'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update.
  */
 export var PoamType;
 (function (PoamType) {
     PoamType["Mitigation"] = "mitigation";
     PoamType["Remediation"] = "remediation";
     PoamType["RiskAcceptance"] = "riskAcceptance";
+    PoamType["VendorDependency"] = "vendorDependency";
 })(PoamType || (PoamType = {}));
 /**
  * Explicit severity rating. Typically derived from impact score but provided explicitly for
@@ -122,19 +124,25 @@ export var Severity;
     Severity["Medium"] = "medium";
 })(Severity || (Severity = {}));
 /**
- * The type of status override applied to this requirement.
+ * The type of override applied to this requirement.
  *
  * The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified
  * (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked
  * (no status change). 'inherited': control provided by another component or system
- * (overrides to notApplicable/passed).
+ * (overrides to notApplicable/passed). 'falsePositive': scanner incorrectly identified a
+ * finding (overrides to notApplicable). 'riskAdjustment': impact score adjusted based on
+ * environmental context. 'operationalRequirement': deviation required by operational
+ * constraints.
  */
 export var OverrideType;
 (function (OverrideType) {
     OverrideType["Attestation"] = "attestation";
     OverrideType["Exception"] = "exception";
+    OverrideType["FalsePositive"] = "falsePositive";
     OverrideType["Inherited"] = "inherited";
+    OverrideType["OperationalRequirement"] = "operationalRequirement";
     OverrideType["Poam"] = "poam";
+    OverrideType["RiskAdjustment"] = "riskAdjustment";
     OverrideType["Waiver"] = "waiver";
 })(OverrideType || (OverrideType = {}));
 export var CloudProvider;

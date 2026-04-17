@@ -74,8 +74,8 @@ func ComputeEffectiveStatus(req hdf.EvaluatedRequirement, referenceTimestamp str
 		}
 
 		for _, override := range req.StatusOverrides {
-			if override.ExpiresAt.After(refTime) {
-				return string(override.Status)
+			if override.ExpiresAt.After(refTime) && override.Status != nil {
+				return string(*override.Status)
 			}
 		}
 		// All overrides expired — fall through to results

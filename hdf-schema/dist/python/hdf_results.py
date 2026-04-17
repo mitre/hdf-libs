@@ -438,8 +438,8 @@ class ResultStatus(Enum):
     
     The status of this test within the requirement. Example: 'failed'.
     
-    The new status this override sets for the requirement. This intentionally changes the
-    compliance status.
+    The new status this override sets for the requirement. Optional when only impact is being
+    overridden.
     """
     ERROR = "error"
     FAILED = "failed"
@@ -474,8 +474,8 @@ class Identity:
     
     The identity that created this signature.
     
-    Identity of who applied this status override. For simple cases, use type 'simple' with
-    just an identifier.
+    Identity of who applied this override. For simple cases, use type 'simple' with just an
+    identifier.
     
     Identity of the person or system that approved this override.
     
@@ -761,10 +761,12 @@ class Signature:
 class PoamType(Enum):
     """The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via
     compensating controls. 'riskAcceptance' documents decision to accept risk.
+    'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update.
     """
     MITIGATION = "mitigation"
     REMEDIATION = "remediation"
     RISK_ACCEPTANCE = "riskAcceptance"
+    VENDOR_DEPENDENCY = "vendorDependency"
 
 
 @dataclass
@@ -786,6 +788,7 @@ class Poam:
     type: PoamType
     """The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via
     compensating controls. 'riskAcceptance' documents decision to accept risk.
+    'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update.
     """
     evidence: Optional[List[Evidence]] = None
     """Supporting evidence for this POA&M, such as documentation of compensating controls or
@@ -979,52 +982,80 @@ class SourceLocation:
         return result
 
 
+@dataclass
+class ImpactOverride:
+    """Override to the requirement's impact score. At least one of status or impact must be
+    set.
+    
+    An override to the requirement's impact score. The prior impact is the original result
+    value or the preceding override in the chain.
+    """
+    value: float
+    """The overridden impact score (0.0–1.0)."""
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'ImpactOverride':
+        assert isinstance(obj, dict)
+        value = from_float(obj.get("value"))
+        return ImpactOverride(value)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["value"] = to_float(self.value)
+        return result
+
+
 class OverrideType(Enum):
-    """The type of status override applied to this requirement.
+    """The type of override applied to this requirement.
     
     The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified
     (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked
     (no status change). 'inherited': control provided by another component or system
-    (overrides to notApplicable/passed).
+    (overrides to notApplicable/passed). 'falsePositive': scanner incorrectly identified a
+    finding (overrides to notApplicable). 'riskAdjustment': impact score adjusted based on
+    environmental context. 'operationalRequirement': deviation required by operational
+    constraints.
     """
     ATTESTATION = "attestation"
     EXCEPTION = "exception"
+    FALSE_POSITIVE = "falsePositive"
     INHERITED = "inherited"
+    OPERATIONAL_REQUIREMENT = "operationalRequirement"
     POAM = "poam"
+    RISK_ADJUSTMENT = "riskAdjustment"
     WAIVER = "waiver"
 
 
 @dataclass
 class StatusOverride:
-    """An intentional change to a requirement's compliance status (waiver or attestation).
-    Status overrides change the effectiveStatus of the requirement. All status overrides must
-    have an expiration date to enforce periodic review.
+    """An intentional change to a requirement's compliance status and/or impact score. At least
+    one of status or impact must be set. Overrides change the effectiveStatus or impact of
+    the requirement. All overrides must have an expiration date to enforce periodic review.
     """
     applied_at: datetime
-    """Timestamp when this status override was applied. ISO 8601 format."""
+    """Timestamp when this override was applied. ISO 8601 format."""
 
     applied_by: Identity
-    """Identity of who applied this status override. For simple cases, use type 'simple' with
-    just an identifier.
+    """Identity of who applied this override. For simple cases, use type 'simple' with just an
+    identifier.
     """
     expires_at: datetime
-    """Timestamp when this status override expires and must be reviewed/renewed. REQUIRED - no
-    permanent status overrides allowed. ISO 8601 format.
+    """Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no
+    permanent overrides allowed. ISO 8601 format.
     """
     reason: str
-    """Explanation for why this status override was applied."""
+    """Explanation for why this override was applied."""
 
-    status: ResultStatus
-    """The new status this override sets for the requirement. This intentionally changes the
-    compliance status.
-    """
     type: OverrideType
-    """The type of status override applied to this requirement."""
+    """The type of override applied to this requirement."""
 
     evidence: Optional[List[Evidence]] = None
-    """Supporting evidence for this status override, such as screenshots demonstrating manual
+    """Supporting evidence for this override, such as screenshots demonstrating manual
     verification for attestations.
     """
+    impact: Optional[ImpactOverride] = None
+    """Override to the requirement's impact score. At least one of status or impact must be set."""
+
     previous_checksum: Optional[Checksum] = None
     """SHA-256 checksum of the previous amendment in chronological order. Creates a
     tamper-evident chain of amendments (similar to blockchain). Null for the first amendment
@@ -1035,6 +1066,10 @@ class StatusOverride:
     security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing
     methods.
     """
+    status: Optional[ResultStatus] = None
+    """The new status this override sets for the requirement. Optional when only impact is being
+    overridden.
+    """
 
     @staticmethod
     def from_dict(obj: Any) -> 'StatusOverride':
@@ -1043,12 +1078,13 @@ class StatusOverride:
         applied_by = Identity.from_dict(obj.get("appliedBy"))
         expires_at = from_datetime(obj.get("expiresAt"))
         reason = from_str(obj.get("reason"))
-        status = ResultStatus(obj.get("status"))
         type = OverrideType(obj.get("type"))
         evidence = from_union([lambda x: from_list(Evidence.from_dict, x), from_none], obj.get("evidence"))
+        impact = from_union([ImpactOverride.from_dict, from_none], obj.get("impact"))
         previous_checksum = from_union([Checksum.from_dict, from_none], obj.get("previousChecksum"))
         signature = from_union([Signature.from_dict, from_none], obj.get("signature"))
-        return StatusOverride(applied_at, applied_by, expires_at, reason, status, type, evidence, previous_checksum, signature)
+        status = from_union([ResultStatus, from_none], obj.get("status"))
+        return StatusOverride(applied_at, applied_by, expires_at, reason, type, evidence, impact, previous_checksum, signature, status)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -1056,14 +1092,17 @@ class StatusOverride:
         result["appliedBy"] = to_class(Identity, self.applied_by)
         result["expiresAt"] = self.expires_at.isoformat()
         result["reason"] = from_str(self.reason)
-        result["status"] = to_enum(ResultStatus, self.status)
         result["type"] = to_enum(OverrideType, self.type)
         if self.evidence is not None:
             result["evidence"] = from_union([lambda x: from_list(lambda x: to_class(Evidence, x), x), from_none], self.evidence)
+        if self.impact is not None:
+            result["impact"] = from_union([lambda x: to_class(ImpactOverride, x), from_none], self.impact)
         if self.previous_checksum is not None:
             result["previousChecksum"] = from_union([lambda x: to_class(Checksum, x), from_none], self.previous_checksum)
         if self.signature is not None:
             result["signature"] = from_union([lambda x: to_class(Signature, x), from_none], self.signature)
+        if self.status is not None:
+            result["status"] = from_union([lambda x: to_enum(ResultStatus, x), from_none], self.status)
         return result
 
 
@@ -1112,9 +1151,10 @@ class EvaluatedRequirement:
     """The explicit location of the requirement within the source code."""
 
     status_overrides: Optional[List[StatusOverride]] = None
-    """Chronological history of all status overrides applied to this requirement. Status
-    overrides are intentional changes to the compliance status (waivers, attestations). Most
-    recent override should be first in array. Preserves full audit trail.
+    """Chronological history of all overrides applied to this requirement. Overrides are
+    intentional changes to the compliance status and/or impact score (waivers, attestations,
+    false positives, risk adjustments). Most recent override should be first in array.
+    Preserves full audit trail.
     """
     code: Optional[str] = None
     """The raw source code of the requirement. Set to null for manual-only requirements or

@@ -110,7 +110,8 @@ func TestConvertPOAMToHDF_RiskSeverityExtracted(t *testing.T) {
 
 	// The fixture has risks with "open" status → should map to "failed"
 	require.NotEmpty(t, amendments.Overrides)
-	assert.Equal(t, hdf.Failed, amendments.Overrides[0].Status)
+	require.NotNil(t, amendments.Overrides[0].Status)
+	assert.Equal(t, hdf.Failed, *amendments.Overrides[0].Status)
 }
 
 func TestConvertPOAMToHDF_ValidatesAgainstSchema(t *testing.T) {

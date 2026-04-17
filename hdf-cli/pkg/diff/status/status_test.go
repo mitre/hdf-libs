@@ -59,7 +59,7 @@ func makeOverride(opts struct {
 	}
 	return hdf.StatusOverride{
 		Type:      overrideType,
-		Status:    status,
+		Status:    &status,
 		Reason:    reason,
 		AppliedBy: hdf.Identity{Identifier: "admin"},
 		AppliedAt: appliedAt,

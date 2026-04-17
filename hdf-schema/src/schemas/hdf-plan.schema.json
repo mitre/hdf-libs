@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.0.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.1.0",
   "title": "HDF Plan",
   "description": "Defines an assessment plan — what baselines to run against which targets, with resolved inputs and scheduling. Maps to OSCAL Assessment Plan.",
   "type": "object",
@@ -20,7 +20,7 @@
       "description": "Human-readable plan name. Example: 'Portal Monthly Assessment'."
     },
     "type": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.0.0#/$defs/Plan_Type",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.1.0#/$defs/Plan_Type",
       "description": "The type of assessment plan."
     },
     "description": {
@@ -36,12 +36,12 @@
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.0.0#/$defs/Assessment"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.1.0#/$defs/Assessment"
       },
       "description": "The assessments to perform. Each assessment pairs a baseline with targets and resolved inputs."
     },
     "schedule": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.0.0#/$defs/Schedule",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.1.0#/$defs/Schedule",
       "description": "Optional scheduling configuration for recurring assessments."
     },
     "labels": {
@@ -52,7 +52,7 @@
       "description": "Optional key-value labels for grouping and querying plans."
     },
     "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Integrity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this plan document has not been tampered with."
     },
     "version": {
@@ -60,7 +60,7 @@
       "description": "Version of this plan document."
     },
     "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.0.0#/$defs/Generator",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0#/$defs/Generator",
       "description": "Information about the tool that generated this plan."
     }
   },

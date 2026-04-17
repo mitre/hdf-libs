@@ -44,8 +44,7 @@ export var Status;
     Status["Pending"] = "pending";
 })(Status || (Status = {}));
 /**
- * The new status this amendment sets. For POA&Ms, this is the current status (POA&Ms track
- * work, they don't change status).
+ * The new status this amendment sets. Optional when only impact is being overridden.
  *
  * The status of an individual test result. 'notApplicable' indicates the requirement does
  * not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g.,
@@ -65,13 +64,19 @@ export var ResultStatus;
  * The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified
  * (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked
  * (no status change). 'inherited': control provided by another component or system
- * (overrides to notApplicable/passed).
+ * (overrides to notApplicable/passed). 'falsePositive': scanner incorrectly identified a
+ * finding (overrides to notApplicable). 'riskAdjustment': impact score adjusted based on
+ * environmental context. 'operationalRequirement': deviation required by operational
+ * constraints.
  */
 export var OverrideType;
 (function (OverrideType) {
     OverrideType["Attestation"] = "attestation";
     OverrideType["Exception"] = "exception";
+    OverrideType["FalsePositive"] = "falsePositive";
     OverrideType["Inherited"] = "inherited";
+    OverrideType["OperationalRequirement"] = "operationalRequirement";
     OverrideType["Poam"] = "poam";
+    OverrideType["RiskAdjustment"] = "riskAdjustment";
     OverrideType["Waiver"] = "waiver";
 })(OverrideType || (OverrideType = {}));
