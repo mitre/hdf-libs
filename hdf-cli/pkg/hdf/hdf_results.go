@@ -162,8 +162,14 @@ type EvaluatedRequirement struct {
 	// present. Convention: place default description first. Common labels: 'default', 'check',
 	// 'fix', 'rationale'.
 	Descriptions []Description `json:"descriptions"`
-	// The current effective status of this requirement after applying the most recent
-	// non-expired override, or computed from results if no overrides exist.
+	// The type of the most recent non-expired override governing this requirement.
+	// Absent when no overrides apply.
+	Disposition *StatusOverrideType `json:"disposition,omitempty"`
+	// The current effective impact score (0.0-1.0) after applying the most recent
+	// non-expired override with an impact field. Absent when no impact overrides apply.
+	EffectiveImpact *float64 `json:"effectiveImpact,omitempty"`
+	// The current effective compliance status after applying the most recent non-expired
+	// override with a status field, or computed from results if no status-bearing overrides exist.
 	EffectiveStatus *ResultStatus `json:"effectiveStatus"`
 	// Supporting evidence for this requirement's findings, such as screenshots, code samples,
 	// or log excerpts.
@@ -740,7 +746,6 @@ type StatusOverrideType string
 
 const (
 	Attestation            StatusOverrideType = "attestation"
-	Exception              StatusOverrideType = "exception"
 	FalsePositive          StatusOverrideType = "falsePositive"
 	Inherited              StatusOverrideType = "inherited"
 	OperationalRequirement StatusOverrideType = "operationalRequirement"

@@ -156,13 +156,17 @@ describe('amendments.schema.json — Standalone_Override', () => {
   // -- All override types --
 
   it('should accept all override types', () => {
-    for (const type of ['waiver', 'attestation', 'exception', 'poam', 'inherited', 'falsePositive', 'riskAdjustment', 'operationalRequirement']) {
+    for (const type of ['waiver', 'attestation', 'poam', 'inherited', 'falsePositive', 'riskAdjustment', 'operationalRequirement']) {
       expect(validate({ ...valid, type })).toBe(true);
     }
   });
 
   it('should reject invalid override type', () => {
     expect(validate({ ...valid, type: 'approval' })).toBe(false);
+  });
+
+  it('should reject removed exception override type', () => {
+    expect(validate({ ...valid, type: 'exception' })).toBe(false);
   });
 
   // -- Required fields --

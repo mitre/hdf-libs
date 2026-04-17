@@ -89,6 +89,28 @@
           "expiresAt": "2026-10-14T00:00:00Z"
         },
         {
+          "type": "falsePositive",
+          "status": "passed",
+          "reason": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
+          "appliedBy": {
+            "identifier": "assessor@agency.gov",
+            "type": "email"
+          },
+          "appliedAt": "2026-04-14T10:00:00Z",
+          "expiresAt": "2026-10-14T00:00:00Z"
+        },
+        {
+          "type": "falsePositive",
+          "status": "notApplicable",
+          "reason": "CVE scanner matched library signature but the vulnerable code path is not present — dependency compiled with affected module disabled",
+          "appliedBy": {
+            "identifier": "dev@org.gov",
+            "type": "email"
+          },
+          "appliedAt": "2026-04-14T10:00:00Z",
+          "expiresAt": "2026-10-14T00:00:00Z"
+        },
+        {
           "type": "attestation",
           "status": "passed",
           "reason": "Manual verification completed: Reviewed firewall rules and confirmed all required ports are properly restricted per security policy",

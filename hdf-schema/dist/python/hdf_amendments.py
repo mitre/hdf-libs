@@ -508,16 +508,21 @@ class ResultStatus(Enum):
 class OverrideType(Enum):
     """The type of amendment.
     
-    The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified
-    (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked
-    (no status change). 'inherited': control provided by another component or system
-    (overrides to notApplicable/passed). 'falsePositive': scanner incorrectly identified a
-    finding (overrides to notApplicable). 'riskAdjustment': impact score adjusted based on
-    environmental context. 'operationalRequirement': deviation required by operational
-    constraints.
+    The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk
+    accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam':
+    remediation tracked (no status change). 'inherited': control provided by another
+    component or system. 'falsePositive': scanner incorrectly identified a finding — for
+    compliance scans (STIG, CIS), the check actually passes, so status is typically set to
+    'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to
+    this system, so status is typically set to 'notApplicable'. The disposition field on the
+    requirement distinguishes false positives from genuinely not-applicable findings.
+    'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk
+    Adjustment); does not change pass/fail status, only impact via the impact field.
+    'operationalRequirement': deviation required by operational constraints (FedRAMP
+    Operational Requirement); the finding cannot be remediated because the system requires
+    the affected functionality. Remains an open risk.
     """
     ATTESTATION = "attestation"
-    EXCEPTION = "exception"
     FALSE_POSITIVE = "falsePositive"
     INHERITED = "inherited"
     OPERATIONAL_REQUIREMENT = "operationalRequirement"

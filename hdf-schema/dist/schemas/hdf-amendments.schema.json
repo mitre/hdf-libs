@@ -923,21 +923,20 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.1.0",
       "title": "HDF Amendment Primitives",
-      "description": "Types for waivers, attestations, exceptions, and POA&Ms that modify requirement compliance status.",
+      "description": "Types for waivers, attestations, and POA&Ms that modify requirement compliance status.",
       "$defs": {
         "Override_Type": {
           "type": "string",
           "enum": [
             "waiver",
             "attestation",
-            "exception",
             "poam",
             "inherited",
             "falsePositive",
             "riskAdjustment",
             "operationalRequirement"
           ],
-          "description": "The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked (no status change). 'inherited': control provided by another component or system (overrides to notApplicable/passed). 'falsePositive': scanner incorrectly identified a finding (overrides to notApplicable). 'riskAdjustment': impact score adjusted based on environmental context. 'operationalRequirement': deviation required by operational constraints.",
+          "description": "The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam': remediation tracked (no status change). 'inherited': control provided by another component or system. 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set to 'notApplicable'. The disposition field on the requirement distinguishes false positives from genuinely not-applicable findings. 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field. 'operationalRequirement': deviation required by operational constraints (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires the affected functionality. Remains an open risk.",
           "title": "Override Type"
         },
         "Impact_Override": {
@@ -1077,8 +1076,20 @@
               "type": "falsePositive",
               "requirementId": "SV-258010",
               "baselineRef": "RHEL9-STIG",
+              "status": "passed",
+              "reason": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "assessor@agency.gov"
+              },
+              "appliedAt": "2026-04-14T10:00:00Z",
+              "expiresAt": "2026-10-14T00:00:00Z"
+            },
+            {
+              "type": "falsePositive",
+              "requirementId": "CVE-2026-12345",
               "status": "notApplicable",
-              "reason": "Scanner misidentified library version; actual version is patched",
+              "reason": "CVE scanner matched library signature but the vulnerable code path is not present in our build — dependency is compiled with the affected module disabled",
               "appliedBy": {
                 "type": "email",
                 "identifier": "dev@org.gov"
@@ -1372,6 +1383,28 @@
                 "value": 0.3
               },
               "reason": "CVE-123 is in a dead code path, unreachable from any entry point",
+              "appliedBy": {
+                "identifier": "dev@org.gov",
+                "type": "email"
+              },
+              "appliedAt": "2026-04-14T10:00:00Z",
+              "expiresAt": "2026-10-14T00:00:00Z"
+            },
+            {
+              "type": "falsePositive",
+              "status": "passed",
+              "reason": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
+              "appliedBy": {
+                "identifier": "assessor@agency.gov",
+                "type": "email"
+              },
+              "appliedAt": "2026-04-14T10:00:00Z",
+              "expiresAt": "2026-10-14T00:00:00Z"
+            },
+            {
+              "type": "falsePositive",
+              "status": "notApplicable",
+              "reason": "CVE scanner matched library signature but the vulnerable code path is not present — dependency compiled with affected module disabled",
               "appliedBy": {
                 "identifier": "dev@org.gov",
                 "type": "email"

@@ -1259,6 +1259,153 @@ describe('hdf-results.schema.json (refactored)', () => {
     });
   });
 
+  describe('disposition field', () => {
+    it('should accept requirement with disposition set to an override type', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult({ status: 'failed' })],
+                disposition: 'waiver',
+                effectiveStatus: 'passed',
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept all disposition values', () => {
+      for (const disposition of ['waiver', 'attestation', 'poam', 'inherited', 'falsePositive', 'riskAdjustment', 'operationalRequirement']) {
+        const doc = createMinimalResultsDoc({
+          baselines: [
+            createMinimalEvaluatedBaseline({
+              requirements: [
+                createMinimalRequirement({ disposition }),
+              ],
+            }),
+          ],
+        });
+        expect(validate(doc)).toBe(true);
+      }
+    });
+
+    it('should reject invalid disposition value', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({ disposition: 'approval' }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('should accept requirement without disposition (optional)', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [createMinimalRequirement()],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept disposition with effectiveStatus and effectiveImpact together', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult({ status: 'failed' })],
+                disposition: 'riskAdjustment',
+                effectiveStatus: 'failed',
+                effectiveImpact: 0.3,
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+  });
+
+  describe('effectiveImpact field', () => {
+    it('should accept requirement with effectiveImpact', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                effectiveImpact: 0.5,
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept effectiveImpact at boundaries', () => {
+      for (const effectiveImpact of [0.0, 1.0]) {
+        const doc = createMinimalResultsDoc({
+          baselines: [
+            createMinimalEvaluatedBaseline({
+              requirements: [
+                createMinimalRequirement({ effectiveImpact }),
+              ],
+            }),
+          ],
+        });
+        expect(validate(doc)).toBe(true);
+      }
+    });
+
+    it('should reject effectiveImpact below 0.0', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({ effectiveImpact: -0.1 }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('should reject effectiveImpact above 1.0', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({ effectiveImpact: 1.1 }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('should accept requirement without effectiveImpact (optional)', () => {
+      const req = createMinimalRequirement();
+      expect(req).not.toHaveProperty('effectiveImpact');
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [req],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+  });
+
   describe('statistics', () => {
     it('should validate statistics with vendor-neutral status values', () => {
       const doc = createMinimalResultsDoc({

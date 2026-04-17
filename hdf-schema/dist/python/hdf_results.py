@@ -428,9 +428,40 @@ class Description:
         return result
 
 
+class OverrideType(Enum):
+    """The type of the most recent non-expired override governing this requirement. Indicates
+    why the requirement is in its current state (e.g., waiver, falsePositive,
+    riskAdjustment). Absent when no overrides apply.
+    
+    The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk
+    accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam':
+    remediation tracked (no status change). 'inherited': control provided by another
+    component or system. 'falsePositive': scanner incorrectly identified a finding — for
+    compliance scans (STIG, CIS), the check actually passes, so status is typically set to
+    'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to
+    this system, so status is typically set to 'notApplicable'. The disposition field on the
+    requirement distinguishes false positives from genuinely not-applicable findings.
+    'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk
+    Adjustment); does not change pass/fail status, only impact via the impact field.
+    'operationalRequirement': deviation required by operational constraints (FedRAMP
+    Operational Requirement); the finding cannot be remediated because the system requires
+    the affected functionality. Remains an open risk.
+    
+    The type of override applied to this requirement.
+    """
+    ATTESTATION = "attestation"
+    FALSE_POSITIVE = "falsePositive"
+    INHERITED = "inherited"
+    OPERATIONAL_REQUIREMENT = "operationalRequirement"
+    POAM = "poam"
+    RISK_ADJUSTMENT = "riskAdjustment"
+    WAIVER = "waiver"
+
+
 class ResultStatus(Enum):
-    """The current effective status of this requirement after applying the most recent
-    non-expired override, or computed from results if no overrides exist.
+    """The current effective compliance status of this requirement after applying the most
+    recent non-expired override with a status field, or computed from results (worst-wins) if
+    no status-bearing overrides exist.
     
     The status of an individual test result. 'notApplicable' indicates the requirement does
     not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g.,
@@ -1005,27 +1036,6 @@ class ImpactOverride:
         return result
 
 
-class OverrideType(Enum):
-    """The type of override applied to this requirement.
-    
-    The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified
-    (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked
-    (no status change). 'inherited': control provided by another component or system
-    (overrides to notApplicable/passed). 'falsePositive': scanner incorrectly identified a
-    finding (overrides to notApplicable). 'riskAdjustment': impact score adjusted based on
-    environmental context. 'operationalRequirement': deviation required by operational
-    constraints.
-    """
-    ATTESTATION = "attestation"
-    EXCEPTION = "exception"
-    FALSE_POSITIVE = "falsePositive"
-    INHERITED = "inherited"
-    OPERATIONAL_REQUIREMENT = "operationalRequirement"
-    POAM = "poam"
-    RISK_ADJUSTMENT = "riskAdjustment"
-    WAIVER = "waiver"
-
-
 @dataclass
 class StatusOverride:
     """An intentional change to a requirement's compliance status and/or impact score. At least
@@ -1130,9 +1140,20 @@ class EvaluatedRequirement:
     tags: Dict[str, Any]
     """A set of tags - usually metadata like CCI, STIG ID, severity."""
 
+    disposition: Optional[OverrideType] = None
+    """The type of the most recent non-expired override governing this requirement. Indicates
+    why the requirement is in its current state (e.g., waiver, falsePositive,
+    riskAdjustment). Absent when no overrides apply.
+    """
+    effective_impact: Optional[float] = None
+    """The current effective impact score (0.0–1.0) after applying the most recent non-expired
+    override with an impact field. Absent when no impact overrides apply; consumers should
+    use the requirement's impact field in that case.
+    """
     effective_status: Optional[ResultStatus] = None
-    """The current effective status of this requirement after applying the most recent
-    non-expired override, or computed from results if no overrides exist.
+    """The current effective compliance status of this requirement after applying the most
+    recent non-expired override with a status field, or computed from results (worst-wins) if
+    no status-bearing overrides exist.
     """
     evidence: Optional[List[Evidence]] = None
     """Supporting evidence for this requirement's findings, such as screenshots, code samples,
@@ -1175,6 +1196,8 @@ class EvaluatedRequirement:
         id = from_str(obj.get("id"))
         impact = from_float(obj.get("impact"))
         tags = from_dict(lambda x: x, obj.get("tags"))
+        disposition = from_union([OverrideType, from_none], obj.get("disposition"))
+        effective_impact = from_union([from_float, from_none], obj.get("effectiveImpact"))
         effective_status = from_union([ResultStatus, from_none], obj.get("effectiveStatus"))
         evidence = from_union([lambda x: from_list(Evidence.from_dict, x), from_none], obj.get("evidence"))
         poams = from_union([lambda x: from_list(Poam.from_dict, x), from_none], obj.get("poams"))
@@ -1184,7 +1207,7 @@ class EvaluatedRequirement:
         code = from_union([from_str, from_none], obj.get("code"))
         refs = from_union([lambda x: from_list(Reference.from_dict, x), from_none], obj.get("refs"))
         title = from_union([from_str, from_none], obj.get("title"))
-        return EvaluatedRequirement(descriptions, results, id, impact, tags, effective_status, evidence, poams, severity, source_location, status_overrides, code, refs, title)
+        return EvaluatedRequirement(descriptions, results, id, impact, tags, disposition, effective_impact, effective_status, evidence, poams, severity, source_location, status_overrides, code, refs, title)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -1193,6 +1216,10 @@ class EvaluatedRequirement:
         result["id"] = from_str(self.id)
         result["impact"] = to_float(self.impact)
         result["tags"] = from_dict(lambda x: x, self.tags)
+        if self.disposition is not None:
+            result["disposition"] = from_union([lambda x: to_enum(OverrideType, x), from_none], self.disposition)
+        if self.effective_impact is not None:
+            result["effectiveImpact"] = from_union([to_float, from_none], self.effective_impact)
         if self.effective_status is not None:
             result["effectiveStatus"] = from_union([lambda x: to_enum(ResultStatus, x), from_none], self.effective_status)
         if self.evidence is not None:
