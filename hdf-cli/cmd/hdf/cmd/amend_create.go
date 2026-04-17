@@ -603,15 +603,18 @@ func identityType(s string) string {
 }
 
 // amendTypeToStatus returns the default status for an amendment type.
-// Returns empty string for types that don't change status (impact-only or tracking).
+// Returns empty string only for riskAdjustment (impact-only, satisfies anyOf via impact field).
+// poam and operationalRequirement emit the current status (failed) to satisfy the schema anyOf.
 func amendTypeToStatus(amendType string) string {
 	switch amendType {
 	case "waiver", "attestation":
 		return "passed"
 	case "falsePositive", "inherited":
 		return statusNotApplicable
-	case "poam", "riskAdjustment", "operationalRequirement":
-		return "" // These don't change status by default
+	case "poam", "operationalRequirement":
+		return "failed" // Acknowledges current state; finding remains open
+	case "riskAdjustment":
+		return "" // Impact-only; anyOf satisfied via impact field
 	default:
 		return ""
 	}

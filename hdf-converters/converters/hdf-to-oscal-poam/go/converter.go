@@ -117,12 +117,12 @@ func amendmentsToPOAM(amendments *hdf.HDFAmendments, converterVersion string) (*
 func overrideToPOAMItem(override *hdf.StandaloneOverride) (oscal.POAMItem, []oscal.Risk) {
 	riskUUID := oscal.GenerateUUID()
 
-	// Map HDF status to OSCAL risk status
-	var overrideStatus hdf.ResultStatus
+	// Map HDF status to OSCAL risk status.
+	// Overrides without a status field (impact-only) are treated as open risks.
+	riskStatus := "open"
 	if override.Status != nil {
-		overrideStatus = *override.Status
+		riskStatus = oscal.HDFStatusToOSCALRiskStatus(*override.Status)
 	}
-	riskStatus := oscal.HDFStatusToOSCALRiskStatus(overrideStatus)
 
 	// Convert requirement ID from NIST notation to OSCAL control ID
 	controlID := oscal.NistTagToControlID(override.RequirementID)
