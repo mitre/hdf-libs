@@ -85,18 +85,23 @@ jobs:
           cat package.json
           npm install --no-audit --no-fund
 
-      # TODO: once every package is bundled via tsdown (see bd issue
-      # hdf-libs-3tht), add a runtime import check here:
-      #
-      #   node -e "import('@mitre/<pkg>')"
-      #
-      # per package, to catch regressions where JSON imports or similar
-      # survive into dist. Currently deferred because the 4 consumer
-      # packages (hdf-validators, hdf-parsers, hdf-converters, hdf-diff)
-      # are still tsc-only and import from hdf-schema's /schemas/*.json
-      # sub-paths — an import check would fail on those. hdf-mappings is
-      # bundled and would pass, but a partial check adds confusion more
-      # than signal.
+      - name: Import every package in raw Node ESM
+        # Catches regressions where JSON imports (or any import pattern
+        # Node ESM rejects) survive into the published dist. The
+        # scratch project above has all packages installed via npm,
+        # so this exercises the real consumer path.
+        run: |
+          cd /tmp/smoke
+          FAIL=0
+          for pkg in @mitre/hdf-schema @mitre/hdf-utilities @mitre/hdf-mappings \
+                     @mitre/hdf-validators @mitre/hdf-parsers @mitre/hdf-converters \
+                     @mitre/hdf-generators @mitre/hdf-diff @mitre/hdf-extension-graph; do
+            printf "%-30s " "$pkg"
+            if ! node -e "import('$pkg').then(m => console.log('OK,', Object.keys(m).length, 'exports')).catch(e => { console.error('FAIL:', e.message); process.exit(1); })"; then
+              FAIL=1
+            fi
+          done
+          exit $FAIL
 
   # Packs every package and runs publint + @arethetypeswrong/cli against
   # each tarball. Catches package-metadata and types-export defects that

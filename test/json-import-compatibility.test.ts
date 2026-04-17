@@ -1,39 +1,31 @@
 /**
  * JSON Import Compatibility Tests
  *
- * Two architectures coexist in this repo, both of which need to remain
- * consumable by Nuxt/Vite apps (browser + SSR) AND raw Node.js ESM
- * scripts:
+ * Every package that has JSON imports is built with tsdown so the JSON
+ * gets inlined as JS object literals at build time. The published
+ * artifacts contain no unresolved JSON imports and work in any
+ * consumer — raw Node.js ESM, Vite/Nuxt, webpack, esbuild, Bun — with
+ * no noExternal / bundler-inline configuration required.
  *
- * (A) BUNDLED packages — JSON is inlined into a single dist/index.js
- *     by esbuild at build time. The artifact contains no JSON imports
- *     at all and works in any consumer (raw Node, Vite, webpack, etc.)
- *     with no special configuration.
+ * Packages that don't have JSON imports in their sources (hdf-schema,
+ * hdf-utilities, hdf-parsers, hdf-diff, hdf-generators,
+ * hdf-extension-graph, hdf-converters) stay on tsc-only builds; their
+ * dist is already raw-Node-compatible because the JSON problem never
+ * existed there. Bundling them would only add tooling-consistency
+ * benefit, not functional benefit, and is left as follow-up work.
  *
- *     Currently bundled: @mitre/hdf-mappings.
- *
- * (B) UNBUNDLED packages — tsc-only build, source-style bare JSON
- *     imports survive into dist. Consumer MUST run them through a
- *     bundler (Vite/Nuxt/webpack/esbuild) that resolves bare JSON
- *     imports natively. Raw Node ESM consumers will fail with
- *     ERR_IMPORT_ATTRIBUTE_MISSING. To use these in Vite/Nuxt, set
- *     `vite.ssr.noExternal: ['@mitre/hdf-…']` so they get inlined
- *     into the consumer's bundle.
- *
- *     Currently unbundled: @mitre/hdf-validators, @mitre/hdf-parsers,
- *     @mitre/hdf-converters, @mitre/hdf-diff. Goal is to migrate these
- *     to architecture (A) too, by having them import from
- *     @mitre/hdf-schema's JS entry point instead of its raw .json
- *     sub-paths (which requires bundling hdf-schema first).
- *
- * Shared rules for BOTH architectures:
+ * Rules below apply to every package, bundled or not:
  *
  * 1. NO Node-only APIs (`createRequire`, `fs`, `path`) in any SOURCE
- *    file imported by consumers. Crashes browser bundles.
+ *    file imported by consumers. Those crash browser bundles with
+ *    "Module has been externalized for browser compatibility."
  *
- * 2. NO `with { type: 'json' }` in source files. Vite strips these
- *    during plugin analysis (Vite RFC #18534), leaving bare imports
- *    that Node.js then rejects.
+ * 2. NO `with { type: 'json' }` import attributes in source files.
+ *    Vite strips these during plugin analysis (Vite RFC #18534),
+ *    leaving bare imports that raw Node.js then rejects. Bundled
+ *    packages resolve JSON at build time so the question doesn't come
+ *    up at consume time; unbundled packages must not introduce this
+ *    syntax in source.
  *
  * 3. `tsconfig.base.json` must NOT have `verbatimModuleSyntax: true`
  *    (would force tsc to emit the import attribute).
@@ -101,30 +93,13 @@ describe('JSON import compatibility', () => {
     }
   });
 
-  describe('unbundled packages: dist must not contain createRequire or import attributes', () => {
-    const distFiles = [
-      'hdf-validators/dist/index.js',
-    ];
-
-    for (const file of distFiles) {
-      it(`${file} must not use createRequire`, () => {
-        const content = readFileSync(resolve(__dirname, '..', file), 'utf-8');
-        expect(content).not.toContain('createRequire');
-      });
-
-      it(`${file} must not use import attributes`, () => {
-        const content = readFileSync(resolve(__dirname, '..', file), 'utf-8');
-        expect(content).not.toMatch(/with\s*\{\s*type:\s*['"]json['"]\s*\}/);
-      });
-    }
-  });
-
   describe('bundled packages: dist/index.js must be self-contained', () => {
-    // Packages built with esbuild --bundle: JSON data is inlined as JS
-    // objects, so the artifact has no JSON imports at all and works in
-    // raw Node ESM as well as any bundler.
+    // Packages built with tsdown: JSON data is inlined as JS objects, so
+    // the artifact has no unresolved JSON imports at all and works in
+    // raw Node ESM as well as any bundler without consumer configuration.
     const bundledPackages = [
       'hdf-mappings',
+      'hdf-validators',
     ];
 
     for (const pkg of bundledPackages) {

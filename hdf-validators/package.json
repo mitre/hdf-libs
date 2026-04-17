@@ -18,7 +18,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "pnpm clean && tsc",
+    "build": "tsdown",
     "clean": "rimraf dist",
     "test": "pnpm run test:ts && pnpm run test:go",
     "test:ts": "vitest run",
