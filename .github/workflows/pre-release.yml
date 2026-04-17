@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
 
 jobs:
   # Packs every publishable workspace package and installs the resulting
@@ -85,9 +85,67 @@ jobs:
           cat package.json
           npm install --no-audit --no-fund
 
-      # TODO: Add a runtime import-check step once the JSON import
-      # attribute bug is fixed (see bd ticket — pure-ESM packages that
-      # internally import .json files without `with { type: 'json' }`
-      # fail at runtime on Node 20+). The pack + npm install steps above
-      # already catch workspace: protocol leakage and most packaging
-      # defects (missing files, broken main/exports paths, peer conflicts).
+      # TODO: once every package is bundled via tsdown (see bd issue
+      # hdf-libs-3tht), add a runtime import check here:
+      #
+      #   node -e "import('@mitre/<pkg>')"
+      #
+      # per package, to catch regressions where JSON imports or similar
+      # survive into dist. Currently deferred because the 4 consumer
+      # packages (hdf-validators, hdf-parsers, hdf-converters, hdf-diff)
+      # are still tsc-only and import from hdf-schema's /schemas/*.json
+      # sub-paths — an import check would fail on those. hdf-mappings is
+      # bundled and would pass, but a partial check adds confusion more
+      # than signal.
+
+  # Packs every package and runs publint + @arethetypeswrong/cli against
+  # each tarball. Catches package-metadata and types-export defects that
+  # npm install alone doesn't: missing `exports.types`, ESM-declared
+  # packages with broken dual-types, dead `main`/`module` paths,
+  # unreachable sub-path exports, etc. Uses tarballs (not source dirs)
+  # so we're validating exactly what `pnpm publish` would upload.
+  verify-packages:
+    name: Lint packed tarballs (publint + attw)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: ./.github/actions/setup
+      - name: Build TypeScript (pack reads dist/)
+        run: pnpm build:ts
+
+      - name: Pack all publishable packages
+        run: |
+          mkdir -p /tmp/tarballs
+          PACKAGES=(
+            hdf-schema hdf-utilities hdf-mappings hdf-validators
+            hdf-parsers hdf-converters hdf-generators hdf-diff
+            hdf-extension-graph
+          )
+          for pkg in "${PACKAGES[@]}"; do
+            (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)
+          done
+
+      - name: publint each tarball
+        run: |
+          FAIL=0
+          for tb in /tmp/tarballs/*.tgz; do
+            echo "::group::publint $(basename "$tb")"
+            pnpm dlx publint "$tb" || FAIL=1
+            echo "::endgroup::"
+          done
+          exit $FAIL
+
+      - name: "@arethetypeswrong/cli each tarball"
+        # --ignore-rules cjs-resolves-to-esm: we publish ESM-only
+        # intentionally (see package.json `"type": "module"`); attw's
+        # default complaint about CJS consumers resolving to ESM is not
+        # actionable for us.
+        run: |
+          FAIL=0
+          for tb in /tmp/tarballs/*.tgz; do
+            echo "::group::attw $(basename "$tb")"
+            pnpm dlx @arethetypeswrong/cli --ignore-rules cjs-resolves-to-esm -- "$tb" || FAIL=1
+            echo "::endgroup::"
+          done
+          exit $FAIL

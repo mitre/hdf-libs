@@ -1,34 +1,42 @@
 /**
  * JSON Import Compatibility Tests
  *
- * REQUIREMENTS:
- * hdf-libs packages are consumed by Nuxt/Vite applications that bundle them
- * for BOTH browser (client) and Node.js (server/SSR). This means:
+ * Two architectures coexist in this repo, both of which need to remain
+ * consumable by Nuxt/Vite apps (browser + SSR) AND raw Node.js ESM
+ * scripts:
  *
- * 1. NO Node-only APIs (e.g., `createRequire`, `fs`, `path`) in any source
- *    file that gets imported by consumers. `module.createRequire` crashes
- *    in the browser with "Module has been externalized for browser compatibility."
+ * (A) BUNDLED packages — JSON is inlined into a single dist/index.js
+ *     by esbuild at build time. The artifact contains no JSON imports
+ *     at all and works in any consumer (raw Node, Vite, webpack, etc.)
+ *     with no special configuration.
  *
- * 2. NO `with { type: 'json' }` import attributes. Vite strips these during
- *    its plugin analysis phase (see Vite RFC #18534), leaving bare imports
- *    that Node.js then rejects with "needs an import attribute of type json."
+ *     Currently bundled: @mitre/hdf-mappings.
  *
- * 3. USE bare `import ... from '...json'` (no `with` clause). This works
- *    because the consumer configures `vite.ssr.noExternal` and
- *    `nitro.noExternal` to force Vite to bundle hdf-libs packages.
- *    Vite natively handles JSON imports in its bundler.
+ * (B) UNBUNDLED packages — tsc-only build, source-style bare JSON
+ *     imports survive into dist. Consumer MUST run them through a
+ *     bundler (Vite/Nuxt/webpack/esbuild) that resolves bare JSON
+ *     imports natively. Raw Node ESM consumers will fail with
+ *     ERR_IMPORT_ATTRIBUTE_MISSING. To use these in Vite/Nuxt, set
+ *     `vite.ssr.noExternal: ['@mitre/hdf-…']` so they get inlined
+ *     into the consumer's bundle.
  *
- * 4. `tsconfig.base.json` must NOT have `verbatimModuleSyntax: true`.
- *    That flag forces TypeScript to emit `with { type: 'json' }` for
- *    JSON imports, which triggers problem #2.
+ *     Currently unbundled: @mitre/hdf-validators, @mitre/hdf-parsers,
+ *     @mitre/hdf-converters, @mitre/hdf-diff. Goal is to migrate these
+ *     to architecture (A) too, by having them import from
+ *     @mitre/hdf-schema's JS entry point instead of its raw .json
+ *     sub-paths (which requires bundling hdf-schema first).
  *
- * CONSUMER CONFIGURATION (nuxt.config.ts):
- *   vite: { ssr: { noExternal: ['@mitre/hdf-mappings', ...] } }
- *   nitro: { externals: { inline: ['@mitre/hdf-mappings', ...] } }
+ * Shared rules for BOTH architectures:
  *
- * If these tests fail, the fix is NOT to add createRequire or import
- * attributes — it's to ensure bare JSON imports are used and the consumer
- * has the noExternal configuration.
+ * 1. NO Node-only APIs (`createRequire`, `fs`, `path`) in any SOURCE
+ *    file imported by consumers. Crashes browser bundles.
+ *
+ * 2. NO `with { type: 'json' }` in source files. Vite strips these
+ *    during plugin analysis (Vite RFC #18534), leaving bare imports
+ *    that Node.js then rejects.
+ *
+ * 3. `tsconfig.base.json` must NOT have `verbatimModuleSyntax: true`
+ *    (would force tsc to emit the import attribute).
  */
 
 import { describe, it, expect } from 'vitest';
@@ -93,16 +101,8 @@ describe('JSON import compatibility', () => {
     }
   });
 
-  describe('compiled dist must not contain createRequire or import attributes', () => {
+  describe('unbundled packages: dist must not contain createRequire or import attributes', () => {
     const distFiles = [
-      'hdf-mappings/dist/cci/index.js',
-      'hdf-mappings/dist/nikto/index.js',
-      'hdf-mappings/dist/awsconfig/index.js',
-      'hdf-mappings/dist/owasp/index.js',
-      'hdf-mappings/dist/nist/index.js',
-      'hdf-mappings/dist/scoutsuite/index.js',
-      'hdf-mappings/dist/cwe/index.js',
-      'hdf-mappings/dist/nessus/index.js',
       'hdf-validators/dist/index.js',
     ];
 
@@ -115,6 +115,34 @@ describe('JSON import compatibility', () => {
       it(`${file} must not use import attributes`, () => {
         const content = readFileSync(resolve(__dirname, '..', file), 'utf-8');
         expect(content).not.toMatch(/with\s*\{\s*type:\s*['"]json['"]\s*\}/);
+      });
+    }
+  });
+
+  describe('bundled packages: dist/index.js must be self-contained', () => {
+    // Packages built with esbuild --bundle: JSON data is inlined as JS
+    // objects, so the artifact has no JSON imports at all and works in
+    // raw Node ESM as well as any bundler.
+    const bundledPackages = [
+      'hdf-mappings',
+    ];
+
+    for (const pkg of bundledPackages) {
+      const distFile = `${pkg}/dist/index.js`;
+
+      it(`${distFile} must not use createRequire`, () => {
+        const content = readFileSync(resolve(__dirname, '..', distFile), 'utf-8');
+        expect(content).not.toContain('createRequire');
+      });
+
+      it(`${distFile} must not use import attributes`, () => {
+        const content = readFileSync(resolve(__dirname, '..', distFile), 'utf-8');
+        expect(content).not.toMatch(/with\s*\{\s*type:\s*['"]json['"]\s*\}/);
+      });
+
+      it(`${distFile} must not import any .json files (data must be inlined)`, () => {
+        const content = readFileSync(resolve(__dirname, '..', distFile), 'utf-8');
+        expect(content).not.toMatch(/from\s+['"][^'"]+\.json['"]/);
       });
     }
   });

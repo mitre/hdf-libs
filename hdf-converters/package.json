@@ -10,16 +10,16 @@
   "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/src/index.js",
-      "types": "./dist/src/index.d.ts"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
     },
     "./detect": {
-      "import": "./dist/src/detect.js",
-      "types": "./dist/src/detect.d.ts"
+      "types": "./dist/src/detect.d.ts",
+      "import": "./dist/src/detect.js"
     },
     "./registry": {
-      "import": "./dist/shared/typescript/registry.js",
-      "types": "./dist/shared/typescript/registry.d.ts"
+      "types": "./dist/shared/typescript/registry.d.ts",
+      "import": "./dist/shared/typescript/registry.js"
     },
     "./package.json": "./package.json"
   },
