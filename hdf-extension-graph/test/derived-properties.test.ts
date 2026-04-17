@@ -286,6 +286,55 @@ describe('ContextualizedRequirement derived properties', () => {
       expect(overlayR1.modifications).toEqual([]);
     });
 
+    it('detects effectiveImpact change', () => {
+      const graph = buildExtensionGraph({
+        baselines: [
+          makeBaseline({ name: 'base', requirements: [makeRequirement({ id: 'R1', effectiveImpact: 0.7 } as any)] }),
+          makeBaseline({ name: 'overlay', requirements: [makeRequirement({ id: 'R1', effectiveImpact: 0.3 } as any)], parentBaseline: 'base' }),
+        ],
+      } as any);
+
+      const overlayR1 = graph.baselines[1]!.requirements[0]!;
+      const mods = overlayR1.modifications;
+
+      expect(mods).toHaveLength(1);
+      expect(mods[0]).toEqual({
+        field: 'effectiveImpact',
+        originalValue: 0.7,
+        newValue: 0.3,
+        inBaseline: 'overlay',
+      });
+    });
+
+    it('detects disposition change', () => {
+      const graph = buildExtensionGraph({
+        baselines: [
+          makeBaseline({ name: 'base', requirements: [makeRequirement({ id: 'R1', disposition: 'waiver' } as any)] }),
+          makeBaseline({ name: 'overlay', requirements: [makeRequirement({ id: 'R1', disposition: 'riskAdjustment' } as any)], parentBaseline: 'base' }),
+        ],
+      } as any);
+
+      const overlayR1 = graph.baselines[1]!.requirements[0]!;
+      const mods = overlayR1.modifications;
+
+      expect(mods.some((m) => m.field === 'disposition')).toBe(true);
+      const dispMod = mods.find((m) => m.field === 'disposition')!;
+      expect(dispMod.originalValue).toBe('waiver');
+      expect(dispMod.newValue).toBe('riskAdjustment');
+    });
+
+    it('does not report unchanged effectiveImpact and disposition', () => {
+      const graph = buildExtensionGraph({
+        baselines: [
+          makeBaseline({ name: 'base', requirements: [makeRequirement({ id: 'R1', effectiveImpact: 0.3, disposition: 'waiver' } as any)] }),
+          makeBaseline({ name: 'overlay', requirements: [makeRequirement({ id: 'R1', effectiveImpact: 0.3, disposition: 'waiver' } as any)], parentBaseline: 'base' }),
+        ],
+      } as any);
+
+      const overlayR1 = graph.baselines[1]!.requirements[0]!;
+      expect(overlayR1.modifications.filter((m) => m.field === 'effectiveImpact' || m.field === 'disposition')).toEqual([]);
+    });
+
     it('detects multiple changes at once', () => {
       const graph = buildExtensionGraph({
         baselines: [

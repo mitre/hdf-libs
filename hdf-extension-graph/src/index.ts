@@ -1,7 +1,7 @@
 import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 /** Fields compared for modification detection between overlay and parent. */
-const TRACKED_FIELDS: readonly string[] = ['impact', 'title', 'severity'] as const;
+const TRACKED_FIELDS: readonly (string & keyof EvaluatedRequirement)[] = ['impact', 'title', 'severity', 'effectiveImpact', 'disposition'];
 
 /** A detected change between an overlay requirement and its parent. */
 export interface Modification {

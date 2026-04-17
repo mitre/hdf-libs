@@ -1,20 +1,37 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.0.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.1.0",
   "title": "HDF Amendment Primitives",
-  "description": "Types for waivers, attestations, exceptions, and POA&Ms that modify requirement compliance status.",
+  "description": "Types for waivers, attestations, and POA&Ms that modify requirement compliance status.",
   "$defs": {
     "Override_Type": {
       "type": "string",
       "enum": [
         "waiver",
         "attestation",
-        "exception",
         "poam",
-        "inherited"
+        "inherited",
+        "falsePositive",
+        "riskAdjustment",
+        "operationalRequirement"
       ],
-      "description": "The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked (no status change). 'inherited': control provided by another component or system (overrides to notApplicable/passed).",
+      "description": "The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam': remediation tracked (no status change). 'inherited': control provided by another component or system. 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set to 'notApplicable'. The disposition field on the requirement distinguishes false positives from genuinely not-applicable findings. 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field. 'operationalRequirement': deviation required by operational constraints (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires the affected functionality. Remains an open risk.",
       "title": "Override Type"
+    },
+    "Impact_Override": {
+      "type": "object",
+      "required": ["value"],
+      "unevaluatedProperties": false,
+      "properties": {
+        "value": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "The overridden impact score (0.0–1.0)."
+        }
+      },
+      "description": "An override to the requirement's impact score. The prior impact is the original result value or the preceding override in the chain.",
+      "title": "Impact Override"
     },
     "Standalone_Override": {
       "type": "object",
@@ -22,11 +39,14 @@
       "required": [
         "type",
         "requirementId",
-        "status",
         "reason",
         "appliedBy",
         "appliedAt",
         "expiresAt"
+      ],
+      "anyOf": [
+        { "required": ["status"] },
+        { "required": ["impact"] }
       ],
       "properties": {
         "type": {
@@ -42,15 +62,19 @@
           "description": "Name of the baseline containing the requirement. Required when the system has multiple baselines with potentially overlapping requirement IDs."
         },
         "status": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.0.0#/$defs/Result_Status",
-          "description": "The new status this amendment sets. For POA&Ms, this is the current status (POA&Ms track work, they don't change status)."
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.1.0#/$defs/Result_Status",
+          "description": "The new status this amendment sets. Optional when only impact is being overridden."
+        },
+        "impact": {
+          "$ref": "#/$defs/Impact_Override",
+          "description": "Override to the requirement's impact score. At least one of status or impact must be set."
         },
         "reason": {
           "type": "string",
           "description": "Justification for this amendment."
         },
         "appliedBy": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Identity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Identity",
           "description": "Identity of who applied this amendment."
         },
         "appliedAt": {
@@ -66,22 +90,22 @@
         "evidence": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Evidence"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Evidence"
           },
           "description": "Supporting evidence (screenshots, logs, URLs, documents)."
         },
         "signature": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Signature",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Signature",
           "description": "Digital signature for non-repudiation."
         },
         "previousChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Checksum",
           "description": "Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null for the first amendment."
         },
         "milestones": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.0.0#/$defs/Milestone"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Milestone"
           },
           "description": "Remediation milestones (primarily for POA&M type amendments)."
         },
@@ -113,6 +137,35 @@
               "description": "ISSM approval with compensating control documentation"
             }
           ]
+        },
+        {
+          "type": "falsePositive",
+          "requirementId": "SV-258010",
+          "baselineRef": "RHEL9-STIG",
+          "status": "passed",
+          "reason": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
+          "appliedBy": { "type": "email", "identifier": "assessor@agency.gov" },
+          "appliedAt": "2026-04-14T10:00:00Z",
+          "expiresAt": "2026-10-14T00:00:00Z"
+        },
+        {
+          "type": "falsePositive",
+          "requirementId": "CVE-2026-12345",
+          "status": "notApplicable",
+          "reason": "CVE scanner matched library signature but the vulnerable code path is not present in our build — dependency is compiled with the affected module disabled",
+          "appliedBy": { "type": "email", "identifier": "dev@org.gov" },
+          "appliedAt": "2026-04-14T10:00:00Z",
+          "expiresAt": "2026-10-14T00:00:00Z"
+        },
+        {
+          "type": "riskAdjustment",
+          "requirementId": "SV-258020",
+          "baselineRef": "RHEL9-STIG",
+          "impact": { "value": 0.3 },
+          "reason": "CVE-123 is in a dead code path, unreachable from any entry point",
+          "appliedBy": { "type": "email", "identifier": "dev@org.gov" },
+          "appliedAt": "2026-04-14T10:00:00Z",
+          "expiresAt": "2026-10-14T00:00:00Z"
         },
         {
           "type": "poam",
@@ -148,7 +201,7 @@
           "expiresAt": "2026-09-26T00:00:00Z"
         }
       ],
-      "description": "A standalone amendment that modifies a requirement's compliance status. Extends the inline Status_Override concept with requirementId and baselineRef for use outside of results documents.",
+      "description": "A standalone amendment that modifies a requirement's compliance status and/or impact score. At least one of status or impact must be set. Extends the inline Override concept with requirementId and baselineRef for use outside of results documents.",
       "title": "Standalone Override"
     }
   }

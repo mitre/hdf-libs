@@ -162,8 +162,14 @@ type EvaluatedRequirement struct {
 	// present. Convention: place default description first. Common labels: 'default', 'check',
 	// 'fix', 'rationale'.
 	Descriptions []Description `json:"descriptions"`
-	// The current effective status of this requirement after applying the most recent
-	// non-expired override, or computed from results if no overrides exist.
+	// The type of the most recent non-expired override governing this requirement.
+	// Absent when no overrides apply.
+	Disposition *StatusOverrideType `json:"disposition,omitempty"`
+	// The current effective impact score (0.0-1.0) after applying the most recent
+	// non-expired override with an impact field. Absent when no impact overrides apply.
+	EffectiveImpact *float64 `json:"effectiveImpact,omitempty"`
+	// The current effective compliance status after applying the most recent non-expired
+	// override with a status field, or computed from results if no status-bearing overrides exist.
 	EffectiveStatus *ResultStatus `json:"effectiveStatus"`
 	// Supporting evidence for this requirement's findings, such as screenshots, code samples,
 	// or log excerpts.
@@ -390,37 +396,45 @@ type SourceLocation struct {
 	Ref *string `json:"ref"`
 }
 
-// An intentional change to a requirement's compliance status (waiver or attestation).
-// Status overrides change the effectiveStatus of the requirement. All status overrides must
-// have an expiration date to enforce periodic review.
+// An intentional change to a requirement's compliance status and/or impact score.
+// At least one of status or impact must be set. Overrides change the effectiveStatus
+// or impact of the requirement. All overrides must have an expiration date to enforce
+// periodic review.
 type StatusOverride struct {
-	// Timestamp when this status override was applied. ISO 8601 format.
+	// Timestamp when this override was applied. ISO 8601 format.
 	AppliedAt time.Time `json:"appliedAt"`
-	// Identity of who applied this status override. For simple cases, use type 'simple' with
+	// Identity of who applied this override. For simple cases, use type 'simple' with
 	// just an identifier.
 	AppliedBy Identity `json:"appliedBy"`
-	// Supporting evidence for this status override, such as screenshots demonstrating manual
+	// Supporting evidence for this override, such as screenshots demonstrating manual
 	// verification for attestations.
 	Evidence []Evidence `json:"evidence"`
-	// Timestamp when this status override expires and must be reviewed/renewed. REQUIRED - no
-	// permanent status overrides allowed. ISO 8601 format.
+	// Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no
+	// permanent overrides allowed. ISO 8601 format.
 	ExpiresAt time.Time `json:"expiresAt"`
+	// Override to the requirement's impact score. At least one of status or impact must be set.
+	Impact *ImpactOverride `json:"impact,omitempty"`
 	// SHA-256 checksum of the previous amendment in chronological order. Creates a
 	// tamper-evident chain of amendments (similar to blockchain). Null for the first amendment
 	// on a requirement.
 	PreviousChecksum *Checksum `json:"previousChecksum"`
-	// Explanation for why this status override was applied.
+	// Explanation for why this override was applied.
 	Reason string `json:"reason"`
 	// Optional digital signature for enhanced trust and non-repudiation. Supports hardware
 	// security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing
 	// methods.
 	Signature *Signature `json:"signature"`
-	// The new status this override sets for the requirement. This intentionally changes the
-	// compliance status.
-	Status ResultStatus `json:"status"`
-	// The type of status override. 'waiver' indicates risk acceptance. 'attestation' indicates
-	// manual verification.
+	// The new status this override sets for the requirement. Optional when only impact is
+	// being overridden.
+	Status *ResultStatus `json:"status,omitempty"`
+	// The type of override applied to this requirement.
 	Type StatusOverrideType `json:"type"`
+}
+
+// An override to the requirement's impact score.
+type ImpactOverride struct {
+	// The overridden impact score (0.0-1.0).
+	Value float64 `json:"value"`
 }
 
 // A supported platform target. Example: the platform name being 'ubuntu'.
@@ -709,9 +723,10 @@ const (
 type PoamType string
 
 const (
-	Mitigation      PoamType = "mitigation"
-	RiskAcceptance  PoamType = "riskAcceptance"
-	TypeRemediation PoamType = "remediation"
+	Mitigation       PoamType = "mitigation"
+	RiskAcceptance   PoamType = "riskAcceptance"
+	TypeRemediation  PoamType = "remediation"
+	VendorDependency PoamType = "vendorDependency"
 )
 
 // Explicit severity rating. Typically derived from impact score but provided explicitly for
@@ -726,13 +741,17 @@ const (
 	Medium        Severity = "medium"
 )
 
-// The type of status override. 'waiver' indicates risk acceptance. 'attestation' indicates
-// manual verification.
+// The type of override applied to this requirement.
 type StatusOverrideType string
 
 const (
-	Attestation StatusOverrideType = "attestation"
-	Waiver      StatusOverrideType = "waiver"
+	Attestation            StatusOverrideType = "attestation"
+	FalsePositive          StatusOverrideType = "falsePositive"
+	Inherited              StatusOverrideType = "inherited"
+	OperationalRequirement StatusOverrideType = "operationalRequirement"
+	OverrideTypePoam       StatusOverrideType = "poam"
+	RiskAdjustment         StatusOverrideType = "riskAdjustment"
+	Waiver                 StatusOverrideType = "waiver"
 )
 
 type Provider string

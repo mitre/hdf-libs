@@ -74,8 +74,8 @@ func ComputeEffectiveStatus(req hdf.EvaluatedRequirement, referenceTimestamp str
 		}
 
 		for _, override := range req.StatusOverrides {
-			if override.ExpiresAt.After(refTime) {
-				return string(override.Status)
+			if override.ExpiresAt.After(refTime) && override.Status != nil {
+				return string(*override.Status)
 			}
 		}
 		// All overrides expired — fall through to results
@@ -152,6 +152,16 @@ func ClassifyChangeReasons(
 		reasons = append(reasons, types.ReasonImpactChanged)
 	}
 
+	// Check disposition changes
+	if dispositionChanged(oldReq, newReq) {
+		reasons = append(reasons, types.ReasonDispositionChanged)
+	}
+
+	// Check effectiveImpact changes
+	if effectiveImpactChanged(oldReq, newReq) {
+		reasons = append(reasons, types.ReasonEffectiveImpactChanged)
+	}
+
 	// Check baseline metadata changes (tags, descriptions, title)
 	tagsChanged := !reflect.DeepEqual(oldReq.Tags, newReq.Tags)
 	descsChanged := !reflect.DeepEqual(oldReq.Descriptions, newReq.Descriptions)
@@ -196,6 +206,31 @@ func ClassifyDiffStatus(oldEffectiveStatus, newEffectiveStatus string) types.Req
 	}
 
 	return types.StateUpdated
+}
+
+// dispositionChanged returns true if the disposition differs between old and new requirements.
+func dispositionChanged(oldReq, newReq hdf.EvaluatedRequirement) bool {
+	oldDisp := ""
+	if oldReq.Disposition != nil {
+		oldDisp = string(*oldReq.Disposition)
+	}
+	newDisp := ""
+	if newReq.Disposition != nil {
+		newDisp = string(*newReq.Disposition)
+	}
+	return oldDisp != newDisp
+}
+
+// effectiveImpactChanged returns true if the effectiveImpact differs between old and new requirements.
+func effectiveImpactChanged(oldReq, newReq hdf.EvaluatedRequirement) bool {
+	switch {
+	case oldReq.EffectiveImpact == nil && newReq.EffectiveImpact == nil:
+		return false
+	case oldReq.EffectiveImpact == nil || newReq.EffectiveImpact == nil:
+		return true
+	default:
+		return *oldReq.EffectiveImpact != *newReq.EffectiveImpact
+	}
 }
 
 // extractSortedStatuses extracts status strings from results and returns them sorted.
