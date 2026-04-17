@@ -175,6 +175,45 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req)).toBe('passed');
   });
 
+  it('skips impact-only override (no status) and falls through to results', () => {
+    const req = makeRequirement({
+      results: [makeResult('failed')],
+      statusOverrides: [
+        {
+          type: 'riskAdjustment',
+          impact: { value: 0.3 },
+          reason: 'Dead code path',
+          appliedBy: { name: 'admin', email: 'admin@example.com' },
+          appliedAt: '2025-01-01T00:00:00Z',
+          expiresAt: '2099-12-31T23:59:59Z',
+        },
+      ],
+    });
+    expect(computeEffectiveStatus(req, '2025-06-01T00:00:00Z')).toBe('failed');
+  });
+
+  it('uses status override after skipping impact-only override', () => {
+    const req = makeRequirement({
+      results: [makeResult('failed')],
+      statusOverrides: [
+        {
+          type: 'riskAdjustment',
+          impact: { value: 0.3 },
+          reason: 'Dead code path',
+          appliedBy: { name: 'admin', email: 'admin@example.com' },
+          appliedAt: '2025-01-01T00:00:00Z',
+          expiresAt: '2099-12-31T23:59:59Z',
+        },
+        makeOverride({
+          type: 'waiver',
+          status: 'passed',
+          expiresAt: '2099-12-31T23:59:59Z',
+        }),
+      ],
+    });
+    expect(computeEffectiveStatus(req, '2025-06-01T00:00:00Z')).toBe('passed');
+  });
+
   it('uses effectiveStatus when overrides array is empty', () => {
     const req = makeRequirement({
       results: [makeResult('failed')],

@@ -20,7 +20,7 @@ interface ResultLike {
 }
 
 interface OverrideLike {
-  status: string;
+  status?: string;
   expiresAt: string;
 }
 
@@ -48,7 +48,7 @@ export function computeEffectiveStatus(
     const refTime = referenceTimestamp ? new Date(referenceTimestamp).getTime() : Date.now();
     for (const override of overrides) {
       const expiresAt = new Date(override.expiresAt).getTime();
-      if (expiresAt > refTime) {
+      if (expiresAt > refTime && override.status) {
         return override.status;
       }
     }
