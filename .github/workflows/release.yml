@@ -77,10 +77,15 @@ jobs:
             TAG_FLAG="--tag next"
           fi
 
+          # Use pnpm publish (not npm) so that workspace:* dependency specifiers
+          # are rewritten to the actual published versions in the tarball.
+          # npm publish ships package.json verbatim and breaks consumers with
+          # EUNSUPPORTEDPROTOCOL. --no-git-checks is required because the
+          # "Set version from tag" step above leaves the working tree dirty.
           for pkg in "${PACKAGES[@]}"; do
             echo "Publishing $pkg@$VERSION..."
             cd "$pkg"
-            npm publish --access public $TAG_FLAG
+            pnpm publish --access public --no-git-checks $TAG_FLAG
             cd ..
           done
 
