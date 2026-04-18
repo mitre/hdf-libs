@@ -10,15 +10,15 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "pnpm clean && tsc",
+    "build": "tsdown",
     "clean": "rimraf dist",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
@@ -39,7 +39,7 @@
     "@mitre/hdf-schema": "workspace:*"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "keywords": [
     "hdf",

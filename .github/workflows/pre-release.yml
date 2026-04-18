@@ -1,0 +1,158 @@
+name: Pre-release checks
+
+# Runs after merge to main (and on manual dispatch) to verify that the
+# next tag-triggered release will produce installable packages. These
+# checks are too expensive to run on every PR, but they catch the class
+# of bug — broken publish pipeline — that only surfaces at consume time
+# and is otherwise silent until a release is already cut.
+#
+# If any job here fails on main, do NOT cut a tag — fix the underlying
+# packaging problem first.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.beads/**'
+      - 'LICENSE*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pre-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # Packs every publishable workspace package and installs the resulting
+  # tarballs via `npm` (deliberately not pnpm) into a scratch project.
+  # Catches the broad category of "publishing pipeline produces a broken
+  # package" — examples include `workspace:` protocol leakage, missing
+  # files in the npm tarball, broken `main`/`exports` paths, or anything
+  # else that only surfaces at consumer-install time. Using npm (not
+  # pnpm) is essential: pnpm tolerates `workspace:` and would mask the
+  # very class of bug we care about.
+  publish-smoke-test:
+    name: Publish smoke test (npm install)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: ./.github/actions/setup
+      - name: Build TypeScript (pack reads dist/)
+        run: pnpm build:ts
+
+      - name: Pack all publishable packages
+        run: |
+          mkdir -p /tmp/tarballs
+          PACKAGES=(
+            hdf-schema hdf-utilities hdf-mappings hdf-validators
+            hdf-parsers hdf-converters hdf-generators hdf-diff
+            hdf-extension-graph
+          )
+          for pkg in "${PACKAGES[@]}"; do
+            (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)
+          done
+          ls -la /tmp/tarballs
+
+      - name: Install tarballs in scratch project via npm
+        run: |
+          mkdir -p /tmp/smoke
+          cd /tmp/smoke
+          # Synthesize a package.json that file:-references every tarball,
+          # so npm resolves the inter-package @mitre/* deps from local
+          # tarballs (versions match because they were all packed from the
+          # same workspace state).
+          node <<'EOF'
+          const fs = require('fs');
+          const tarballs = fs.readdirSync('/tmp/tarballs').filter(f => f.endsWith('.tgz'));
+          const deps = {};
+          for (const tb of tarballs) {
+            const m = tb.match(/^mitre-(.+)-\d/);
+            if (!m) throw new Error('unexpected tarball name: ' + tb);
+            deps['@mitre/' + m[1]] = 'file:/tmp/tarballs/' + tb;
+          }
+          fs.writeFileSync('package.json', JSON.stringify({
+            name: 'smoke-test', version: '0.0.0', private: true, dependencies: deps,
+          }, null, 2));
+          EOF
+          cat package.json
+          npm install --no-audit --no-fund
+
+      - name: Import every package in raw Node ESM
+        # Catches regressions where JSON imports (or any import pattern
+        # Node ESM rejects) survive into the published dist. The
+        # scratch project above has all packages installed via npm, so
+        # this exercises the real consumer path under the same Node
+        # version (22) declared in engines.node — no split, no
+        # cross-version surprises.
+        run: |
+          cd /tmp/smoke
+          FAIL=0
+          for pkg in @mitre/hdf-schema @mitre/hdf-utilities @mitre/hdf-mappings \
+                     @mitre/hdf-validators @mitre/hdf-parsers @mitre/hdf-converters \
+                     @mitre/hdf-generators @mitre/hdf-diff @mitre/hdf-extension-graph; do
+            printf "%-30s " "$pkg"
+            if ! node -e "import('$pkg').then(m => console.log('OK,', Object.keys(m).length, 'exports')).catch(e => { console.error('FAIL:', e.message); process.exit(1); })"; then
+              FAIL=1
+            fi
+          done
+          exit $FAIL
+
+  # Packs every package and runs publint + @arethetypeswrong/cli against
+  # each tarball. Catches package-metadata and types-export defects that
+  # npm install alone doesn't: missing `exports.types`, ESM-declared
+  # packages with broken dual-types, dead `main`/`module` paths,
+  # unreachable sub-path exports, etc. Uses tarballs (not source dirs)
+  # so we're validating exactly what `pnpm publish` would upload.
+  verify-packages:
+    name: Lint packed tarballs (publint + attw)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: ./.github/actions/setup
+      - name: Build TypeScript (pack reads dist/)
+        run: pnpm build:ts
+
+      - name: Pack all publishable packages
+        run: |
+          mkdir -p /tmp/tarballs
+          PACKAGES=(
+            hdf-schema hdf-utilities hdf-mappings hdf-validators
+            hdf-parsers hdf-converters hdf-generators hdf-diff
+            hdf-extension-graph
+          )
+          for pkg in "${PACKAGES[@]}"; do
+            (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)
+          done
+
+      - name: publint each tarball
+        run: |
+          FAIL=0
+          for tb in /tmp/tarballs/*.tgz; do
+            echo "::group::publint $(basename "$tb")"
+            pnpm dlx publint "$tb" || FAIL=1
+            echo "::endgroup::"
+          done
+          exit $FAIL
+
+      - name: "@arethetypeswrong/cli each tarball"
+        # --ignore-rules cjs-resolves-to-esm: we publish ESM-only
+        # intentionally (see package.json `"type": "module"`); attw's
+        # default complaint about CJS consumers resolving to ESM is not
+        # actionable for us.
+        run: |
+          FAIL=0
+          for tb in /tmp/tarballs/*.tgz; do
+            echo "::group::attw $(basename "$tb")"
+            pnpm dlx @arethetypeswrong/cli --ignore-rules cjs-resolves-to-esm -- "$tb" || FAIL=1
+            echo "::endgroup::"
+          done
+          exit $FAIL

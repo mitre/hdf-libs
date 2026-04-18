@@ -1,28 +1,33 @@
 import Ajv, { type ValidateFunction, type ErrorObject } from 'ajv';
 import addFormats from 'ajv-formats';
 
-// Import all schemas (bare JSON imports — bundled by Vite via noExternal config)
-import hdfResultsSchema from '@mitre/hdf-schema/schemas/hdf-results.schema.json';
-import hdfBaselineSchema from '@mitre/hdf-schema/schemas/hdf-baseline.schema.json';
-import hdfComparisonSchema from '@mitre/hdf-schema/schemas/hdf-comparison.schema.json';
-import hdfSystemSchema from '@mitre/hdf-schema/schemas/hdf-system.schema.json';
-import hdfPlanSchema from '@mitre/hdf-schema/schemas/hdf-plan.schema.json';
-import hdfAmendmentsSchema from '@mitre/hdf-schema/schemas/hdf-amendments.schema.json';
-import hdfEvidencePackageSchema from '@mitre/hdf-schema/schemas/hdf-evidence-package.schema.json';
-import commonSchema from '@mitre/hdf-schema/schemas/primitives/common.schema.json';
-import extensionsSchema from '@mitre/hdf-schema/schemas/primitives/extensions.schema.json';
-import platformSchema from '@mitre/hdf-schema/schemas/primitives/platform.schema.json';
-import resultSchema from '@mitre/hdf-schema/schemas/primitives/result.schema.json';
-import runnerSchema from '@mitre/hdf-schema/schemas/primitives/runner.schema.json';
-import statisticsSchema from '@mitre/hdf-schema/schemas/primitives/statistics.schema.json';
-import targetSchema from '@mitre/hdf-schema/schemas/primitives/target.schema.json';
-import parameterSchema from '@mitre/hdf-schema/schemas/primitives/parameter.schema.json';
-import systemSchema from '@mitre/hdf-schema/schemas/primitives/system.schema.json';
-import planSchema from '@mitre/hdf-schema/schemas/primitives/plan.schema.json';
-import amendmentsSchema from '@mitre/hdf-schema/schemas/primitives/amendments.schema.json';
-import comparisonSchema from '@mitre/hdf-schema/schemas/primitives/comparison.schema.json';
-import componentSchema from '@mitre/hdf-schema/schemas/primitives/component.schema.json';
-import dataFlowSchema from '@mitre/hdf-schema/schemas/primitives/data-flow.schema.json';
+// Named JS-object schema imports — the schemas are inlined into
+// @mitre/hdf-schema's dist/index.js at build time, so downstream consumers
+// never see raw JSON imports. Works uniformly in raw Node ESM, Vite/Nuxt,
+// webpack, esbuild — no consumer-side noExternal configuration required.
+import {
+  hdfResultsSchema,
+  hdfBaselineSchema,
+  hdfComparisonSchema,
+  hdfSystemSchema,
+  hdfPlanSchema,
+  hdfAmendmentsSchema,
+  hdfEvidencePackageSchema,
+  commonSchema,
+  extensionsSchema,
+  platformSchema,
+  resultSchema,
+  runnerSchema,
+  statisticsSchema,
+  targetSchema,
+  parameterSchema,
+  systemSchema,
+  planSchema,
+  amendmentsSchema,
+  comparisonSchema,
+  componentSchema,
+  dataFlowSchema,
+} from '@mitre/hdf-schema';
 
 /**
  * Validation error details

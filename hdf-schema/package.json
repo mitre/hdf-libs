@@ -10,46 +10,44 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./helpers": {
-      "import": "./dist/helpers.js",
-      "types": "./dist/helpers.d.ts"
+      "types": "./dist/helpers.d.ts",
+      "import": "./dist/helpers.js"
     },
     "./hdf-results": {
-      "import": "./dist/ts/hdf-results.js",
-      "types": "./dist/ts/hdf-results.d.ts"
+      "types": "./dist/ts/hdf-results.d.ts",
+      "import": "./dist/ts/hdf-results.js"
     },
     "./hdf-baseline": {
-      "import": "./dist/ts/hdf-baseline.js",
-      "types": "./dist/ts/hdf-baseline.d.ts"
+      "types": "./dist/ts/hdf-baseline.d.ts",
+      "import": "./dist/ts/hdf-baseline.js"
     },
     "./hdf-comparison": {
-      "import": "./dist/ts/hdf-comparison.js",
-      "types": "./dist/ts/hdf-comparison.d.ts"
+      "types": "./dist/ts/hdf-comparison.d.ts",
+      "import": "./dist/ts/hdf-comparison.js"
     },
     "./hdf-system": {
-      "import": "./dist/ts/hdf-system.js",
-      "types": "./dist/ts/hdf-system.d.ts"
+      "types": "./dist/ts/hdf-system.d.ts",
+      "import": "./dist/ts/hdf-system.js"
     },
     "./hdf-plan": {
-      "import": "./dist/ts/hdf-plan.js",
-      "types": "./dist/ts/hdf-plan.d.ts"
+      "types": "./dist/ts/hdf-plan.d.ts",
+      "import": "./dist/ts/hdf-plan.js"
     },
     "./hdf-amendments": {
-      "import": "./dist/ts/hdf-amendments.js",
-      "types": "./dist/ts/hdf-amendments.d.ts"
+      "types": "./dist/ts/hdf-amendments.d.ts",
+      "import": "./dist/ts/hdf-amendments.js"
     },
     "./hdf-evidence-package": {
-      "import": "./dist/ts/hdf-evidence-package.js",
-      "types": "./dist/ts/hdf-evidence-package.d.ts"
-    },
-    "./schemas/*": "./src/schemas/*"
+      "types": "./dist/ts/hdf-evidence-package.d.ts",
+      "import": "./dist/ts/hdf-evidence-package.js"
+    }
   },
   "files": [
-    "dist",
-    "src/schemas"
+    "dist"
   ],
   "scripts": {
     "build": "pnpm run clean && pnpm run build:schemas && pnpm run build:types && pnpm run build:index",
@@ -89,7 +87,7 @@
     "tsx": "^4.20.6"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "keywords": [
     "hdf",

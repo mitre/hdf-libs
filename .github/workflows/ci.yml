@@ -21,8 +21,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# NODE_VERSION pinned to the current LTS (22). Matches each published
+# package's `engines.node: ">=22.0.0"`. Node 20 reaches EOL 2026-04-30;
+# we're not advertising support for a runtime that loses security patches
+# during the lifetime of this release.
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
   GO_VERSION: '1.26.2'
   GOLANGCI_LINT_VERSION: 'v2.11.3'
 
