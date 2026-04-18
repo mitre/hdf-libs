@@ -6,20 +6,20 @@
     "access": "public"
   },
   "type": "module",
-  "main": "./dist/src/index.js",
-  "types": "./dist/src/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/src/index.js",
-      "types": "./dist/src/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./detect": {
-      "import": "./dist/src/detect.js",
-      "types": "./dist/src/detect.d.ts"
+      "types": "./dist/detect.d.ts",
+      "import": "./dist/detect.js"
     },
     "./registry": {
-      "import": "./dist/shared/typescript/registry.js",
-      "types": "./dist/shared/typescript/registry.d.ts"
+      "types": "./dist/registry.d.ts",
+      "import": "./dist/registry.js"
     },
     "./package.json": "./package.json"
   },
@@ -28,7 +28,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "pnpm clean && tsc",
+    "build": "tsdown",
     "clean": "rimraf dist",
     "test": "pnpm run test:ts && pnpm run test:go",
     "test:ts": "vitest run",
@@ -58,7 +58,7 @@
   },
   "devDependencies": {},
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "keywords": [
     "hdf",

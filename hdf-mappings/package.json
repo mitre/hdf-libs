@@ -10,17 +10,16 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "pnpm clean && tsc && pnpm copy-data",
+    "build": "tsdown",
     "clean": "rimraf dist",
-    "copy-data": "cpy src/data/** dist/data",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
     "test:go": "cd go && go test ./...",
@@ -42,7 +41,7 @@
     "@stryker-mutator/vitest-runner": "^9.5.1"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "keywords": [
     "hdf",

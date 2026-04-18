@@ -10,39 +10,39 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./json": {
-      "import": "./dist/json/index.js",
-      "types": "./dist/json/index.d.ts"
+      "types": "./dist/json/index.d.ts",
+      "import": "./dist/json/index.js"
     },
     "./hash": {
-      "import": "./dist/hash/index.js",
-      "types": "./dist/hash/index.d.ts"
+      "types": "./dist/hash/index.d.ts",
+      "import": "./dist/hash/index.js"
     },
     "./xml": {
-      "import": "./dist/xml/index.js",
-      "types": "./dist/xml/index.d.ts"
+      "types": "./dist/xml/index.d.ts",
+      "import": "./dist/xml/index.js"
     },
     "./csv": {
-      "import": "./dist/csv/index.js",
-      "types": "./dist/csv/index.d.ts"
+      "types": "./dist/csv/index.d.ts",
+      "import": "./dist/csv/index.js"
     },
     "./object": {
-      "import": "./dist/object/index.js",
-      "types": "./dist/object/index.d.ts"
+      "types": "./dist/object/index.d.ts",
+      "import": "./dist/object/index.js"
     },
     "./string": {
-      "import": "./dist/string/index.js",
-      "types": "./dist/string/index.d.ts"
+      "types": "./dist/string/index.d.ts",
+      "import": "./dist/string/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "pnpm clean && tsc",
+    "build": "tsdown",
     "clean": "rimraf dist",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
@@ -65,7 +65,7 @@
     "fast-xml-parser": "5.5.7"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "keywords": [
     "hdf",
