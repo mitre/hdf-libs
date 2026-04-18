@@ -48,23 +48,6 @@ linters:
           - gocyclo
           - gocognit
 
-      # Exclude generated files
-      - path: 'pkg/hdf/hdf_results\.go'
-        linters:
-          - dupl
-          - gocyclo
-          - gocognit
-          - gocritic
-          - revive
-
-      - path: 'pkg/hdf/hdf_baseline\.go'
-        linters:
-          - dupl
-          - gocyclo
-          - gocognit
-          - gocritic
-          - revive
-
   settings:
     gocyclo:
       min-complexity: 20

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	hdf "github.com/mitre/hdf-schema"
 )
 
 func TestDetermineControlStatus(t *testing.T) {
@@ -52,7 +52,7 @@ func TestDetermineControlStatus(t *testing.T) {
 			control: hdf.EvaluatedRequirement{
 				Impact: 0.5,
 				Results: []hdf.RequirementResult{
-					{Status: ptrResultStatus(hdf.Passed)},
+					{Status: hdf.Passed},
 				},
 			},
 			expected: "passed",
@@ -62,8 +62,8 @@ func TestDetermineControlStatus(t *testing.T) {
 			control: hdf.EvaluatedRequirement{
 				Impact: 0.5,
 				Results: []hdf.RequirementResult{
-					{Status: ptrResultStatus(hdf.Passed)},
-					{Status: ptrResultStatus(hdf.Failed)},
+					{Status: hdf.Passed},
+					{Status: hdf.Failed},
 				},
 			},
 			expected: "failed",
@@ -73,8 +73,8 @@ func TestDetermineControlStatus(t *testing.T) {
 			control: hdf.EvaluatedRequirement{
 				Impact: 0.5,
 				Results: []hdf.RequirementResult{
-					{Status: ptrResultStatus(hdf.Failed)},
-					{Status: ptrResultStatus(hdf.Error)},
+					{Status: hdf.Failed},
+					{Status: hdf.Error},
 				},
 			},
 			expected: "error",
