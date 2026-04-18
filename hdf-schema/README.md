@@ -41,7 +41,7 @@ Security requirement definitions without results. Contains:
 
 ```typescript
 import Ajv from 'ajv';
-import hdfResultsSchema from '@mitre/hdf-schema/schemas/hdf-results.schema.json';
+import { hdfResultsSchema } from '@mitre/hdf-schema';
 
 const ajv = new Ajv({ strict: false });
 const validate = ajv.compile(hdfResultsSchema);
@@ -51,6 +51,10 @@ if (!isValid) {
   console.error(validate.errors);
 }
 ```
+
+> Schemas have been available as named exports since v3.1.0. The legacy
+> `import x from '@mitre/hdf-schema/schemas/<name>.schema.json'` sub-path
+> form was removed in the same release; switch to named imports.
 
 ### Using Generated Types (TypeScript)
 

@@ -44,12 +44,10 @@
     "./hdf-evidence-package": {
       "types": "./dist/ts/hdf-evidence-package.d.ts",
       "import": "./dist/ts/hdf-evidence-package.js"
-    },
-    "./schemas/*": "./src/schemas/*"
+    }
   },
   "files": [
-    "dist",
-    "src/schemas"
+    "dist"
   ],
   "scripts": {
     "build": "pnpm run clean && pnpm run build:schemas && pnpm run build:types && pnpm run build:index",
