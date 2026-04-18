@@ -5,7 +5,6 @@ import (
 	"sort"
 	"testing"
 
-	
 	hdf "github.com/mitre/hdf-schema"
 )
 

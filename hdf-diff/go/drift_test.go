@@ -3,7 +3,6 @@ package diff
 import (
 	"testing"
 
-	
 	hdf "github.com/mitre/hdf-schema"
 )
 

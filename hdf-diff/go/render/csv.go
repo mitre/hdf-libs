@@ -65,7 +65,7 @@ func CSV(comparison diff.HdfComparison, opts Options) (string, error) {
 // sanitizeCSVCell prevents spreadsheet formula injection by prepending a single
 // quote when the cell starts with a formula trigger character.
 func sanitizeCSVCell(s string) string {
-	if len(s) == 0 {
+	if s == "" {
 		return s
 	}
 	switch s[0] {

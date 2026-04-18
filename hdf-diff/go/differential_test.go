@@ -16,7 +16,6 @@ import (
 	"runtime"
 	"testing"
 
-	
 	hdf "github.com/mitre/hdf-schema"
 )
 

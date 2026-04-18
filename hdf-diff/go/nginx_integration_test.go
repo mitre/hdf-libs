@@ -8,8 +8,6 @@ package diff
 
 import (
 	"testing"
-
-	
 )
 
 var nginx v1FixturePair

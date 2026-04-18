@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 	"time"
-
 )
 
 // systemTrackedFields are the component-level fields tracked for field changes.
@@ -26,6 +25,8 @@ type DataFlowChange struct {
 // Components are matched by componentId first, then by name (2-pass matching).
 // Top-level system fields (authorizationStatus, categorizationLevel, description)
 // and data flows are also compared.
+//
+//nolint:revive // matches TypeScript export name
 func DiffSystems(oldSystem, newSystem map[string]any) (HdfComparison, error) {
 	oldComponents := extractComponents(oldSystem)
 	newComponents := extractComponents(newSystem)

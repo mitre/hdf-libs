@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	
 	hdf "github.com/mitre/hdf-schema"
 )
 

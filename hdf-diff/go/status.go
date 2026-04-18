@@ -1,4 +1,4 @@
-// Package status provides functions for computing effective requirement statuses,
+// Package diff provides functions for computing effective requirement statuses,
 // classifying change reasons between evaluations, and determining diff states.
 // It is a direct port of the TypeScript implementation in hdf-diff/src/status.ts.
 package diff
@@ -13,6 +13,9 @@ import (
 
 // statusSeverity defines the severity ranking of statuses.
 // Higher index = worse status.
+// statusNotReviewed is the default status for requirements with no results.
+const statusNotReviewed = "notReviewed"
+
 var statusSeverity = []string{
 	"notApplicable",
 	"notReviewed",
@@ -87,11 +90,11 @@ func ComputeEffectiveStatus(req hdf.EvaluatedRequirement, referenceTimestamp str
 
 	// 4. Aggregate results using worst-wins
 	if len(req.Results) == 0 {
-		return "notReviewed"
+		return statusNotReviewed
 	}
 
 	worstIndex := -1
-	worstStatus := "notReviewed"
+	worstStatus := statusNotReviewed
 	for _, result := range req.Results {
 		idx := severityIndex(string(result.Status))
 		if idx > worstIndex {

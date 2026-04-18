@@ -1,9 +1,8 @@
-// Package exitcodes provides GNU diff compatible and detailed exit codes
+// Package diff provides GNU diff compatible and detailed exit codes
 // for HDF comparison operations. Basic codes (0/1/2) follow the GNU diff
 // convention. Detailed codes (10-14) communicate nuanced security outcomes
 // such as fixes, regressions, baseline changes, and metadata drift.
 package diff
-
 
 // Basic exit codes (GNU diff compatible).
 const (

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	hdf "github.com/mitre/hdf-schema"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -364,7 +364,7 @@ func TestToV2_MapsSkippedToNotReviewed(t *testing.T) {
 
 	r := firstResult(t, result)
 	require.NotNil(t, r.Status)
-	assert.Equal(t, "notReviewed", string(string(r.Status)))
+	assert.Equal(t, "notReviewed", string(r.Status))
 }
 
 func TestToV2_NormalizesNonISOTimestamp(t *testing.T) {

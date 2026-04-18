@@ -4,17 +4,15 @@ import (
 	"testing"
 	"time"
 
-	
 	hdf "github.com/mitre/hdf-schema"
 )
 
 // Test-level status string constants to avoid goconst duplication.
 const (
-	stStatusPassed      = string(hdf.Passed)
-	statusNotReviewed = string(hdf.NotReviewed)
-	stStatusFailed      = "failed"
-	statusError       = "error"
-	statusNotAppl     = "notApplicable"
+	stStatusPassed = string(hdf.Passed)
+	stStatusFailed = "failed"
+	statusError    = "error"
+	statusNotAppl  = "notApplicable"
 )
 
 // ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-// Package normalize provides legacy InSpec exec-json to HDF normalization.
+// Package diff provides legacy InSpec exec-json to HDF normalization.
 //
 // Legacy format uses profiles[].controls[] with snake_case fields.
 // Current HDF format uses baselines[].requirements[] with camelCase fields.
@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	hdf "github.com/mitre/hdf-schema"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	hdf "github.com/mitre/hdf-schema"
 )
 
 // IsV1Format detects whether a JSON document is legacy InSpec exec-json format.

@@ -1,4 +1,4 @@
-// Package types defines the comparison-specific types for the HDF diff library.
+// Package diff defines the comparison-specific types for the HDF diff library.
 //
 // These types mirror the TypeScript definitions in hdf-diff/src/types.ts and conform
 // to the hdf-comparison JSON schema. They are used by the diff engine to represent

@@ -1,4 +1,4 @@
-// Package engine provides the core diff engine for comparing HDF evaluation documents.
+// Package diff provides the core diff engine for comparing HDF evaluation documents.
 // It is a direct port of the TypeScript implementation in hdf-diff/src/diff.ts.
 package diff
 
@@ -64,6 +64,8 @@ func buildMatchOptions(opts Options) matching.Options {
 // DiffHdf compares two HDF results documents and produces a structured comparison.
 // For fleet mode, newResults can contain multiple HdfResults (one per system).
 // Returns an error if the match strategy is invalid.
+//
+//nolint:revive // matches TypeScript export name
 func DiffHdf(oldResults hdf.HDFResults, newResults []hdf.HDFResults, opts Options) (HdfComparison, error) {
 	opts = resolveOptions(opts)
 	matchOpts := buildMatchOptions(opts)
@@ -515,6 +517,8 @@ var defaultBaselineTrackedFields = []string{fieldNameTitle, fieldNameImpact, fie
 // Unlike DiffHdf (which compares evaluation results), this compares baseline definitions —
 // requirements without results. There is no status-based classification (fixed/regressed);
 // only metadata changes (title, impact, descriptions, tags) are tracked.
+//
+//nolint:revive // matches TypeScript export name
 func DiffBaselines(oldBaseline, newBaseline hdf.HDFBaseline, opts Options) (HdfComparison, error) {
 	trackedFields := opts.TrackedFields
 	if len(trackedFields) == 0 {

@@ -2,8 +2,6 @@ package diff
 
 import (
 	"testing"
-
-	
 )
 
 // makeSummary builds a ComparisonSummary with sensible defaults (all unchanged).

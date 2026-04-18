@@ -1,0 +1,71 @@
+# golangci-lint configuration for library modules
+# Shared across hdf-libs Go library packages
+
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - dupl
+    - errname
+    - errorlint
+    - exhaustive
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - gosec
+    - misspell
+    - nakedret
+    - nilerr
+    - revive
+    - unconvert
+    - unparam
+    - whitespace
+
+  exclusions:
+    rules:
+      - path: '_test\.go'
+        linters:
+          - gosec
+          - gocyclo
+          - gocognit
+
+  settings:
+    gocyclo:
+      min-complexity: 20
+    gocognit:
+      min-complexity: 40
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    dupl:
+      threshold: 100
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+      disabled-checks:
+        - whyNoLint
+        - unnamedResult
+    gosec:
+      excludes:
+        - G104
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 10

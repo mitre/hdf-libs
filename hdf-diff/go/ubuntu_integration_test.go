@@ -9,8 +9,6 @@ package diff
 
 import (
 	"testing"
-
-	
 )
 
 var ubuntu v1FixturePair

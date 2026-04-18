@@ -2,8 +2,6 @@ package diff
 
 import (
 	"testing"
-
-	
 )
 
 // makeReq builds a minimal RequirementDiff with only the fields ComputeSummary needs.

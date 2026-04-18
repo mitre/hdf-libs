@@ -1,4 +1,4 @@
-// Package sbom provides SBOM comparison functionality for the HDF diff engine.
+// Package diff provides SBOM comparison functionality for the HDF diff engine.
 // It compares two SBOM documents (CycloneDX or SPDX JSON) and produces
 // package-level diffs showing added, removed, updated, and unchanged packages.
 //
@@ -25,6 +25,8 @@ type PackageDiff struct {
 }
 
 // DiffResult holds the complete result of comparing two SBOM documents.
+//
+//nolint:revive // matches TypeScript export name
 type DiffResult struct {
 	PackageDiffs []PackageDiff `json:"packageDiffs"`
 	Added        int           `json:"added"`
@@ -35,6 +37,8 @@ type DiffResult struct {
 
 // DiffSBOMs compares two SBOM files (CycloneDX or SPDX JSON) and returns
 // package-level diffs. Uses protobom for format-agnostic parsing.
+//
+//nolint:revive // matches TypeScript export name
 func DiffSBOMs(oldData, newData []byte) (*DiffResult, error) {
 	r := reader.New()
 
