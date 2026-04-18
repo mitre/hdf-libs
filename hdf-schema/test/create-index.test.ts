@@ -221,13 +221,17 @@ describe('create-index', () => {
         const indexJs = readFileSync(join(DIST_DIR, 'index.js'), 'utf-8');
         const indexDts = readFileSync(join(DIST_DIR, 'index.d.ts'), 'utf-8');
 
-        // Should NOT contain comparison exports
-        expect(indexJs).not.toContain('hdf-comparison');
-        expect(indexDts).not.toContain('hdf-comparison');
+        // Should NOT contain comparison TYPE re-exports (the `hasComparison`
+        // branch in create-index.ts guards these). The string 'hdf-comparison'
+        // still appears in the inlined hdfComparisonSchema's $id URL, which
+        // is orthogonal — the JSON schema exists in src/schemas/ regardless
+        // of whether quicktype emitted a matching .ts file.
+        expect(indexJs).not.toMatch(/from ['"]\.\/ts\/hdf-comparison\.js['"]/);
+        expect(indexDts).not.toMatch(/from ['"]\.\/ts\/hdf-comparison\.js['"]/);
 
-        // Should still contain results exports
-        expect(indexJs).toContain('hdf-results');
-        expect(indexDts).toContain('hdf-results');
+        // Should still contain results type re-exports
+        expect(indexJs).toMatch(/from ['"]\.\/ts\/hdf-results\.js['"]/);
+        expect(indexDts).toMatch(/from ['"]\.\/ts\/hdf-results\.js['"]/);
       } finally {
         // Restore all backed up files
         for (const [file, content] of backup) {

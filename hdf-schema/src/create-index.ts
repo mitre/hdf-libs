@@ -1,7 +1,14 @@
 /**
- * Script to create index.js and index.d.ts files after type generation
+ * Script to create index.js and index.d.ts files after type generation.
+ *
+ * Also inlines all 21 source schemas (7 main + 14 primitives) as named
+ * JS exports, so downstream consumers (notably @mitre/hdf-validators) can
+ * do `import { hdfResultsSchema, commonSchema, ... } from '@mitre/hdf-schema'`
+ * and pick them up as plain JS objects — no JSON imports, no
+ * bundler-specific configuration, no duplication across consuming
+ * packages.
  */
-import { writeFileSync, copyFileSync, existsSync, rmSync, readdirSync } from 'fs';
+import { writeFileSync, copyFileSync, existsSync, rmSync, readdirSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { execSync } from 'child_process';
@@ -9,6 +16,63 @@ import { execSync } from 'child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
+
+/** Convert kebab-case filename stem to camelCase identifier. */
+function toCamel(stem: string): string {
+  return stem.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
+/**
+ * Compute the exported identifier for a schema filename.
+ * Kebab-case stems like `hdf-results` become `hdfResults`, then get the
+ * literal `Schema` suffix appended: `hdfResultsSchema`. Primitives work
+ * the same way: `data-flow` -> `dataFlowSchema`.
+ */
+function schemaExportName(filename: string): string {
+  const stem = filename.replace(/\.schema\.json$/, '');
+  return `${toCamel(stem)}Schema`;
+}
+
+/**
+ * Read every source schema JSON and emit it as a named JS export. Returns
+ * matched `.js` and `.d.ts` fragments ready to be spliced into the
+ * generated index files. Exports are source-format (with $refs intact) to
+ * preserve the validator contract: consumers register each schema
+ * independently with AJV, which resolves the refs at runtime.
+ */
+function generateSchemaExports(rootDir: string): { js: string; dts: string } {
+  const schemasDir = join(rootDir, 'src/schemas');
+  const primitivesDir = join(schemasDir, 'primitives');
+
+  const mainFiles = readdirSync(schemasDir)
+    .filter((f) => f.endsWith('.schema.json'))
+    .sort();
+  const primitiveFiles = readdirSync(primitivesDir)
+    .filter((f) => f.endsWith('.schema.json'))
+    .sort();
+
+  const jsLines: string[] = [];
+  const dtsLines: string[] = [];
+
+  const entries: { exportName: string; path: string }[] = [
+    ...mainFiles.map((file) => ({
+      exportName: schemaExportName(file),
+      path: join(schemasDir, file),
+    })),
+    ...primitiveFiles.map((file) => ({
+      exportName: schemaExportName(file),
+      path: join(primitivesDir, file),
+    })),
+  ];
+
+  for (const { exportName, path } of entries) {
+    const json = JSON.parse(readFileSync(path, 'utf-8')) as Record<string, unknown>;
+    jsLines.push(`export const ${exportName} = ${JSON.stringify(json)};`);
+    dtsLines.push(`export declare const ${exportName}: Readonly<Record<string, unknown>>;`);
+  }
+
+  return { js: jsLines.join('\n'), dts: dtsLines.join('\n') };
+}
 
 export interface CreateIndexOptions {
   /** Override the compile step (for testing) */
@@ -100,10 +164,17 @@ export {
 `
     : '';
 
+  const schemaExports = generateSchemaExports(ROOT_DIR);
+
   const indexDtsContent = `/**
  * Main entry point for @mitre/hdf-schema
- * Re-exports all types from generated TypeScript definitions
+ * Re-exports all types from generated TypeScript definitions, plus the
+ * 21 source schemas as named JS-object exports.
  */
+
+// Inlined source schemas (with $refs intact — consumers register them
+// individually with their JSON Schema validator to resolve cross-refs).
+${schemaExports.dts}
 
 // Re-export all types from hdf-results (includes most common types)
 export * from './ts/hdf-results.js';
@@ -165,8 +236,13 @@ export {
 
   const indexJsContent = `/**
  * Main entry point for @mitre/hdf-schema
- * Re-exports all types from generated TypeScript definitions
+ * Re-exports all types from generated TypeScript definitions, plus the
+ * 21 source schemas as named JS-object exports.
  */
+
+// Inlined source schemas (with $refs intact — consumers register them
+// individually with their JSON Schema validator to resolve cross-refs).
+${schemaExports.js}
 
 // Re-export all values from hdf-results (enums like ResultStatus, HashAlgorithm, Severity)
 export * from './ts/hdf-results.js';
