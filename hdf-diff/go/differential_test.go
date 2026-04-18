@@ -28,8 +28,8 @@ func fixturesDir(t *testing.T) string {
 	if !ok {
 		t.Fatal("runtime.Caller failed")
 	}
-	// From hdf-cli/pkg/diff/engine/ up to hdf-libs root, then into hdf-diff/test/fixtures
-	dir := filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "hdf-diff", "test", "fixtures")
+	// From hdf-diff/go/ up to hdf-diff/, then into test/fixtures
+	dir := filepath.Join(filepath.Dir(filename), "..", "test", "fixtures")
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
 		t.Fatalf("filepath.Abs failed: %v", err)

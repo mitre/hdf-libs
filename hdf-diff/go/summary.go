@@ -1,8 +1,4 @@
-// Package summary computes aggregate counts from requirement diffs.
 package diff
-
-import (
-)
 
 // ComputeSummary computes aggregate counts from requirement diffs.
 func ComputeSummary(requirements []RequirementDiff) ComparisonSummary {

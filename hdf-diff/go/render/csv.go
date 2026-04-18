@@ -36,17 +36,17 @@ func CSV(comparison diff.HdfComparison, opts Options) (string, error) {
 	// Data rows
 	for _, req := range filtered {
 		row := []string{
-			req.ID,
-			req.Title,
+			sanitizeCSVCell(req.ID),
+			sanitizeCSVCell(req.Title),
 			string(req.State),
 			req.OldEffectiveStatus,
 			req.NewEffectiveStatus,
 			formatImpact(req.OldImpact),
 			formatImpact(req.NewImpact),
-			formatChangeReasons(req.ChangeReasons),
+			sanitizeCSVCell(formatChangeReasons(req.ChangeReasons)),
 		}
 		if detail == DetailFull {
-			row = append(row, formatFieldChangesWithArrow(req.FieldChanges, "->"))
+			row = append(row, sanitizeCSVCell(formatFieldChangesWithArrow(req.FieldChanges, "->")))
 		}
 		if err := w.Write(row); err != nil {
 			return "", fmt.Errorf("writing CSV row: %w", err)
@@ -60,6 +60,19 @@ func CSV(comparison diff.HdfComparison, opts Options) (string, error) {
 
 	// Trim trailing newline added by csv.Writer
 	return strings.TrimRight(buf.String(), "\n"), nil
+}
+
+// sanitizeCSVCell prevents spreadsheet formula injection by prepending a single
+// quote when the cell starts with a formula trigger character.
+func sanitizeCSVCell(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	switch s[0] {
+	case '=', '+', '-', '@', '|', '%':
+		return "'" + s
+	}
+	return s
 }
 
 // formatImpact formats an optional impact value for CSV output.

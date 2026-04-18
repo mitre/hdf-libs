@@ -42,7 +42,10 @@ func NewHTTPClient(opts TLSOptions) (*http.Client, error) {
 		ResponseHeaderTimeout: 30 * time.Second,
 	}
 
-	return &http.Client{Transport: transport}, nil
+	return &http.Client{
+		Transport: transport,
+		Timeout:   5 * time.Minute, // Overall request timeout including body read
+	}, nil
 }
 
 // buildTLSConfig constructs a *tls.Config from TLSOptions.

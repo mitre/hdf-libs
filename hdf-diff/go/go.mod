@@ -35,6 +35,4 @@ require (
 
 replace github.com/mitre/hdf-schema => ../../hdf-schema/dist/go
 
-replace github.com/mitre/hdf-mappings/go => ../../hdf-mappings/go
-
 replace github.com/mitre/hdf-libs/hdf-utilities/go => ../../hdf-utilities/go

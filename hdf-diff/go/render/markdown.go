@@ -123,7 +123,10 @@ func renderStateSection(sb *strings.Builder, state diff.RequirementState, diffs 
 	}
 }
 
-// escapeMarkdownCell replaces pipe characters with HTML entities.
+// escapeMarkdownCell escapes characters that would break markdown table structure.
 func escapeMarkdownCell(value string) string {
-	return strings.ReplaceAll(value, "|", "&#124;")
+	value = strings.ReplaceAll(value, "|", "&#124;")
+	value = strings.ReplaceAll(value, "\n", " ")
+	value = strings.ReplaceAll(value, "\r", "")
+	return value
 }

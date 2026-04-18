@@ -687,6 +687,7 @@ func baselineReqsToEvaluated(reqs []hdf.BaselineRequirement) []hdf.EvaluatedRequ
 			ID:             req.ID,
 			Title:          req.Title,
 			Impact:         req.Impact,
+			Severity:       req.Severity,
 			Tags:           req.Tags,
 			Descriptions:   req.Descriptions,
 			Refs:           req.Refs,
