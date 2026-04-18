@@ -1,20 +1,22 @@
 /**
  * JSON Import Compatibility Tests
  *
- * Every package that has JSON imports is built with tsdown so the JSON
- * gets inlined as JS object literals at build time. The published
- * artifacts contain no unresolved JSON imports and work in any
- * consumer — raw Node.js ESM, Vite/Nuxt, webpack, esbuild, Bun — with
+ * 8 of 9 workspace packages are built with tsdown (hdf-mappings,
+ * hdf-utilities, hdf-validators, hdf-parsers, hdf-converters,
+ * hdf-generators, hdf-diff, hdf-extension-graph). Their published
+ * artifacts have any JSON data inlined as JS object literals at build
+ * time — they contain no unresolved JSON imports and work in any
+ * consumer (raw Node.js ESM, Vite/Nuxt, webpack, esbuild, Bun) with
  * no noExternal / bundler-inline configuration required.
  *
- * Packages that don't have JSON imports in their sources (hdf-schema,
- * hdf-utilities, hdf-parsers, hdf-diff, hdf-generators,
- * hdf-extension-graph, hdf-converters) stay on tsc-only builds; their
- * dist is already raw-Node-compatible because the JSON problem never
- * existed there. Bundling them would only add tooling-consistency
- * benefit, not functional benefit, and is left as follow-up work.
+ * hdf-schema stays on its specialized generator pipeline
+ * (bundle-schemas → quicktype → create-index) because replacing that
+ * with tsdown is an invasive restructuring separate from the raw-Node
+ * fix; see bd hdf-libs-qit4. It still produces a raw-Node-compatible
+ * dist — its schemas are inlined into dist/index.js via the generator,
+ * and it's the single source of truth for schema data (bw30).
  *
- * Rules below apply to every package, bundled or not:
+ * Rules below apply to every package, regardless of the build tool:
  *
  * 1. NO Node-only APIs (`createRequire`, `fs`, `path`) in any SOURCE
  *    file imported by consumers. Those crash browser bundles with
@@ -22,10 +24,10 @@
  *
  * 2. NO `with { type: 'json' }` import attributes in source files.
  *    Vite strips these during plugin analysis (Vite RFC #18534),
- *    leaving bare imports that raw Node.js then rejects. Bundled
- *    packages resolve JSON at build time so the question doesn't come
- *    up at consume time; unbundled packages must not introduce this
- *    syntax in source.
+ *    leaving bare imports that raw Node.js then rejects. Source files
+ *    should use bare `import x from './y.json'`; the bundler (tsdown)
+ *    resolves them at build time so the question doesn't come up at
+ *    consume time.
  *
  * 3. `tsconfig.base.json` must NOT have `verbatimModuleSyntax: true`
  *    (would force tsc to emit the import attribute).

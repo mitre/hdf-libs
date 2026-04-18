@@ -88,8 +88,10 @@ jobs:
       - name: Import every package in raw Node ESM
         # Catches regressions where JSON imports (or any import pattern
         # Node ESM rejects) survive into the published dist. The
-        # scratch project above has all packages installed via npm,
-        # so this exercises the real consumer path.
+        # scratch project above has all packages installed via npm, so
+        # this exercises the real consumer path under the same Node
+        # version (22) declared in engines.node — no split, no
+        # cross-version surprises.
         run: |
           cd /tmp/smoke
           FAIL=0

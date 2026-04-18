@@ -12,6 +12,8 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+# NODE_VERSION pinned to the current LTS (22). Matches each published
+# package's `engines.node: ">=22.0.0"`.
 env:
   NODE_VERSION: '22'
   GO_VERSION: '1.26.2'
