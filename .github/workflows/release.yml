@@ -73,9 +73,12 @@ jobs:
             hdf-extension-graph
           )
 
-          # Pre-release tags (v3.0.0-rc.1) publish with --tag next
+          # Pre-release tags publish with npm dist-tag `next` instead of `latest`.
+          # Convention for this repo: `rc` is the only pre-release identifier.
+          # Any tag with `-rc` in it (e.g. v3.1.0-rc.1, v3.1.0-rc.2) is a
+          # pre-release; a bare semver tag (v3.1.0) is a stable release.
           TAG_FLAG=""
-          if [[ "$VERSION" == *"-"* ]]; then
+          if [[ "$VERSION" == *"-rc"* ]]; then
             TAG_FLAG="--tag next"
           fi
 
@@ -216,7 +219,10 @@ jobs:
             https://mitre.github.io/hdf-libs/schemas/
           files: release-assets/*
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          # Convention: any tag with `-rc` in it is a pre-release (see
+          # publish-npm job for the matching check). A bare semver tag
+          # (v3.1.0) creates a stable release.
+          prerelease: ${{ contains(github.ref_name, '-rc') }}
 
       - name: Create Go module version tags
         run: |
