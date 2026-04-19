@@ -32,13 +32,13 @@ func SetSchemaDir(dir string) {
 	schemaDir = dir
 	// Reset sync.Once instances so schemas reload from new source
 	schemaOnce = map[SchemaType]*sync.Once{
-		TypeResults:         {},
-		TypeBaseline:        {},
-		TypeComparison:      {},
-		TypeSystem:          {},
-		TypePlan:            {},
-		TypeAmendments:      {},
-		TypeEvidencePackage: {},
+		TypeResults:         new(sync.Once),
+		TypeBaseline:        new(sync.Once),
+		TypeComparison:      new(sync.Once),
+		TypeSystem:          new(sync.Once),
+		TypePlan:            new(sync.Once),
+		TypeAmendments:      new(sync.Once),
+		TypeEvidencePackage: new(sync.Once),
 	}
 	schemaCache = make(map[SchemaType]*gojsonschema.Schema)
 }
