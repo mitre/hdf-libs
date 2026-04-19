@@ -1,9 +1,13 @@
 name: Deploy Schema Site
 
 on:
-  push:
-    branches:
-      - main
+  # Fire on production GitHub Releases (release.yml creates these from
+  # tag pushes). Excludes pre-releases (release.types: released, not
+  # published) so the hosted schemas at mitre.github.io/hdf-libs/schemas/
+  # always reflect the latest stable release, never an RC. Switch to
+  # `[published]` if you want pre-release docs to deploy too.
+  release:
+    types: [released]
   workflow_dispatch:
 
 permissions:
