@@ -5,7 +5,7 @@ go 1.26
 require (
 	github.com/mitre/hdf-schema v0.0.0
 	github.com/mitre/hdf-validators/go v0.0.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
