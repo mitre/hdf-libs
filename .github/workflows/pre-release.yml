@@ -144,19 +144,17 @@ jobs:
           exit $FAIL
 
       - name: "@arethetypeswrong/cli each tarball"
-        # --ignore-rules cjs-resolves-to-esm: we publish ESM-only
-        # intentionally (see package.json `"type": "module"`); attw's
-        # default complaint about CJS consumers resolving to ESM is not
-        # actionable for us.
-        # --entrypoints-legacy false: skip node10 resolution checks.
-        # Sub-path exports (./helpers, ./hdf-results, etc.) require the
-        # package.json "exports" map, which node10 does not support.
-        # We target Node 22+ (see engines field in package.json).
+        # --ignore-rules:
+        #   cjs-resolves-to-esm: we publish ESM-only intentionally
+        #     (see package.json `"type": "module"`).
+        #   no-resolution: sub-path exports (./helpers, ./hdf-results)
+        #     require the "exports" map, which node10 does not support.
+        #     We target Node 22+ (see engines field in package.json).
         run: |
           FAIL=0
           for tb in /tmp/tarballs/*.tgz; do
             echo "::group::attw $(basename "$tb")"
-            pnpm dlx @arethetypeswrong/cli --ignore-rules cjs-resolves-to-esm --entrypoints-legacy false -- "$tb" || FAIL=1
+            pnpm dlx @arethetypeswrong/cli --ignore-rules cjs-resolves-to-esm no-resolution -- "$tb" || FAIL=1
             echo "::endgroup::"
           done
           exit $FAIL
