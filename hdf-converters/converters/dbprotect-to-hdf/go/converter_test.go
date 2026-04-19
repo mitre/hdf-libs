@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -292,7 +293,7 @@ func TestConvertDbprotect_CheckResults_NISTTags(t *testing.T) {
 	require.NotNil(t, req.Tags)
 	nist, ok := req.Tags["nist"]
 	require.True(t, ok, "Should have nist tag")
-	nistSlice := shared.SafeStringSlice(nist)
+	nistSlice := hdfutil.SafeStringSlice(nist)
 	assert.NotEmpty(t, nistSlice, "NIST tags should not be empty")
 }
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mitre/hdf-cli/pkg/amend"
+	"github.com/mitre/hdf-diff/go/amend"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -378,10 +378,12 @@ func TestAmendTypeToStatus(t *testing.T) {
 	}{
 		{"waiver", "passed"},
 		{"attestation", "passed"},
-		{"exception", "notApplicable"},
+		{"falsePositive", "notApplicable"},
 		{"inherited", "notApplicable"},
+		{"riskAdjustment", ""},
+		{"operationalRequirement", "failed"},
 		{"poam", "failed"},
-		{"unknown", "notReviewed"},
+		{"unknown", ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.amendType, func(t *testing.T) {

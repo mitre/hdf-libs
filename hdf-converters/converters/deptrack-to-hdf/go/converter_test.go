@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -161,7 +162,7 @@ func TestConvertDeptrack_CweToNist(t *testing.T) {
 	require.NotEmpty(t, reqs)
 
 	// CWE-400 should have a NIST mapping
-	nist := shared.SafeStringSlice(reqs[0].Tags["nist"])
+	nist := hdfutil.SafeStringSlice(reqs[0].Tags["nist"])
 	require.NotNil(t, nist, "nist tag should be present")
 	assert.NotEmpty(t, nist)
 }
@@ -243,12 +244,12 @@ func TestConvertDeptrack_Tags(t *testing.T) {
 	req := reqs[0]
 
 	// nist
-	nist := shared.SafeStringSlice(req.Tags["nist"])
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist should be present")
 	assert.NotEmpty(t, nist)
 
 	// cci
-	cci := shared.SafeStringSlice(req.Tags["cci"])
+	cci := hdfutil.SafeStringSlice(req.Tags["cci"])
 	require.NotNil(t, cci, "cci should be present")
 	assert.NotEmpty(t, cci)
 

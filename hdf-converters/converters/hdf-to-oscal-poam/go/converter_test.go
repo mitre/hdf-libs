@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func resultStatusPtr(s hdf.ResultStatus) *hdf.ResultStatus { return &s }
+
 func TestConvertHDFToOSCALPOAM_EmptyInput(t *testing.T) {
 	_, err := ConvertHDFToOSCALPOAM([]byte{}, "1.0.0")
 	require.Error(t, err)
@@ -31,7 +33,7 @@ func TestConvertHDFToOSCALPOAM_MinimalAmendments(t *testing.T) {
 				Type:          hdf.Poam,
 				RequirementID: "AC-1",
 				Reason:        "Pending remediation",
-				Status:        hdf.Failed,
+				Status:        resultStatusPtr(hdf.Failed),
 				AppliedBy: hdf.Identity{
 					Type:       hdf.Simple,
 					Identifier: "admin@example.com",
@@ -98,7 +100,7 @@ func TestConvertHDFToOSCALPOAM_SystemRef(t *testing.T) {
 				Type:          hdf.Poam,
 				RequirementID: "AC-1",
 				Reason:        "test",
-				Status:        hdf.Failed,
+				Status:        resultStatusPtr(hdf.Failed),
 				AppliedBy: hdf.Identity{
 					Type:       hdf.Simple,
 					Identifier: "admin",
@@ -143,7 +145,7 @@ func TestConvertHDFToOSCALPOAM_StatusMapping(t *testing.T) {
 						Type:          hdf.Poam,
 						RequirementID: "AC-1",
 						Reason:        "test",
-						Status:        tt.hdfStatus,
+						Status:        &tt.hdfStatus,
 						AppliedBy: hdf.Identity{
 							Type:       hdf.Simple,
 							Identifier: "admin",
@@ -178,7 +180,7 @@ func TestConvertHDFToOSCALPOAM_MultipleOverrides(t *testing.T) {
 				Type:          hdf.Poam,
 				RequirementID: "AC-1",
 				Reason:        "First item",
-				Status:        hdf.Failed,
+				Status:        resultStatusPtr(hdf.Failed),
 				AppliedBy: hdf.Identity{
 					Type:       hdf.Simple,
 					Identifier: "admin",
@@ -190,7 +192,7 @@ func TestConvertHDFToOSCALPOAM_MultipleOverrides(t *testing.T) {
 				Type:          hdf.Poam,
 				RequirementID: "SI-7 (1)",
 				Reason:        "Second item",
-				Status:        hdf.Passed,
+				Status:        resultStatusPtr(hdf.Passed),
 				AppliedBy: hdf.Identity{
 					Type:       hdf.Simple,
 					Identifier: "admin",
@@ -239,7 +241,7 @@ func TestConvertHDFToOSCALPOAM_Milestones(t *testing.T) {
 				Type:          hdf.Poam,
 				RequirementID: "AC-2",
 				Reason:        "With milestones",
-				Status:        hdf.Failed,
+				Status:        resultStatusPtr(hdf.Failed),
 				AppliedBy: hdf.Identity{
 					Type:       hdf.Simple,
 					Identifier: "admin",
@@ -294,7 +296,7 @@ func TestConvertHDFToOSCALPOAM_AppliedByInMetadata(t *testing.T) {
 				Type:          hdf.Poam,
 				RequirementID: "AC-1",
 				Reason:        "test",
-				Status:        hdf.Failed,
+				Status:        resultStatusPtr(hdf.Failed),
 				AppliedBy: hdf.Identity{
 					Type:       hdf.Simple,
 					Identifier: "admin",
@@ -331,7 +333,7 @@ func TestConvertHDFToOSCALPOAM_ExpiresAtInRiskLog(t *testing.T) {
 				Type:          hdf.Poam,
 				RequirementID: "AC-1",
 				Reason:        "test",
-				Status:        hdf.Failed,
+				Status:        resultStatusPtr(hdf.Failed),
 				AppliedBy: hdf.Identity{
 					Type:       hdf.Simple,
 					Identifier: "admin",
@@ -366,7 +368,7 @@ func TestConvertHDFToOSCALPOAM_UniqueUUIDs(t *testing.T) {
 				Type:          hdf.Poam,
 				RequirementID: "AC-1",
 				Reason:        "test 1",
-				Status:        hdf.Failed,
+				Status:        resultStatusPtr(hdf.Failed),
 				AppliedBy: hdf.Identity{
 					Type:       hdf.Simple,
 					Identifier: "admin",
@@ -378,7 +380,7 @@ func TestConvertHDFToOSCALPOAM_UniqueUUIDs(t *testing.T) {
 				Type:          hdf.Poam,
 				RequirementID: "AC-2",
 				Reason:        "test 2",
-				Status:        hdf.Failed,
+				Status:        resultStatusPtr(hdf.Failed),
 				AppliedBy: hdf.Identity{
 					Type:       hdf.Simple,
 					Identifier: "admin",
@@ -465,7 +467,7 @@ func TestConvertHDFToOSCALPOAM_RoundTrip(t *testing.T) {
 				Type:          hdf.Poam,
 				RequirementID: "AC-2 (3)",
 				Reason:        "Account management controls pending deployment",
-				Status:        hdf.Failed,
+				Status:        resultStatusPtr(hdf.Failed),
 				AppliedBy: hdf.Identity{
 					Type:       hdf.Simple,
 					Identifier: "security-admin",
@@ -505,7 +507,8 @@ func TestConvertHDFToOSCALPOAM_RoundTrip(t *testing.T) {
 	// Reverse: risk prop "ac-2.3" -> ControlIDToNistTag -> "AC-2 (3)"
 	assert.Equal(t, "AC-2 (3)", override.RequirementID)
 	assert.Equal(t, "Account management controls pending deployment", override.Reason)
-	assert.Equal(t, hdf.Failed, override.Status)
+	require.NotNil(t, override.Status)
+	assert.Equal(t, hdf.Failed, *override.Status)
 
 	// Milestones should survive round trip
 	require.Len(t, override.Milestones, 1)

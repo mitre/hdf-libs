@@ -8,12 +8,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/xeipuuv/gojsonschema"
 )
 
 //go:embed schemas/*.schema.json
 var schemaFS embed.FS
+
+// schemaMu protects schemaDir and the cached schema pointers from concurrent access.
+var schemaMu sync.RWMutex
 
 // schemaDir is an optional directory to load schemas from instead of embedded.
 // When set, schemas are loaded from disk for development/testing workflows.
@@ -23,19 +27,26 @@ var schemaDir string
 // directory instead of using embedded schemas. Pass empty string to revert
 // to embedded schemas. This also clears any cached schemas.
 func SetSchemaDir(dir string) {
+	schemaMu.Lock()
+	defer schemaMu.Unlock()
 	schemaDir = dir
-	// Clear cached schemas so they reload from new source
-	resultsSchema = nil
-	baselineSchema = nil
-	comparisonSchema = nil
-	systemSchema = nil
-	planSchema = nil
-	amendmentsSchema = nil
-	evidencePackageSchema = nil
+	// Reset sync.Once instances so schemas reload from new source
+	schemaOnce = map[SchemaType]*sync.Once{
+		TypeResults:         new(sync.Once),
+		TypeBaseline:        new(sync.Once),
+		TypeComparison:      new(sync.Once),
+		TypeSystem:          new(sync.Once),
+		TypePlan:            new(sync.Once),
+		TypeAmendments:      new(sync.Once),
+		TypeEvidencePackage: new(sync.Once),
+	}
+	schemaCache = make(map[SchemaType]*gojsonschema.Schema)
 }
 
 // GetSchemaDir returns the current schema directory, or empty if using embedded.
 func GetSchemaDir() string {
+	schemaMu.RLock()
+	defer schemaMu.RUnlock()
 	return schemaDir
 }
 
@@ -66,7 +77,11 @@ type ValidationError struct {
 	Value       any    `json:"value,omitempty"`
 }
 
-// ValidationResult contains the result of schema validation.
+// ValidationResult contains the result of schema validation. It implements
+// the error interface for convenience but is semantically a "result" (may
+// represent a successful validation), not an error — hence the naming.
+//
+//nolint:errname // result type, not an error type
 type ValidationResult struct {
 	Valid  bool              `json:"valid"`
 	Errors []ValidationError `json:"errors,omitempty"`
@@ -88,21 +103,40 @@ func (r ValidationResult) Error() string {
 	return strings.Join(msgs, "; ")
 }
 
-var (
-	resultsSchema    *gojsonschema.Schema
-	baselineSchema   *gojsonschema.Schema
-	comparisonSchema *gojsonschema.Schema
-	systemSchema     *gojsonschema.Schema
-	planSchema       *gojsonschema.Schema
-	amendmentsSchema      *gojsonschema.Schema
-	evidencePackageSchema *gojsonschema.Schema
-)
+// schemaOnce ensures each schema is loaded exactly once (per SetSchemaDir cycle).
+var schemaOnce = map[SchemaType]*sync.Once{
+	TypeResults:         {},
+	TypeBaseline:        {},
+	TypeComparison:      {},
+	TypeSystem:          {},
+	TypePlan:            {},
+	TypeAmendments:      {},
+	TypeEvidencePackage: {},
+}
+
+// schemaCache stores compiled schemas keyed by type.
+var schemaCache = make(map[SchemaType]*gojsonschema.Schema)
+
+// schemaFiles maps schema types to their filenames.
+var schemaFiles = map[SchemaType]string{
+	TypeResults:         "hdf-results.schema.json",
+	TypeBaseline:        "hdf-baseline.schema.json",
+	TypeComparison:      "hdf-comparison.schema.json",
+	TypeSystem:          "hdf-system.schema.json",
+	TypePlan:            "hdf-plan.schema.json",
+	TypeAmendments:      "hdf-amendments.schema.json",
+	TypeEvidencePackage: "hdf-evidence-package.schema.json",
+}
 
 // readSchemaData reads schema bytes from either the filesystem (if schemaDir
 // is set) or from embedded schemas.
 func readSchemaData(filename string) ([]byte, string, error) {
-	if schemaDir != "" {
-		path := filepath.Join(schemaDir, filename)
+	schemaMu.RLock()
+	dir := schemaDir
+	schemaMu.RUnlock()
+
+	if dir != "" {
+		path := filepath.Join(dir, filename)
 		data, err := os.ReadFile(path) // #nosec G304 -- intentional for dev workflow
 		if err != nil {
 			return nil, "", fmt.Errorf("failed to read schema from %s: %w", path, err)
@@ -169,81 +203,46 @@ func registerEmbeddedSchemas(sl *gojsonschema.SchemaLoader, entries map[string]i
 }
 
 // getSchema returns the compiled schema for the given type.
+// Thread-safe: uses sync.Once per schema type to ensure single initialization.
 func getSchema(schemaType SchemaType) (*gojsonschema.Schema, error) {
-	switch schemaType {
-	case TypeResults:
-		if resultsSchema == nil {
-			var err error
-			resultsSchema, err = loadSchema("hdf-results.schema.json")
-			if err != nil {
-				return nil, err
-			}
-		}
-		return resultsSchema, nil
+	schemaMu.RLock()
+	once, ok := schemaOnce[schemaType]
+	schemaMu.RUnlock()
 
-	case TypeBaseline:
-		if baselineSchema == nil {
-			var err error
-			baselineSchema, err = loadSchema("hdf-baseline.schema.json")
-			if err != nil {
-				return nil, err
-			}
-		}
-		return baselineSchema, nil
-
-	case TypeComparison:
-		if comparisonSchema == nil {
-			var err error
-			comparisonSchema, err = loadSchema("hdf-comparison.schema.json")
-			if err != nil {
-				return nil, err
-			}
-		}
-		return comparisonSchema, nil
-
-	case TypeSystem:
-		if systemSchema == nil {
-			var err error
-			systemSchema, err = loadSchema("hdf-system.schema.json")
-			if err != nil {
-				return nil, err
-			}
-		}
-		return systemSchema, nil
-
-	case TypePlan:
-		if planSchema == nil {
-			var err error
-			planSchema, err = loadSchema("hdf-plan.schema.json")
-			if err != nil {
-				return nil, err
-			}
-		}
-		return planSchema, nil
-
-	case TypeAmendments:
-		if amendmentsSchema == nil {
-			var err error
-			amendmentsSchema, err = loadSchema("hdf-amendments.schema.json")
-			if err != nil {
-				return nil, err
-			}
-		}
-		return amendmentsSchema, nil
-
-	case TypeEvidencePackage:
-		if evidencePackageSchema == nil {
-			var err error
-			evidencePackageSchema, err = loadSchema("hdf-evidence-package.schema.json")
-			if err != nil {
-				return nil, err
-			}
-		}
-		return evidencePackageSchema, nil
-
-	default:
+	if !ok {
 		return nil, fmt.Errorf("unknown schema type: %s", schemaType)
 	}
+
+	var loadErr error
+	once.Do(func() {
+		filename, exists := schemaFiles[schemaType]
+		if !exists {
+			loadErr = fmt.Errorf("no filename for schema type: %s", schemaType)
+			return
+		}
+		schema, err := loadSchema(filename)
+		if err != nil {
+			loadErr = err
+			return
+		}
+		schemaMu.Lock()
+		schemaCache[schemaType] = schema
+		schemaMu.Unlock()
+	})
+
+	if loadErr != nil {
+		return nil, loadErr
+	}
+
+	schemaMu.RLock()
+	s := schemaCache[schemaType]
+	schemaMu.RUnlock()
+
+	if s == nil {
+		return nil, fmt.Errorf("schema %s not loaded", schemaType)
+	}
+
+	return s, nil
 }
 
 // Validate validates JSON data against the specified HDF schema.

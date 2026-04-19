@@ -1155,6 +1155,257 @@ describe('hdf-results.schema.json (refactored)', () => {
     });
   });
 
+  describe('override with impact and new types', () => {
+    it('should accept requirement with falsePositive override', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult({ status: 'failed' })],
+                statusOverrides: [
+                  {
+                    type: 'falsePositive',
+                    status: 'notApplicable',
+                    reason: 'Scanner misidentified library version',
+                    appliedBy: { identifier: 'dev@org.gov', type: 'email' },
+                    appliedAt: '2026-04-14T10:00:00Z',
+                    expiresAt: '2026-10-14T00:00:00Z',
+                  },
+                ],
+                effectiveStatus: 'notApplicable',
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept override with impact only (no status)', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult({ status: 'failed' })],
+                statusOverrides: [
+                  {
+                    type: 'riskAdjustment',
+                    impact: { value: 0.3 },
+                    reason: 'CVE-123 is in a dead code path',
+                    appliedBy: { identifier: 'dev@org.gov', type: 'email' },
+                    appliedAt: '2026-04-14T10:00:00Z',
+                    expiresAt: '2026-10-14T00:00:00Z',
+                  },
+                ],
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept override with both status and impact', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult({ status: 'failed' })],
+                statusOverrides: [
+                  {
+                    type: 'waiver',
+                    status: 'passed',
+                    impact: { value: 0.3 },
+                    reason: 'AO accepted risk with compensating controls; severity lowered',
+                    appliedBy: { identifier: 'ao@agency.gov', type: 'email' },
+                    appliedAt: '2026-04-14T10:00:00Z',
+                    expiresAt: '2026-10-14T00:00:00Z',
+                  },
+                ],
+                effectiveStatus: 'passed',
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept POAM with vendorDependency type', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult({ status: 'failed' })],
+                poams: [
+                  {
+                    type: 'vendorDependency',
+                    explanation: 'Waiting for vendor to release patch for CVE-2026-1234',
+                    appliedBy: { identifier: 'ops@agency.gov', type: 'email' },
+                    appliedAt: '2026-04-14T10:00:00Z',
+                  },
+                ],
+                effectiveStatus: 'failed',
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+  });
+
+  describe('disposition field', () => {
+    it('should accept requirement with disposition set to an override type', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult({ status: 'failed' })],
+                disposition: 'waiver',
+                effectiveStatus: 'passed',
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept all disposition values', () => {
+      for (const disposition of ['waiver', 'attestation', 'poam', 'inherited', 'falsePositive', 'riskAdjustment', 'operationalRequirement']) {
+        const doc = createMinimalResultsDoc({
+          baselines: [
+            createMinimalEvaluatedBaseline({
+              requirements: [
+                createMinimalRequirement({ disposition }),
+              ],
+            }),
+          ],
+        });
+        expect(validate(doc)).toBe(true);
+      }
+    });
+
+    it('should reject invalid disposition value', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({ disposition: 'approval' }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('should accept requirement without disposition (optional)', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [createMinimalRequirement()],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept disposition with effectiveStatus and effectiveImpact together', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                results: [createMinimalResult({ status: 'failed' })],
+                disposition: 'riskAdjustment',
+                effectiveStatus: 'failed',
+                effectiveImpact: 0.3,
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+  });
+
+  describe('effectiveImpact field', () => {
+    it('should accept requirement with effectiveImpact', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                effectiveImpact: 0.5,
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+
+    it('should accept effectiveImpact at boundaries', () => {
+      for (const effectiveImpact of [0.0, 1.0]) {
+        const doc = createMinimalResultsDoc({
+          baselines: [
+            createMinimalEvaluatedBaseline({
+              requirements: [
+                createMinimalRequirement({ effectiveImpact }),
+              ],
+            }),
+          ],
+        });
+        expect(validate(doc)).toBe(true);
+      }
+    });
+
+    it('should reject effectiveImpact below 0.0', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({ effectiveImpact: -0.1 }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('should reject effectiveImpact above 1.0', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({ effectiveImpact: 1.1 }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('should accept requirement without effectiveImpact (optional)', () => {
+      const req = createMinimalRequirement();
+      expect(req).not.toHaveProperty('effectiveImpact');
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [req],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(true);
+    });
+  });
+
   describe('statistics', () => {
     it('should validate statistics with vendor-neutral status values', () => {
       const doc = createMinimalResultsDoc({

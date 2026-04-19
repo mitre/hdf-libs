@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	hdf "github.com/mitre/hdf-schema"
 )
 
 // determineControlStatus derives a display status string from a requirement's
@@ -29,10 +29,7 @@ func determineControlStatus(control hdf.EvaluatedRequirement) string {
 	hasNotApplicable := false
 
 	for _, result := range control.Results {
-		if result.Status == nil {
-			continue
-		}
-		switch *result.Status {
+		switch result.Status {
 		case hdf.Error:
 			return StatusError // highest precedence — no need to scan further
 		case hdf.Failed:

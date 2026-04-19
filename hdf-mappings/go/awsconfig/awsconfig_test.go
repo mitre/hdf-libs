@@ -166,15 +166,15 @@ func TestNISTControls(t *testing.T) {
 // TestLazyLoading verifies that calling GetByRuleName after resetting state
 // causes load() to repopulate the maps.
 func TestLazyLoading(t *testing.T) {
-	// Save original state.
+	// Save original state. sync.Once is not copy-safe, so we reset it
+	// in the defer rather than save/restore; load() is idempotent.
 	origByRuleName := byRuleName
 	origByIdentifier := byIdentifier
-	origLoadOnce := loadOnce
 
 	defer func() {
 		byRuleName = origByRuleName
 		byIdentifier = origByIdentifier
-		loadOnce = origLoadOnce
+		loadOnce = sync.Once{}
 	}()
 
 	// Reset to unloaded state.
@@ -202,17 +202,17 @@ func TestLazyLoading(t *testing.T) {
 // When mappingsData contains invalid JSON, load() must set empty maps rather
 // than panic, and all public functions must return nil/nil gracefully.
 func TestLoadWithCorruptJSON(t *testing.T) {
-	// Save original state.
+	// Save original state. sync.Once is not copy-safe, so we reset it
+	// in the defer rather than save/restore; load() is idempotent.
 	origByRuleName := byRuleName
 	origByIdentifier := byIdentifier
-	origLoadOnce := loadOnce
 	origMappingsData := mappingsData
 
 	defer func() {
 		byRuleName = origByRuleName
 		byIdentifier = origByIdentifier
-		loadOnce = origLoadOnce
 		mappingsData = origMappingsData
+		loadOnce = sync.Once{}
 	}()
 
 	// Reset to unloaded state and inject invalid JSON.

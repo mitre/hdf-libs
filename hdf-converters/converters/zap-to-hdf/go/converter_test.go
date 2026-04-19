@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -410,9 +411,9 @@ func Test_parseCweID(t *testing.T) {
 // --- StripHTML ---
 
 func Test_stripHTML(t *testing.T) {
-	assert.Equal(t, "Hello world", shared.StripHTML("<p>Hello</p><p>world</p>"))
-	assert.Equal(t, "plain text", shared.StripHTML("plain text"))
-	assert.Equal(t, "", shared.StripHTML(""))
+	assert.Equal(t, "Hello world", hdfutil.StripHTML("<p>Hello</p><p>world</p>"))
+	assert.Equal(t, "plain text", hdfutil.StripHTML("plain text"))
+	assert.Equal(t, "", hdfutil.StripHTML(""))
 }
 
 // --- Webgoat fixture ---

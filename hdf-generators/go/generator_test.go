@@ -100,14 +100,16 @@ func TestGenerateInSpecYml_WithDepends(t *testing.T) {
 
 func TestGenerateInSpecYml_WithInputs(t *testing.T) {
 	baseline := makeBaseline("my-profile", []hdf.BaselineRequirement{makeRequirement("SV-001", 0.5)})
-	baseline.Inputs = []map[string]interface{}{
-		{"disable_slow_controls": true},
-		{"max_retries": 3.0},
+	baseline.Inputs = []hdf.Input{
+		{Name: "disable_slow_controls", Value: true},
+		{Name: "max_retries", Value: 3.0},
 	}
 	yml := GenerateInSpecYml(baseline, nil)
 	assert.Contains(t, yml, "inputs:")
-	assert.Contains(t, yml, "disable_slow_controls: true")
-	assert.Contains(t, yml, "max_retries: 3")
+	assert.Contains(t, yml, "- name: disable_slow_controls")
+	assert.Contains(t, yml, "value: true")
+	assert.Contains(t, yml, "- name: max_retries")
+	assert.Contains(t, yml, "value: 3")
 }
 
 func TestGenerateInSpecYml_OmitsEmptyOptional(t *testing.T) {

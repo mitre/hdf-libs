@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	hdf "github.com/mitre/hdf-schema"
 	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +20,7 @@ const (
 	StatusSkipped       = "skipped" // deprecated in v2, kept for display compatibility
 )
 
-// SchemaStatusToDisplay maps HDF v2 schema ResultStatus values (camelCase)
+// SchemaStatusToDisplay maps HDF schema ResultStatus values (camelCase)
 // to CLI display constants (snake_case). This is the single source of truth
 // for the schema→CLI status translation.
 func SchemaStatusToDisplay(status hdf.ResultStatus) string {

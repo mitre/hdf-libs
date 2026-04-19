@@ -8,6 +8,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -163,7 +164,7 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 
 	// Descriptions
 	descriptions := []hdf.Description{
-		{Label: "default", Data: shared.StripHTML(cs.Description)},
+		{Label: "default", Data: hdfutil.StripHTML(cs.Description)},
 	}
 
 	// Add fix description from profile remediation
@@ -172,7 +173,7 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 		remediations := make([]string, 0)
 		for _, p := range matched {
 			if p.Remediation != "" {
-				remediations = append(remediations, shared.StripHTML(p.Remediation))
+				remediations = append(remediations, hdfutil.StripHTML(p.Remediation))
 			}
 		}
 		if len(remediations) > 0 {
@@ -186,7 +187,7 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 		impacts := make([]string, 0)
 		for _, p := range matched {
 			if p.RemediationImpact != "" {
-				impacts = append(impacts, shared.StripHTML(p.RemediationImpact))
+				impacts = append(impacts, hdfutil.StripHTML(p.RemediationImpact))
 			}
 		}
 		if len(impacts) > 0 {
@@ -204,7 +205,7 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 	}
 
 	// StartTime from createdDateTime
-	startTime := shared.ParseTimestamp(createdDateTime)
+	startTime := hdfutil.ParseTimestamp(createdDateTime)
 
 	results := []hdf.RequirementResult{
 		{

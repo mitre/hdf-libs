@@ -9,6 +9,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -75,7 +76,7 @@ func getEntryID(entry XrayEntry) string {
 
 // getImpact maps JFrog Xray severity strings to HDF impact values.
 func getImpact(severity string) float64 {
-	return shared.SeverityToImpact(severity, 0.5)
+	return hdfutil.SeverityToImpact(severity, 0.5)
 }
 
 // extractCWEs extracts CWE identifiers from the first CVE entry's cwe array.
@@ -228,8 +229,8 @@ func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "jfrog-xray-to-hdf",
 		ConverterVersion: converterVersion,
-		ToolName:   "JFrog Xray",
-		ToolFormat: "JSON",
+		ToolName:         "JFrog Xray",
+		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{Name: "JFrog Xray Scan", Type: hdf.CopyrightApplication},

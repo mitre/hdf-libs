@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -156,14 +157,14 @@ func overallStatus(results []hdf.RequirementResult) hdf.ResultStatus {
 }
 
 // deriveSeverity determines the severity string from impact and optional
-// explicit severity. Delegates to impactToSeverity (query.go) for the
-// impact-based mapping, with an override when explicit severity is provided.
+// explicit severity. Uses hdfutil.ImpactToSeverity for the impact-based
+// mapping, with an override when explicit severity is provided.
 // Maps "informational" to "none" for SAF CLI threshold YAML compatibility.
 func deriveSeverity(impact float64, severity *hdf.Severity) string {
 	if severity != nil {
 		return string(*severity)
 	}
-	sev := impactToSeverity(impact)
+	sev := hdfutil.ImpactToSeverity(impact)
 	if sev == SeverityInformational {
 		return "none"
 	}

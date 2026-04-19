@@ -3,6 +3,7 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import commonSchema from '../src/schemas/primitives/common.schema.json';
 import dataFlowSchema from '../src/schemas/primitives/data-flow.schema.json';
+import { schemaRef } from './schema-ref';
 
 describe('data-flow.schema.json', () => {
   const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
@@ -15,7 +16,7 @@ describe('data-flow.schema.json', () => {
 
   describe('Data_Flow', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0#/$defs/Data_Flow',
+      ...schemaRef(dataFlowSchema, 'Data_Flow'),
     });
 
     it('should validate a minimal data flow (from + to as local componentIds)', () => {
@@ -167,7 +168,7 @@ describe('data-flow.schema.json', () => {
 
   describe('Cross_System_Reference', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0#/$defs/Cross_System_Reference',
+      ...schemaRef(dataFlowSchema, 'Cross_System_Reference'),
     });
 
     it('should validate a cross-system reference with URI', () => {
@@ -213,7 +214,7 @@ describe('data-flow.schema.json', () => {
 
   describe('External_Endpoint', () => {
     const validate = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v2.0.0#/$defs/External_Endpoint',
+      ...schemaRef(dataFlowSchema, 'External_Endpoint'),
     });
 
     it('should validate a valid external endpoint', () => {

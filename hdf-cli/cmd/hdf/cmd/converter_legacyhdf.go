@@ -5,36 +5,38 @@ import (
 	"fmt"
 
 	legacyhdf "github.com/mitre/hdf-converters/converters/legacyhdf-to-hdf/go"
+	shared "github.com/mitre/hdf-converters/shared/go"
 )
 
-// legacyHDFConverter converts HDF v1.0 (legacy InSpec JSON) to HDF v2.0.
+// legacyHDFConverter converts legacy InSpec exec-json (profiles/controls)
+// to the current HDF format (baselines/requirements).
 type legacyHDFConverter struct{}
 
 // Name returns the human-readable name for this converter.
 func (c *legacyHDFConverter) Name() string {
-	return "Legacy HDF (v1.0) to HDF (v2.0)"
+	return "Legacy InSpec exec-json to HDF"
 }
 
-// Convert transforms HDF v1.0 input to HDF v2.0 output.
+// Convert transforms legacy InSpec exec-json input to current HDF output.
 func (c *legacyHDFConverter) Convert(input []byte) ([]byte, error) {
-	// Validate input is v1.0 format
-	if !legacyhdf.IsHDFV1(input) {
-		return nil, fmt.Errorf("input is not valid HDF v1.0 format")
+	if err := shared.ValidateJSONSize(input, "legacyhdf", 0); err != nil {
+		return nil, fmt.Errorf("legacyhdf input validation: %w", err)
 	}
 
-	// Parse v1.0 input
+	if !legacyhdf.IsHDFV1(input) {
+		return nil, fmt.Errorf("input is not valid legacy InSpec exec-json format")
+	}
+
 	var v1 legacyhdf.HDFV1Results
 	if err := json.Unmarshal(input, &v1); err != nil {
-		return nil, fmt.Errorf("failed to parse HDF v1.0 input: %w", err)
+		return nil, fmt.Errorf("failed to parse legacy InSpec input: %w", err)
 	}
 
-	// Convert to v2.0
 	v2 := legacyhdf.ConvertV1ToV2(&v1)
 
-	// Serialize v2.0 output
 	output, err := json.MarshalIndent(v2, "", "  ")
 	if err != nil {
-		return nil, fmt.Errorf("failed to serialize HDF v2.0 output: %w", err)
+		return nil, fmt.Errorf("failed to serialize HDF output: %w", err)
 	}
 
 	return output, nil

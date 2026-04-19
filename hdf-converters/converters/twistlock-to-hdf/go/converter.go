@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -70,7 +71,7 @@ var twistlockAliases = map[string]float64{
 }
 
 func getImpact(severity string) float64 {
-	return shared.SeverityToImpactWithAliases(severity, twistlockAliases, 0.5)
+	return hdfutil.SeverityToImpactWithAliases(severity, twistlockAliases, 0.5)
 }
 
 // buildTitle constructs the baseline title from scan result data.
@@ -78,11 +79,12 @@ func getImpact(severity string) float64 {
 // to the repository field.
 func buildTitle(result TwistlockResult) string {
 	var projectName string
-	if result.Repository != "" {
+	switch {
+	case result.Repository != "":
 		projectName = result.Repository
-	} else if len(result.Collections) > 0 {
+	case len(result.Collections) > 0:
 		projectName = strings.Join(result.Collections, " / ")
-	} else {
+	default:
 		projectName = "N/A"
 	}
 	return fmt.Sprintf("Twistlock Project: %s", projectName)
@@ -130,7 +132,7 @@ func buildRequirement(vuln TwistlockVuln) hdf.EvaluatedRequirement {
 		{Label: "default", Data: vuln.Description},
 	}
 
-	startTime := shared.ParseTimestamp(vuln.DiscoveredDate)
+	startTime := hdfutil.ParseTimestamp(vuln.DiscoveredDate)
 
 	results := []hdf.RequirementResult{
 		{
@@ -228,8 +230,8 @@ func ConvertTwistlockToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "twistlock-to-hdf",
 		ConverterVersion: converterVersion,
-		ToolName:   "Twistlock",
-		ToolFormat: "JSON",
+		ToolName:         "Twistlock",
+		ToolFormat:       "JSON",
 		Baselines:        baselines,
 		Components: []hdf.Component{
 			{

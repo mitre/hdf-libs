@@ -221,17 +221,3 @@ func yamlScalar(s string) string {
 	}
 	return s
 }
-
-// formatYamlValue formats a value for inline YAML output.
-func formatYamlValue(v interface{}) string {
-	switch val := v.(type) {
-	case bool:
-		return fmt.Sprintf("%t", val)
-	case float64:
-		return formatFloat(val)
-	case string:
-		return yamlScalar(val)
-	default:
-		return fmt.Sprintf("%v", val)
-	}
-}

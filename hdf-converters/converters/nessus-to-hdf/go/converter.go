@@ -8,6 +8,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	nessusmappings "github.com/mitre/hdf-mappings/go/nessus"
 	hdf "github.com/mitre/hdf-schema"
@@ -69,7 +70,7 @@ func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResu
 		ConverterVersion: converterVersion,
 		ToolName:         "Nessus",
 		Baselines:        baselines,
-		Components:          targets,
+		Components:       targets,
 		Statistics: &hdf.Statistics{
 			Duration: &duration,
 		},
@@ -115,7 +116,7 @@ func calculateTiming(hosts []ReportHost) (time.Time, float64) {
 }
 
 func parseHostTime(timeStr string) time.Time {
-	t := shared.ParseTimestamp(timeStr)
+	t := hdfutil.ParseTimestamp(timeStr)
 	if t.IsZero() {
 		return time.Now()
 	}
@@ -246,12 +247,12 @@ func calculateImpact(item *ReportItem, isCompliance bool) float64 {
 		cats := parseComplianceRef(item.ComplianceReference, "CAT")
 		if len(cats) > 0 {
 			cat := strings.ToLower(cats[0])
-			return shared.SeverityToImpactWithAliases(cat, nessusAliases, 0.5)
+			return hdfutil.SeverityToImpactWithAliases(cat, nessusAliases, 0.5)
 		}
 		return 0.5 // Default for compliance
 	}
 
-	return shared.SeverityToImpactWithAliases(item.Severity, nessusAliases, 0.0)
+	return hdfutil.SeverityToImpactWithAliases(item.Severity, nessusAliases, 0.0)
 }
 
 func buildTags(item *ReportItem, isCompliance bool) map[string]interface{} {
@@ -395,7 +396,7 @@ func parseComplianceRef(ref, key string) []string {
 }
 
 func parseHTML(html string) string {
-	return shared.StripHTML(html)
+	return hdfutil.StripHTML(html)
 }
 
 func convertReportHostToTarget(host *ReportHost) hdf.Component {

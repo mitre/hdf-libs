@@ -84,9 +84,9 @@ Converters are implemented in separate files (`converter_nessus.go`, `converter_
 
 Conversion error messages include suggestions (which sources support the target format, which targets the source supports) — preserve this UX pattern.
 
-### Data Types (`pkg/hdf/`)
+### Data Types
 
-`hdf_results.go` and `hdf_baseline.go` are **generated** from the hdf-schema package. Do not edit them manually. Run `pnpm sync-schemas` and rebuild if schema types change.
+Go types are imported from `github.com/mitre/hdf-schema` (quicktype-generated from the JSON schemas in `hdf-schema/dist/go/`). The CLI does not maintain its own copy of these types. The diff engine lives in `github.com/mitre/hdf-diff/go` (sibling monorepo package).
 
 ### Schema Validation (`hdf-validators/go`)
 

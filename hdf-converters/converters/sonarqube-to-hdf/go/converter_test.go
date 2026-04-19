@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -490,7 +491,7 @@ func TestSeverityImpactMappingParity(t *testing.T) {
 		"INFO":     0.0,
 	}
 	for sev, impact := range expected {
-		actual := shared.SeverityToImpactWithAliases(sev, sonarqubeAliases, 0.5)
+		actual := hdfutil.SeverityToImpactWithAliases(sev, sonarqubeAliases, 0.5)
 		assert.Equal(t, impact, actual, "Severity %s impact mismatch", sev)
 	}
 }

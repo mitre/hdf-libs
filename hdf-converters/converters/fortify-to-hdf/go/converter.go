@@ -8,6 +8,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -83,8 +84,8 @@ func ConvertFortifyToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "fortify-to-hdf",
 		ConverterVersion: converterVersion,
-		ToolName:   "Fortify",
-		ToolFormat: "FVDL",
+		ToolName:         "Fortify",
+		ToolFormat:       "FVDL",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{Name: targetName, Type: hdf.Repository},
@@ -123,10 +124,10 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 	tags := shared.BuildNISTCCITags(nistTags, cciTags)
 
 	// Title from Abstract (HTML stripped)
-	titleStr := shared.StripHTML(desc.Abstract)
+	titleStr := hdfutil.StripHTML(desc.Abstract)
 
 	// Default description from Explanation (HTML stripped)
-	explanationText := shared.StripHTML(desc.Explanation)
+	explanationText := hdfutil.StripHTML(desc.Explanation)
 	if explanationText == "" {
 		explanationText = titleStr
 	}
@@ -138,7 +139,7 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 	if desc.Recommendations != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
-			Data:  shared.StripHTML(desc.Recommendations),
+			Data:  hdfutil.StripHTML(desc.Recommendations),
 		})
 	}
 

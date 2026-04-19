@@ -17,6 +17,7 @@ import (
 	"unicode/utf8"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
@@ -35,7 +36,7 @@ var veracodeAliases = map[string]float64{
 }
 
 func veracodeSeverityToImpact(severity string) float64 {
-	return shared.SeverityToImpactWithAliases(severity, veracodeAliases, 0.1)
+	return hdfutil.SeverityToImpactWithAliases(severity, veracodeAliases, 0.1)
 }
 
 // XML structures for Veracode DetailedReport
@@ -259,14 +260,14 @@ type latin1Reader struct {
 
 func (r *latin1Reader) Read(p []byte) (int, error) {
 	// Read raw bytes
-	max := len(r.buf)
-	if max > len(p)/utf8.UTFMax {
-		max = len(p) / utf8.UTFMax
+	chunk := len(r.buf)
+	if chunk > len(p)/utf8.UTFMax {
+		chunk = len(p) / utf8.UTFMax
 	}
-	if max == 0 {
-		max = 1
+	if chunk == 0 {
+		chunk = 1
 	}
-	n, err := r.r.Read(r.buf[:max])
+	n, err := r.r.Read(r.buf[:chunk])
 	if n == 0 {
 		return 0, err
 	}
@@ -311,8 +312,11 @@ func ConvertVeracodeToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	// Build CVE-based requirements from SCA components
 	cveRequirements := buildCVERequirements(report.SoftwareCompositionSCA, report.FirstBuildSubmitted)
 
-	// Merge all requirements into one baseline
-	allRequirements := append(cweRequirements, cveRequirements...)
+	// Merge all requirements into one baseline. Pre-allocate to avoid
+	// aliasing cweRequirements' backing array.
+	allRequirements := make([]hdf.EvaluatedRequirement, 0, len(cweRequirements)+len(cveRequirements))
+	allRequirements = append(allRequirements, cweRequirements...)
+	allRequirements = append(allRequirements, cveRequirements...)
 
 	baseline := hdf.EvaluatedBaseline{
 		Name:            "Veracode Scan",
@@ -676,7 +680,7 @@ func formatFlawCodeDesc(flaw Flaw) string {
 		{"Module", flaw.Module},
 		{"Type", flaw.Type},
 		{"CWE ID", flaw.CWEID},
-		{"Date First Occurence", flaw.DateFirstOccurrence},
+		{"Date First Occurence", flaw.DateFirstOccurrence}, //nolint:misspell // label parity with TypeScript converter and stored fixture
 		{"CIA Impact", flaw.CIAImpact},
 		{"Description", flaw.Description},
 		{"Source File", flaw.SourceFile},
@@ -763,7 +767,7 @@ func parseVeracodeTimestamp(s string) time.Time {
 	}
 
 	// Fall back to shared parser
-	return shared.ParseTimestamp(s)
+	return hdfutil.ParseTimestamp(s)
 }
 
 // cweNISTControls wraps the cwe.NISTControls function for use in this package.
