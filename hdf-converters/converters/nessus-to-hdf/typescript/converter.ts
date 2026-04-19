@@ -13,7 +13,10 @@ import type {
   Tool,
 } from '@mitre/hdf-schema';
 import { ResultStatus, Copyright as TargetType, createMinimalBaseline } from '@mitre/hdf-schema';
-import { version as converterVersion } from '@mitre/hdf-converters/package.json';
+// Per-converter version (matches the pattern used by the other 32 converters).
+// Bumped manually when the nessus converter's output format changes in a way
+// consumers might notice. Distinct from the package's npm version.
+const converterVersion = '1.0.0';
 
 interface NessusXml {
   NessusClientData_v2: {

@@ -6,7 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	hdf "github.com/mitre/hdf-schema"
 	"github.com/spf13/cobra"
 )
 
@@ -140,7 +141,7 @@ func runQuery(_ *cobra.Command, args []string) error {
 }
 
 // findMatches applies filters to all controls and returns matching results.
-func findMatches(results hdf.HdfResults, filters []filterFunc) []queryResult {
+func findMatches(results hdf.HDFResults, filters []filterFunc) []queryResult {
 	var matches []queryResult
 
 	for _, baseline := range results.Baselines {
@@ -156,7 +157,7 @@ func findMatches(results hdf.HdfResults, filters []filterFunc) []queryResult {
 			}
 
 			status := determineControlStatus(control)
-			severity := impactToSeverity(control.Impact)
+			severity := hdfutil.ImpactToSeverity(control.Impact)
 
 			// Apply all filters
 			if !applyFilters(control, status, severity, filters) {
@@ -345,21 +346,6 @@ const (
 	SeverityLow           = "low"
 	SeverityInformational = "informational"
 )
-
-func impactToSeverity(impact float64) string {
-	switch {
-	case impact >= 0.9:
-		return SeverityCritical
-	case impact >= 0.7:
-		return SeverityHigh
-	case impact >= 0.4:
-		return SeverityMedium
-	case impact > 0:
-		return SeverityLow
-	default:
-		return SeverityInformational
-	}
-}
 
 func severityToLabel(severity string) string {
 	switch severity {

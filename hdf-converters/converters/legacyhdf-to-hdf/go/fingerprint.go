@@ -5,7 +5,7 @@ import "github.com/mitre/hdf-converters/registry"
 func init() {
 	registry.Register(registry.ConverterFingerprint{
 		ID:          "legacyhdf-to-hdf",
-		Label:       "HDF v1 (Legacy)",
+		Label:       "Legacy InSpec exec-json",
 		Direction:   registry.DirectionIngest,
 		InputFamily: registry.FamilyJSON,
 		OutputType:  registry.OutputResults,
@@ -14,13 +14,13 @@ func init() {
 			if !ok {
 				return 0
 			}
-			// Must NOT have baselines[] (that would be HDF v2)
+			// Must NOT have baselines[] (that would be current HDF)
 			if baselines, exists := obj["baselines"]; exists {
 				if _, isArr := baselines.([]any); isArr {
 					return 0
 				}
 			}
-			// V1 structure: profiles[] + platform object + version string
+			// Legacy structure: profiles[] + platform object + version string
 			_, hasVersion := obj["version"].(string)
 			profiles, hasProfiles := obj["profiles"]
 			platform, hasPlatform := obj["platform"]

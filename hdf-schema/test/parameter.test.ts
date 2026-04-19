@@ -3,6 +3,7 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import commonSchema from '../src/schemas/primitives/common.schema.json';
 import parameterSchema from '../src/schemas/primitives/parameter.schema.json';
+import { schemaRef } from './schema-ref';
 
 describe('parameter.schema.json — Input primitive', () => {
   const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
@@ -12,7 +13,7 @@ describe('parameter.schema.json — Input primitive', () => {
   ajv.addSchema(parameterSchema);
 
   const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v2.0.0#/$defs/Input',
+    ...schemaRef(parameterSchema, 'Input'),
   });
 
   describe('valid inputs', () => {

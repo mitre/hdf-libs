@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

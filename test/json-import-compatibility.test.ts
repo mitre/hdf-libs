@@ -1,34 +1,36 @@
 /**
  * JSON Import Compatibility Tests
  *
- * REQUIREMENTS:
- * hdf-libs packages are consumed by Nuxt/Vite applications that bundle them
- * for BOTH browser (client) and Node.js (server/SSR). This means:
+ * 8 of 9 workspace packages are built with tsdown (hdf-mappings,
+ * hdf-utilities, hdf-validators, hdf-parsers, hdf-converters,
+ * hdf-generators, hdf-diff, hdf-extension-graph). Their published
+ * artifacts have any JSON data inlined as JS object literals at build
+ * time — they contain no unresolved JSON imports and work in any
+ * consumer (raw Node.js ESM, Vite/Nuxt, webpack, esbuild, Bun) with
+ * no noExternal / bundler-inline configuration required.
  *
- * 1. NO Node-only APIs (e.g., `createRequire`, `fs`, `path`) in any source
- *    file that gets imported by consumers. `module.createRequire` crashes
- *    in the browser with "Module has been externalized for browser compatibility."
+ * hdf-schema stays on its specialized generator pipeline
+ * (bundle-schemas → quicktype → create-index) because replacing that
+ * with tsdown is an invasive restructuring separate from the raw-Node
+ * fix; see bd hdf-libs-qit4. It still produces a raw-Node-compatible
+ * dist — its schemas are inlined into dist/index.js via the generator,
+ * and it's the single source of truth for schema data (bw30).
  *
- * 2. NO `with { type: 'json' }` import attributes. Vite strips these during
- *    its plugin analysis phase (see Vite RFC #18534), leaving bare imports
- *    that Node.js then rejects with "needs an import attribute of type json."
+ * Rules below apply to every package, regardless of the build tool:
  *
- * 3. USE bare `import ... from '...json'` (no `with` clause). This works
- *    because the consumer configures `vite.ssr.noExternal` and
- *    `nitro.noExternal` to force Vite to bundle hdf-libs packages.
- *    Vite natively handles JSON imports in its bundler.
+ * 1. NO Node-only APIs (`createRequire`, `fs`, `path`) in any SOURCE
+ *    file imported by consumers. Those crash browser bundles with
+ *    "Module has been externalized for browser compatibility."
  *
- * 4. `tsconfig.base.json` must NOT have `verbatimModuleSyntax: true`.
- *    That flag forces TypeScript to emit `with { type: 'json' }` for
- *    JSON imports, which triggers problem #2.
+ * 2. NO `with { type: 'json' }` import attributes in source files.
+ *    Vite strips these during plugin analysis (Vite RFC #18534),
+ *    leaving bare imports that raw Node.js then rejects. Source files
+ *    should use bare `import x from './y.json'`; the bundler (tsdown)
+ *    resolves them at build time so the question doesn't come up at
+ *    consume time.
  *
- * CONSUMER CONFIGURATION (nuxt.config.ts):
- *   vite: { ssr: { noExternal: ['@mitre/hdf-mappings', ...] } }
- *   nitro: { externals: { inline: ['@mitre/hdf-mappings', ...] } }
- *
- * If these tests fail, the fix is NOT to add createRequire or import
- * attributes — it's to ensure bare JSON imports are used and the consumer
- * has the noExternal configuration.
+ * 3. `tsconfig.base.json` must NOT have `verbatimModuleSyntax: true`
+ *    (would force tsc to emit the import attribute).
  */
 
 import { describe, it, expect } from 'vitest';
@@ -93,28 +95,31 @@ describe('JSON import compatibility', () => {
     }
   });
 
-  describe('compiled dist must not contain createRequire or import attributes', () => {
-    const distFiles = [
-      'hdf-mappings/dist/cci/index.js',
-      'hdf-mappings/dist/nikto/index.js',
-      'hdf-mappings/dist/awsconfig/index.js',
-      'hdf-mappings/dist/owasp/index.js',
-      'hdf-mappings/dist/nist/index.js',
-      'hdf-mappings/dist/scoutsuite/index.js',
-      'hdf-mappings/dist/cwe/index.js',
-      'hdf-mappings/dist/nessus/index.js',
-      'hdf-validators/dist/index.js',
+  describe('bundled packages: dist/index.js must be self-contained', () => {
+    // Packages built with tsdown: JSON data is inlined as JS objects, so
+    // the artifact has no unresolved JSON imports at all and works in
+    // raw Node ESM as well as any bundler without consumer configuration.
+    const bundledPackages = [
+      'hdf-mappings',
+      'hdf-validators',
     ];
 
-    for (const file of distFiles) {
-      it(`${file} must not use createRequire`, () => {
-        const content = readFileSync(resolve(__dirname, '..', file), 'utf-8');
+    for (const pkg of bundledPackages) {
+      const distFile = `${pkg}/dist/index.js`;
+
+      it(`${distFile} must not use createRequire`, () => {
+        const content = readFileSync(resolve(__dirname, '..', distFile), 'utf-8');
         expect(content).not.toContain('createRequire');
       });
 
-      it(`${file} must not use import attributes`, () => {
-        const content = readFileSync(resolve(__dirname, '..', file), 'utf-8');
+      it(`${distFile} must not use import attributes`, () => {
+        const content = readFileSync(resolve(__dirname, '..', distFile), 'utf-8');
         expect(content).not.toMatch(/with\s*\{\s*type:\s*['"]json['"]\s*\}/);
+      });
+
+      it(`${distFile} must not import any .json files (data must be inlined)`, () => {
+        const content = readFileSync(resolve(__dirname, '..', distFile), 'utf-8');
+        expect(content).not.toMatch(/from\s+['"][^'"]+\.json['"]/);
       });
     }
   });

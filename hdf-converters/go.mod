@@ -3,16 +3,16 @@ module github.com/mitre/hdf-converters
 go 1.26
 
 require (
+	github.com/mitre/hdf-libs/hdf-utilities/go v0.0.0
 	github.com/mitre/hdf-mappings/go v0.0.0
 	github.com/mitre/hdf-parsers/go v0.0.0
 	github.com/mitre/hdf-schema v0.0.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/mitre/hdf-validators/go v0.0.0 // indirect
-	github.com/package-url/packageurl-go v0.1.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
@@ -27,3 +27,5 @@ replace github.com/mitre/hdf-mappings/go => ../hdf-mappings/go
 replace github.com/mitre/hdf-parsers/go => ../hdf-parsers/go
 
 replace github.com/mitre/hdf-validators/go => ../hdf-validators/go
+
+replace github.com/mitre/hdf-libs/hdf-utilities/go => ../hdf-utilities/go

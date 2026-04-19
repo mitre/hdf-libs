@@ -9,6 +9,7 @@ import (
 	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
 	"github.com/mitre/hdf-converters/registry"
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
@@ -64,7 +65,7 @@ type ZapInstance struct {
 
 // parseZapTimestamp parses ZAP's timestamp format "Thu, 6 Dec 2018 10:53:11"
 // which is RFC1123-like but without timezone and allows single-digit day.
-// Falls back to shared.ParseTimestamp for other formats.
+// Falls back to hdfutil.ParseTimestamp for other formats.
 func parseZapTimestamp(s string) time.Time {
 	if s == "" {
 		return time.Time{}
@@ -73,7 +74,7 @@ func parseZapTimestamp(s string) time.Time {
 	if t, err := time.Parse("Mon, 2 Jan 2006 15:04:05", s); err == nil {
 		return t
 	}
-	return shared.ParseTimestamp(s)
+	return hdfutil.ParseTimestamp(s)
 }
 
 // --- Risk code to impact ---
@@ -87,7 +88,7 @@ var zapAliases = map[string]float64{
 }
 
 func riskCodeToImpact(riskCode string) float64 {
-	return shared.SeverityToImpactWithAliases(riskCode, zapAliases, 0.5)
+	return hdfutil.SeverityToImpactWithAliases(riskCode, zapAliases, 0.5)
 }
 
 // --- NIST tag building ---
@@ -135,13 +136,13 @@ func buildCodeDesc(instance ZapInstance) string {
 func buildCheckDescription(alert ZapAlert) string {
 	result := ""
 	if alert.Solution != "" {
-		stripped := shared.StripHTML(alert.Solution)
+		stripped := hdfutil.StripHTML(alert.Solution)
 		if stripped != "" {
 			result = stripped
 		}
 	}
 	if alert.OtherInfo != "" {
-		stripped := shared.StripHTML(alert.OtherInfo)
+		stripped := hdfutil.StripHTML(alert.OtherInfo)
 		if stripped != "" {
 			if result != "" {
 				result += "\n"
@@ -265,7 +266,7 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 			if alert.Desc != "" {
 				descriptions = append(descriptions, hdf.Description{
 					Label: "default",
-					Data:  shared.StripHTML(alert.Desc),
+					Data:  hdfutil.StripHTML(alert.Desc),
 				})
 			}
 			checkDesc := buildCheckDescription(alert)
@@ -331,14 +332,14 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 	}
 
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:     "zap-to-hdf",
-		ConverterVersion:  converterVersion,
-		ToolName:          "OWASP ZAP",
-		ToolVersion:       zapData.Version,
-		ToolFormat:        "JSON",
-		Baselines:         []hdf.EvaluatedBaseline{baseline},
-		Components:           targets,
-		Timestamp:         timestamp,
+		GeneratorName:    "zap-to-hdf",
+		ConverterVersion: converterVersion,
+		ToolName:         "OWASP ZAP",
+		ToolVersion:      zapData.Version,
+		ToolFormat:       "JSON",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Components:       targets,
+		Timestamp:        timestamp,
 	})
 
 	return hdfResult, nil

@@ -21,8 +21,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# NODE_VERSION pinned to the current LTS (22). Matches each published
+# package's `engines.node: ">=22.0.0"`. Node 20 reaches EOL 2026-04-30;
+# we're not advertising support for a runtime that loses security patches
+# during the lifetime of this release.
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
   GO_VERSION: '1.26.2'
   GOLANGCI_LINT_VERSION: 'v2.11.3'
 
@@ -44,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
       - name: Build TypeScript (required for cross-package type resolution)
         run: pnpm build:ts
@@ -61,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
         with:
           go: 'true'
@@ -89,7 +93,7 @@ jobs:
     timeout-minutes: 15
     needs: [check-ts, check-go]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
         with:
           go: 'true'
@@ -127,7 +131,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
@@ -146,7 +150,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
         with:
           go: 'true'
@@ -169,7 +173,7 @@ jobs:
     timeout-minutes: 15
     needs: build
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
         with:
           go: 'true'

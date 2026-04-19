@@ -158,9 +158,9 @@ export declare enum HashAlgorithm {
     Sha512 = "sha512"
 }
 /**
- * A standalone amendment that modifies a requirement's compliance status. Extends the
- * inline Status_Override concept with requirementId and baselineRef for use outside of
- * results documents.
+ * A standalone amendment that modifies a requirement's compliance status and/or impact
+ * score. At least one of status or impact must be set. Extends the inline Override concept
+ * with requirementId and baselineRef for use outside of results documents.
  */
 export interface StandaloneOverride {
     /**
@@ -191,6 +191,10 @@ export interface StandaloneOverride {
      */
     expiresAt: Date;
     /**
+     * Override to the requirement's impact score. At least one of status or impact must be set.
+     */
+    impact?: ImpactOverride;
+    /**
      * componentId of the local component that provides this control. Set when the provider is
      * in the same system. Omit for external or cross-system providers; the reason field
      * explains the source. Primarily used with type 'inherited'.
@@ -219,10 +223,9 @@ export interface StandaloneOverride {
      */
     signature?: Signature;
     /**
-     * The new status this amendment sets. For POA&Ms, this is the current status (POA&Ms track
-     * work, they don't change status).
+     * The new status this amendment sets. Optional when only impact is being overridden.
      */
-    status: ResultStatus;
+    status?: ResultStatus;
     /**
      * The type of amendment.
      */
@@ -279,6 +282,20 @@ export declare enum EvidenceType {
     Other = "other",
     Screenshot = "screenshot",
     URL = "url"
+}
+/**
+ * Override to the requirement's impact score. At least one of status or impact must be
+ * set.
+ *
+ * An override to the requirement's impact score. The prior impact is the original result
+ * value or the preceding override in the chain.
+ */
+export interface ImpactOverride {
+    /**
+     * The overridden impact score (0.0–1.0).
+     */
+    value: number;
+    [property: string]: any;
 }
 /**
  * A milestone or task within a POA&M remediation plan.
@@ -415,8 +432,7 @@ export interface VerificationMethod {
     [property: string]: any;
 }
 /**
- * The new status this amendment sets. For POA&Ms, this is the current status (POA&Ms track
- * work, they don't change status).
+ * The new status this amendment sets. Optional when only impact is being overridden.
  *
  * The status of an individual test result. 'notApplicable' indicates the requirement does
  * not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g.,
@@ -432,15 +448,26 @@ export declare enum ResultStatus {
 /**
  * The type of amendment.
  *
- * The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified
- * (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked
- * (no status change). 'inherited': control provided by another component or system
- * (overrides to notApplicable/passed).
+ * The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk
+ * accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam':
+ * remediation tracked (no status change). 'inherited': control provided by another
+ * component or system. 'falsePositive': scanner incorrectly identified a finding — for
+ * compliance scans (STIG, CIS), the check actually passes, so status is typically set to
+ * 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to
+ * this system, so status is typically set to 'notApplicable'. The disposition field on the
+ * requirement distinguishes false positives from genuinely not-applicable findings.
+ * 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk
+ * Adjustment); does not change pass/fail status, only impact via the impact field.
+ * 'operationalRequirement': deviation required by operational constraints (FedRAMP
+ * Operational Requirement); the finding cannot be remediated because the system requires
+ * the affected functionality. Remains an open risk.
  */
 export declare enum OverrideType {
     Attestation = "attestation",
-    Exception = "exception",
+    FalsePositive = "falsePositive",
     Inherited = "inherited",
+    OperationalRequirement = "operationalRequirement",
     Poam = "poam",
+    RiskAdjustment = "riskAdjustment",
     Waiver = "waiver"
 }

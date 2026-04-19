@@ -11,6 +11,7 @@ import (
 	hdf "github.com/mitre/hdf-schema"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 )
 
 // ConvertHDFToXCCDF converts HDF Results JSON to XCCDF 1.2 XML.
@@ -64,15 +65,15 @@ type XCCDFProfile struct {
 
 // XCCDFRule represents an XCCDF Rule element.
 type XCCDFRule struct {
-	XMLName     xml.Name      `xml:"Rule"`
-	ID          string        `xml:"id,attr"`
-	Severity    string        `xml:"severity,attr"`
-	Selected    string        `xml:"selected,attr"`
-	Title       string        `xml:"title"`
-	Description string        `xml:"description,omitempty"`
-	Fixtext     string        `xml:"fixtext,omitempty"`
-	Idents      []XCCDFIdent  `xml:"ident,omitempty"`
-	Check       *XCCDFCheck   `xml:"check,omitempty"`
+	XMLName     xml.Name     `xml:"Rule"`
+	ID          string       `xml:"id,attr"`
+	Severity    string       `xml:"severity,attr"`
+	Selected    string       `xml:"selected,attr"`
+	Title       string       `xml:"title"`
+	Description string       `xml:"description,omitempty"`
+	Fixtext     string       `xml:"fixtext,omitempty"`
+	Idents      []XCCDFIdent `xml:"ident,omitempty"`
+	Check       *XCCDFCheck  `xml:"check,omitempty"`
 }
 
 // XCCDFIdent represents an XCCDF ident element (e.g. CCI).
@@ -91,14 +92,14 @@ type XCCDFCheck struct {
 
 // XCCDFTestResult represents an XCCDF TestResult element.
 type XCCDFTestResult struct {
-	XMLName       xml.Name           `xml:"TestResult"`
-	ID            string             `xml:"id,attr"`
-	StartTime     string             `xml:"start-time,attr,omitempty"`
-	EndTime       string             `xml:"end-time,attr,omitempty"`
-	Title         string             `xml:"title"`
-	Target        string             `xml:"target"`
-	TargetAddress string             `xml:"target-address,omitempty"`
-	RuleResults   []XCCDFRuleResult  `xml:"rule-result"`
+	XMLName       xml.Name          `xml:"TestResult"`
+	ID            string            `xml:"id,attr"`
+	StartTime     string            `xml:"start-time,attr,omitempty"`
+	EndTime       string            `xml:"end-time,attr,omitempty"`
+	Title         string            `xml:"title"`
+	Target        string            `xml:"target"`
+	TargetAddress string            `xml:"target-address,omitempty"`
+	RuleResults   []XCCDFRuleResult `xml:"rule-result"`
 }
 
 // XCCDFRuleResult represents an XCCDF rule-result element.
@@ -237,7 +238,7 @@ func buildRule(req hdf.EvaluatedRequirement) XCCDFRule {
 	// Map CCI idents from tags
 	if req.Tags != nil {
 		if cciRaw, ok := req.Tags["cci"]; ok {
-			ccis := shared.SafeStringSlice(cciRaw)
+			ccis := hdfutil.SafeStringSlice(cciRaw)
 			for _, cci := range ccis {
 				rule.Idents = append(rule.Idents, XCCDFIdent{
 					System: "http://cyber.mil/cci",

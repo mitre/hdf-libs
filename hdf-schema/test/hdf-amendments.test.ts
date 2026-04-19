@@ -6,6 +6,7 @@ import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
 import resultSchema from '../src/schemas/primitives/result.schema.json';
 import amendmentsSchema from '../src/schemas/primitives/amendments.schema.json';
 import hdfAmendmentsSchema from '../src/schemas/hdf-amendments.schema.json';
+import { schemaRef } from './schema-ref';
 
 describe('hdf-amendments.schema.json', () => {
   const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
@@ -135,7 +136,7 @@ describe('amendments.schema.json — Standalone_Override', () => {
   ajv.addSchema(amendmentsSchema);
 
   const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v2.0.0#/$defs/Standalone_Override',
+    ...schemaRef(amendmentsSchema, 'Standalone_Override'),
   });
 
   const valid = {
@@ -155,13 +156,17 @@ describe('amendments.schema.json — Standalone_Override', () => {
   // -- All override types --
 
   it('should accept all override types', () => {
-    for (const type of ['waiver', 'attestation', 'exception', 'poam', 'inherited']) {
+    for (const type of ['waiver', 'attestation', 'poam', 'inherited', 'falsePositive', 'riskAdjustment', 'operationalRequirement']) {
       expect(validate({ ...valid, type })).toBe(true);
     }
   });
 
   it('should reject invalid override type', () => {
     expect(validate({ ...valid, type: 'approval' })).toBe(false);
+  });
+
+  it('should reject removed exception override type', () => {
+    expect(validate({ ...valid, type: 'exception' })).toBe(false);
   });
 
   // -- Required fields --
@@ -172,7 +177,7 @@ describe('amendments.schema.json — Standalone_Override', () => {
     expect(validate(obj)).toBe(false);
   });
 
-  it('should reject override missing status', () => {
+  it('should reject override missing both status and impact', () => {
     const obj = { ...valid } as Record<string, unknown>;
     delete obj.status;
     expect(validate(obj)).toBe(false);
@@ -326,6 +331,65 @@ describe('amendments.schema.json — Standalone_Override', () => {
       inheritedFrom: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
     };
     expect(validate(override)).toBe(true);
+  });
+
+  // -- New override types --
+
+  it('should accept falsePositive override type', () => {
+    expect(validate({ ...valid, type: 'falsePositive', status: 'notApplicable' })).toBe(true);
+  });
+
+  it('should accept riskAdjustment override type', () => {
+    const override = { ...valid } as Record<string, unknown>;
+    delete override.status;
+    expect(validate({ ...override, type: 'riskAdjustment', impact: { value: 0.3 } })).toBe(true);
+  });
+
+  it('should accept operationalRequirement override type', () => {
+    expect(validate({ ...valid, type: 'operationalRequirement' })).toBe(true);
+  });
+
+  // -- Impact override --
+
+  it('should accept override with impact only (no status)', () => {
+    const override = { ...valid } as Record<string, unknown>;
+    delete override.status;
+    expect(validate({ ...override, impact: { value: 0.5 } })).toBe(true);
+  });
+
+  it('should accept override with status only (no impact) — backward compat', () => {
+    expect(validate(valid)).toBe(true);
+  });
+
+  it('should accept override with both status and impact', () => {
+    expect(validate({ ...valid, impact: { value: 0.3 } })).toBe(true);
+  });
+
+  it('should reject override with neither status nor impact', () => {
+    const override = { ...valid } as Record<string, unknown>;
+    delete override.status;
+    expect(validate(override)).toBe(false);
+  });
+
+  it('should reject impact value below 0.0', () => {
+    expect(validate({ ...valid, impact: { value: -0.1 } })).toBe(false);
+  });
+
+  it('should reject impact value above 1.0', () => {
+    expect(validate({ ...valid, impact: { value: 1.1 } })).toBe(false);
+  });
+
+  it('should accept impact value at boundaries', () => {
+    expect(validate({ ...valid, impact: { value: 0.0 } })).toBe(true);
+    expect(validate({ ...valid, impact: { value: 1.0 } })).toBe(true);
+  });
+
+  it('should reject impact object without value', () => {
+    expect(validate({ ...valid, impact: {} })).toBe(false);
+  });
+
+  it('should reject impact with extra properties', () => {
+    expect(validate({ ...valid, impact: { value: 0.5, extra: 'bad' } })).toBe(false);
   });
 
   it('should validate inherited amendment in a full amendments document', () => {

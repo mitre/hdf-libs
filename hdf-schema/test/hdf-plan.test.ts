@@ -6,6 +6,7 @@ import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
 import systemSchema from '../src/schemas/primitives/system.schema.json';
 import planSchema from '../src/schemas/primitives/plan.schema.json';
 import hdfPlanSchema from '../src/schemas/hdf-plan.schema.json';
+import { schemaRef } from './schema-ref';
 
 describe('hdf-plan.schema.json', () => {
   const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
@@ -123,7 +124,7 @@ describe('plan.schema.json — Assessment', () => {
   ajv.addSchema(planSchema);
 
   const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/plan/v2.0.0#/$defs/Assessment',
+    ...schemaRef(planSchema, 'Assessment'),
   });
 
   it('should validate a minimal assessment', () => {
@@ -183,7 +184,7 @@ describe('plan.schema.json — Schedule', () => {
   ajv.addSchema(planSchema);
 
   const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/plan/v2.0.0#/$defs/Schedule',
+    ...schemaRef(planSchema, 'Schedule'),
   });
 
   it('should validate a minimal schedule', () => {
@@ -226,7 +227,7 @@ describe('plan.schema.json — Runner_Config', () => {
   ajv.addSchema(planSchema);
 
   const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/plan/v2.0.0#/$defs/Runner_Config',
+    ...schemaRef(planSchema, 'Runner_Config'),
   });
 
   it('should validate a runner config', () => {

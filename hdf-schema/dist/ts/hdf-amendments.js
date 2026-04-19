@@ -44,8 +44,7 @@ export var Status;
     Status["Pending"] = "pending";
 })(Status || (Status = {}));
 /**
- * The new status this amendment sets. For POA&Ms, this is the current status (POA&Ms track
- * work, they don't change status).
+ * The new status this amendment sets. Optional when only impact is being overridden.
  *
  * The status of an individual test result. 'notApplicable' indicates the requirement does
  * not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g.,
@@ -62,16 +61,27 @@ export var ResultStatus;
 /**
  * The type of amendment.
  *
- * The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified
- * (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked
- * (no status change). 'inherited': control provided by another component or system
- * (overrides to notApplicable/passed).
+ * The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk
+ * accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam':
+ * remediation tracked (no status change). 'inherited': control provided by another
+ * component or system. 'falsePositive': scanner incorrectly identified a finding — for
+ * compliance scans (STIG, CIS), the check actually passes, so status is typically set to
+ * 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to
+ * this system, so status is typically set to 'notApplicable'. The disposition field on the
+ * requirement distinguishes false positives from genuinely not-applicable findings.
+ * 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk
+ * Adjustment); does not change pass/fail status, only impact via the impact field.
+ * 'operationalRequirement': deviation required by operational constraints (FedRAMP
+ * Operational Requirement); the finding cannot be remediated because the system requires
+ * the affected functionality. Remains an open risk.
  */
 export var OverrideType;
 (function (OverrideType) {
     OverrideType["Attestation"] = "attestation";
-    OverrideType["Exception"] = "exception";
+    OverrideType["FalsePositive"] = "falsePositive";
     OverrideType["Inherited"] = "inherited";
+    OverrideType["OperationalRequirement"] = "operationalRequirement";
     OverrideType["Poam"] = "poam";
+    OverrideType["RiskAdjustment"] = "riskAdjustment";
     OverrideType["Waiver"] = "waiver";
 })(OverrideType || (OverrideType = {}));

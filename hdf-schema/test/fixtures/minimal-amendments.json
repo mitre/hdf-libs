@@ -1,0 +1,19 @@
+{
+  "name": "Smoke Test Waivers",
+  "description": "Minimal amendments fixture for CLI smoke testing.",
+  "overrides": [
+    {
+      "type": "waiver",
+      "requirementId": "SV-001",
+      "status": "passed",
+      "reason": "Risk accepted per AO memo dated 2026-01-15. Compensating control in place.",
+      "appliedBy": {
+        "identifier": "jane.smith@example.com",
+        "type": "email",
+        "name": "Jane Smith"
+      },
+      "appliedAt": "2026-03-01T12:00:00Z",
+      "expiresAt": "2026-09-01T12:00:00Z"
+    }
+  ]
+}

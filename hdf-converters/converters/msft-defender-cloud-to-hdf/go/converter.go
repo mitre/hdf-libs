@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -146,7 +147,7 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 			{
 				Name:      fmt.Sprintf("Azure Subscription %s", subscriptionID),
 				Type:      hdf.CloudAccount,
-				AccountID: shared.Ptr(subscriptionID),
+				AccountID: hdfutil.Ptr(subscriptionID),
 				Provider:  &azureProvider,
 				Labels: map[string]string{
 					"account":  subscriptionID,
@@ -160,10 +161,10 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "msft-defender-cloud-to-hdf",
 		ConverterVersion: converterVersion,
-		ToolName:   "Microsoft Defender for Cloud",
-		ToolFormat: "JSON",
+		ToolName:         "Microsoft Defender for Cloud",
+		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
-		Components:          targets,
+		Components:       targets,
 		Timestamp:        &now,
 	}), nil
 }
@@ -174,27 +175,27 @@ func buildRequirement(assessmentID string, assessments []assessment) hdf.Evaluat
 	rep := assessments[0]
 	meta := rep.Properties.Metadata
 
-	impact := shared.SeverityToImpact(meta.Severity, 0.5)
+	impact := hdfutil.SeverityToImpact(meta.Severity, 0.5)
 
 	// Build tags
 	tags := map[string]interface{}{}
 
 	// Categories
 	if len(meta.Categories) > 0 {
-		tags["categories"] = shared.StringsToInterfaces(meta.Categories)
+		tags["categories"] = hdfutil.StringsToInterfaces(meta.Categories)
 	}
 
 	// MITRE ATT&CK tactics and techniques
 	if len(meta.Tactics) > 0 {
-		tags["tactics"] = shared.StringsToInterfaces(meta.Tactics)
+		tags["tactics"] = hdfutil.StringsToInterfaces(meta.Tactics)
 	}
 	if len(meta.Techniques) > 0 {
-		tags["techniques"] = shared.StringsToInterfaces(meta.Techniques)
+		tags["techniques"] = hdfutil.StringsToInterfaces(meta.Techniques)
 	}
 
 	// Threats
 	if len(meta.Threats) > 0 {
-		tags["threats"] = shared.StringsToInterfaces(meta.Threats)
+		tags["threats"] = hdfutil.StringsToInterfaces(meta.Threats)
 	}
 
 	// Severity and additional metadata
@@ -245,9 +246,9 @@ func buildResult(a assessment) hdf.RequirementResult {
 
 	var message *string
 	if a.Properties.Status.Description != "" {
-		message = shared.Ptr(a.Properties.Status.Description)
+		message = hdfutil.Ptr(a.Properties.Status.Description)
 	} else if a.Properties.Status.Cause != "" {
-		message = shared.Ptr(a.Properties.Status.Cause)
+		message = hdfutil.Ptr(a.Properties.Status.Cause)
 	}
 
 	return hdf.RequirementResult{

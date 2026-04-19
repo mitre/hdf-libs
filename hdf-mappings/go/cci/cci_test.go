@@ -57,10 +57,10 @@ func TestGetCCIDescription(t *testing.T) {
 
 func TestGetCCINistMappings(t *testing.T) {
 	tests := []struct {
-		name       string
-		cciID      string
-		expectNil  bool
-		expectLen  int
+		name           string
+		cciID          string
+		expectNil      bool
+		expectLen      int
 		expectContains string
 	}{
 		{
@@ -71,10 +71,10 @@ func TestGetCCINistMappings(t *testing.T) {
 			expectContains: "CM-6 b",
 		},
 		{
-			name:          "CCI-000001 maps to AC-1 controls",
-			cciID:         "CCI-000001",
-			expectNil:     false,
-			expectLen:     3,
+			name:           "CCI-000001 maps to AC-1 controls",
+			cciID:          "CCI-000001",
+			expectNil:      false,
+			expectLen:      3,
 			expectContains: "AC-1 a",
 		},
 		{
