@@ -81,6 +81,18 @@ Hosted at: `https://mitre.github.io/hdf-libs/schemas/`
 - `generator` — converter that produced the HDF file (required: name + version)
 - `integrity` — root-level hash + optional signature (Integrity type)
 - `baselines[].resultsChecksum` / `originalChecksum` — per-baseline checksums (Checksum type)
+- `disposition` — Override_Type of the governing non-expired override (waiver, falsePositive, riskAdjustment, etc.)
+- `effectiveStatus` — Result_Status after overrides (passed, failed, notApplicable, notReviewed, error)
+- `effectiveImpact` — impact score (0.0–1.0) after impact overrides
+
+### Schema examples convention
+When adding or modifying a `$defs` type in the schema source files, always add or update the `examples` array on the definition. Examples should:
+- Use realistic data (real STIG IDs, plausible CVEs, genuine tool output patterns)
+- Include a `$comment` field explaining what the example demonstrates
+- Cover the key usage patterns and edge cases (e.g., both compliance-scan and CVE-scan false positives)
+- Be valid against the schema — the bundler includes them in dist, and consumers see them in IDE tooltips
+
+See `Evaluated_Requirement` in `hdf-results.schema.json` for the model to follow.
 
 ## Converter Pattern
 

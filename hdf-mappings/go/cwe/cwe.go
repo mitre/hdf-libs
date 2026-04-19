@@ -11,8 +11,8 @@ import (
 
 // cweMapping represents one row in the CWE→NIST mapping table.
 type cweMapping struct {
-	CWEID   int    `json:"CWE-ID"`
-	NISTID  string `json:"NIST-ID"`
+	CWEID  int    `json:"CWE-ID"`
+	NISTID string `json:"NIST-ID"`
 }
 
 //go:embed cwe-nist-mappings.json

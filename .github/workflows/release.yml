@@ -12,8 +12,10 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+# NODE_VERSION pinned to the current LTS (22). Matches each published
+# package's `engines.node: ">=22.0.0"`.
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
   GO_VERSION: '1.26.2'
 
 jobs:
@@ -25,14 +27,14 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: 'https://registry.npmjs.org'
 
-      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -71,16 +73,24 @@ jobs:
             hdf-extension-graph
           )
 
-          # Pre-release tags (v3.0.0-rc.1) publish with --tag next
+          # Pre-release tags publish with npm dist-tag `next` instead of `latest`.
+          # Convention for this repo: `rc` is the only pre-release identifier.
+          # Any tag with `-rc` in it (e.g. v3.1.0-rc.1, v3.1.0-rc.2) is a
+          # pre-release; a bare semver tag (v3.1.0) is a stable release.
           TAG_FLAG=""
-          if [[ "$VERSION" == *"-"* ]]; then
+          if [[ "$VERSION" == *"-rc"* ]]; then
             TAG_FLAG="--tag next"
           fi
 
+          # Use pnpm publish (not npm) so that workspace:* dependency specifiers
+          # are rewritten to the actual published versions in the tarball.
+          # npm publish ships package.json verbatim and breaks consumers with
+          # EUNSUPPORTEDPROTOCOL. --no-git-checks is required because the
+          # "Set version from tag" step above leaves the working tree dirty.
           for pkg in "${PACKAGES[@]}"; do
             echo "Publishing $pkg@$VERSION..."
             cd "$pkg"
-            npm publish --access public $TAG_FLAG
+            pnpm publish --access public --no-git-checks $TAG_FLAG
             cd ..
           done
 
@@ -91,7 +101,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -123,7 +133,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: ./.github/actions/setup
 
@@ -144,7 +154,7 @@ jobs:
     permissions:
       contents: write  # create GitHub Release + push Go module tags
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -209,7 +219,10 @@ jobs:
             https://mitre.github.io/hdf-libs/schemas/
           files: release-assets/*
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          # Convention: any tag with `-rc` in it is a pre-release (see
+          # publish-npm job for the matching check). A bare semver tag
+          # (v3.1.0) creates a stable release.
+          prerelease: ${{ contains(github.ref_name, '-rc') }}
 
       - name: Create Go module version tags
         run: |

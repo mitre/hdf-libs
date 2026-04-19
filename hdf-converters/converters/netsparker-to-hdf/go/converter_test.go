@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -218,7 +219,7 @@ func TestConvertNetsparker_DualNistMapping(t *testing.T) {
 	// First vuln: CWE-327 → SC-12/SC-13, OWASP A6 → CM-6
 	req := findRequirement(reqs, "e8b418ae-a532-4b43-5d9b-af9b04bbbca3")
 	require.NotNil(t, req)
-	nist := shared.SafeStringSlice(req.Tags["nist"])
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist, "nist tag should be present")
 	assert.NotEmpty(t, nist)
 	// Should contain OWASP A6 mapping (CM-6) in addition to CWE mappings
@@ -238,12 +239,12 @@ func TestConvertNetsparker_Tags(t *testing.T) {
 	require.NotNil(t, req)
 
 	// nist should be present
-	nist := shared.SafeStringSlice(req.Tags["nist"])
+	nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 	require.NotNil(t, nist)
 	assert.NotEmpty(t, nist)
 
 	// cci should be present
-	cciSlice := shared.SafeStringSlice(req.Tags["cci"])
+	cciSlice := hdfutil.SafeStringSlice(req.Tags["cci"])
 	require.NotNil(t, cciSlice)
 	assert.NotEmpty(t, cciSlice)
 

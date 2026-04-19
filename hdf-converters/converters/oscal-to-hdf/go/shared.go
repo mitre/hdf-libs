@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -185,21 +186,7 @@ func ToKebabCase(title, fallback string) string {
 	if title == "" {
 		return fallback
 	}
-	name := strings.ToLower(title)
-	name = strings.Map(func(r rune) rune {
-		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
-			return r
-		}
-		return '-'
-	}, name)
-	for strings.Contains(name, "--") {
-		name = strings.ReplaceAll(name, "--", "-")
-	}
-	name = strings.Trim(name, "-")
-	if len(name) > 80 {
-		name = name[:80]
-	}
-	return name
+	return hdfutil.ToKebabCase(title)
 }
 
 // nistEnhancementReverseRe matches NIST tags with enhancements like "AC-2 (3)".

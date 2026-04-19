@@ -8,6 +8,7 @@ import (
 
 	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -117,13 +118,13 @@ func extractEnrichments(raw msdoSarif) ([]hdf.Component, []runEnrichment) {
 				target := hdf.Component{
 					Name: repoNameFromURI(vcp.RepositoryURI),
 					Type: hdf.Repository,
-					URL:  shared.Ptr(vcp.RepositoryURI),
+					URL:  hdfutil.Ptr(vcp.RepositoryURI),
 				}
 				if vcp.Branch != "" {
-					target.Branch = shared.Ptr(vcp.Branch)
+					target.Branch = hdfutil.Ptr(vcp.Branch)
 				}
 				if vcp.RevisionID != "" {
-					target.Commit = shared.Ptr(vcp.RevisionID)
+					target.Commit = hdfutil.Ptr(vcp.RevisionID)
 				}
 				targets = append(targets, target)
 			}

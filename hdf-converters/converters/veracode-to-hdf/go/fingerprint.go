@@ -2,7 +2,7 @@ package veracode
 
 import (
 	"github.com/mitre/hdf-converters/registry"
-	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 )
 
 func init() {
@@ -17,7 +17,7 @@ func init() {
 			if !ok {
 				return 0
 			}
-			if shared.ExtractXMLRootElement(s) == "detailedreport" {
+			if hdfutil.ExtractXMLRootElement(s) == "detailedreport" {
 				return 1.0
 			}
 			return 0

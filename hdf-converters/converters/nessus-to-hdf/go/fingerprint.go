@@ -2,7 +2,7 @@ package nessus
 
 import (
 	"github.com/mitre/hdf-converters/registry"
-	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 )
 
 func init() {
@@ -17,7 +17,7 @@ func init() {
 			if !ok {
 				return 0
 			}
-			if shared.ExtractXMLRootElement(s) == "NessusClientData_v2" {
+			if hdfutil.ExtractXMLRootElement(s) == "NessusClientData_v2" {
 				return 1.0
 			}
 			return 0
@@ -27,7 +27,7 @@ func init() {
 			if !ok {
 				return ""
 			}
-			if shared.ExtractXMLRootElement(s) == "NessusClientData_v2" {
+			if hdfutil.ExtractXMLRootElement(s) == "NessusClientData_v2" {
 				return "2"
 			}
 			return ""

@@ -43,8 +43,40 @@ export var HashAlgorithm;
     HashAlgorithm["Sha512"] = "sha512";
 })(HashAlgorithm || (HashAlgorithm = {}));
 /**
- * The current effective status of this requirement after applying the most recent
- * non-expired override, or computed from results if no overrides exist.
+ * The type of the most recent non-expired override governing this requirement. Indicates
+ * why the requirement is in its current state (e.g., waiver, falsePositive,
+ * riskAdjustment). Absent when no overrides apply.
+ *
+ * The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk
+ * accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam':
+ * remediation tracked (no status change). 'inherited': control provided by another
+ * component or system. 'falsePositive': scanner incorrectly identified a finding — for
+ * compliance scans (STIG, CIS), the check actually passes, so status is typically set to
+ * 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to
+ * this system, so status is typically set to 'notApplicable'. The disposition field on the
+ * requirement distinguishes false positives from genuinely not-applicable findings.
+ * 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk
+ * Adjustment); does not change pass/fail status, only impact via the impact field.
+ * 'operationalRequirement': deviation required by operational constraints (FedRAMP
+ * Operational Requirement); the finding cannot be remediated because the system requires
+ * the affected functionality. Remains an open risk.
+ *
+ * The type of override applied to this requirement.
+ */
+export var OverrideType;
+(function (OverrideType) {
+    OverrideType["Attestation"] = "attestation";
+    OverrideType["FalsePositive"] = "falsePositive";
+    OverrideType["Inherited"] = "inherited";
+    OverrideType["OperationalRequirement"] = "operationalRequirement";
+    OverrideType["Poam"] = "poam";
+    OverrideType["RiskAdjustment"] = "riskAdjustment";
+    OverrideType["Waiver"] = "waiver";
+})(OverrideType || (OverrideType = {}));
+/**
+ * The current effective compliance status of this requirement after applying the most
+ * recent non-expired override with a status field, or computed from results (worst-wins) if
+ * no status-bearing overrides exist.
  *
  * The status of an individual test result. 'notApplicable' indicates the requirement does
  * not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g.,
@@ -52,8 +84,8 @@ export var HashAlgorithm;
  *
  * The status of this test within the requirement. Example: 'failed'.
  *
- * The new status this override sets for the requirement. This intentionally changes the
- * compliance status.
+ * The new status this override sets for the requirement. Optional when only impact is being
+ * overridden.
  */
 export var ResultStatus;
 (function (ResultStatus) {
@@ -100,12 +132,14 @@ export var Status;
 /**
  * The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via
  * compensating controls. 'riskAcceptance' documents decision to accept risk.
+ * 'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update.
  */
 export var PoamType;
 (function (PoamType) {
     PoamType["Mitigation"] = "mitigation";
     PoamType["Remediation"] = "remediation";
     PoamType["RiskAcceptance"] = "riskAcceptance";
+    PoamType["VendorDependency"] = "vendorDependency";
 })(PoamType || (PoamType = {}));
 /**
  * Explicit severity rating. Typically derived from impact score but provided explicitly for
@@ -121,22 +155,6 @@ export var Severity;
     Severity["Low"] = "low";
     Severity["Medium"] = "medium";
 })(Severity || (Severity = {}));
-/**
- * The type of status override applied to this requirement.
- *
- * The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified
- * (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked
- * (no status change). 'inherited': control provided by another component or system
- * (overrides to notApplicable/passed).
- */
-export var OverrideType;
-(function (OverrideType) {
-    OverrideType["Attestation"] = "attestation";
-    OverrideType["Exception"] = "exception";
-    OverrideType["Inherited"] = "inherited";
-    OverrideType["Poam"] = "poam";
-    OverrideType["Waiver"] = "waiver";
-})(OverrideType || (OverrideType = {}));
 export var CloudProvider;
 (function (CloudProvider) {
     CloudProvider["Aws"] = "aws";

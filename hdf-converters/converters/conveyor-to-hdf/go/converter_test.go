@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,7 +43,6 @@ func containsStr(s, substr string) bool {
 	}
 	return false
 }
-
 
 // ---- Input validation ----
 
@@ -278,7 +278,7 @@ func TestConvertConveyor_NISTTags(t *testing.T) {
 
 	for _, baseline := range result.Baselines {
 		for _, req := range baseline.Requirements {
-			nist := shared.SafeStringSlice(req.Tags["nist"])
+			nist := hdfutil.SafeStringSlice(req.Tags["nist"])
 			assert.NotEmpty(t, nist,
 				"each requirement should have NIST tags (req %s)", req.ID)
 		}

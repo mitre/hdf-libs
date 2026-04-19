@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	diff "github.com/mitre/hdf-diff/go"
 )
 
 // --- Fixture builders for diff tests ---
@@ -221,8 +223,8 @@ func TestDiffCommand_JSONOutput(t *testing.T) {
 	if _, ok := output["summary"]; !ok {
 		t.Error("expected 'summary' key in JSON output")
 	}
-	if _, ok := output["requirements"]; !ok {
-		t.Error("expected 'requirements' key in JSON output")
+	if _, ok := output["requirementDiffs"]; !ok {
+		t.Error("expected 'requirementDiffs' key in JSON output")
 	}
 
 	// Check summary counts
@@ -245,9 +247,9 @@ func TestDiffCommand_JSONOutput(t *testing.T) {
 	}
 
 	// Check requirements array
-	reqs, ok := output["requirements"].([]interface{})
+	reqs, ok := output["requirementDiffs"].([]interface{})
 	if !ok {
-		t.Fatal("expected 'requirements' to be an array")
+		t.Fatal("expected 'requirementDiffs' to be an array")
 	}
 	if len(reqs) == 0 {
 		t.Error("expected non-empty requirements array")
@@ -341,7 +343,7 @@ func TestDiffCommand_DefaultExitCode_Differences(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	_, _, err := executeCommand("diff", oldPath, newPath)
-	requireExitCode(t, err, exitDifferences)
+	requireExitCode(t, err, diff.Differences)
 }
 
 // TestDiffCommand_DefaultExitCode_Identical verifies exit code 0 by default
@@ -362,7 +364,7 @@ func TestDiffCommand_ExitCode_Differences(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	_, _, err := executeCommand("diff", "--exit-code", oldPath, newPath)
-	requireExitCode(t, err, exitDifferences)
+	requireExitCode(t, err, diff.Differences)
 }
 
 // TestDiffCommand_ExitCode_Identical verifies that --exit-code returns exit code 0
@@ -383,7 +385,7 @@ func TestDiffCommand_ExitCode_FixesOnly(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFSinglePassed())
 
 	_, _, err := executeCommand("diff", "--exit-code", oldPath, newPath)
-	requireExitCode(t, err, exitDifferences)
+	requireExitCode(t, err, diff.Differences)
 }
 
 // --- Detailed exit code tests ---
@@ -404,7 +406,7 @@ func TestDiffCommand_DetailedExitCode_FixesOnly(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFSinglePassed())
 
 	_, _, err := executeCommand("diff", "--detailed-exitcode", oldPath, newPath)
-	requireExitCode(t, err, exitFixesOnly)
+	requireExitCode(t, err, diff.FixesOnly)
 }
 
 // TestDiffCommand_DetailedExitCode_RegressionsOnly verifies regressions-only → exit 11.
@@ -414,7 +416,7 @@ func TestDiffCommand_DetailedExitCode_RegressionsOnly(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFSingleFailed())
 
 	_, _, err := executeCommand("diff", "--detailed-exitcode", oldPath, newPath)
-	requireExitCode(t, err, exitRegressionsOnly)
+	requireExitCode(t, err, diff.RegressionsOnly)
 }
 
 // TestDiffCommand_DetailedExitCode_Mixed verifies mixed fixes+regressions → exit 12.
@@ -425,7 +427,7 @@ func TestDiffCommand_DetailedExitCode_Mixed(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	_, _, err := executeCommand("diff", "--detailed-exitcode", oldPath, newPath)
-	requireExitCode(t, err, exitMixed)
+	requireExitCode(t, err, diff.Mixed)
 }
 
 // TestDiffCommand_DetailedExitCode_BaselineChanged verifies new/absent controls only → exit 13.
@@ -463,7 +465,7 @@ func TestDiffCommand_DetailedExitCode_BaselineChanged(t *testing.T) {
 	newPath := writeHDFFixture(t, newFixture)
 
 	_, _, err := executeCommand("diff", "--detailed-exitcode", oldPath, newPath)
-	requireExitCode(t, err, exitBaselineChanged)
+	requireExitCode(t, err, diff.BaselineChanged)
 }
 
 // TestDiffCommand_DetailedExitCode_DriftOnly verifies metadata-only changes → exit 14.
@@ -474,7 +476,7 @@ func TestDiffCommand_DetailedExitCode_DriftOnly(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFUpdated())
 
 	_, _, err := executeCommand("diff", "--detailed-exitcode", oldPath, newPath)
-	requireExitCode(t, err, exitDriftOnly)
+	requireExitCode(t, err, diff.DriftOnly)
 }
 
 // TestDiffCommand_DetailedExitCode_HelpText verifies the flag appears in help.
@@ -596,24 +598,24 @@ func TestDiffCommand_FilterAbsent(t *testing.T) {
 func TestComputeBasicExitCode(t *testing.T) {
 	tests := []struct {
 		name    string
-		summary diffSummary
+		summary diff.ComparisonSummary
 		want    int
 	}{
-		{"identical", diffSummary{Total: 10, Unchanged: 10}, exitIdentical},
-		{"empty", diffSummary{Total: 0, Unchanged: 0}, exitIdentical},
-		{"fixes", diffSummary{Total: 10, Fixed: 3, Unchanged: 7}, exitDifferences},
-		{"regressions", diffSummary{Total: 10, Regressed: 2, Unchanged: 8}, exitDifferences},
-		{"mixed", diffSummary{Total: 10, Fixed: 1, Regressed: 1, Unchanged: 8}, exitDifferences},
-		{"new only", diffSummary{Total: 12, New: 2, Unchanged: 10}, exitDifferences},
-		{"absent only", diffSummary{Total: 10, Absent: 3, Unchanged: 7}, exitDifferences},
-		{"updated only", diffSummary{Total: 10, Updated: 1, Unchanged: 9}, exitDifferences},
+		{"identical", diff.ComparisonSummary{Total: 10, Unchanged: 10}, diff.Identical},
+		{"empty", diff.ComparisonSummary{Total: 0, Unchanged: 0}, diff.Identical},
+		{"fixes", diff.ComparisonSummary{Total: 10, Fixed: 3, Unchanged: 7}, diff.Differences},
+		{"regressions", diff.ComparisonSummary{Total: 10, Regressed: 2, Unchanged: 8}, diff.Differences},
+		{"mixed", diff.ComparisonSummary{Total: 10, Fixed: 1, Regressed: 1, Unchanged: 8}, diff.Differences},
+		{"new only", diff.ComparisonSummary{Total: 12, New: 2, Unchanged: 10}, diff.Differences},
+		{"absent only", diff.ComparisonSummary{Total: 10, Absent: 3, Unchanged: 7}, diff.Differences},
+		{"updated only", diff.ComparisonSummary{Total: 10, Updated: 1, Unchanged: 9}, diff.Differences},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := computeBasicExitCode(tt.summary)
+			got := diff.ComputeBasicExitCode(tt.summary)
 			if got != tt.want {
-				t.Errorf("computeBasicExitCode(%v) = %d, want %d", tt.summary, got, tt.want)
+				t.Errorf("diff.ComputeBasicExitCode(%v) = %d, want %d", tt.summary, got, tt.want)
 			}
 		})
 	}
@@ -623,29 +625,29 @@ func TestComputeBasicExitCode(t *testing.T) {
 func TestComputeDetailedExitCode(t *testing.T) {
 	tests := []struct {
 		name    string
-		summary diffSummary
+		summary diff.ComparisonSummary
 		want    int
 	}{
-		{"identical", diffSummary{Total: 10, Unchanged: 10}, exitIdentical},
-		{"empty", diffSummary{Total: 0, Unchanged: 0}, exitIdentical},
-		{"fixes only", diffSummary{Total: 10, Fixed: 3, Unchanged: 7}, exitFixesOnly},
-		{"regressions only", diffSummary{Total: 10, Regressed: 2, Unchanged: 8}, exitRegressionsOnly},
-		{"mixed", diffSummary{Total: 10, Fixed: 2, Regressed: 1, Unchanged: 7}, exitMixed},
-		{"new only", diffSummary{Total: 12, New: 2, Unchanged: 10}, exitBaselineChanged},
-		{"absent only", diffSummary{Total: 10, Absent: 3, Unchanged: 7}, exitBaselineChanged},
-		{"new and absent", diffSummary{Total: 10, New: 1, Absent: 1, Unchanged: 8}, exitBaselineChanged},
-		{"updated only (drift)", diffSummary{Total: 10, Updated: 1, Unchanged: 9}, exitDriftOnly},
-		{"fixes + new (fixes take priority)", diffSummary{Total: 10, Fixed: 2, New: 1, Unchanged: 7}, exitFixesOnly},
-		{"regressions + absent (regressions take priority)", diffSummary{Total: 10, Regressed: 1, Absent: 2, Unchanged: 7}, exitRegressionsOnly},
-		{"all categories present", diffSummary{Total: 10, Fixed: 1, Regressed: 1, New: 1, Absent: 1, Unchanged: 6}, exitMixed},
-		{"updated + new (baseline takes priority over drift)", diffSummary{Total: 10, Updated: 1, New: 1, Unchanged: 8}, exitBaselineChanged},
+		{"identical", diff.ComparisonSummary{Total: 10, Unchanged: 10}, diff.Identical},
+		{"empty", diff.ComparisonSummary{Total: 0, Unchanged: 0}, diff.Identical},
+		{"fixes only", diff.ComparisonSummary{Total: 10, Fixed: 3, Unchanged: 7}, diff.FixesOnly},
+		{"regressions only", diff.ComparisonSummary{Total: 10, Regressed: 2, Unchanged: 8}, diff.RegressionsOnly},
+		{"mixed", diff.ComparisonSummary{Total: 10, Fixed: 2, Regressed: 1, Unchanged: 7}, diff.Mixed},
+		{"new only", diff.ComparisonSummary{Total: 12, New: 2, Unchanged: 10}, diff.BaselineChanged},
+		{"absent only", diff.ComparisonSummary{Total: 10, Absent: 3, Unchanged: 7}, diff.BaselineChanged},
+		{"new and absent", diff.ComparisonSummary{Total: 10, New: 1, Absent: 1, Unchanged: 8}, diff.BaselineChanged},
+		{"updated only (drift)", diff.ComparisonSummary{Total: 10, Updated: 1, Unchanged: 9}, diff.DriftOnly},
+		{"fixes + new (fixes take priority)", diff.ComparisonSummary{Total: 10, Fixed: 2, New: 1, Unchanged: 7}, diff.FixesOnly},
+		{"regressions + absent (regressions take priority)", diff.ComparisonSummary{Total: 10, Regressed: 1, Absent: 2, Unchanged: 7}, diff.RegressionsOnly},
+		{"all categories present", diff.ComparisonSummary{Total: 10, Fixed: 1, Regressed: 1, New: 1, Absent: 1, Unchanged: 6}, diff.Mixed},
+		{"updated + new (baseline takes priority over drift)", diff.ComparisonSummary{Total: 10, Updated: 1, New: 1, Unchanged: 8}, diff.BaselineChanged},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := computeDetailedExitCode(tt.summary)
+			got := diff.ComputeDetailedExitCode(tt.summary)
 			if got != tt.want {
-				t.Errorf("computeDetailedExitCode(%v) = %d, want %d", tt.summary, got, tt.want)
+				t.Errorf("diff.ComputeDetailedExitCode(%v) = %d, want %d", tt.summary, got, tt.want)
 			}
 		})
 	}
@@ -780,9 +782,9 @@ func TestDiffCommand_SystemFlag_JSON(t *testing.T) {
 	}
 
 	// Should have componentSummaries
-	cs, ok := output["componentSummaries"].([]interface{})
+	cs, ok := output["componentDiffs"].([]interface{})
 	if !ok {
-		t.Fatalf("expected 'componentSummaries' array in JSON output, got: %v", output["componentSummaries"])
+		t.Fatalf("expected 'componentDiffs' array in JSON output, got: %v", output["componentDiffs"])
 	}
 	if len(cs) != 2 {
 		t.Errorf("expected 2 component summaries, got %d", len(cs))
@@ -811,20 +813,30 @@ func TestDiffCommand_SystemFlag_MissingFile(t *testing.T) {
 	}
 }
 
-// TestDiffCommand_GroupByBaseline verifies --group-by baseline groups by baseline name.
+// TestDiffCommand_GroupByBaseline verifies --group-by baseline adds a Baseline column.
 func TestDiffCommand_GroupByBaseline(t *testing.T) {
 	oldPath := writeHDFFixture(t, syntheticHDFTwoBaselinesOld())
 	newPath := writeHDFFixture(t, syntheticHDFTwoBaselinesNew())
 
+	// Without --all, only changed requirements are shown
 	stdout, stderr, err := executeCommand("diff", "--group-by", "baseline", oldPath, newPath)
 	allowExitCode(t, err, stderr)
 
-	// Should show baseline names as group labels
+	// Should have a Baseline column header
+	if !strings.Contains(stdout, "Baseline") {
+		t.Errorf("expected 'Baseline' column header, got:\n%s", stdout)
+	}
+	// Changed requirement should show its baseline
 	if !strings.Contains(stdout, "RHEL9-STIG") {
 		t.Errorf("expected 'RHEL9-STIG' in grouped output, got:\n%s", stdout)
 	}
+
+	// With --all, unchanged requirements (including PostgreSQL-STIG) are shown
+	stdout, stderr, err = executeCommand("diff", "--group-by", "baseline", "--all", oldPath, newPath)
+	allowExitCode(t, err, stderr)
+
 	if !strings.Contains(stdout, "PostgreSQL-STIG") {
-		t.Errorf("expected 'PostgreSQL-STIG' in grouped output, got:\n%s", stdout)
+		t.Errorf("expected 'PostgreSQL-STIG' in --all grouped output, got:\n%s", stdout)
 	}
 }
 
@@ -1116,7 +1128,7 @@ func TestDiffCommand_SystemDrift_ExitCode(t *testing.T) {
 	newPath := writeJSONFixture(t, syntheticSystemNew())
 
 	_, _, err := executeCommand("diff", oldPath, newPath)
-	requireExitCode(t, err, exitDifferences)
+	requireExitCode(t, err, diff.Differences)
 }
 
 // TestDiffCommand_SystemDrift_DataFlowChanges verifies data flow diffs are reported.

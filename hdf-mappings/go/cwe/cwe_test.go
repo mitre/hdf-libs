@@ -92,13 +92,14 @@ func TestNISTControls_CasePrefixHandling(t *testing.T) {
 
 func TestLoadCWEData_InvalidJSON(t *testing.T) {
 	// Exercise the json.Unmarshal error path in loadCWEData.
+	// sync.Once is not copy-safe; reset in defer rather than save/restore
+	// (loadCWEData is idempotent).
 	origData := cweMappingsData
 	origMap := cweData
-	origOnce := cweDataOnce
 	defer func() {
 		cweMappingsData = origData
 		cweData = origMap
-		cweDataOnce = origOnce
+		cweDataOnce = sync.Once{}
 	}()
 
 	cweMappingsData = []byte("not valid json")

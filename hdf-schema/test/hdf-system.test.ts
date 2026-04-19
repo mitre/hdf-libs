@@ -7,6 +7,7 @@ import systemSchema from '../src/schemas/primitives/system.schema.json';
 import componentSchema from '../src/schemas/primitives/component.schema.json';
 import dataFlowSchema from '../src/schemas/primitives/data-flow.schema.json';
 import hdfSystemSchema from '../src/schemas/hdf-system.schema.json';
+import { schemaRef } from './schema-ref';
 
 describe('hdf-system.schema.json', () => {
   const ajv = new Ajv2020({ strict: false, allErrors: true, validateFormats: true });
@@ -289,7 +290,7 @@ describe('system.schema.json — Input_Override', () => {
   ajv.addSchema(systemSchema);
 
   const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Input_Override',
+    ...schemaRef(systemSchema, 'Input_Override'),
   });
 
   it('should validate a minimal override', () => {
@@ -333,7 +334,7 @@ describe('system.schema.json — Control_Designation', () => {
   ajv.addSchema(systemSchema);
 
   const validate = ajv.compile({
-    $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/system/v2.0.0#/$defs/Control_Designation',
+    ...schemaRef(systemSchema, 'Control_Designation'),
   });
 
   const minimal = {

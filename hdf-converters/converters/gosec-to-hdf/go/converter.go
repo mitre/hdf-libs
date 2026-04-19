@@ -9,6 +9,7 @@ import (
 	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
 	"github.com/mitre/hdf-converters/registry"
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cwe"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -58,7 +59,7 @@ type GosecIssue struct {
 
 // getImpact maps gosec severity strings to HDF impact values.
 func getImpact(severity string) float64 {
-	return shared.SeverityToImpact(severity, 0.5)
+	return hdfutil.SeverityToImpact(severity, 0.5)
 }
 
 // isSuppressed reports whether an issue should be treated as notReviewed.
@@ -231,11 +232,11 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 	now := time.Now().UTC()
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:     "gosec-to-hdf",
-		ConverterVersion:  converterVersion,
-		ToolName:    "gosec",
-		ToolVersion: report.GosecVersion,
-		Baselines:         []hdf.EvaluatedBaseline{baseline},
-		Timestamp:         &now,
+		GeneratorName:    "gosec-to-hdf",
+		ConverterVersion: converterVersion,
+		ToolName:         "gosec",
+		ToolVersion:      report.GosecVersion,
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
+		Timestamp:        &now,
 	}), nil
 }

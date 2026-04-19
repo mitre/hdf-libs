@@ -422,8 +422,21 @@ export interface EvaluatedRequirement {
      */
     descriptions: Description[];
     /**
-     * The current effective status of this requirement after applying the most recent
-     * non-expired override, or computed from results if no overrides exist.
+     * The type of the most recent non-expired override governing this requirement. Indicates
+     * why the requirement is in its current state (e.g., waiver, falsePositive,
+     * riskAdjustment). Absent when no overrides apply.
+     */
+    disposition?: OverrideType;
+    /**
+     * The current effective impact score (0.0–1.0) after applying the most recent non-expired
+     * override with an impact field. Absent when no impact overrides apply; consumers should
+     * use the requirement's impact field in that case.
+     */
+    effectiveImpact?: number;
+    /**
+     * The current effective compliance status of this requirement after applying the most
+     * recent non-expired override with a status field, or computed from results (worst-wins) if
+     * no status-bearing overrides exist.
      */
     effectiveStatus?: ResultStatus;
     /**
@@ -451,9 +464,10 @@ export interface EvaluatedRequirement {
      */
     sourceLocation?: SourceLocation;
     /**
-     * Chronological history of all status overrides applied to this requirement. Status
-     * overrides are intentional changes to the compliance status (waivers, attestations). Most
-     * recent override should be first in array. Preserves full audit trail.
+     * Chronological history of all overrides applied to this requirement. Overrides are
+     * intentional changes to the compliance status and/or impact score (waivers, attestations,
+     * false positives, risk adjustments). Most recent override should be first in array.
+     * Preserves full audit trail.
      */
     statusOverrides?: StatusOverride[];
     /**
@@ -499,8 +513,40 @@ export interface Description {
 }
 
 /**
- * The current effective status of this requirement after applying the most recent
- * non-expired override, or computed from results if no overrides exist.
+ * The type of the most recent non-expired override governing this requirement. Indicates
+ * why the requirement is in its current state (e.g., waiver, falsePositive,
+ * riskAdjustment). Absent when no overrides apply.
+ *
+ * The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk
+ * accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam':
+ * remediation tracked (no status change). 'inherited': control provided by another
+ * component or system. 'falsePositive': scanner incorrectly identified a finding — for
+ * compliance scans (STIG, CIS), the check actually passes, so status is typically set to
+ * 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to
+ * this system, so status is typically set to 'notApplicable'. The disposition field on the
+ * requirement distinguishes false positives from genuinely not-applicable findings.
+ * 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk
+ * Adjustment); does not change pass/fail status, only impact via the impact field.
+ * 'operationalRequirement': deviation required by operational constraints (FedRAMP
+ * Operational Requirement); the finding cannot be remediated because the system requires
+ * the affected functionality. Remains an open risk.
+ *
+ * The type of override applied to this requirement.
+ */
+export enum OverrideType {
+    Attestation = "attestation",
+    FalsePositive = "falsePositive",
+    Inherited = "inherited",
+    OperationalRequirement = "operationalRequirement",
+    Poam = "poam",
+    RiskAdjustment = "riskAdjustment",
+    Waiver = "waiver",
+}
+
+/**
+ * The current effective compliance status of this requirement after applying the most
+ * recent non-expired override with a status field, or computed from results (worst-wins) if
+ * no status-bearing overrides exist.
  *
  * The status of an individual test result. 'notApplicable' indicates the requirement does
  * not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g.,
@@ -508,8 +554,8 @@ export interface Description {
  *
  * The status of this test within the requirement. Example: 'failed'.
  *
- * The new status this override sets for the requirement. This intentionally changes the
- * compliance status.
+ * The new status this override sets for the requirement. Optional when only impact is being
+ * overridden.
  */
 export enum ResultStatus {
     Error = "error",
@@ -573,8 +619,8 @@ export interface Evidence {
  *
  * The identity that created this signature.
  *
- * Identity of who applied this status override. For simple cases, use type 'simple' with
- * just an identifier.
+ * Identity of who applied this override. For simple cases, use type 'simple' with just an
+ * identifier.
  *
  * Identity of the person or system that approved this override.
  *
@@ -674,6 +720,7 @@ export interface Poam {
     /**
      * The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via
      * compensating controls. 'riskAcceptance' documents decision to accept risk.
+     * 'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update.
      */
     type: PoamType;
     [property: string]: any;
@@ -803,11 +850,13 @@ export interface VerificationMethod {
 /**
  * The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via
  * compensating controls. 'riskAcceptance' documents decision to accept risk.
+ * 'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update.
  */
 export enum PoamType {
     Mitigation = "mitigation",
     Remediation = "remediation",
     RiskAcceptance = "riskAcceptance",
+    VendorDependency = "vendorDependency",
 }
 
 /**
@@ -903,30 +952,34 @@ export interface SourceLocation {
 }
 
 /**
- * An intentional change to a requirement's compliance status (waiver or attestation).
- * Status overrides change the effectiveStatus of the requirement. All status overrides must
- * have an expiration date to enforce periodic review.
+ * An intentional change to a requirement's compliance status and/or impact score. At least
+ * one of status or impact must be set. Overrides change the effectiveStatus or impact of
+ * the requirement. All overrides must have an expiration date to enforce periodic review.
  */
 export interface StatusOverride {
     /**
-     * Timestamp when this status override was applied. ISO 8601 format.
+     * Timestamp when this override was applied. ISO 8601 format.
      */
     appliedAt: Date;
     /**
-     * Identity of who applied this status override. For simple cases, use type 'simple' with
-     * just an identifier.
+     * Identity of who applied this override. For simple cases, use type 'simple' with just an
+     * identifier.
      */
     appliedBy: Identity;
     /**
-     * Supporting evidence for this status override, such as screenshots demonstrating manual
+     * Supporting evidence for this override, such as screenshots demonstrating manual
      * verification for attestations.
      */
     evidence?: Evidence[];
     /**
-     * Timestamp when this status override expires and must be reviewed/renewed. REQUIRED - no
-     * permanent status overrides allowed. ISO 8601 format.
+     * Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no
+     * permanent overrides allowed. ISO 8601 format.
      */
     expiresAt: Date;
+    /**
+     * Override to the requirement's impact score. At least one of status or impact must be set.
+     */
+    impact?: ImpactOverride;
     /**
      * SHA-256 checksum of the previous amendment in chronological order. Creates a
      * tamper-evident chain of amendments (similar to blockchain). Null for the first amendment
@@ -934,7 +987,7 @@ export interface StatusOverride {
      */
     previousChecksum?: Checksum;
     /**
-     * Explanation for why this status override was applied.
+     * Explanation for why this override was applied.
      */
     reason: string;
     /**
@@ -944,31 +997,30 @@ export interface StatusOverride {
      */
     signature?: Signature;
     /**
-     * The new status this override sets for the requirement. This intentionally changes the
-     * compliance status.
+     * The new status this override sets for the requirement. Optional when only impact is being
+     * overridden.
      */
-    status: ResultStatus;
+    status?: ResultStatus;
     /**
-     * The type of status override applied to this requirement.
+     * The type of override applied to this requirement.
      */
     type: OverrideType;
     [property: string]: any;
 }
 
 /**
- * The type of status override applied to this requirement.
+ * Override to the requirement's impact score. At least one of status or impact must be
+ * set.
  *
- * The type of amendment. 'waiver': risk accepted (AO). 'attestation': manually verified
- * (assessor). 'exception': not applicable (system owner + AO). 'poam': remediation tracked
- * (no status change). 'inherited': control provided by another component or system
- * (overrides to notApplicable/passed).
+ * An override to the requirement's impact score. The prior impact is the original result
+ * value or the preceding override in the chain.
  */
-export enum OverrideType {
-    Attestation = "attestation",
-    Exception = "exception",
-    Inherited = "inherited",
-    Poam = "poam",
-    Waiver = "waiver",
+export interface ImpactOverride {
+    /**
+     * The overridden impact score (0.0–1.0).
+     */
+    value: number;
+    [property: string]: any;
 }
 
 /**

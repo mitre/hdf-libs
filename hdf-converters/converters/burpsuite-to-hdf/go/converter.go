@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -53,7 +54,7 @@ var burpsuiteAliases = map[string]float64{
 
 // getImpact maps BurpSuite severity strings to HDF impact values.
 func getImpact(severity string) float64 {
-	return shared.SeverityToImpactWithAliases(severity, burpsuiteAliases, 0.3)
+	return hdfutil.SeverityToImpactWithAliases(severity, burpsuiteAliases, 0.3)
 }
 
 // --- CWE parsing ---
@@ -61,7 +62,7 @@ func getImpact(severity string) float64 {
 // parseCWEIDs extracts CWE identifiers from the vulnerabilityClassifications HTML.
 // Returns CWE-prefixed IDs (e.g., ["CWE-79"]) for use in tags and MapCWEToNIST.
 func parseCWEIDs(html string) []string {
-	ids := shared.ExtractCWEIDs(html)
+	ids := hdfutil.ExtractCWEIDs(html)
 	if len(ids) == 0 {
 		return nil
 	}
@@ -81,10 +82,10 @@ func formatCodeDesc(hostIP, hostURL, location, issueDetail, confidence string) s
 
 	parts = append(parts, fmt.Sprintf("Host: ip: %s, url: %s", hostIP, hostURL))
 
-	parts = append(parts, fmt.Sprintf("Location: %s", shared.StripHTML(location)))
+	parts = append(parts, fmt.Sprintf("Location: %s", hdfutil.StripHTML(location)))
 
 	if issueDetail != "" {
-		parts = append(parts, fmt.Sprintf("issueDetail: %s", shared.StripHTML(issueDetail)))
+		parts = append(parts, fmt.Sprintf("issueDetail: %s", hdfutil.StripHTML(issueDetail)))
 	}
 
 	parts = append(parts, fmt.Sprintf("confidence: %s", confidence))
@@ -107,7 +108,7 @@ func parseBurpTimestamp(s string) time.Time {
 	if t, err := time.Parse("Mon Jan 2 15:04:05 2006", s); err == nil {
 		return t
 	}
-	return shared.ParseTimestamp(s)
+	return hdfutil.ParseTimestamp(s)
 }
 
 // --- Main converter ---
@@ -171,12 +172,12 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}
 
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:     "burpsuite-to-hdf",
-		ConverterVersion:  converterVersion,
-		ToolName:          "BurpSuite",
-		ToolVersion:       burpData.BurpVersion,
-		ToolFormat:        "XML",
-		Baselines:         []hdf.EvaluatedBaseline{baseline},
+		GeneratorName:    "burpsuite-to-hdf",
+		ConverterVersion: converterVersion,
+		ToolName:         "BurpSuite",
+		ToolVersion:      burpData.BurpVersion,
+		ToolFormat:       "XML",
+		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{
 				Name: targetName,
@@ -218,7 +219,7 @@ func buildRequirement(issueType string, issues []BurpIssue, exportTime string) h
 	// Default description (required minimum 1 with "default" label)
 	defaultData := rep.Name
 	if rep.IssueBackground != "" {
-		defaultData = shared.StripHTML(rep.IssueBackground)
+		defaultData = hdfutil.StripHTML(rep.IssueBackground)
 	}
 	descriptions = append(descriptions, hdf.Description{
 		Label: "default",
@@ -229,7 +230,7 @@ func buildRequirement(issueType string, issues []BurpIssue, exportTime string) h
 	if rep.IssueBackground != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "check",
-			Data:  shared.StripHTML(rep.IssueBackground),
+			Data:  hdfutil.StripHTML(rep.IssueBackground),
 		})
 	}
 
@@ -237,7 +238,7 @@ func buildRequirement(issueType string, issues []BurpIssue, exportTime string) h
 	if rep.RemediationBackground != "" {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "fix",
-			Data:  shared.StripHTML(rep.RemediationBackground),
+			Data:  hdfutil.StripHTML(rep.RemediationBackground),
 		})
 	}
 

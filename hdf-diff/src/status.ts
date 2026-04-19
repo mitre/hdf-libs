@@ -20,7 +20,7 @@ interface ResultLike {
 }
 
 interface OverrideLike {
-  status: string;
+  status?: string;
   expiresAt: string;
 }
 
@@ -48,7 +48,7 @@ export function computeEffectiveStatus(
     const refTime = referenceTimestamp ? new Date(referenceTimestamp).getTime() : Date.now();
     for (const override of overrides) {
       const expiresAt = new Date(override.expiresAt).getTime();
-      if (expiresAt > refTime) {
+      if (expiresAt > refTime && override.status) {
         return override.status;
       }
     }
@@ -129,6 +129,20 @@ export function classifyChangeReasons(
   const newImpact = newReq['impact'] as number | undefined;
   if (oldImpact !== newImpact) {
     reasons.push('impactChanged');
+  }
+
+  // Check disposition changes
+  const oldDisposition = oldReq['disposition'] as string | undefined;
+  const newDisposition = newReq['disposition'] as string | undefined;
+  if (oldDisposition !== newDisposition) {
+    reasons.push('dispositionChanged');
+  }
+
+  // Check effectiveImpact changes
+  const oldEffectiveImpact = oldReq['effectiveImpact'] as number | undefined;
+  const newEffectiveImpact = newReq['effectiveImpact'] as number | undefined;
+  if (oldEffectiveImpact !== newEffectiveImpact) {
+    reasons.push('effectiveImpactChanged');
   }
 
   // Check baseline metadata changes (tags, descriptions, title)

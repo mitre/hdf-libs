@@ -104,7 +104,7 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 	}
 
 	// Extract system name for package name
-	sysData, err := os.ReadFile(systemPath) // #nosec G304 -- CLI reads user-provided path
+	sysData, err := readInputFile(systemPath)
 	if err != nil {
 		return fmt.Errorf("failed to re-read system file: %w", err)
 	}
@@ -144,7 +144,7 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 }
 
 func buildContentEntry(docType, filePath string) (map[string]interface{}, error) {
-	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided path
+	data, err := readInputFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read %s file %s: %w", docType, filePath, err)
 	}
@@ -172,7 +172,7 @@ func computeCompleteness(sysDoc map[string]interface{}, resultsPaths []string) m
 	passedReqs := 0
 
 	for _, resultsPath := range resultsPaths {
-		resultsData, err := os.ReadFile(resultsPath) //nolint:gosec // CLI reads user-provided path
+		resultsData, err := readInputFile(resultsPath)
 		if err != nil {
 			continue
 		}

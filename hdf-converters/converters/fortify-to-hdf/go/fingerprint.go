@@ -5,11 +5,10 @@ import (
 	"strings"
 
 	"github.com/mitre/hdf-converters/registry"
-	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 )
 
 var fvdlVersionRe = regexp.MustCompile(`<FVDL\b[^>]*\bversion="([^"]+)"`)
-
 
 func init() {
 	registry.Register(registry.ConverterFingerprint{
@@ -23,7 +22,7 @@ func init() {
 			if !ok {
 				return 0
 			}
-			if shared.ExtractXMLRootElement(s) != "FVDL" {
+			if hdfutil.ExtractXMLRootElement(s) != "FVDL" {
 				return 0
 			}
 			// Higher confidence with Fortify namespace

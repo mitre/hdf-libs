@@ -7,6 +7,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	hdf "github.com/mitre/hdf-schema"
 )
@@ -14,31 +15,31 @@ import (
 // IonChannelAnalysis is the top-level Ion Channel analysis JSON structure
 // from the /v1/report/getAnalysis API endpoint.
 type IonChannelAnalysis struct {
-	ID             string        `json:"id"`
-	AnalysisID     string        `json:"analysis_id"`
-	TeamID         string        `json:"team_id"`
-	ProjectID      string        `json:"project_id"`
-	Name           string        `json:"name"`
-	Text           string        `json:"text"`
-	Type           string        `json:"type"`
-	Source         string        `json:"source"`
-	Branch         string        `json:"branch"`
-	Description    string        `json:"description"`
-	Risk           string        `json:"risk"`
-	Summary        string        `json:"summary"`
-	Passed         bool          `json:"passed"`
-	RulesetID      string        `json:"ruleset_id"`
-	RulesetName    string        `json:"ruleset_name"`
-	Status         string        `json:"status"`
-	CreatedAt      string        `json:"created_at"`
-	UpdatedAt      string        `json:"updated_at"`
-	Duration       float64       `json:"duration"`
-	TriggerHash    string        `json:"trigger_hash"`
-	TriggerText    string        `json:"trigger_text"`
-	TriggerAuthor  string        `json:"trigger_author"`
-	Trigger        string        `json:"trigger"`
-	Public         bool          `json:"public"`
-	ScanSummaries  []ScanSummary `json:"scan_summaries"`
+	ID            string        `json:"id"`
+	AnalysisID    string        `json:"analysis_id"`
+	TeamID        string        `json:"team_id"`
+	ProjectID     string        `json:"project_id"`
+	Name          string        `json:"name"`
+	Text          string        `json:"text"`
+	Type          string        `json:"type"`
+	Source        string        `json:"source"`
+	Branch        string        `json:"branch"`
+	Description   string        `json:"description"`
+	Risk          string        `json:"risk"`
+	Summary       string        `json:"summary"`
+	Passed        bool          `json:"passed"`
+	RulesetID     string        `json:"ruleset_id"`
+	RulesetName   string        `json:"ruleset_name"`
+	Status        string        `json:"status"`
+	CreatedAt     string        `json:"created_at"`
+	UpdatedAt     string        `json:"updated_at"`
+	Duration      float64       `json:"duration"`
+	TriggerHash   string        `json:"trigger_hash"`
+	TriggerText   string        `json:"trigger_text"`
+	TriggerAuthor string        `json:"trigger_author"`
+	Trigger       string        `json:"trigger"`
+	Public        bool          `json:"public"`
+	ScanSummaries []ScanSummary `json:"scan_summaries"`
 }
 
 // ScanSummary represents a single scan within an Ion Channel analysis.
@@ -169,14 +170,14 @@ func buildTags(dep contextualizedDependency) map[string]interface{} {
 	cciTags := cci.NISTToCCI(nist)
 
 	extras := map[string]interface{}{
-		"org":             dep.Org,
-		"name":            dep.Name,
-		"type":            dep.Type,
-		"version":         dep.Version,
-		"latest_version":  dep.LatestVersion,
-		"scope":           dep.Scope,
-		"requirement":     dep.Requirement,
-		"file":            dep.File,
+		"org":            dep.Org,
+		"name":           dep.Name,
+		"type":           dep.Type,
+		"version":        dep.Version,
+		"latest_version": dep.LatestVersion,
+		"scope":          dep.Scope,
+		"requirement":    dep.Requirement,
+		"file":           dep.File,
 	}
 
 	if len(dep.Dependencies) > 0 {
@@ -239,13 +240,13 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 
 		requirements[i] = hdf.EvaluatedRequirement{
 			ID:    depID,
-			Title: shared.Ptr(title),
+			Title: hdfutil.Ptr(title),
 			Descriptions: []hdf.Description{
 				{Label: "default", Data: desc},
 			},
 			Impact: 0.0,
 			Tags:   tags,
-			Code:   shared.Ptr(code),
+			Code:   hdfutil.Ptr(code),
 			Results: []hdf.RequirementResult{
 				{
 					Status:    hdf.NotReviewed,
@@ -261,22 +262,22 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 
 	baseline := hdf.EvaluatedBaseline{
 		Name:         "Ion Channel SBOM Analysis",
-		Title:        shared.Ptr(baselineTitle),
-		Summary:      shared.Ptr(analysis.Summary),
-		Maintainer:   shared.Ptr("saf@groups.mitre.org"),
-		Version:      shared.Ptr(""),
+		Title:        hdfutil.Ptr(baselineTitle),
+		Summary:      hdfutil.Ptr(analysis.Summary),
+		Maintainer:   hdfutil.Ptr("saf@groups.mitre.org"),
+		Version:      hdfutil.Ptr(""),
 		Supports:     []hdf.SupportedPlatform{},
 		Groups:       []hdf.RequirementGroup{},
 		Requirements: requirements,
 		Integrity:    integrity,
-		Status:       shared.Ptr("loaded"),
+		Status:       hdfutil.Ptr("loaded"),
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "ionchannel-to-hdf",
 		ConverterVersion: converterVersion,
-		ToolName:   "Ion Channel",
-		ToolFormat: "JSON",
+		ToolName:         "Ion Channel",
+		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 	}), nil
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	hdf "github.com/mitre/hdf-schema"
 )
 
@@ -43,7 +44,7 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 	// Extract planRef from import-ap
 	var planRef *string
 	if sar.ImportAP != nil && sar.ImportAP.Href != "" {
-		planRef = shared.Ptr(sar.ImportAP.Href)
+		planRef = hdfutil.Ptr(sar.ImportAP.Href)
 	}
 
 	// Parse timestamp from metadata
@@ -57,8 +58,8 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 	result := shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "oscal-assessment-results-to-hdf",
 		ConverterVersion: converterVersion,
-		ToolName:   "OSCAL Assessment Results",
-		ToolFormat: "OSCAL",
+		ToolName:         "OSCAL Assessment Results",
+		ToolFormat:       "OSCAL",
 		Baselines:        baselines,
 		Timestamp:        timestamp,
 	})
@@ -117,7 +118,7 @@ func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput 
 	status := "loaded"
 	baseline := hdf.EvaluatedBaseline{
 		Name:            name,
-		Title:           shared.Ptr(result.Title),
+		Title:           hdfutil.Ptr(result.Title),
 		Status:          &status,
 		Integrity:       integrity,
 		ResultsChecksum: checksum,
@@ -125,7 +126,7 @@ func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput 
 	}
 
 	if result.Description != "" {
-		baseline.Description = shared.Ptr(result.Description)
+		baseline.Description = hdfutil.Ptr(result.Description)
 	}
 
 	return baseline
@@ -168,7 +169,7 @@ func findingsToEvaluatedRequirement(
 
 	return hdf.EvaluatedRequirement{
 		ID:           nistTag,
-		Title:        shared.Ptr(title),
+		Title:        hdfutil.Ptr(title),
 		Impact:       impact,
 		Tags:         tags,
 		Descriptions: descriptions,
@@ -202,7 +203,7 @@ func findingToRequirementResult(
 	}
 
 	if message != "" {
-		reqResult.Message = shared.Ptr(message)
+		reqResult.Message = hdfutil.Ptr(message)
 	}
 
 	return reqResult

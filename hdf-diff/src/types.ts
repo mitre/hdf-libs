@@ -27,7 +27,9 @@ export type ChangeReason =
   | 'scannerChanged'
   | 'targetChanged'
   | 'configChanged'
-  | 'metadataChanged';
+  | 'metadataChanged'
+  | 'dispositionChanged'
+  | 'effectiveImpactChanged';
 
 /**
  * Classification of how a requirement's state changed between evaluations.

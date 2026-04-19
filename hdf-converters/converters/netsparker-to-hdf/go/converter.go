@@ -8,6 +8,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-converters/shared/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 	"github.com/mitre/hdf-mappings/go/cci"
 	"github.com/mitre/hdf-mappings/go/cwe"
 	"github.com/mitre/hdf-mappings/go/owasp"
@@ -92,7 +93,7 @@ var netsparkerAliases = map[string]float64{
 }
 
 func getImpact(severity string) float64 {
-	return shared.SeverityToImpactWithAliases(severity, netsparkerAliases, 0.5)
+	return hdfutil.SeverityToImpactWithAliases(severity, netsparkerAliases, 0.5)
 }
 
 // --- Format helpers ---
@@ -115,7 +116,7 @@ func formatMessage(response NetsparkerHTTPResponse) string {
 func formatControlDesc(vuln *NetsparkerVuln) string {
 	parts := []string{}
 	if vuln.Description != "" {
-		parts = append(parts, shared.StripHTML(vuln.Description))
+		parts = append(parts, hdfutil.StripHTML(vuln.Description))
 	}
 	if vuln.ExploitationSkills != "" {
 		parts = append(parts, fmt.Sprintf("Exploitation-skills: %s", vuln.ExploitationSkills))
@@ -124,7 +125,7 @@ func formatControlDesc(vuln *NetsparkerVuln) string {
 		parts = append(parts, fmt.Sprintf("Classification: cwe=>%s, owasp=>%s", vuln.Classification.CWE, vuln.Classification.OWASP))
 	}
 	if vuln.Impact != "" {
-		parts = append(parts, fmt.Sprintf("Impact: %s", shared.StripHTML(vuln.Impact)))
+		parts = append(parts, fmt.Sprintf("Impact: %s", hdfutil.StripHTML(vuln.Impact)))
 	}
 	if vuln.FirstSeenDate != "" {
 		parts = append(parts, fmt.Sprintf("FirstSeenDate: %s", vuln.FirstSeenDate))
@@ -145,7 +146,7 @@ func formatControlDesc(vuln *NetsparkerVuln) string {
 }
 
 // parseNetsparkerTimestamp parses Netsparker's "MM/DD/YYYY HH:MM PM" format.
-// Falls back to shared.ParseTimestamp for other formats.
+// Falls back to hdfutil.ParseTimestamp for other formats.
 func parseNetsparkerTimestamp(s string) time.Time {
 	if s == "" {
 		return time.Time{}
@@ -154,7 +155,7 @@ func parseNetsparkerTimestamp(s string) time.Time {
 	if t, err := time.Parse("01/02/2006 03:04 PM", s); err == nil {
 		return t
 	}
-	return shared.ParseTimestamp(s)
+	return hdfutil.ParseTimestamp(s)
 }
 
 // mapNISTFromCWEAndOWASP performs dual NIST mapping from both CWE and OWASP IDs.
@@ -223,25 +224,25 @@ func buildRequirement(vuln *NetsparkerVuln, initiated string) hdf.EvaluatedRequi
 		checkParts = append(checkParts, fmt.Sprintf("Exploitation-skills: %s", vuln.ExploitationSkills))
 	}
 	if vuln.ProofOfConcept != "" {
-		checkParts = append(checkParts, fmt.Sprintf("Proof-of-concept: %s", shared.StripHTML(vuln.ProofOfConcept)))
+		checkParts = append(checkParts, fmt.Sprintf("Proof-of-concept: %s", hdfutil.StripHTML(vuln.ProofOfConcept)))
 	}
 	if len(checkParts) > 0 {
 		descriptions = append(descriptions, hdf.Description{
 			Label: "check",
-			Data:  shared.StripHTML(strings.Join(checkParts, "\n")),
+			Data:  hdfutil.StripHTML(strings.Join(checkParts, "\n")),
 		})
 	}
 
 	// Fix description
 	fixParts := []string{}
 	if vuln.RemedialActions != "" {
-		fixParts = append(fixParts, fmt.Sprintf("Remedial-actions: %s", shared.StripHTML(vuln.RemedialActions)))
+		fixParts = append(fixParts, fmt.Sprintf("Remedial-actions: %s", hdfutil.StripHTML(vuln.RemedialActions)))
 	}
 	if vuln.RemedialProcedure != "" {
-		fixParts = append(fixParts, fmt.Sprintf("Remedial-procedure: %s", shared.StripHTML(vuln.RemedialProcedure)))
+		fixParts = append(fixParts, fmt.Sprintf("Remedial-procedure: %s", hdfutil.StripHTML(vuln.RemedialProcedure)))
 	}
 	if vuln.RemedyReferences != "" {
-		fixParts = append(fixParts, fmt.Sprintf("Remedy-references: %s", shared.StripHTML(vuln.RemedyReferences)))
+		fixParts = append(fixParts, fmt.Sprintf("Remedy-references: %s", hdfutil.StripHTML(vuln.RemedyReferences)))
 	}
 	if len(fixParts) > 0 {
 		descriptions = append(descriptions, hdf.Description{
@@ -372,8 +373,8 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
 			{
-				Name:   targetName,
-				Type:   hdf.CopyrightApplication,
+				Name: targetName,
+				Type: hdf.CopyrightApplication,
 			},
 		},
 	}), nil

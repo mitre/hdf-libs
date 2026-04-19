@@ -175,6 +175,45 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req)).toBe('passed');
   });
 
+  it('skips impact-only override (no status) and falls through to results', () => {
+    const req = makeRequirement({
+      results: [makeResult('failed')],
+      statusOverrides: [
+        {
+          type: 'riskAdjustment',
+          impact: { value: 0.3 },
+          reason: 'Dead code path',
+          appliedBy: { name: 'admin', email: 'admin@example.com' },
+          appliedAt: '2025-01-01T00:00:00Z',
+          expiresAt: '2099-12-31T23:59:59Z',
+        },
+      ],
+    });
+    expect(computeEffectiveStatus(req, '2025-06-01T00:00:00Z')).toBe('failed');
+  });
+
+  it('uses status override after skipping impact-only override', () => {
+    const req = makeRequirement({
+      results: [makeResult('failed')],
+      statusOverrides: [
+        {
+          type: 'riskAdjustment',
+          impact: { value: 0.3 },
+          reason: 'Dead code path',
+          appliedBy: { name: 'admin', email: 'admin@example.com' },
+          appliedAt: '2025-01-01T00:00:00Z',
+          expiresAt: '2099-12-31T23:59:59Z',
+        },
+        makeOverride({
+          type: 'waiver',
+          status: 'passed',
+          expiresAt: '2099-12-31T23:59:59Z',
+        }),
+      ],
+    });
+    expect(computeEffectiveStatus(req, '2025-06-01T00:00:00Z')).toBe('passed');
+  });
+
   it('uses effectiveStatus when overrides array is empty', () => {
     const req = makeRequirement({
       results: [makeResult('failed')],
@@ -375,6 +414,87 @@ describe('classifyChangeReasons', () => {
       title: 'New Title',
     });
     expect(classifyChangeReasons(oldReq, newReq)).toContain('metadataChanged');
+  });
+
+  it('returns ["dispositionChanged"] when disposition differs', () => {
+    const oldReq = makeRequirement({
+      results: [makeResult('failed')],
+      disposition: 'waiver',
+    });
+    const newReq = makeRequirement({
+      results: [makeResult('failed')],
+      disposition: 'riskAdjustment',
+    });
+    expect(classifyChangeReasons(oldReq, newReq)).toContain('dispositionChanged');
+  });
+
+  it('returns ["dispositionChanged"] when disposition added', () => {
+    const oldReq = makeRequirement({
+      results: [makeResult('failed')],
+    });
+    const newReq = makeRequirement({
+      results: [makeResult('failed')],
+      disposition: 'falsePositive',
+    });
+    expect(classifyChangeReasons(oldReq, newReq)).toContain('dispositionChanged');
+  });
+
+  it('returns ["dispositionChanged"] when disposition removed', () => {
+    const oldReq = makeRequirement({
+      results: [makeResult('failed')],
+      disposition: 'waiver',
+    });
+    const newReq = makeRequirement({
+      results: [makeResult('failed')],
+    });
+    expect(classifyChangeReasons(oldReq, newReq)).toContain('dispositionChanged');
+  });
+
+  it('does not return "dispositionChanged" when disposition is the same', () => {
+    const oldReq = makeRequirement({
+      results: [makeResult('failed')],
+      disposition: 'waiver',
+    });
+    const newReq = makeRequirement({
+      results: [makeResult('failed')],
+      disposition: 'waiver',
+    });
+    expect(classifyChangeReasons(oldReq, newReq)).not.toContain('dispositionChanged');
+  });
+
+  it('returns ["effectiveImpactChanged"] when effectiveImpact differs', () => {
+    const oldReq = makeRequirement({
+      results: [makeResult('failed')],
+      effectiveImpact: 0.7,
+    });
+    const newReq = makeRequirement({
+      results: [makeResult('failed')],
+      effectiveImpact: 0.3,
+    });
+    expect(classifyChangeReasons(oldReq, newReq)).toContain('effectiveImpactChanged');
+  });
+
+  it('returns ["effectiveImpactChanged"] when effectiveImpact added', () => {
+    const oldReq = makeRequirement({
+      results: [makeResult('failed')],
+    });
+    const newReq = makeRequirement({
+      results: [makeResult('failed')],
+      effectiveImpact: 0.3,
+    });
+    expect(classifyChangeReasons(oldReq, newReq)).toContain('effectiveImpactChanged');
+  });
+
+  it('does not return "effectiveImpactChanged" when effectiveImpact is the same', () => {
+    const oldReq = makeRequirement({
+      results: [makeResult('failed')],
+      effectiveImpact: 0.3,
+    });
+    const newReq = makeRequirement({
+      results: [makeResult('failed')],
+      effectiveImpact: 0.3,
+    });
+    expect(classifyChangeReasons(oldReq, newReq)).not.toContain('effectiveImpactChanged');
   });
 });
 
