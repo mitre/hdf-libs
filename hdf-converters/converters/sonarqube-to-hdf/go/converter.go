@@ -346,7 +346,9 @@ func extractTags(rule *Rule, hasRule bool, issues []Issue) ([]string, []string, 
 
 	// Extract from rule tags
 	if hasRule && rule != nil {
-		ruleTags := append(rule.Tags, rule.SysTags...)
+		ruleTags := make([]string, 0, len(rule.Tags)+len(rule.SysTags))
+		ruleTags = append(ruleTags, rule.Tags...)
+		ruleTags = append(ruleTags, rule.SysTags...)
 
 		for _, tag := range ruleTags {
 			lowerTag := strings.ToLower(tag)

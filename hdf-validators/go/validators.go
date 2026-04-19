@@ -77,7 +77,11 @@ type ValidationError struct {
 	Value       any    `json:"value,omitempty"`
 }
 
-// ValidationResult contains the result of schema validation.
+// ValidationResult contains the result of schema validation. It implements
+// the error interface for convenience but is semantically a "result" (may
+// represent a successful validation), not an error — hence the naming.
+//
+//nolint:errname // result type, not an error type
 type ValidationResult struct {
 	Valid  bool              `json:"valid"`
 	Errors []ValidationError `json:"errors,omitempty"`

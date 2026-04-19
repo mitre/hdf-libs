@@ -27,8 +27,8 @@ type lookupKey struct {
 }
 
 var (
-	exactMap    map[lookupKey]string   // family+pluginID → NIST-ID
-	wildcardMap map[string]string      // family → NIST-ID (for pluginID="*")
+	exactMap    map[lookupKey]string // family+pluginID → NIST-ID
+	wildcardMap map[string]string    // family → NIST-ID (for pluginID="*")
 	dataOnce    sync.Once
 )
 

@@ -135,7 +135,7 @@ func tagSeverityToSeverity(raw interface{}) *hdf.Severity {
 	lower := ""
 	for _, c := range s {
 		if c >= 'A' && c <= 'Z' {
-			lower += string(rune(c + 32))
+			lower += string(c + 32)
 		} else {
 			lower += string(c)
 		}
