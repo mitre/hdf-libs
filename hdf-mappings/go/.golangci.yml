@@ -1,0 +1,85 @@
+# golangci-lint configuration for hdf-libs Go library modules.
+#
+# Philosophy: Match the linter set used by Prometheus, Telegraf, and
+# Kubernetes. Enable high-signal linters; avoid the noisy ones
+# (dupl, gocognit, gocyclo, goconst) that produce mostly false
+# positives on parser/converter code. `revive` is narrowed to a
+# named rule list rather than its defaults, since its defaults
+# (exported stuttering, package-comments) are excluded in every
+# production Go config we surveyed.
+
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    # golangci-lint v2 "standard" defaults
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+    # High-signal additions used by most Go projects
+    - errname       # Error type/variable naming
+    - errorlint     # errors.Is/As correctness
+    - gosec         # Security (SAST)
+    - misspell      # Spell check
+    - nakedret      # Naked returns in long functions
+    - nilerr        # Returning nil after checking error
+    - unconvert     # Unnecessary type conversions
+    - whitespace    # Leading/trailing whitespace
+    - gocritic      # Opinionated (diagnostic tag only)
+    - revive        # Narrowed rule list below
+
+  exclusions:
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: '_test\.go'
+        linters:
+          - gosec
+
+  settings:
+    gocritic:
+      enabled-tags:
+        - diagnostic
+
+    gosec:
+      excludes:
+        - G104  # Errors not checked — errcheck covers this
+        - G304  # File path from variable — expected for converters reading user input
+
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: increment-decrement
+        - name: range
+        - name: receiver-naming
+        - name: redefines-builtin-id
+        - name: time-naming
+        - name: unreachable-code
+        - name: var-declaration
+        - name: unused-parameter
+          disabled: true  # Too noisy on interface impls and test helpers
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 10

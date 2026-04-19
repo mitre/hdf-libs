@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mitre/hdf-cli/pkg/amend"
+	"github.com/mitre/hdf-diff/go/amend"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -79,11 +79,12 @@ func getImpact(severity string) float64 {
 // to the repository field.
 func buildTitle(result TwistlockResult) string {
 	var projectName string
-	if result.Repository != "" {
+	switch {
+	case result.Repository != "":
 		projectName = result.Repository
-	} else if len(result.Collections) > 0 {
+	case len(result.Collections) > 0:
 		projectName = strings.Join(result.Collections, " / ")
-	} else {
+	default:
 		projectName = "N/A"
 	}
 	return fmt.Sprintf("Twistlock Project: %s", projectName)

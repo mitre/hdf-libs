@@ -207,15 +207,17 @@ func TestNISTAndCCITags(t *testing.T) {
 	}
 
 	nistVal, hasNist := req.Tags["nist"]
-	if !hasNist {
+	switch {
+	case !hasNist:
 		t.Error("Expected NIST tags to be defined")
-	} else {
+	default:
 		nistSlice, ok := nistVal.([]interface{})
-		if !ok {
+		switch {
+		case !ok:
 			t.Error("Expected NIST tags to be a slice")
-		} else if len(nistSlice) == 0 {
+		case len(nistSlice) == 0:
 			t.Error("Expected NIST tags to be non-empty")
-		} else if len(nistSlice) != 2 {
+		case len(nistSlice) != 2:
 			t.Errorf("Expected 2 NIST tags, got %d", len(nistSlice))
 		}
 	}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mitre/hdf-cli/pkg/amend"
+	"github.com/mitre/hdf-diff/go/amend"
 	"github.com/spf13/cobra"
 )
 
@@ -116,6 +116,10 @@ func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath str
 		return fmt.Errorf("failed to read amendments file: %w", err)
 	}
 
+	if _, typeErr := requireDocumentType(amendmentsData, []string{"amendments"}, "hdf amend apply"); typeErr != nil {
+		return typeErr
+	}
+
 	merged, err := amend.MergeAmendments(resultsData, amendmentsData)
 	if err != nil {
 		return fmt.Errorf("merge failed: %w", err)
@@ -164,9 +168,9 @@ func runAmendList(_ *cobra.Command, args []string) error {
 	}
 
 	if !noHeaders {
-		fmt.Printf("Amendments: %s\n", name)
+		fmt.Printf("Amendments: %s\n", sanitizeOutput(name))
 		if systemRef != "" {
-			fmt.Printf("System: %s\n", systemRef)
+			fmt.Printf("System: %s\n", sanitizeOutput(systemRef))
 		}
 		fmt.Println()
 	}

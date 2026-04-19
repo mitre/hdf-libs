@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	hdf "github.com/mitre/hdf-schema"
 	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
 )

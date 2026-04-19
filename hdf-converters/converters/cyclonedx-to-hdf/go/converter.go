@@ -107,7 +107,7 @@ func maxImpact(ratings []CDXRating) float64 {
 		return 0.5
 	}
 
-	max := 0.0
+	maxVal := 0.0
 	for _, r := range ratings {
 		var impact float64
 		if cvssMethods[r.Method] && r.Score != nil {
@@ -119,11 +119,11 @@ func maxImpact(ratings []CDXRating) float64 {
 			}
 			impact = severityToImpact(sev)
 		}
-		if impact > max {
-			max = impact
+		if impact > maxVal {
+			maxVal = impact
 		}
 	}
-	return max
+	return maxVal
 }
 
 // NOTE: heimdall2 mapped info/unknown severity to NotReviewed status.

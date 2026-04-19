@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	hdf "github.com/mitre/hdf-schema"
 	validators "github.com/mitre/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
@@ -227,7 +227,7 @@ func listSystemDataFlows(doc map[string]interface{}) error {
 	return nil
 }
 
-func listSummary(results hdf.HdfResults) error {
+func listSummary(results hdf.HDFResults) error {
 	if jsonOutput {
 		summary := struct {
 			Baselines     int `json:"baselines"`
@@ -295,7 +295,7 @@ type controlInfo struct {
 	Profile string  `json:"baseline"`
 }
 
-func listControls(results hdf.HdfResults) error {
+func listControls(results hdf.HDFResults) error {
 	controls := buildControlList(results)
 
 	if jsonOutput {
@@ -313,7 +313,7 @@ func listControls(results hdf.HdfResults) error {
 	return nil
 }
 
-func buildControlList(results hdf.HdfResults) []controlInfo {
+func buildControlList(results hdf.HDFResults) []controlInfo {
 	var controls []controlInfo
 
 	for _, baseline := range results.Baselines {
@@ -390,7 +390,7 @@ func truncateTitle(title string, maxLen int) string {
 	return title
 }
 
-func listProfiles(results hdf.HdfResults) error {
+func listProfiles(results hdf.HDFResults) error {
 	type baselineInfo struct {
 		Name             string `json:"name"`
 		Title            string `json:"title,omitempty"`
@@ -440,7 +440,7 @@ func listProfiles(results hdf.HdfResults) error {
 	return nil
 }
 
-func listComponents(results hdf.HdfResults) error {
+func listComponents(results hdf.HDFResults) error {
 	if len(results.Components) == 0 {
 		if jsonOutput {
 			fmt.Println("[]")
@@ -518,7 +518,7 @@ func runListBulk(cmd *cobra.Command, args []string, detail string) error {
 }
 
 // listAppliedAmendments shows statusOverrides from within a results file.
-func listAppliedAmendments(results hdf.HdfResults) error {
+func listAppliedAmendments(results hdf.HDFResults) error {
 	type appliedAmendment struct {
 		RequirementID string `json:"requirementId"`
 		Baseline      string `json:"baseline"`

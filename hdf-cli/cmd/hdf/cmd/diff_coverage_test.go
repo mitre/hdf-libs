@@ -9,9 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mitre/hdf-cli/pkg/diff/sbom"
-	diffTypes "github.com/mitre/hdf-cli/pkg/diff/types"
-	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	diff "github.com/mitre/hdf-diff/go"
+	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,12 +48,12 @@ func TestDiffCoverage_Truncate(t *testing.T) {
 func TestDiffCoverage_OutputDiffNameOnly(t *testing.T) {
 	result := diffResult{
 		RequirementDiffs: []diffRequirement{
-			{ID: "REQ-001", State: diffTypes.StateFixed},
-			{ID: "REQ-002", State: diffTypes.StateUnchanged},
-			{ID: "REQ-003", State: diffTypes.StateRegressed},
-			{ID: "REQ-004", State: diffTypes.StateNew},
-			{ID: "REQ-005", State: diffTypes.StateAbsent},
-			{ID: "REQ-006", State: diffTypes.StateUpdated},
+			{ID: "REQ-001", State: diff.StateFixed},
+			{ID: "REQ-002", State: diff.StateUnchanged},
+			{ID: "REQ-003", State: diff.StateRegressed},
+			{ID: "REQ-004", State: diff.StateNew},
+			{ID: "REQ-005", State: diff.StateAbsent},
+			{ID: "REQ-006", State: diff.StateUpdated},
 		},
 	}
 
@@ -84,7 +83,7 @@ func TestDiffCoverage_OutputDiffNameOnly(t *testing.T) {
 // --- Unit tests for resolveGroupValues ---
 
 func TestDiffCoverage_ResolveGroupValues(t *testing.T) {
-	oldResults := hdf.HdfResults{
+	oldResults := hdf.HDFResults{
 		Baselines: []hdf.EvaluatedBaseline{
 			{
 				Name: "baseline-a",
@@ -104,7 +103,7 @@ func TestDiffCoverage_ResolveGroupValues(t *testing.T) {
 	t.Run("group-by baseline uses Baseline field", func(t *testing.T) {
 		result := diffResult{
 			RequirementDiffs: []diffRequirement{
-				{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
+				{ID: "REQ-001", State: diff.StateUnchanged, Baseline: "baseline-a"},
 			},
 		}
 		resolveGroupValues("baseline", oldResults, newResults, &result)
@@ -114,7 +113,7 @@ func TestDiffCoverage_ResolveGroupValues(t *testing.T) {
 	t.Run("group-by id uses ID field", func(t *testing.T) {
 		result := diffResult{
 			RequirementDiffs: []diffRequirement{
-				{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
+				{ID: "REQ-001", State: diff.StateUnchanged, Baseline: "baseline-a"},
 			},
 		}
 		resolveGroupValues("id", oldResults, newResults, &result)
@@ -124,7 +123,7 @@ func TestDiffCoverage_ResolveGroupValues(t *testing.T) {
 	t.Run("group-by status uses effective status", func(t *testing.T) {
 		result := diffResult{
 			RequirementDiffs: []diffRequirement{
-				{ID: "REQ-001", State: diffTypes.StateFixed, OldStatus: "failed", NewStatus: "passed"},
+				{ID: "REQ-001", State: diff.StateFixed, OldStatus: "failed", NewStatus: "passed"},
 			},
 		}
 		resolveGroupValues("status", oldResults, newResults, &result)
@@ -134,7 +133,7 @@ func TestDiffCoverage_ResolveGroupValues(t *testing.T) {
 	t.Run("group-by label key resolves from extensions", func(t *testing.T) {
 		result := diffResult{
 			RequirementDiffs: []diffRequirement{
-				{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
+				{ID: "REQ-001", State: diff.StateUnchanged, Baseline: "baseline-a"},
 			},
 		}
 		resolveGroupValues("env", oldResults, newResults, &result)
@@ -144,7 +143,7 @@ func TestDiffCoverage_ResolveGroupValues(t *testing.T) {
 	t.Run("unknown label key leaves groupValue empty", func(t *testing.T) {
 		result := diffResult{
 			RequirementDiffs: []diffRequirement{
-				{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
+				{ID: "REQ-001", State: diff.StateUnchanged, Baseline: "baseline-a"},
 			},
 		}
 		resolveGroupValues("nonexistent", oldResults, newResults, &result)
@@ -154,7 +153,7 @@ func TestDiffCoverage_ResolveGroupValues(t *testing.T) {
 	t.Run("labels. prefix stripped", func(t *testing.T) {
 		result := diffResult{
 			RequirementDiffs: []diffRequirement{
-				{ID: "REQ-001", State: diffTypes.StateUnchanged, Baseline: "baseline-a"},
+				{ID: "REQ-001", State: diff.StateUnchanged, Baseline: "baseline-a"},
 			},
 		}
 		resolveGroupValues("labels.env", oldResults, newResults, &result)
@@ -168,9 +167,9 @@ func TestDiffCoverage_RenderDiffOutput(t *testing.T) {
 	filtered := diffResult{
 		FormatVersion:  "1.0.0",
 		ComparisonMode: "temporal",
-		Summary:        diffTypes.ComparisonSummary{Total: 1, Fixed: 1},
+		Summary:        diff.ComparisonSummary{Total: 1, Fixed: 1},
 		RequirementDiffs: []diffRequirement{
-			{ID: "REQ-001", State: diffTypes.StateFixed, OldStatus: "failed", NewStatus: "passed", Title: "Test Requirement"},
+			{ID: "REQ-001", State: diff.StateFixed, OldStatus: "failed", NewStatus: "passed", Title: "Test Requirement"},
 		},
 	}
 
@@ -272,8 +271,8 @@ func TestDiffCoverage_RenderDiffOutput(t *testing.T) {
 // --- Unit tests for outputSbomJSON ---
 
 func TestDiffCoverage_OutputSbomJSON(t *testing.T) {
-	result := &sbom.DiffResult{
-		PackageDiffs: []sbom.PackageDiff{
+	result := &diff.DiffResult{
+		PackageDiffs: []diff.PackageDiff{
 			{Name: "pkg-a", State: "added", NewVersion: "1.0.0"},
 			{Name: "pkg-b", State: "removed", OldVersion: "2.0.0"},
 		},
@@ -308,8 +307,8 @@ func TestDiffCoverage_OutputSbomJSON(t *testing.T) {
 // --- Unit tests for outputSbomTable ---
 
 func TestDiffCoverage_OutputSbomTable(t *testing.T) {
-	result := &sbom.DiffResult{
-		PackageDiffs: []sbom.PackageDiff{
+	result := &diff.DiffResult{
+		PackageDiffs: []diff.PackageDiff{
 			{Name: "pkg-add", State: "added", NewVersion: "1.0.0"},
 			{Name: "pkg-rem", State: "removed", OldVersion: "2.0.0"},
 			{Name: "pkg-upd", State: "updated", OldVersion: "1.0.0", NewVersion: "2.0.0"},
@@ -325,7 +324,7 @@ func TestDiffCoverage_OutputSbomTable(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	outputSbomTable(result, "old-sbom.json", "new-sbom.json")
+	outputSbomTable(result, "old-diff.json", "new-diff.json")
 
 	_ = w.Close()
 	os.Stdout = oldStdout
@@ -335,8 +334,8 @@ func TestDiffCoverage_OutputSbomTable(t *testing.T) {
 	output := string(buf[:n])
 
 	assert.Contains(t, output, "SBOM Comparison")
-	assert.Contains(t, output, "old-sbom.json")
-	assert.Contains(t, output, "new-sbom.json")
+	assert.Contains(t, output, "old-diff.json")
+	assert.Contains(t, output, "new-diff.json")
 	assert.Contains(t, output, "pkg-add")
 	assert.Contains(t, output, "pkg-rem")
 	assert.Contains(t, output, "pkg-upd")
@@ -615,16 +614,16 @@ func TestDiffCoverage_RenderDiffOutput_WithComponentSummaries(t *testing.T) {
 	filtered := diffResult{
 		FormatVersion:  "1.0.0",
 		ComparisonMode: "temporal",
-		Summary:        diffTypes.ComparisonSummary{Total: 2, Fixed: 1, Unchanged: 1},
+		Summary:        diff.ComparisonSummary{Total: 2, Fixed: 1, Unchanged: 1},
 		RequirementDiffs: []diffRequirement{
-			{ID: "REQ-001", State: diffTypes.StateFixed, OldStatus: "failed", NewStatus: "passed", Baseline: "baseline-a"},
-			{ID: "REQ-002", State: diffTypes.StateUnchanged, OldStatus: "passed", NewStatus: "passed", Baseline: "baseline-a"},
+			{ID: "REQ-001", State: diff.StateFixed, OldStatus: "failed", NewStatus: "passed", Baseline: "baseline-a"},
+			{ID: "REQ-002", State: diff.StateUnchanged, OldStatus: "passed", NewStatus: "passed", Baseline: "baseline-a"},
 		},
 		ComponentDiffs: []componentSummary{
 			{
 				Name:            "WebTier",
 				BaselineRefs:    []string{"baseline-a"},
-				Summary:         diffTypes.ComparisonSummary{Total: 2, Fixed: 1, Unchanged: 1},
+				Summary:         diff.ComparisonSummary{Total: 2, Fixed: 1, Unchanged: 1},
 				OldCompliance:   50,
 				NewCompliance:   100,
 				ComplianceDelta: 50,
@@ -684,7 +683,7 @@ func makeMinimalEvalReq(id, status string) hdf.EvaluatedRequirement {
 		Descriptions: []hdf.Description{{Label: "default", Data: "test"}},
 		Results: []hdf.RequirementResult{
 			{
-				Status:    &rs,
+				Status:    rs,
 				CodeDesc:  "synthetic check",
 				StartTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
