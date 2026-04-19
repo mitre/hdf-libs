@@ -12,11 +12,11 @@ require (
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/google/uuid v1.6.0
 	github.com/mitre/hdf-converters v0.0.0
+	github.com/mitre/hdf-diff/go v0.0.0
 	github.com/mitre/hdf-generators/go v0.0.0
 	github.com/mitre/hdf-libs/hdf-utilities/go v0.0.0
 	github.com/mitre/hdf-schema v0.0.0
 	github.com/mitre/hdf-validators/go v0.0.0
-	github.com/protobom/protobom v0.5.4
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/term v0.41.0
@@ -70,6 +70,7 @@ require (
 	github.com/olekukonko/ll v0.0.9 // indirect
 	github.com/olekukonko/tablewriter v1.0.9 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/protobom/protobom v0.5.4 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spdx/tools-golang v0.5.5 // indirect
@@ -88,6 +89,8 @@ require (
 replace github.com/mitre/hdf-parsers/go => ../hdf-parsers/go
 
 replace github.com/mitre/hdf-converters => ../hdf-converters
+
+replace github.com/mitre/hdf-diff/go => ../hdf-diff/go
 
 replace github.com/mitre/hdf-schema => ../hdf-schema/dist/go
 

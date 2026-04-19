@@ -101,8 +101,8 @@ func TestConvertHDFToXCCDF_StigRhel7(t *testing.T) {
 
 func TestHdfStatusToXCCDF(t *testing.T) {
 	tests := []struct {
-		hdf    hdf.ResultStatus
-		xccdf  string
+		hdf   hdf.ResultStatus
+		xccdf string
 	}{
 		{hdf.Passed, "pass"},
 		{hdf.Failed, "fail"},

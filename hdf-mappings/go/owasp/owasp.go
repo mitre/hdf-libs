@@ -9,8 +9,8 @@ import (
 
 // owaspMapping represents one row in the OWASP→NIST mapping table.
 type owaspMapping struct {
-	OwaspID  string `json:"OWASP-ID"`
-	NistID   string `json:"NIST-ID"`
+	OwaspID string `json:"OWASP-ID"`
+	NistID  string `json:"NIST-ID"`
 }
 
 //go:embed owasp-nist-mappings.json

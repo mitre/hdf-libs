@@ -1,5 +1,15 @@
-# golangci-lint configuration
-# https://golangci-lint.run/usage/configuration/
+# golangci-lint configuration for hdf-cli
+#
+# Philosophy: Match the linter set used by Prometheus, Telegraf, and
+# Kubernetes. Enable high-signal linters; avoid the noisy ones
+# (dupl, gocognit, gocyclo, goconst) that produce mostly false
+# positives. `revive` is narrowed to a named rule list rather
+# than its defaults, since the defaults (exported stuttering,
+# package-comments) are excluded in every production Go config
+# we surveyed.
+#
+# The CLI adds a few extras that aren't useful in library packages
+# (bodyclose, noctx, tparallel).
 
 version: "2"
 
@@ -9,88 +19,51 @@ run:
 
 linters:
   enable:
-    # Default linters (enabled by default in v2)
-    - errcheck      # Check for unchecked errors
-    - govet         # Report suspicious constructs
-    - ineffassign   # Detect ineffective assignments
-    - staticcheck   # Static analysis (includes gosimple, stylecheck)
-    - unused        # Check for unused code
+    # golangci-lint v2 "standard" defaults
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
 
-    # Additional linters
-    - bodyclose     # Check HTTP body is closed
-    - dogsled       # Check for too many blank identifiers
-    - dupl          # Code duplication
-    - errname       # Check error naming conventions
-    - errorlint     # Find issues with error wrapping
-    - exhaustive    # Check switch exhaustiveness
-    - gocognit      # Cognitive complexity
-    - goconst       # Find repeated strings that could be constants
-    - gocritic      # Opinionated linter
-    - gocyclo       # Cyclomatic complexity
-    - godot         # Check comments end with period
-    - gosec         # Security checks (SAST)
-    - misspell      # Spell checker
+    # High-signal additions used by most Go projects
+    - errname       # Error type/variable naming
+    - errorlint     # errors.Is/As correctness
+    - gosec         # Security (SAST)
+    - misspell      # Spell check
     - nakedret      # Naked returns in long functions
-    - nilerr        # Return nil error after checking error
+    - nilerr        # Returning nil after checking error
+    - unconvert     # Unnecessary type conversions
+    - whitespace    # Leading/trailing whitespace
+    - gocritic      # Opinionated (diagnostic tag only)
+    - revive        # Narrowed rule list below
+
+    # CLI-specific (networking/HTTP awareness, test parallelism)
+    - bodyclose     # Ensure HTTP body is closed
     - noctx         # HTTP requests without context
-    - revive        # Fast, configurable linter
-    - tparallel     # Detect inappropriate use of t.Parallel
-    - unconvert     # Remove unnecessary type conversions
-    - unparam       # Report unused function parameters
-    - whitespace    # Detect leading/trailing whitespace
+    - tparallel     # t.Parallel misuse
+    - dogsled       # Too many blank identifiers
 
   exclusions:
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      # Exclude some linters from running on test files
       - path: '_test\.go'
         linters:
           - gosec
-          - gocyclo
-          - gocognit
-
-      # Exclude generated files
-      - path: 'pkg/hdf/hdf_results\.go'
-        linters:
-          - dupl
-          - gocyclo
-          - gocognit
-          - gocritic
-          - revive
-
-      - path: 'pkg/hdf/hdf_baseline\.go'
-        linters:
-          - dupl
-          - gocyclo
-          - gocognit
-          - gocritic
-          - revive
 
   settings:
-    gocyclo:
-      min-complexity: 20
-
-    gocognit:
-      min-complexity: 40
-
-    goconst:
-      min-len: 3
-      min-occurrences: 3
-
-    dupl:
-      threshold: 100
-
     gocritic:
       enabled-tags:
         - diagnostic
-        - style
-      disabled-checks:
-        - whyNoLint      # We don't require nolint comments to have explanations
-        - unnamedResult  # Not required for simple return types
 
     gosec:
       excludes:
-        - G104  # Audit errors not checked (we handle this with errcheck)
-        - G304  # File path provided as taint input - expected for CLI tools
+        - G104  # Errors not checked — errcheck covers this
+        - G304  # File path from variable — expected for CLI tools
 
     revive:
       rules:
@@ -100,27 +73,21 @@ linters:
         - name: dot-imports
         - name: error-return
         - name: error-strings
-        - name: error-naming
-        - name: exported
-        - name: if-return
+        - name: errorf
         - name: increment-decrement
-        - name: var-naming
-        - name: var-declaration
-        - name: package-comments
         - name: range
         - name: receiver-naming
+        - name: redefines-builtin-id
         - name: time-naming
-        - name: unexported-return
-        - name: indent-error-flow
-        - name: errorf
-        - name: empty-block
-        - name: superfluous-else
         - name: unreachable-code
+        - name: var-declaration
+        - name: unused-parameter
+          disabled: true
 
 formatters:
   enable:
-    - gofmt         # Check formatting
-    - goimports     # Check imports
+    - gofmt
+    - goimports
 
 issues:
   max-issues-per-linter: 50

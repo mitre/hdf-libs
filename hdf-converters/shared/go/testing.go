@@ -14,23 +14,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// getSharedDir returns the path to the shared/ directory
+// getSharedDir returns the path to the shared/ directory.
 func getSharedDir() string {
 	_, filename, _, _ := runtime.Caller(0)
 	return filepath.Dir(filename)
 }
 
-// GetConvertersDir returns the path to the converters/ directory
+// GetConvertersDir returns the path to the converters/ directory.
 func GetConvertersDir() string {
 	return filepath.Join(getSharedDir(), "..", "..", "converters")
 }
 
-// GetOutputDir returns the path to test output directory
+// GetOutputDir returns the path to test output directory.
 func GetOutputDir() string {
 	return filepath.Join(getSharedDir(), "..", "..", "test-output")
 }
 
-// DifferentialTest represents a test case with input and expected output
+// DifferentialTest represents a test case with input and expected output.
 type DifferentialTest struct {
 	Name          string
 	ConverterName string
@@ -38,7 +38,7 @@ type DifferentialTest struct {
 	ExpectedFile  string
 }
 
-// GetDifferentialTests loads all test cases for a converter
+// GetDifferentialTests loads all test cases for a converter.
 func GetDifferentialTests(t *testing.T, converterName string) []DifferentialTest {
 	convertersDir := GetConvertersDir()
 	inputDir := filepath.Join(convertersDir, converterName, "fixtures", "input")
@@ -65,7 +65,7 @@ func GetDifferentialTests(t *testing.T, converterName string) []DifferentialTest
 	return tests
 }
 
-// WriteOutput writes converter output for comparison with TypeScript
+// WriteOutput writes converter output for comparison with TypeScript.
 func WriteOutput(t *testing.T, converterName, testName string, data interface{}) {
 	outputDir := filepath.Join(GetOutputDir(), converterName)
 	err := os.MkdirAll(outputDir, 0755)
@@ -75,7 +75,7 @@ func WriteOutput(t *testing.T, converterName, testName string, data interface{})
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	require.NoError(t, err, "Failed to marshal output")
 
-	err = os.WriteFile(outputFile, jsonData, 0644)
+	err = os.WriteFile(outputFile, jsonData, 0o600)
 	require.NoError(t, err, "Failed to write output file")
 }
 
@@ -269,7 +269,7 @@ func RunConverterContractTests(t *testing.T, spec ConverterContractSpec) {
 	})
 }
 
-// LoadJSON loads and unmarshals a JSON file
+// LoadJSON loads and unmarshals a JSON file.
 func LoadJSON(t *testing.T, path string, v interface{}) {
 	data, err := os.ReadFile(path)
 	require.NoError(t, err, "Failed to read file: %s", path)
@@ -278,7 +278,7 @@ func LoadJSON(t *testing.T, path string, v interface{}) {
 	require.NoError(t, err, "Failed to unmarshal JSON: %s", path)
 }
 
-// CompareJSON compares two JSON structures
+// CompareJSON compares two JSON structures.
 func CompareJSON(t *testing.T, expected, actual interface{}, msgAndArgs ...interface{}) {
 	expectedJSON, err := json.MarshalIndent(expected, "", "  ")
 	require.NoError(t, err, "Failed to marshal expected")

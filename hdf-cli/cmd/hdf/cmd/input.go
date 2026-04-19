@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	hdf "github.com/mitre/hdf-cli/pkg/hdf"
+	hdf "github.com/mitre/hdf-schema"
 	validators "github.com/mitre/hdf-validators/go"
 )
 
@@ -139,8 +139,8 @@ func safePath(baseDir, relPath string) (string, error) {
 
 // parseHDFResults validates and parses JSON data into HdfResults.
 // This acts as a gatekeeper - invalid data never reaches processing logic.
-func parseHDFResults(data []byte) (hdf.HdfResults, error) {
-	var results hdf.HdfResults
+func parseHDFResults(data []byte) (hdf.HDFResults, error) {
+	var results hdf.HDFResults
 
 	// Step 1: Validate against JSON Schema (gatekeeper)
 	validationResult := validators.ValidateResults(data)
@@ -166,8 +166,8 @@ func parseHDFResults(data []byte) (hdf.HdfResults, error) {
 // This acts as a gatekeeper - invalid data never reaches processing logic.
 //
 //nolint:unparam // result is used in validate.go, linter can't see across files
-func parseHDFBaseline(data []byte) (hdf.HdfBaseline, error) {
-	var baseline hdf.HdfBaseline
+func parseHDFBaseline(data []byte) (hdf.HDFBaseline, error) {
+	var baseline hdf.HDFBaseline
 
 	// Step 1: Validate against JSON Schema (gatekeeper)
 	validationResult := validators.ValidateBaseline(data)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	legacyhdf "github.com/mitre/hdf-converters/converters/legacyhdf-to-hdf/go"
+	shared "github.com/mitre/hdf-converters/shared/go"
 )
 
 // legacyHDFConverter converts legacy InSpec exec-json (profiles/controls)
@@ -18,6 +19,10 @@ func (c *legacyHDFConverter) Name() string {
 
 // Convert transforms legacy InSpec exec-json input to current HDF output.
 func (c *legacyHDFConverter) Convert(input []byte) ([]byte, error) {
+	if err := shared.ValidateJSONSize(input, "legacyhdf", 0); err != nil {
+		return nil, fmt.Errorf("legacyhdf input validation: %w", err)
+	}
+
 	if !legacyhdf.IsHDFV1(input) {
 		return nil, fmt.Errorf("input is not valid legacy InSpec exec-json format")
 	}

@@ -8,8 +8,9 @@
 // This is the Go equivalent of TypeScript's registerAllFingerprints().
 package all
 
-// JSON ingest converters
+// Blank imports below register converter fingerprints via package init().
 import (
+	// JSON ingest converters.
 	_ "github.com/mitre/hdf-converters/converters/aws-config-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/conveyor-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/cyclonedx-to-hdf/go"
@@ -30,16 +31,12 @@ import (
 	_ "github.com/mitre/hdf-converters/converters/splunk-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/trufflehog-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/twistlock-to-hdf/go"
-)
 
-// JSON ingest converters (input is JSON despite tool names suggesting XML)
-import (
+	// JSON ingest converters (tool names suggest XML, but input is JSON).
 	_ "github.com/mitre/hdf-converters/converters/nikto-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/zap-to-hdf/go"
-)
 
-// XML ingest converters
-import (
+	// XML ingest converters.
 	_ "github.com/mitre/hdf-converters/converters/burpsuite-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/dbprotect-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/fortify-to-hdf/go"
@@ -48,26 +45,18 @@ import (
 	_ "github.com/mitre/hdf-converters/converters/netsparker-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/veracode-to-hdf/go"
 	_ "github.com/mitre/hdf-converters/converters/xccdf-results-to-hdf/go"
-)
 
-// Text/CSV ingest
-import (
+	// Text/CSV ingest.
 	_ "github.com/mitre/hdf-converters/converters/prisma-to-hdf/go"
-)
 
-// HDF native detection
-import (
+	// HDF native detection.
 	_ "github.com/mitre/hdf-converters/converters/hdf-v2-passthrough/go"
 	_ "github.com/mitre/hdf-converters/converters/legacyhdf-to-hdf/go"
-)
 
-// OSCAL converters
-import (
+	// OSCAL converters.
 	_ "github.com/mitre/hdf-converters/converters/oscal-to-hdf/go"
-)
 
-// Export converters
-import (
+	// Export converters.
 	_ "github.com/mitre/hdf-converters/converters/hdf-to-csv/go"
 	_ "github.com/mitre/hdf-converters/converters/hdf-to-oscal-poam/go"
 	_ "github.com/mitre/hdf-converters/converters/hdf-to-oscal-sar/go"

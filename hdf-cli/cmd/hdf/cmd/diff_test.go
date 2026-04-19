@@ -8,8 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mitre/hdf-cli/pkg/diff/exitcodes"
-	diffTypes "github.com/mitre/hdf-cli/pkg/diff/types"
+	diff "github.com/mitre/hdf-diff/go"
 )
 
 // --- Fixture builders for diff tests ---
@@ -344,7 +343,7 @@ func TestDiffCommand_DefaultExitCode_Differences(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	_, _, err := executeCommand("diff", oldPath, newPath)
-	requireExitCode(t, err, exitcodes.Differences)
+	requireExitCode(t, err, diff.Differences)
 }
 
 // TestDiffCommand_DefaultExitCode_Identical verifies exit code 0 by default
@@ -365,7 +364,7 @@ func TestDiffCommand_ExitCode_Differences(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	_, _, err := executeCommand("diff", "--exit-code", oldPath, newPath)
-	requireExitCode(t, err, exitcodes.Differences)
+	requireExitCode(t, err, diff.Differences)
 }
 
 // TestDiffCommand_ExitCode_Identical verifies that --exit-code returns exit code 0
@@ -386,7 +385,7 @@ func TestDiffCommand_ExitCode_FixesOnly(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFSinglePassed())
 
 	_, _, err := executeCommand("diff", "--exit-code", oldPath, newPath)
-	requireExitCode(t, err, exitcodes.Differences)
+	requireExitCode(t, err, diff.Differences)
 }
 
 // --- Detailed exit code tests ---
@@ -407,7 +406,7 @@ func TestDiffCommand_DetailedExitCode_FixesOnly(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFSinglePassed())
 
 	_, _, err := executeCommand("diff", "--detailed-exitcode", oldPath, newPath)
-	requireExitCode(t, err, exitcodes.FixesOnly)
+	requireExitCode(t, err, diff.FixesOnly)
 }
 
 // TestDiffCommand_DetailedExitCode_RegressionsOnly verifies regressions-only → exit 11.
@@ -417,7 +416,7 @@ func TestDiffCommand_DetailedExitCode_RegressionsOnly(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFSingleFailed())
 
 	_, _, err := executeCommand("diff", "--detailed-exitcode", oldPath, newPath)
-	requireExitCode(t, err, exitcodes.RegressionsOnly)
+	requireExitCode(t, err, diff.RegressionsOnly)
 }
 
 // TestDiffCommand_DetailedExitCode_Mixed verifies mixed fixes+regressions → exit 12.
@@ -428,7 +427,7 @@ func TestDiffCommand_DetailedExitCode_Mixed(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFAfter())
 
 	_, _, err := executeCommand("diff", "--detailed-exitcode", oldPath, newPath)
-	requireExitCode(t, err, exitcodes.Mixed)
+	requireExitCode(t, err, diff.Mixed)
 }
 
 // TestDiffCommand_DetailedExitCode_BaselineChanged verifies new/absent controls only → exit 13.
@@ -466,7 +465,7 @@ func TestDiffCommand_DetailedExitCode_BaselineChanged(t *testing.T) {
 	newPath := writeHDFFixture(t, newFixture)
 
 	_, _, err := executeCommand("diff", "--detailed-exitcode", oldPath, newPath)
-	requireExitCode(t, err, exitcodes.BaselineChanged)
+	requireExitCode(t, err, diff.BaselineChanged)
 }
 
 // TestDiffCommand_DetailedExitCode_DriftOnly verifies metadata-only changes → exit 14.
@@ -477,7 +476,7 @@ func TestDiffCommand_DetailedExitCode_DriftOnly(t *testing.T) {
 	newPath := writeHDFFixture(t, syntheticHDFUpdated())
 
 	_, _, err := executeCommand("diff", "--detailed-exitcode", oldPath, newPath)
-	requireExitCode(t, err, exitcodes.DriftOnly)
+	requireExitCode(t, err, diff.DriftOnly)
 }
 
 // TestDiffCommand_DetailedExitCode_HelpText verifies the flag appears in help.
@@ -599,24 +598,24 @@ func TestDiffCommand_FilterAbsent(t *testing.T) {
 func TestComputeBasicExitCode(t *testing.T) {
 	tests := []struct {
 		name    string
-		summary diffTypes.ComparisonSummary
+		summary diff.ComparisonSummary
 		want    int
 	}{
-		{"identical", diffTypes.ComparisonSummary{Total: 10, Unchanged: 10}, exitcodes.Identical},
-		{"empty", diffTypes.ComparisonSummary{Total: 0, Unchanged: 0}, exitcodes.Identical},
-		{"fixes", diffTypes.ComparisonSummary{Total: 10, Fixed: 3, Unchanged: 7}, exitcodes.Differences},
-		{"regressions", diffTypes.ComparisonSummary{Total: 10, Regressed: 2, Unchanged: 8}, exitcodes.Differences},
-		{"mixed", diffTypes.ComparisonSummary{Total: 10, Fixed: 1, Regressed: 1, Unchanged: 8}, exitcodes.Differences},
-		{"new only", diffTypes.ComparisonSummary{Total: 12, New: 2, Unchanged: 10}, exitcodes.Differences},
-		{"absent only", diffTypes.ComparisonSummary{Total: 10, Absent: 3, Unchanged: 7}, exitcodes.Differences},
-		{"updated only", diffTypes.ComparisonSummary{Total: 10, Updated: 1, Unchanged: 9}, exitcodes.Differences},
+		{"identical", diff.ComparisonSummary{Total: 10, Unchanged: 10}, diff.Identical},
+		{"empty", diff.ComparisonSummary{Total: 0, Unchanged: 0}, diff.Identical},
+		{"fixes", diff.ComparisonSummary{Total: 10, Fixed: 3, Unchanged: 7}, diff.Differences},
+		{"regressions", diff.ComparisonSummary{Total: 10, Regressed: 2, Unchanged: 8}, diff.Differences},
+		{"mixed", diff.ComparisonSummary{Total: 10, Fixed: 1, Regressed: 1, Unchanged: 8}, diff.Differences},
+		{"new only", diff.ComparisonSummary{Total: 12, New: 2, Unchanged: 10}, diff.Differences},
+		{"absent only", diff.ComparisonSummary{Total: 10, Absent: 3, Unchanged: 7}, diff.Differences},
+		{"updated only", diff.ComparisonSummary{Total: 10, Updated: 1, Unchanged: 9}, diff.Differences},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := exitcodes.ComputeBasicExitCode(tt.summary)
+			got := diff.ComputeBasicExitCode(tt.summary)
 			if got != tt.want {
-				t.Errorf("exitcodes.ComputeBasicExitCode(%v) = %d, want %d", tt.summary, got, tt.want)
+				t.Errorf("diff.ComputeBasicExitCode(%v) = %d, want %d", tt.summary, got, tt.want)
 			}
 		})
 	}
@@ -626,29 +625,29 @@ func TestComputeBasicExitCode(t *testing.T) {
 func TestComputeDetailedExitCode(t *testing.T) {
 	tests := []struct {
 		name    string
-		summary diffTypes.ComparisonSummary
+		summary diff.ComparisonSummary
 		want    int
 	}{
-		{"identical", diffTypes.ComparisonSummary{Total: 10, Unchanged: 10}, exitcodes.Identical},
-		{"empty", diffTypes.ComparisonSummary{Total: 0, Unchanged: 0}, exitcodes.Identical},
-		{"fixes only", diffTypes.ComparisonSummary{Total: 10, Fixed: 3, Unchanged: 7}, exitcodes.FixesOnly},
-		{"regressions only", diffTypes.ComparisonSummary{Total: 10, Regressed: 2, Unchanged: 8}, exitcodes.RegressionsOnly},
-		{"mixed", diffTypes.ComparisonSummary{Total: 10, Fixed: 2, Regressed: 1, Unchanged: 7}, exitcodes.Mixed},
-		{"new only", diffTypes.ComparisonSummary{Total: 12, New: 2, Unchanged: 10}, exitcodes.BaselineChanged},
-		{"absent only", diffTypes.ComparisonSummary{Total: 10, Absent: 3, Unchanged: 7}, exitcodes.BaselineChanged},
-		{"new and absent", diffTypes.ComparisonSummary{Total: 10, New: 1, Absent: 1, Unchanged: 8}, exitcodes.BaselineChanged},
-		{"updated only (drift)", diffTypes.ComparisonSummary{Total: 10, Updated: 1, Unchanged: 9}, exitcodes.DriftOnly},
-		{"fixes + new (fixes take priority)", diffTypes.ComparisonSummary{Total: 10, Fixed: 2, New: 1, Unchanged: 7}, exitcodes.FixesOnly},
-		{"regressions + absent (regressions take priority)", diffTypes.ComparisonSummary{Total: 10, Regressed: 1, Absent: 2, Unchanged: 7}, exitcodes.RegressionsOnly},
-		{"all categories present", diffTypes.ComparisonSummary{Total: 10, Fixed: 1, Regressed: 1, New: 1, Absent: 1, Unchanged: 6}, exitcodes.Mixed},
-		{"updated + new (baseline takes priority over drift)", diffTypes.ComparisonSummary{Total: 10, Updated: 1, New: 1, Unchanged: 8}, exitcodes.BaselineChanged},
+		{"identical", diff.ComparisonSummary{Total: 10, Unchanged: 10}, diff.Identical},
+		{"empty", diff.ComparisonSummary{Total: 0, Unchanged: 0}, diff.Identical},
+		{"fixes only", diff.ComparisonSummary{Total: 10, Fixed: 3, Unchanged: 7}, diff.FixesOnly},
+		{"regressions only", diff.ComparisonSummary{Total: 10, Regressed: 2, Unchanged: 8}, diff.RegressionsOnly},
+		{"mixed", diff.ComparisonSummary{Total: 10, Fixed: 2, Regressed: 1, Unchanged: 7}, diff.Mixed},
+		{"new only", diff.ComparisonSummary{Total: 12, New: 2, Unchanged: 10}, diff.BaselineChanged},
+		{"absent only", diff.ComparisonSummary{Total: 10, Absent: 3, Unchanged: 7}, diff.BaselineChanged},
+		{"new and absent", diff.ComparisonSummary{Total: 10, New: 1, Absent: 1, Unchanged: 8}, diff.BaselineChanged},
+		{"updated only (drift)", diff.ComparisonSummary{Total: 10, Updated: 1, Unchanged: 9}, diff.DriftOnly},
+		{"fixes + new (fixes take priority)", diff.ComparisonSummary{Total: 10, Fixed: 2, New: 1, Unchanged: 7}, diff.FixesOnly},
+		{"regressions + absent (regressions take priority)", diff.ComparisonSummary{Total: 10, Regressed: 1, Absent: 2, Unchanged: 7}, diff.RegressionsOnly},
+		{"all categories present", diff.ComparisonSummary{Total: 10, Fixed: 1, Regressed: 1, New: 1, Absent: 1, Unchanged: 6}, diff.Mixed},
+		{"updated + new (baseline takes priority over drift)", diff.ComparisonSummary{Total: 10, Updated: 1, New: 1, Unchanged: 8}, diff.BaselineChanged},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := exitcodes.ComputeDetailedExitCode(tt.summary)
+			got := diff.ComputeDetailedExitCode(tt.summary)
 			if got != tt.want {
-				t.Errorf("exitcodes.ComputeDetailedExitCode(%v) = %d, want %d", tt.summary, got, tt.want)
+				t.Errorf("diff.ComputeDetailedExitCode(%v) = %d, want %d", tt.summary, got, tt.want)
 			}
 		})
 	}
@@ -1129,7 +1128,7 @@ func TestDiffCommand_SystemDrift_ExitCode(t *testing.T) {
 	newPath := writeJSONFixture(t, syntheticSystemNew())
 
 	_, _, err := executeCommand("diff", oldPath, newPath)
-	requireExitCode(t, err, exitcodes.Differences)
+	requireExitCode(t, err, diff.Differences)
 }
 
 // TestDiffCommand_SystemDrift_DataFlowChanges verifies data flow diffs are reported.

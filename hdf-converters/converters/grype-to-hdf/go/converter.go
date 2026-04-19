@@ -245,11 +245,12 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 
 	// Determine status
 	var status hdf.ResultStatus
-	if isIgnored {
+	switch {
+	case isIgnored:
 		status = hdf.NotReviewed // Ignored by configured rules
-	} else if isNegligibleOrUnknown(severity) {
+	case isNegligibleOrUnknown(severity):
 		status = hdf.NotApplicable
-	} else {
+	default:
 		status = hdf.Failed
 	}
 

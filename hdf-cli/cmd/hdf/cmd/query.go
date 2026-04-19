@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	hdf "github.com/mitre/hdf-cli/pkg/hdf"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	hdf "github.com/mitre/hdf-schema"
 	"github.com/spf13/cobra"
 )
 
@@ -141,7 +141,7 @@ func runQuery(_ *cobra.Command, args []string) error {
 }
 
 // findMatches applies filters to all controls and returns matching results.
-func findMatches(results hdf.HdfResults, filters []filterFunc) []queryResult {
+func findMatches(results hdf.HDFResults, filters []filterFunc) []queryResult {
 	var matches []queryResult
 
 	for _, baseline := range results.Baselines {
