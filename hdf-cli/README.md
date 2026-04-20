@@ -31,9 +31,29 @@ HDF (Heimdall Data Format) is a standardized JSON format for security assessment
 
 ## Installation
 
-Pre-built binaries for macOS, Linux, and Windows are planned. Until then, build from source.
+### Pre-built binaries (recommended)
 
-**Requirements:** Go 1.23+
+Download the latest release for your platform from [GitHub Releases](https://github.com/mitre/hdf-libs/releases). Binaries are available for:
+
+- macOS (amd64, arm64)
+- Linux (amd64, arm64)
+- Windows (amd64)
+
+```bash
+# Example: download and install on macOS (Apple Silicon)
+curl -sL https://github.com/mitre/hdf-libs/releases/latest/download/hdf_darwin_arm64.tar.gz | tar xz
+sudo mv hdf /usr/local/bin/
+
+# Linux (amd64)
+curl -sL https://github.com/mitre/hdf-libs/releases/latest/download/hdf_linux_amd64.tar.gz | tar xz
+sudo mv hdf /usr/local/bin/
+```
+
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.1.0_darwin_arm64.tar.gz`).
+
+### Build from source
+
+**Requirements:** Go 1.26+, pnpm
 
 ```bash
 # From the hdf-libs monorepo root
@@ -46,6 +66,8 @@ go build -o hdf ./cmd/hdf
 ```
 
 The binary is written to `hdf-cli/hdf`. Add it to your PATH or invoke it directly.
+
+> **Note:** `go install github.com/mitre/hdf-cli/cmd/hdf@latest` does not work because the monorepo uses Go `replace` directives for local development. Use pre-built binaries or build from source.
 
 ## Terminology
 
@@ -358,30 +380,56 @@ These flags apply to all commands.
 | Source Format | Aliases | Description |
 |--------------|---------|-------------|
 | `aws-config` | | AWS Config compliance evaluation results (JSON) |
+| `burpsuite` | | PortSwigger BurpSuite web scanner (XML) |
+| `conveyor` | | Conveyor container security (JSON) |
 | `cyclonedx` | | CycloneDX SBOM/VEX (JSON) |
+| `dbprotect` | | DbProtect database scanner (XML) |
+| `deptrack` | `dependency-track` | Dependency-Track vulnerability audit (JSON) |
+| `fortify` | | Micro Focus Fortify SAST (FVDL XML) |
 | `gitlab` | `gitlab-sast`, `gitlab-dast` | GitLab CI/CD security scan reports (JSON) |
 | `gosec` | | gosec Go security checker (JSON or SARIF) |
 | `grype` | | Anchore Grype vulnerability scan (JSON) |
+| `ionchannel` | | Ion Channel supply chain analysis (JSON) |
+| `jfrog-xray` | `xray` | JFrog Xray SCA scan (JSON) |
 | `junit` | | JUnit XML test results |
-| `legacyhdf` | `inspec` | HDF v1.0 (InSpec legacy format) to HDF v2.0 |
+| `legacyhdf` | `inspec` | Legacy HDF (InSpec exec-json format) to current HDF |
+| `msft-defender-cloud` | `defender-cloud` | Microsoft Defender for Cloud (JSON) |
+| `msft-defender-devops` | `msdo` | Microsoft Defender for DevOps (SARIF) |
+| `msft-defender-endpoint` | `defender-endpoint` | Microsoft Defender for Endpoint (JSON) |
+| `msft-secure-score` | | Microsoft Secure Score (JSON) |
 | `nessus` | | Tenable Nessus scan results (`.nessus` XML) |
+| `netsparker` | `invicti` | Netsparker/Invicti web scanner (XML) |
+| `neuvector` | | NeuVector container security (JSON) |
 | `nikto` | | Nikto web server scanner (JSON) |
+| `oscal` | | OSCAL document (auto-detect type) |
+| `oscal-sar` | `oscal-assessment-results` | OSCAL Assessment Results → HDF Results |
+| `oscal-catalog` | | OSCAL Catalog → HDF Baseline |
+| `oscal-component-definition` | | OSCAL Component Definition → HDF Baseline |
+| `oscal-ssp` | | OSCAL System Security Plan → HDF System |
+| `oscal-poam` | | OSCAL Plan of Action and Milestones → HDF Amendments |
+| `prisma` | | Prisma Cloud/Twistlock container scan (JSON) |
 | `sarif` | | SARIF 2.1.0 (Static Analysis Results Interchange Format) |
+| `scoutsuite` | | NCC Group ScoutSuite cloud audit (JSON) |
 | `snyk` | | Snyk vulnerability scan (JSON) |
 | `sonarqube` | | SonarQube issues export (JSON) |
 | `splunk` | | Splunk HDF events (JSON) |
 | `trufflehog` | | TruffleHog secret scanner (JSON, NDJSON, or single object) |
-| `xccdf` | `arf` | XCCDF/ARF benchmark results (XML) |
+| `twistlock` | | Palo Alto Twistlock container scan (JSON) |
+| `veracode` | | Veracode SAST/DAST results (XML) |
+| `xccdf` | `arf`, `xccdf-benchmark`, `xccdf-results` | XCCDF/ARF benchmark or results (XML) |
 | `zap` | | OWASP ZAP web scanner (JSON) |
 
-Tools that support SARIF output (gosec, Snyk, etc.) are automatically detected and routed through the SARIF converter when SARIF input is provided. No special flag is needed.
+Auto-detection: `hdf convert <file>` identifies the input format automatically. Use `--from <format>` only when auto-detection fails or you want to force a specific parser.
 
 ### From HDF
 
 | Source | Destination | Description |
 |--------|-------------|-------------|
-| `hdf` | `csv` | Export controls/requirements to CSV |
-| `hdf` | `xml` | Export controls/requirements to XML |
+| `hdf` | `csv` | Export requirements to CSV spreadsheet |
+| `hdf` | `xml` | Export requirements to XML |
+| `hdf` | `xccdf` | Export to XCCDF results XML |
+| `hdf` | `oscal-sar` | Export to OSCAL Assessment Results |
+| `hdf` | `oscal-poam` | Export to OSCAL Plan of Action and Milestones |
 
 ## Credential Handling
 
@@ -406,7 +454,7 @@ Override with the `GLAB_CONFIG_DIR` environment variable on any platform.
 
 ## Development
 
-See the [monorepo root README](../README.md) and [CLAUDE.md](./CLAUDE.md) for full architecture and contribution guidelines.
+See the [monorepo root README](https://github.com/mitre/hdf-libs/blob/main/README.md) and [CLAUDE.md](https://github.com/mitre/hdf-libs/blob/main/hdf-cli/CLAUDE.md) for full architecture and contribution guidelines.
 
 ### Quick Reference
 
@@ -430,7 +478,7 @@ pnpm test:coverage              # coverage report (generates coverage.out)
 
 ### Adding a New Converter
 
-See the [`/build-converter` skill documentation](./CLAUDE.md) for the full process. In brief:
+See the [`/build-converter` skill documentation](https://github.com/mitre/hdf-libs/blob/main/hdf-cli/CLAUDE.md) for the full process. In brief:
 
 1. Implement Go converter in `hdf-converters/converters/<name>/go/converter.go`
 2. Implement TypeScript converter in `hdf-converters/converters/<name>/typescript/converter.ts`

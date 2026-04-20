@@ -42,7 +42,7 @@
       "items": {
         "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.1.0#/$defs/Standalone_Override"
       },
-      "description": "The set of amendments (waivers, attestations, exceptions, POA&Ms)."
+      "description": "The set of amendments (waivers, attestations, POA&Ms, and other overrides)."
     },
     "labels": {
       "type": "object",
