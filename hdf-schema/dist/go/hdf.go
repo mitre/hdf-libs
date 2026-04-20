@@ -342,9 +342,10 @@ type EvaluatedRequirement struct {
 	// present. Convention: place default description first. Common labels: 'default', 'check',                        
 	// 'fix', 'rationale'.                                                                                             
 	Descriptions                                                                                []Description          `json:"descriptions"`
-	// The type of the most recent non-expired override governing this requirement. Indicates                          
-	// why the requirement is in its current state (e.g., waiver, falsePositive,                                       
-	// riskAdjustment). Absent when no overrides apply.                                                                
+	// The type of the most recent non-expired override or POAM governing this requirement.                            
+	// Indicates why the requirement is in its current state (e.g., waiver, falsePositive,                             
+	// riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or                        
+	// POAMs apply.                                                                                                    
 	Disposition                                                                                 *OverrideType          `json:"disposition,omitempty"`
 	// The current effective impact score (0.0–1.0) after applying the most recent non-expired                         
 	// override with an impact field. Absent when no impact overrides apply; consumers should                          
@@ -1537,7 +1538,7 @@ type Schedule struct {
 	StartDate                                                                                  *time.Time `json:"startDate,omitempty"`
 }
 
-// Waivers, attestations, exceptions, and POA&Ms that modify requirement compliance status.
+// Waivers, attestations, and POA&Ms that modify requirement compliance status or impact.
 // Amendments are standalone documents that can be applied to results via merge operations.
 type HDFAmendments struct {
 	// Unique identifier for this amendments document. Useful for cross-referencing when                           
@@ -1739,9 +1740,10 @@ const (
 	Sha512 HashAlgorithm = "sha512"
 )
 
-// The type of the most recent non-expired override governing this requirement. Indicates
-// why the requirement is in its current state (e.g., waiver, falsePositive,
-// riskAdjustment). Absent when no overrides apply.
+// The type of the most recent non-expired override or POAM governing this requirement.
+// Indicates why the requirement is in its current state (e.g., waiver, falsePositive,
+// riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or
+// POAMs apply.
 //
 // The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk
 // accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam':
@@ -1755,7 +1757,8 @@ const (
 // Adjustment); does not change pass/fail status, only impact via the impact field.
 // 'operationalRequirement': deviation required by operational constraints (FedRAMP
 // Operational Requirement); the finding cannot be remediated because the system requires
-// the affected functionality. Remains an open risk.
+// the affected functionality. Remains an open risk. Migration note: 'exception' was removed
+// in v3.1.0 — use 'waiver' with status 'notApplicable' instead.
 //
 // The type of override applied to this requirement.
 //

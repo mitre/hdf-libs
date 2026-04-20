@@ -73,7 +73,8 @@ export var ResultStatus;
  * Adjustment); does not change pass/fail status, only impact via the impact field.
  * 'operationalRequirement': deviation required by operational constraints (FedRAMP
  * Operational Requirement); the finding cannot be remediated because the system requires
- * the affected functionality. Remains an open risk.
+ * the affected functionality. Remains an open risk. Migration note: 'exception' was removed
+ * in v3.1.0 — use 'waiver' with status 'notApplicable' instead.
  */
 export var OverrideType;
 (function (OverrideType) {

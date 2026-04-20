@@ -43,9 +43,10 @@ export var HashAlgorithm;
     HashAlgorithm["Sha512"] = "sha512";
 })(HashAlgorithm || (HashAlgorithm = {}));
 /**
- * The type of the most recent non-expired override governing this requirement. Indicates
- * why the requirement is in its current state (e.g., waiver, falsePositive,
- * riskAdjustment). Absent when no overrides apply.
+ * The type of the most recent non-expired override or POAM governing this requirement.
+ * Indicates why the requirement is in its current state (e.g., waiver, falsePositive,
+ * riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or
+ * POAMs apply.
  *
  * The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk
  * accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam':
@@ -59,7 +60,8 @@ export var HashAlgorithm;
  * Adjustment); does not change pass/fail status, only impact via the impact field.
  * 'operationalRequirement': deviation required by operational constraints (FedRAMP
  * Operational Requirement); the finding cannot be remediated because the system requires
- * the affected functionality. Remains an open risk.
+ * the affected functionality. Remains an open risk. Migration note: 'exception' was removed
+ * in v3.1.0 — use 'waiver' with status 'notApplicable' instead.
  *
  * The type of override applied to this requirement.
  */
