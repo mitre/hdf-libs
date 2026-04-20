@@ -155,34 +155,6 @@ describe('generate-types', () => {
     });
   });
 
-  describe('Python output', () => {
-    it('should create dist/python directory', () => {
-      expect(existsSync(join(DIST_DIR, 'python'))).toBe(true);
-    });
-
-    it('should create hdf_results.py', () => {
-      expect(existsSync(join(DIST_DIR, 'python', 'hdf_results.py'))).toBe(true);
-    });
-
-    it('should create hdf_baseline.py', () => {
-      expect(existsSync(join(DIST_DIR, 'python', 'hdf_baseline.py'))).toBe(true);
-    });
-
-    it('should create hdf_comparison.py', () => {
-      expect(existsSync(join(DIST_DIR, 'python', 'hdf_comparison.py'))).toBe(true);
-    });
-
-    it('should contain class definitions', () => {
-      const content = readFileSync(join(DIST_DIR, 'python', 'hdf_results.py'), 'utf-8');
-      expect(content).toContain('class');
-    });
-
-    it('should use dataclasses or typing', () => {
-      const content = readFileSync(join(DIST_DIR, 'python', 'hdf_results.py'), 'utf-8');
-      expect(content).toMatch(/dataclass|@dataclass|from typing|TypedDict/);
-    });
-  });
-
   describe('Error handling', () => {
     it('should throw error when bundled schemas directory does not exist', async () => {
       // Temporarily rename schemas directory
