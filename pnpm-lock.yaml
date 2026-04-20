@@ -192,6 +192,10 @@ importers:
         version: 9.5.1(@stryker-mutator/core@9.5.1(@types/node@24.10.1))(vitest@2.1.9(@types/node@24.10.1))
 
   site:
+    dependencies:
+      '@mitre/hdf-schema':
+        specifier: workspace:^
+        version: link:../hdf-schema
     devDependencies:
       vitepress:
         specifier: ^1.6.3
