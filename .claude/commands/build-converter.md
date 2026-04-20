@@ -44,6 +44,8 @@ After plan approval, implement in order:
 1. Write CLI registration (`converter_<snake>.go`)
 2. Write CLI tests (`converter_<snake>_test.go`)
 3. Spot-check output via CLI binary
+4. Add the new format to the "Supported Conversions" table in `hdf-cli/README.md`
+5. Add the new format to the converter table in `hdf-converters/README.md`
 
 ### Phase 5 — Verification
 
@@ -978,3 +980,5 @@ cat output.json | head -40
 - [ ] HDF output validation in CLI tests uses `assertHDFOutput()` / `hdf-validators` — no ad-hoc field checks as substitute
 - [ ] CSV/XML parsing uses `hdf-utilities` (TypeScript) or Go stdlib — no new third-party parser deps
 - [ ] If a new mapping package was created: exported from `hdf-mappings/src/index.ts`, added to the table and usage examples in `hdf-mappings/README.md`
+- [ ] New format added to "Supported Conversions" table in `hdf-cli/README.md`
+- [ ] New format added to converter table in `hdf-converters/README.md`

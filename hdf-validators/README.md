@@ -1,12 +1,12 @@
 # @mitre/hdf-validators
 
-JSON Schema validation for Heimdall Data Format (HDF) documents. Validates HDF Results and Baselines against the official HDF schemas to ensure structural correctness and data integrity.
+JSON Schema validation for Heimdall Data Format (HDF) documents. Validates all 7 HDF document types against their official schemas to ensure structural correctness and data integrity.
 
 ## Scope and Responsibilities
 
 **hdf-validators** provides schema-based validation:
-- Validate HDF Results documents against the HDF Results schema
-- Validate HDF Baseline documents against the HDF Baseline schema
+- Validate all HDF document types: Results, Baseline, System, Plan, Amendments, Evidence Package, Comparison
+- Auto-detect document type via the generic `validate()` function
 - Detailed error reporting with field-level validation messages
 - Support for both TypeScript and Go implementations
 
@@ -174,6 +174,46 @@ Validate data against the HDF Baseline schema.
   - `data` - JavaScript object to validate
 - **Returns:** `ValidationResult` with validation status and errors
 
+#### `validateComparison(data: unknown): ValidationResult`
+
+Validate data against the HDF Comparison schema.
+
+- **Parameters:**
+  - `data` - JavaScript object to validate
+- **Returns:** `ValidationResult` with validation status and errors
+
+#### `validateSystem(data: unknown): ValidationResult`
+
+Validate data against the HDF System schema.
+
+- **Parameters:**
+  - `data` - JavaScript object to validate
+- **Returns:** `ValidationResult` with validation status and errors
+
+#### `validatePlan(data: unknown): ValidationResult`
+
+Validate data against the HDF Plan schema.
+
+- **Parameters:**
+  - `data` - JavaScript object to validate
+- **Returns:** `ValidationResult` with validation status and errors
+
+#### `validateAmendments(data: unknown): ValidationResult`
+
+Validate data against the HDF Amendments schema.
+
+- **Parameters:**
+  - `data` - JavaScript object to validate
+- **Returns:** `ValidationResult` with validation status and errors
+
+#### `validateEvidencePackage(data: unknown): ValidationResult`
+
+Validate data against the HDF Evidence Package schema.
+
+- **Parameters:**
+  - `data` - JavaScript object to validate
+- **Returns:** `ValidationResult` with validation status and errors
+
 #### `validate(data: unknown): ValidationResult`
 
 Auto-detect document type and validate.
@@ -288,7 +328,7 @@ The `name` field is required for each baseline.
 results[0].status: must be equal to one of the allowed values
 ```
 
-Result status must be one of: `passed`, `failed`, `error`, `skipped`, `not_applicable`, `not_reviewed`.
+Result status must be one of: `passed`, `failed`, `error`, `notApplicable`, `notReviewed`.
 
 ### Invalid Numeric Ranges
 

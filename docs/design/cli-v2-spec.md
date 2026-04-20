@@ -1,5 +1,8 @@
 # HDF CLI v2 Design Spec
 
+> **Note (v3.1.0):** This design spec has been largely implemented. See the CHANGELOG
+> and current CLI help (`hdf --help`) for the authoritative command reference.
+
 > Design review for the HDF CLI in the context of the full v2 schema ecosystem
 > (7 document types, fingerprint auto-detection, labels, typed inputs, OSCAL alignment).
 

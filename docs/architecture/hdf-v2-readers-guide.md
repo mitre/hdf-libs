@@ -280,20 +280,23 @@ matters to you.
 
 ---
 
-## Walkthrough 4: Amendments (Waivers, Attestations, Exceptions)
+## Walkthrough 4: Amendments (Waivers, Attestations, Overrides)
 
 *Governance decisions about findings — applied as formal amendments to the record.*
 
 ### Why "amendments"?
 
 The document type is called `hdf-amendments` (not hdf-attestation) because it covers
-four subtypes:
+seven subtypes aligned with FedRAMP deviation request categories:
 
 | Subtype | Meaning | Effect on status |
 |---------|---------|-----------------|
 | **attestation** | "I verified this manually" | Status → passed |
 | **waiver** | "I accept this risk" | Status → passed (risk remains) |
-| **exception** | "This doesn't apply here" | Status → notApplicable |
+| **falsePositive** | "Scanner incorrectly flagged this" | Status → passed or notApplicable |
+| **riskAdjustment** | "Impact adjusted for context" | Impact score changed |
+| **operationalRequirement** | "Deviation required by operations" | Open risk |
+| **inherited** | "Control provided by another system" | Status reflects inherited posture |
 | **poam** | "We'll fix this by date X" | Status unchanged (tracks work) |
 
 Each entry amends the assessment record. The amendment chain (`previousChecksum`)
@@ -621,7 +624,7 @@ hdf
 │   └── run <file>                   # Execute the plan (run scans)
 │
 ├── amend                            # Governance decisions
-│   ├── create <results>             # Create waiver/attestation/exception
+│   ├── create <results>             # Create waiver/attestation/override
 │   ├── apply <results> <amendments> # Merge into results
 │   ├── verify <file>                # Verify signatures + chain
 │   └── list <file>                  # List active/expired
@@ -704,7 +707,7 @@ not competing schemas:
 | Document | What it covers |
 |----------|---------------|
 | [Architecture](hdf-v2-document-ecosystem.md) | Full ecosystem vision, all 7 types, JSON examples |
-| [Decisions](../design/decisions.md) | 12 design decisions with research rationale |
+| Design decisions | (archived) — 12 design decisions with research rationale |
 | [Developer Guide](../design/developer-guide.md) | Contributor patterns, dual impl, testing |
 | [Implementation Plan](../plans/2026-03-14-hdf-v2-ecosystem-plan.md) | Phase-by-phase plan with beads cards |
-| [SBOM Research](../reviews/2026-03-15-sbom-library-research.md) | CycloneDX/SPDX library landscape |
+| SBOM Research | (archived) — CycloneDX/SPDX library landscape |

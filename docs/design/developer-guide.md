@@ -48,7 +48,7 @@ output for the same inputs.
 
 ### Example
 
-The hdf-diff differential tests (`hdf-cli/pkg/diff/engine/differential_test.go`):
+The hdf-diff differential tests (`hdf-diff/go/engine/differential_test.go`):
 - Load fixtures from `../../../hdf-diff/test/fixtures/`
 - Run Go's `engine.DiffHdf()` on each fixture pair
 - Assert the same values that the TypeScript tests in `hdf-diff/test/diff.test.ts` assert
@@ -68,7 +68,7 @@ explicitly nullable. TypeScript omits `undefined` fields entirely from serialize
 
 ### The Fix
 
-`pkg/diff/validate/validate.go` exports `NormalizeForSchema()` which:
+`hdf-diff/go/validate/validate.go` exports `NormalizeForSchema()` which:
 - Preserves `null` for explicitly nullable fields (`before`, `after`)
 - Converts `null` to `[]` for required array fields (`fieldChanges`, `changeReasons`)
 - Strips all other `null` values (matches JS undefined behavior)
@@ -111,7 +111,7 @@ GNU diff compatible: 0=identical, 1=differences, 2=error.
 | 14 | Drift only | Inform |
 
 Range 10-14 chosen to avoid sysexits.h (64-78), signal range (128+), and InSpec (100-101).
-Full rationale in `docs/design/decisions.md` Decision 2.
+Full rationale documented in CHANGELOG.md.
 
 ---
 
@@ -125,7 +125,7 @@ Full rationale in `docs/design/decisions.md` Decision 2.
 4. Set `unevaluatedProperties: false` on all object types
 5. Add to `test/setup.ts` `createAjvWithPrimitives()` primitive list
 6. Write `test/hdf-<name>.test.ts` with 20+ validation tests
-7. Add to `src/generate-types.ts` for TS/Go/Python type generation
+7. Add to `src/generate-types.ts` for TS/Go type generation
 8. Add subpath export to `package.json`
 9. Add to `src/create-index.ts` for barrel exports
 
@@ -140,8 +140,8 @@ Full rationale in `docs/design/decisions.md` Decision 2.
 ### $ref URI Pattern
 
 ```
-https://mitre.github.io/hdf-libs/schemas/primitives/<name>/v2.0.0#/$defs/<Type>
-https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v1.0.0#/$defs/<Type>
+https://mitre.github.io/hdf-libs/schemas/primitives/<name>/v3.1.0#/$defs/<Type>
+https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.1.0#/$defs/<Type>
 ```
 
 ---
@@ -190,7 +190,7 @@ signatures), follow the **progressive enrichment** pattern:
 5. Consumers (Heimdall, CLI) MAY prompt users to add enrichment, but MUST NOT fail
    when enrichment is absent
 
-See `docs/design/decisions.md` Decision 9 for the full rationale.
+See CHANGELOG.md for the full rationale.
 
 ### SBOM References
 

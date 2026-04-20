@@ -32,6 +32,9 @@ Security teams use many different tools—vulnerability scanners, compliance che
 | [`@mitre/hdf-parsers`](./hdf-parsers/README.md) | Parse and flatten HDF documents |
 | [`@mitre/hdf-converters`](./hdf-converters/README.md) | Convert security tool outputs to HDF |
 | [`@mitre/hdf-validators`](./hdf-validators/README.md) | Validate HDF documents against schemas |
+| [`@mitre/hdf-generators`](./hdf-generators/README.md) | Generate InSpec profiles from HDF baselines |
+| [`@mitre/hdf-diff`](./hdf-diff/README.md) | Structured diff engine for HDF assessment results |
+| [`@mitre/hdf-extension-graph`](./hdf-extension-graph/README.md) | InSpec overlay/extension chain resolution |
 
 ### CLI tool
 
@@ -41,7 +44,7 @@ Security teams use many different tools—vulnerability scanners, compliance che
 
 ## Schema Types
 
-HDF defines two primary document types:
+HDF defines seven document types (all JSON Schema 2020-12):
 
 ### HDF Results
 Assessment results from running security checks against a target system. Contains:
@@ -56,6 +59,24 @@ Security requirement definitions without results. Contains:
 - Check and fix instructions
 - Framework mappings (NIST, CIS, etc.)
 - Dependencies between requirements
+
+### HDF System
+Authorization boundary definition for a system. Contains:
+- Components (hosts, cloud accounts, container images, etc.)
+- Data flows between components
+- Control designations (common, hybrid, system-specific)
+
+### HDF Plan
+Assessment plan linking baselines to system components. Defines which baselines apply to which parts of the system and under what schedule.
+
+### HDF Amendments
+Waivers, attestations, and plans of action & milestones (POA&Ms). Captures risk acceptance decisions and remediation timelines.
+
+### HDF Evidence Package
+Bundle of references to all related HDF documents for a complete assessment record. Links results, baselines, system definitions, plans, and amendments.
+
+### HDF Comparison
+Differential analysis between HDF documents (results, baselines, or systems). Produced by the hdf-diff library. All schemas are at v3.1.0.
 
 ## Installation
 
@@ -75,7 +96,7 @@ The following tools must be installed before running `pnpm lint` or `pnpm test`:
 |------|---------|---------|
 | [Node.js](https://nodejs.org/) | ≥20.0.0 | TypeScript build and test runner |
 | [pnpm](https://pnpm.io/) | ≥9.0.0 | Package manager |
-| [Go](https://go.dev/) | 1.25.x | Go packages and CLI tool |
+| [Go](https://go.dev/) | 1.26.x | Go packages and CLI tool |
 | [git-lfs](https://git-lfs.com/) | latest | Large test fixtures are stored in Git LFS |
 | [golangci-lint](https://golangci-lint.run/) | latest | Go linter (required for `pnpm lint`) |
 | [gosec](https://github.com/securego/gosec) | latest | Go SAST scanner (required for `pnpm check`) |
@@ -87,7 +108,7 @@ The following tools must be installed before running `pnpm lint` or `pnpm test`:
 ```bash
 brew install node go git-lfs gitleaks
 corepack enable && corepack prepare pnpm@9.14.2 --activate
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 go install github.com/securego/gosec/v2/cmd/gosec@latest
 go install golang.org/x/vuln/cmd/govulncheck@latest
 ```
@@ -106,13 +127,13 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 corepack enable && corepack prepare pnpm@9.14.2 --activate
 
-# Go 1.23 — check https://go.dev/dl/ for the latest 1.23.x tarball
-wget https://go.dev/dl/go1.23.8.linux-amd64.tar.gz
-sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.8.linux-amd64.tar.gz
+# Go 1.26 — check https://go.dev/dl/ for the latest 1.26.x tarball
+wget https://go.dev/dl/go1.26.0.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.26.0.linux-amd64.tar.gz
 echo 'export PATH="$PATH:/usr/local/go/bin"' >> ~/.bashrc && source ~/.bashrc
 
 # golangci-lint, gosec, govulncheck
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 go install github.com/securego/gosec/v2/cmd/gosec@latest
 go install golang.org/x/vuln/cmd/govulncheck@latest
 
@@ -133,7 +154,7 @@ winget install GoLang.Go
 corepack enable && corepack prepare pnpm@9.14.2 --activate
 
 # Go tools (restart your terminal after installing Go)
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 go install github.com/securego/gosec/v2/cmd/gosec@latest
 go install golang.org/x/vuln/cmd/govulncheck@latest
 
@@ -170,7 +191,7 @@ pnpm build
 # Build TypeScript packages only (no Go required)
 pnpm build:ts
 
-# Build Go CLI only (requires Go 1.23+)
+# Build Go CLI only (requires Go 1.26+)
 pnpm build:go
 ```
 
