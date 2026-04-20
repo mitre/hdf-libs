@@ -40,10 +40,16 @@ Download the latest release for your platform from [GitHub Releases](https://git
 - Windows (amd64)
 
 ```bash
-# Example: download and install on macOS/Linux
-curl -sL https://github.com/mitre/hdf-libs/releases/latest/download/hdf_$(uname -s)_$(uname -m).tar.gz | tar xz
+# Example: download and install on macOS (Apple Silicon)
+curl -sL https://github.com/mitre/hdf-libs/releases/latest/download/hdf_darwin_arm64.tar.gz | tar xz
+sudo mv hdf /usr/local/bin/
+
+# Linux (amd64)
+curl -sL https://github.com/mitre/hdf-libs/releases/latest/download/hdf_linux_amd64.tar.gz | tar xz
 sudo mv hdf /usr/local/bin/
 ```
+
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.1.0_darwin_arm64.tar.gz`).
 
 ### Build from source
 

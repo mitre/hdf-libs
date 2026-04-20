@@ -47,8 +47,8 @@ const baselineDiff = diffBaselines(oldBaseline, newBaseline);
 const systemDiff = diffSystems(oldSystem, newSystem);
 
 // Render as markdown, JSON, CSV, or terminal
-const md = render(comparison, { format: 'markdown', detail: 'full' });
-const json = render(comparison, { format: 'json' });
+const md = render(comparison, 'markdown', { detail: 'full' });
+const json = render(comparison, 'json');
 
 // Check exit codes for CI
 import { computeExitCode, EXIT_IDENTICAL } from '@mitre/hdf-diff';

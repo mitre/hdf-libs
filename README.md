@@ -76,7 +76,7 @@ Waivers, attestations, and plans of action & milestones (POA&Ms). Captures risk 
 Bundle of references to all related HDF documents for a complete assessment record. Links results, baselines, system definitions, plans, and amendments.
 
 ### HDF Comparison
-Differential analysis between two HDF results documents. Produced by the hdf-diff library and validated against its own schema (v1.0.0; all other schemas are v2.0.0).
+Differential analysis between HDF documents (results, baselines, or systems). Produced by the hdf-diff library. All schemas are at v3.1.0.
 
 ## Installation
 

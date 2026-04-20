@@ -2,7 +2,7 @@
 
 Convert security tool outputs to and from Heimdall Data Format (HDF). Part of the [hdf-libs](https://github.com/mitre/hdf-libs) monorepo.
 
-Every converter is implemented in both TypeScript and Go. The TypeScript library is published as an npm package; the Go implementations are used by the [`hdf` CLI](../hdf-cli/).
+Every converter is implemented in both TypeScript and Go. The TypeScript library is published as an npm package; the Go implementations are used by the [`hdf` CLI](https://github.com/mitre/hdf-libs/tree/main/hdf-cli).
 
 All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/hdf-libs/schemas/).
 
@@ -125,7 +125,7 @@ import grype "github.com/mitre/hdf-converters/converters/grype-to-hdf/go"
 results, err := grype.ConvertGrypeToHdf(input, "grype-report.json")
 ```
 
-For CLI usage, install the `hdf` binary from [hdf-cli](../hdf-cli/):
+For CLI usage, install the `hdf` binary from [hdf-cli](https://github.com/mitre/hdf-libs/tree/main/hdf-cli):
 
 ```bash
 hdf convert grype-report.json -o results.json          # auto-detect format
