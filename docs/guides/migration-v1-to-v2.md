@@ -159,7 +159,7 @@ These fields and concepts are new in v2 and have no v1 equivalent:
 - **Multiple component types** -- 11 polymorphic component types (host, container, cloud account, cloud resource, repository, application, artifact, network, database).
 - **hdf-system documents** -- Describe system architecture, authorization boundaries, components with label-based selectors, input overrides, and SBOM references.
 - **hdf-plan documents** -- Assessment plans with resolved inputs, target selectors, runner configuration, and schedules.
-- **hdf-amendments documents** -- Standalone signed waivers, attestations, exceptions, and POA&Ms that merge into results.
+- **hdf-amendments documents** -- Standalone signed waivers, attestations, and POA&Ms that merge into results.
 - **hdf-evidence-package documents** -- Audit-ready bundles referencing all other document types with completeness checks and integrity verification.
 - **hdf-comparison documents** -- Structured diffs between any two HDF documents of the same type.
 

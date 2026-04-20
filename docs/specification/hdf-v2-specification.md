@@ -1,6 +1,6 @@
-# Heimdall Data Format (HDF) v2.0 Specification
+# Heimdall Data Format (HDF) v3.1.0 Specification
 
-**Version**: 2.0.0
+**Version**: 3.1.0
 **Schema**: JSON Schema draft 2020-12
 **License**: Apache-2.0 | The MITRE Corporation
 
@@ -35,7 +35,7 @@ Documents reference each other via URI strings: `systemRef`, `planRef`.
 
 Assessment findings from running security checks against target systems.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v2.0.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.1.0`
 
 ### Top-Level Fields
 
@@ -106,6 +106,8 @@ A single security requirement with test results. Each requirement maps to one te
 | statusOverrides | StatusOverride[] | no | Audit trail of status changes |
 | poams | PoamElement[] | no | Remediation tracking (don't change status) |
 | evidence | Evidence[] | no | Screenshots, logs, code samples |
+| disposition | OverrideType | no | Override disposition applied to this requirement |
+| effectiveImpact | number | no | Effective impact after overrides (0.0–1.0) |
 
 ### RequirementResult
 
@@ -162,7 +164,7 @@ The system element that was assessed. Components are polymorphic — each has a 
 
 Security requirements without results (before assessment).
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v2.0.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.1.0`
 
 Shares most fields with Evaluated_Baseline but uses `Baseline_Requirement` (no results, no effectiveStatus) instead of `Evaluated_Requirement`.
 
@@ -211,7 +213,7 @@ A security requirement before assessment. Structurally identical to Evaluated_Re
 
 Describes a system under assessment. A system document defines the authorization boundary, including what components make up the system, its security categorization (FIPS 199), and its authorization status (ATO). This corresponds to a FedRAMP system or an OSCAL SSP's system characteristics. Results and amendments reference the system via `systemRef` to establish which system the assessment applies to.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-system/v2.0.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.1.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -268,7 +270,7 @@ Declares a control's designation within the system — whether it is common (pro
 
 Assessment plan defining what to assess and how. A plan document describes the scope, methodology, and schedule for an upcoming security assessment. It references the system under test via `systemRef` and lists the individual assessments to be performed. This corresponds to an OSCAL SAP (Security Assessment Plan) or a FedRAMP test plan.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-plan/v2.0.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.1.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -300,9 +302,9 @@ A single assessment within a plan — defines which baseline to run against whic
 
 ## 5. Amendments
 
-Status overrides applied after assessment (waivers, attestations, exceptions, POAMs).
+Status overrides applied after assessment (waivers, attestations, POAMs).
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v2.0.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.1.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -320,7 +322,7 @@ Status overrides applied after assessment (waivers, attestations, exceptions, PO
 
 ### Override
 
-A deliberate change to an assessed requirement's compliance status. Waivers grant temporary acceptance of a known risk. Attestations assert manual verification of a requirement that cannot be automatically tested. Exceptions document approved deviations from policy. POAMs track planned remediation with milestones. Inherited overrides indicate that a control is provided by another component or system (typically overriding to notApplicable or passed). Each override records who authorized it, why, and when it expires. The `previousChecksum` field creates a tamper-evident chain linking each override to the document state at the time it was applied.
+A deliberate change to an assessed requirement's compliance status. Waivers grant temporary acceptance of a known risk. Attestations assert manual verification of a requirement that cannot be automatically tested. POAMs track planned remediation with milestones. False positives mark findings confirmed as not applicable. Risk adjustments modify severity based on contextual analysis. Operational requirements document accepted deviations due to mission needs. Inherited overrides indicate that a control is provided by another component or system (typically overriding to notApplicable or passed). Each override records who authorized it, why, and when it expires. The `previousChecksum` field creates a tamper-evident chain linking each override to the document state at the time it was applied.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -340,7 +342,7 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 
 Diff between two or more assessment documents. A comparison captures how compliance posture changed between scans, across environments, or between baseline versions. The `comparisonMode` indicates the type of analysis (temporal drift, fleet comparison, baseline evolution, etc.). Each requirement diff records whether a control is new, absent, fixed, regressed, or unchanged. Comparisons are produced by `hdf diff` and consumed by dashboards to show trend data.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v2.0.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.1.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -367,7 +369,7 @@ Diff between two or more assessment documents. A comparison captures how complia
 
 Bundles references to assessment artifacts for audit and compliance submission. An evidence package collects results, baselines, amendments, system descriptions, and supporting materials (screenshots, logs, SBOMs) into a single auditable unit. This corresponds to a FedRAMP security package or an OSCAL POA&M submission bundle. The `completenessCheck` field validates that all expected artifacts are present.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v2.0.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.1.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -418,7 +420,7 @@ Impact is a float 0.0 to 1.0. Conventional mapping to severity:
 | 0.0 | informational / notApplicable |
 
 ### OverrideType
-`waiver` | `attestation` | `exception` | `poam` | `inherited`
+`waiver` | `attestation` | `poam` | `inherited` | `falsePositive` | `riskAdjustment` | `operationalRequirement`
 
 ### PlanType
 `automated` | `manual` | `hybrid`
@@ -565,13 +567,13 @@ Schemas are published at `https://mitre.github.io/hdf-libs/schemas/` and distrib
 
 | Package | Language | Purpose |
 |---------|----------|---------|
-| `hdf-schema` | TS/Go/Python | JSON schemas, generated types, validation helpers |
+| `hdf-schema` | TS/Go | JSON schemas, generated types, validation helpers |
 | `hdf-validators` | TS/Go | Validate documents against HDF schemas |
 | `hdf-converters` | TS/Go | Convert 30+ security tool formats to/from HDF |
 | `hdf-parsers` | TS/Go | Parse and flatten HDF documents |
 | `hdf-mappings` | TS/Go | CCI, CWE, OWASP, NIST framework mappings |
 | `hdf-generators` | TS/Go | Generate scanner profile stubs from HDF Baselines |
-| `hdf-diff` | TS | Compare HDF documents, produce Comparison documents |
+| `hdf-diff` | TS/Go | Compare HDF documents, produce Comparison documents |
 | `hdf-extension-graph` | TS | Resolve baseline overlay/extension dependency chains |
 | `hdf-utilities` | TS | Shared utilities: XML parsing, HTML stripping, hashing |
 | `hdf-cli` | Go | CLI tool: `hdf validate`, `hdf convert`, `hdf query`, `hdf diff` |
