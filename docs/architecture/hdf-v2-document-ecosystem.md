@@ -4,7 +4,7 @@
 > in beads epic `hdf-libs-15kg`. As of 2026-04-02, all 7 schemas exist (hdf-baseline,
 > hdf-results, hdf-comparison, hdf-system, hdf-plan, hdf-amendments, hdf-evidence-package)
 > and all Phase 0–4 work is complete (typed inputs, labels, rename, cross-references,
-> all document type schemas with full type generation for TS/Go/Python). Phase 5
+> all document type schemas with full type generation for TS/Go). Phase 5
 > (ecosystem integration) is in progress.
 
 ## Overview
@@ -562,7 +562,7 @@ SBOM documents (CycloneDX and SPDX are both supported) to produce package-level 
 - **TypeScript:** Custom format-agnostic parser normalizing CycloneDX `components[]`
   and SPDX `packages[]` into a common model, indexed by PURL via `packageurl-js`
 
-Full research: `docs/reviews/2026-03-15-sbom-library-research.md`
+Full research: (archived)
 
 The diff algorithm is format-agnostic once components are extracted: match by PURL,
 compare versions, report added/removed/updated. Both CycloneDX and SPDX from day one.
@@ -617,16 +617,19 @@ Each amendment entry carries:
 - **Signature**: digital signature by the authorizing official
 - **Chain link**: previousChecksum linking to prior amendment
 
-### Attestation vs Waiver vs Exception
+### Override Types
 
-| Concept | Meaning | Effect | Who |
+| Type | Meaning | Effect | Who |
 |---------|---------|--------|-----|
-| **Attestation** | "I verified this manually" | Status → passed | Assessor |
-| **Waiver** | "I accept this risk" | Status → passed (risk remains) | Authorizing official |
-| **Exception** | "This doesn't apply" | Status → notApplicable | System owner + AO |
-| **POA&M** | "We'll fix this by date X" | Status unchanged (tracks work) | System owner |
+| **attestation** | "I verified this manually" | Status → passed | Assessor |
+| **waiver** | "I accept this risk" | Status → passed (risk remains) | Authorizing official |
+| **falsePositive** | "Scanner incorrectly flagged this" | Status → passed or notApplicable | Assessor + AO |
+| **riskAdjustment** | "Impact adjusted for context" | Impact score changed (FedRAMP Risk Adjustment) | AO |
+| **operationalRequirement** | "Deviation required by operations" | Open risk (FedRAMP Operational Requirement) | System owner + AO |
+| **inherited** | "Control provided by another system" | Status reflects inherited posture | System owner |
+| **poam** | "We'll fix this by date X" | Status unchanged (tracks work) | System owner |
 
-All four use the same `hdf-amendments` document type with a `type` discriminator.
+All seven use the same `hdf-amendments` document type with a `type` discriminator.
 
 ---
 
@@ -664,7 +667,7 @@ hdf
 │   └── run <file>                # Execute the plan (run scans)
 │
 ├── amend                         # Amendment management
-│   ├── create <results-file>     # Create waiver/attestation/exception
+│   ├── create <results-file>     # Create waiver/attestation/override
 │   ├── apply <results> <amend>   # Merge amendments into results
 │   ├── verify <file>             # Verify signatures and amendment chain
 │   └── list <file>               # List active/expired overrides
@@ -1023,19 +1026,18 @@ by AI agents. Create card when MCP ecosystem matures.
 
 - **TypeScript** — npm packages for programmatic use (Heimdall, CI/CD integrations)
 - **Go** — native CLI binary + reusable packages
-- **Python** — type definitions generated from schema (no runtime library yet)
 
 ### Planned / Considered
 
+- **Python** — type definitions and runtime library for data science, ML-based security
+  analytics, Jupyter notebook consumption of HDF data.
 - **Ruby** — would serve the Chef/InSpec ecosystem natively. InSpec itself is Ruby.
   Could enable direct profile-to-baseline conversion without Node/Go.
-- **Python** — runtime library (not just types) for data science, ML-based security
-  analytics, Jupyter notebook consumption of HDF data.
 - **Rust** — performance-critical CLI, WASM compilation for browser-based tools,
   memory-safe parsing of untrusted HDF documents.
 
-No timeline set. The quicktype type generator already produces Python types from schema.
-Ruby and Rust would require manual implementation or new generator backends.
+No timeline set. Ruby, Python, and Rust would require manual implementation or new
+generator backends.
 
 ---
 
@@ -1045,12 +1047,12 @@ Ruby and Rust would require manual implementation or new generator backends.
 |----------|---------|
 | `docs/architecture/hdf-v2-readers-guide.md` | **Start here** — narrative guide with walkthroughs |
 | `docs/architecture/hdf-v2-document-ecosystem.md` | This file — full ecosystem vision |
-| `docs/design/decisions.md` | Design decisions with research rationale (12 decisions) |
+| Design decisions | (archived) — 12 design decisions with research rationale |
 | `docs/design/developer-guide.md` | Patterns for contributors (dual impl, testing, cross-platform) |
 | `docs/plans/2026-03-14-hdf-v2-ecosystem-plan.md` | Implementation plan with phase cards |
-| `docs/reviews/2026-03-15-sbom-library-research.md` | SBOM library research (TS + Go) |
-| `docs/reviews/2026-03-15-docs-consistency-review.md` | Agent review of doc consistency |
-| `docs/reviews/2026-03-15-memory-audit.md` | Agent review of beads memories |
+| SBOM library research | (archived) |
+| Docs consistency review | (archived) |
+| Memory audit | (archived) |
 
 ## Decision-to-Card Mapping
 

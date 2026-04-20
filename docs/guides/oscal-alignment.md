@@ -115,7 +115,7 @@ Key field correspondences:
 
 Key field correspondences:
 - OSCAL `poam-items[]` map to HDF `overrides[]`
-- OSCAL risk responses (mitigate, transfer, accept) map to HDF override types (waiver, exception, poam)
+- OSCAL risk responses (mitigate, transfer, accept) map to HDF override types (waiver, riskAdjustment, operationalRequirement, poam)
 - Remediation milestones map to evidence and justification fields
 
 ### Amendments to POA&M (reverse)
