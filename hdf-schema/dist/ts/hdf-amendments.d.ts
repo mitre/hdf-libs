@@ -1,5 +1,5 @@
 /**
- * Waivers, attestations, exceptions, and POA&Ms that modify requirement compliance status.
+ * Waivers, attestations, and POA&Ms that modify requirement compliance status or impact.
  * Amendments are standalone documents that can be applied to results via merge operations.
  */
 export interface HdfAmendments {
@@ -460,7 +460,8 @@ export declare enum ResultStatus {
  * Adjustment); does not change pass/fail status, only impact via the impact field.
  * 'operationalRequirement': deviation required by operational constraints (FedRAMP
  * Operational Requirement); the finding cannot be remediated because the system requires
- * the affected functionality. Remains an open risk.
+ * the affected functionality. Remains an open risk. Migration note: 'exception' was removed
+ * in v3.1.0 — use 'waiver' with status 'notApplicable' instead.
  */
 export declare enum OverrideType {
     Attestation = "attestation",
