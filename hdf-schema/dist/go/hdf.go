@@ -1560,7 +1560,7 @@ type HDFAmendments struct {
 	Labels                                                                                    map[string]string    `json:"labels,omitempty"`
 	// Human-readable name for this amendments document. Example: 'Portal Q1 2026 Waivers'.                        
 	Name                                                                                      string               `json:"name"`
-	// The set of amendments (waivers, attestations, exceptions, POA&Ms).                                          
+	// The set of amendments (waivers, attestations, POA&Ms, and other overrides).                                 
 	Overrides                                                                                 []StandaloneOverride `json:"overrides"`
 	// Document-level digital signature covering all amendments.                                                   
 	Signature                                                                                 *Signature           `json:"signature,omitempty"`

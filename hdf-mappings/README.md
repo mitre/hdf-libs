@@ -215,6 +215,10 @@ Each mapping is also available as a Go package:
 hdf-mappings/go/
   cci/        — CCI↔NIST lookups (GetCCINistMappings, NISTToCCI, CCIToNIST)
   cwe/        — CWE→NIST lookups (NISTControls)
+  owasp/      — OWASP→NIST lookups (NISTControls)
+  nessus/     — Nessus plugin→NIST lookups (NISTControls, with family+pluginID)
+  nikto/      — Nikto test→NIST lookups (NISTControls)
+  scoutsuite/ — ScoutSuite rule→NIST lookups (NISTControls)
   awsconfig/  — AWS Config→NIST lookups (NISTControls, GetByRuleName, GetByIdentifier)
 ```
 
