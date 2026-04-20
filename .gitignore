@@ -13,6 +13,9 @@ lerna-debug.log*
 
 # Build outputs
 dist/
+# Exception: Go generated types must be committed for go get to work
+# (standard practice for generated Go source — see protobuf, sqlc, ent)
+!hdf-schema/dist/go/
 lib/
 build/
 *.tsbuildinfo

@@ -29,7 +29,6 @@ const SCHEMAS = [
 const LANGUAGES = [
   { name: 'typescript', dir: 'ts', ext: 'ts', options: { 'just-types': true } },
   { name: 'go', dir: 'go', ext: 'go', options: { package: 'hdf' } },
-  { name: 'python', dir: 'python', ext: 'py', options: { 'python-version': '3.7' } },
 ];
 
 /**
@@ -111,7 +110,7 @@ async function generateForLanguage(
 
   const result = await quicktype({
     inputData,
-    lang: language as 'typescript' | 'go' | 'python',
+    lang: language as 'typescript' | 'go',
     rendererOptions: options as Record<string, string>,
   });
 
@@ -139,7 +138,7 @@ async function generateCombinedForLanguage(
 
   const result = await quicktype({
     inputData,
-    lang: language as 'typescript' | 'go' | 'python',
+    lang: language as 'typescript' | 'go',
     rendererOptions: options as Record<string, string>,
   });
 
