@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.1.0",
   "title": "HDF Amendments",
-  "description": "Waivers, attestations, exceptions, and POA&Ms that modify requirement compliance status. Amendments are standalone documents that can be applied to results via merge operations.",
+  "description": "Waivers, attestations, and POA&Ms that modify requirement compliance status or impact. Amendments are standalone documents that can be applied to results via merge operations.",
   "type": "object",
   "unevaluatedProperties": false,
   "required": [

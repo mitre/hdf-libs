@@ -2,9 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
-## [3.0.0] - Unreleased
+## [3.1.0] - 2026-04-19
 
-Initial public release of the HDF Libraries monorepo. This is a ground-up rewrite of the Heimdall Data Format ecosystem, previously spread across heimdall2, saf-cli, and inspec-objects.
+### Breaking Changes
+
+- **`exception` removed from Override_Type enum.** The `exception` override type was redundant with `waiver` + `status: "notApplicable"` and has no equivalent in FedRAMP or NIST RMF terminology. Existing HDF documents with `"type": "exception"` in statusOverrides or standalone overrides will fail schema validation against v3.1.0. **Migration:** Replace `"type": "exception"` with `"type": "waiver"` and set `"status": "notApplicable"`.
+
+### New Features
+
+- **Override_Type expanded** with 3 new values aligned with FedRAMP deviation request categories: `falsePositive` (scanner incorrectly identified a finding), `riskAdjustment` (impact score adjusted based on environmental context), `operationalRequirement` (deviation required by operational constraints)
+- **Impact overrides** — `Status_Override` and `Standalone_Override` now support an optional `impact` field (`Impact_Override` object with a `value` from 0.0 to 1.0). At least one of `status` or `impact` must be set (enforced via `anyOf`).
+- **`disposition` field** on `Evaluated_Requirement` — indicates the type of the governing override or POAM. Enables consumers to distinguish adjudication context (e.g., false positive vs genuinely not applicable).
+- **`effectiveImpact` field** on `Evaluated_Requirement` — the computed impact score (0.0-1.0) after applying the most recent non-expired impact override.
+- **`vendorDependency`** added to POAM type enum — tracks fixes that depend on a vendor releasing a patch or update.
+- **Comprehensive examples** added to `Evaluated_Requirement` covering all disposition patterns.
+
+### Architecture Changes
+
+- **Go diff engine extracted** from `hdf-cli/pkg/diff/` to `hdf-diff/go/` — matches the monorepo pattern used by other packages.
+- **`hdf-cli/pkg/hdf/` eliminated** — all Go code now imports canonical types from `hdf-schema/dist/go/`.
+- **Amendment operations extracted** to `hdf-diff/go/amend/`.
+
+### Security Fixes
+
+- Add `ValidateJSONSize` to legacyhdf converter
+- Add top-level HTTP client timeout (5 min) to fetcher clients
+- Add CSV formula injection sanitization to diff CSV renderer
+- Add newline escaping to markdown table cell renderer
+- Add schema validation to `amend apply` command
+- Switch `evidence build` to size-limited `readInputFile`
+- Add `sanitizeOutput` to `amend list` terminal output
+- Fix thread-safe schema caching in `hdf-validators/go` (`sync.Once` with persistent error propagation)
+
+### Quality Improvements
+
+- Add `.golangci.yml` to 6 Go library modules
+- Fix broken fixture paths in `hdf-diff/go` integration tests
+- Fix `baselineReqsToEvaluated` dropping `Severity` field
+- Add `type-check` script to `hdf-schema`
+- Add `dispositionChanged` and `effectiveImpactChanged` to diff engine change detection
+- Track `effectiveImpact` and `disposition` in `hdf-extension-graph` modification detection
+- Schema version bumped from v3.0.0 to v3.1.0 across all `$id`/`$ref` URLs
+
+## [3.0.0] - 2026-03-15
+
+Initial public release of the HDF Libraries monorepo. Ground-up rewrite of the Heimdall Data Format ecosystem, previously spread across heimdall2, saf-cli, and inspec-objects. Followed by patch release v3.0.1 with deduplication fixes and barrel export corrections.
 
 ### Schema (`@mitre/hdf-schema`)
 
