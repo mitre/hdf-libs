@@ -75,7 +75,7 @@
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
   "dependencies": {
-    "@mitre/hdf-utilities": "workspace:*",
+    "@mitre/hdf-utilities": "workspace:^",
     "ajv": "^8.17.0",
     "ajv-formats": "^3.0.0"
   },

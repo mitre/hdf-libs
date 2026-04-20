@@ -323,7 +323,7 @@ func loadDiffInputsFromData(oldData, newData []byte, oldFile, newFile string) (h
 }
 
 // engineResultToDiffResult converts the engine's typed HdfComparison to the CLI's
-// diffResult for rendering. This is the bridge between pkg/diff and the CLI layer.
+// diffResult for rendering. This is the bridge between hdf-diff/go and the CLI layer.
 func engineResultToDiffResult(comp diff.HdfComparison, oldFile, newFile string) diffResult {
 	// Convert requirement diffs
 	reqs := make([]diffRequirement, 0, len(comp.RequirementDiffs))

@@ -41,6 +41,7 @@ func SetSchemaDir(dir string) {
 		TypeEvidencePackage: new(sync.Once),
 	}
 	schemaCache = make(map[SchemaType]*gojsonschema.Schema)
+	schemaErrors = make(map[SchemaType]error)
 }
 
 // GetSchemaDir returns the current schema directory, or empty if using embedded.
@@ -116,6 +117,10 @@ var schemaOnce = map[SchemaType]*sync.Once{
 
 // schemaCache stores compiled schemas keyed by type.
 var schemaCache = make(map[SchemaType]*gojsonschema.Schema)
+
+// schemaErrors stores load errors keyed by type, so subsequent callers
+// see the original error instead of a generic "not loaded" message.
+var schemaErrors = make(map[SchemaType]error)
 
 // schemaFiles maps schema types to their filenames.
 var schemaFiles = map[SchemaType]string{
@@ -213,16 +218,19 @@ func getSchema(schemaType SchemaType) (*gojsonschema.Schema, error) {
 		return nil, fmt.Errorf("unknown schema type: %s", schemaType)
 	}
 
-	var loadErr error
 	once.Do(func() {
 		filename, exists := schemaFiles[schemaType]
 		if !exists {
-			loadErr = fmt.Errorf("no filename for schema type: %s", schemaType)
+			schemaMu.Lock()
+			schemaErrors[schemaType] = fmt.Errorf("no filename for schema type: %s", schemaType)
+			schemaMu.Unlock()
 			return
 		}
 		schema, err := loadSchema(filename)
 		if err != nil {
-			loadErr = err
+			schemaMu.Lock()
+			schemaErrors[schemaType] = err
+			schemaMu.Unlock()
 			return
 		}
 		schemaMu.Lock()
@@ -230,14 +238,14 @@ func getSchema(schemaType SchemaType) (*gojsonschema.Schema, error) {
 		schemaMu.Unlock()
 	})
 
-	if loadErr != nil {
-		return nil, loadErr
-	}
-
 	schemaMu.RLock()
 	s := schemaCache[schemaType]
+	e := schemaErrors[schemaType]
 	schemaMu.RUnlock()
 
+	if e != nil {
+		return nil, e
+	}
 	if s == nil {
 		return nil, fmt.Errorf("schema %s not loaded", schemaType)
 	}

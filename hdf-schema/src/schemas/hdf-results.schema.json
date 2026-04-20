@@ -297,7 +297,7 @@
         },
         "disposition": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.1.0#/$defs/Override_Type",
-          "description": "The type of the most recent non-expired override governing this requirement. Indicates why the requirement is in its current state (e.g., waiver, falsePositive, riskAdjustment). Absent when no overrides apply."
+          "description": "The type of the most recent non-expired override or POAM governing this requirement. Indicates why the requirement is in its current state (e.g., waiver, falsePositive, riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or POAMs apply."
         },
         "evidence": {
           "type": "array",
@@ -426,6 +426,7 @@
           "statusOverrides": [
             {
               "type": "operationalRequirement",
+              "status": "failed",
               "reason": "Air-gapped system requires USB transfer for classified data ingestion per operational procedure OP-2026-003. Compensating controls: USB ports are physically secured, all transfers are logged and require two-person integrity.",
               "appliedBy": { "type": "email", "identifier": "system-owner@agency.gov" },
               "appliedAt": "2026-01-20T10:00:00Z",
