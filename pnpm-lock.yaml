@@ -67,34 +67,34 @@ importers:
   hdf-converters:
     dependencies:
       '@mitre/hdf-mappings':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../hdf-mappings
       '@mitre/hdf-parsers':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../hdf-parsers
       '@mitre/hdf-schema':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../hdf-schema
       '@mitre/hdf-utilities':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../hdf-utilities
 
   hdf-diff:
     dependencies:
       '@mitre/hdf-validators':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../hdf-validators
 
   hdf-extension-graph:
     dependencies:
       '@mitre/hdf-schema':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../hdf-schema
 
   hdf-generators:
     dependencies:
       '@mitre/hdf-schema':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../hdf-schema
 
   hdf-mappings:
@@ -109,10 +109,10 @@ importers:
   hdf-parsers:
     dependencies:
       '@mitre/hdf-schema':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../hdf-schema
       '@mitre/hdf-validators':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../hdf-validators
     devDependencies:
       '@stryker-mutator/core':
@@ -125,7 +125,7 @@ importers:
   hdf-schema:
     dependencies:
       '@mitre/hdf-utilities':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../hdf-utilities
       ajv:
         specifier: 8.18.0
@@ -175,7 +175,7 @@ importers:
   hdf-validators:
     dependencies:
       '@mitre/hdf-schema':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../hdf-schema
       ajv:
         specifier: 8.18.0
