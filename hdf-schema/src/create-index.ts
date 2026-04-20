@@ -109,15 +109,28 @@ export function createIndex(options: CreateIndexOptions = {}): void {
   const compile = options.compile ?? ((cwd: string) => {
     const tsFiles = readdirSync(tsDir)
       .filter(f => f.endsWith('.ts') && !f.endsWith('.d.ts'))
-      .map(f => join('dist/ts', f))
-      .join(' ');
-    if (!tsFiles) {
+      .map(f => join('dist/ts', f));
+    if (tsFiles.length === 0) {
       throw new Error('No .ts files found in dist/ts/');
     }
-    execSync(`tsc ${tsFiles} --declaration --module esnext --target es2020 --moduleResolution bundler --skipLibCheck`, {
-      cwd,
-      stdio: 'inherit',
-    });
+    // Write a temporary tsconfig to avoid TS6's TS5112 error when passing
+    // files on the command line alongside an existing tsconfig.json.
+    const tmpConfig = join(cwd, 'tsconfig.dist-types.json');
+    writeFileSync(tmpConfig, JSON.stringify({
+      compilerOptions: {
+        declaration: true,
+        module: 'ESNext',
+        target: 'ES2020',
+        moduleResolution: 'bundler',
+        skipLibCheck: true,
+      },
+      files: tsFiles,
+    }));
+    try {
+      execSync(`tsc --project ${tmpConfig}`, { cwd, stdio: 'inherit' });
+    } finally {
+      rmSync(tmpConfig, { force: true });
+    }
   });
 
   try {
