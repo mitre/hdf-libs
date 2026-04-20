@@ -245,7 +245,7 @@ describe('convertOscalProfileToHdf', () => {
       ),
     ).rejects.toThrow('alter');
   });
-}, { timeout: 30000 });
+}, 30000);
 
 // ---------------------------------------------------------------------------
 // Component Definition converter
