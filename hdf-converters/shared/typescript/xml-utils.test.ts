@@ -52,4 +52,45 @@ describe('extractXmlRootElement', () => {
     expect(elapsed).toBeLessThan(100);
     expect(result).toBe('realRoot');
   });
+
+  it('returns null for unterminated processing instruction', () => {
+    expect(extractXmlRootElement('<?xml version="1.0"')).toBeNull();
+  });
+
+  it('returns null for unterminated comment', () => {
+    expect(extractXmlRootElement('<!-- unterminated comment')).toBeNull();
+  });
+
+  it('returns null for unterminated DOCTYPE', () => {
+    expect(extractXmlRootElement('<!DOCTYPE root')).toBeNull();
+  });
+
+  it('returns null for unterminated DOCTYPE internal subset', () => {
+    expect(extractXmlRootElement('<!DOCTYPE root [ <!ELEMENT root (child)>')).toBeNull();
+  });
+
+  it('handles other markup declarations (<!...>)', () => {
+    expect(extractXmlRootElement('<!ENTITY foo "bar">\n<root/>')).toBe('root');
+  });
+
+  it('returns null for unterminated other markup declaration', () => {
+    expect(extractXmlRootElement('<!ENTITY foo "bar"')).toBeNull();
+  });
+
+  it('handles whitespace-only input', () => {
+    expect(extractXmlRootElement('   \n  \t  ')).toBeNull();
+  });
+
+  it('handles multiple mixed preamble items', () => {
+    const input = '<?xml version="1.0"?>\n<!-- comment -->\n<!DOCTYPE root>\n<myRoot/>';
+    expect(extractXmlRootElement(input)).toBe('myRoot');
+  });
+
+  it('handles root element with attributes', () => {
+    expect(extractXmlRootElement('<root attr="val">')).toBe('root');
+  });
+
+  it('handles root element with complex namespace prefix', () => {
+    expect(extractXmlRootElement('<ns1.sub:Element/>')).toBe('Element');
+  });
 });

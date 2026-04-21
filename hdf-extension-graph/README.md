@@ -1,8 +1,20 @@
 # @mitre/hdf-extension-graph
 
-Bidirectional extension graph processing for HDF baseline hierarchies. Builds a navigable graph from `HdfResults` files that reveals how baselines (profiles) and requirements (controls) relate across extension/overlay layers.
+Bidirectional extension graph processing for HDF baseline hierarchies.
 
-Ports the algorithm from Heimdall2's `context.ts` to the HDF v2 schema.
+## Why this exists
+
+HDF baseline documents can represent 'overlay' structures that form extension chains of parent baselines and their children. For example, a DISA STIG baseline defines hundreds of requirements; an organizational overlay on that DISA baseline can modify a subset for organization-specific policies; a project overlay can further tighten thresholds for a specific system. When an HDF results file contains multiple baselines linked via `parentBaseline`, understanding what each layer changed requires walking these chains bidirectionally.
+
+Without this library, answering "did this overlay change the impact of SV-238196, or inherit it unchanged?" requires manually cross-referencing requirements across baselines by ID. The extension graph provides:
+
+- **`root`** — jump from any overlay requirement to the original base definition
+- **`modifications`** — which fields (impact, title, severity, effectiveImpact, disposition) an overlay changed relative to its parent
+- **`isRedundant`** — whether an overlay re-declares a control without actually changing it
+- **`fullCode`** — the complete code from all layers in one string
+- **`extensionChain`** — the ordered list of baselines from root to leaf
+
+This is the same graph algorithm that powers Heimdall's control detail panel, extracted as a standalone library.
 
 ## Installation
 
@@ -138,6 +150,11 @@ interface Modification {
   inBaseline: string;   // Name of the baseline making the change
 }
 ```
+
+## Notes
+
+- **TypeScript only** — there is no Go implementation of hdf-extension-graph.
+- The HDF schemas consumed by this package are documented at <https://mitre.github.io/hdf-libs/schemas/>.
 
 ## License
 

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { existsSync, readFileSync, renameSync } from 'fs';
+import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { bundleSchemas } from '../src/bundle-schemas';
-import { generateTypes } from '../src/generate-types';
+import { generateTypes, toOutputFilename } from '../src/generate-types';
 import { createIndex } from '../src/create-index';
 
 const DIST_DIR = join(__dirname, '..', 'dist');
@@ -155,6 +155,42 @@ describe('generate-types', () => {
     });
   });
 
+  describe('toOutputFilename', () => {
+    it('should convert hyphens to underscores for Go output', () => {
+      // Exercises the ext === 'go' branch (line 41)
+      expect(toOutputFilename('hdf-results.schema.json', 'go')).toBe('hdf_results.go');
+      expect(toOutputFilename('hdf-evidence-package.schema.json', 'go')).toBe('hdf_evidence_package.go');
+    });
+
+    it('should preserve hyphens for TypeScript output', () => {
+      expect(toOutputFilename('hdf-results.schema.json', 'ts')).toBe('hdf-results.ts');
+      expect(toOutputFilename('hdf-baseline.schema.json', 'ts')).toBe('hdf-baseline.ts');
+    });
+  });
+
+  describe('output directory creation', () => {
+    it('should create output directories when they do not exist', async () => {
+      // Delete output dirs to exercise the `!existsSync(outputDir)` true branch
+      // at line 232 (mkdirSync). The beforeAll ensures schemas are bundled.
+      const tsDir = join(DIST_DIR, 'ts');
+      const goDir = join(DIST_DIR, 'go');
+
+      if (existsSync(tsDir)) rmSync(tsDir, { recursive: true });
+      if (existsSync(goDir)) rmSync(goDir, { recursive: true });
+
+      expect(existsSync(tsDir)).toBe(false);
+      expect(existsSync(goDir)).toBe(false);
+
+      await generateTypes();
+
+      // Dirs should now exist with generated content
+      expect(existsSync(tsDir)).toBe(true);
+      expect(existsSync(goDir)).toBe(true);
+      expect(existsSync(join(tsDir, 'hdf-results.ts'))).toBe(true);
+      expect(existsSync(join(goDir, 'hdf.go'))).toBe(true);
+    });
+  });
+
   describe('Error handling', () => {
     it('should throw error when bundled schemas directory does not exist', async () => {
       // Temporarily rename schemas directory
@@ -193,6 +229,34 @@ describe('generate-types', () => {
           renameSync(tempFile, schemaFile);
         }
         // Regenerate with all schemas to restore correct state
+        await generateTypes();
+      }
+    });
+
+    it('should skip individual TS schemas that cause quicktype to error', async () => {
+      // Replace one bundled schema with content that quicktype cannot process,
+      // exercising the per-file error catch at line 325.
+      const schemaFile = join(SCHEMAS_DIR, 'hdf-comparison.schema.json');
+      const backupFile = join(SCHEMAS_DIR, 'hdf-comparison.schema.json.bak');
+      const original = readFileSync(schemaFile, 'utf-8');
+
+      writeFileSync(backupFile, original);
+
+      try {
+        // Write a schema that will fail quicktype (recursive $ref with no base case)
+        writeFileSync(schemaFile, JSON.stringify({
+          $schema: 'https://json-schema.org/draft/2020-12/schema',
+          $id: 'https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v1.0.0',
+          type: 'INVALID_TYPE',
+        }));
+
+        // generateTypes should not throw — it catches per-file errors
+        await expect(generateTypes()).resolves.not.toThrow();
+      } finally {
+        // Restore original schema
+        writeFileSync(schemaFile, original);
+        if (existsSync(backupFile)) rmSync(backupFile);
+        // Regenerate to restore clean state
         await generateTypes();
       }
     });

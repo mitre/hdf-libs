@@ -1,12 +1,73 @@
 # @mitre/hdf-converters
 
-Converters for transforming security tool outputs and HDF format versions.
+Convert security tool outputs to and from Heimdall Data Format (HDF). Part of the [hdf-libs](https://github.com/mitre/hdf-libs) monorepo.
 
-## Overview
+Every converter is implemented in both TypeScript and Go. The TypeScript library is published as an npm package; the Go implementations are used by the [`hdf` CLI](https://github.com/mitre/hdf-libs/tree/main/hdf-cli).
 
-This library provides converters for:
-- **HDF v1.0 → v2.0**: Transform legacy HDF format to current version
-- **Security Tools** (future): 30+ security tool output converters (Nessus, SCAP, etc.)
+All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/hdf-libs/schemas/).
+
+## Supported Converters
+
+### Security Tool to HDF
+
+| Source Format | Function | Input |
+|---|---|---|
+| AWS Config | `convertAwsConfigToHdf` | JSON |
+| BurpSuite | `convertBurpsuiteToHdf` | XML |
+| Conveyor | `convertConveyorToHdf` | JSON |
+| CycloneDX (SBOM/VEX) | `convertCyclonedxToHdf` | JSON |
+| DBProtect | `convertDbprotectToHdf` | XML |
+| Dependency-Track | `convertDeptrackToHdf` | JSON |
+| Fortify | `convertFortifyToHdf` | XML |
+| GitLab Security Report | `convertGitlabToHdf` | JSON |
+| Gosec | `convertGosecToHdf` | JSON |
+| Grype | `convertGrypeToHdf` | JSON |
+| Ion Channel | `convertIonchannelToHdf` | JSON |
+| JFrog Xray | `convertJfrogXrayToHdf` | JSON |
+| JUnit | `convertJunitToHdf` | XML |
+| MSFT Defender for Cloud | `convertMsftDefenderCloudToHdf` | JSON |
+| MSFT Defender for DevOps | `convertMsftDefenderDevopsToHdf` | JSON |
+| MSFT Defender for Endpoint | `convertMsftDefenderEndpointToHdf` | JSON |
+| MSFT Secure Score | `convertMsftSecureScoreToHdf` | JSON |
+| Nessus | `convertNessusToHdf` | XML |
+| Netsparker / Invicti | `convertNetsparkerToHdf` | XML |
+| NeuVector | `convertNeuvectorToHdf` | JSON |
+| Nikto | `convertNiktoToHdf` | JSON |
+| OSCAL Catalog | `convertOscalCatalogToHdf` | JSON |
+| OSCAL Component Definition | `convertOscalComponentToHdf` | JSON |
+| OSCAL POA&M | `convertOscalPoamToHdf` | JSON |
+| OSCAL Profile | `convertOscalProfileToHdf` | JSON |
+| OSCAL SAP | `convertOscalSapToHdf` | JSON |
+| OSCAL SAR | `convertOscalSarToHdf` | JSON |
+| OSCAL SSP | `convertOscalSspToHdf` | JSON |
+| OWASP ZAP | `convertZapToHdf` | JSON |
+| Prisma Cloud | `convertPrismaToHdf` | JSON |
+| SARIF | `convertSarifToHdf` | JSON |
+| ScoutSuite | `convertScoutsuiteToHdf` | JSON |
+| Snyk | `convertSnykToHdf` | JSON |
+| SonarQube | `convertSonarqubeToHdf` | JSON |
+| Splunk | `convertSplunkToHdf` | JSON |
+| TruffleHog | `convertTrufflehogToHdf` | JSON |
+| Twistlock | `convertTwistlockToHdf` | JSON |
+| Veracode | `convertVeracodeToHdf` | JSON |
+| XCCDF Results | `convertXccdfResultsToHdf` | XML |
+
+### HDF to Other Formats
+
+| Target Format | Function |
+|---|---|
+| CSV | `convertHdfToCsv` |
+| XML | `convertHdfToXml` |
+| XCCDF | `convertHdfToXccdf` |
+| OSCAL SAR | `convertHdfToOscalSar` |
+| OSCAL POA&M | `convertHdfToOscalPoam` |
+
+### Format Migration
+
+| Conversion | Function |
+|---|---|
+| Legacy HDF (InSpec exec-json format) to current HDF | `convertV1ToV2` |
+| Detect legacy HDF format | `isHDFV1` |
 
 ## Installation
 
@@ -14,126 +75,103 @@ This library provides converters for:
 npm install @mitre/hdf-converters
 ```
 
-## Usage
+Requires Node.js >= 22.
 
-### HDF v1.0 to v2.0 Conversion
+## TypeScript Usage
+
+All exports use ESM (`"type": "module"`).
+
+### Convert a security tool report
 
 ```typescript
-import { convertV1ToV2, isHDFV1 } from '@mitre/hdf-converters';
+import { convertGrypeToHdf } from '@mitre/hdf-converters';
 
-// Check if data is v1.0 format
-const data = JSON.parse(fileContent);
-if (isHDFV1(data)) {
-  const v2Data = convertV1ToV2(data);
-  console.log('Converted to v2.0:', v2Data);
-}
+const grypeJson = fs.readFileSync('grype-report.json', 'utf-8');
+const hdfResults = convertGrypeToHdf(grypeJson, 'grype-report.json');
 ```
 
-### Key Changes in v2.0
+### Auto-detect input format
 
-- `version` field removed (implicit in schema)
-- `profiles` → `baselines`
-- `platform` (single object) → `targets` (array, supports multiple targets)
-- Extension fields moved to `extensions` object
-
-## Auto-Detection (Fingerprint Registry)
-
-Automatically detect which converter to use for a given input:
+The `@mitre/hdf-converters/detect` sub-path provides lightweight format detection without importing any converter code.
 
 ```typescript
 import { registerAllFingerprints, detectConverter } from '@mitre/hdf-converters/detect';
 
 registerAllFingerprints();
 const result = detectConverter(rawInput);
-// result.fingerprint.id === 'gosec-to-hdf'
-// result.confidence === 1.0
+// result.fingerprint.id  -> e.g. 'grype-to-hdf'
+// result.confidence       -> 0.0 to 1.0
+// result.version          -> detected format version (if available)
 ```
 
-Each converter self-registers a lightweight structural fingerprint.
-Detection is cheap (~2KB, no converter imports). Conversion is lazy-loaded.
+### Upgrade legacy HDF
 
-Fingerprints can optionally detect the **format version** (e.g. SARIF 2.1.0,
-CycloneDX 1.5) via the `detectVersion` field on `ConverterFingerprint`. The
-detected version is returned in `DetectionResult.version`.
+```typescript
+import { convertV1ToV2, isHDFV1 } from '@mitre/hdf-converters';
 
-See **[Fingerprint Registry Guide](../docs/guides/converter-fingerprint-registry.md)**
-for full documentation, usage examples, and how to add fingerprints for new converters.
-
-## Version Specifiers
-
-Converters support `format@version` syntax to specify input or output format versions:
-
-```bash
-# Explicit input version
-hdf convert --from sarif@2.0 scan.sarif
-
-# HDF schema version transforms
-hdf convert --from hdf@1 --to hdf@2 legacy.json     # Upgrade v1 → v2
-hdf convert --from hdf@1 --to hdf legacy.json        # Same (v2 is default)
-
-# Post-process any converter output to v1
-hdf convert --from grype --to hdf@1 scan.json         # Grype → HDF v2 → HDF v1
-```
-
-### Version Defaulting
-
-- No `@version`: converter uses its latest supported version
-- `--to hdf` (no version): produces latest HDF version (currently v2)
-- `--to hdf@1`: downgrades output to HDF v1 (lossy — prints warning)
-- `--from legacyhdf` is an alias for `--from hdf@1 --to hdf@2`
-
-### Multi-Version Converters (VersionedConverter)
-
-Converters that handle multiple input versions implement `VersionedConverter`:
-
-```go
-type VersionedConverter interface {
-    Converter
-    SetInputVersion(version string)
-    SupportedVersions() []string
+const data = JSON.parse(fileContent);
+if (isHDFV1(data)) {
+  const currentHdf = convertV1ToV2(data);
 }
 ```
 
-When `SetInputVersion("")` is called (or not called at all), the converter
-defaults to its latest supported version. `SupportedVersions()` returns
-versions in order, latest first.
+## Go Usage
 
-### HDF Version Transforms
-
-The `hdfversion` package provides a registry-based router for HDF schema
-version transforms:
+Go converters live under `converters/<name>/go/` and follow the same function signature:
 
 ```go
-import "github.com/mitre/hdf-converters/shared/go/hdfversion"
+import grype "github.com/mitre/hdf-converters/converters/grype-to-hdf/go"
 
-output, err := hdfversion.TransformHDF(input, "1", "2")  // upgrade
-output, err := hdfversion.TransformHDF(input, "2", "1")  // downgrade (lossy)
-ver, err := hdfversion.DetectHDFVersion(input)            // "1" or "2"
+results, err := grype.ConvertGrypeToHdf(input, "grype-report.json")
 ```
 
-```typescript
-import { transformHDF, detectHDFVersion } from '@mitre/hdf-converters/shared/typescript/hdf-version.js';
+For CLI usage, install the `hdf` binary from [hdf-cli](https://github.com/mitre/hdf-libs/tree/main/hdf-cli):
 
-const v2 = transformHDF(v1Input, '1', '2');
-const ver = detectHDFVersion(input); // '1' or '2'
+```bash
+hdf convert grype-report.json -o results.json          # auto-detect format
+hdf convert --from grype grype-report.json -o results.json  # explicit format
 ```
 
-## Adding New Converters
+## Package Exports
 
-This package maintains **dual implementations** (TypeScript and Go) for all converters:
-- TypeScript for npm package (web apps, Node.js tools)
-- Go for `hdf-cli` (standalone binary, better security)
+| Import path | Contents |
+|---|---|
+| `@mitre/hdf-converters` | All converter functions and types |
+| `@mitre/hdf-converters/detect` | Auto-detection (fingerprints, `detectConverter`) |
+| `@mitre/hdf-converters/registry` | Fingerprint registry primitives |
 
-See **[CONVERTER_GUIDE.md](./CONVERTER_GUIDE.md)** for complete implementation instructions.
+## Project Structure
 
-**Quick start**:
-1. Implement TypeScript converter in `converters/{tool}/typescript/`
-2. Add test fixtures in `converters/{tool}/fixtures/`
-3. Port to Go in `converters/{tool}/go/`
-4. Differential tests ensure both produce identical output
+```
+hdf-converters/
+  converters/<name>/
+    typescript/converter.ts       # TS implementation
+    typescript/converter.test.ts  # TS tests
+    go/converter.go               # Go implementation
+    go/converter_test.go          # Go tests
+    fixtures/input/               # Real tool output
+    fixtures/expected/            # Schema-validated expected HDF
+  shared/
+    typescript/                   # Shared TS helpers
+    go/                           # Shared Go helpers
+  src/
+    index.ts                      # Barrel export (all converters)
+    detect.ts                     # Auto-detection sub-path entry
+```
 
-**Architecture decision**: [ADR-001](../docs/architecture/ADR-001-dual-converter-implementations.md)
+Each converter has shared test fixtures and differential tests that verify TypeScript and Go produce identical output.
+
+## Adding a New Converter
+
+See [CONVERTER_GUIDE.md](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/CONVERTER_GUIDE.md) for implementation instructions.
+
+Summary:
+1. Add real tool output fixtures in `converters/<name>/fixtures/input/`
+2. Write tests first (TDD) in both TypeScript and Go
+3. Implement the converter in `converters/<name>/typescript/` and `converters/<name>/go/`
+4. Register a fingerprint for auto-detection
+5. Add a CLI wrapper in `hdf-cli/cmd/hdf/cmd/`
 
 ## License
 
-Apache-2.0 © MITRE Corporation
+Apache-2.0 -- MITRE Corporation
