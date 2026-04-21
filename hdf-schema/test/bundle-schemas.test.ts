@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { existsSync, rmSync, readFileSync } from 'fs';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { existsSync, rmSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
@@ -9,13 +9,37 @@ import { loadFixture } from './setup';
 const DIST_DIR = join(__dirname, '..', 'dist', 'schemas');
 
 describe('bundle-schemas', () => {
+  // Path for a temporary schema file without $id, used to exercise the
+  // `if (id)` false branch in registerAllSchemas (bundle-schemas.ts line 28).
+  // Placed BEFORE bundleSchemas() runs so the first registration pass sees it.
+  const PRIMITIVES_DIR = join(__dirname, '..', 'src', 'schemas', 'primitives');
+  const noIdPrimitive = join(PRIMITIVES_DIR, 'no-id-test.schema.json');
+
   beforeAll(async () => {
     // Clean dist directory before tests
     if (existsSync(DIST_DIR)) {
       rmSync(DIST_DIR, { recursive: true });
     }
-    // Run the bundler
+
+    // Create a temporary primitive schema WITHOUT $id before the first
+    // bundleSchemas() call. registerAllSchemas reads all .schema.json files
+    // in the primitives dir; this file will exercise the `if (id)` false
+    // branch at line 28 — the file is silently skipped.
+    writeFileSync(noIdPrimitive, JSON.stringify({
+      type: 'object',
+      properties: { test: { type: 'string' } },
+    }));
+
+    // Run the bundler (registers all schemas including the no-$id one)
     await bundleSchemas();
+
+    // Clean up the temporary file
+    if (existsSync(noIdPrimitive)) rmSync(noIdPrimitive);
+  });
+
+  afterAll(() => {
+    // Safety cleanup in case beforeAll failed before removing the file
+    if (existsSync(noIdPrimitive)) rmSync(noIdPrimitive);
   });
 
   describe('output files', () => {

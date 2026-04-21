@@ -18,7 +18,7 @@ export default defineConfig({
       // Note: CLI entry points excluded with c8 ignore comments
       thresholds: {
         statements: 90,
-        branches: 80, // vitest 4 counts branches more strictly
+        branches: 90,
         functions: 90,
         lines: 90,
       },
