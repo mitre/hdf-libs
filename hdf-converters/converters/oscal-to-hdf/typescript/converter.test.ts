@@ -10,6 +10,23 @@ import { convertOscalSspToHdf } from './converter-ssp.js';
 import { convertOscalSapToHdf } from './converter-sap.js';
 import { convertOscalPoamToHdf } from './converter-poam.js';
 import { convertOscalSarToHdf } from './converter-sar.js';
+import {
+  controlIdToNistTag,
+  controlIdsToNistTags,
+  extractControlIdFromObjectiveId,
+  oscalStatusToHdf,
+  extractPropValue,
+  extractAllPropValues,
+  flattenParts,
+  flattenPartsByName,
+  extractRiskSeverity,
+  extractMetadata,
+  nistTagToControlId,
+  impactToSeverity,
+  hdfStatusToOscalRiskStatus,
+  parseOscalDocument,
+  toKebabCase,
+} from './shared.js';
 import type { HdfResults, HdfBaseline } from '@mitre/hdf-schema';
 import type { HdfSystem } from '@mitre/hdf-schema';
 import type { HdfPlan } from '@mitre/hdf-schema';
@@ -245,7 +262,7 @@ describe('convertOscalProfileToHdf', () => {
       ),
     ).rejects.toThrow('alter');
   });
-}, { timeout: 30000 });
+}, 30000);
 
 // ---------------------------------------------------------------------------
 // Component Definition converter
@@ -465,5 +482,1754 @@ describe('convertOscalSarToHdf', () => {
 
     expect(results.baselines[0]!.integrity?.algorithm).toBe('sha256');
     expect(results.baselines[0]!.integrity?.checksum).toMatch(/^[a-f0-9]{64}$/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Shared utilities
+// ---------------------------------------------------------------------------
+
+describe('OSCAL shared helpers', () => {
+  describe('controlIdToNistTag', () => {
+    it('converts simple control IDs', () => {
+      expect(controlIdToNistTag('ac-1')).toBe('AC-1');
+    });
+
+    it('converts enhancement control IDs', () => {
+      expect(controlIdToNistTag('ac-2.3')).toBe('AC-2 (3)');
+    });
+
+    it('converts si-7.1', () => {
+      expect(controlIdToNistTag('si-7.1')).toBe('SI-7 (1)');
+    });
+  });
+
+  describe('controlIdsToNistTags', () => {
+    it('deduplicates IDs', () => {
+      expect(controlIdsToNistTags(['ac-1', 'ac-2', 'ac-1'])).toEqual(['AC-1', 'AC-2']);
+    });
+
+    it('handles empty array', () => {
+      expect(controlIdsToNistTags([])).toEqual([]);
+    });
+  });
+
+  describe('extractControlIdFromObjectiveId', () => {
+    it('extracts from objective ID', () => {
+      expect(extractControlIdFromObjectiveId('ac-1.a.1_obj.1')).toBe('ac-1');
+    });
+
+    it('extracts from enhancement objective ID', () => {
+      expect(extractControlIdFromObjectiveId('ac-2.3')).toBe('ac-2.3');
+    });
+
+    it('returns original if no match', () => {
+      expect(extractControlIdFromObjectiveId('foobar')).toBe('foobar');
+    });
+  });
+
+  describe('oscalStatusToHdf', () => {
+    it('maps satisfied to passed', () => {
+      expect(oscalStatusToHdf('satisfied')).toBe('passed');
+    });
+
+    it('maps closed to passed', () => {
+      expect(oscalStatusToHdf('closed')).toBe('passed');
+    });
+
+    it('maps not-satisfied to failed', () => {
+      expect(oscalStatusToHdf('not-satisfied')).toBe('failed');
+    });
+
+    it('maps open to failed', () => {
+      expect(oscalStatusToHdf('open')).toBe('failed');
+    });
+
+    it('returns undefined for unknown status', () => {
+      expect(oscalStatusToHdf('in-progress')).toBeUndefined();
+    });
+
+    it('handles mixed case and whitespace', () => {
+      expect(oscalStatusToHdf('  SATISFIED  ')).toBe('passed');
+      expect(oscalStatusToHdf('NOT-SATISFIED')).toBe('failed');
+    });
+  });
+
+  describe('extractPropValue', () => {
+    it('returns undefined for undefined props', () => {
+      expect(extractPropValue(undefined, 'name')).toBeUndefined();
+    });
+
+    it('returns undefined if prop not found', () => {
+      expect(extractPropValue([{ name: 'other', value: 'x' }], 'name')).toBeUndefined();
+    });
+
+    it('finds prop by name', () => {
+      expect(extractPropValue([{ name: 'label', value: 'AC-1' }], 'label')).toBe('AC-1');
+    });
+
+    it('respects namespace filter', () => {
+      const props = [
+        { name: 'label', value: 'wrong', ns: 'other-ns' },
+        { name: 'label', value: 'correct', ns: 'my-ns' },
+      ];
+      expect(extractPropValue(props, 'label', 'my-ns')).toBe('correct');
+    });
+
+    it('ignores namespace when ns param is undefined', () => {
+      const props = [{ name: 'label', value: 'val', ns: 'any-ns' }];
+      expect(extractPropValue(props, 'label')).toBe('val');
+    });
+  });
+
+  describe('extractAllPropValues', () => {
+    it('returns empty array for undefined props', () => {
+      expect(extractAllPropValues(undefined, 'name')).toEqual([]);
+    });
+
+    it('returns all matching values', () => {
+      const props = [
+        { name: 'tag', value: 'a' },
+        { name: 'other', value: 'b' },
+        { name: 'tag', value: 'c' },
+      ];
+      expect(extractAllPropValues(props, 'tag')).toEqual(['a', 'c']);
+    });
+
+    it('respects namespace filter', () => {
+      const props = [
+        { name: 'tag', value: 'a', ns: 'ns1' },
+        { name: 'tag', value: 'b', ns: 'ns2' },
+      ];
+      expect(extractAllPropValues(props, 'tag', 'ns1')).toEqual(['a']);
+    });
+  });
+
+  describe('flattenParts', () => {
+    it('returns empty string for undefined', () => {
+      expect(flattenParts(undefined)).toBe('');
+    });
+
+    it('returns empty string for empty array', () => {
+      expect(flattenParts([])).toBe('');
+    });
+
+    it('concatenates prose from nested parts', () => {
+      const parts = [
+        { name: 'a', prose: 'line1', parts: [{ name: 'b', prose: 'line2' }] },
+        { name: 'c', prose: 'line3' },
+      ];
+      expect(flattenParts(parts)).toBe('line1\nline2\nline3');
+    });
+
+    it('skips parts without prose', () => {
+      const parts = [
+        { name: 'a' },
+        { name: 'b', prose: 'text' },
+      ];
+      expect(flattenParts(parts)).toBe('text');
+    });
+  });
+
+  describe('flattenPartsByName', () => {
+    it('returns empty string for undefined', () => {
+      expect(flattenPartsByName(undefined, 'statement')).toBe('');
+    });
+
+    it('only includes parts matching name', () => {
+      const parts = [
+        { name: 'statement', prose: 'stmt text' },
+        { name: 'guidance', prose: 'guidance text' },
+        { name: 'statement', prose: 'stmt2 text', parts: [{ name: 'sub', prose: 'nested' }] },
+      ];
+      expect(flattenPartsByName(parts, 'statement')).toBe('stmt text\nstmt2 text\nnested');
+    });
+
+    it('returns empty string when no parts match', () => {
+      const parts = [{ name: 'guidance', prose: 'text' }];
+      expect(flattenPartsByName(parts, 'statement')).toBe('');
+    });
+  });
+
+  describe('extractRiskSeverity', () => {
+    it('returns default for undefined characterizations', () => {
+      expect(extractRiskSeverity(undefined, 0.5)).toBe(0.5);
+    });
+
+    it('returns default when no matching facets', () => {
+      const chars = [{ facets: [{ name: 'other', value: 'high' }] }];
+      expect(extractRiskSeverity(chars, 0.5)).toBe(0.5);
+    });
+
+    it('returns default for characterization with no facets', () => {
+      expect(extractRiskSeverity([{}] as any, 0.5)).toBe(0.5);
+    });
+
+    it('maps critical to 0.9', () => {
+      const chars = [{ facets: [{ name: 'impact', value: 'critical' }] }];
+      expect(extractRiskSeverity(chars, 0.5)).toBe(0.9);
+    });
+
+    it('maps high to 0.7', () => {
+      const chars = [{ facets: [{ name: 'risk', value: 'high' }] }];
+      expect(extractRiskSeverity(chars, 0.5)).toBe(0.7);
+    });
+
+    it('maps moderate to 0.5', () => {
+      const chars = [{ facets: [{ name: 'impact', value: 'moderate' }] }];
+      expect(extractRiskSeverity(chars, 0.3)).toBe(0.5);
+    });
+
+    it('maps medium to 0.5', () => {
+      const chars = [{ facets: [{ name: 'impact', value: 'medium' }] }];
+      expect(extractRiskSeverity(chars, 0.3)).toBe(0.5);
+    });
+
+    it('maps low to 0.3', () => {
+      const chars = [{ facets: [{ name: 'likelihood', value: 'low' }] }];
+      expect(extractRiskSeverity(chars, 0.5)).toBe(0.3);
+    });
+
+    it('maps info to 0.0', () => {
+      const chars = [{ facets: [{ name: 'impact', value: 'info' }] }];
+      expect(extractRiskSeverity(chars, 0.5)).toBe(0.0);
+    });
+
+    it('maps informational to 0.0', () => {
+      const chars = [{ facets: [{ name: 'impact', value: 'informational' }] }];
+      expect(extractRiskSeverity(chars, 0.5)).toBe(0.0);
+    });
+
+    it('maps none to 0.0', () => {
+      const chars = [{ facets: [{ name: 'impact', value: 'none' }] }];
+      expect(extractRiskSeverity(chars, 0.5)).toBe(0.0);
+    });
+  });
+
+  describe('extractMetadata', () => {
+    it('extracts all fields', () => {
+      const meta = {
+        title: 'Test',
+        version: '1.0',
+        'oscal-version': '1.1.2',
+        'last-modified': '2024-01-01T00:00:00Z',
+      };
+      const result = extractMetadata(meta as any);
+      expect(result.title).toBe('Test');
+      expect(result.version).toBe('1.0');
+      expect(result.oscalVersion).toBe('1.1.2');
+      expect(result.lastModified).toBe('2024-01-01T00:00:00Z');
+    });
+  });
+
+  describe('nistTagToControlId', () => {
+    it('converts simple tag', () => {
+      expect(nistTagToControlId('AC-1')).toBe('ac-1');
+    });
+
+    it('converts enhancement tag', () => {
+      expect(nistTagToControlId('AC-2 (3)')).toBe('ac-2.3');
+    });
+
+    it('handles whitespace', () => {
+      expect(nistTagToControlId('  SI-7 (1)  ')).toBe('si-7.1');
+    });
+  });
+
+  describe('impactToSeverity', () => {
+    it('maps 0.9+ to critical', () => {
+      expect(impactToSeverity(0.9)).toBe('critical');
+      expect(impactToSeverity(1.0)).toBe('critical');
+    });
+
+    it('maps 0.7-0.89 to high', () => {
+      expect(impactToSeverity(0.7)).toBe('high');
+      expect(impactToSeverity(0.89)).toBe('high');
+    });
+
+    it('maps 0.4-0.69 to moderate', () => {
+      expect(impactToSeverity(0.4)).toBe('moderate');
+      expect(impactToSeverity(0.5)).toBe('moderate');
+    });
+
+    it('maps 0.1-0.39 to low', () => {
+      expect(impactToSeverity(0.1)).toBe('low');
+      expect(impactToSeverity(0.3)).toBe('low');
+    });
+
+    it('maps 0.0 to info', () => {
+      expect(impactToSeverity(0.0)).toBe('info');
+      expect(impactToSeverity(0.09)).toBe('info');
+    });
+  });
+
+  describe('hdfStatusToOscalRiskStatus', () => {
+    it('maps passed to closed', () => {
+      expect(hdfStatusToOscalRiskStatus('passed')).toBe('closed');
+    });
+
+    it('maps notApplicable to closed', () => {
+      expect(hdfStatusToOscalRiskStatus('notApplicable')).toBe('closed');
+    });
+
+    it('maps failed to open', () => {
+      expect(hdfStatusToOscalRiskStatus('failed')).toBe('open');
+    });
+
+    it('maps error to open', () => {
+      expect(hdfStatusToOscalRiskStatus('error')).toBe('open');
+    });
+
+    it('maps unknown to open', () => {
+      expect(hdfStatusToOscalRiskStatus('something')).toBe('open');
+    });
+  });
+
+  describe('parseOscalDocument', () => {
+    it('throws on empty input', () => {
+      expect(() => parseOscalDocument('', 'catalog', 'test')).toThrow('test: empty input');
+    });
+
+    it('throws on whitespace-only input', () => {
+      expect(() => parseOscalDocument('  \n  ', 'catalog', 'test')).toThrow('test: empty input');
+    });
+
+    it('throws on invalid JSON', () => {
+      expect(() => parseOscalDocument('not json', 'catalog', 'test')).toThrow('test: failed to parse JSON');
+    });
+
+    it('throws on wrong document type', () => {
+      expect(() => parseOscalDocument('{"profile":{}}', 'catalog', 'test')).toThrow('test: expected catalog document');
+    });
+
+    it('returns the document when valid', () => {
+      const result = parseOscalDocument('{"catalog":{"uuid":"123","metadata":{"title":"T","version":"1","oscal-version":"1.1.2","last-modified":"now"}}}', 'catalog', 'test');
+      expect(result.uuid).toBe('123');
+    });
+  });
+
+  describe('toKebabCase', () => {
+    it('converts title to kebab case', () => {
+      expect(toKebabCase('My Test Title', 'fallback')).toBe('my-test-title');
+    });
+
+    it('returns fallback for empty title', () => {
+      expect(toKebabCase('', 'fallback')).toBe('fallback');
+    });
+
+    it('collapses consecutive dashes', () => {
+      expect(toKebabCase('A -- B -- C', 'fb')).toBe('a-b-c');
+    });
+
+    it('strips leading and trailing dashes', () => {
+      expect(toKebabCase('--hello--', 'fb')).toBe('hello');
+    });
+
+    it('truncates to 80 characters', () => {
+      const longTitle = 'a'.repeat(100);
+      expect(toKebabCase(longTitle, 'fb').length).toBe(80);
+    });
+
+    it('handles special characters', () => {
+      expect(toKebabCase('Hello, World! (Test)', 'fb')).toBe('hello-world-test');
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Profile converter edge cases
+// ---------------------------------------------------------------------------
+
+describe('convertOscalProfileToHdf edge cases', () => {
+  it('should throw on profile with no imports', async () => {
+    const profileDoc = JSON.stringify({
+      profile: {
+        uuid: '123',
+        metadata: { title: 'T', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        imports: [],
+      },
+    });
+    const catalogDoc = JSON.stringify({
+      catalog: {
+        uuid: '456',
+        metadata: { title: 'C', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        groups: [],
+      },
+    });
+    await expect(convertOscalProfileToHdf(profileDoc, catalogDoc)).rejects.toThrow('no imports');
+  });
+
+  it('should throw on profile with multiple imports', async () => {
+    const profileDoc = JSON.stringify({
+      profile: {
+        uuid: '123',
+        metadata: { title: 'T', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        imports: [
+          { href: 'catalog1.json' },
+          { href: 'catalog2.json' },
+        ],
+      },
+    });
+    const catalogDoc = JSON.stringify({
+      catalog: {
+        uuid: '456',
+        metadata: { title: 'C', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        groups: [],
+      },
+    });
+    await expect(convertOscalProfileToHdf(profileDoc, catalogDoc)).rejects.toThrow('2 imports');
+  });
+
+  it('should handle profile that includes all controls', async () => {
+    const profileDoc = JSON.stringify({
+      profile: {
+        uuid: '123',
+        metadata: { title: 'All Controls Profile', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        imports: [{ href: 'catalog.json' }],
+      },
+    });
+    const catalogDoc = JSON.stringify({
+      catalog: {
+        uuid: '456',
+        metadata: { title: 'Catalog', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        groups: [{
+          id: 'ac',
+          title: 'Access Control',
+          controls: [{
+            id: 'ac-1',
+            title: 'Policy',
+            parts: [{ name: 'statement', prose: 'Develop policy.' }],
+          }],
+        }],
+      },
+    });
+    const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
+    const baseline = JSON.parse(output) as HdfBaseline;
+    expect(baseline.requirements).toHaveLength(1);
+    expect(baseline.requirements[0]!.id).toBe('AC-1');
+  });
+
+  it('should handle profile with exclude-controls', async () => {
+    const profileDoc = JSON.stringify({
+      profile: {
+        uuid: '123',
+        metadata: { title: 'Exclude Test', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        imports: [{
+          href: 'catalog.json',
+          'exclude-controls': [{ 'with-ids': ['ac-2'] }],
+        }],
+      },
+    });
+    const catalogDoc = JSON.stringify({
+      catalog: {
+        uuid: '456',
+        metadata: { title: 'Catalog', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        groups: [{
+          id: 'ac',
+          title: 'Access Control',
+          controls: [
+            { id: 'ac-1', title: 'Policy', parts: [{ name: 'statement', prose: 'P1.' }] },
+            { id: 'ac-2', title: 'Account Mgmt', parts: [{ name: 'statement', prose: 'P2.' }] },
+            { id: 'ac-3', title: 'Access Enforcement', parts: [{ name: 'statement', prose: 'P3.' }] },
+          ],
+        }],
+      },
+    });
+    const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
+    const baseline = JSON.parse(output) as HdfBaseline;
+    expect(baseline.requirements.map(r => r.id)).toEqual(['AC-1', 'AC-3']);
+  });
+
+  it('should apply parameter overrides to control prose', async () => {
+    const profileDoc = JSON.stringify({
+      profile: {
+        uuid: '123',
+        metadata: { title: 'Param Test', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        imports: [{ href: 'catalog.json' }],
+        modify: {
+          'set-parameters': [
+            { 'param-id': 'ac-1_prm_1', values: ['annually'] },
+          ],
+        },
+      },
+    });
+    const catalogDoc = JSON.stringify({
+      catalog: {
+        uuid: '456',
+        metadata: { title: 'Catalog', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        groups: [{
+          id: 'ac',
+          title: 'Access Control',
+          controls: [{
+            id: 'ac-1',
+            title: 'Policy',
+            params: [{ id: 'ac-1_prm_1', label: 'frequency' }],
+            parts: [{
+              name: 'statement',
+              prose: 'Review policy {{ insert: param, ac-1_prm_1 }}.',
+            }],
+          }],
+        }],
+      },
+    });
+    const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
+    const baseline = JSON.parse(output) as HdfBaseline;
+    const desc = baseline.requirements[0]!.descriptions?.find(d => d.label === 'default');
+    expect(desc?.data).toContain('annually');
+  });
+
+  it('should handle profile with include-controls and specific with-ids', async () => {
+    const profileDoc = JSON.stringify({
+      profile: {
+        uuid: '123',
+        metadata: { title: 'Select Test', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        imports: [{
+          href: 'catalog.json',
+          'include-controls': [{ 'with-ids': ['ac-1'] }],
+        }],
+      },
+    });
+    const catalogDoc = JSON.stringify({
+      catalog: {
+        uuid: '456',
+        metadata: { title: 'Catalog', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        groups: [{
+          id: 'ac',
+          title: 'Access Control',
+          controls: [
+            { id: 'ac-1', title: 'Policy', parts: [{ name: 'statement', prose: 'P1.' }] },
+            { id: 'ac-2', title: 'Acct', parts: [{ name: 'statement', prose: 'P2.' }] },
+          ],
+        }],
+      },
+    });
+    const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
+    const baseline = JSON.parse(output) as HdfBaseline;
+    expect(baseline.requirements).toHaveLength(1);
+    expect(baseline.requirements[0]!.id).toBe('AC-1');
+  });
+
+  it('should handle catalog with top-level controls (outside groups)', async () => {
+    const profileDoc = JSON.stringify({
+      profile: {
+        uuid: '123',
+        metadata: { title: 'Top Level', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        imports: [{ href: 'catalog.json' }],
+      },
+    });
+    const catalogDoc = JSON.stringify({
+      catalog: {
+        uuid: '456',
+        metadata: { title: 'Catalog', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        controls: [
+          { id: 'ac-1', title: 'Policy', parts: [{ name: 'statement', prose: 'P1.' }] },
+        ],
+      },
+    });
+    const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
+    const baseline = JSON.parse(output) as HdfBaseline;
+    expect(baseline.requirements).toHaveLength(1);
+  });
+
+  it('should handle profile with set-parameters with no values', async () => {
+    const profileDoc = JSON.stringify({
+      profile: {
+        uuid: '123',
+        metadata: { title: 'Empty Params', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        imports: [{ href: 'catalog.json' }],
+        modify: {
+          'set-parameters': [
+            { 'param-id': 'ac-1_prm_1' },
+          ],
+        },
+      },
+    });
+    const catalogDoc = JSON.stringify({
+      catalog: {
+        uuid: '456',
+        metadata: { title: 'Catalog', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        groups: [{
+          id: 'ac',
+          title: 'Access Control',
+          controls: [{ id: 'ac-1', title: 'Policy', params: [{ id: 'ac-1_prm_1', label: 'freq' }] }],
+        }],
+      },
+    });
+    const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
+    const baseline = JSON.parse(output) as HdfBaseline;
+    expect(baseline.requirements).toHaveLength(1);
+  });
+
+  it('should filter control enhancements in include-controls', async () => {
+    const profileDoc = JSON.stringify({
+      profile: {
+        uuid: '123',
+        metadata: { title: 'Enh Test', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        imports: [{
+          href: 'catalog.json',
+          'include-controls': [{ 'with-ids': ['ac-2', 'ac-2.1'] }],
+        }],
+      },
+    });
+    const catalogDoc = JSON.stringify({
+      catalog: {
+        uuid: '456',
+        metadata: { title: 'Catalog', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        groups: [{
+          id: 'ac',
+          title: 'Access Control',
+          controls: [{
+            id: 'ac-2',
+            title: 'Account',
+            controls: [
+              { id: 'ac-2.1', title: 'Automated Mgmt' },
+              { id: 'ac-2.2', title: 'Removal' },
+            ],
+          }],
+        }],
+      },
+    });
+    const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
+    const baseline = JSON.parse(output) as HdfBaseline;
+    const ids = baseline.requirements.map(r => r.id);
+    expect(ids).toContain('AC-2');
+    expect(ids).toContain('AC-2 (1)');
+    expect(ids).not.toContain('AC-2 (2)');
+  });
+}, 30000);
+
+// ---------------------------------------------------------------------------
+// SSP converter edge cases
+// ---------------------------------------------------------------------------
+
+describe('convertOscalSspToHdf edge cases', () => {
+  it('should throw on wrong document type', async () => {
+    await expect(
+      convertOscalSspToHdf(JSON.stringify({ catalog: {} })),
+    ).rejects.toThrow('not a system-security-plan');
+  });
+
+  it('should handle SSP with no system-characteristics', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: '123',
+        metadata: { title: 'Test SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+      },
+    });
+    const output = await convertOscalSspToHdf(doc);
+    const system = JSON.parse(output) as HdfSystem;
+    expect(system.name).toBe('Test SSP');
+  });
+
+  it('should use system-name over metadata title', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: '123',
+        metadata: { title: 'Metadata Title', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'system-characteristics': { 'system-name': 'System Name' },
+      },
+    });
+    const output = await convertOscalSspToHdf(doc);
+    const system = JSON.parse(output) as HdfSystem;
+    expect(system.name).toBe('System Name');
+  });
+
+  it('should fall back to oscal-ssp when no name found', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: '123',
+        metadata: { version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+      },
+    });
+    const output = await convertOscalSspToHdf(doc);
+    const system = JSON.parse(output) as HdfSystem;
+    expect(system.name).toBe('oscal-ssp');
+  });
+
+  it('should map security-impact-level to categorization level', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: '123',
+        metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'system-characteristics': {
+          'system-name': 'Test',
+          'security-impact-level': {
+            'security-objective-confidentiality': 'fips-199-moderate',
+            'security-objective-integrity': 'fips-199-low',
+            'security-objective-availability': 'fips-199-low',
+          },
+        },
+      },
+    });
+    const output = await convertOscalSspToHdf(doc);
+    const system = JSON.parse(output) as HdfSystem;
+    expect(system.categorizationLevel).toBe('moderate');
+  });
+
+  it('should map high FIPS level', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: '123',
+        metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'system-characteristics': {
+          'system-name': 'Test',
+          'security-impact-level': {
+            'security-objective-confidentiality': 'high',
+            'security-objective-integrity': 'low',
+            'security-objective-availability': 'low',
+          },
+        },
+      },
+    });
+    const output = await convertOscalSspToHdf(doc);
+    const system = JSON.parse(output) as HdfSystem;
+    expect(system.categorizationLevel).toBe('high');
+  });
+
+  it('should map security-sensitivity-level as fallback', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: '123',
+        metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'system-characteristics': {
+          'system-name': 'Test',
+          'security-sensitivity-level': 'low',
+        },
+      },
+    });
+    const output = await convertOscalSspToHdf(doc);
+    const system = JSON.parse(output) as HdfSystem;
+    expect(system.categorizationLevel).toBe('low');
+  });
+
+  it('should handle medium as moderate in sensitivity level', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: '123',
+        metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'system-characteristics': {
+          'system-name': 'Test',
+          'security-sensitivity-level': 'medium',
+        },
+      },
+    });
+    const output = await convertOscalSspToHdf(doc);
+    const system = JSON.parse(output) as HdfSystem;
+    expect(system.categorizationLevel).toBe('moderate');
+  });
+
+  it('should handle unknown sensitivity level', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: '123',
+        metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'system-characteristics': {
+          'system-name': 'Test',
+          'security-sensitivity-level': 'unknown',
+        },
+      },
+    });
+    const output = await convertOscalSspToHdf(doc);
+    const system = JSON.parse(output) as HdfSystem;
+    expect(system.categorizationLevel).toBeUndefined();
+  });
+
+  it('should map authorization status from system status', async () => {
+    for (const [state, expected] of [
+      ['operational', 'authorized'],
+      ['under-development', 'pendingAuthorization'],
+      ['disposition', 'revoked'],
+      ['other', 'notYetRequested'],
+      ['unknown-state', undefined],
+    ] as const) {
+      const doc = JSON.stringify({
+        'system-security-plan': {
+          uuid: '123',
+          metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+          'system-characteristics': {
+            'system-name': 'Test',
+            status: { state },
+          },
+        },
+      });
+      const output = await convertOscalSspToHdf(doc);
+      const system = JSON.parse(output) as HdfSystem;
+      expect(system.authorizationStatus).toBe(expected);
+    }
+  });
+
+  it('should map authorization-boundary description', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: '123',
+        metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'system-characteristics': {
+          'system-name': 'Test',
+          description: 'System desc',
+          'authorization-boundary': { description: 'Boundary desc' },
+        },
+      },
+    });
+    const output = await convertOscalSspToHdf(doc);
+    const system = JSON.parse(output) as HdfSystem;
+    expect(system.description).toContain('System desc');
+    expect(system.description).toContain('Boundary desc');
+    expect(system.boundaryDescription).toBe('Boundary desc');
+  });
+
+  it('should map system-ids', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: '123',
+        metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'system-characteristics': {
+          'system-name': 'Test',
+          'system-ids': [{ id: 'SYS-001', 'identifier-type': 'https://fedramp.gov' }],
+        },
+      },
+    });
+    const output = await convertOscalSspToHdf(doc);
+    const system = JSON.parse(output) as HdfSystem;
+    expect(system.identifier).toBe('SYS-001');
+    expect(system.identifierScheme).toBe('https://fedramp.gov');
+  });
+
+  it('should map OSCAL component types to HDF types', async () => {
+    for (const [oscalType, expectedType] of [
+      ['software', 'application'],
+      ['this-system', 'application'],
+      ['service', 'application'],
+      ['hardware', 'host'],
+      ['network', 'network'],
+      ['database', 'database'],
+      ['storage', 'artifact'],
+      ['unknown', 'application'],
+    ] as const) {
+      const doc = JSON.stringify({
+        'system-security-plan': {
+          uuid: '123',
+          metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+          'system-implementation': {
+            components: [{ uuid: 'comp-1', title: 'Comp', type: oscalType, description: 'Desc' }],
+          },
+        },
+      });
+      const output = await convertOscalSspToHdf(doc);
+      const system = JSON.parse(output) as HdfSystem;
+      expect(system.components[0]!.type).toBe(expectedType);
+    }
+  });
+
+  it('should build component control map from control-implementation', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: '123',
+        metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'system-implementation': {
+          components: [{ uuid: 'comp-1', title: 'Web App', type: 'software' }],
+        },
+        'control-implementation': {
+          'implemented-requirements': [
+            {
+              'control-id': 'ac-1',
+              'by-components': [{ 'component-uuid': 'comp-1', description: 'Impl' }],
+            },
+            {
+              'control-id': 'ac-2',
+              statements: [
+                { 'by-components': [{ 'component-uuid': 'comp-1', description: 'Impl' }] },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    const output = await convertOscalSspToHdf(doc);
+    const system = JSON.parse(output) as HdfSystem;
+    const comp = system.components[0]!;
+    expect((comp as any).baselineRefs).toContain('AC-1');
+    expect((comp as any).baselineRefs).toContain('AC-2');
+  });
+
+  it('should handle all unknown FIPS levels returning null categorization', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: '123',
+        metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'system-characteristics': {
+          'system-name': 'Test',
+          'security-impact-level': {
+            'security-objective-confidentiality': 'unknown',
+            'security-objective-integrity': '',
+            'security-objective-availability': '',
+          },
+        },
+      },
+    });
+    const output = await convertOscalSspToHdf(doc);
+    const system = JSON.parse(output) as HdfSystem;
+    expect(system.categorizationLevel).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SAP converter edge cases
+// ---------------------------------------------------------------------------
+
+describe('convertOscalSapToHdf edge cases', () => {
+  it('should throw on wrong document type', async () => {
+    await expect(
+      convertOscalSapToHdf(JSON.stringify({ catalog: {} })),
+    ).rejects.toThrow('not an assessment-plan');
+  });
+
+  it('should handle SAP with no reviewed-controls', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'import-ssp': { href: 'ssp.json' },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments).toHaveLength(1);
+    expect(plan.assessments[0]!.baselineRef).toBe('oscal-assessment-plan');
+  });
+
+  it('should handle include-all in control-selections', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'import-ssp': { href: 'ssp.json' },
+        'reviewed-controls': {
+          'control-selections': [{
+            'include-all': {},
+          }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.baselineRef).toBe('ssp.json');
+  });
+
+  it('should handle include-all without import-ssp', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'reviewed-controls': {
+          'control-selections': [{
+            'include-all': {},
+          }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.baselineRef).toBe('all-controls');
+  });
+
+  it('should handle include-controls in control-selections', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'reviewed-controls': {
+          'control-selections': [{
+            'include-controls': [{ 'control-id': 'ac-1' }, { 'control-id': 'ac-2' }],
+          }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.baselineRef).toBe('AC-1,AC-2');
+  });
+
+  it('should handle control-objective-selections', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'reviewed-controls': {
+          'control-objective-selections': [{
+            'include-objectives': [{ 'objective-id': 'ac-1.a.1_obj.1' }],
+            description: 'Objective test',
+          }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments).toHaveLength(1);
+    expect(plan.assessments[0]!.description).toBe('Objective test');
+  });
+
+  it('should handle control-objective-selections with include-all', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'import-ssp': { href: 'ssp.json' },
+        'reviewed-controls': {
+          'control-objective-selections': [{
+            'include-all': {},
+          }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.baselineRef).toBe('ssp.json');
+  });
+
+  it('should handle control-objective-selections include-all without import-ssp', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'reviewed-controls': {
+          'control-objective-selections': [{
+            'include-all': {},
+          }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.baselineRef).toBe('all-objectives');
+  });
+
+  it('should extract runner config from assessment-platforms', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'assessment-assets': {
+          'assessment-platforms': [{ uuid: 'p1', title: 'Nessus Scanner' }],
+        },
+        'reviewed-controls': {
+          'control-selections': [{ 'include-all': {} }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.runner?.name).toBe('Nessus Scanner');
+  });
+
+  it('should extract runner config from components fallback', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'assessment-assets': {
+          components: [{
+            uuid: 'c1',
+            title: 'Scanner',
+            type: 'software',
+            props: [{ name: 'version', value: '10.0' }],
+          }],
+        },
+        'reviewed-controls': {
+          'control-selections': [{ 'include-all': {} }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.runner?.name).toBe('Scanner');
+    expect(plan.assessments[0]!.runner?.version).toBe('10.0');
+  });
+
+  it('should extract target selector from assessment-subjects', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'assessment-subjects': [
+          { type: 'component', 'include-all': {} },
+          { type: 'inventory-item' },
+        ],
+        'reviewed-controls': {
+          'control-selections': [{ 'include-all': {} }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.targetSelector).toBeDefined();
+    expect(plan.assessments[0]!.targetSelector!['subject-type']).toBe('component,inventory-item');
+    expect(plan.assessments[0]!.targetSelector!['include-component']).toBe('all');
+  });
+
+  it('should determine plan type from assessment-type prop', async () => {
+    for (const [aType, expected] of [
+      ['automated', 'automated'],
+      ['manual', 'manual'],
+    ] as const) {
+      const doc = JSON.stringify({
+        'assessment-plan': {
+          uuid: '123',
+          metadata: {
+            title: 'SAP',
+            version: '1',
+            'oscal-version': '1.1.2',
+            'last-modified': 'now',
+            props: [{ name: 'assessment-type', value: aType }],
+          },
+          'reviewed-controls': {
+            'control-selections': [{ 'include-all': {} }],
+          },
+        },
+      });
+      const output = await convertOscalSapToHdf(doc);
+      const plan = JSON.parse(output) as HdfPlan;
+      expect(plan.type).toBe(expected);
+    }
+  });
+
+  it('should determine hybrid plan type from tasks', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        tasks: [{ uuid: 't1', type: 'milestone', title: 'Task 1' }],
+        'reviewed-controls': {
+          'control-selections': [{ 'include-all': {} }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.type).toBe('hybrid');
+  });
+
+  it('should build description from metadata remarks', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: {
+          title: 'SAP',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': 'now',
+          remarks: 'Important notes',
+        },
+        'reviewed-controls': {
+          'control-selections': [{ 'include-all': {} }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.description).toContain('Important notes');
+  });
+
+  it('should build description from terms-and-conditions', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: {
+          title: 'SAP',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': 'now',
+          remarks: 'Notes',
+        },
+        'terms-and-conditions': {
+          parts: [{ name: 'terms', prose: 'Must comply with standards.' }],
+        },
+        'reviewed-controls': {
+          'control-selections': [{ 'include-all': {} }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.description).toContain('Terms and Conditions');
+    expect(plan.description).toContain('Must comply with standards');
+  });
+
+  it('should handle empty reviewed-controls with fallback assessment', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'reviewed-controls': {},
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments).toHaveLength(1);
+    expect(plan.assessments[0]!.baselineRef).toBe('oscal-assessment-plan');
+  });
+
+  it('should handle control-selection with description', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'reviewed-controls': {
+          'control-selections': [{
+            description: 'Selected for annual review',
+            'include-all': {},
+          }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.description).toBe('Selected for annual review');
+  });
+
+  it('should handle control-selection falling back to import-ssp', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'import-ssp': { href: 'ssp-ref.json' },
+        'reviewed-controls': {
+          'control-selections': [{}],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.baselineRef).toBe('ssp-ref.json');
+  });
+
+  it('should fallback to oscal-assessment-plan baselineRef', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'reviewed-controls': {
+          'control-selections': [{}],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.baselineRef).toBe('oscal-assessment-plan');
+  });
+
+  it('should handle empty assessment-subjects', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'assessment-subjects': [],
+        'reviewed-controls': {
+          'control-selections': [{ 'include-all': {} }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.targetSelector).toBeUndefined();
+  });
+
+  it('should handle assessment-subject with no type', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'assessment-subjects': [{}],
+        'reviewed-controls': {
+          'control-selections': [{ 'include-all': {} }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    // With no type or include-all, selector is empty -> null -> undefined
+    expect(plan.assessments[0]!.targetSelector).toBeUndefined();
+  });
+
+  it('should handle assessment-assets with no platforms and no components', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'assessment-assets': {},
+        'reviewed-controls': {
+          'control-selections': [{ 'include-all': {} }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.runner).toBeUndefined();
+  });
+
+  it('should handle assessment-platform with no title', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'assessment-assets': {
+          'assessment-platforms': [{ uuid: 'p1' }],
+        },
+        'reviewed-controls': {
+          'control-selections': [{ 'include-all': {} }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.runner).toBeDefined();
+    expect(plan.assessments[0]!.runner?.name).toBeUndefined();
+  });
+
+  it('should handle components with no version prop', async () => {
+    const doc = JSON.stringify({
+      'assessment-plan': {
+        uuid: '123',
+        metadata: { title: 'SAP', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        'assessment-assets': {
+          components: [{ uuid: 'c1', title: 'Scanner', type: 'software' }],
+        },
+        'reviewed-controls': {
+          'control-selections': [{ 'include-all': {} }],
+        },
+      },
+    });
+    const output = await convertOscalSapToHdf(doc);
+    const plan = JSON.parse(output) as HdfPlan;
+    expect(plan.assessments[0]!.runner?.name).toBe('Scanner');
+    expect(plan.assessments[0]!.runner?.version).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// POA&M converter edge cases
+// ---------------------------------------------------------------------------
+
+describe('convertOscalPoamToHdf edge cases', () => {
+  it('should throw on wrong document type', async () => {
+    await expect(
+      convertOscalPoamToHdf(JSON.stringify({ catalog: {} })),
+    ).rejects.toThrow('not a plan-of-action-and-milestones');
+  });
+
+  it('should handle POAM item with no related-risks', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+          'responsible-parties': [{ 'role-id': 'prepared-by', 'party-uuids': ['user-1'] }],
+        },
+        'poam-items': [{
+          uuid: 'item-1',
+          title: 'Finding 1',
+          description: 'A finding',
+        }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    expect(amendments.overrides).toHaveLength(1);
+    expect(amendments.overrides[0]!.status).toBe('failed');
+  });
+
+  it('should extract requirement ID from POAM-ID prop', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+        },
+        'poam-items': [{
+          uuid: 'item-1',
+          title: 'Finding 1',
+          description: 'Desc',
+          props: [{ name: 'POAM-ID', value: 'V-12345' }],
+        }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    expect(amendments.overrides[0]!.requirementId).toBe('V-12345');
+  });
+
+  it('should fall back to title for requirement ID', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+        },
+        'poam-items': [{
+          uuid: 'item-1',
+          title: 'AC-1 Finding',
+        }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    expect(amendments.overrides[0]!.requirementId).toBe('AC-1 Finding');
+  });
+
+  it('should fall back to unknown for requirement ID', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+        },
+        'poam-items': [{ uuid: 'item-1' }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    expect(amendments.overrides[0]!.requirementId).toBe('unknown');
+  });
+
+  it('should extract control ID from risk impacted-control-id', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+        },
+        risks: [{
+          uuid: 'risk-1',
+          title: 'Risk',
+          status: 'open',
+          props: [{ name: 'impacted-control-id', value: 'ac-2' }],
+        }],
+        'poam-items': [{
+          uuid: 'item-1',
+          title: 'Finding',
+          'related-risks': [{ 'risk-uuid': 'risk-1' }],
+        }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    expect(amendments.overrides[0]!.requirementId).toBe('AC-2');
+  });
+
+  it('should map risk status to override status', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+        },
+        risks: [{
+          uuid: 'risk-1',
+          title: 'Risk',
+          status: 'closed',
+        }],
+        'poam-items': [{
+          uuid: 'item-1',
+          title: 'Finding',
+          'related-risks': [{ 'risk-uuid': 'risk-1' }],
+        }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    expect(amendments.overrides[0]!.status).toBe('passed');
+  });
+
+  it('should extract milestones from risk remediations', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+        },
+        risks: [{
+          uuid: 'risk-1',
+          title: 'Risk',
+          status: 'open',
+          remediations: [
+            { lifecycle: 'planned', title: 'Fix', description: 'Apply patch' },
+            { lifecycle: 'completed', title: 'Done', description: 'Already fixed' },
+          ],
+        }],
+        'poam-items': [{
+          uuid: 'item-1',
+          title: 'Finding',
+          'related-risks': [{ 'risk-uuid': 'risk-1' }],
+        }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    const milestones = amendments.overrides[0]!.milestones ?? [];
+    // Only planned lifecycle should be included
+    expect(milestones).toHaveLength(1);
+    expect(milestones[0]!.description).toContain('Fix');
+    expect(milestones[0]!.description).toContain('Apply patch');
+  });
+
+  it('should extract appliedBy from prepared-by responsible-party', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+          'responsible-parties': [
+            { 'role-id': 'prepared-by', 'party-uuids': ['user-abc'] },
+          ],
+        },
+        'poam-items': [{ uuid: 'item-1', title: 'F' }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    expect(amendments.appliedBy?.identifier).toBe('user-abc');
+  });
+
+  it('should fall back to first responsible party', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+          'responsible-parties': [
+            { 'role-id': 'other-role', 'party-uuids': ['user-xyz'] },
+          ],
+        },
+        'poam-items': [{ uuid: 'item-1', title: 'F' }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    // poamItemAppliedBy uses prepared-by first, then first party
+    expect(amendments.overrides[0]!.appliedBy?.identifier).toBe('user-xyz');
+  });
+
+  it('should fall back to system appliedBy when no responsible-parties', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+        },
+        'poam-items': [{ uuid: 'item-1', title: 'F' }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    expect(amendments.overrides[0]!.appliedBy?.identifier).toBe('oscal-poam-converter');
+  });
+
+  it('should use item description as reason, falling back to title', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+        },
+        'poam-items': [{ uuid: 'item-1', title: 'My Title' }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    expect(amendments.overrides[0]!.reason).toBe('My Title');
+  });
+
+  it('should fall back to default reason', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+        },
+        'poam-items': [{ uuid: 'item-1' }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    expect(amendments.overrides[0]!.reason).toBe('POA&M item');
+  });
+
+  it('should handle poamItemAppliedAt with invalid date', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': 'not-a-date',
+        },
+        'poam-items': [{ uuid: 'item-1', title: 'F' }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    // Should still produce output (falls back to new Date())
+    expect(amendments.overrides[0]!.appliedAt).toBeTruthy();
+  });
+
+  it('should extract systemRef from import-ssp', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+        },
+        'import-ssp': { href: 'ssp-ref.json' },
+        'poam-items': [{ uuid: 'item-1', title: 'F' }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    expect(amendments.systemRef).toBe('ssp-ref.json');
+  });
+
+  it('should handle risk with unrecognized status', async () => {
+    const doc = JSON.stringify({
+      'plan-of-action-and-milestones': {
+        uuid: '123',
+        metadata: {
+          title: 'POAM',
+          version: '1',
+          'oscal-version': '1.1.2',
+          'last-modified': '2024-01-01T00:00:00Z',
+        },
+        risks: [{
+          uuid: 'risk-1',
+          title: 'Risk',
+          status: 'investigating',
+        }],
+        'poam-items': [{
+          uuid: 'item-1',
+          title: 'Finding',
+          'related-risks': [{ 'risk-uuid': 'risk-1' }],
+        }],
+      },
+    });
+    const output = await convertOscalPoamToHdf(doc);
+    const amendments = JSON.parse(output) as HdfAmendments;
+    // oscalStatusToHdf returns undefined for 'investigating', so falls through to default 'failed'
+    expect(amendments.overrides[0]!.status).toBe('failed');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Component converter edge cases
+// ---------------------------------------------------------------------------
+
+describe('convertOscalComponentToHdf edge cases', () => {
+  it('should throw when document has no components', async () => {
+    const doc = JSON.stringify({
+      'component-definition': {
+        uuid: '123',
+        metadata: { title: 'Empty', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        components: [],
+      },
+    });
+    await expect(convertOscalComponentToHdf(doc)).rejects.toThrow('no components');
+  });
+
+  it('should throw when wrong document type', async () => {
+    await expect(
+      convertOscalComponentToHdf(JSON.stringify({ catalog: {} })),
+    ).rejects.toThrow('not a component-definition');
+  });
+
+  it('should handle component with no control-implementations', async () => {
+    const doc = JSON.stringify({
+      'component-definition': {
+        uuid: '123',
+        metadata: { title: 'Comp Def', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        components: [{
+          uuid: 'c1',
+          title: 'My Component',
+          type: 'software',
+        }],
+      },
+    });
+    const output = await convertOscalComponentToHdf(doc);
+    const baseline = JSON.parse(output) as HdfBaseline;
+    expect(baseline.requirements).toHaveLength(0);
+    expect(baseline.name).toContain('my-component');
+  });
+
+  it('should handle implemented-requirement with statements', async () => {
+    const doc = JSON.stringify({
+      'component-definition': {
+        uuid: '123',
+        metadata: { title: 'Comp Def', version: '1', 'oscal-version': '1.1.2', 'last-modified': 'now' },
+        components: [{
+          uuid: 'c1',
+          title: 'Component',
+          type: 'software',
+          'control-implementations': [{
+            uuid: 'ci1',
+            source: 'catalog.json',
+            'implemented-requirements': [{
+              uuid: 'ir1',
+              'control-id': 'ac-1',
+              description: 'Main desc',
+              statements: [
+                {
+                  'statement-id': 'ac-1_smt.a',
+                  description: 'Statement desc',
+                  remarks: 'Remarks here',
+                },
+              ],
+            }],
+          }],
+        }],
+      },
+    });
+    const output = await convertOscalComponentToHdf(doc);
+    const baseline = JSON.parse(output) as HdfBaseline;
+    const req = baseline.requirements[0]!;
+    expect(req.descriptions!.length).toBeGreaterThanOrEqual(3);
+    const labels = req.descriptions!.map(d => d.label);
+    expect(labels).toContain('ac-1_smt.a');
+    expect(labels).toContain('ac-1_smt.a-remarks');
   });
 });
