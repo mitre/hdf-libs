@@ -34,10 +34,10 @@ const LANGUAGES = [
 /**
  * Convert a schema filename to output filename for a given language.
  */
-function toOutputFilename(schemaFile: string, ext: string): string {
+export function toOutputFilename(schemaFile: string, ext: string): string {
   // hdf-results.schema.json -> hdf-results.ts or hdf_results.go
   const base = schemaFile.replace('.schema.json', '');
-  if (ext === 'go' || ext === 'py') {
+  if (ext === 'go') {
     return base.replace(/-/g, '_') + '.' + ext;
   }
   return base + '.' + ext;
