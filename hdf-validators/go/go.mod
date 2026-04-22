@@ -1,4 +1,4 @@
-module github.com/mitre/hdf-validators/go
+module github.com/mitre/hdf-libs/hdf-validators/go
 
 go 1.26
 

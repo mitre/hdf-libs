@@ -5,8 +5,8 @@ import (
 	"encoding/xml"
 	"fmt"
 
-	shared "github.com/mitre/hdf-converters/shared/go"
-	hdf "github.com/mitre/hdf-schema"
+	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 // ConvertHDFToXML converts HDF JSON to XML format

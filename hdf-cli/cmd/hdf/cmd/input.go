@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	hdf "github.com/mitre/hdf-schema"
-	validators "github.com/mitre/hdf-validators/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go"
 )
 
 const (

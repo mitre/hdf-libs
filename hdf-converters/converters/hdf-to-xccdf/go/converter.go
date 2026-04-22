@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	hdf "github.com/mitre/hdf-schema"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 
-	shared "github.com/mitre/hdf-converters/shared/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 )
 

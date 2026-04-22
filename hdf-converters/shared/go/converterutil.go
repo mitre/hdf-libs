@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/cwe"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
-	"github.com/mitre/hdf-mappings/go/cwe"
-	hdf "github.com/mitre/hdf-schema"
 )
 
 // InputChecksum computes the SHA-256 checksum of raw input bytes and returns

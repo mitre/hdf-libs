@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	hdf "github.com/mitre/hdf-schema"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 // v1FixturePair holds a pair of v1 fixtures loaded, normalized, and diffed.

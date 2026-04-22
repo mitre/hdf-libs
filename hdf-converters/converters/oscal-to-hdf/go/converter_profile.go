@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	shared "github.com/mitre/hdf-converters/shared/go"
-	hdf "github.com/mitre/hdf-schema"
+	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 // ConvertProfileToHDF resolves an OSCAL Profile against a provided catalog and

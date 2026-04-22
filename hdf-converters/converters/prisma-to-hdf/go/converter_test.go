@@ -6,9 +6,9 @@ import (
 	"sort"
 	"testing"
 
-	shared "github.com/mitre/hdf-converters/shared/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
-	hdf "github.com/mitre/hdf-schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

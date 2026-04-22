@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	diff "github.com/mitre/hdf-diff/go"
+	diff "github.com/mitre/hdf-libs/hdf-diff/go"
 )
 
 // stateOrder defines the display order for requirement state sections.

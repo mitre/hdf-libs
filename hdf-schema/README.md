@@ -105,7 +105,7 @@ function processResults(results: HdfResults) {
 ### Using Generated Types (Go)
 
 ```go
-import hdf "github.com/mitre/hdf-schema"
+import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 
 func main() {
     data := []byte(`{"baselines": [...]}`)

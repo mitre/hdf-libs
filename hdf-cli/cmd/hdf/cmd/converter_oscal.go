@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	oscal "github.com/mitre/hdf-converters/converters/oscal-to-hdf/go"
+	oscal "github.com/mitre/hdf-libs/hdf-converters/converters/oscal-to-hdf/go"
 	"github.com/spf13/cobra"
 )
 
