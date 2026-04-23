@@ -3,7 +3,7 @@ package matching
 import (
 	"fmt"
 
-	hdf "github.com/mitre/hdf-schema"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 // createStrategy creates a strategy instance by name.

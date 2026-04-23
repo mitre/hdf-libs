@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/mitre/hdf-converters/registry"
+	"github.com/mitre/hdf-libs/hdf-converters/registry"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
 )
 

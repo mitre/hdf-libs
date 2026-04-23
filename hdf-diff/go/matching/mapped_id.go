@@ -1,6 +1,6 @@
 package matching
 
-import hdf "github.com/mitre/hdf-schema"
+import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 
 // MappedIDStrategy matches requirements by translating old IDs through a
 // mapping table and then performing exact matching on the translated IDs.

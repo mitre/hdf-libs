@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	hdf "github.com/mitre/hdf-schema"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 func TestDetermineControlStatus(t *testing.T) {

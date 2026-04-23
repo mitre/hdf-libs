@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math"
 
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
-	hdf "github.com/mitre/hdf-schema"
 )
 
 // SeverityCounts holds counts broken down by severity level.

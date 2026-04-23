@@ -1,6 +1,6 @@
 package ionchannel
 
-import "github.com/mitre/hdf-converters/registry"
+import "github.com/mitre/hdf-libs/hdf-converters/registry"
 
 // isIonChannelAnalysis checks whether a JSON object looks like Ion Channel analysis output.
 // Returns confidence based on how many fingerprint keys are present.

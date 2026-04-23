@@ -1,6 +1,6 @@
 package cmd
 
-import msftdefendercloud "github.com/mitre/hdf-converters/converters/msft-defender-cloud-to-hdf/go"
+import msftdefendercloud "github.com/mitre/hdf-libs/hdf-converters/converters/msft-defender-cloud-to-hdf/go"
 
 func init() {
 	registerHDFConverterMulti(

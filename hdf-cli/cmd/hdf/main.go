@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mitre/hdf-cli/cmd/hdf/cmd"
+	"github.com/mitre/hdf-libs/hdf-cli/cmd/hdf/cmd"
 )
 
 func main() {

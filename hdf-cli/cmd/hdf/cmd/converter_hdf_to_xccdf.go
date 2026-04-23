@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	hdftoxccdf "github.com/mitre/hdf-converters/converters/hdf-to-xccdf/go"
+	hdftoxccdf "github.com/mitre/hdf-libs/hdf-converters/converters/hdf-to-xccdf/go"
 )
 
 type hdfToXCCDFConverter struct{}

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	hdf "github.com/mitre/hdf-schema"
-	validators "github.com/mitre/hdf-validators/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
 

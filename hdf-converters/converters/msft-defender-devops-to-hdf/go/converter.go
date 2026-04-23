@@ -6,10 +6,10 @@ import (
 	"path"
 	"strings"
 
-	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
-	shared "github.com/mitre/hdf-converters/shared/go"
+	sarif "github.com/mitre/hdf-libs/hdf-converters/converters/sarif-to-hdf/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
-	hdf "github.com/mitre/hdf-schema"
 )
 
 // --- MSDO-specific SARIF struct definitions ---

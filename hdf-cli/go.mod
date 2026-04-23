@@ -1,4 +1,4 @@
-module github.com/mitre/hdf-cli
+module github.com/mitre/hdf-libs/hdf-cli
 
 go 1.26
 
@@ -11,12 +11,12 @@ require (
 	github.com/charmbracelet/huh v1.0.0
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/google/uuid v1.6.0
-	github.com/mitre/hdf-converters v0.0.0
-	github.com/mitre/hdf-diff/go v0.0.0
-	github.com/mitre/hdf-generators/go v0.0.0
+	github.com/mitre/hdf-libs/hdf-converters v0.0.0
+	github.com/mitre/hdf-libs/hdf-diff/go v0.0.0
+	github.com/mitre/hdf-libs/hdf-generators/go v0.0.0
+	github.com/mitre/hdf-libs/hdf-schema/dist/go v0.0.0
 	github.com/mitre/hdf-libs/hdf-utilities/go v0.0.0
-	github.com/mitre/hdf-schema v0.0.0
-	github.com/mitre/hdf-validators/go v0.0.0
+	github.com/mitre/hdf-libs/hdf-validators/go v0.0.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/term v0.42.0
@@ -63,8 +63,8 @@ require (
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
-	github.com/mitre/hdf-mappings/go v0.0.0 // indirect
-	github.com/mitre/hdf-parsers/go v0.0.0 // indirect
+	github.com/mitre/hdf-libs/hdf-mappings/go v0.0.0 // indirect
+	github.com/mitre/hdf-libs/hdf-parsers/go v0.0.0 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
@@ -87,18 +87,18 @@ require (
 	sigs.k8s.io/release-utils v0.12.1 // indirect
 )
 
-replace github.com/mitre/hdf-parsers/go => ../hdf-parsers/go
-
-replace github.com/mitre/hdf-converters => ../hdf-converters
-
-replace github.com/mitre/hdf-diff/go => ../hdf-diff/go
-
-replace github.com/mitre/hdf-schema => ../hdf-schema/dist/go
-
-replace github.com/mitre/hdf-mappings/go => ../hdf-mappings/go
-
-replace github.com/mitre/hdf-generators/go => ../hdf-generators/go
-
-replace github.com/mitre/hdf-validators/go => ../hdf-validators/go
+replace github.com/mitre/hdf-libs/hdf-schema/dist/go => ../hdf-schema/dist/go
 
 replace github.com/mitre/hdf-libs/hdf-utilities/go => ../hdf-utilities/go
+
+replace github.com/mitre/hdf-libs/hdf-mappings/go => ../hdf-mappings/go
+
+replace github.com/mitre/hdf-libs/hdf-validators/go => ../hdf-validators/go
+
+replace github.com/mitre/hdf-libs/hdf-parsers/go => ../hdf-parsers/go
+
+replace github.com/mitre/hdf-libs/hdf-converters => ../hdf-converters
+
+replace github.com/mitre/hdf-libs/hdf-diff/go => ../hdf-diff/go
+
+replace github.com/mitre/hdf-libs/hdf-generators/go => ../hdf-generators/go

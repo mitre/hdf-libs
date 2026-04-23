@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	hdf "github.com/mitre/hdf-schema"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 // ── Public Types ────────────────────────────────────────────

@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mitre/hdf-cli/internal/fetchers"
-	sonarqube "github.com/mitre/hdf-converters/converters/sonarqube-to-hdf/go"
+	"github.com/mitre/hdf-libs/hdf-cli/internal/fetchers"
+	sonarqube "github.com/mitre/hdf-libs/hdf-converters/converters/sonarqube-to-hdf/go"
 )
 
 func newFetchSonarqubeCmd() *cobra.Command {

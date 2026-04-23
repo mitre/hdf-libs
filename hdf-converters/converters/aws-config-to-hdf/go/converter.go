@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	shared "github.com/mitre/hdf-converters/shared/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
+	awsconfigmap "github.com/mitre/hdf-libs/hdf-mappings/go/awsconfig"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
-	awsconfigmap "github.com/mitre/hdf-mappings/go/awsconfig"
-	hdf "github.com/mitre/hdf-schema"
 )
 
 // ---- Input types --------------------------------------------------------

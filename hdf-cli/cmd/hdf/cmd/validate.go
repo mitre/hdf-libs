@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	validators "github.com/mitre/hdf-validators/go"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
 

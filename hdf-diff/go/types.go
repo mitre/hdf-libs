@@ -6,7 +6,7 @@
 package diff
 
 import (
-	hdf "github.com/mitre/hdf-schema"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 // RequirementState classifies how a requirement changed between evaluations.

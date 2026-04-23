@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mitre/hdf-converters/registry"
-	_ "github.com/mitre/hdf-converters/registry/all" // register all fingerprints via init()
+	"github.com/mitre/hdf-libs/hdf-converters/registry"
+	_ "github.com/mitre/hdf-libs/hdf-converters/registry/all" // register all fingerprints via init()
 	"github.com/spf13/cobra"
 )
 

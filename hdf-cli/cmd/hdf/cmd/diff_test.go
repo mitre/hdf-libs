@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	diff "github.com/mitre/hdf-diff/go"
+	diff "github.com/mitre/hdf-libs/hdf-diff/go"
 )
 
 // --- Fixture builders for diff tests ---

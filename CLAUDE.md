@@ -109,7 +109,7 @@ hdf-converters/converters/<name>/
 ```
 
 ### Shared helpers
-- **Go**: `shared "github.com/mitre/hdf-converters/shared/go"` — `BuildHDFResults()`, `SeverityToImpact()`, `ValidateJSONSize()`, `LimitSliceWithWarning()`, `MapCWEToNIST()`
+- **Go**: `shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"` — `BuildHDFResults()`, `SeverityToImpact()`, `ValidateJSONSize()`, `LimitSliceWithWarning()`, `MapCWEToNIST()`
 - **TS**: `converterutil.ts` — `buildHdfResults()`, `inputChecksum()`, `validateInputSize()`, `mapCWEToNIST()`, `limitArrayWithWarning()`
 
 ### CLI integration

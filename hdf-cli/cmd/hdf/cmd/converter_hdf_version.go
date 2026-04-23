@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/mitre/hdf-converters/shared/go/hdfversion"
+	"github.com/mitre/hdf-libs/hdf-converters/shared/go/hdfversion"
 )
 
 // hdfVersionConverter handles HDF version transforms (e.g. hdf@1 → hdf@2).

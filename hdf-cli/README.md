@@ -67,7 +67,7 @@ go build -o hdf ./cmd/hdf
 
 The binary is written to `hdf-cli/hdf`. Add it to your PATH or invoke it directly.
 
-> **Note:** `go install github.com/mitre/hdf-cli/cmd/hdf@latest` does not work because the monorepo uses Go `replace` directives for local development. Use pre-built binaries or build from source.
+> **Note:** `go install github.com/mitre/hdf-libs/hdf-cli/cmd/hdf@latest` does not work because the monorepo uses Go `replace` directives for local development. Use pre-built binaries or build from source.
 
 ## Terminology
 
