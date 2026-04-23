@@ -173,7 +173,8 @@ jobs:
       - name: Generate release notes
         id: notes
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          # Find previous stable release tag (skip pre-release tags like -rc)
+          PREV_TAG=$(git tag -l 'v*' --sort=-v:refname | grep -v '-' | head -2 | tail -1)
           if [ -n "$PREV_TAG" ]; then
             NOTES=$(git log --oneline "$PREV_TAG"..HEAD | head -50)
           else
@@ -206,8 +207,14 @@ jobs:
             ## Installation
 
             ```bash
-            # TypeScript/Node.js
-            npm install @mitre/hdf-schema @mitre/hdf-converters
+            # TypeScript/Node.js — install the packages you need
+            npm install @mitre/hdf-converters   # converters + schema + parsers + utilities + mappings
+            npm install @mitre/hdf-validators    # schema validation
+            npm install @mitre/hdf-diff          # structural diff engine
+            npm install @mitre/hdf-generators    # InSpec profile generation
+
+            # Go libraries
+            go get github.com/mitre/hdf-libs/hdf-converters@${{ github.ref_name }}
 
             # Go CLI — download a binary for your platform from the assets below, then:
             chmod +x hdf && sudo mv hdf /usr/local/bin/

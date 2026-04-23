@@ -22,25 +22,20 @@ Security teams use many different tools—vulnerability scanners, compliance che
 
 ## Packages
 
-### npm libraries
+All libraries are available for both TypeScript (npm) and Go. See [Installation](#installation) for install commands.
 
 | Package | Description |
 |---------|-------------|
-| [`@mitre/hdf-schema`](./hdf-schema/README.md) | JSON schemas and generated types for HDF documents |
-| [`@mitre/hdf-mappings`](./hdf-mappings/README.md) | CCI, NIST 800-53, CIS, and CMMC framework mappings |
-| [`@mitre/hdf-utilities`](./hdf-utilities/README.md) | Generic utilities for XML, CSV, and hash operations |
-| [`@mitre/hdf-parsers`](./hdf-parsers/README.md) | Parse and flatten HDF documents |
-| [`@mitre/hdf-converters`](./hdf-converters/README.md) | Convert security tool outputs to HDF |
-| [`@mitre/hdf-validators`](./hdf-validators/README.md) | Validate HDF documents against schemas |
-| [`@mitre/hdf-generators`](./hdf-generators/README.md) | Generate InSpec profiles from HDF baselines |
-| [`@mitre/hdf-diff`](./hdf-diff/README.md) | Structured diff engine for HDF assessment results |
-| [`@mitre/hdf-extension-graph`](./hdf-extension-graph/README.md) | InSpec overlay/extension chain resolution |
-
-### CLI tool
-
-| Tool | Description |
-|------|-------------|
-| [`hdf`](./hdf-cli/README.md) | Command-line tool for validating, querying, and converting HDF files |
+| [`hdf-schema`](./hdf-schema/README.md) | JSON schemas and generated TypeScript/Go types for all 7 HDF document types |
+| [`hdf-converters`](./hdf-converters/README.md) | 33 security tool format converters (Nessus, XCCDF, OSCAL, SARIF, Grype, etc.) |
+| [`hdf-validators`](./hdf-validators/README.md) | Schema validation for all 7 HDF document types with embedded schemas |
+| [`hdf-parsers`](./hdf-parsers/README.md) | Parse and flatten HDF documents |
+| [`hdf-mappings`](./hdf-mappings/README.md) | CCI, NIST 800-53, CWE, OWASP, and tool-specific control mappings |
+| [`hdf-utilities`](./hdf-utilities/README.md) | XML, CSV, JSON parsing, SHA-256/SHA-512 hashing, string helpers |
+| [`hdf-generators`](./hdf-generators/README.md) | Generate InSpec profiles from HDF baselines or XCCDF benchmarks |
+| [`hdf-diff`](./hdf-diff/README.md) | Structural diff engine for HDF results, baselines, and systems |
+| [`hdf-extension-graph`](./hdf-extension-graph/README.md) | InSpec overlay/extension chain resolution (TypeScript only) |
+| [`hdf-cli`](./hdf-cli/README.md) | Command-line tool wrapping all of the above — convert, validate, query, diff, amend |
 
 ## Schema Types
 
@@ -80,9 +75,23 @@ Differential analysis between HDF documents (results, baselines, or systems). Pr
 
 ## Installation
 
-```bash
-npm install @mitre/hdf-schema
-```
+Install only the packages you need. Each package is published independently to npm and as a Go module.
+
+| Package | npm | Go |
+|---------|-----|----|
+| **Schema** — HDF document types and JSON schemas | `npm install @mitre/hdf-schema` | `go get github.com/mitre/hdf-libs/hdf-schema/dist/go` |
+| **Converters** — 33 security tool format converters | `npm install @mitre/hdf-converters` | `go get github.com/mitre/hdf-libs/hdf-converters` |
+| **Validators** — schema validation with embedded schemas | `npm install @mitre/hdf-validators` | `go get github.com/mitre/hdf-libs/hdf-validators/go` |
+| **Parsers** — parse and flatten HDF documents | `npm install @mitre/hdf-parsers` | `go get github.com/mitre/hdf-libs/hdf-parsers/go` |
+| **Mappings** — CCI, NIST, CWE, OWASP control mappings | `npm install @mitre/hdf-mappings` | `go get github.com/mitre/hdf-libs/hdf-mappings/go` |
+| **Utilities** — XML, CSV, hash, string helpers | `npm install @mitre/hdf-utilities` | `go get github.com/mitre/hdf-libs/hdf-utilities/go` |
+| **Generators** — InSpec profile generation from baselines | `npm install @mitre/hdf-generators` | `go get github.com/mitre/hdf-libs/hdf-generators/go` |
+| **Diff** — structural diff engine for assessments | `npm install @mitre/hdf-diff` | `go get github.com/mitre/hdf-libs/hdf-diff/go` |
+| **Extension Graph** — InSpec overlay/extension chain resolution | `npm install @mitre/hdf-extension-graph` | — |
+
+The npm packages declare their dependencies, so `npm install @mitre/hdf-converters` automatically pulls in schema, parsers, utilities, and mappings.
+
+The **CLI** is distributed as pre-built binaries — see [hdf-cli](./hdf-cli/README.md) for installation.
 
 ## Development
 
@@ -94,10 +103,9 @@ The following tools must be installed before running `pnpm lint` or `pnpm test`:
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| [Node.js](https://nodejs.org/) | ≥20.0.0 | TypeScript build and test runner |
+| [Node.js](https://nodejs.org/) | ≥22.0.0 | TypeScript build and test runner |
 | [pnpm](https://pnpm.io/) | ≥9.0.0 | Package manager |
 | [Go](https://go.dev/) | 1.26.x | Go packages and CLI tool |
-| [git-lfs](https://git-lfs.com/) | latest | Large test fixtures are stored in Git LFS |
 | [golangci-lint](https://golangci-lint.run/) | latest | Go linter (required for `pnpm lint`) |
 | [gosec](https://github.com/securego/gosec) | latest | Go SAST scanner (required for `pnpm check`) |
 | [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) | latest | Go vulnerability scanner (required for `pnpm check`) |
@@ -106,24 +114,18 @@ The following tools must be installed before running `pnpm lint` or `pnpm test`:
 **macOS (Homebrew):**
 
 ```bash
-brew install node go git-lfs gitleaks
+brew install node go gitleaks
 corepack enable && corepack prepare pnpm@9.14.2 --activate
 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 go install github.com/securego/gosec/v2/cmd/gosec@latest
 go install golang.org/x/vuln/cmd/govulncheck@latest
 ```
 
-After cloning, fetch LFS objects:
-
-```bash
-git lfs fetch --all && git lfs checkout
-```
-
 **Ubuntu / WSL:**
 
 ```bash
-# Node.js 20.x
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# Node.js 22.x
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
 corepack enable && corepack prepare pnpm@9.14.2 --activate
 
@@ -137,10 +139,8 @@ go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 go install github.com/securego/gosec/v2/cmd/gosec@latest
 go install golang.org/x/vuln/cmd/govulncheck@latest
 
-# git-lfs and gitleaks
-sudo apt-get install -y git-lfs
+# gitleaks
 brew install gitleaks  # or download from GitHub releases
-git lfs fetch --all && git lfs checkout
 ```
 
 **Windows (native):**
@@ -158,10 +158,8 @@ go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 go install github.com/securego/gosec/v2/cmd/gosec@latest
 go install golang.org/x/vuln/cmd/govulncheck@latest
 
-# gitleaks and git-lfs
+# gitleaks
 winget install Gitleaks.Gitleaks
-winget install GitHub.GitLFS
-git lfs fetch --all && git lfs checkout
 ```
 
 Ensure `%USERPROFILE%\go\bin` is on your PATH (the Go installer usually adds this, but `go install` binaries land here).
