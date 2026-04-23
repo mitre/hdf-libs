@@ -2,11 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [3.1.0] - 2026-04-20
+## [3.1.0] - 2026-04-23
 
 ### Breaking Changes
 
 - **`exception` removed from Override_Type enum.** The `exception` override type was redundant with `waiver` + `status: "notApplicable"` and has no equivalent in FedRAMP or NIST RMF terminology. Existing HDF documents with `"type": "exception"` in statusOverrides or standalone overrides will fail schema validation against v3.1.0. **Migration:** Replace `"type": "exception"` with `"type": "waiver"` and set `"status": "notApplicable"`.
+- **Python type generation removed.** The generated Python types were vestigial and never consumed. Only TypeScript and Go types are generated from v3.1.0 onward.
 
 ### New Features
 
@@ -22,6 +23,8 @@ All notable changes to this project will be documented in this file.
 - **Go diff engine extracted** from `hdf-cli/pkg/diff/` to `hdf-diff/go/` — matches the monorepo pattern used by other packages.
 - **`hdf-cli/pkg/hdf/` eliminated** — all Go code now imports canonical types from `hdf-schema/dist/go/`.
 - **Amendment operations extracted** to `hdf-diff/go/amend/`.
+- **Go module paths renamed** to `github.com/mitre/hdf-libs/*` with `go.work` workspace — enables `go get` for all Go library modules.
+- **`dist/` build artifacts untracked** — TypeScript and schema dist outputs are now built at install/publish time. Go generated types remain committed (required for `go get`).
 
 ### Security Fixes
 
@@ -33,6 +36,7 @@ All notable changes to this project will be documented in this file.
 - Switch `evidence build` to size-limited `readInputFile`
 - Add `sanitizeOutput` to `amend list` terminal output
 - Fix thread-safe schema caching in `hdf-validators/go` (`sync.Once` with persistent error propagation)
+- Bump `fast-xml-parser` 5.5.7 → 5.7.1 (GHSA-gh4j-gqv2-49f6, XML comment/CDATA injection)
 
 ### Quality Improvements
 
@@ -43,6 +47,14 @@ All notable changes to this project will be documented in this file.
 - Add `dispositionChanged` and `effectiveImpactChanged` to diff engine change detection
 - Track `effectiveImpact` and `disposition` in `hdf-extension-graph` modification detection
 - Schema version bumped from v3.0.0 to v3.1.0 across all `$id`/`$ref` URLs
+
+### Bug Fixes
+
+- Fix `workspace:*` → `workspace:^` in inter-package dependencies — resolves `npm install` failure for published packages (#28, #39)
+
+### Compatibility
+
+- TypeScript 6 compatibility for `create-index` and `type-check` scripts
 
 ## [3.0.0] - 2026-03-15
 
