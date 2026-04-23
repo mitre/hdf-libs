@@ -119,11 +119,11 @@ for (const fp of getFingerprints()) {
 ### Go
 
 ```go
-import "github.com/mitre/hdf-converters/registry"
+import "github.com/mitre/hdf-libs/hdf-converters/registry"
 
 // Registration happens via init() in each converter package.
 // Import the register_all package to trigger all registrations:
-import _ "github.com/mitre/hdf-converters/registry/all"
+import _ "github.com/mitre/hdf-libs/hdf-converters/registry/all"
 
 result := registry.DetectConverter(inputBytes)
 if result != nil {

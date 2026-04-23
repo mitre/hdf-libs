@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/mitre/hdf-cli/pkg/table"
+	"github.com/mitre/hdf-libs/hdf-cli/pkg/table"
 )
 
 // ColumnAlign re-exports table.ColumnAlign for use by command files.

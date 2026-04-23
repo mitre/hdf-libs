@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	hdf "github.com/mitre/hdf-schema"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 // determineControlStatus derives a display status string from a requirement's

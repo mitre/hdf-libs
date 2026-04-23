@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
-	hdf "github.com/mitre/hdf-schema"
 	"github.com/spf13/cobra"
 )
 

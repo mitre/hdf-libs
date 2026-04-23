@@ -188,7 +188,7 @@ cat old-results.json | hdf convert --from legacyhdf - -o new-results.json
 ```go
 import (
     "encoding/json"
-    legacyhdf "github.com/mitre/hdf-converters/converters/legacyhdf-to-hdf/go"
+    legacyhdf "github.com/mitre/hdf-libs/hdf-converters/converters/legacyhdf-to-hdf/go"
 )
 
 var v1 legacyhdf.HDFV1Results

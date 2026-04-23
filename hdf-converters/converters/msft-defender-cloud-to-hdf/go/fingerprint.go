@@ -1,6 +1,6 @@
 package msftdefendercloud
 
-import "github.com/mitre/hdf-converters/registry"
+import "github.com/mitre/hdf-libs/hdf-converters/registry"
 
 func init() {
 	registry.Register(registry.ConverterFingerprint{

@@ -1,6 +1,6 @@
 package matching
 
-import hdf "github.com/mitre/hdf-schema"
+import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 
 // exactIDStrategyName is the canonical name for the exact ID matching strategy.
 const exactIDStrategyName = "exactId"

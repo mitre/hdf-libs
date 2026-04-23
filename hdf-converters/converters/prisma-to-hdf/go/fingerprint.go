@@ -3,7 +3,7 @@ package prisma
 import (
 	"strings"
 
-	"github.com/mitre/hdf-converters/registry"
+	"github.com/mitre/hdf-libs/hdf-converters/registry"
 )
 
 // prismaColumns are the CSV headers that uniquely identify Prisma Cloud output.

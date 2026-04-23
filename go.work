@@ -1,0 +1,13 @@
+go 1.26
+
+use (
+	./hdf-cli
+	./hdf-converters
+	./hdf-diff/go
+	./hdf-generators/go
+	./hdf-mappings/go
+	./hdf-parsers/go
+	./hdf-schema/dist/go
+	./hdf-utilities/go
+	./hdf-validators/go
+)

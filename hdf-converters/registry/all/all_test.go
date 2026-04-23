@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/mitre/hdf-converters/registry"
+	"github.com/mitre/hdf-libs/hdf-converters/registry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

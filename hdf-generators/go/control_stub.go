@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	hdf "github.com/mitre/hdf-schema"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 // GenerateControlStub generates a Ruby InSpec control stub from an HDF BaselineRequirement.

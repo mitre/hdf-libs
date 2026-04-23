@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	hdf "github.com/mitre/hdf-schema"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 // Test-level status string constants to avoid goconst duplication.

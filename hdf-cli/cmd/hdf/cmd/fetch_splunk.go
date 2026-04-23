@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mitre/hdf-cli/internal/fetchers"
-	splunk "github.com/mitre/hdf-converters/converters/splunk-to-hdf/go"
+	"github.com/mitre/hdf-libs/hdf-cli/internal/fetchers"
+	splunk "github.com/mitre/hdf-libs/hdf-converters/converters/splunk-to-hdf/go"
 )
 
 func newFetchSplunkCmd() *cobra.Command {

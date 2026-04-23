@@ -3,8 +3,8 @@ package msftdefendercloud
 import (
 	"testing"
 
-	"github.com/mitre/hdf-converters/registry"
-	"github.com/mitre/hdf-converters/registry/fptest"
+	"github.com/mitre/hdf-libs/hdf-converters/registry"
+	"github.com/mitre/hdf-libs/hdf-converters/registry/fptest"
 )
 
 func TestMsftDefenderCloudFingerprint(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	hdf "github.com/mitre/hdf-schema"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 // ErrConverterNotFound is returned when no converter exists for the requested format pair.

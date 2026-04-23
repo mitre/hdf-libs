@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
-	"github.com/mitre/hdf-converters/registry"
-	shared "github.com/mitre/hdf-converters/shared/go"
+	sarif "github.com/mitre/hdf-libs/hdf-converters/converters/sarif-to-hdf/go"
+	"github.com/mitre/hdf-libs/hdf-converters/registry"
+	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/cci"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
-	"github.com/mitre/hdf-mappings/go/cci"
-	hdf "github.com/mitre/hdf-schema"
 )
 
 // SnykReport is the top-level Snyk test JSON output structure.

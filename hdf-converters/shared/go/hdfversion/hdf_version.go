@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	legacyhdf "github.com/mitre/hdf-converters/converters/legacyhdf-to-hdf/go"
-	hdf "github.com/mitre/hdf-schema"
+	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/converters/legacyhdf-to-hdf/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 // HDFVersionTransform converts HDF data from one schema version to another.

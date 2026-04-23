@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	shared "github.com/mitre/hdf-converters/shared/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/cci"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/scoutsuite"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
-	"github.com/mitre/hdf-mappings/go/cci"
-	"github.com/mitre/hdf-mappings/go/scoutsuite"
-	hdf "github.com/mitre/hdf-schema"
 )
 
 // ScoutSuiteReport is the top-level ScoutSuite JSON output structure.

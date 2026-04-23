@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	validators "github.com/mitre/hdf-validators/go"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go"
 )
 
 // detectHDFDocumentType fingerprints an HDF document by its root keys

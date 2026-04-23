@@ -3,7 +3,7 @@ package matching
 import (
 	"testing"
 
-	hdf "github.com/mitre/hdf-schema"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 )
 
 func makeReq(id string) hdf.EvaluatedRequirement {

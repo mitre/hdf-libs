@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	legacyhdf "github.com/mitre/hdf-converters/converters/legacyhdf-to-hdf/go"
-	shared "github.com/mitre/hdf-converters/shared/go"
+	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/converters/legacyhdf-to-hdf/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
 )
 
 // legacyHDFConverter converts legacy InSpec exec-json (profiles/controls)

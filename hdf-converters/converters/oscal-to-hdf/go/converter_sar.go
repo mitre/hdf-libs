@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	shared "github.com/mitre/hdf-converters/shared/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
-	hdf "github.com/mitre/hdf-schema"
 )
 
 // ConvertAssessmentResultsToHDF converts an OSCAL Assessment Results (SAR)

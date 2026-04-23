@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"sort"
 
-	xccdf "github.com/mitre/hdf-converters/converters/xccdf-results-to-hdf/go"
-	generators "github.com/mitre/hdf-generators/go"
-	schema "github.com/mitre/hdf-schema"
-	validators "github.com/mitre/hdf-validators/go"
+	xccdf "github.com/mitre/hdf-libs/hdf-converters/converters/xccdf-results-to-hdf/go"
+	generators "github.com/mitre/hdf-libs/hdf-generators/go"
+	schema "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go"
 	"github.com/spf13/cobra"
 )
 

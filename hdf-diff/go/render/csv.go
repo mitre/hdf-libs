@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	diff "github.com/mitre/hdf-diff/go"
+	diff "github.com/mitre/hdf-libs/hdf-diff/go"
 )
 
 // CSV renders an HdfComparison as a CSV string.

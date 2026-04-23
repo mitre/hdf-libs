@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	sonarqubeconv "github.com/mitre/hdf-converters/converters/sonarqube-to-hdf/go"
+	sonarqubeconv "github.com/mitre/hdf-libs/hdf-converters/converters/sonarqube-to-hdf/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
