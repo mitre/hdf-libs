@@ -179,8 +179,8 @@ import (
     "path/filepath"
     "testing"
 
-    hdf "github.com/mitre/hdf-schema"
-    shared "github.com/mitre/hdf-converters/shared/go"
+    hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+    shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
 )
@@ -282,8 +282,8 @@ import (
     "fmt"
     "time"
 
-    hdf "github.com/mitre/hdf-schema"
-    shared "github.com/mitre/hdf-converters/shared/go"
+    hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+    shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 )
 
 // Convert<Name> converts <Source> to HDF format.
@@ -407,7 +407,7 @@ var impactMap = map[string]float64{
 
 Use the mappings packages when the source format provides NIST or CCI references:
 ```go
-import "github.com/mitre/hdf-mappings/go/cci"
+import "github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 
 // Tags field is map[string]interface{}
 tags := map[string]interface{}{
@@ -426,7 +426,7 @@ tags := map[string]interface{}{
 
 ### `hdf-schema` — types and builder helpers
 
-**Go** (`hdf "github.com/mitre/hdf-schema"`): All HDF struct types. Use these directly; never redefine HDF types in converter code.
+**Go** (`hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"`): All HDF struct types. Use these directly; never redefine HDF types in converter code.
 
 **TypeScript** (`@mitre/hdf-schema`): Types AND builder helpers. Use these instead of constructing objects by hand:
 
@@ -445,7 +445,7 @@ tags := map[string]interface{}{
 
 ### `hdf-mappings` — NIST/CCI/CWE/OWASP lookups
 
-**Go** (`github.com/mitre/hdf-mappings/go/cci`, `.../cwe`, `.../awsconfig`):
+**Go** (`github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci`, `.../cwe`, `.../awsconfig`):
 
 | Function | Use for |
 |----------|---------|
@@ -497,7 +497,7 @@ If a mapping package for the source tool doesn't exist yet, create it in `hdf-ma
 
 **Go**: Use stdlib (`encoding/json`, `encoding/csv`, `encoding/xml`, `crypto/sha256`).
 
-Also available from `shared "github.com/mitre/hdf-converters/shared/go"`:
+Also available from `shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"`:
 
 | Function | Use for |
 |----------|---------|
@@ -532,7 +532,7 @@ Also available from `hdf-converters/shared/typescript/formatdetect.ts`:
 
 ### `hdf-validators` — output validation
 
-**Go** (`github.com/mitre/hdf-validators/go`):
+**Go** (`github.com/mitre/hdf-libs/hdf-validators/go/v3`):
 
 | Function | Use for |
 |----------|---------|
@@ -673,8 +673,8 @@ At the top of your `Convert<Name>` function, before any tool-specific parsing:
 
 ```go
 import (
-    shared "github.com/mitre/hdf-converters/shared/go"
-    sarif "github.com/mitre/hdf-converters/converters/sarif-to-hdf/go"
+    shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+    sarif "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sarif-to-hdf/go"
 )
 
 func Convert<Name>(input []byte, converterVersion string) (*hdf.HDFResults, error) {
@@ -728,7 +728,7 @@ import (
     "encoding/json"
     "fmt"
 
-    <pkg> "github.com/mitre/hdf-converters/converters/<name>/go"
+    <pkg> "github.com/mitre/hdf-libs/hdf-converters/v3/converters/<name>/go"
 )
 
 type <name>Converter struct{}

@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	sarif "github.com/mitre/hdf-libs/hdf-converters/converters/sarif-to-hdf/go"
-	"github.com/mitre/hdf-libs/hdf-converters/registry"
-	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	sarif "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sarif-to-hdf/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // CheckovReport is the top-level checkov JSON output structure for a single framework.
