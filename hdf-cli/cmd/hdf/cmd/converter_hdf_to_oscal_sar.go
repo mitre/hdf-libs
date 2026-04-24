@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	hdftooscalsar "github.com/mitre/hdf-libs/hdf-converters/converters/hdf-to-oscal-sar/go"
+	hdftooscalsar "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-oscal-sar/go"
 )
 
 type hdfToOSCALSARConverter struct{}

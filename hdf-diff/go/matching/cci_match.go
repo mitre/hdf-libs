@@ -1,6 +1,6 @@
 package matching
 
-import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 
 // CCIMatchStrategy matches requirements by shared CCI identifiers in tags.
 type CCIMatchStrategy struct{}

@@ -1,6 +1,6 @@
 package matching
 
-import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 
 // buildUniqueIDIndex builds a map of requirement ID to slice index, detecting
 // duplicates. IDs that appear more than once are removed from byID and added

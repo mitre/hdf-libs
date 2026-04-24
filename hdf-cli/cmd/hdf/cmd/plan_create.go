@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
 )
 

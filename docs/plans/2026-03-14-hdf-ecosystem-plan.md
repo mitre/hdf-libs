@@ -1,11 +1,11 @@
-# HDF v2 Document Ecosystem Implementation Plan
+# HDF Document Ecosystem Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan.
 
-**Goal:** Complete the HDF v2 document ecosystem — 7 document types covering the full
+**Goal:** Complete the HDF document ecosystem — 7 document types covering the full
 security assessment lifecycle, with typed inputs, labels, chain of trust, and OSCAL alignment.
 
-**Architecture:** See `docs/architecture/hdf-v2-document-ecosystem.md` for full vision,
+**Architecture:** See `docs/architecture/hdf-document-ecosystem.md` for full vision,
 lifecycle diagrams, example JSON, CLI command tree, Heimdall integration, and design rationale.
 
 **Key Design Decisions:** (see `docs/design/decisions.md` for full rationale)
@@ -61,7 +61,7 @@ lifecycle diagrams, example JSON, CLI command tree, Heimdall integration, and de
 
 ---
 
-## Phase 0: Foundation (v2 schema refinements)
+## Phase 0: Foundation (schema refinements)
 
 **Card:** `hdf-libs-hlvt` (typed inputs), `hdf-libs-pdf7` (labels), `hdf-libs-fjfe` (rename), `hdf-libs-5ef5` (refs)
 
@@ -71,7 +71,7 @@ lifecycle diagrams, example JSON, CLI command tree, Heimdall integration, and de
 
 Create `primitives/parameter.schema.json` with `Input` type definition.
 
-**Architecture reference:** See `docs/architecture/hdf-v2-document-ecosystem.md` section
+**Architecture reference:** See `docs/architecture/hdf-document-ecosystem.md` section
 "Typed Inputs — Bridging Governance and Automation" for the full rationale and the
 input chain diagram showing how values flow from baseline → system → plan → results → comparison.
 
@@ -95,7 +95,7 @@ Implementation:
 
 **Card:** `hdf-libs-pdf7`
 
-**Architecture reference:** See `docs/architecture/hdf-v2-document-ecosystem.md` section
+**Architecture reference:** See `docs/architecture/hdf-document-ecosystem.md` section
 "Labels — Flexible Grouping Without Hierarchy" for design rationale, well-known keys table,
 and label selector pattern used by hdf-system components.
 
@@ -142,7 +142,7 @@ These create the provenance chain: "this scan was planned by X for system Y."
 
 **Card:** `hdf-libs-b4lj`
 
-**Architecture reference:** See `docs/architecture/hdf-v2-document-ecosystem.md` section
+**Architecture reference:** See `docs/architecture/hdf-document-ecosystem.md` section
 "Phase 2: DESCRIBE — hdf-system" for full example JSON showing components with label
 selectors and input overrides. See "Labels" section for targetSelector design.
 
@@ -193,7 +193,7 @@ Both TS and Go types must be generated — dual implementation from day one.
 
 **Card:** `hdf-libs-5sgt`
 
-**Architecture reference:** See `docs/architecture/hdf-v2-document-ecosystem.md` section
+**Architecture reference:** See `docs/architecture/hdf-document-ecosystem.md` section
 "Phase 3: PLAN — hdf-plan" for example JSON showing how inputs are resolved from
 baseline defaults + system overrides into final scanner parameters.
 
@@ -232,7 +232,7 @@ References hdf-baseline (which baselines to run), hdf-system (which components t
 
 **Card:** `hdf-libs-3qm7`
 
-**Architecture reference:** See `docs/architecture/hdf-v2-document-ecosystem.md` sections
+**Architecture reference:** See `docs/architecture/hdf-document-ecosystem.md` sections
 "Phase 6: GOVERN — hdf-amendments", "Chain of Trust", and "Attestation vs Waiver vs Exception"
 for full design including signed waivers, amendment chains, and the merge operation.
 
@@ -294,7 +294,7 @@ Original results (checksum A) → Attestation (previousChecksum: A) → Merged r
 
 **Card:** `hdf-libs-3cjk`
 
-**Architecture reference:** See `docs/architecture/hdf-v2-document-ecosystem.md` section
+**Architecture reference:** See `docs/architecture/hdf-document-ecosystem.md` section
 "Phase 7: PROVE — hdf-evidence-package" for full example JSON and CLI usage.
 
 ### 4.1 Design hdf-evidence-package.schema.json
@@ -390,7 +390,7 @@ Systematic review and update of ALL converters for v2 schema changes:
 
 ### 5.5 Documentation
 
-- HDF v2 specification document (formal)
+- HDF specification document (formal)
 - Well-known label keys reference
 - OSCAL alignment guide
 - Migration guide from v1 (for tool authors)

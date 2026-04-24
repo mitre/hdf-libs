@@ -1,6 +1,6 @@
 package cmd
 
-import msftdefenderendpoint "github.com/mitre/hdf-libs/hdf-converters/converters/msft-defender-endpoint-to-hdf/go"
+import msftdefenderendpoint "github.com/mitre/hdf-libs/hdf-converters/v3/converters/msft-defender-endpoint-to-hdf/go"
 
 func init() {
 	registerHDFConverterMulti(

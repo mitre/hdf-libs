@@ -9,9 +9,9 @@ builds:
     binary: hdf
     ldflags:
       - -s -w
-      - -X github.com/mitre/hdf-cli/cmd/hdf/cmd.version={{.Version}}
-      - -X github.com/mitre/hdf-cli/cmd/hdf/cmd.commit={{.ShortCommit}}
-      - -X github.com/mitre/hdf-cli/cmd/hdf/cmd.date={{.Date}}
+      - -X github.com/mitre/hdf-libs/hdf-cli/v3/cmd/hdf/cmd.version={{.Version}}
+      - -X github.com/mitre/hdf-libs/hdf-cli/v3/cmd/hdf/cmd.commit={{.ShortCommit}}
+      - -X github.com/mitre/hdf-libs/hdf-cli/v3/cmd/hdf/cmd.date={{.Date}}
     env:
       - CGO_ENABLED=0
     goos:

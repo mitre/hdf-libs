@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.1] - 2026-04-23
+
+### Go Module Changes
+
+- **Go module paths now include `/v3` suffix** per Go major version convention. Consumers update imports from `github.com/mitre/hdf-libs/hdf-converters` to `github.com/mitre/hdf-libs/hdf-converters/v3` (and similarly for all other modules). This enables `go install` and `go get` to resolve versions correctly from the module proxy.
+- **hdf-schema Go module path corrected** from `github.com/mitre/hdf-schema` to `github.com/mitre/hdf-libs/hdf-schema/dist/go/v3`.
+- **goreleaser ldflags fixed** — version, commit, and date are now correctly injected into CLI binaries.
+- **hdf-diff/go and hdf-utilities/go added to release workflow** — these modules now receive version tags alongside the other Go modules.
+
 ## [3.1.0] - 2026-04-23
 
 ### Breaking Changes

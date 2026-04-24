@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // controlEnhancementRe matches OSCAL control IDs with enhancements like "ac-2.3".

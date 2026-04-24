@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	awsconfigconv "github.com/mitre/hdf-libs/hdf-converters/converters/aws-config-to-hdf/go"
+	awsconfigconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/aws-config-to-hdf/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mitre/hdf-libs/hdf-diff/go/amend"
+	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	"github.com/spf13/cobra"
 )
 

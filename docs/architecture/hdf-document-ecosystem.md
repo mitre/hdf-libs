@@ -1,6 +1,6 @@
-# HDF v2 Document Type Ecosystem
+# HDF Document Type Ecosystem
 
-> **Status:** This is the HDF v2 **design specification**. Implementation is tracked
+> **Status:** This is the HDF **design specification**. Implementation is tracked
 > in beads epic `hdf-libs-15kg`. As of 2026-04-02, all 7 schemas exist (hdf-baseline,
 > hdf-results, hdf-comparison, hdf-system, hdf-plan, hdf-amendments, hdf-evidence-package)
 > and all Phase 0–4 work is complete (typed inputs, labels, rename, cross-references,
@@ -9,7 +9,7 @@
 
 ## Overview
 
-HDF (Heimdall Data Format) v2 defines 7 document types that together cover the full
+HDF (Heimdall Data Format) defines 7 document types that together cover the full
 security assessment lifecycle: define requirements, describe systems, plan assessments,
 execute scans, analyze changes, govern risk, and prove compliance.
 
@@ -752,7 +752,7 @@ hdf-results. Each OSCAL document type maps to a specific HDF document type:
 
 These converters cannot be implemented until the target schemas exist. They are
 tracked under Phase 5 (hdf-libs-qcj7) with a converter alignment audit card
-(hdf-libs-ccp0) to ensure all converters reflect v2 schema changes.
+(hdf-libs-ccp0) to ensure all converters reflect current schema changes.
 
 Reverse converters (HDF → OSCAL) are also needed for OSCAL export from Heimdall.
 
@@ -794,7 +794,7 @@ Existing primitives reused across document types:
 - **Evidence** — supporting artifacts (screenshots, logs, URLs)
 - **Component** — assessed entities (11 polymorphic types)
 
-New primitives for v2:
+New primitives:
 - **Input** — typed parameter definition (name, type, value, operator, constraints)
 - **Labels** — key-value metadata on components and baselines
 
@@ -826,7 +826,7 @@ New primitives for v2:
 
 ---
 
-## v2 Changes to Existing Schemas
+## Changes to Existing Schemas
 
 ### hdf-results.schema.json
 - Rename `attributes` to `inputs` on Evaluated_Baseline (normalize legacy InSpec naming)
@@ -1045,11 +1045,11 @@ generator backends.
 
 | Document | Purpose |
 |----------|---------|
-| `docs/architecture/hdf-v2-readers-guide.md` | **Start here** — narrative guide with walkthroughs |
-| `docs/architecture/hdf-v2-document-ecosystem.md` | This file — full ecosystem vision |
+| `docs/architecture/hdf-readers-guide.md` | **Start here** — narrative guide with walkthroughs |
+| `docs/architecture/hdf-document-ecosystem.md` | This file — full ecosystem vision |
 | Design decisions | (archived) — 12 design decisions with research rationale |
 | `docs/design/developer-guide.md` | Patterns for contributors (dual impl, testing, cross-platform) |
-| `docs/plans/2026-03-14-hdf-v2-ecosystem-plan.md` | Implementation plan with phase cards |
+| `docs/plans/2026-03-14-hdf-ecosystem-plan.md` | Implementation plan with phase cards |
 | SBOM library research | (archived) |
 | Docs consistency review | (archived) |
 | Memory audit | (archived) |

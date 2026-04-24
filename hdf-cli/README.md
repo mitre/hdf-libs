@@ -49,7 +49,7 @@ curl -sL https://github.com/mitre/hdf-libs/releases/latest/download/hdf_linux_am
 sudo mv hdf /usr/local/bin/
 ```
 
-Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.1.0_darwin_arm64.tar.gz`).
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.1.1_darwin_arm64.tar.gz`).
 
 ### Build from source
 
@@ -67,7 +67,7 @@ go build -o hdf ./cmd/hdf
 
 The binary is written to `hdf-cli/hdf`. Add it to your PATH or invoke it directly.
 
-> **Note:** `go install github.com/mitre/hdf-libs/hdf-cli/cmd/hdf@latest` does not work because the monorepo uses Go `replace` directives for local development. Use pre-built binaries or build from source.
+> You can also install from the Go module proxy: `go install github.com/mitre/hdf-libs/hdf-cli/v3/cmd/hdf@latest`
 
 ## Terminology
 

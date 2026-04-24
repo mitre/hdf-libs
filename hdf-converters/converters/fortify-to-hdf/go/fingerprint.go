@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/mitre/hdf-libs/hdf-converters/registry"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 var fvdlVersionRe = regexp.MustCompile(`<FVDL\b[^>]*\bversion="([^"]+)"`)

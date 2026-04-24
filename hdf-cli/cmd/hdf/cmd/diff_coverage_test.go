@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	diff "github.com/mitre/hdf-libs/hdf-diff/go"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

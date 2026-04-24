@@ -1,7 +1,7 @@
 // Package matching provides strategies for matching requirements across evaluations.
 package matching
 
-import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 
 // MatchPair represents a matched pair of requirements.
 type MatchPair struct {

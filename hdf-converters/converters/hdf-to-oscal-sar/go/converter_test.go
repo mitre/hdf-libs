@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	oscal "github.com/mitre/hdf-libs/hdf-converters/converters/oscal-to-hdf/go"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	oscal "github.com/mitre/hdf-libs/hdf-converters/v3/converters/oscal-to-hdf/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
