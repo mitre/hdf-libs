@@ -173,8 +173,9 @@ jobs:
       - name: Generate release notes
         id: notes
         run: |
-          # Find previous stable release tag (skip pre-release tags like -rc)
-          PREV_TAG=$(git tag -l 'v*' --sort=-v:refname | grep -v '-' | head -2 | tail -1)
+          # Find previous stable release tag reachable from HEAD (skip pre-release tags like -rc)
+          CURRENT_TAG="${GITHUB_REF_NAME}"
+          PREV_TAG=$(git tag --merged HEAD -l 'v*' --sort=-v:refname | grep -v '-' | grep -Fvx "$CURRENT_TAG" | head -1)
           if [ -n "$PREV_TAG" ]; then
             NOTES=$(git log --oneline "$PREV_TAG"..HEAD | head -50)
           else
