@@ -1,0 +1,220 @@
+import { parseJSON } from '@mitre/hdf-utilities';
+import { DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
+import { detectConverter } from '../../../shared/typescript/fingerprint.js';
+import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
+import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
+import { inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import type {
+  EvaluatedBaseline,
+  EvaluatedRequirement,
+  RequirementResult,
+  Checksum,
+} from '@mitre/hdf-schema';
+import {
+  ResultStatus,
+  severityToImpact,
+  createMinimalBaseline,
+  createRequirement,
+  createResult,
+  type Description,
+} from '@mitre/hdf-schema';
+
+/**
+ * Checkov JSON output structures.
+ */
+interface CheckovReport {
+  check_type: string;
+  results: CheckovResults;
+  summary: CheckovSummary;
+}
+
+interface CheckovResults {
+  passed_checks: CheckovCheck[];
+  failed_checks: CheckovCheck[];
+  skipped_checks: CheckovCheck[];
+}
+
+interface CheckovSummary {
+  passed: number;
+  failed: number;
+  skipped: number;
+  parsing_errors: number;
+  resource_count: number;
+  checkov_version: string;
+}
+
+interface CheckovCheck {
+  check_id: string;
+  check_name: string;
+  check_result: CheckovCheckResult;
+  severity: string | null;
+  file_path: string;
+  file_line_range: number[];
+  resource: string;
+  guideline: string | null;
+  code_block: unknown;
+  check_class: string;
+}
+
+interface CheckovCheckResult {
+  result: string;
+  suppress_comment?: string;
+}
+
+/**
+ * Maps checkov result string to HDF ResultStatus.
+ */
+function mapStatus(result: string): ResultStatus {
+  switch (result.toUpperCase()) {
+    case 'PASSED':
+      return ResultStatus.Passed;
+    case 'FAILED':
+      return ResultStatus.Failed;
+    case 'SKIPPED':
+      return ResultStatus.NotReviewed;
+    default:
+      return ResultStatus.NotReviewed;
+  }
+}
+
+/**
+ * Maps severity to impact, defaulting to 0.5 for null/unknown.
+ */
+function getImpact(severity: string | null): number {
+  if (!severity) return 0.5;
+  return severityToImpact(severity);
+}
+
+/**
+ * Converts a single CheckovCheck to an HDF RequirementResult.
+ */
+function checkToResult(check: CheckovCheck): RequirementResult {
+  const status = mapStatus(check.check_result.result);
+  const codeDesc = `Resource: ${check.resource}\nFile: ${check.file_path} (lines ${JSON.stringify(check.file_line_range)})`;
+
+  let message: string | undefined;
+  if (status === ResultStatus.NotReviewed && check.check_result.suppress_comment) {
+    message = check.check_result.suppress_comment;
+  }
+
+  return createResult(status, message ?? '', { codeDesc });
+}
+
+/**
+ * Converts a group of checks sharing a check_id into one EvaluatedRequirement.
+ */
+function buildRequirement(checkId: string, checks: CheckovCheck[]): EvaluatedRequirement {
+  const rep = checks[0]!;
+  const impact = getImpact(rep.severity);
+
+  const tags: Record<string, unknown> = {
+    nist: [...DEFAULT_STATIC_ANALYSIS_NIST_TAGS],
+  };
+
+  const descriptions: Description[] = [
+    { label: 'default', data: rep.check_name },
+  ];
+  if (rep.guideline) {
+    descriptions.push({ label: 'check', data: rep.guideline });
+  }
+
+  const results = checks.map(checkToResult);
+
+  return createRequirement(checkId, rep.check_name, descriptions, impact, results, { tags });
+}
+
+/**
+ * Parses checkov input which can be a single object or array.
+ */
+function parseInput(input: string): CheckovReport[] {
+  const parsed = parseJSON<CheckovReport | CheckovReport[]>(input);
+  if (Array.isArray(parsed)) {
+    return parsed;
+  }
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Invalid checkov structure: not a valid JSON object');
+  }
+  if (!parsed.results || typeof parsed.results !== 'object') {
+    throw new Error('Invalid checkov structure: missing or invalid results field');
+  }
+  return [parsed];
+}
+
+/**
+ * Converts checkov output to HDF format.
+ * Accepts native checkov JSON (single object or array) and SARIF format.
+ * SARIF input is detected automatically and delegated to the shared SARIF converter.
+ *
+ * @param input - checkov JSON or SARIF string
+ * @returns HDF JSON string
+ */
+export async function convertCheckovToHdf(input: string): Promise<string> {
+  validateInputSize(input, 'checkov');
+
+  // Detect SARIF format and delegate
+  registerAllFingerprints();
+  const detected = detectConverter(input);
+  if (detected && detected.fingerprint.id === 'sarif-to-hdf') {
+    return convertSarifToHdf(input);
+  }
+
+  const resultsChecksum: Checksum = await inputChecksum(input);
+
+  const reports = parseInput(input);
+
+  // Merge all checks from all frameworks
+  const allChecks: CheckovCheck[] = [];
+  const checkTypes: string[] = [];
+  let version: string | undefined;
+
+  for (const report of reports) {
+    checkTypes.push(report.check_type);
+    if (!version && report.summary.checkov_version) {
+      version = report.summary.checkov_version;
+    }
+    allChecks.push(...report.results.passed_checks);
+    allChecks.push(...report.results.failed_checks);
+    allChecks.push(...report.results.skipped_checks);
+  }
+
+  const { items: limitedChecks, truncated } = limitArray(allChecks);
+  /* v8 ignore next -- truncation only triggers with >100K items */
+  if (truncated) {
+    // eslint-disable-next-line no-console
+    console.warn(`WARNING: Input truncated at ${limitedChecks.length} check items (original: ${allChecks.length})`);
+  }
+
+  // Group by check_id preserving insertion order
+  const groups = new Map<string, CheckovCheck[]>();
+  for (const check of limitedChecks) {
+    const existing = groups.get(check.check_id);
+    if (existing) {
+      existing.push(check);
+    } else {
+      groups.set(check.check_id, [check]);
+    }
+  }
+
+  const requirements: EvaluatedRequirement[] = [];
+  for (const [checkId, checks] of groups) {
+    requirements.push(buildRequirement(checkId, checks));
+  }
+
+  const baseline: EvaluatedBaseline = createMinimalBaseline(
+    'Checkov Scan',
+    requirements,
+    { resultsChecksum }
+  ) as EvaluatedBaseline;
+
+  const format = checkTypes.join(', ');
+
+  return buildHdfResults({
+    generatorName: 'checkov-to-hdf',
+    converterVersion: '1.0.0',
+    toolName: 'Checkov',
+    toolVersion: version,
+    toolFormat: format,
+    baselines: [baseline],
+    timestamp: new Date(),
+  });
+}

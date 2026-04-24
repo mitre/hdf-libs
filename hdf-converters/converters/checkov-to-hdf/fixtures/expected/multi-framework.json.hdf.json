@@ -1,0 +1,282 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Disallow policies from using the AWS AdministratorAccess policy",
+              "label": "default"
+            },
+            {
+              "data": "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/bc-aws-275",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: aws_iam_policy.ebs_csi_policy\nFile: /main.tf (lines [100 102])",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "CKV_AWS_275",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Disallow policies from using the AWS AdministratorAccess policy"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Ensure no hard coded AWS access key and secret key exists in provider",
+              "label": "default"
+            },
+            {
+              "data": "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/secrets-policies/bc-aws-secrets-5",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: aws.default\nFile: /main.tf (lines [4 6])",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "CKV_AWS_41",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Ensure no hard coded AWS access key and secret key exists in provider"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Ensure Terraform module sources use a commit hash",
+              "label": "default"
+            },
+            {
+              "data": "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/supply-chain-policies/terraform-policies/ensure-terraform-module-sources-use-git-url-with-commit-hash-revision",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: vpc\nFile: /main.tf (lines [26 49])",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Resource: eks\nFile: /main.tf (lines [51 96])",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "CKV_TF_1",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Ensure Terraform module sources use a commit hash"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Ensure the S3 bucket has access logging enabled",
+              "label": "default"
+            },
+            {
+              "data": "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/s3-policies/s3-13-enable-logging",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115 119])",
+              "message": "Skipping access logging for demo bucket",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "CKV_AWS_18",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Ensure the S3 bucket has access logging enabled"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Ensure that S3 bucket has a Public Access block",
+              "label": "default"
+            },
+            {
+              "data": "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/s3-bucket-should-have-public-access-blocks-defaults-to-false-if-the-public-access-block-is-not-attached",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: aws_s3_bucket.logs\nFile: /main.tf (lines [115 119])",
+              "message": "Skipping public access block for demo",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "CKV2_AWS_6",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Ensure that S3 bucket has a Public Access block"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Ensure From Alias are unique for multistage builds.",
+              "label": "default"
+            },
+            {
+              "data": "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-docker-from-alias-is-unique-for-multistage-builds",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1 41])",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "CKV_DOCKER_11",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Ensure From Alias are unique for multistage builds."
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Ensure update instructions are not use alone in the Dockerfile",
+              "label": "default"
+            },
+            {
+              "data": "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-update-instructions-are-not-used-alone-in-the-dockerfile",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1 41])",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "CKV_DOCKER_5",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Ensure update instructions are not use alone in the Dockerfile"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Ensure the base image uses a non latest version tag",
+              "label": "default"
+            },
+            {
+              "data": "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-the-base-image-uses-a-non-latest-version-tag",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: /Dockerfile.FROM\nFile: /Dockerfile (lines [22 22])",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "CKV_DOCKER_7",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Ensure the base image uses a non latest version tag"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Ensure that HEALTHCHECK instructions have been added to container images",
+              "label": "default"
+            },
+            {
+              "data": "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/docker-policy-index/ensure-that-healthcheck-instructions-have-been-added-to-container-images",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Resource: /Dockerfile.\nFile: /Dockerfile (lines [1 41])",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "failed"
+            }
+          ],
+          "id": "CKV_DOCKER_2",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "Ensure that HEALTHCHECK instructions have been added to container images"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "1c7446f7d449fc45cd58f7b9a81128eaf3ceca50388d8cfd595fc24c34b615c9"
+      },
+      "name": "Checkov Scan"
+    }
+  ],
+  "generator": {
+    "name": "checkov-to-hdf",
+    "version": "0.1.0"
+  },
+  "timestamp": "2026-04-24T14:16:44.261067Z",
+  "tool": {
+    "format": "terraform, dockerfile",
+    "name": "Checkov",
+    "version": "3.2.524"
+  }
+}
