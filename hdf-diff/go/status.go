@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
 // statusSeverity defines the severity ranking of statuses.

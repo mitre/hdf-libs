@@ -104,7 +104,7 @@ hdf diff --mode baseline golden.json current.json
 The diff engine is also available as a Go module:
 
 ```go
-import diff "github.com/mitre/hdf-libs/hdf-diff/go"
+import diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
 ```
 
 See the [hdf-diff/go](https://github.com/mitre/hdf-libs/tree/main/hdf-diff/go) directory for the Go API.

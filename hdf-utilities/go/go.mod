@@ -1,4 +1,4 @@
-module github.com/mitre/hdf-libs/hdf-utilities/go
+module github.com/mitre/hdf-libs/hdf-utilities/go/v3
 
 go 1.26
 

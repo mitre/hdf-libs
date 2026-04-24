@@ -1,4 +1,4 @@
-# Converter Fingerprint Registry — v2 (Post-Review)
+# Converter Fingerprint Registry
 
 **Status:** Revised after 3-agent review
 **Date:** 2026-03-20
@@ -304,7 +304,7 @@ Add `"sideEffects": false` — our registration is explicit, not side-effect bas
 **Corrections from review:**
 - ~~Prisma listed as JSON~~ → Prisma is CSV/text input
 - ~~Fortify listed as JSON~~ → Fortify is XML-only (FVDL root element)
-- Added HDF v2 native detection (most common upload format)
+- Added HDF native detection (most common upload format)
 - Added HDF v1 legacy detection (delegates to existing `isHDFV1()`)
 - ~~Nikto listed as XML~~ → Nikto input is JSON (`vulnerabilities[]` + `host`/`port`)
 - ~~ZAP listed as XML~~ → ZAP input is JSON (`site[]` + `@version`/`@generated`)

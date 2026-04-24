@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	gitlab "github.com/mitre/hdf-libs/hdf-converters/converters/gitlab-to-hdf/go"
+	gitlab "github.com/mitre/hdf-libs/hdf-converters/v3/converters/gitlab-to-hdf/go"
 )
 
 type gitlabConverter struct{}

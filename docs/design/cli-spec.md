@@ -1,9 +1,9 @@
-# HDF CLI v2 Design Spec
+# HDF CLI Design Spec
 
 > **Note (v3.1.0):** This design spec has been largely implemented. See the CHANGELOG
 > and current CLI help (`hdf --help`) for the authoritative command reference.
 
-> Design review for the HDF CLI in the context of the full v2 schema ecosystem
+> Design review for the HDF CLI in the context of the full schema ecosystem
 > (7 document types, fingerprint auto-detection, labels, typed inputs, OSCAL alignment).
 
 ## Design Principles
@@ -46,7 +46,7 @@
 2. **`list`** — 2 positionals, results-only, old terminology (controls/profiles)
 3. **`amend apply`** — 2 positional files
 4. **Noun-verb duplication** — `hdf system info` AND `hdf info` both show system info
-5. **Terminology** — "controls" and "profiles" predate v2 naming
+5. **Terminology** — "controls" and "profiles" predate current naming
 6. **Doc-type siloing** — `stats`, `list`, `query` only work on results
 
 ---

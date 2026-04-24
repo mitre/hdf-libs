@@ -47,7 +47,7 @@ When a control has multiple test results with different statuses, the overall st
 
 ## Where Status Is Computed
 
-### effectiveStatus Field (v2 Schema)
+### effectiveStatus Field
 
 The `effectiveStatus` field on `EvaluatedRequirement` is the authoritative status. When present, consumers should use it directly. When absent, consumers derive status from results using the precedence above.
 
@@ -58,7 +58,7 @@ The `effectiveStatus` field on `EvaluatedRequirement` is the authoritative statu
 
 ### Schema Note
 
-The HDF v2 schema uses **camelCase** for status enum values (`notApplicable`, `notReviewed`). The CLI uses **snake_case** for display (`not_applicable`, `not_reviewed`). The `SchemaStatusToDisplay` function in the CLI handles this translation.
+The HDF schema uses **camelCase** for status enum values (`notApplicable`, `notReviewed`). The CLI uses **snake_case** for display (`not_applicable`, `not_reviewed`). The `SchemaStatusToDisplay` function in the CLI handles this translation.
 
 ## Reference
 

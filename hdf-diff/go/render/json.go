@@ -3,7 +3,7 @@ package render
 import (
 	"encoding/json"
 
-	diff "github.com/mitre/hdf-libs/hdf-diff/go"
+	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
 )
 
 // jsonSummary is the shape emitted for DetailSummary.

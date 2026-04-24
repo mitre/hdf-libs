@@ -1,6 +1,6 @@
 package oscal
 
-import "github.com/mitre/hdf-libs/hdf-converters/registry"
+import "github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 
 type oscalFingerprintSpec struct {
 	key        string

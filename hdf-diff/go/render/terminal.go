@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	diff "github.com/mitre/hdf-libs/hdf-diff/go"
+	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
 )
 
 // ANSI color codes.

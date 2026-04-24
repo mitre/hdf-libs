@@ -4,7 +4,7 @@
 // Legacy types are defined here manually. The official exec-json schema
 // exists in heimdall2/libs/inspecjs/schemas/ but is not yet integrated into
 // hdf-libs' type generation pipeline.
-// Current HDF types are imported from github.com/mitre/hdf-libs/hdf-schema/dist/go.
+// Current HDF types are imported from github.com/mitre/hdf-libs/hdf-schema/dist/go/v3.
 package legacyhdf
 
 // V1Result represents a test result in HDF v1.0 format.

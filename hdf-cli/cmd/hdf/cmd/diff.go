@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	diff "github.com/mitre/hdf-libs/hdf-diff/go"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
-	validators "github.com/mitre/hdf-libs/hdf-validators/go"
+	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 )
 

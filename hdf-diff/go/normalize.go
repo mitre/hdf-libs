@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // IsV1Format detects whether a JSON document is legacy InSpec exec-json format.

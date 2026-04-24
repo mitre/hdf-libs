@@ -4,7 +4,7 @@ HDF and OSCAL are complementary formats. OSCAL (Open Security Controls Assessmen
 
 The HDF CLI provides bidirectional converters between OSCAL and HDF document types. This guide documents the mapping between the two ecosystems.
 
-For full architecture details, see [hdf-v2-document-ecosystem.md](../architecture/hdf-v2-document-ecosystem.md), section "OSCAL Alignment."
+For full architecture details, see [hdf-document-ecosystem.md](../architecture/hdf-document-ecosystem.md), section "OSCAL Alignment."
 
 ## Bidirectional Mapping Table
 
