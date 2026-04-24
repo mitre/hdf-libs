@@ -1,6 +1,6 @@
-# HDF v2: The Complete Picture
+# HDF: The Complete Picture
 
-> A narrative guide to the Heimdall Data Format v2 ecosystem — what it is, why it
+> A narrative guide to the Heimdall Data Format ecosystem — what it is, why it
 > exists, and how all the pieces fit together. Read this first if you're new to HDF.
 
 ---
@@ -19,7 +19,7 @@ Security assessment is fragmented. An organization running 500 systems has:
 - **No way to ask** "what changed?" at the system level — only at the individual
   scan level
 
-HDF v2 solves this with **7 document types** that together cover the full security
+HDF solves this with **7 document types** that together cover the full security
 assessment lifecycle.
 
 ---
@@ -460,7 +460,7 @@ hdf evidence verify portal-ato-evidence-q1-2026.json
 
 ## Walkthrough 7: The Typed Input Chain
 
-*The most important innovation in HDF v2 — tracing a value from governance to automation.*
+*The most important innovation in HDF — tracing a value from governance to automation.*
 
 This is the full chain for one value (`max_concurrent_sessions`):
 
@@ -653,7 +653,7 @@ HDF documents map to OSCAL document types:
 
 OSCAL converters are special — they produce **multiple HDF document types**, not
 just results. An OSCAL SSP produces an hdf-system. An OSCAL POA&M produces
-hdf-amendments. This is why the v2 ecosystem matters.
+hdf-amendments. This is why the HDF ecosystem matters.
 
 ---
 
@@ -674,7 +674,7 @@ not competing schemas:
 
 ## Implementation Status
 
-> As of 2026-04-02. See `docs/plans/2026-03-14-hdf-v2-ecosystem-plan.md` for the
+> As of 2026-04-02. See `docs/plans/2026-03-14-hdf-ecosystem-plan.md` for the
 > full implementation plan with beads card references.
 
 | What | Status |
@@ -706,8 +706,8 @@ not competing schemas:
 
 | Document | What it covers |
 |----------|---------------|
-| [Architecture](hdf-v2-document-ecosystem.md) | Full ecosystem vision, all 7 types, JSON examples |
+| [Architecture](hdf-document-ecosystem.md) | Full ecosystem vision, all 7 types, JSON examples |
 | Design decisions | (archived) — 12 design decisions with research rationale |
 | [Developer Guide](../design/developer-guide.md) | Contributor patterns, dual impl, testing |
-| [Implementation Plan](../plans/2026-03-14-hdf-v2-ecosystem-plan.md) | Phase-by-phase plan with beads cards |
+| [Implementation Plan](../plans/2026-03-14-hdf-ecosystem-plan.md) | Phase-by-phase plan with beads cards |
 | SBOM Research | (archived) — CycloneDX/SPDX library landscape |

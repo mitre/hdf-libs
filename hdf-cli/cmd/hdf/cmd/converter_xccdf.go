@@ -1,6 +1,6 @@
 package cmd
 
-import xccdf "github.com/mitre/hdf-libs/hdf-converters/converters/xccdf-results-to-hdf/go"
+import xccdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/xccdf-results-to-hdf/go"
 
 func init() {
 	// xccdf — Auto-detect: benchmark → baseline, results → results

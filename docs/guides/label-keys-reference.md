@@ -1,8 +1,8 @@
 # Well-Known Label Keys Reference
 
-Labels are optional `Record<string, string>` metadata on **components** and **baselines** in HDF v2. They enable flexible grouping, filtering, and system-level organization without imposing a fixed hierarchy.
+Labels are optional `Record<string, string>` metadata on **components** and **baselines** in HDF. They enable flexible grouping, filtering, and system-level organization without imposing a fixed hierarchy.
 
-For full design rationale, see [hdf-v2-document-ecosystem.md](../architecture/hdf-v2-document-ecosystem.md), section "Labels -- Flexible Grouping Without Hierarchy."
+For full design rationale, see [hdf-document-ecosystem.md](../architecture/hdf-document-ecosystem.md), section "Labels -- Flexible Grouping Without Hierarchy."
 
 ## What Labels Are
 

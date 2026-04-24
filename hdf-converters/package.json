@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-converters",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Converters for transforming security tool outputs and HDF formats",
   "publishConfig": {
     "access": "public"

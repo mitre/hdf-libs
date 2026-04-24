@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
-	validators "github.com/mitre/hdf-libs/hdf-validators/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

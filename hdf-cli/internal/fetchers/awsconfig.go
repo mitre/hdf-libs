@@ -16,7 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/configservice"
 	"github.com/aws/aws-sdk-go-v2/service/configservice/types"
 
-	awsconfigconv "github.com/mitre/hdf-libs/hdf-converters/converters/aws-config-to-hdf/go"
+	awsconfigconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/aws-config-to-hdf/go"
 )
 
 const (

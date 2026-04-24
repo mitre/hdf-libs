@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
 // ---------------------------------------------------------------------------

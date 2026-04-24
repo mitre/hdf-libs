@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
 // GeneratorOptions configures InSpec profile generation.

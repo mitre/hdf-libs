@@ -1,6 +1,6 @@
 package twistlock
 
-import "github.com/mitre/hdf-libs/hdf-converters/registry"
+import "github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 
 func hasTwistlockMarkers(obj map[string]any) float64 {
 	if _, has := obj["complianceDistribution"]; has {

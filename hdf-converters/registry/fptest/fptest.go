@@ -6,7 +6,7 @@ package fptest
 import (
 	"testing"
 
-	"github.com/mitre/hdf-libs/hdf-converters/registry"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mitre/hdf-libs/hdf-diff/go/matching"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	"github.com/mitre/hdf-libs/hdf-diff/go/v3/matching"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
 // Field name constants for tracked field configuration and lookups.

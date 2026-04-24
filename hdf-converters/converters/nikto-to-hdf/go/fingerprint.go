@@ -1,6 +1,6 @@
 package nikto_to_hdf
 
-import "github.com/mitre/hdf-libs/hdf-converters/registry"
+import "github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 
 func init() {
 	registry.Register(registry.ConverterFingerprint{

@@ -223,7 +223,7 @@ hdf-mappings/go/
 ```
 
 ```go
-import "github.com/mitre/hdf-libs/hdf-mappings/go/cci"
+import "github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 
 controls := cci.GetCCINistMappings("CCI-000001")
 // Returns: []string{"AC-1 a", "AC-1.1 (i and ii)", "AC-1 a 1"}
@@ -236,14 +236,14 @@ nist := cci.CCIToNIST([]string{"CCI-000366", "CCI-000001"})
 ```
 
 ```go
-import "github.com/mitre/hdf-libs/hdf-mappings/go/cwe"
+import "github.com/mitre/hdf-libs/hdf-mappings/go/v3/cwe"
 
 controls := cwe.NISTControls("CWE-476")  // prefix form
 controls  = cwe.NISTControls("476")      // numeric form — equivalent
 ```
 
 ```go
-import "github.com/mitre/hdf-libs/hdf-mappings/go/awsconfig"
+import "github.com/mitre/hdf-libs/hdf-mappings/go/v3/awsconfig"
 
 controls := awsconfig.NISTControls("SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK")
 mapping  := awsconfig.GetByIdentifier("SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK")

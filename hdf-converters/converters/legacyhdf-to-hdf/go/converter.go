@@ -3,9 +3,9 @@ package legacyhdf
 import (
 	"time"
 
-	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // computeEffectiveStatus derives effectiveStatus from impact and v2 results.

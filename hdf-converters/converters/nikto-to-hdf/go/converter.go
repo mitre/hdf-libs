@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
-	"github.com/mitre/hdf-libs/hdf-mappings/go/cci"
-	"github.com/mitre/hdf-libs/hdf-mappings/go/nikto"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nikto"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
 // Nikto JSON input structures

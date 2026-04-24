@@ -1,8 +1,8 @@
 package nessus
 
 import (
-	"github.com/mitre/hdf-libs/hdf-converters/registry"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 func init() {

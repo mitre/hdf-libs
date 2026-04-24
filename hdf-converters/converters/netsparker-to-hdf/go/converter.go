@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
-	"github.com/mitre/hdf-libs/hdf-mappings/go/cci"
-	"github.com/mitre/hdf-libs/hdf-mappings/go/cwe"
-	"github.com/mitre/hdf-libs/hdf-mappings/go/owasp"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cwe"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/owasp"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // --- XML input structures ---
