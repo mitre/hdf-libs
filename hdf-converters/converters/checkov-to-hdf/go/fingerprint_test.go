@@ -1,7 +1,6 @@
 package checkov
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
@@ -11,9 +10,6 @@ import (
 
 func TestFingerprint_SingleObject(t *testing.T) {
 	input := `{"check_type":"terraform","results":{"passed_checks":[],"failed_checks":[],"skipped_checks":[]},"summary":{"checkov_version":"3.2.524"}}`
-	var parsed any
-	require.NoError(t, json.Unmarshal([]byte(input), &parsed))
-
 	result := registry.DetectConverter([]byte(input))
 	require.NotNil(t, result, "should detect checkov single object")
 	assert.Equal(t, "checkov-to-hdf", result.Fingerprint.ID)

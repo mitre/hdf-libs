@@ -75,6 +75,6 @@ func fingerprintObject(obj map[string]any) float64 {
 		}
 	}
 
-	// Medium signal: has check_type + results but no version
-	return 0.7
+	// Medium signal: has check_type + results with check arrays but no version
+	return 0.8
 }

@@ -2,7 +2,7 @@
  * Checkov format fingerprint.
  *
  * Detects JSON with check_type + results.passed_checks/failed_checks (single object or array).
- * Strong signal (1.0) when summary.checkov_version is present; medium (0.7) otherwise.
+ * Strong signal (1.0) when summary.checkov_version is present; medium (0.8) otherwise.
  */
 
 import { registerFingerprint, getFingerprint, type ConverterFingerprint } from '../../../shared/typescript/registry.js';
@@ -22,7 +22,8 @@ function fingerprintObject(obj: Record<string, unknown>): number {
     if ('checkov_version' in sum) return 1.0;
   }
 
-  return 0.7;
+  // Medium signal: has check_type + results with check arrays but no version
+  return 0.8;
 }
 
 export const checkovFingerprint: ConverterFingerprint = {

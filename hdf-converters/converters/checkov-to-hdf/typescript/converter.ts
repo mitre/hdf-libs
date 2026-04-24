@@ -169,12 +169,12 @@ export async function convertCheckovToHdf(input: string): Promise<string> {
 
   for (const report of reports) {
     checkTypes.push(report.check_type);
-    if (!version && report.summary?.checkov_version) {
+    if (!version && report.summary.checkov_version) {
       version = report.summary.checkov_version;
     }
-    allChecks.push(...(report.results?.passed_checks ?? []));
-    allChecks.push(...(report.results?.failed_checks ?? []));
-    allChecks.push(...(report.results?.skipped_checks ?? []));
+    allChecks.push(...report.results.passed_checks);
+    allChecks.push(...report.results.failed_checks);
+    allChecks.push(...report.results.skipped_checks);
   }
 
   const { items: limitedChecks, truncated } = limitArray(allChecks);
