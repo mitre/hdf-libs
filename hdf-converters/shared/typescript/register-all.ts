@@ -9,6 +9,7 @@ import { registerFingerprint, getFingerprint, type ConverterFingerprint } from '
 
 // JSON ingest converters
 import { awsConfigFingerprint } from '../../converters/aws-config-to-hdf/typescript/fingerprint.js';
+import { checkovFingerprint } from '../../converters/checkov-to-hdf/typescript/fingerprint.js';
 import { conveyorFingerprint } from '../../converters/conveyor-to-hdf/typescript/fingerprint.js';
 import { cyclonedxFingerprint } from '../../converters/cyclonedx-to-hdf/typescript/fingerprint.js';
 import { deptrackFingerprint } from '../../converters/deptrack-to-hdf/typescript/fingerprint.js';
@@ -62,6 +63,7 @@ import { hdfToOscalPoamFingerprint } from '../../converters/hdf-to-oscal-poam/ty
 const allFingerprints: ConverterFingerprint[] = [
   // JSON ingest
   awsConfigFingerprint,
+  checkovFingerprint,
   conveyorFingerprint,
   cyclonedxFingerprint,
   deptrackFingerprint,

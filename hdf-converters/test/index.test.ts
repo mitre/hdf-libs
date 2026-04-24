@@ -9,6 +9,7 @@ import {
   convertNessusToHdf,
   convertSonarqubeToHdf,
   convertAwsConfigToHdf,
+  convertCheckovToHdf,
   convertGosecToHdf,
   convertNiktoToHdf,
   convertZapToHdf,
@@ -105,6 +106,11 @@ describe('Main exports', () => {
   it('should export convertAwsConfigToHdf from main index', () => {
     expect(convertAwsConfigToHdf).toBeDefined();
     expect(typeof convertAwsConfigToHdf).toBe('function');
+  });
+
+  it('should export convertCheckovToHdf from main index', () => {
+    expect(convertCheckovToHdf).toBeDefined();
+    expect(typeof convertCheckovToHdf).toBe('function');
   });
 
   it('should export convertGosecToHdf from main index', () => {

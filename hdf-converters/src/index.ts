@@ -36,6 +36,9 @@ export { convertSonarqubeToHdf } from '../converters/sonarqube-to-hdf/typescript
 // AWS Config to HDF converter
 export { convertAwsConfigToHdf } from '../converters/aws-config-to-hdf/typescript/index.js';
 
+// Checkov to HDF converter
+export { convertCheckovToHdf } from '../converters/checkov-to-hdf/typescript/index.js';
+
 // Gosec to HDF converter
 export { convertGosecToHdf } from '../converters/gosec-to-hdf/typescript/index.js';
 
