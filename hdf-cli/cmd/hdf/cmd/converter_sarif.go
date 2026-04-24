@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	sarif "github.com/mitre/hdf-libs/hdf-converters/converters/sarif-to-hdf/go"
+	sarif "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sarif-to-hdf/go"
 )
 
 // versionedSarifConverter wraps the SARIF converter with VersionedConverter

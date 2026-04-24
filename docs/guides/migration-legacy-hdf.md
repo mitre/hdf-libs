@@ -1,8 +1,8 @@
-# v1 to v2 Migration Guide
+# Legacy HDF Migration Guide
 
-This guide is for tool authors and pipeline maintainers who work with InSpec exec-json (HDF v1) output and need to understand the changes in HDF v2.
+This guide is for tool authors and pipeline maintainers who work with Legacy HDF (InSpec exec-json) output and need to understand the changes in the current HDF format.
 
-For full architecture details, see [hdf-v2-document-ecosystem.md](../architecture/hdf-v2-document-ecosystem.md).
+For full architecture details, see [hdf-document-ecosystem.md](../architecture/hdf-document-ecosystem.md).
 
 ## Audience
 
@@ -12,7 +12,7 @@ For full architecture details, see [hdf-v2-document-ecosystem.md](../architectur
 
 ## Key Renames
 
-| v1 (InSpec exec-json) | v2 (HDF) | Notes |
+| Legacy HDF (InSpec exec-json) | HDF (current) | Notes |
 |---|---|---|
 | `profiles[]` | `baselines[]` | Terminology alignment -- "baseline" is tool-agnostic, "profile" is InSpec-specific |
 | `controls[]` | `requirements[]` | Broader scope: security requirements, not just InSpec controls |
@@ -188,7 +188,7 @@ cat old-results.json | hdf convert --from legacyhdf - -o new-results.json
 ```go
 import (
     "encoding/json"
-    legacyhdf "github.com/mitre/hdf-libs/hdf-converters/converters/legacyhdf-to-hdf/go"
+    legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 )
 
 var v1 legacyhdf.HDFV1Results

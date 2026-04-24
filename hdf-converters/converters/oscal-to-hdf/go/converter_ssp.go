@@ -3,8 +3,8 @@ package oscal
 import (
 	"strings"
 
-	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
 // ConvertSSPToHDF converts an OSCAL System Security Plan document to an

@@ -90,7 +90,7 @@ import (
 	"fmt"
 	"os"
 
-	parsers "github.com/mitre/hdf-libs/hdf-parsers/go"
+	parsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
 )
 
 func main() {

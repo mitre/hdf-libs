@@ -103,7 +103,7 @@ Phase 1 (4dr9) ──┬──> Phase 2 (bccx) ──> Phase 5 (dbpq) ──> Ph
 
 5. **Data flows replace interconnections.** The data-flow schema is more expressive (protocol, port, cross-system references) and works at the component level rather than the system boundary level.
 
-6. **No backward compatibility shims.** HDF v2 hasn't shipped yet, so schema changes are clean additions/replacements without migration paths.
+6. **No backward compatibility shims.** HDF hadn't shipped yet at the time, so schema changes are clean additions/replacements without migration paths.
 
 ## OSCAL Alignment Summary
 

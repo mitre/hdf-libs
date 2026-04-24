@@ -1,6 +1,6 @@
 package snyk
 
-import "github.com/mitre/hdf-libs/hdf-converters/registry"
+import "github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 
 func isSnykReport(obj map[string]any) float64 {
 	vulns, hasVulns := obj["vulnerabilities"]

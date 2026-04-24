@@ -38,7 +38,7 @@ tags.nist = [...new Set(mappedControls)];
 ### Go Pattern
 
 ```go
-import "github.com/mitre/hdf-libs/hdf-mappings/go/cci"
+import "github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 
 // Pattern: Extract source IDs → Map each ID → Flatten results → Deduplicate
 cciTags := parseComplianceRef(item.ComplianceReference, "CCI")
@@ -76,7 +76,7 @@ tags["nist"] = nistControls
 - **CWE Utilities**: `getCWEDescription()`, `getCWESeverity()`, etc.
 
 ### Go Mappers
-- **CCI to NIST**: `cci.GetCCINistMappings(cciID string): []string` (from `github.com/mitre/hdf-libs/hdf-mappings/go/cci`)
+- **CCI to NIST**: `cci.GetCCINistMappings(cciID string): []string` (from `github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci`)
 - **CCI Description**: `cci.GetCCIDescription(cciID string): string`
 - **CCI Validation**: `cci.CCIExists(cciID string): bool`
 - **List all CCIs**: `cci.GetAllCCIIDs(): []string`

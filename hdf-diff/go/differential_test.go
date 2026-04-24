@@ -16,7 +16,7 @@ import (
 	"runtime"
 	"testing"
 
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
 // fixturesDir returns the absolute path to the shared test fixtures directory.

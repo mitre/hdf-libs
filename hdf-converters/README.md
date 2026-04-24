@@ -120,7 +120,7 @@ if (isHDFV1(data)) {
 Go converters live under `converters/<name>/go/` and follow the same function signature:
 
 ```go
-import grype "github.com/mitre/hdf-libs/hdf-converters/converters/grype-to-hdf/go"
+import grype "github.com/mitre/hdf-libs/hdf-converters/v3/converters/grype-to-hdf/go"
 
 results, err := grype.ConvertGrypeToHdf(input, "grype-report.json")
 ```

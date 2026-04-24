@@ -79,14 +79,14 @@ Install only the packages you need. Each package is published independently to n
 
 | Package | npm | Go |
 |---------|-----|----|
-| **Schema** — HDF document types and JSON schemas | `npm install @mitre/hdf-schema` | `go get github.com/mitre/hdf-libs/hdf-schema/dist/go` |
-| **Converters** — 33 security tool format converters | `npm install @mitre/hdf-converters` | `go get github.com/mitre/hdf-libs/hdf-converters` |
-| **Validators** — schema validation with embedded schemas | `npm install @mitre/hdf-validators` | `go get github.com/mitre/hdf-libs/hdf-validators/go` |
-| **Parsers** — parse and flatten HDF documents | `npm install @mitre/hdf-parsers` | `go get github.com/mitre/hdf-libs/hdf-parsers/go` |
-| **Mappings** — CCI, NIST, CWE, OWASP control mappings | `npm install @mitre/hdf-mappings` | `go get github.com/mitre/hdf-libs/hdf-mappings/go` |
-| **Utilities** — XML, CSV, hash, string helpers | `npm install @mitre/hdf-utilities` | `go get github.com/mitre/hdf-libs/hdf-utilities/go` |
-| **Generators** — InSpec profile generation from baselines | `npm install @mitre/hdf-generators` | `go get github.com/mitre/hdf-libs/hdf-generators/go` |
-| **Diff** — structural diff engine for assessments | `npm install @mitre/hdf-diff` | `go get github.com/mitre/hdf-libs/hdf-diff/go` |
+| **Schema** — HDF document types and JSON schemas | `npm install @mitre/hdf-schema` | `go get github.com/mitre/hdf-libs/hdf-schema/dist/go/v3` |
+| **Converters** — 33 security tool format converters | `npm install @mitre/hdf-converters` | `go get github.com/mitre/hdf-libs/hdf-converters/v3` |
+| **Validators** — schema validation with embedded schemas | `npm install @mitre/hdf-validators` | `go get github.com/mitre/hdf-libs/hdf-validators/go/v3` |
+| **Parsers** — parse and flatten HDF documents | `npm install @mitre/hdf-parsers` | `go get github.com/mitre/hdf-libs/hdf-parsers/go/v3` |
+| **Mappings** — CCI, NIST, CWE, OWASP control mappings | `npm install @mitre/hdf-mappings` | `go get github.com/mitre/hdf-libs/hdf-mappings/go/v3` |
+| **Utilities** — XML, CSV, hash, string helpers | `npm install @mitre/hdf-utilities` | `go get github.com/mitre/hdf-libs/hdf-utilities/go/v3` |
+| **Generators** — InSpec profile generation from baselines | `npm install @mitre/hdf-generators` | `go get github.com/mitre/hdf-libs/hdf-generators/go/v3` |
+| **Diff** — structural diff engine for assessments | `npm install @mitre/hdf-diff` | `go get github.com/mitre/hdf-libs/hdf-diff/go/v3` |
 | **Extension Graph** — InSpec overlay/extension chain resolution | `npm install @mitre/hdf-extension-graph` | — |
 
 The npm packages declare their dependencies, so `npm install @mitre/hdf-converters` automatically pulls in schema, parsers, utilities, and mappings.

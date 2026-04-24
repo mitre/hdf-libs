@@ -125,7 +125,7 @@ package toolname
 
 import (
     "encoding/json"
-    hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+    hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
 func ConvertToHDF(input []byte) (*hdf.ExecutionResult, error) {

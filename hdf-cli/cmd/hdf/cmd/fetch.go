@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mitre/hdf-libs/hdf-cli/internal/fetchers"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/fetchers"
 )
 
 // Valid values for the --format flag on fetch subcommands.

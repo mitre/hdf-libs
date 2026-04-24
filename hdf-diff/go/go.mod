@@ -1,10 +1,10 @@
-module github.com/mitre/hdf-libs/hdf-diff/go
+module github.com/mitre/hdf-libs/hdf-diff/go/v3
 
 go 1.26
 
 require (
-	github.com/mitre/hdf-libs/hdf-schema/dist/go v0.0.0
-	github.com/mitre/hdf-libs/hdf-utilities/go v0.0.0
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.1.1
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.1.1
 	github.com/protobom/protobom v0.5.4
 	github.com/stretchr/testify v1.11.1
 )
@@ -33,6 +33,5 @@ require (
 	sigs.k8s.io/release-utils v0.12.1 // indirect
 )
 
-replace github.com/mitre/hdf-libs/hdf-schema/dist/go => ../../hdf-schema/dist/go
-
-replace github.com/mitre/hdf-libs/hdf-utilities/go => ../../hdf-utilities/go
+replace github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 => ../../hdf-schema/dist/go
+replace github.com/mitre/hdf-libs/hdf-utilities/go/v3 => ../../hdf-utilities/go

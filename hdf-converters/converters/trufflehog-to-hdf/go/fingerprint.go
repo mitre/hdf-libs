@@ -1,6 +1,6 @@
 package trufflehog
 
-import "github.com/mitre/hdf-libs/hdf-converters/registry"
+import "github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 
 func isTrufflehogFinding(obj map[string]any) float64 {
 	detName, hasDetName := obj["DetectorName"]

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	shared "github.com/mitre/hdf-libs/hdf-converters/shared/go"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
 // ConvertHDFToCSV converts HDF JSON to CSV format

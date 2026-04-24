@@ -1,6 +1,6 @@
 // Package shared provides converter-specific utilities for Go converters.
 // General-purpose utilities (severity mapping, string manipulation, CWE
-// extraction, etc.) live in hdfutil (github.com/mitre/hdf-libs/hdf-utilities/go).
+// extraction, etc.) live in hdfutil (github.com/mitre/hdf-libs/hdf-utilities/go/v3).
 // This package contains only converter-specific logic that depends on
 // hdf-schema types, hdf-mappings, or converter-domain constants.
 package shared
@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitre/hdf-libs/hdf-mappings/go/cwe"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cwe"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // InputChecksum computes the SHA-256 checksum of raw input bytes and returns

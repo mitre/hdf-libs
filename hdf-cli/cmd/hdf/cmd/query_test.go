@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 func TestImpactToSeverity(t *testing.T) {

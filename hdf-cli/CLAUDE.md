@@ -86,7 +86,7 @@ Conversion error messages include suggestions (which sources support the target 
 
 ### Data Types
 
-Go types are imported from `github.com/mitre/hdf-libs/hdf-schema/dist/go` (quicktype-generated from the JSON schemas in `hdf-schema/dist/go/`). The CLI does not maintain its own copy of these types. The diff engine lives in `github.com/mitre/hdf-libs/hdf-diff/go` (sibling monorepo package).
+Go types are imported from `github.com/mitre/hdf-libs/hdf-schema/dist/go/v3` (quicktype-generated from the JSON schemas in `hdf-schema/dist/go/`). The CLI does not maintain its own copy of these types. The diff engine lives in `github.com/mitre/hdf-libs/hdf-diff/go/v3` (sibling monorepo package).
 
 ### Schema Validation (`hdf-validators/go`)
 

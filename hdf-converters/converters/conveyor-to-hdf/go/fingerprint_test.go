@@ -3,8 +3,8 @@ package conveyor
 import (
 	"testing"
 
-	"github.com/mitre/hdf-libs/hdf-converters/registry"
-	"github.com/mitre/hdf-libs/hdf-converters/registry/fptest"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/registry/fptest"
 )
 
 func TestConveyorFingerprint(t *testing.T) {

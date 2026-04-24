@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

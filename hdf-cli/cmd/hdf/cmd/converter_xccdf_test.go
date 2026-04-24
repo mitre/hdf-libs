@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	validators "github.com/mitre/hdf-libs/hdf-validators/go"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
