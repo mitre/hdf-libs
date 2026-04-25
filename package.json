@@ -11,13 +11,14 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "pnpm run build:ts && pnpm run build:go",
-    "build:ts": "pnpm -r --filter=!hdf-cli run build",
+    "build:ts": "pnpm -r --filter='!.' --filter='!hdf-cli' run build",
     "build:go": "pnpm --filter hdf-cli run build",
     "pretest": "pnpm run build:ts",
     "test": "pnpm run test:ts && pnpm run test:go",
     "check": "pnpm run build:ts && pnpm run lint && pnpm run lint:go && pnpm run typecheck && pnpm run test && pnpm run security",
-    "test:ts": "pnpm -r run test:ts",
-    "test:go": "pnpm -r run test:go",
+    "test:ts": "pnpm -r --filter='!.' run test:ts",
+    "test:go": "pnpm -r --filter='!.' run test:go",
+    "test:exports": "vitest run --config vitest.config.ts",
     "test:coverage": "pnpm -r run test:coverage",
     "typecheck": "pnpm -r --filter=!hdf-cli run type-check",
     "security": "pnpm run security:ts && pnpm run security:go",
@@ -46,9 +47,9 @@
   },
   "engines": {
     "node": ">=22.0.0",
-    "pnpm": ">=9.0.0"
+    "pnpm": ">=10.0.0"
   },
-  "packageManager": "pnpm@9.14.2",
+  "packageManager": "pnpm@10.33.0",
   "pnpm": {
     "overrides": {
       "minimatch@<3.1.4": "3.1.4",
@@ -66,6 +67,19 @@
       "picomatch@>=4.0.0 <4.0.4": "4.0.4",
       "yaml@>=2.0.0 <2.8.3": "2.8.3",
       "brace-expansion@>=5.0.0 <5.0.5": "5.0.5"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "-",
+      "3",
+      "b",
+      "e",
+      "esbuild",
+      "i",
+      "l",
+      "q",
+      "r",
+      "s",
+      "t"
+    ]
   }
 }
