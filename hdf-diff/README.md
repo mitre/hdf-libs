@@ -114,6 +114,32 @@ See the [hdf-diff/go](https://github.com/mitre/hdf-libs/tree/main/hdf-diff/go) d
 The HDF Comparison schema that hdf-diff produces is documented at
 <https://mitre.github.io/hdf-libs/schemas/>.
 
+## Subpath imports
+
+The matching strategies and renderers are also available as dedicated subpaths for fine-grained imports and tree-shaking:
+
+```typescript
+// Just the matching strategies — useful when wiring custom comparison flows
+import {
+  matchRequirements,
+  createExactIdStrategy,
+  createMappedIdStrategy,
+  createCciMatchStrategy,
+  createFuzzyTitleStrategy,
+} from '@mitre/hdf-diff/matching';
+
+// Just the renderers — useful when shipping reports without the diff engine
+import {
+  render,
+  renderJson,
+  renderMarkdown,
+  renderTerminal,
+  renderCsv,
+} from '@mitre/hdf-diff/renderers';
+```
+
+The main entry (`@mitre/hdf-diff`) re-exports both, so either style works.
+
 ## License
 
 Apache-2.0 © MITRE Corporation

@@ -398,6 +398,22 @@ pnpm lint
 
 All utilities maintain **>95% test coverage**. Run `pnpm test:coverage` to view current coverage report.
 
+## Subpath imports
+
+Each utility category is also available as a dedicated subpath for fine-grained imports and tree-shaking:
+
+```typescript
+import { parseJSON, stringifyJSON } from '@mitre/hdf-utilities/json';
+import { sha256, hashObject } from '@mitre/hdf-utilities/hash';
+import { parseXml, buildXml } from '@mitre/hdf-utilities/xml';
+import { parseCsv, buildCsv } from '@mitre/hdf-utilities/csv';
+import { findValuesByKey, findRows } from '@mitre/hdf-utilities/object';
+import { stripHtml, parseTimestamp } from '@mitre/hdf-utilities/string';
+import { severityToImpact, impactToSeverity } from '@mitre/hdf-utilities/severity';
+```
+
+The main entry (`@mitre/hdf-utilities`) re-exports everything from these subpaths, so either style works — pick whichever fits your bundle-size goals.
+
 ## License
 
 Apache-2.0 © MITRE Corporation
