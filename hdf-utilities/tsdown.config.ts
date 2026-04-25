@@ -9,6 +9,7 @@ export default defineConfig({
     'src/csv/index.ts',
     'src/object/index.ts',
     'src/string/index.ts',
+    'src/severity/index.ts',
   ],
   format: 'esm',
   dts: true,

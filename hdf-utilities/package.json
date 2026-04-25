@@ -36,6 +36,10 @@
     "./string": {
       "types": "./dist/string/index.d.ts",
       "import": "./dist/string/index.js"
+    },
+    "./severity": {
+      "types": "./dist/severity/index.d.ts",
+      "import": "./dist/severity/index.js"
     }
   },
   "files": [
