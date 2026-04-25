@@ -12,6 +12,38 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./awsconfig": {
+      "types": "./dist/awsconfig/index.d.ts",
+      "import": "./dist/awsconfig/index.js"
+    },
+    "./cci": {
+      "types": "./dist/cci/index.d.ts",
+      "import": "./dist/cci/index.js"
+    },
+    "./cwe": {
+      "types": "./dist/cwe/index.d.ts",
+      "import": "./dist/cwe/index.js"
+    },
+    "./nessus": {
+      "types": "./dist/nessus/index.d.ts",
+      "import": "./dist/nessus/index.js"
+    },
+    "./nikto": {
+      "types": "./dist/nikto/index.d.ts",
+      "import": "./dist/nikto/index.js"
+    },
+    "./nist": {
+      "types": "./dist/nist/index.d.ts",
+      "import": "./dist/nist/index.js"
+    },
+    "./owasp": {
+      "types": "./dist/owasp/index.d.ts",
+      "import": "./dist/owasp/index.js"
+    },
+    "./scoutsuite": {
+      "types": "./dist/scoutsuite/index.d.ts",
+      "import": "./dist/scoutsuite/index.js"
     }
   },
   "files": [

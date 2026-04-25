@@ -1,7 +1,17 @@
 import { defineConfig } from 'tsdown';
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: [
+    'src/index.ts',
+    'src/awsconfig/index.ts',
+    'src/cci/index.ts',
+    'src/cwe/index.ts',
+    'src/nessus/index.ts',
+    'src/nikto/index.ts',
+    'src/nist/index.ts',
+    'src/owasp/index.ts',
+    'src/scoutsuite/index.ts',
+  ],
   format: 'esm',
   dts: true,
   sourcemap: true,
