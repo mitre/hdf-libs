@@ -12,10 +12,10 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-# NODE_VERSION pinned to the current LTS (22). Matches each published
-# package's `engines.node: ">=22.0.0"`.
+# NODE_VERSION pinned to the current LTS (24). Matches each published
+# package's `engines.node: ">=24.0.0"`.
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: '24'
   GO_VERSION: '1.26.2'
 
 jobs:
@@ -136,6 +136,8 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Build schemas
         run: cd hdf-schema && pnpm build:schemas

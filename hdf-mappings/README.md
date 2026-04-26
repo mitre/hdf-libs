@@ -263,6 +263,23 @@ mapping   = awsconfig.GetByRuleName("secretsmanager-scheduled-rotation-success-c
 | ScoutSuite→NIST | heimdall2 mapping tables |
 | AWS Config→NIST | heimdall2 mapping tables |
 
+## Subpath imports
+
+Each framework's mappings are also available as a dedicated subpath, useful when you only need one framework's data and want to tree-shake the rest out of your bundle:
+
+```typescript
+import { getCCIDescription, getCCINistMappings } from '@mitre/hdf-mappings/cci';
+import { getNISTDescription, getNISTFamily }     from '@mitre/hdf-mappings/nist';
+import { getCweName, getCweNistControl }         from '@mitre/hdf-mappings/cwe';
+import { getOwaspName, getOwaspNistControl }     from '@mitre/hdf-mappings/owasp';
+import { getNessusNistControl }                  from '@mitre/hdf-mappings/nessus';
+import { getNiktoNistControl }                   from '@mitre/hdf-mappings/nikto';
+import { getScoutsuiteNistMapping }              from '@mitre/hdf-mappings/scoutsuite';
+import { getAwsConfigNistMappingByName }         from '@mitre/hdf-mappings/awsconfig';
+```
+
+The main entry (`@mitre/hdf-mappings`) re-exports all eight, so either style works.
+
 ## License
 
 Apache-2.0 © MITRE Corporation

@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: '24'
 
 jobs:
   # Packs every publishable workspace package and installs the resulting
@@ -45,6 +45,8 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
       - name: Build TypeScript (pack reads dist/)
         run: pnpm build:ts
 
@@ -90,7 +92,7 @@ jobs:
         # Node ESM rejects) survive into the published dist. The
         # scratch project above has all packages installed via npm, so
         # this exercises the real consumer path under the same Node
-        # version (22) declared in engines.node — no split, no
+        # version (24) declared in engines.node — no split, no
         # cross-version surprises.
         run: |
           cd /tmp/smoke
@@ -118,6 +120,8 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
       - name: Build TypeScript (pack reads dist/)
         run: pnpm build:ts
 
@@ -149,7 +153,7 @@ jobs:
         #     (see package.json `"type": "module"`).
         #   no-resolution: sub-path exports (./helpers, ./hdf-results)
         #     require the "exports" map, which node10 does not support.
-        #     We target Node 22+ (see engines field in package.json).
+        #     We target Node 24+ (see engines field in package.json).
         run: |
           FAIL=0
           for tb in /tmp/tarballs/*.tgz; do

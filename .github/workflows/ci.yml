@@ -21,12 +21,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# NODE_VERSION pinned to the current LTS (22). Matches each published
-# package's `engines.node: ">=22.0.0"`. Node 20 reaches EOL 2026-04-30;
-# we're not advertising support for a runtime that loses security patches
-# during the lifetime of this release.
+# NODE_VERSION pinned to the current LTS (24). Matches each published
+# package's `engines.node: ">=24.0.0"`. Node 22 enters Maintenance LTS
+# 2025-10 and EOLs 2027-04; Node 24 has Active LTS through 2026-10 and
+# EOL 2028-04, so it gives the longest forward runway.
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: '24'
   GO_VERSION: '1.26.2'
   GOLANGCI_LINT_VERSION: 'v2.11.3'
 
@@ -50,14 +50,16 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
       - name: Build TypeScript (required for cross-package type resolution)
         run: pnpm build:ts
       - name: ESLint
-        run: pnpm -r --filter=!hdf-cli run lint
+        run: pnpm -r --filter=!. --filter=!hdf-cli run lint
       - name: tsc --noEmit
-        run: pnpm -r --filter=!hdf-cli run type-check
-      - name: npm audit
-        run: pnpm audit --audit-level=high
+        run: pnpm -r --filter=!. --filter=!hdf-cli run type-check
+      - name: npm audit (prod=moderate, dev=high)
+        run: pnpm run security:ts
 
   # ── Gate: Go checks ─────────────────────────────────────────────────────
   check-go:
@@ -68,6 +70,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
         with:
+          node-version: ${{ env.NODE_VERSION }}
           go: 'true'
       - name: Build TypeScript (Go modules need hdf-schema/dist/go/)
         run: pnpm build:ts
@@ -96,12 +99,13 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
         with:
+          node-version: ${{ env.NODE_VERSION }}
           go: 'true'
       - name: Build TypeScript
         run: pnpm build:ts
       - name: Verify TS artifacts
         run: |
-          for pkg in hdf-schema hdf-utilities hdf-mappings hdf-validators hdf-parsers hdf-converters hdf-diff; do
+          for pkg in hdf-schema hdf-utilities hdf-mappings hdf-validators hdf-parsers hdf-converters hdf-diff hdf-extension-graph hdf-generators; do
             [ -d "$pkg/dist" ] && echo "✓ $pkg/dist" || { echo "✗ $pkg/dist missing"; exit 1; }
           done
       - name: Build Go CLI
@@ -118,6 +122,8 @@ jobs:
             hdf-parsers/dist/
             hdf-converters/dist/
             hdf-diff/dist/
+            hdf-extension-graph/dist/
+            hdf-generators/dist/
           retention-days: 1
 
   # ── Test TypeScript ──────────────────────────────────────────────────────
@@ -133,11 +139,15 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: build-artifacts
       - name: Test TypeScript (all packages)
         run: pnpm test:ts
+      - name: Export-contract gate (three-artifact rule)
+        run: pnpm test:exports
 
   # ── Test Go ──────────────────────────────────────────────────────────────
   test-go:
@@ -153,8 +163,8 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
         with:
+          node-version: ${{ env.NODE_VERSION }}
           go: 'true'
-          lfs: 'true'
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: build-artifacts
@@ -176,13 +186,13 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup
         with:
+          node-version: ${{ env.NODE_VERSION }}
           go: 'true'
-          lfs: 'true'
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: build-artifacts
       - name: TypeScript coverage
-        run: pnpm -r --filter=!hdf-cli run test:coverage
+        run: pnpm -r --filter=!. --filter=!hdf-cli run test:coverage
       - name: Go coverage (workspace packages)
         run: |
           for dir in hdf-mappings/go hdf-validators/go hdf-parsers/go; do

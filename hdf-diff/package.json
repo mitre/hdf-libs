@@ -12,6 +12,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./matching": {
+      "types": "./dist/matching/index.d.ts",
+      "import": "./dist/matching/index.js"
+    },
+    "./renderers": {
+      "types": "./dist/renderers/index.d.ts",
+      "import": "./dist/renderers/index.js"
     }
   },
   "files": [
@@ -40,7 +48,7 @@
     "@mitre/hdf-validators": "workspace:^"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   },
   "keywords": [
     "hdf",

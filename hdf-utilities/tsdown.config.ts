@@ -9,11 +9,12 @@ export default defineConfig({
     'src/csv/index.ts',
     'src/object/index.ts',
     'src/string/index.ts',
+    'src/severity/index.ts',
   ],
   format: 'esm',
   dts: true,
   sourcemap: true,
   clean: true,
-  target: 'node20',
+  target: 'node24',
   platform: 'neutral',
 });
