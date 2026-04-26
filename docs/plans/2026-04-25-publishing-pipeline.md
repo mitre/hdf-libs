@@ -194,7 +194,7 @@ jobs:
       - uses: pnpm/action-setup@v3
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile

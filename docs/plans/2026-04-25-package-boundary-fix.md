@@ -146,7 +146,7 @@ import data from './data/cci.json';
 import data from './data/cci.json' with { type: 'json' };
 ```
 
-Verify `tsconfig.json` (and the build's TS settings) preserve the attribute through compilation. TypeScript 5.3+ + tsdown should handle it correctly when targeting Node 22+.
+Verify `tsconfig.json` (and the build's TS settings) preserve the attribute through compilation. TypeScript 5.3+ + tsdown should handle it correctly for this repo's supported Node 24+ runtime.
 
 Build + test. Verify hdf-mappings main entry now imports successfully at runtime.
 
