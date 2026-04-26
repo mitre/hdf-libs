@@ -12,10 +12,10 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-# NODE_VERSION pinned to the current LTS (22). Matches each published
-# package's `engines.node: ">=22.0.0"`.
+# NODE_VERSION pinned to the current LTS (24). Matches each published
+# package's `engines.node: ">=24.0.0"`.
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: '24'
   GO_VERSION: '1.26.2'
 
 jobs:

@@ -12,7 +12,7 @@ inputs:
   node-version:
     description: 'Node version'
     required: false
-    default: '20'
+    default: '24'
 
 runs:
   using: composite

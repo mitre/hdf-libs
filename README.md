@@ -103,7 +103,7 @@ The following tools must be installed before running `pnpm lint` or `pnpm test`:
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| [Node.js](https://nodejs.org/) | ≥22.0.0 | TypeScript build and test runner |
+| [Node.js](https://nodejs.org/) | ≥24.0.0 | TypeScript build and test runner |
 | [pnpm](https://pnpm.io/) | ≥10.0.0 | Package manager |
 | [Go](https://go.dev/) | 1.26.x | Go packages and CLI tool |
 | [golangci-lint](https://golangci-lint.run/) | latest | Go linter (required for `pnpm lint`) |
@@ -124,8 +124,8 @@ go install golang.org/x/vuln/cmd/govulncheck@latest
 **Ubuntu / WSL:**
 
 ```bash
-# Node.js 22.x
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+# Node.js 24.x
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt-get install -y nodejs
 corepack enable && corepack prepare pnpm@10.33.0 --activate
 

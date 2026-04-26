@@ -16,7 +16,7 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  target: 'node20',
+  target: 'node24',
   platform: 'neutral',
   // tsdown auto-externalizes `dependencies` and `peerDependencies` from
   // package.json, so workspace-sibling @mitre/* packages stay as imports
