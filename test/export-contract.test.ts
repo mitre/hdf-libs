@@ -19,19 +19,32 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-// All TS-publishing hdf-* workspace packages. hdf-cli is Go-only and excluded.
-// Mirrors pnpm-workspace.yaml's `hdf-*` glob minus hdf-cli.
-const TS_PACKAGES = [
-  'hdf-converters',
-  'hdf-diff',
-  'hdf-extension-graph',
-  'hdf-generators',
-  'hdf-mappings',
-  'hdf-parsers',
-  'hdf-schema',
-  'hdf-utilities',
-  'hdf-validators',
-];
+// Discovered at runtime from repo-root directories matching
+// pnpm-workspace.yaml's `hdf-*` glob, minus hdf-cli (Go-only). Auto-covers
+// any future hdf-* TS package added to the workspace — eliminates the
+// failure mode where a new package is added and someone forgets to wire
+// it into the gate, silently reintroducing the drift class this gate
+// exists to prevent.
+async function discoverTsPackages(): Promise<string[]> {
+  const entries = await readdir(REPO_ROOT, { withFileTypes: true });
+  return entries
+    .filter(
+      (entry) =>
+        entry.isDirectory() &&
+        entry.name.startsWith('hdf-') &&
+        entry.name !== 'hdf-cli' &&
+        existsSync(join(REPO_ROOT, entry.name, 'package.json')),
+    )
+    .map((entry) => entry.name)
+    .sort();
+}
+
+const TS_PACKAGES = await discoverTsPackages();
+if (TS_PACKAGES.length === 0) {
+  throw new Error(
+    'export-contract gate discovered no hdf-* TS packages — is REPO_ROOT correct?',
+  );
+}
 
 // Subdirs under src/ that are not subpath-export candidates (data, types, internal helpers, etc.).
 const INTERNAL_SRC_SUBDIRS = new Set([
