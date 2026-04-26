@@ -144,6 +144,85 @@ describe('renderCsv', () => {
     });
   });
 
+  // CSV-injection (formula-injection) hardening. Spreadsheet apps treat
+  // cells starting with =, +, -, @, tab, or CR as formulas and will execute
+  // them on open. Scan-tool output (vuln titles, descriptions) is
+  // attacker-influenced, so any cell whose first character is dangerous must
+  // be prefixed with an apostrophe to neutralize formula evaluation.
+  // OWASP "CSV Injection" recommendation; CWE-1236.
+  describe('formula-injection hardening', () => {
+    it.each([
+      ['=', '=SUM(1+1)'],
+      ['+', '+SUM(1+1)'],
+      ['-', '-SUM(1+1)'],
+      ['@', '@SUM(1+1)'],
+      ['tab', '\t=cmd'],
+      ['CR', '\r=cmd'],
+    ])('prefixes apostrophe when title starts with %s', (_label, payload) => {
+      const comp: HdfComparison = {
+        ...comparison,
+        requirementDiffs: [{ ...comparison.requirementDiffs[0]!, title: payload }],
+      };
+      const output = renderCsv(comp);
+      const dataRow = output.split('\n').filter((l) => l.trim() !== '')[1]!;
+      expect(dataRow).toContain(`'${payload}`);
+    });
+
+    it('prefixes apostrophe inside the quoted field when payload also contains a comma', () => {
+      const payload = '=HYPERLINK("http://x"),click';
+      const comp: HdfComparison = {
+        ...comparison,
+        requirementDiffs: [{ ...comparison.requirementDiffs[0]!, title: payload }],
+      };
+      const output = renderCsv(comp);
+      // Comma forces RFC-4180 quoting; apostrophe must sit INSIDE the leading quote.
+      expect(output).toContain('"\'=HYPERLINK(""http://x""),click"');
+    });
+
+    it('does not prefix apostrophe for benign fields starting with safe characters', () => {
+      const comp: HdfComparison = {
+        ...comparison,
+        requirementDiffs: [{ ...comparison.requirementDiffs[0]!, title: 'Normal title' }],
+      };
+      const output = renderCsv(comp);
+      expect(output).not.toContain("'Normal title");
+    });
+
+    it('does not prefix apostrophe for empty fields', () => {
+      const comp: HdfComparison = {
+        ...comparison,
+        requirementDiffs: [{ ...comparison.requirementDiffs[0]!, title: '' }],
+      };
+      const output = renderCsv(comp);
+      const dataRow = output.split('\n').filter((l) => l.trim() !== '')[1]!;
+      // Field 2 (Title) should be empty, not "'".
+      const cells = dataRow.split(',');
+      expect(cells[1]).toBe('');
+    });
+
+    it('hardens dangerous prefixes in the Field Changes column under detail=full', () => {
+      const comp: HdfComparison = {
+        ...comparison,
+        requirementDiffs: [
+          {
+            ...comparison.requirementDiffs[0]!,
+            title: 'Safe title',
+            fieldChanges: [
+              { op: 'add', path: 'tags.payload', newValue: '=cmd|"/c calc"' },
+            ],
+          },
+        ],
+      };
+      const output = renderCsv(comp, { detail: 'full' });
+      // formatFieldChanges produces "+tags.payload: \"=cmd|\\\"/c calc\\\"\""
+      // After JSON.stringify, the field value starts with `+` (already
+      // dangerous), so the whole cell must be prefixed with apostrophe.
+      const dataRow = output.split('\n').filter((l) => l.trim() !== '')[1]!;
+      // Cell starts with apostrophe, then the literal `+tags.payload:`.
+      expect(dataRow).toMatch(/(?:^|,)"?'\+tags\.payload:/);
+    });
+  });
+
   describe('filtering', () => {
     it('should filter rows by state when filterStates is set', () => {
       const output = renderCsv(comparison, { filterStates: ['fixed'] });

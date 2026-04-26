@@ -58,8 +58,8 @@ jobs:
         run: pnpm -r --filter=!. --filter=!hdf-cli run lint
       - name: tsc --noEmit
         run: pnpm -r --filter=!. --filter=!hdf-cli run type-check
-      - name: npm audit
-        run: pnpm audit --audit-level=high
+      - name: npm audit (prod=moderate, dev=high)
+        run: pnpm run security:ts
 
   # ── Gate: Go checks ─────────────────────────────────────────────────────
   check-go:

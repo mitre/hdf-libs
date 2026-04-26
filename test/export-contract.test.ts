@@ -47,6 +47,12 @@ if (TS_PACKAGES.length === 0) {
 }
 
 // Subdirs under src/ that are not subpath-export candidates (data, types, internal helpers, etc.).
+// Hand-maintained opt-out list. The opt-out integrity check below fails the
+// gate if any of these dirs is also partially wired as a public subpath
+// (tsdown entry or package.json exports key) — the silent-failure mode of
+// the opt-out model. Future work: replace with per-dir marker files
+// (`src/<dir>/.internal`) so adding an internal dir is an explicit opt-out
+// at the dir itself, not a central list update.
 const INTERNAL_SRC_SUBDIRS = new Set([
   '__tests__',
   '_internal',
@@ -119,19 +125,21 @@ async function findSrcSubdirs(pkg: string): Promise<string[]> {
 
 
 /**
- * Parse src/index.ts and find every value re-export from a sibling subdir's
- * index.js. Returns a map of subdir name → list of named value exports.
+ * Parse src/index.ts and find every value re-export from a relative path.
+ * Returns a map of relative-path-string → list of named value exports.
  *
- * Only matches `export { ... } from './<subdir>/index.js'` — explicitly
- * skips `export type { ... } from ...` since types do not exist at runtime.
+ * Matches any `export { ... } from './X'` or `'../X'` — including deeper
+ * paths like `./matching/strategies.js`, not just `./<subdir>/index.js`.
+ * Skips `export type { ... } from ...` (types do not exist at runtime) and
+ * non-relative paths (externals are not part of the package-boundary gate).
  * Handles `export { x as y }` (the exported name is `y`).
  */
 function findValueReExports(srcIndex: string): Map<string, string[]> {
   const result = new Map<string, string[]>();
-  const re = /export\s+(?!type\b)\{\s*([^}]*)\}\s+from\s+['"]\.\/([^'"\\/]+)\/index\.js['"]/g;
+  const re = /export\s+(?!type\b)\{\s*([^}]*)\}\s+from\s+['"](\.\.?\/[^'"]+)['"]/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(srcIndex)) !== null) {
-    const subdir = m[2];
+    const reExportPath = m[2];
     const names = m[1]
       .split(',')
       .map((s) => s.trim())
@@ -142,8 +150,8 @@ function findValueReExports(srcIndex: string): Map<string, string[]> {
         return asMatch ? asMatch[2] : s;
       });
     if (names.length === 0) continue;
-    const existing = result.get(subdir) ?? [];
-    result.set(subdir, [...existing, ...names]);
+    const existing = result.get(reExportPath) ?? [];
+    result.set(reExportPath, [...existing, ...names]);
   }
   return result;
 }
@@ -177,6 +185,34 @@ describe('export-contract', () => {
           pkgJson.exports?.['.'],
           `${pkg}/package.json exports must declare main entry "."`,
         ).toBeDefined();
+      });
+
+      // Opt-out integrity: an INTERNAL_SRC_SUBDIRS dir must not also appear
+      // as a public subpath. The opt-out model's failure mode is a
+      // maintainer adding `src/internal/index.ts` intending it to be
+      // public, then having the gate silently drop it because `internal`
+      // happens to match the excludes list. This catches the contradiction.
+      it('excluded internal subdirs are not partially wired as public exports', async () => {
+        const srcRoot = join(REPO_ROOT, pkg, 'src');
+        if (!existsSync(srcRoot)) return;
+        const violations: string[] = [];
+        const entries = await readdir(srcRoot, { withFileTypes: true });
+        for (const entry of entries) {
+          if (!entry.isDirectory()) continue;
+          if (!INTERNAL_SRC_SUBDIRS.has(entry.name)) continue;
+          if (!existsSync(join(srcRoot, entry.name, 'index.ts'))) continue;
+          const tsdownEntry = `src/${entry.name}/index.ts`;
+          if (tsdownEntries?.includes(tsdownEntry)) {
+            violations.push(`tsdown.config.ts entry includes "${tsdownEntry}"`);
+          }
+          if (pkgJson.exports?.[`./${entry.name}`]) {
+            violations.push(`package.json exports declares "./${entry.name}"`);
+          }
+        }
+        expect(
+          violations,
+          `${pkg}: subdir(s) in INTERNAL_SRC_SUBDIRS are partially wired as public exports — either remove from INTERNAL_SRC_SUBDIRS or unwire: ${violations.join('; ')}`,
+        ).toHaveLength(0);
       });
 
       // Three-artifact rule: every src/<subdir>/index.ts must be in tsdown entries AND exports map.
@@ -241,10 +277,10 @@ describe('export-contract', () => {
           }
           const mod = await import(pathToFileURL(distFile).href);
           const missing: string[] = [];
-          for (const [subdir, names] of valueReExports) {
+          for (const [reExportPath, names] of valueReExports) {
             for (const name of names) {
               if (!(name in mod)) {
-                missing.push(`${name} (re-exported from ./${subdir}/index.js)`);
+                missing.push(`${name} (re-exported from ${reExportPath})`);
               }
             }
           }

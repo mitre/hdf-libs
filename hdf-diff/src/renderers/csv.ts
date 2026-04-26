@@ -2,18 +2,32 @@ import type { HdfComparison, RequirementDiff } from '../types.js';
 import type { RenderOptions } from './types.js';
 import { filterRequirements } from './filter.js';
 
+// Spreadsheet apps (Excel, Sheets, LibreOffice) treat cells starting with
+// these characters as formulas and execute them on file open. Scan-tool
+// output (vuln titles, descriptions) is attacker-influenced, so neutralize
+// any cell whose first character is dangerous. OWASP "CSV Injection";
+// CWE-1236.
+const FORMULA_TRIGGERS = new Set(['=', '+', '-', '@', '\t', '\r']);
+
+function neutralizeFormulaInjection(value: string): string {
+  if (value.length === 0) return value;
+  return FORMULA_TRIGGERS.has(value[0]!) ? `'${value}` : value;
+}
+
 /**
  * Escape a value for CSV output.
  *
- * Per RFC 4180:
- * - Fields containing commas, double quotes, or newlines are enclosed in double quotes.
- * - Double quotes within a field are escaped by doubling them.
+ * Two-step:
+ * 1. Neutralize formula-injection triggers (CSV-injection / CWE-1236).
+ * 2. RFC-4180: enclose in double quotes if the field contains commas,
+ *    double quotes, or newlines; double internal quotes.
  */
 function escapeCsvField(value: string): string {
-  if (value.includes(',') || value.includes('"') || value.includes('\n') || value.includes('\r')) {
-    return `"${value.replace(/"/g, '""')}"`;
+  const safe = neutralizeFormulaInjection(value);
+  if (safe.includes(',') || safe.includes('"') || safe.includes('\n') || safe.includes('\r')) {
+    return `"${safe.replace(/"/g, '""')}"`;
   }
-  return value;
+  return safe;
 }
 
 /**

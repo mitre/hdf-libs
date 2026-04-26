@@ -27,8 +27,13 @@ runs:
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
         path: ~/.local/share/pnpm/store
-        key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: ${{ runner.os }}-pnpm-
+        # Bound cache-poisoning blast radius: a key shared across Node /
+        # pnpm versions lets a poisoned tarball from one matrix job
+        # serve every other. Bind the key to (os, node, pnpm, lockfile).
+        key: ${{ runner.os }}-node${{ inputs.node-version }}-pnpm10-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-node${{ inputs.node-version }}-pnpm10-
+          ${{ runner.os }}-node${{ inputs.node-version }}-
 
     - name: Install dependencies
       shell: bash
