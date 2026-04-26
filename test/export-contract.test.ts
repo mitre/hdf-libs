@@ -157,7 +157,7 @@ const packageData: PackageContractData[] = await Promise.all(
 
 describe('export-contract', () => {
   for (const { pkg, pkgJson, tsdownEntries, srcSubdirs, valueReExports } of packageData) {
-    describe(`@mitre/${pkg.replace(/^hdf-/, 'hdf-')}`, () => {
+    describe(`@mitre/${pkg}`, () => {
       it('package.json declares an exports map with a main entry', () => {
         expect(pkgJson.exports, `${pkg}/package.json must declare an exports field`).toBeDefined();
         expect(
