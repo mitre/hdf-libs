@@ -53,9 +53,9 @@ jobs:
       - name: Build TypeScript (required for cross-package type resolution)
         run: pnpm build:ts
       - name: ESLint
-        run: pnpm -r --filter='!.' --filter='!hdf-cli' run lint
+        run: pnpm -r --filter=!. --filter=!hdf-cli run lint
       - name: tsc --noEmit
-        run: pnpm -r --filter='!.' --filter='!hdf-cli' run type-check
+        run: pnpm -r --filter=!. --filter=!hdf-cli run type-check
       - name: npm audit
         run: pnpm audit --audit-level=high
 
@@ -118,6 +118,8 @@ jobs:
             hdf-parsers/dist/
             hdf-converters/dist/
             hdf-diff/dist/
+            hdf-extension-graph/dist/
+            hdf-generators/dist/
           retention-days: 1
 
   # ── Test TypeScript ──────────────────────────────────────────────────────
@@ -184,7 +186,7 @@ jobs:
         with:
           name: build-artifacts
       - name: TypeScript coverage
-        run: pnpm -r --filter='!.' --filter='!hdf-cli' run test:coverage
+        run: pnpm -r --filter=!. --filter=!hdf-cli run test:coverage
       - name: Go coverage (workspace packages)
         run: |
           for dir in hdf-mappings/go hdf-validators/go hdf-parsers/go; do
