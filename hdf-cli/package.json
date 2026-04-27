@@ -16,8 +16,8 @@
     "test:race": "go test -race ./...",
     "test:bench": "go test -bench=. -benchmem ./...",
     "test:fuzz": "go test -fuzz=. -fuzztime=30s ./pkg/hdf/",
-    "lint": "PATH=\"$PATH:$HOME/go/bin\" golangci-lint run",
-    "lint:fix": "PATH=\"$PATH:$HOME/go/bin\" golangci-lint run --fix",
+    "lint:go": "PATH=\"$PATH:$HOME/go/bin\" golangci-lint run",
+    "lint:go:fix": "PATH=\"$PATH:$HOME/go/bin\" golangci-lint run --fix",
     "fmt": "gofmt -s -w .",
     "fmt:check": "gofmt -l . | grep -q . && exit 1 || exit 0",
     "vet": "go vet ./...",
@@ -25,7 +25,7 @@
     "security:sast": "gosec -exclude=G304,G104,G115,G706 -exclude-generated ./...",
     "security:vuln": "govulncheck ./...",
     "security:secrets": "gitleaks detect --source=. --config=.gitleaks.toml --verbose",
-    "check": "pnpm run fmt:check && pnpm run lint && pnpm run test && pnpm run security",
+    "check": "pnpm run fmt:check && pnpm run lint:go && pnpm run test && pnpm run security",
     "ci": "pnpm run check"
   },
   "repository": {

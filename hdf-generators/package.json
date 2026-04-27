@@ -27,7 +27,11 @@
     "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit",
     "lint": "eslint src test",
-    "lint:fix": "eslint src test --fix"
+    "lint:fix": "eslint src test --fix",
+    "lint:go": "cd go && golangci-lint run",
+    "lint:go:fix": "cd go && golangci-lint run --fix",
+    "security:vuln": "cd go && govulncheck ./...",
+    "security:sast": "cd go && gosec -exclude=G304,G104,G115,G706 -exclude-generated ./..."
   },
   "repository": {
     "type": "git",

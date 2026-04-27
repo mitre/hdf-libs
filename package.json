@@ -23,9 +23,11 @@
     "typecheck": "pnpm -r --filter=!. --filter=!hdf-cli run type-check",
     "security": "pnpm run security:ts && pnpm run security:go",
     "security:ts": "echo '── prod deps (fail on moderate+) ──' && pnpm audit --prod --audit-level=moderate && echo '── dev deps (fail on high+) ──' && pnpm audit --dev --audit-level=high",
-    "security:go": "pnpm --filter hdf-cli run security:vuln && pnpm --filter hdf-cli run security:sast",
+    "security:go": "pnpm run security:vuln:go && pnpm run security:sast:go",
+    "security:vuln:go": "pnpm -r --filter=!. --workspace-concurrency=1 run security:vuln",
+    "security:sast:go": "pnpm -r --filter=!. --workspace-concurrency=1 run security:sast",
     "lint": "pnpm -r --filter=!. run lint",
-    "lint:go": "pnpm --filter hdf-cli run lint && pnpm --filter @mitre/hdf-converters run lint:go",
+    "lint:go": "pnpm -r --filter=!. --workspace-concurrency=1 run lint:go",
     "lint:fix": "pnpm -r --filter=!. run lint:fix",
     "clean": "pnpm -r --filter=!. run clean",
     "prepare": "husky"

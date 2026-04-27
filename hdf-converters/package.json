@@ -41,7 +41,9 @@
     "lint": "eslint src converters shared",
     "lint:fix": "eslint src converters shared --fix",
     "lint:go": "golangci-lint run ./...",
-    "lint:go:fix": "golangci-lint run --fix ./..."
+    "lint:go:fix": "golangci-lint run --fix ./...",
+    "security:vuln": "govulncheck ./...",
+    "security:sast": "gosec -exclude=G304,G104,G115,G706 -exclude-generated ./..."
   },
   "repository": {
     "type": "git",
