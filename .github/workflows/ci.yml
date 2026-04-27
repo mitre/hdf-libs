@@ -74,20 +74,53 @@ jobs:
           go: 'true'
       - name: Build TypeScript (Go modules need hdf-schema/dist/go/)
         run: pnpm build:ts
-      - name: golangci-lint (hdf-cli)
+      - name: Install Go security tooling
         run: |
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${{ env.GOLANGCI_LINT_VERSION }}
-          cd hdf-cli && golangci-lint run
-      - name: golangci-lint (hdf-converters)
-        run: cd hdf-converters && golangci-lint run ./...
-      - name: govulncheck
-        run: |
           go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
-          cd hdf-cli && govulncheck ./...
-      - name: gosec
-        run: |
           go install github.com/securego/gosec/v2/cmd/gosec@v2.25.0
-          cd hdf-cli && gosec -exclude=G304,G104,G115,G706 -exclude-generated ./...
+      - name: golangci-lint (all Go modules)
+        # Self-discover: lint every go.mod in the repo (excluding generated
+        # output under */dist/). Each module's own .golangci.yml governs.
+        run: |
+          found=0
+          for mod in $(find hdf-* -name go.mod -not -path "*/dist/*" -not -path "*/node_modules/*" | sort); do
+            dir=$(dirname "$mod")
+            echo "::group::golangci-lint $dir"
+            (cd "$dir" && golangci-lint run)
+            echo "::endgroup::"
+            found=$((found + 1))
+          done
+          [ "$found" -gt 0 ] || { echo "✗ no Go modules discovered"; exit 1; }
+          echo "Linted $found Go module(s)."
+      - name: govulncheck (all Go modules)
+        run: |
+          found=0
+          for mod in $(find hdf-* -name go.mod -not -path "*/dist/*" -not -path "*/node_modules/*" | sort); do
+            dir=$(dirname "$mod")
+            echo "::group::govulncheck $dir"
+            (cd "$dir" && govulncheck ./...)
+            echo "::endgroup::"
+            found=$((found + 1))
+          done
+          [ "$found" -gt 0 ] || { echo "✗ no Go modules discovered"; exit 1; }
+          echo "Scanned $found Go module(s)."
+      - name: gosec (all Go modules)
+        # Excludes are uniform across modules: G304 (path traversal — flagged
+        # by every CLI taking user input), G104 (unhandled errors — too noisy
+        # without a per-call audit), G115 (integer overflow conversions),
+        # G706 (no-fail on shell exec). Tighten per-module if/when needed.
+        run: |
+          found=0
+          for mod in $(find hdf-* -name go.mod -not -path "*/dist/*" -not -path "*/node_modules/*" | sort); do
+            dir=$(dirname "$mod")
+            echo "::group::gosec $dir"
+            (cd "$dir" && gosec -exclude=G304,G104,G115,G706 -exclude-generated ./...)
+            echo "::endgroup::"
+            found=$((found + 1))
+          done
+          [ "$found" -gt 0 ] || { echo "✗ no Go modules discovered"; exit 1; }
+          echo "Scanned $found Go module(s)."
 
   # ── Build (once, share artifacts) ────────────────────────────────────────
   build:
@@ -104,26 +137,27 @@ jobs:
       - name: Build TypeScript
         run: pnpm build:ts
       - name: Verify TS artifacts
+        # Self-discover: any hdf-* package whose package.json declares a
+        # ./dist/-rooted main entry should have a built dist/ on disk.
+        # Auto-covers new TS packages without needing a CI list update.
         run: |
-          for pkg in hdf-schema hdf-utilities hdf-mappings hdf-validators hdf-parsers hdf-converters hdf-diff hdf-extension-graph hdf-generators; do
+          found=0
+          for pkg_json in hdf-*/package.json; do
+            pkg=$(dirname "$pkg_json")
+            grep -q '"main": *"\./dist/' "$pkg_json" || continue
             [ -d "$pkg/dist" ] && echo "✓ $pkg/dist" || { echo "✗ $pkg/dist missing"; exit 1; }
+            found=$((found + 1))
           done
+          [ "$found" -gt 0 ] || { echo "✗ no TS packages discovered — glob/grep broken?"; exit 1; }
+          echo "Verified $found TS package(s)."
       - name: Build Go CLI
         run: pnpm build:go
       - name: Upload build artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: build-artifacts
-          path: |
-            hdf-schema/dist/
-            hdf-utilities/dist/
-            hdf-mappings/dist/
-            hdf-validators/dist/
-            hdf-parsers/dist/
-            hdf-converters/dist/
-            hdf-diff/dist/
-            hdf-extension-graph/dist/
-            hdf-generators/dist/
+          # Glob auto-covers any new hdf-* package's dist/ on build.
+          path: hdf-*/dist/
           retention-days: 1
 
   # ── Test TypeScript ──────────────────────────────────────────────────────
@@ -194,11 +228,19 @@ jobs:
       - name: TypeScript coverage
         run: pnpm -r --filter=!. --filter=!hdf-cli run test:coverage
       - name: Go coverage (workspace packages)
+        # Self-discover: every hdf-*/go/ with a go.mod gets coverage.
+        # hdf-converters and hdf-cli have their own dedicated steps below
+        # because their Go layouts don't follow the hdf-*/go/ convention.
         run: |
-          for dir in hdf-mappings/go hdf-validators/go hdf-parsers/go; do
+          found=0
+          for dir in hdf-*/go; do
+            [ -f "$dir/go.mod" ] || continue
             echo "=== $dir ==="
-            (cd $dir && go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out | tail -1)
+            (cd "$dir" && go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out | tail -1)
+            found=$((found + 1))
           done
+          [ "$found" -gt 0 ] || { echo "✗ no Go workspace packages discovered"; exit 1; }
+          echo "Covered $found Go workspace package(s)."
       - name: Go coverage (hdf-converters)
         run: |
           cd hdf-converters
