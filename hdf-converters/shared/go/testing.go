@@ -68,7 +68,7 @@ func GetDifferentialTests(t *testing.T, converterName string) []DifferentialTest
 // WriteOutput writes converter output for comparison with TypeScript.
 func WriteOutput(t *testing.T, converterName, testName string, data interface{}) {
 	outputDir := filepath.Join(GetOutputDir(), converterName)
-	err := os.MkdirAll(outputDir, 0755)
+	err := os.MkdirAll(outputDir, 0o750)
 	require.NoError(t, err, "Failed to create output directory")
 
 	outputFile := filepath.Join(outputDir, testName)
