@@ -201,27 +201,27 @@ func TestValidateMultiFile_GlobExpansion(t *testing.T) {
 	assert.Contains(t, stdout, "Results: 2/2")
 }
 
-func TestValidateMultiFile_AbortsOnFirstFailure(t *testing.T) {
+func TestValidateMultiFile_ContinuesByDefault(t *testing.T) {
 	fixture := testFixturePath(t, "minimal-v2.json")
 	tmpDir := t.TempDir()
 	badFile := filepath.Join(tmpDir, "bad.json")
 	require.NoError(t, os.WriteFile(badFile, []byte("not json"), 0o600))
 
-	// Without -k, should abort on the bad file.
-	_, _, err := executeCommand("validate", badFile, fixture)
-	require.Error(t, err)
-}
-
-func TestValidateMultiFile_ContinuesWithDashK(t *testing.T) {
-	fixture := testFixturePath(t, "minimal-v2.json")
-	tmpDir := t.TempDir()
-	badFile := filepath.Join(tmpDir, "bad.json")
-	require.NoError(t, os.WriteFile(badFile, []byte("not json"), 0o600))
-
-	// With -k, should process all files and show summary.
-	stdout, _, err := executeCommand("validate", "-k", badFile, fixture)
+	// Without --fail-fast, should process all files and show summary.
+	stdout, _, err := executeCommand("validate", badFile, fixture)
 	require.Error(t, err)
 	assert.Contains(t, stdout, "Results: 1/2")
+}
+
+func TestValidateMultiFile_AbortsWithFailFast(t *testing.T) {
+	fixture := testFixturePath(t, "minimal-v2.json")
+	tmpDir := t.TempDir()
+	badFile := filepath.Join(tmpDir, "bad.json")
+	require.NoError(t, os.WriteFile(badFile, []byte("not json"), 0o600))
+
+	// With -F, should abort on the bad file.
+	_, _, err := executeCommand("validate", "-F", badFile, fixture)
+	require.Error(t, err)
 }
 
 // --- Bulk convert tests ---
@@ -238,7 +238,7 @@ func TestConvertBulk_MultipleFiles(t *testing.T) {
 	require.NoError(t, os.WriteFile(f2, data, 0o600))
 
 	outDir := filepath.Join(tmpDir, "output")
-	_, _, err = executeCommand("convert", "--from", "legacyhdf", f1, f2, "-o", outDir, "-k")
+	_, _, err = executeCommand("convert", "--from", "legacyhdf", f1, f2, "-o", outDir)
 	require.NoError(t, err)
 
 	// Check output files exist with .hdf.json suffix
@@ -264,7 +264,7 @@ func TestConvertBulk_RequiresOutputDir(t *testing.T) {
 	assert.Contains(t, err.Error(), "output-directory")
 }
 
-func TestConvertBulk_AbortsWithoutK(t *testing.T) {
+func TestConvertBulk_ContinuesByDefault(t *testing.T) {
 	fixture := legacyhdfFixturePath(t, "input/minimal.json")
 	tmpDir := t.TempDir()
 	data, err := os.ReadFile(fixture)
@@ -275,34 +275,33 @@ func TestConvertBulk_AbortsWithoutK(t *testing.T) {
 	require.NoError(t, os.WriteFile(bad, []byte("not json"), 0o600))
 
 	outDir := filepath.Join(tmpDir, "output")
-	// Bad file first, no -k — should abort
+	// Without --fail-fast, should skip bad and convert good
 	_, _, err = executeCommand("convert", "--from", "legacyhdf", bad, good, "-o", outDir)
+	require.Error(t, err) // still exits non-zero
+
+	// Good file should have been converted
+	_, statErr := os.Stat(filepath.Join(outDir, "good.hdf.json"))
+	require.NoError(t, statErr, "good.hdf.json should exist without --fail-fast")
+}
+
+func TestConvertBulk_AbortsWithFailFast(t *testing.T) {
+	fixture := legacyhdfFixturePath(t, "input/minimal.json")
+	tmpDir := t.TempDir()
+	data, err := os.ReadFile(fixture)
+	require.NoError(t, err)
+	good := filepath.Join(tmpDir, "good.json")
+	bad := filepath.Join(tmpDir, "bad.json")
+	require.NoError(t, os.WriteFile(good, data, 0o600))
+	require.NoError(t, os.WriteFile(bad, []byte("not json"), 0o600))
+
+	outDir := filepath.Join(tmpDir, "output")
+	// Bad file first, with -F — should abort
+	_, _, err = executeCommand("convert", "--from", "legacyhdf", "-F", bad, good, "-o", outDir)
 	require.Error(t, err)
 
 	// Good file should NOT have been processed
 	_, statErr := os.Stat(filepath.Join(outDir, "good.hdf.json"))
-	assert.True(t, os.IsNotExist(statErr), "good.hdf.json should not exist when aborting without -k")
-}
-
-func TestConvertBulk_ContinuesWithK(t *testing.T) {
-	fixture := legacyhdfFixturePath(t, "input/minimal.json")
-	tmpDir := t.TempDir()
-	data, err := os.ReadFile(fixture)
-	require.NoError(t, err)
-	good := filepath.Join(tmpDir, "good.json")
-	bad := filepath.Join(tmpDir, "bad.json")
-	require.NoError(t, os.WriteFile(good, data, 0o600))
-	require.NoError(t, os.WriteFile(bad, []byte("not json"), 0o600))
-
-	outDir := filepath.Join(tmpDir, "output")
-	// With -k, should skip bad and convert good
-	_, _, err = executeCommand("convert", "--from", "legacyhdf", "-k", bad, good, "-o", outDir)
-	require.Error(t, err) // still exits non-zero
-	require.Error(t, err)
-
-	// Good file should have been converted
-	_, statErr := os.Stat(filepath.Join(outDir, "good.hdf.json"))
-	require.NoError(t, statErr, "good.hdf.json should exist with -k")
+	assert.True(t, os.IsNotExist(statErr), "good.hdf.json should not exist when aborting with --fail-fast")
 }
 
 func TestBulkOutputPath(t *testing.T) {

@@ -54,7 +54,7 @@ type GlobalFlags struct {
 	MaxSizeMB        int
 	NoFollowSymlinks bool
 	SchemaDirFlag    string
-	ContinueOnError  bool
+	FailFast         bool
 	NoHeaders        bool
 }
 
@@ -65,7 +65,7 @@ var (
 	maxSizeMB        int
 	noFollowSymlinks bool
 	schemaDirFlag    string
-	continueOnError  bool
+	failFast         bool
 	noHeaders        bool
 )
 
@@ -101,7 +101,7 @@ For more information: https://github.com/mitre/hdf-libs`,
 			maxSizeMB = gf.MaxSizeMB
 			noFollowSymlinks = gf.NoFollowSymlinks
 			schemaDirFlag = gf.SchemaDirFlag
-			continueOnError = gf.ContinueOnError
+			failFast = gf.FailFast
 			noHeaders = gf.NoHeaders
 
 			initConfig()
@@ -114,7 +114,7 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.PersistentFlags().IntVar(&gf.MaxSizeMB, "max-size", 50, "Maximum file size in MB")
 	cmd.PersistentFlags().BoolVar(&gf.NoFollowSymlinks, "no-follow-symlinks", false, "Refuse to read symlinked files")
 	cmd.PersistentFlags().StringVar(&gf.SchemaDirFlag, "schema-dir", "", "Load schemas from directory instead of embedded (for development)")
-	cmd.PersistentFlags().BoolVarP(&gf.ContinueOnError, "continue-on-error", "k", false, "Skip files that fail and report errors at the end")
+	cmd.PersistentFlags().BoolVarP(&gf.FailFast, "fail-fast", "F", false, "Abort on first file that fails instead of continuing")
 	cmd.PersistentFlags().BoolVar(&gf.NoHeaders, "no-headers", false, "Suppress column headers in table output")
 
 	// Add subcommands
