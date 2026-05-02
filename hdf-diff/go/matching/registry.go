@@ -21,6 +21,12 @@ func createStrategy(name string, opts Options) (Strategy, error) {
 		return NewCCIMatchStrategy(), nil
 	case "fuzzyTitle":
 		return NewFuzzyTitleStrategy(opts.MinConfidence), nil
+	case "srgDeterministic":
+		return NewSRGDeterministicStrategy(), nil
+	case "srgCciTiebreak":
+		return NewSRGCCITiebreakStrategy(), nil
+	case "vendorFuzzyTitle":
+		return NewVendorFuzzyTitleStrategy(opts.MinConfidence), nil
 	default:
 		return nil, fmt.Errorf("unknown matching strategy: '%s'", name)
 	}

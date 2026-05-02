@@ -3,6 +3,9 @@ import { createExactIdStrategy } from './exact-id.js';
 import { createMappedIdStrategy } from './mapped-id.js';
 import { createCciMatchStrategy } from './cci-match.js';
 import { createFuzzyTitleStrategy } from './fuzzy-match.js';
+import { createSrgDeterministicStrategy } from './srg-deterministic.js';
+import { createSrgCciTiebreakStrategy } from './srg-cci-tiebreak.js';
+import { createVendorFuzzyTitleStrategy } from './vendor-fuzzy-title.js';
 
 // Re-export types and factory functions
 export type { MatchResult, MatchPair, MatchStrategy } from './types.js';
@@ -10,6 +13,9 @@ export { createExactIdStrategy } from './exact-id.js';
 export { createMappedIdStrategy } from './mapped-id.js';
 export { createCciMatchStrategy } from './cci-match.js';
 export { createFuzzyTitleStrategy, tokenize, jaccardSimilarity } from './fuzzy-match.js';
+export { createSrgDeterministicStrategy } from './srg-deterministic.js';
+export { createSrgCciTiebreakStrategy } from './srg-cci-tiebreak.js';
+export { createVendorFuzzyTitleStrategy, levenshteinDistance, normalizedLevenshtein } from './vendor-fuzzy-title.js';
 
 /**
  * Options for configuring requirement matching.
@@ -39,6 +45,12 @@ function createStrategy(name: string, options: MatchOptions): MatchStrategy {
       return createCciMatchStrategy();
     case 'fuzzyTitle':
       return createFuzzyTitleStrategy(options.minConfidence);
+    case 'srgDeterministic':
+      return createSrgDeterministicStrategy();
+    case 'srgCciTiebreak':
+      return createSrgCciTiebreakStrategy();
+    case 'vendorFuzzyTitle':
+      return createVendorFuzzyTitleStrategy(options.minConfidence);
     default:
       throw new Error(`Unknown matching strategy: '${name}'`);
   }

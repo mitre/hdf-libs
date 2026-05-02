@@ -22,6 +22,8 @@ export interface MatchPair {
   strategy: string;
   /** Confidence score for the match (0.0 - 1.0) */
   confidence: number;
+  /** Relationship type for delta matching: 'primary' (code source) or 'related' (informational) */
+  relationship?: 'primary' | 'related';
 }
 
 /**

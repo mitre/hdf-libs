@@ -16,7 +16,7 @@ func (s *CCIMatchStrategy) Name() string {
 }
 
 // extractCCIs extracts CCI identifiers from a requirement's Tags["cci"] field.
-// The cci field is expected to be []any with string elements.
+// Handles both []any (from JSON unmarshal) and []string (from typed converters).
 func extractCCIs(req hdf.EvaluatedRequirement) []string {
 	if req.Tags == nil {
 		return nil
@@ -27,18 +27,22 @@ func extractCCIs(req hdf.EvaluatedRequirement) []string {
 		return nil
 	}
 
-	cciSlice, ok := cciVal.([]any)
-	if !ok {
+	switch v := cciVal.(type) {
+	case []any:
+		result := make([]string, 0, len(v))
+		for _, c := range v {
+			if s, ok := c.(string); ok {
+				result = append(result, s)
+			}
+		}
+		return result
+	case []string:
+		result := make([]string, len(v))
+		copy(result, v)
+		return result
+	default:
 		return nil
 	}
-
-	result := make([]string, 0, len(cciSlice))
-	for _, c := range cciSlice {
-		if s, ok := c.(string); ok {
-			result = append(result, s)
-		}
-	}
-	return result
 }
 
 // Match matches requirements that share unambiguous CCI identifiers.
