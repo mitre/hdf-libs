@@ -2,6 +2,12 @@ import type { BaselineRequirement } from '@mitre/hdf-schema';
 import { escapeQuotes } from './ruby-escape.js';
 
 /**
+ * Detects when a code string already starts with `control 'ID' do`,
+ * meaning it's a complete InSpec control file — not a body fragment.
+ */
+const FULL_CONTROL_BLOCK = /^\s*control\s+['"]([^'"]+)['"]\s+do\b/;
+
+/**
  * Generate a Ruby InSpec control stub from an HDF BaselineRequirement.
  *
  * Output follows the InSpec DSL ordering convention:
@@ -15,6 +21,16 @@ import { escapeQuotes } from './ruby-escape.js';
  *   end
  */
 export function generateControlStub(req: BaselineRequirement): string {
+  // If code is already a complete `control 'ID' do ... end` block (e.g.
+  // from `-c controls/` reading whole .rb files), emit it as-is — wrapping
+  // it again would produce nested control blocks, which InSpec rejects.
+  if (req.code) {
+    const m = FULL_CONTROL_BLOCK.exec(req.code);
+    if (m && m[1] === req.id) {
+      return req.code;
+    }
+  }
+
   const lines: string[] = [];
 
   lines.push(`control '${req.id}' do`);

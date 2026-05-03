@@ -127,6 +127,18 @@ func TestGenerateControlStub_WithCode(t *testing.T) {
 	assert.Contains(t, ruby, "it { should exist }")
 }
 
+func TestGenerateControlStub_FullControlBlock_NotDoubleWrapped(t *testing.T) {
+	// When req.Code already contains a full `control 'ID' do ... end` wrapper
+	// (e.g. from `-c controls/` reading whole .rb files), the stub generator
+	// must not wrap it again — that produces invalid nested control blocks.
+	req := makeRequirement("SV-12345", 0.5)
+	code := "control 'SV-12345' do\n  describe file('/etc/passwd') do\n    it { should exist }\n  end\nend\n"
+	req.Code = &code
+	ruby := GenerateControlStub(req)
+	count := strings.Count(ruby, "control 'SV-12345' do")
+	assert.Equal(t, 1, count, "expected exactly one `control 'SV-12345' do` line, got %d:\n%s", count, ruby)
+}
+
 func TestGenerateControlStub_StubComment(t *testing.T) {
 	req := makeRequirement("SV-014", 0.5)
 	ruby := GenerateControlStub(req)
