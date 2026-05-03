@@ -15,7 +15,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '../fixtures');
 const INPUT_DIR = join(FIXTURES_DIR, 'input');
 const EXPECTED_DIR = join(FIXTURES_DIR, 'expected');
-const OUTPUT_DIR = join(__dirname, '../../../../test-output/differential/typescript/legacyhdf');
+const OUTPUT_DIR = join(__dirname, '../../../test-output/differential/typescript/legacyhdf');
 
 describe('legacyhdf Converter - Differential Tests', () => {
   // Get all test cases from input directory

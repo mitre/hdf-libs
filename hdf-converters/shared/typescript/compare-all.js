@@ -13,7 +13,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '../..');
-const outputDir = join(rootDir, '../test-output/differential');
+const outputDir = join(rootDir, 'test-output/differential');
 const tsOutputDir = join(outputDir, 'typescript');
 const goOutputDir = join(outputDir, 'go');
 
