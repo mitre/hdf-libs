@@ -15,9 +15,14 @@ All fixtures are in the repo under `hdf-converters/converters/xccdf-results-to-h
 ```bash
 XCCDF_12=hdf-converters/converters/xccdf-results-to-hdf/fixtures/input/benchmark-minimal-1.2.xml
 XCCDF_11=hdf-converters/converters/xccdf-results-to-hdf/fixtures/input/benchmark-minimal-1.1.xml
-RHEL7_XCCDF=hdf-converters/converters/xccdf-results-to-hdf/fixtures/input/stig-rhel7.xml
-RHEL7_HDF=hdf-converters/converters/xccdf-results-to-hdf/fixtures/expected/stig-rhel7.xml.hdf.json
+INSPEC_HDF=hdf-converters/converters/legacyhdf-to-hdf/fixtures/expected/ubi9-scan.json
 ```
+
+> Note: real-world STIG SCAP files (e.g. `stig-rhel7.xml`) often bundle a `<Benchmark>`
+> together with an embedded `<TestResult>`. The XCCDF→Baseline converter currently
+> rejects such inputs as "not a benchmark." The fixtures above are clean inputs
+> suitable for `upgrade`. To use a SCAP-bundled file, strip the `<TestResult>`
+> first.
 
 ---
 
@@ -49,62 +54,55 @@ cat /tmp/upgrade-identity/delta.md
 
 ## Test 3: HDF Results as current baseline
 
-Uses RHEL7 STIG HDF Results (with code in baselines) as the current profile.
+Verifies HDF Results JSON auto-detects as the current side and that the
+`code` field from `baselines[].requirements[]` is preserved into the
+upgraded baseline.
 
 ```bash
-./hdf generate upgrade $RHEL7_HDF $RHEL7_XCCDF /tmp/upgrade-rhel7/
+./hdf generate upgrade $INSPEC_HDF $XCCDF_12 /tmp/upgrade-rhel7/
 ```
 
-**Expected**: Requirements matched. Code from HDF Results preserved in baseline.json.
+**Expected**: 452 current reqs (from UBI 9 InSpec scan) carry through with
+`code` populated; 3 upstream reqs (Windows minimal benchmark) added.
 
 ```bash
 python3 -c "
 import json
-with open('/tmp/upgrade-rhel7/baseline.json') as f:
-    bl = json.load(f)
-for r in bl['requirements'][:3]:
-    print(r['id'], 'has code' if r.get('code') else 'no code')
+bl = json.load(open('/tmp/upgrade-rhel7/baseline.json'))
+with_code = [r for r in bl['requirements'] if r.get('code')]
+print('total reqs:', len(bl['requirements']))
+print('reqs with code:', len(with_code))
 "
 ```
 
 ## Test 4: Smart merge verification
 
-Craft a test where current has custom tags/descriptions, upstream has updated scalars.
+Build a customized current baseline by converting the upstream XCCDF and
+injecting custom tags/descriptions. Then upgrade against the same XCCDF —
+upstream scalars should adopt; current's customizations should survive.
 
 ```bash
-# Create a current baseline with custom tags
+# Seed a known-valid baseline from the upstream, then customize first req.
+./hdf convert --from xccdf-benchmark $XCCDF_12 -o /tmp/seed-baseline.json
 python3 -c "
 import json
-with open('$RHEL7_HDF') as f:
-    results = json.load(f)
-reqs = results['baselines'][0]['requirements']
-# Add custom tags and descriptions to first req
-if reqs:
-    reqs[0]['tags']['custom_tag'] = 'my-custom-value'
-    reqs[0]['descriptions'].append({'label': 'custom', 'data': 'My custom description'})
-bl = {'name': 'custom-rhel7', 'requirements': [
-    {'id': r['id'], 'impact': r['impact'], 'title': r.get('title'),
-     'tags': r.get('tags', {}), 'descriptions': r.get('descriptions', []),
-     'code': r.get('code')} for r in reqs
-], 'groups': [], 'supports': []}
+bl = json.load(open('/tmp/seed-baseline.json'))
+bl['requirements'][0]['tags']['custom_tag'] = 'my-custom-value'
+bl['requirements'][0]['descriptions'].append({'label': 'custom', 'data': 'My custom note'})
 with open('/tmp/custom-current.json', 'w') as f:
     json.dump(bl, f, indent=2)
-" 2>/dev/null
+"
 
-./hdf generate upgrade /tmp/custom-current.json $RHEL7_XCCDF /tmp/upgrade-smart-merge/
+./hdf generate upgrade /tmp/custom-current.json $XCCDF_12 /tmp/upgrade-smart-merge/
 ```
 
-**Expected**: `baseline.json` first requirement has:
-- Upstream scalars (title, impact from XCCDF)
-- Union of tags including `custom_tag: my-custom-value`
-- Union of descriptions including label `custom`
+**Expected**: first requirement in output has both upstream's title/impact
+*and* current's `custom_tag` and `custom` description label.
 
 ```bash
 python3 -c "
 import json
-with open('/tmp/upgrade-smart-merge/baseline.json') as f:
-    bl = json.load(f)
-r = bl['requirements'][0]
+r = json.load(open('/tmp/upgrade-smart-merge/baseline.json'))['requirements'][0]
 print('custom_tag:', r['tags'].get('custom_tag'))
 print('custom desc:', any(d['label'] == 'custom' for d in r['descriptions']))
 "
@@ -112,26 +110,30 @@ print('custom desc:', any(d['label'] == 'custom' for d in r['descriptions']))
 
 ## Test 5: --prefer current
 
-```bash
-./hdf generate upgrade /tmp/custom-current.json $RHEL7_XCCDF /tmp/upgrade-prefer-current/ --prefer current
-```
+Same input as Test 4. `--prefer current` should keep current's scalars
+on conflicts (no observable difference in this fixture pair, since
+current and upstream scalars are already identical — but the flag should
+not error and should still preserve the customizations).
 
-**Expected**: Current values win on scalar conflicts. Custom tags/descriptions still preserved.
+```bash
+./hdf generate upgrade /tmp/custom-current.json $XCCDF_12 /tmp/upgrade-prefer-current/ --prefer current
+python3 -c "
+import json
+r = json.load(open('/tmp/upgrade-prefer-current/baseline.json'))['requirements'][0]
+print('custom_tag:', r['tags'].get('custom_tag'))
+"
+```
 
 ## Test 6: --prefer upstream
 
-```bash
-./hdf generate upgrade /tmp/custom-current.json $RHEL7_XCCDF /tmp/upgrade-prefer-upstream/ --prefer upstream
-```
-
-**Expected**: Upstream replaces everything. `custom_tag` should NOT be present.
+Same input as Test 4. `--prefer upstream` should replace tags/descriptions
+entirely with upstream's — `custom_tag` should NOT be present.
 
 ```bash
+./hdf generate upgrade /tmp/custom-current.json $XCCDF_12 /tmp/upgrade-prefer-upstream/ --prefer upstream
 python3 -c "
 import json
-with open('/tmp/upgrade-prefer-upstream/baseline.json') as f:
-    bl = json.load(f)
-r = bl['requirements'][0]
+r = json.load(open('/tmp/upgrade-prefer-upstream/baseline.json'))['requirements'][0]
 print('custom_tag present:', 'custom_tag' in r.get('tags', {}))
 "
 ```
@@ -189,15 +191,29 @@ with open('/tmp/test-current.json', 'w') as f:
 
 **Expected**: Output includes InSpec profile. The `SV-12345` requirement preserves the `.rb` code from the controls directory.
 
-## Test 10: Cross-vendor (RHEL → minimal benchmark)
+## Test 10: Cross-document — large current, small upstream
 
-Deliberate mismatch — different benchmarks with no SRG overlap.
+A 452-req RHEL UBI 9 InSpec profile as current, the 3-req Windows
+minimal benchmark as upstream. The two share the SRG-OS taxonomy so
+some matches are expected; the bulk of current reqs carry through
+unmatched.
 
 ```bash
-./hdf generate upgrade $RHEL7_XCCDF $XCCDF_12 /tmp/upgrade-cross/
+./hdf generate upgrade $INSPEC_HDF $XCCDF_12 /tmp/upgrade-cross/
 ```
 
-**Expected**: Most/all upstream reqs are no-match. Unmatched current reqs included as-is. `delta.md` shows matching strategies attempted.
+**Expected**: output baseline retains all 452 current reqs (matched ones
+take upstream metadata + current code; unmatched ones pass through unchanged).
+`delta.md` shows the matching tier each upstream req hit.
+
+```bash
+python3 -c "
+import json
+bl = json.load(open('/tmp/upgrade-cross/baseline.json'))
+print('total reqs:', len(bl['requirements']))
+"
+grep -A 5 "Match Statistics" /tmp/upgrade-cross/delta.md | head -7
+```
 
 ## Test 11: `hdf generate delta` alias
 
@@ -217,7 +233,7 @@ Deliberate mismatch — different benchmarks with no SRG overlap.
 | inspec.yml valid | `cat /tmp/upgrade-*/inspec.yml` (when -f inspec/both) |
 | Mapping report | `cat /tmp/upgrade-*/delta.md` |
 | JSON report parseable | `python3 -m json.tool /tmp/upgrade-*/delta.json > /dev/null` |
-| Stats invariant | In `delta.md`: matched + related + noMatch = totalNew |
+| Match-tier breakdown | `delta.md`'s "Match Statistics" section. Note: `related` can overlap with `match` (secondary strategy hits an already-matched upstream), so the four counts are not a strict partition of `totalNew`. |
 
 ## Cleanup
 
@@ -226,7 +242,8 @@ rm -rf /tmp/upgrade-identity /tmp/upgrade-xccdf-versions /tmp/upgrade-rhel7 \
        /tmp/upgrade-smart-merge /tmp/upgrade-prefer-current /tmp/upgrade-prefer-upstream \
        /tmp/upgrade-inspec /tmp/upgrade-both /tmp/upgrade-controls \
        /tmp/upgrade-cross /tmp/upgrade-alias \
-       /tmp/custom-current.json /tmp/test-current.json /tmp/test-controls
+       /tmp/seed-baseline.json /tmp/custom-current.json \
+       /tmp/test-current.json /tmp/test-controls
 ```
 
 ## Notes
