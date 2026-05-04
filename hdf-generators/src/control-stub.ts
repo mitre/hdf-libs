@@ -24,10 +24,18 @@ export function generateControlStub(req: BaselineRequirement): string {
   // If code is already a complete `control 'ID' do ... end` block (e.g.
   // from `-c controls/` reading whole .rb files), emit it as-is — wrapping
   // it again would produce nested control blocks, which InSpec rejects.
+  // When the inner ID differs from req.id (e.g. an upgrade rename match
+  // where current's code was carried into a renamed requirement), rewrite
+  // the wrapper to match req.id so the file remains valid InSpec.
   if (req.code) {
     const m = FULL_CONTROL_BLOCK.exec(req.code);
-    if (m && m[1] === req.id) {
-      return req.code;
+    if (m && m[1] !== undefined) {
+      const innerID = m[1];
+      if (innerID === req.id) {
+        return req.code;
+      }
+      const start = m.index + m[0].indexOf(innerID);
+      return req.code.slice(0, start) + req.id + req.code.slice(start + innerID.length);
     }
   }
 

@@ -139,6 +139,20 @@ describe('generateControlStub', () => {
     expect(matches.length).toBe(1);
   });
 
+  it('rewrites the inner control ID when renamed by an upgrade match', () => {
+    // When upgrade matches a rename (current SV-OLD merges with upstream
+    // SV-NEW), the merged requirement adopts the new ID but inherits
+    // current's full .rb body — which still wraps with `control 'SV-OLD'`.
+    // The stub generator must rewrite the wrapper ID to match req.id.
+    const req = makeRequirement({
+      id: 'SV-268322',
+      code: "control 'SV-244540' do\n  describe file('/etc/pam.d/system-auth') do\n    its('content') { should_not match(/nullok/) }\n  end\nend\n",
+    });
+    const ruby = generateControlStub(req);
+    expect((ruby.match(/control 'SV-268322' do/g) || []).length).toBe(1);
+    expect((ruby.match(/control 'SV-244540' do/g) || []).length).toBe(0);
+  });
+
   it('adds stub comment when no code is provided', () => {
     const req = makeRequirement({ id: 'SV-014' });
     const ruby = generateControlStub(req);

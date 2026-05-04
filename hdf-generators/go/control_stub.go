@@ -30,9 +30,17 @@ func GenerateControlStub(req hdf.BaselineRequirement) string {
 	// If code is already a complete `control 'ID' do ... end` block (e.g.
 	// from `-c controls/` reading whole .rb files), emit it as-is — wrapping
 	// it again would produce nested control blocks, which InSpec rejects.
+	// When the inner ID differs from req.ID (e.g. an upgrade rename match
+	// where current's code was carried into a renamed requirement), rewrite
+	// the wrapper to match req.ID so the file remains valid InSpec.
 	if req.Code != nil {
-		if m := fullControlBlockRegex.FindStringSubmatch(*req.Code); m != nil && m[1] == req.ID {
-			return *req.Code
+		if m := fullControlBlockRegex.FindStringSubmatchIndex(*req.Code); m != nil {
+			innerID := (*req.Code)[m[2]:m[3]]
+			if innerID == req.ID {
+				return *req.Code
+			}
+			rewritten := (*req.Code)[:m[2]] + req.ID + (*req.Code)[m[3]:]
+			return rewritten
 		}
 	}
 

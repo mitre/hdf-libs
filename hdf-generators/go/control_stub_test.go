@@ -139,6 +139,23 @@ func TestGenerateControlStub_FullControlBlock_NotDoubleWrapped(t *testing.T) {
 	assert.Equal(t, 1, count, "expected exactly one `control 'SV-12345' do` line, got %d:\n%s", count, ruby)
 }
 
+func TestGenerateControlStub_RenamedControlBlock_RewriteInnerID(t *testing.T) {
+	// When upgrade matches a rename (current SV-OLD merges with upstream
+	// SV-NEW), the merged requirement adopts the new ID but inherits
+	// current's full .rb body — which still wraps with `control 'SV-OLD'`.
+	// The stub generator must detect the mismatch and rewrite the wrapper
+	// ID to match req.ID so the emitted .rb is valid InSpec (one control
+	// per file, named consistently with the requirement).
+	req := makeRequirement("SV-268322", 0.5)
+	code := "control 'SV-244540' do\n  describe file('/etc/pam.d/system-auth') do\n    its('content') { should_not match(/nullok/) }\n  end\nend\n"
+	req.Code = &code
+	ruby := GenerateControlStub(req)
+	assert.Equal(t, 1, strings.Count(ruby, "control 'SV-268322' do"),
+		"expected exactly one `control 'SV-268322' do`, got:\n%s", ruby)
+	assert.Equal(t, 0, strings.Count(ruby, "control 'SV-244540' do"),
+		"expected zero `control 'SV-244540' do` (old ID should be rewritten), got:\n%s", ruby)
+}
+
 func TestGenerateControlStub_StubComment(t *testing.T) {
 	req := makeRequirement("SV-014", 0.5)
 	ruby := GenerateControlStub(req)
