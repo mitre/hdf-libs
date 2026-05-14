@@ -26,7 +26,10 @@ export interface XmlParseOptions {
   attributeNamePrefix?: string;
   /** Key name used for element text content (default: '#text') */
   textNodeName?: string;
-  /** Remove namespace prefixes from element and attribute names (default: true) */
+  /**
+   * Remove namespace prefixes from element and attribute names (default: true).
+   * When true, `ns:tag` → `tag` and `xmlns:ns` declarations are omitted.
+   */
   removeNSPrefix?: boolean;
   /** Maximum allowed input size in bytes; throws if exceeded */
   maxSize?: number;
@@ -207,6 +210,11 @@ function txmlNodeToValue(
  *   - Comments (`<!--...-->`)
  *   - CDATA sections (`<![CDATA[...]]>`)
  *   - DOCTYPE declarations with optional internal subsets (`<!DOCTYPE [...]>`)
+ *
+ * This check is complementary to `txml.parse()`: txml throws on mismatched closing
+ * tags (e.g. `<root><item>Test</root>`) but is lenient about *unclosed* tags
+ * (e.g. `<root><item>Test</item>` with no `</root>` does not throw). This function
+ * catches both cases by requiring all open tags to be balanced at the end.
  */
 function isTagBalanced(xml: string): boolean {
   let open = 0;
@@ -276,7 +284,7 @@ function isTagBalanced(xml: string): boolean {
         inQuote = true;
         quoteChar = c;
       } else if (c === '>') {
-        if (xml[i - 1] !== '/') open++; // self-closing does not increment
+        if (i > 0 && xml[i - 1] !== '/') open++; // self-closing does not increment
         i++;
         break;
       }
