@@ -27,7 +27,7 @@ concurrency:
 # during the lifetime of this release.
 env:
   NODE_VERSION: '22'
-  GO_VERSION: '1.26.2'
+  GO_VERSION: '1.26.3'
   GOLANGCI_LINT_VERSION: 'v2.11.3'
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
