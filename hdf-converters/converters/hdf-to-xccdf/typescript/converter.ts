@@ -6,10 +6,10 @@ import type {
 } from '@mitre/hdf-schema';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 
-/** Attribute prefix used by fast-xml-parser to distinguish attrs from elements. */
+/** Attribute prefix used by the XML builder to distinguish attrs from elements. */
 const ATTR = '@_';
 
-/** XML build options that enable attribute rendering via @_ prefix. */
+/** XML build options that enable attribute rendering via the @_ prefix. */
 const BUILD_OPTIONS = {
   attributeNamePrefix: ATTR,
   textNodeName: '#text',

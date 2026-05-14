@@ -24,7 +24,7 @@ import {
 import { getCCINistMappings } from '@mitre/hdf-mappings';
 
 // ---------------------------------------------------------------------------
-// Parsed XCCDF types (post-fast-xml-parser with removeNSPrefix)
+// Parsed XCCDF types (post-txml parsing with namespace prefix stripping)
 // ---------------------------------------------------------------------------
 
 interface XccdfBenchmark {
@@ -114,7 +114,7 @@ interface RuleResultElement {
 }
 
 // ---------------------------------------------------------------------------
-// Parsed ARF types (post-fast-xml-parser with removeNSPrefix)
+// Parsed ARF types (post-txml parsing with namespace prefix stripping)
 // ---------------------------------------------------------------------------
 
 interface ArfParsed {
@@ -272,7 +272,7 @@ export async function convertXccdfResultsToHdf(input: string): Promise<string> {
 
 /**
  * Converts an XCCDF benchmark document (no TestResult) to HDF Baseline JSON.
- * Supports both XCCDF 1.1 and 1.2 (namespace-agnostic via fast-xml-parser).
+ * Supports both XCCDF 1.1 and 1.2 (namespace-agnostic via txml with removeNSPrefix).
  *
  * @param input - Raw XML string (XCCDF Benchmark without TestResult)
  * @returns Stringified HDF Baseline JSON

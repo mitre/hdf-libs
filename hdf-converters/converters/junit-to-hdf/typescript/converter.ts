@@ -15,7 +15,7 @@ import {
   createResult,
 } from '@mitre/hdf-schema';
 
-// JUnit XML parsed types (from fast-xml-parser via parseXmlWithArrays)
+// JUnit XML parsed types (from parseXmlWithArrays)
 
 interface JUnitTestSuites {
   testsuites?: {

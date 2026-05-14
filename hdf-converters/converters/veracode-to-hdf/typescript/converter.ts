@@ -28,7 +28,7 @@ import {
   createResult,
 } from '@mitre/hdf-schema';
 
-/** Attribute prefix used by fast-xml-parser — all XML attributes are accessed via `@_name`. */
+/** Attribute prefix for the XML builder — all XML attributes are accessed via `@_name`. */
 const A = '@_';
 
 

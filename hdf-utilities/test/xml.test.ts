@@ -91,7 +91,7 @@ describe('XML Utilities', () => {
 
   describe('buildXml', () => {
     it('should build simple XML', () => {
-      // Note: Simple string values become attributes, use #text for element content
+      // Use #text for element text content; plain string values become attributes on parent
       const obj = { root: { item: { '#text': 'Test' } } };
       const xml = buildXml(obj);
       expect(xml).toContain('<root>');
@@ -295,8 +295,7 @@ describe('XML Utilities', () => {
 
   describe('extractTextFromXml edge cases', () => {
     it('should handle number value in XML node (exercises typeof number branch)', () => {
-      // fast-xml-parser parses numeric text nodes as numbers when parseTagValue:true
-      // extractTextRecursive has a `typeof obj === 'number'` branch
+      // txml always returns strings; extractTextRecursive handles string values via String(obj)
       const xml = '<root><count>42</count></root>';
       const text = extractTextFromXml(xml);
       // The number branch converts to string via String(obj)
@@ -396,10 +395,10 @@ describe('XML Utilities', () => {
   <!ENTITY xxe SYSTEM "file:///etc/passwd">
 ]>
 <root><data>&xxe;</data></root>`;
-      // fast-xml-parser v5 does not process DTD/entities
-      // parseXml should either:
-      // 1. Parse but not expand the entity (entity text remains as literal or empty)
-      // 2. Throw on invalid XML (the validator may reject DTD syntax)
+      // txml skips DOCTYPE declarations entirely and never expands custom entities —
+      // XXE is impossible by design. parseXml should either:
+      // 1. Parse but return the literal entity reference (not file contents)
+      // 2. Throw on invalid XML
       // Either outcome is safe — the key assertion is that /etc/passwd content is NOT returned
       try {
         const result = parseXml(xxeXml);
@@ -407,7 +406,7 @@ describe('XML Utilities', () => {
         // Should not contain actual file contents
         expect(String(data)).not.toMatch(/root:/);
       } catch {
-        // Throwing is also safe — DTD rejected
+        // Throwing is also safe — entity not resolved
       }
     });
 
