@@ -1,5 +1,12 @@
 # `hdf generate upgrade` — Smoke Test Guide
 
+Validates `hdf generate upgrade` end-to-end. The primary workflow is
+**in-place update of an existing InSpec profile** to track a newer
+XCCDF release — equivalent to SAF CLI's `update_controls4delta` +
+`delta` collapsed into one command. Most of this guide exercises that
+path. A file-input mode (for direct baseline-to-baseline upgrades
+without a profile dir) is covered toward the end.
+
 ## Prerequisites
 
 ```bash
@@ -8,9 +15,234 @@ go build -o ../hdf ./cmd/hdf/
 cd ..
 ```
 
-## Fixture Paths
+For the in-place tests:
+- [cinc-auditor](https://cinc.sh/start/auditor/) or
+  [inspec](https://docs.chef.io/inspec/install/) on PATH — upgrade
+  shells out to one of them to extract control metadata from a profile
+  directory.
+- For SAF parity (Test 4 below): SAF CLI on PATH (`saf --version`).
 
-All fixtures are in the repo under `hdf-converters/converters/xccdf-results-to-hdf/fixtures/`.
+## Shared setup for in-place tests
+
+The headline workflow uses the publicly available redhat baseline
+profile, upgrading from its v1.14.1 release to RHEL 8 V2R1 (the next
+major DISA STIG version).
+
+```bash
+# Clone the source profile at v1.14.1
+git clone https://github.com/mitre/redhat-enterprise-linux-8-stig-baseline /tmp/redhat-baseline
+git -C /tmp/redhat-baseline switch --detach v1.14.1
+
+# Download the target XCCDF (V2R1) from cyber.trackr.live
+curl -sL "https://cyber.trackr.live/stig/Red_Hat_Enterprise_Linux_8/2/1/download" \
+  -o /tmp/RHEL8_V2R1.xml
+```
+
+The v1.14.1 → V2R1 jump has well-known characteristics:
+- 366 controls keep their IDs (text/check/fix updates only)
+- 1 control was renamed: **SV-244540 → SV-268322**
+- 8 controls were retired (no replacement)
+- Total: 375 in v1.14.1, 367 in V2R1
+
+---
+
+## Test 1: Default in-place upgrade
+
+The headline workflow. Run upgrade against the profile directory with
+no `-o` — outputs land back in the profile.
+
+```bash
+# Make a working copy so we don't have to reclone for subsequent tests
+cp -r /tmp/redhat-baseline /tmp/redhat-inplace
+
+./hdf generate upgrade /tmp/redhat-inplace /tmp/RHEL8_V2R1.xml
+```
+
+**Expected output**:
+```
+Updated 367 controls in /tmp/redhat-inplace/controls (9 stale .rb files pruned)
+Upgrade: 367 match, 0 possible mismatch, 0 related, 0 no match (of 367 upstream from 375 current)
+Updated profile in-place at /tmp/redhat-inplace; reports in /tmp/redhat-inplace/.upgrade
+```
+
+The "9 stale .rb files pruned" = 8 truly deprecated + 1 renamed source (SV-244540).
+
+**Verifications**:
+
+```bash
+# Control count dropped from 375 to 367
+ls /tmp/redhat-inplace/controls/*.rb | wc -l                       # 367
+
+# Original inspec.yml preserved verbatim (not overwritten)
+head -1 /tmp/redhat-inplace/inspec.yml                             # name: redhat-enterprise-linux-8-stig-baseline
+
+# Profile structure intact (Gemfile, libraries/, etc. untouched)
+ls /tmp/redhat-inplace/Gemfile /tmp/redhat-inplace/libraries
+
+# Reports landed in .upgrade/
+ls /tmp/redhat-inplace/.upgrade/                                   # baseline.json delta.json delta.md
+
+# Stale rename source pruned, new ID written
+ls /tmp/redhat-inplace/controls/SV-244540.rb 2>&1                  # No such file
+ls /tmp/redhat-inplace/controls/SV-268322.rb                       # exists
+
+# Profile passes cinc-auditor check cleanly
+cinc-auditor check /tmp/redhat-inplace                             # Valid: true, 0 errors/warnings/offenses
+```
+
+**Rename rewrite — critical verification**:
+
+The SV-244540 → SV-268322 rename should produce a clean `.rb` file
+with a single control block and its inner control declaration renamed
+to match. If it has two nested control blocks, the bug fix has
+regressed.
+
+```bash
+test "$(grep -c "^control '" /tmp/redhat-inplace/controls/SV-268322.rb)" -eq 1 \
+  && echo "✓ single control block"
+grep -q "control 'SV-268322' do" /tmp/redhat-inplace/controls/SV-268322.rb \
+  && echo "✓ wrapper renamed to SV-268322"
+grep -q "control 'SV-244540' do" /tmp/redhat-inplace/controls/SV-268322.rb \
+  && echo "✗ stale SV-244540 wrapper present (REGRESSION)"
+ruby -c /tmp/redhat-inplace/controls/SV-268322.rb                  # Syntax OK
+```
+
+**All .rb files should be valid Ruby with single control declarations**:
+
+```bash
+for f in /tmp/redhat-inplace/controls/*.rb; do
+  c=$(grep -c "^control '" "$f")
+  [ "$c" -gt 1 ] && echo "NESTED: $f (count=$c)"
+  ruby -c "$f" >/dev/null || echo "PARSE FAIL: $f"
+done
+echo "(no NESTED or PARSE FAIL lines above = clean)"
+```
+
+## Test 2: Fresh-copy mode (-o leaves original alone)
+
+When `-o` is provided, the original profile dir is untouched and a
+fresh copy is written to `-o`. Useful for reviewing the upgrade
+before committing it back.
+
+```bash
+./hdf generate upgrade /tmp/redhat-baseline /tmp/RHEL8_V2R1.xml -o /tmp/redhat-fresh
+```
+
+**Verifications**:
+
+```bash
+# Original profile untouched
+ls /tmp/redhat-baseline/controls/*.rb | wc -l                      # still 375
+
+# Fresh copy has the upgraded state
+ls /tmp/redhat-fresh/controls/*.rb | wc -l                         # 367
+head -1 /tmp/redhat-fresh/inspec.yml                               # original inspec.yml preserved in copy
+ls /tmp/redhat-fresh/.upgrade/                                     # baseline.json delta.json delta.md
+
+# Full profile structure copied, not just controls/
+ls /tmp/redhat-fresh/Gemfile /tmp/redhat-fresh/libraries
+
+cinc-auditor check /tmp/redhat-fresh                               # Valid: true
+```
+
+## Test 3: `--keep-unmatched` preserves deprecated controls
+
+By default, controls present in current but absent from upstream are
+dropped (matching SAF CLI's "the new XCCDF is truth" semantics).
+`--keep-unmatched` preserves them — useful when the profile has custom
+controls outside the DISA STIG, or you want to see what would be
+dropped before committing.
+
+```bash
+cp -r /tmp/redhat-baseline /tmp/redhat-keep
+./hdf generate upgrade /tmp/redhat-keep /tmp/RHEL8_V2R1.xml --keep-unmatched
+```
+
+**Verifications**:
+
+```bash
+# Output: 367 matched (with the rename target SV-268322 replacing
+# the renamed source SV-244540) + 8 unmatched-current preserved = 375.
+# SV-244540 is still pruned — it was matched to SV-268322 and replaced,
+# not unmatched.
+ls /tmp/redhat-keep/controls/*.rb | wc -l                          # 375
+
+# Confirm the 8 deprecated controls survive
+for id in SV-230348 SV-230349 SV-230350 SV-230353 SV-230368 SV-244537 SV-245540 SV-251717; do
+  test -f "/tmp/redhat-keep/controls/${id}.rb" && echo "✓ $id preserved"
+done
+```
+
+## Test 4: SAF CLI parity comparison
+
+The headline parity test. Run both tools on identical inputs and
+verify HDF matches SAF's output count + catches an additional rename
+SAF misses.
+
+```bash
+# SAF needs profile.json as input
+cp -r /tmp/redhat-baseline /tmp/redhat-saf-source
+cinc-auditor json /tmp/redhat-saf-source > /tmp/profile.json
+
+# SAF run
+saf generate delta -X /tmp/RHEL8_V2R1.xml -J /tmp/profile.json \
+  -r /tmp/saf-out/report.md -o /tmp/saf-out/
+
+# HDF run
+cp -r /tmp/redhat-baseline /tmp/redhat-hdf-cmp
+./hdf generate upgrade /tmp/redhat-hdf-cmp /tmp/RHEL8_V2R1.xml
+```
+
+**Count parity**:
+
+```bash
+ls /tmp/saf-out/controls/*.rb | wc -l                              # 367
+ls /tmp/redhat-hdf-cmp/controls/*.rb | wc -l                       # 367
+diff <(ls /tmp/saf-out/controls/ | sort) <(ls /tmp/redhat-hdf-cmp/controls/ | sort)
+# (no diff output = identical filename sets)
+```
+
+**Rename catch — where HDF wins**:
+
+SAF uses exact-ID matching and treats SV-268322 as net-new (it doesn't
+exist in v1.14.1). HDF uses SRG+CCI matching and identifies it as a
+rename of SV-244540, so SV-268322.rb inherits the current code body.
+
+```bash
+# SAF's SV-268322.rb is a fresh stub — no preserved code
+head -15 /tmp/saf-out/controls/SV-268322.rb
+
+# HDF's SV-268322.rb is the merged body (current code + upstream metadata)
+head -15 /tmp/redhat-hdf-cmp/controls/SV-268322.rb
+
+# Compare body lengths — HDF's should be larger (it has real test code)
+wc -l /tmp/saf-out/controls/SV-268322.rb /tmp/redhat-hdf-cmp/controls/SV-268322.rb
+```
+
+**UX difference — profile-dir completeness**:
+
+SAF emits ONLY `controls/`, `delta.json`, `report.md`. No `inspec.yml`,
+so `cinc-auditor check /tmp/saf-out/` fails ("doesn't look like a
+supported profile structure"). The user is expected to splice the
+controls into an existing profile dir.
+
+HDF updates in place (or copies the whole profile when `-o` is given),
+so `cinc-auditor check` runs out of the box.
+
+```bash
+cinc-auditor check /tmp/saf-out 2>&1 | tail -3                     # fails: not a profile structure
+cinc-auditor check /tmp/redhat-hdf-cmp 2>&1 | tail -3              # passes: Valid: true
+```
+
+---
+
+## File-input mode
+
+When `<current>` is a JSON or XML file (not a profile directory),
+upgrade emits only `baseline.json` + delta reports to `-o`. Use this
+for direct baseline-to-baseline upgrades that don't involve an InSpec
+profile. To turn the resulting baseline.json into an InSpec profile,
+chain `hdf generate inspec-profile`.
 
 ```bash
 XCCDF_12=hdf-converters/converters/xccdf-results-to-hdf/fixtures/input/benchmark-minimal-1.2.xml
@@ -18,238 +250,152 @@ XCCDF_11=hdf-converters/converters/xccdf-results-to-hdf/fixtures/input/benchmark
 INSPEC_HDF=hdf-converters/converters/legacyhdf-to-hdf/fixtures/expected/ubi9-scan.json
 ```
 
-> Note: real-world STIG SCAP files (e.g. `stig-rhel7.xml`) often bundle a `<Benchmark>`
-> together with an embedded `<TestResult>`. The XCCDF→Baseline converter currently
-> rejects such inputs as "not a benchmark." The fixtures above are clean inputs
-> suitable for `upgrade`. To use a SCAP-bundled file, strip the `<TestResult>`
-> first.
-
----
-
-## Test 1: Baseline → Baseline (identity upgrade)
-
-Same file as both current and upstream — verify no-op merge.
+## Test 5: Error — file input without -o
 
 ```bash
-./hdf generate upgrade $XCCDF_12 $XCCDF_12 /tmp/upgrade-identity/
+./hdf generate upgrade $XCCDF_12 $XCCDF_12
+# Expected: exit 1, "Error: -o/--output-dir is required when <current> is not an InSpec profile directory"
 ```
 
-**Expected**:
-- `/tmp/upgrade-identity/baseline.json` exists with 3 requirements
-- `delta.json` shows 3 matched, 0 no-match
-- All controls are identical (no field changes in merge)
+## Test 6: Identity upgrade (file input)
 
 ```bash
-python3 -m json.tool /tmp/upgrade-identity/baseline.json | grep '"id"'
-cat /tmp/upgrade-identity/delta.md
+./hdf generate upgrade $XCCDF_12 $XCCDF_12 -o /tmp/upgrade-identity/
+ls /tmp/upgrade-identity/                                          # baseline.json delta.json delta.md (no controls/, no inspec.yml)
+python3 -c "import json; bl=json.load(open('/tmp/upgrade-identity/baseline.json')); print('reqs:', len(bl['requirements']))"
+# Expected: 3 reqs
 ```
 
-## Test 2: XCCDF 1.1 → 1.2 (cross-version)
+## Test 7: XCCDF 1.1 → 1.2 cross-version
 
 ```bash
-./hdf generate upgrade $XCCDF_11 $XCCDF_12 /tmp/upgrade-xccdf-versions/
-```
-
-**Expected**: 3 requirements matched. Baseline.json has upstream (1.2) metadata.
-
-## Test 3: HDF Results as current baseline
-
-Verifies HDF Results JSON auto-detects as the current side and that the
-`code` field from `baselines[].requirements[]` is preserved into the
-upgraded baseline.
-
-```bash
-./hdf generate upgrade $INSPEC_HDF $XCCDF_12 /tmp/upgrade-rhel7/
-```
-
-**Expected**: 452 current reqs (from UBI 9 InSpec scan) carry through with
-`code` populated; 3 upstream reqs (Windows minimal benchmark) added.
-
-```bash
+./hdf generate upgrade $XCCDF_11 $XCCDF_12 -o /tmp/upgrade-xccdf-versions/
 python3 -c "
 import json
-bl = json.load(open('/tmp/upgrade-rhel7/baseline.json'))
-with_code = [r for r in bl['requirements'] if r.get('code')]
-print('total reqs:', len(bl['requirements']))
-print('reqs with code:', len(with_code))
+bl = json.load(open('/tmp/upgrade-xccdf-versions/baseline.json'))
+print('first title:', (bl['requirements'][0].get('title') or '')[:60])
 "
+# Expected: 3 reqs, upstream metadata adopted
 ```
 
-## Test 4: Smart merge verification
-
-Build a customized current baseline by converting the upstream XCCDF and
-injecting custom tags/descriptions. Then upgrade against the same XCCDF —
-upstream scalars should adopt; current's customizations should survive.
+## Test 8: HDF Results as current (default drop, then --keep-unmatched)
 
 ```bash
-# Seed a known-valid baseline from the upstream, then customize first req.
+# Default: drop unmatched-current
+./hdf generate upgrade $INSPEC_HDF $XCCDF_12 -o /tmp/upgrade-rhel7-default/
+python3 -c "
+import json
+bl = json.load(open('/tmp/upgrade-rhel7-default/baseline.json'))
+print('default reqs:', len(bl['requirements']))
+print('with code:', sum(1 for r in bl['requirements'] if r.get('code')))
+"
+# Expected: 3 reqs (only matched), code preserved on all 3
+
+./hdf generate upgrade $INSPEC_HDF $XCCDF_12 -o /tmp/upgrade-rhel7-keep/ --keep-unmatched
+python3 -c "
+import json
+bl = json.load(open('/tmp/upgrade-rhel7-keep/baseline.json'))
+print('keep reqs:', len(bl['requirements']))
+print('with code:', sum(1 for r in bl['requirements'] if r.get('code')))
+"
+# Expected: 452 reqs (everything preserved), code on all 452
+```
+
+## Test 9: Smart merge — custom tags and descriptions survive
+
+```bash
+# Seed a customized current baseline from the upstream
 ./hdf convert --from xccdf-benchmark $XCCDF_12 -o /tmp/seed-baseline.json
 python3 -c "
 import json
 bl = json.load(open('/tmp/seed-baseline.json'))
 bl['requirements'][0]['tags']['custom_tag'] = 'my-custom-value'
 bl['requirements'][0]['descriptions'].append({'label': 'custom', 'data': 'My custom note'})
-with open('/tmp/custom-current.json', 'w') as f:
-    json.dump(bl, f, indent=2)
+json.dump(bl, open('/tmp/custom-current.json', 'w'), indent=2)
 "
 
-./hdf generate upgrade /tmp/custom-current.json $XCCDF_12 /tmp/upgrade-smart-merge/
-```
-
-**Expected**: first requirement in output has both upstream's title/impact
-*and* current's `custom_tag` and `custom` description label.
-
-```bash
+./hdf generate upgrade /tmp/custom-current.json $XCCDF_12 -o /tmp/upgrade-smart-merge/
 python3 -c "
 import json
 r = json.load(open('/tmp/upgrade-smart-merge/baseline.json'))['requirements'][0]
 print('custom_tag:', r['tags'].get('custom_tag'))
 print('custom desc:', any(d['label'] == 'custom' for d in r['descriptions']))
 "
+# Expected: custom_tag=my-custom-value, custom desc=True
 ```
 
-## Test 5: --prefer current
+## Test 10: `--prefer current` and `--prefer upstream`
 
-Same input as Test 4. `--prefer current` should keep current's scalars
-on conflicts (no observable difference in this fixture pair, since
-current and upstream scalars are already identical — but the flag should
-not error and should still preserve the customizations).
+Same input as Test 9. Verify the conflict-resolution variants.
 
 ```bash
-./hdf generate upgrade /tmp/custom-current.json $XCCDF_12 /tmp/upgrade-prefer-current/ --prefer current
+./hdf generate upgrade /tmp/custom-current.json $XCCDF_12 -o /tmp/upgrade-prefer-current/ --prefer current
 python3 -c "
 import json
 r = json.load(open('/tmp/upgrade-prefer-current/baseline.json'))['requirements'][0]
 print('custom_tag:', r['tags'].get('custom_tag'))
 "
-```
+# Expected: custom_tag preserved (current wins)
 
-## Test 6: --prefer upstream
-
-Same input as Test 4. `--prefer upstream` should replace tags/descriptions
-entirely with upstream's — `custom_tag` should NOT be present.
-
-```bash
-./hdf generate upgrade /tmp/custom-current.json $XCCDF_12 /tmp/upgrade-prefer-upstream/ --prefer upstream
+./hdf generate upgrade /tmp/custom-current.json $XCCDF_12 -o /tmp/upgrade-prefer-upstream/ --prefer upstream
 python3 -c "
 import json
 r = json.load(open('/tmp/upgrade-prefer-upstream/baseline.json'))['requirements'][0]
 print('custom_tag present:', 'custom_tag' in r.get('tags', {}))
 "
+# Expected: custom_tag absent (upstream replaces all)
 ```
 
-## Test 7: --output-format inspec
+## Test 11: `delta` alias
 
 ```bash
-./hdf generate upgrade $XCCDF_12 $XCCDF_12 /tmp/upgrade-inspec/ -f inspec
+./hdf generate delta $XCCDF_12 $XCCDF_12 -o /tmp/upgrade-alias/
+diff -q <(python3 -m json.tool /tmp/upgrade-identity/baseline.json) \
+        <(python3 -m json.tool /tmp/upgrade-alias/baseline.json) \
+  && echo "✓ alias output matches identity"
 ```
 
-**Expected**: `inspec.yml` and `controls/*.rb` exist. No `baseline.json`.
+---
 
-```bash
-ls /tmp/upgrade-inspec/
-ls /tmp/upgrade-inspec/controls/
-```
+## Cross-cutting checks
 
-## Test 8: --output-format both
-
-```bash
-./hdf generate upgrade $XCCDF_12 $XCCDF_12 /tmp/upgrade-both/ -f both
-```
-
-**Expected**: Both `baseline.json` AND `inspec.yml` + `controls/*.rb`.
-
-```bash
-ls /tmp/upgrade-both/
-```
-
-## Test 9: -c controls/ (code enrichment)
-
-```bash
-# Create a minimal controls directory
-mkdir -p /tmp/test-controls
-cat > /tmp/test-controls/SV-12345.rb << 'RUBY'
-control 'SV-12345' do
-  describe file('/etc/passwd') do
-    it { should exist }
-  end
-end
-RUBY
-
-# Create a minimal current baseline referencing SV-12345
-python3 -c "
-import json
-bl = {'name': 'test', 'requirements': [
-    {'id': 'SV-12345', 'impact': 0.5, 'tags': {}, 'descriptions': [{'label': 'default', 'data': 'test'}]}
-], 'groups': [], 'supports': []}
-with open('/tmp/test-current.json', 'w') as f:
-    json.dump(bl, f)
-"
-
-./hdf generate upgrade /tmp/test-current.json $XCCDF_12 /tmp/upgrade-controls/ -c /tmp/test-controls/
-```
-
-**Expected**: Output includes InSpec profile. The `SV-12345` requirement preserves the `.rb` code from the controls directory.
-
-## Test 10: Cross-document — large current, small upstream
-
-A 452-req RHEL UBI 9 InSpec profile as current, the 3-req Windows
-minimal benchmark as upstream. The two share the SRG-OS taxonomy so
-some matches are expected; the bulk of current reqs carry through
-unmatched.
-
-```bash
-./hdf generate upgrade $INSPEC_HDF $XCCDF_12 /tmp/upgrade-cross/
-```
-
-**Expected**: output baseline retains all 452 current reqs (matched ones
-take upstream metadata + current code; unmatched ones pass through unchanged).
-`delta.md` shows the matching tier each upstream req hit.
-
-```bash
-python3 -c "
-import json
-bl = json.load(open('/tmp/upgrade-cross/baseline.json'))
-print('total reqs:', len(bl['requirements']))
-"
-grep -A 5 "Match Statistics" /tmp/upgrade-cross/delta.md | head -7
-```
-
-## Test 11: `hdf generate delta` alias
-
-```bash
-./hdf generate delta $XCCDF_12 $XCCDF_12 /tmp/upgrade-alias/
-```
-
-**Expected**: Same output as Test 1. The `delta` alias works identically to `upgrade`.
-
-## What to check in each test
-
-| Check | Command |
-|-------|---------|
-| Stderr statistics | Printed during run |
-| baseline.json valid | `python3 -m json.tool /tmp/upgrade-*/baseline.json > /dev/null` |
-| Requirement count | `python3 -c "import json; print(len(json.load(open('/tmp/upgrade-*/baseline.json'))['requirements']))"` |
-| inspec.yml valid | `cat /tmp/upgrade-*/inspec.yml` (when -f inspec/both) |
-| Mapping report | `cat /tmp/upgrade-*/delta.md` |
-| JSON report parseable | `python3 -m json.tool /tmp/upgrade-*/delta.json > /dev/null` |
-| Match-tier breakdown | `delta.md`'s "Match Statistics" section. Note: `related` can overlap with `match` (secondary strategy hits an already-matched upstream), so the four counts are not a strict partition of `totalNew`. |
+| Check | Command template |
+|---|---|
+| `baseline.json` valid JSON | `python3 -m json.tool /tmp/<dir>/baseline.json > /dev/null` |
+| `delta.json` parseable | `python3 -m json.tool /tmp/<dir>/delta.json > /dev/null` |
+| Match-tier breakdown | `grep -A 5 "Match Statistics" /tmp/<dir>/delta.md` (note: `related` may overlap with `match` — not a strict partition) |
+| Profile passes cinc check | `cinc-auditor check /tmp/<profile-dir>` |
+| No nested control blocks | `for f in /tmp/<dir>/controls/*.rb; do c=$(grep -c "^control '" "$f"); [ "$c" -gt 1 ] && echo "NESTED: $f"; done` |
+| All .rb files parse as Ruby | `for f in /tmp/<dir>/controls/*.rb; do ruby -c "$f" >/dev/null \|\| echo "FAIL: $f"; done` |
 
 ## Cleanup
 
 ```bash
-rm -rf /tmp/upgrade-identity /tmp/upgrade-xccdf-versions /tmp/upgrade-rhel7 \
-       /tmp/upgrade-smart-merge /tmp/upgrade-prefer-current /tmp/upgrade-prefer-upstream \
-       /tmp/upgrade-inspec /tmp/upgrade-both /tmp/upgrade-controls \
-       /tmp/upgrade-cross /tmp/upgrade-alias \
-       /tmp/seed-baseline.json /tmp/custom-current.json \
-       /tmp/test-current.json /tmp/test-controls
+# In-place test artifacts
+rm -rf /tmp/redhat-baseline /tmp/redhat-inplace /tmp/redhat-fresh \
+       /tmp/redhat-keep /tmp/redhat-saf-source /tmp/redhat-hdf-cmp \
+       /tmp/saf-out
+
+# File-input test artifacts
+rm -rf /tmp/upgrade-identity /tmp/upgrade-xccdf-versions \
+       /tmp/upgrade-rhel7-default /tmp/upgrade-rhel7-keep \
+       /tmp/upgrade-smart-merge /tmp/upgrade-prefer-current \
+       /tmp/upgrade-prefer-upstream /tmp/upgrade-alias
+
+# Intermediates
+rm -f /tmp/profile.json /tmp/RHEL8_V2R1.xml \
+      /tmp/seed-baseline.json /tmp/custom-current.json
 ```
 
 ## Notes
 
-- All XCCDF fixtures are in the repo. No external downloads needed.
-- XCCDF-sourced fixtures don't carry Ruby code, so code preservation tests require
-  either HDF Results JSON (which carries code) or the -c flag with a controls directory.
-- InSpec JSON input (`inspec json <profile>` output) is auto-detected when the
-  file has `profiles[].controls[]` structure.
+- `cinc-auditor` and `inspec` produce the same `inspec json` output for
+  this purpose; HDF probes for `cinc-auditor` first, falls back to
+  `inspec` if not found.
+- `--id-type` (rule | group | cis | version) is for XCCDF inputs and
+  was not exercised here — only relevant when migrating between
+  vendors with different ID conventions.
+- `--strategy` overrides the matching chain (advanced; default order
+  works for STIG → STIG upgrades).
+- The `delta` alias exists for SAF CLI muscle memory; new code should
+  use `upgrade`.

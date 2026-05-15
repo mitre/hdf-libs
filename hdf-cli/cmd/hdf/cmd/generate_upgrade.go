@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -28,79 +30,107 @@ var defaultUpgradeStrategies = []string{
 	"fuzzyTitle",
 }
 
-func newGenerateUpgradeCmd() *cobra.Command { //nolint:funlen,gocyclo // CLI command with many flags
+func newGenerateUpgradeCmd() *cobra.Command { //nolint:funlen,gocyclo // CLI command — one big shape so all flag wiring lives in one place
 	var (
-		controlsDir   string
+		outputDir     string
+		reportDir     string
 		idType        string
 		prefer        string
-		outputFormat  string
-		singleFile    bool
-		noCode        bool
-		maintainer    string
-		copyright     string
-		license       string
-		profileVer    string
-		inspecVersion string
-		reportFormat  string
-		reportDir     string
 		strategy      string
+		noCode        bool
+		keepUnmatched bool
 	)
 
 	cmd := &cobra.Command{
-		Use:     "upgrade <current-baseline> <upstream-baseline> <output-dir>",
+		Use:     "upgrade <current> <upstream>",
 		Aliases: []string{"delta"},
-		Short:   "Upgrade baseline with new upstream metadata, preserving customizations",
-		Long: `Upgrade an HDF Baseline by matching requirements between the current (customized)
-baseline and a new upstream baseline, then smart-merging fields.
+		Short:   "Upgrade an existing baseline or InSpec profile to match a newer XCCDF/baseline",
+		Long: `Upgrade <current> to reflect the guidance in <upstream>, matching
+requirements between them and smart-merging fields so your customizations
+survive the version bump.
 
-The current baseline provides your existing customizations (code, tags, descriptions).
-The upstream baseline provides updated guidance (titles, descriptions, impacts).
+Conceptual model
+================
 
-Smart merge behavior (default):
-  - ID: always from upstream (target version)
-  - Scalars (title, impact, severity): upstream wins
-  - Tags: union of keys; upstream wins key conflicts
-  - Descriptions: union by label; upstream wins on same label
-  - Code: preserved from current (your tests)
-  - Refs: union (deduplicated)
+  current:   your existing baseline or profile — the version with your code,
+             custom tags, and any local descriptions.
+  upstream:  the new guidance — typically a freshly released XCCDF benchmark,
+             or another HDF Baseline you want to adopt.
+  upgrade:   for each upstream requirement, find the matching one in current
+             (via SRG/CCI semantics, not exact-ID), then smart-merge:
+               - upstream wins on metadata (title, impact, descriptions, tags)
+               - current wins on code (your authored InSpec tests stay)
+               - collections (tags, descriptions, refs) are unioned
 
-Use --prefer to override: "current" keeps your values on conflict,
-"upstream" does a full replacement.
+Input modes
+===========
 
-The matching engine uses a multi-tier strategy chain:
-  1. SRG deterministic — exact tags.gtitle match
-  2. SRG CCI tiebreak — CCI+title scoring for ambiguous SRG blocks
-  3. Vendor fuzzy title — cross-vendor Levenshtein matching
-  4. Exact ID — same requirement ID
-  5. CCI match — shared CCI identifiers
-  6. Fuzzy title — token Jaccard similarity
+The behavior of upgrade depends on what <current> is:
 
-Input formats are auto-detected: XML = XCCDF, JSON = HDF Results/Baseline.`,
-		Example: `  # Upgrade with new STIG release
-  hdf generate upgrade current-profile.json new-stig-xccdf.xml upgraded/
+  - InSpec profile DIRECTORY (has inspec.yml + controls/):
+        The default action is an IN-PLACE update of the profile —
+        controls/*.rb are overwritten with merged versions, stale .rb
+        files are pruned, and inspec.yml is preserved verbatim.
+        Reports (baseline.json, delta.json, delta.md) land in a new
+        .upgrade/ subdirectory inside the profile.
 
-  # Prefer current values on conflict
-  hdf generate upgrade current.json upstream.json out/ --prefer current
+        Pass -o <dir> to write a fresh copy of the profile to <dir>
+        instead of touching the original. Useful for reviewing the
+        upgrade before committing it back.
 
-  # Output only baseline JSON (no InSpec profile)
-  hdf generate upgrade current.json upstream.json out/ -f baseline
+        Reading the profile directory requires cinc-auditor or inspec
+        on PATH (the upgrade tool shells out to one of them to extract
+        control metadata).
 
-  # Output both baseline JSON and InSpec profile
-  hdf generate upgrade current.json upstream.json out/ -f both
+  - File input (HDF Results JSON / HDF Baseline JSON / InSpec JSON /
+    XCCDF XML):
+        -o <dir> is REQUIRED. baseline.json and delta reports are
+        written to <dir>. No InSpec profile is emitted in this mode —
+        if you want one, chain a second command:
 
-  # Using the delta alias
-  hdf generate delta current.json new.xml out/
+            hdf generate inspec-profile <dir>/baseline.json /path/to/profile/
 
-  # Enrich current baseline with code from InSpec controls directory
-  hdf generate upgrade current.json new.xml out/ -c controls/
+Matching strategy
+=================
 
-  # Override profile metadata for InSpec output
-  hdf generate upgrade old.json new.json out/ -f inspec --maintainer "MITRE SAF"`,
-		Args: cobra.ExactArgs(3),
+The matching engine tries strategies in order until one yields a match:
+
+  1. srgDeterministic  — exact tags.gtitle equality (the cleanest 1:1)
+  2. srgCciTiebreak    — within a shared SRG block, score by CCI Jaccard
+                         and title similarity. Catches renames that
+                         exact-ID matching misses.
+  3. vendorFuzzyTitle  — cross-vendor Levenshtein on titles (Windows ↔
+                         Linux STIGs occasionally share controls).
+  4. exactId           — same SV-/V- identifier.
+  5. cciMatch          — shared CCI identifiers.
+  6. fuzzyTitle        — token Jaccard on titles.
+
+Use --strategy to override the chain (advanced; expert use).`,
+		Example: `  # In-place update of an existing InSpec profile to a new STIG XCCDF.
+  # Reads profile via cinc-auditor json, prunes deprecated controls,
+  # writes baseline.json/delta reports to <profile>/.upgrade/.
+  hdf generate upgrade /path/to/profile/ new-stig-xccdf.xml
+
+  # Fresh copy of the profile, leaving the original untouched.
+  # The copy is upgraded in place.
+  hdf generate upgrade /path/to/profile/ new-stig-xccdf.xml -o /tmp/upgraded/
+
+  # Pure baseline-to-baseline upgrade (no InSpec profile involved).
+  # baseline.json + reports go to /tmp/out/.
+  hdf generate upgrade old.json upstream.xml -o /tmp/out/
+
+  # Keep unmatched current controls (default drops them, matching SAF delta).
+  hdf generate upgrade /path/to/profile/ new.xml --keep-unmatched
+
+  # When current and upstream conflict on scalars, prefer current's values.
+  hdf generate upgrade /path/to/profile/ new.xml --prefer current
+
+  # 'delta' is an alias for backward compatibility with SAF CLI muscle memory.
+  hdf generate delta /path/to/profile/ new.xml`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(_ *cobra.Command, args []string) error {
 			currentPath := args[0]
 			upstreamPath := args[1]
-			outputDir := args[2]
 
 			// Validate --prefer flag
 			if prefer != "" && prefer != "current" && prefer != "upstream" {
@@ -114,26 +144,54 @@ Input formats are auto-detected: XML = XCCDF, JSON = HDF Results/Baseline.`,
 				return fmt.Errorf("--id-type must be 'rule', 'group', 'cis', or 'version', got %q", idType)
 			}
 
-			// When -c is provided, force inspec output
-			if controlsDir != "" && outputFormat == "baseline" {
-				outputFormat = "both"
+			// Detect: is <current> an InSpec profile directory?
+			profileDirMode := isInSpecProfileDir(currentPath)
+
+			// Resolve effective output dir.
+			// Profile dir input:  default to in-place (currentPath); -o overrides.
+			// File input:         -o is required.
+			effectiveOutput := outputDir
+			inPlace := false
+			if profileDirMode {
+				if effectiveOutput == "" {
+					// In-place: write back into the profile directory.
+					effectiveOutput = currentPath
+					inPlace = true
+				} else {
+					// Fresh copy: clone the profile dir to -o, then upgrade in place there.
+					if err := os.MkdirAll(effectiveOutput, 0o750); err != nil { //nolint:gosec // profile dirs need group read
+						return fmt.Errorf("creating output dir: %w", err)
+					}
+					if err := copyDir(currentPath, effectiveOutput); err != nil {
+						return fmt.Errorf("copying profile to output dir: %w", err)
+					}
+					// The upgrade now runs against the COPY's controls; the original
+					// is untouched. Treat the copy as the in-place target.
+					inPlace = true
+				}
+			} else if effectiveOutput == "" {
+				return fmt.Errorf("-o/--output-dir is required when <current> is not an InSpec profile directory")
 			}
 
-			// Validate --output-format flag
-			if outputFormat == "" {
-				outputFormat = "baseline"
-			}
-			switch outputFormat {
-			case "baseline", "inspec", "both":
-			default:
-				return fmt.Errorf("--output-format must be 'baseline', 'inspec', or 'both', got %q", outputFormat)
+			// Read current baseline data. For profile dirs, shell out to
+			// cinc-auditor/inspec to get the InSpec JSON form. For files,
+			// just read the bytes.
+			var currentData []byte
+			if profileDirMode {
+				cinged, err := generateProfileJSON(currentPath)
+				if err != nil {
+					return fmt.Errorf("reading InSpec profile %q: %w", currentPath, err)
+				}
+				currentData = cinged
+			} else {
+				data, err := readInputFile(currentPath)
+				if err != nil {
+					return fmt.Errorf("reading current baseline: %w", err)
+				}
+				currentData = data
 			}
 
-			// Read inputs
-			currentData, err := readInputFile(currentPath)
-			if err != nil {
-				return fmt.Errorf("reading current baseline: %w", err)
-			}
+			// Read upstream baseline data (always a file).
 			upstreamData, err := readInputFile(upstreamPath)
 			if err != nil {
 				return fmt.Errorf("reading upstream baseline: %w", err)
@@ -144,17 +202,8 @@ Input formats are auto-detected: XML = XCCDF, JSON = HDF Results/Baseline.`,
 			if err != nil {
 				return fmt.Errorf("parsing current baseline: %w", err)
 			}
-
-			// Apply --id-type remapping if not default
 			if idType != "rule" {
 				remapBaselineIDs(currentBaseline, idType)
-			}
-
-			// Enrich current baseline with code from controls directory
-			if controlsDir != "" {
-				if err := enrichBaselineFromControlsDir(currentBaseline, controlsDir); err != nil {
-					return fmt.Errorf("reading controls directory: %w", err)
-				}
 			}
 
 			// Parse upstream baseline
@@ -162,8 +211,6 @@ Input formats are auto-detected: XML = XCCDF, JSON = HDF Results/Baseline.`,
 			if err != nil {
 				return fmt.Errorf("parsing upstream baseline: %w", err)
 			}
-
-			// Apply --id-type remapping to upstream too
 			if idType != "rule" {
 				remapBaselineIDs(upstreamBaseline, idType)
 			}
@@ -186,79 +233,116 @@ Input formats are auto-detected: XML = XCCDF, JSON = HDF Results/Baseline.`,
 				return fmt.Errorf("matching failed: %w", matchErr)
 			}
 
-			// Convert MatchPairs → LinkRecords
 			linkRecords := buildUpgradeLinkRecords(matchResult)
 
-			// Build upgrade options
+			// Build upgrade options. In profile-dir mode we always want
+			// InSpec output ("both") so the .rb files get regenerated; in
+			// file-input mode we only emit baseline.json.
 			upgradeOpts := &generators.UpgradeOptions{
-				Prefer:       prefer,
-				NoCode:       noCode,
-				OutputFormat: outputFormat,
-				SingleFile:   singleFile,
+				Prefer:        prefer,
+				NoCode:        noCode,
+				KeepUnmatched: keepUnmatched,
 			}
-			if inspecVersion != "" {
-				upgradeOpts.InSpecVersion = inspecVersion
+			if profileDirMode {
+				upgradeOpts.OutputFormat = "both"
+			} else {
+				upgradeOpts.OutputFormat = "baseline"
 			}
-			if maintainer != "" || copyright != "" || license != "" || profileVer != "" {
-				upgradeOpts.Metadata = &generators.ProfileMetadata{
-					Maintainer: maintainer,
-					Copyright:  copyright,
-					License:    license,
-					Version:    profileVer,
+
+			result := generators.GenerateUpgrade(*currentBaseline, *upstreamBaseline, linkRecords, upgradeOpts)
+
+			// Decide where outputs go.
+			// In-place mode: controls/ overwrite + prune; baseline.json and
+			// reports go to <profile>/.upgrade/ (or --report-dir override).
+			// File-input mode: everything goes to -o/--output-dir.
+			reportTarget := reportDir
+			if reportTarget == "" {
+				if inPlace {
+					reportTarget = filepath.Join(effectiveOutput, ".upgrade")
+				} else {
+					reportTarget = effectiveOutput
 				}
 			}
 
-			// Generate upgrade
-			result := generators.GenerateUpgrade(*currentBaseline, *upstreamBaseline, linkRecords, upgradeOpts)
+			if inPlace {
+				if result.Profile != nil {
+					if err := writeInPlaceProfile(*result.Profile, effectiveOutput); err != nil {
+						return err
+					}
+				}
+				// baseline.json lives with the reports in .upgrade/
+				if err := writeBaselineJSON(result, reportTarget); err != nil {
+					return err
+				}
+			} else {
+				// File-input mode: baseline.json to effectiveOutput; no profile.
+				if err := writeBaselineJSON(result, effectiveOutput); err != nil {
+					return err
+				}
+			}
 
-			// Write outputs
-			if err := writeUpgradeOutputs(result, outputDir, outputFormat); err != nil {
+			if err := writeUpgradeReports(result, reportTarget); err != nil {
 				return err
 			}
 
-			// Write reports
-			rDir := reportDir
-			if rDir == "" {
-				rDir = outputDir
-			}
-			if err := writeUpgradeReports(result, rDir, reportFormat); err != nil {
-				return err
-			}
-
-			// Print statistics to stderr
+			// Print statistics
 			stats := result.Statistics
 			fmt.Fprintf(os.Stderr, "Upgrade: %d match, %d possible mismatch, %d related, %d no match (of %d upstream from %d current)\n",
 				stats.Match, stats.PosMisMatch, stats.DupMatch, stats.NoMatch, stats.NewControlsLength, stats.OldControlsLength)
+			if inPlace {
+				fmt.Fprintf(os.Stderr, "Updated profile in-place at %s; reports in %s\n", effectiveOutput, reportTarget)
+			} else {
+				fmt.Fprintf(os.Stderr, "Wrote baseline.json + reports to %s\n", effectiveOutput)
+			}
 
 			return nil
 		},
 	}
 
-	// Input enrichment
-	cmd.Flags().StringVarP(&controlsDir, "controls-dir", "c", "", "InSpec controls directory (enriches current baseline with code)")
-	cmd.Flags().StringVarP(&idType, "id-type", "T", "rule", "XCCDF control ID type: rule, group, cis, or version")
+	// Output destination. Optional for directory inputs (in-place), required for files.
+	cmd.Flags().StringVarP(&outputDir, "output-dir", "o", "",
+		"Where to write outputs. Required when <current> is a file; optional for "+
+			"profile-directory inputs (default: update the profile in place).")
+	cmd.Flags().StringVar(&reportDir, "report-dir", "",
+		"Override the location for delta reports (delta.json, delta.md, "+
+			"baseline.json). Default: <output>/.upgrade/ for in-place mode; "+
+			"<output>/ for file-input mode.")
 
-	// Merge behavior
-	cmd.Flags().StringVar(&prefer, "prefer", "", "Conflict resolution: current or upstream (default: smart merge)")
-	cmd.Flags().BoolVar(&noCode, "no-code", false, "Don't preserve current test code")
-
-	// Output control
-	cmd.Flags().StringVarP(&outputFormat, "output-format", "f", "baseline", "Output format: baseline, inspec, or both")
-	cmd.Flags().BoolVar(&singleFile, "single-file", false, "All controls in one .rb file (inspec output only)")
-
-	// Profile metadata overrides (inspec output)
-	cmd.Flags().StringVar(&maintainer, "maintainer", "", "Override maintainer in inspec.yml")
-	cmd.Flags().StringVar(&copyright, "copyright", "", "Override copyright in inspec.yml")
-	cmd.Flags().StringVar(&license, "license", "", "Override license in inspec.yml")
-	cmd.Flags().StringVar(&profileVer, "version", "", "Override version in inspec.yml")
-	cmd.Flags().StringVar(&inspecVersion, "inspec-version", "", "InSpec version constraint (default: >=6.0)")
-
-	// Reporting
-	cmd.Flags().StringVar(&reportFormat, "report-format", "both", "Report format: json, markdown, or both")
-	cmd.Flags().StringVar(&reportDir, "report-dir", "", "Report output directory (default: output-dir)")
-
-	// Matching
-	cmd.Flags().StringVar(&strategy, "strategy", "", "Override matching strategy chain")
+	// Matching / merge behavior
+	cmd.Flags().StringVar(&prefer, "prefer", "",
+		"Conflict resolution mode for fields present on both current and upstream:\n"+
+			"  (unset)   smart merge — upstream wins on scalars (title, impact),\n"+
+			"            current wins on code, collections are unioned.\n"+
+			"  current   current's values win on every conflict (your customizations\n"+
+			"            are sticky, even when upstream updates the field).\n"+
+			"  upstream  upstream replaces current entirely (forget customizations,\n"+
+			"            take the new guidance verbatim).")
+	cmd.Flags().BoolVar(&keepUnmatched, "keep-unmatched", false,
+		"Preserve current requirements that have no upstream match.\n"+
+			"By default, unmatched-current controls are DROPPED — matching SAF CLI\n"+
+			"delta: a control DISA removed in the new XCCDF should be removed from\n"+
+			"your profile too. Set this flag when you have custom controls outside\n"+
+			"the DISA STIG, or want to inspect what would be dropped before\n"+
+			"committing to the upgrade.")
+	cmd.Flags().BoolVar(&noCode, "no-code", false,
+		"Don't preserve current's test code on matched requirements. By default,\n"+
+			"smart merge keeps the InSpec test bodies you've already written (the\n"+
+			"whole point of a delta-style upgrade — your tests survive metadata\n"+
+			"updates). With --no-code, upstream's empty code is taken instead,\n"+
+			"effectively regenerating stubs. Useful when starting fresh from a\n"+
+			"new XCCDF release without carrying old tests forward.")
+	cmd.Flags().StringVarP(&idType, "id-type", "T", "rule",
+		"Which XCCDF ID field becomes the requirement ID:\n"+
+			"  rule     SV-NNNN (Rule ID, default — current DISA convention)\n"+
+			"  group    V-NNNN  (Group/Vuln ID — older STIG convention)\n"+
+			"  cis      CIS catalog identifier (e.g. 1.1.1)\n"+
+			"  version  STIG version string (e.g. RHEL-08-010000)\n"+
+			"Only relevant when an input is XCCDF; ignored for JSON inputs.")
+	cmd.Flags().StringVar(&strategy, "strategy", "",
+		"Override the matching strategy chain (advanced). By default, upgrade\n"+
+			"tries srgDeterministic → srgCciTiebreak → vendorFuzzyTitle → exactId\n"+
+			"→ cciMatch → fuzzyTitle, in order, falling through on no-match.\n"+
+			"Pass a single strategy name to use only that one.")
 
 	return cmd
 }
@@ -384,64 +468,87 @@ func buildUpgradeLinkRecords(matchResult matching.MatchResult) []generators.Link
 	return linkRecords
 }
 
-// writeUpgradeOutputs writes the upgrade result to disk based on output format.
-func writeUpgradeOutputs(result generators.UpgradeResult, outputDir, outputFormat string) error {
-	if err := os.MkdirAll(outputDir, 0o750); err != nil { //nolint:gosec // output dir needs group read
-		return fmt.Errorf("failed to create output directory: %w", err)
+// writeBaselineJSON marshals the upgraded baseline and writes it to dir/baseline.json.
+func writeBaselineJSON(result generators.UpgradeResult, dir string) error {
+	if err := os.MkdirAll(dir, 0o750); err != nil { //nolint:gosec // dir needs group read
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
-
-	// Always write baseline.json for "baseline" or "both"
-	if outputFormat == "baseline" || outputFormat == "both" {
-		baselineJSON, err := json.MarshalIndent(result.Baseline, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal baseline: %w", err)
-		}
-		baselinePath := filepath.Join(outputDir, "baseline.json")
-		if err := os.WriteFile(baselinePath, baselineJSON, 0o600); err != nil {
-			return fmt.Errorf("failed to write %s: %w", baselinePath, err)
-		}
-		printDebug("Wrote %s", baselinePath)
+	baselineJSON, err := json.MarshalIndent(result.Baseline, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal baseline: %w", err)
 	}
-
-	// Write InSpec profile for "inspec" or "both"
-	if (outputFormat == "inspec" || outputFormat == "both") && result.Profile != nil {
-		if err := writeInSpecProfile(*result.Profile, outputDir); err != nil {
-			return err
-		}
+	baselinePath := filepath.Join(dir, "baseline.json")
+	if err := os.WriteFile(baselinePath, baselineJSON, 0o600); err != nil {
+		return fmt.Errorf("failed to write %s: %w", baselinePath, err)
 	}
-
+	printDebug("Wrote %s", baselinePath)
 	return nil
 }
 
-// writeUpgradeReports writes delta.json and/or delta.md to the report directory.
-func writeUpgradeReports(result generators.UpgradeResult, reportDir, format string) error {
+// writeInPlaceProfile writes the upgraded controls into an existing
+// InSpec profile directory. The existing inspec.yml is preserved
+// verbatim; control .rb files for IDs no longer in the upgraded baseline
+// are pruned. Used when <current> is a profile directory.
+func writeInPlaceProfile(profile generators.InSpecProfile, profileDir string) error {
+	controlsDir := filepath.Join(profileDir, "controls")
+	if err := os.MkdirAll(controlsDir, 0o750); err != nil { //nolint:gosec // profile dirs need group read
+		return fmt.Errorf("failed to create controls directory: %w", err)
+	}
+
+	// Write updated control files. Collect the set of IDs we wrote so
+	// we can prune stale files afterwards.
+	keepIDs := make(map[string]bool, len(profile.Controls))
+	for name, content := range profile.Controls {
+		controlPath, pathErr := safePath(profileDir, name)
+		if pathErr != nil {
+			return fmt.Errorf("unsafe control path %q: %w", name, pathErr)
+		}
+		dir := filepath.Dir(controlPath)
+		if err := os.MkdirAll(dir, 0o750); err != nil { //nolint:gosec // profile dirs need group read
+			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+		}
+		if err := os.WriteFile(controlPath, []byte(content), 0o600); err != nil {
+			return fmt.Errorf("failed to write %s: %w", controlPath, err)
+		}
+		printDebug("Wrote %s", controlPath)
+		// Extract the control ID from the filename ("controls/SV-X.rb" → "SV-X").
+		base := filepath.Base(name)
+		keepIDs[strings.TrimSuffix(base, ".rb")] = true
+	}
+
+	// Prune stale .rb files (IDs no longer in the upgraded baseline).
+	pruned, err := pruneStaleControlFiles(controlsDir, keepIDs)
+	if err != nil {
+		return fmt.Errorf("pruning stale control files: %w", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "Updated %d controls in %s (%d stale .rb files pruned)\n",
+		len(profile.Controls), controlsDir, pruned)
+	return nil
+}
+
+// writeUpgradeReports writes delta.json and delta.md to the report directory.
+func writeUpgradeReports(result generators.UpgradeResult, reportDir string) error {
 	if err := os.MkdirAll(reportDir, 0o750); err != nil { //nolint:gosec // report dir needs group read
 		return fmt.Errorf("failed to create report directory: %w", err)
 	}
 
-	writeJSON := format == "json" || format == "both"
-	writeMD := format == "markdown" || format == "both"
-
-	if writeJSON {
-		jsonData, err := generators.GenerateDeltaJSON(result)
-		if err != nil {
-			return fmt.Errorf("failed to generate report JSON: %w", err)
-		}
-		jsonPath := filepath.Join(reportDir, "delta.json")
-		if err := os.WriteFile(jsonPath, jsonData, 0o600); err != nil {
-			return fmt.Errorf("failed to write %s: %w", jsonPath, err)
-		}
-		printDebug("Wrote %s", jsonPath)
+	jsonData, err := generators.GenerateDeltaJSON(result)
+	if err != nil {
+		return fmt.Errorf("failed to generate report JSON: %w", err)
 	}
-
-	if writeMD {
-		md := generators.GenerateDeltaMarkdown(result)
-		mdPath := filepath.Join(reportDir, "delta.md")
-		if err := os.WriteFile(mdPath, []byte(md), 0o600); err != nil {
-			return fmt.Errorf("failed to write %s: %w", mdPath, err)
-		}
-		printDebug("Wrote %s", mdPath)
+	jsonPath := filepath.Join(reportDir, "delta.json")
+	if err := os.WriteFile(jsonPath, jsonData, 0o600); err != nil {
+		return fmt.Errorf("failed to write %s: %w", jsonPath, err)
 	}
+	printDebug("Wrote %s", jsonPath)
+
+	md := generators.GenerateDeltaMarkdown(result)
+	mdPath := filepath.Join(reportDir, "delta.md")
+	if err := os.WriteFile(mdPath, []byte(md), 0o600); err != nil {
+		return fmt.Errorf("failed to write %s: %w", mdPath, err)
+	}
+	printDebug("Wrote %s", mdPath)
 
 	return nil
 }
@@ -564,47 +671,6 @@ func parseInSpecDescriptions(desc *string, raw json.RawMessage) []schema.Descrip
 // controlIDRegex matches `control 'ID' do` or `control "ID" do` in Ruby files.
 var controlIDRegex = regexp.MustCompile(`(?m)^\s*control\s+['"]([^'"]+)['"]\s+do`)
 
-// enrichBaselineFromControlsDir reads .rb files from a controls directory and
-// enriches the current baseline requirements with code from those files.
-// Each .rb file's content becomes the code body for the matching requirement.
-func enrichBaselineFromControlsDir(baseline *schema.HDFBaseline, controlsDir string) error {
-	entries, err := os.ReadDir(controlsDir)
-	if err != nil {
-		return fmt.Errorf("reading directory %s: %w", controlsDir, err)
-	}
-
-	// Build code map: control ID → full file content
-	codeMap := make(map[string]string)
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".rb") {
-			continue
-		}
-
-		filePath := filepath.Join(controlsDir, entry.Name())
-		content, err := os.ReadFile(filePath) //nolint:gosec // path comes from user flag, not untrusted input
-		if err != nil {
-			return fmt.Errorf("reading %s: %w", filePath, err)
-		}
-
-		// Extract control ID from the file content
-		matches := controlIDRegex.FindAllStringSubmatch(string(content), -1)
-		for _, m := range matches {
-			if len(m) >= 2 {
-				codeMap[m[1]] = string(content)
-			}
-		}
-	}
-
-	// Enrich baseline requirements with code
-	for i := range baseline.Requirements {
-		if code, ok := codeMap[baseline.Requirements[i].ID]; ok {
-			baseline.Requirements[i].Code = &code
-		}
-	}
-
-	return nil
-}
-
 // remapBaselineIDs changes requirement IDs based on the --id-type flag.
 // XCCDF-sourced baselines have tags: rid (rule ID), gid (group/V-ID),
 // stig_id (version/STIG ID). This remaps the primary ID field.
@@ -637,4 +703,111 @@ func remapBaselineIDs(baseline *schema.HDFBaseline, idType string) {
 			req.ID = newID
 		}
 	}
+}
+
+// isInSpecProfileDir reports whether path is a directory containing an
+// inspec.yml file — i.e., a runnable InSpec/CINC profile root. Used to
+// auto-detect when upgrade should operate in in-place mode.
+func isInSpecProfileDir(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+	if _, err := os.Stat(filepath.Join(path, "inspec.yml")); err == nil {
+		return true
+	}
+	return false
+}
+
+// generateProfileJSON shells out to cinc-auditor (preferred) or inspec
+// to produce the profile.json equivalent of an InSpec profile directory.
+// Returns the JSON bytes so they can be parsed via the existing
+// tryParseInSpecJSON path.
+func generateProfileJSON(profileDir string) ([]byte, error) {
+	for _, bin := range []string{"cinc-auditor", "inspec"} {
+		if _, err := exec.LookPath(bin); err != nil {
+			continue
+		}
+		// #nosec G204 -- bin is from a fixed allowlist; profileDir is user-supplied
+		// path validated by isInSpecProfileDir before reaching here.
+		cmd := exec.CommandContext(context.Background(), bin, "json", profileDir)
+		out, err := cmd.Output()
+		if err != nil {
+			return nil, fmt.Errorf("running %s json: %w", bin, err)
+		}
+		return out, nil
+	}
+	return nil, fmt.Errorf("neither cinc-auditor nor inspec found on PATH " +
+		"(needed to read InSpec profile directories). Install one, or " +
+		"pre-generate profile.json with 'cinc-auditor json <dir>' and " +
+		"pass that file path instead")
+}
+
+// pruneStaleControlFiles removes .rb files from a controls directory
+// whose control IDs are not in the keepIDs set. Used after writing an
+// in-place upgrade to clean out controls that were dropped or renamed.
+func pruneStaleControlFiles(controlsDir string, keepIDs map[string]bool) (int, error) {
+	entries, err := os.ReadDir(controlsDir)
+	if err != nil {
+		return 0, fmt.Errorf("reading controls directory: %w", err)
+	}
+	pruned := 0
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".rb") {
+			continue
+		}
+		path := filepath.Join(controlsDir, entry.Name())
+		content, err := os.ReadFile(path) //nolint:gosec // path is a .rb file in user-supplied profile dir
+		if err != nil {
+			return pruned, fmt.Errorf("reading %s: %w", path, err)
+		}
+		match := controlIDRegex.FindStringSubmatch(string(content))
+		if match == nil {
+			// File doesn't look like a control file — leave it alone
+			// (could be a helper or shared library file).
+			continue
+		}
+		controlID := match[1]
+		if !keepIDs[controlID] {
+			if err := os.Remove(path); err != nil {
+				return pruned, fmt.Errorf("removing stale %s: %w", path, err)
+			}
+			pruned++
+			printDebug("Pruned stale %s", path)
+		}
+	}
+	return pruned, nil
+}
+
+// copyDir recursively copies the contents of src into dst. Used when
+// upgrade is invoked with a directory input AND an -o output dir —
+// the original profile is copied to -o, then upgrade runs in-place
+// within the copy. Preserves file modes and skips dotfiles at the root
+// (to avoid copying .git directories from cloned baselines).
+func copyDir(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		// Skip top-level dotfiles (.git, etc) to avoid copying VCS metadata.
+		if rel != "." && strings.HasPrefix(rel, ".") && !strings.ContainsRune(rel, filepath.Separator) {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		target := filepath.Join(dst, rel)
+		if info.IsDir() {
+			return os.MkdirAll(target, info.Mode())
+		}
+		data, err := os.ReadFile(path) //nolint:gosec // path is within user-supplied src dir
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, info.Mode()) //nolint:gosec // target is derived from user-supplied dst dir
+	})
 }
