@@ -170,3 +170,55 @@ func TestGenerateDelta_InspecYml(t *testing.T) {
 	assert.Contains(t, result.Profile.InSpecYml, "name: updated-stig")
 	assert.Contains(t, result.Profile.InSpecYml, "title: Updated STIG Profile")
 }
+
+func TestGenerateUpgrade_DropsUnmatchedCurrentByDefault(t *testing.T) {
+	// Default behavior (KeepUnmatched=false): if a current requirement has
+	// no upstream match (DISA dropped it), it's dropped from the output.
+	// Matches SAF CLI delta semantics.
+	current := makeTestBaseline("current", []hdf.BaselineRequirement{
+		makeTestReq("SV-001", "Matched control"),
+		makeTestReq("SV-099", "Deprecated control — no upstream match"),
+	})
+	upstream := makeTestBaseline("upstream", []hdf.BaselineRequirement{
+		makeTestReq("SV-001", "Matched control (upstream)"),
+	})
+	links := []LinkRecord{
+		{OldID: "SV-001", NewID: "SV-001", MatchMethod: "srgDeterministic",
+			Confidence: 1.0, Relationship: "primary"},
+	}
+
+	result := GenerateUpgrade(current, upstream, links, &UpgradeOptions{})
+
+	ids := make([]string, 0, len(result.Baseline.Requirements))
+	for _, r := range result.Baseline.Requirements {
+		ids = append(ids, r.ID)
+	}
+	assert.Contains(t, ids, "SV-001", "matched control should be present")
+	assert.NotContains(t, ids, "SV-099", "unmatched current should be dropped by default")
+}
+
+func TestGenerateUpgrade_KeepUnmatched_PreservesUnmatchedCurrent(t *testing.T) {
+	// With KeepUnmatched=true, unmatched current requirements survive the
+	// upgrade. Useful for users carrying custom controls outside the DISA
+	// STIG, or who want to inspect what got dropped before committing.
+	current := makeTestBaseline("current", []hdf.BaselineRequirement{
+		makeTestReq("SV-001", "Matched control"),
+		makeTestReq("SV-099", "Deprecated control — no upstream match"),
+	})
+	upstream := makeTestBaseline("upstream", []hdf.BaselineRequirement{
+		makeTestReq("SV-001", "Matched control (upstream)"),
+	})
+	links := []LinkRecord{
+		{OldID: "SV-001", NewID: "SV-001", MatchMethod: "srgDeterministic",
+			Confidence: 1.0, Relationship: "primary"},
+	}
+
+	result := GenerateUpgrade(current, upstream, links, &UpgradeOptions{KeepUnmatched: true})
+
+	ids := make([]string, 0, len(result.Baseline.Requirements))
+	for _, r := range result.Baseline.Requirements {
+		ids = append(ids, r.ID)
+	}
+	assert.Contains(t, ids, "SV-001", "matched control should be present")
+	assert.Contains(t, ids, "SV-099", "unmatched current should be preserved with --keep-unmatched")
+}

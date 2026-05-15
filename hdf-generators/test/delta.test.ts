@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateDelta } from '../src/delta.js';
+import { generateDelta, generateUpgrade } from '../src/delta.js';
 import type { LinkRecord, DeltaOptions } from '../src/delta-types.js';
 import { makeBaseline, makeRequirement } from './helpers.js';
 
@@ -192,6 +192,54 @@ describe('generateDelta', () => {
 
     expect(result.profile.inspecYml).toContain('name: updated-stig');
     expect(result.profile.inspecYml).toContain('title: Updated STIG Profile');
+  });
+
+  it('drops unmatched-current requirements by default (matches SAF semantics)', () => {
+    const current = makeBaseline({
+      name: 'current',
+      requirements: [
+        makeRequirement({ id: 'SV-001' }),
+        makeRequirement({ id: 'SV-099' }),
+      ],
+    });
+    const upstream = makeBaseline({
+      name: 'upstream',
+      requirements: [makeRequirement({ id: 'SV-001' })],
+    });
+    const links: LinkRecord[] = [
+      { oldId: 'SV-001', newId: 'SV-001', matchMethod: 'srgDeterministic',
+        confidence: 1.0, relationship: 'primary', potentialMismatch: false },
+    ];
+
+    const result = generateUpgrade(current, upstream, links, {});
+
+    const ids = result.baseline.requirements.map((r) => r.id);
+    expect(ids).toContain('SV-001');
+    expect(ids).not.toContain('SV-099');
+  });
+
+  it('preserves unmatched-current when keepUnmatched is true', () => {
+    const current = makeBaseline({
+      name: 'current',
+      requirements: [
+        makeRequirement({ id: 'SV-001' }),
+        makeRequirement({ id: 'SV-099' }),
+      ],
+    });
+    const upstream = makeBaseline({
+      name: 'upstream',
+      requirements: [makeRequirement({ id: 'SV-001' })],
+    });
+    const links: LinkRecord[] = [
+      { oldId: 'SV-001', newId: 'SV-001', matchMethod: 'srgDeterministic',
+        confidence: 1.0, relationship: 'primary', potentialMismatch: false },
+    ];
+
+    const result = generateUpgrade(current, upstream, links, { keepUnmatched: true });
+
+    const ids = result.baseline.requirements.map((r) => r.id);
+    expect(ids).toContain('SV-001');
+    expect(ids).toContain('SV-099');
   });
 
   it('should handle singleFile option', () => {

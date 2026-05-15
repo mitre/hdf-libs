@@ -68,10 +68,15 @@ func GenerateUpgrade(
 		mergedReqs = append(mergedReqs, upReq)
 	}
 
-	// Include unmatched current requirements (removed from upstream)
-	for _, curReq := range currentBaseline.Requirements {
-		if !matchedCurrentIDs[curReq.ID] {
-			mergedReqs = append(mergedReqs, curReq)
+	// Include unmatched current requirements only when explicitly opted in.
+	// By default they're dropped — a control removed from upstream should
+	// not survive the upgrade, matching SAF CLI delta semantics.
+	keepUnmatched := opts != nil && opts.KeepUnmatched
+	if keepUnmatched {
+		for _, curReq := range currentBaseline.Requirements {
+			if !matchedCurrentIDs[curReq.ID] {
+				mergedReqs = append(mergedReqs, curReq)
+			}
 		}
 	}
 

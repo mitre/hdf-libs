@@ -67,6 +67,14 @@ export interface UpgradeOptions {
   metadata?: ProfileMetadata;
   /** InSpec version constraint for inspec.yml. */
   inspecVersion?: string;
+  /**
+   * Preserve current requirements that have no upstream match. Default
+   * (false) drops them — matching SAF CLI delta: a control DISA removed
+   * in the new XCCDF should be removed from the upgraded profile too.
+   * Set true when carrying custom controls outside the DISA STIG, or
+   * to inspect what got dropped before committing to the upgrade.
+   */
+  keepUnmatched?: boolean;
 }
 
 /** Backward-compatible alias. */

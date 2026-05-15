@@ -62,10 +62,14 @@ export function generateUpgrade(
     mergedReqs.push(upReq);
   }
 
-  // Include unmatched current requirements
-  for (const curReq of currentBaseline.requirements) {
-    if (!matchedCurrentIds.has(curReq.id)) {
-      mergedReqs.push(curReq);
+  // Include unmatched current requirements only when explicitly opted in.
+  // By default they're dropped — a control removed from upstream should
+  // not survive the upgrade, matching SAF CLI delta semantics.
+  if (opts?.keepUnmatched) {
+    for (const curReq of currentBaseline.requirements) {
+      if (!matchedCurrentIds.has(curReq.id)) {
+        mergedReqs.push(curReq);
+      }
     }
   }
 
