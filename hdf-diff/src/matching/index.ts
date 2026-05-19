@@ -49,8 +49,17 @@ function createStrategy(name: string, options: MatchOptions): MatchStrategy {
       return createSrgDeterministicStrategy();
     case 'srgCciTiebreak':
       return createSrgCciTiebreakStrategy();
-    case 'vendorFuzzyTitle':
-      return createVendorFuzzyTitleStrategy(options.minConfidence);
+    case 'vendorFuzzyTitle': {
+      // vendorFuzzyTitle is parameterized by a max normalized Levenshtein
+      // distance, not a min confidence. Translate (confidence = 1 - distance).
+      // Leave undefined when minConfidence is unset/zero so the strategy
+      // applies its own default threshold.
+      const acceptThreshold =
+        options.minConfidence !== undefined && options.minConfidence > 0
+          ? 1 - options.minConfidence
+          : undefined;
+      return createVendorFuzzyTitleStrategy(acceptThreshold);
+    }
     default:
       throw new Error(`Unknown matching strategy: '${name}'`);
   }

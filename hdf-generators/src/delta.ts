@@ -12,7 +12,9 @@ import { generateInSpecYml } from './inspec-yml.js';
  * - If matched: smart-merge current + upstream fields per mergeRequirement semantics
  * - If unmatched: include upstream requirement as-is (new control)
  *
- * Unmatched current requirements are also included as-is (removed from upstream).
+ * Current requirements with no upstream match are dropped by default
+ * (a control removed from upstream should not survive the upgrade).
+ * Set opts.keepUnmatched to retain them instead.
  */
 export function generateUpgrade(
   currentBaseline: HdfBaseline,

@@ -15,7 +15,9 @@ import (
 //   - If matched: smart-merge current + upstream fields per MergeRequirement semantics
 //   - If unmatched: include upstream requirement as-is (new control)
 //
-// Unmatched current requirements are also included as-is (removed from upstream).
+// Current requirements with no upstream match are dropped by default
+// (a control removed from upstream should not survive the upgrade).
+// Set opts.KeepUnmatched to retain them instead.
 //
 // When opts.OutputFormat includes "inspec" or "both", also generates an InSpec profile.
 func GenerateUpgrade(

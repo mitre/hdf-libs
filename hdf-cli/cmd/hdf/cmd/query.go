@@ -53,7 +53,7 @@ uses OR logic within that filter.
 
 Examples:
   hdf query results.json --status failed
-  hdf query results.json --status failed --status notReviewed
+  hdf query results.json --status failed --status not_reviewed
   hdf query results.json --status failed --severity high
   hdf query results.json --severity high --severity critical
   hdf query results.json --cci CCI-000366 --cci CCI-000172
@@ -89,7 +89,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringArrayVarP(&localQueryStatus, "status", "s", nil, "Filter by status (repeatable, OR logic): passed, failed, error, notApplicable, notReviewed")
+	cmd.Flags().StringArrayVarP(&localQueryStatus, "status", "s", nil, "Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed")
 	cmd.Flags().StringArrayVar(&localQuerySeverity, "severity", nil, "Filter by severity (repeatable, OR logic): critical, high, medium, low, informational")
 	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by impact (e.g., \">0.5\", \">=0.7\", \"0.5\")")
 	cmd.Flags().StringArrayVar(&localQueryCCI, "cci", nil, "Filter by CCI identifier (repeatable, OR logic)")
