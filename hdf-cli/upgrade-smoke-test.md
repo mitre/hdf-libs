@@ -9,11 +9,14 @@ without a profile dir) is covered toward the end.
 
 ## Prerequisites
 
+Build the `hdf` binary. Run from the repo root:
+
 ```bash
-cd /Users/wdower/repos/mitre/hdf-libs/hdf-cli
-go build -o ../hdf ./cmd/hdf/
-cd ..
+(cd hdf-cli && go build -o ../hdf ./cmd/hdf/)
 ```
+
+All commands below assume the repo root as the working directory, with
+the freshly built `./hdf` binary there.
 
 For the in-place tests:
 - [cinc-auditor](https://cinc.sh/start/auditor/) or
@@ -239,10 +242,12 @@ cinc-auditor check /tmp/redhat-hdf-cmp 2>&1 | tail -3              # passes: Val
 ## File-input mode
 
 When `<current>` is a JSON or XML file (not a profile directory),
-upgrade emits only `baseline.json` + delta reports to `-o`. Use this
-for direct baseline-to-baseline upgrades that don't involve an InSpec
-profile. To turn the resulting baseline.json into an InSpec profile,
-chain `hdf generate inspec-profile`.
+upgrade emits the upgraded `baseline.json`. With no `-o` it streams to
+stdout (pipe-friendly); with `-o <dir>` it's written to disk. Delta
+reports are written only when `--report-dir` is given. Each artifact
+has exactly one flag: `-o` for the baseline, `--report-dir` for the
+reports. To turn baseline.json into an InSpec profile, chain
+`hdf generate inspec-profile`.
 
 ```bash
 XCCDF_12=hdf-converters/converters/xccdf-results-to-hdf/fixtures/input/benchmark-minimal-1.2.xml
@@ -250,23 +255,44 @@ XCCDF_11=hdf-converters/converters/xccdf-results-to-hdf/fixtures/input/benchmark
 INSPEC_HDF=hdf-converters/converters/legacyhdf-to-hdf/fixtures/expected/ubi9-scan.json
 ```
 
-## Test 5: Error — file input without -o
+## Test 5: Baseline to stdout (no -o)
+
+File input with no `-o` streams `baseline.json` to stdout. In this
+mode upgrade acts as a filter — stderr stays empty (no stats, no
+summary), so it composes cleanly in a pipe.
 
 ```bash
-./hdf generate upgrade $XCCDF_12 $XCCDF_12
-# Expected: exit 1, "Error: -o/--output-dir is required when <current> is not an InSpec profile directory"
+# Pipe straight into jq
+./hdf generate upgrade $XCCDF_12 $XCCDF_12 | jq '.requirements | length'
+# Expected: 3
+
+# stdout is pure JSON; stderr is empty
+./hdf generate upgrade $XCCDF_12 $XCCDF_12 > /tmp/up-stdout.json 2> /tmp/up-stderr.txt
+python3 -m json.tool /tmp/up-stdout.json > /dev/null && echo "✓ stdout is valid JSON"
+test ! -s /tmp/up-stderr.txt && echo "✓ stderr is empty (filter mode)"
+
+# No delta reports written (no --report-dir); nothing hits disk
 ```
 
-## Test 6: Identity upgrade (file input)
+## Test 6: Baseline to stdout + reports via --report-dir
+
+```bash
+./hdf generate upgrade $XCCDF_12 $XCCDF_12 --report-dir /tmp/up-reports/ > /tmp/up-bl.json 2> /tmp/up-stderr.txt
+ls /tmp/up-reports/                                                # delta.json delta.md
+python3 -m json.tool /tmp/up-bl.json > /dev/null && echo "✓ baseline on stdout"
+cat /tmp/up-stderr.txt   # only "Wrote delta reports to /tmp/up-reports/" — no match stats
+```
+
+## Test 7: Baseline to a file (-o)
 
 ```bash
 ./hdf generate upgrade $XCCDF_12 $XCCDF_12 -o /tmp/upgrade-identity/
-ls /tmp/upgrade-identity/                                          # baseline.json delta.json delta.md (no controls/, no inspec.yml)
+ls /tmp/upgrade-identity/                                          # baseline.json only (no reports — no --report-dir)
 python3 -c "import json; bl=json.load(open('/tmp/upgrade-identity/baseline.json')); print('reqs:', len(bl['requirements']))"
 # Expected: 3 reqs
 ```
 
-## Test 7: XCCDF 1.1 → 1.2 cross-version
+## Test 8: XCCDF 1.1 → 1.2 cross-version
 
 ```bash
 ./hdf generate upgrade $XCCDF_11 $XCCDF_12 -o /tmp/upgrade-xccdf-versions/
@@ -278,7 +304,7 @@ print('first title:', (bl['requirements'][0].get('title') or '')[:60])
 # Expected: 3 reqs, upstream metadata adopted
 ```
 
-## Test 8: HDF Results as current (default drop, then --keep-unmatched)
+## Test 9: HDF Results as current (default drop, then --keep-unmatched)
 
 ```bash
 # Default: drop unmatched-current
@@ -301,7 +327,7 @@ print('with code:', sum(1 for r in bl['requirements'] if r.get('code')))
 # Expected: 452 reqs (everything preserved), code on all 452
 ```
 
-## Test 9: Smart merge — custom tags and descriptions survive
+## Test 10: Smart merge — custom tags and descriptions survive
 
 ```bash
 # Seed a customized current baseline from the upstream
@@ -324,9 +350,9 @@ print('custom desc:', any(d['label'] == 'custom' for d in r['descriptions']))
 # Expected: custom_tag=my-custom-value, custom desc=True
 ```
 
-## Test 10: `--prefer current` and `--prefer upstream`
+## Test 11: `--prefer current` and `--prefer upstream`
 
-Same input as Test 9. Verify the conflict-resolution variants.
+Same input as Test 10. Verify the conflict-resolution variants.
 
 ```bash
 ./hdf generate upgrade /tmp/custom-current.json $XCCDF_12 -o /tmp/upgrade-prefer-current/ --prefer current
@@ -346,7 +372,7 @@ print('custom_tag present:', 'custom_tag' in r.get('tags', {}))
 # Expected: custom_tag absent (upstream replaces all)
 ```
 
-## Test 11: `delta` alias
+## Test 12: `delta` alias
 
 ```bash
 ./hdf generate delta $XCCDF_12 $XCCDF_12 -o /tmp/upgrade-alias/
@@ -380,18 +406,23 @@ rm -rf /tmp/redhat-baseline /tmp/redhat-inplace /tmp/redhat-fresh \
 rm -rf /tmp/upgrade-identity /tmp/upgrade-xccdf-versions \
        /tmp/upgrade-rhel7-default /tmp/upgrade-rhel7-keep \
        /tmp/upgrade-smart-merge /tmp/upgrade-prefer-current \
-       /tmp/upgrade-prefer-upstream /tmp/upgrade-alias
+       /tmp/upgrade-prefer-upstream /tmp/upgrade-alias /tmp/up-reports
 
 # Intermediates
 rm -f /tmp/profile.json /tmp/RHEL8_V2R1.xml \
-      /tmp/seed-baseline.json /tmp/custom-current.json
+      /tmp/seed-baseline.json /tmp/custom-current.json \
+      /tmp/up-stdout.json /tmp/up-stderr.txt /tmp/up-bl.json
 ```
 
 ## Notes
 
-- `cinc-auditor` and `inspec` produce the same `inspec json` output for
-  this purpose; HDF probes for `cinc-auditor` first, falls back to
-  `inspec` if not found.
+- `cinc-auditor` / `inspec` are **external tools**, not bundled with
+  HDF CLI. For profile-directory inputs, `hdf generate upgrade` shells
+  out to whichever one it finds on `PATH` (probing `cinc-auditor`
+  first, then `inspec`) to run `inspec json` and extract control
+  metadata. If neither is installed, the command errors and tells you
+  to install one or pre-generate `profile.json` yourself. Both tools
+  produce equivalent `inspec json` output for this purpose.
 - `--id-type` (rule | group | cis | version) is for XCCDF inputs and
   was not exercised here — only relevant when migrating between
   vendors with different ID conventions.

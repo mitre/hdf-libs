@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	xccdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/xccdf-results-to-hdf/go"
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/matching"
@@ -71,8 +72,8 @@ The behavior of upgrade depends on what <current> is:
         The default action is an IN-PLACE update of the profile —
         controls/*.rb are overwritten with merged versions, stale .rb
         files are pruned, and inspec.yml is preserved verbatim.
-        Reports (baseline.json, delta.json, delta.md) land in a new
-        .upgrade/ subdirectory inside the profile.
+        baseline.json + delta reports land in a new .upgrade/
+        subdirectory inside the profile.
 
         Pass -o <dir> to write a fresh copy of the profile to <dir>
         instead of touching the original. Useful for reviewing the
@@ -84,11 +85,17 @@ The behavior of upgrade depends on what <current> is:
 
   - File input (HDF Results JSON / HDF Baseline JSON / InSpec JSON /
     XCCDF XML):
-        -o <dir> is REQUIRED. baseline.json and delta reports are
-        written to <dir>. No InSpec profile is emitted in this mode —
-        if you want one, chain a second command:
+        The upgraded baseline.json is emitted. With no -o it streams
+        to stdout (pipe-friendly); with -o <dir> it's written to
+        <dir>/baseline.json. No InSpec profile is emitted in this mode
+        — if you want one, chain a second command:
 
-            hdf generate inspec-profile <dir>/baseline.json /path/to/profile/
+            hdf generate inspec-profile baseline.json /path/to/profile/
+
+        Delta reports (delta.json, delta.md) are NOT written in
+        file-input mode unless --report-dir is given. Each artifact
+        has exactly one flag controlling it: -o for the baseline,
+        --report-dir for the reports.
 
 Matching strategy
 =================
@@ -108,16 +115,21 @@ The matching engine tries strategies in order until one yields a match:
 Use --strategy to override the chain (advanced; expert use).`,
 		Example: `  # In-place update of an existing InSpec profile to a new STIG XCCDF.
   # Reads profile via cinc-auditor json, prunes deprecated controls,
-  # writes baseline.json/delta reports to <profile>/.upgrade/.
+  # writes baseline.json + delta reports to <profile>/.upgrade/.
   hdf generate upgrade /path/to/profile/ new-stig-xccdf.xml
 
   # Fresh copy of the profile, leaving the original untouched.
   # The copy is upgraded in place.
   hdf generate upgrade /path/to/profile/ new-stig-xccdf.xml -o /tmp/upgraded/
 
-  # Pure baseline-to-baseline upgrade (no InSpec profile involved).
-  # baseline.json + reports go to /tmp/out/.
+  # Baseline-to-baseline upgrade — baseline.json streams to stdout.
+  hdf generate upgrade old.json upstream.xml | jq '.requirements | length'
+
+  # Same, written to a file instead of stdout.
   hdf generate upgrade old.json upstream.xml -o /tmp/out/
+
+  # Baseline to stdout, but also keep the delta reports.
+  hdf generate upgrade old.json upstream.xml --report-dir /tmp/reports/
 
   # Keep unmatched current controls (default drops them, matching SAF delta).
   hdf generate upgrade /path/to/profile/ new.xml --keep-unmatched
@@ -169,16 +181,17 @@ Use --strategy to override the chain (advanced; expert use).`,
 					// is untouched. Treat the copy as the in-place target.
 					inPlace = true
 				}
-			} else if effectiveOutput == "" {
-				return fmt.Errorf("-o/--output-dir is required when <current> is not an InSpec profile directory")
 			}
+			// File input with no -o is valid: baseline.json streams to stdout.
 
 			// Read current baseline data. For profile dirs, shell out to
 			// cinc-auditor/inspec to get the InSpec JSON form. For files,
 			// just read the bytes.
 			var currentData []byte
 			if profileDirMode {
+				stop := startSpinner("Reading InSpec profile via cinc-auditor...")
 				cinged, err := generateProfileJSON(currentPath)
+				stop()
 				if err != nil {
 					return fmt.Errorf("reading InSpec profile %q: %w", currentPath, err)
 				}
@@ -251,62 +264,91 @@ Use --strategy to override the chain (advanced; expert use).`,
 
 			result := generators.GenerateUpgrade(*currentBaseline, *upstreamBaseline, linkRecords, upgradeOpts)
 
-			// Decide where outputs go.
-			// In-place mode: controls/ overwrite + prune; baseline.json and
-			// reports go to <profile>/.upgrade/ (or --report-dir override).
-			// File-input mode: everything goes to -o/--output-dir.
+			// Resolve the delta-report destination. Reports are written
+			// ONLY when this resolves to a non-empty path:
+			//   - explicit --report-dir always wins
+			//   - directory-input mode defaults it to <profile>/.upgrade/
+			//   - file-input mode has no default — no --report-dir, no reports
 			reportTarget := reportDir
-			if reportTarget == "" {
-				if inPlace {
-					reportTarget = filepath.Join(effectiveOutput, ".upgrade")
-				} else {
-					reportTarget = effectiveOutput
-				}
+			if reportTarget == "" && inPlace {
+				reportTarget = filepath.Join(effectiveOutput, ".upgrade")
 			}
 
-			if inPlace {
+			// Write the upgraded baseline.
+			switch {
+			case inPlace:
 				if result.Profile != nil {
 					if err := writeInPlaceProfile(*result.Profile, effectiveOutput); err != nil {
 						return err
 					}
 				}
-				// baseline.json lives with the reports in .upgrade/
+				// baseline.json is grouped with the delta reports.
 				if err := writeBaselineJSON(result, reportTarget); err != nil {
 					return err
 				}
-			} else {
-				// File-input mode: baseline.json to effectiveOutput; no profile.
+			case effectiveOutput == "":
+				// File input, no -o: stream baseline.json to stdout.
+				if err := writeBaselineStdout(result); err != nil {
+					return err
+				}
+			default:
 				if err := writeBaselineJSON(result, effectiveOutput); err != nil {
 					return err
 				}
 			}
 
-			if err := writeUpgradeReports(result, reportTarget); err != nil {
-				return err
+			// Write delta reports only when a destination resolved.
+			if reportTarget != "" {
+				if err := writeUpgradeReports(result, reportTarget); err != nil {
+					return err
+				}
 			}
 
-			// Print statistics
+			// Summary to stderr. In stdout-streaming mode (file input, no -o)
+			// upgrade acts as a filter — stay quiet, like jq or cat. The only
+			// stderr output in that mode is a note if reports hit disk.
 			stats := result.Statistics
-			fmt.Fprintf(os.Stderr, "Upgrade: %d match, %d possible mismatch, %d related, %d no match (of %d upstream from %d current)\n",
-				stats.Match, stats.PosMisMatch, stats.DupMatch, stats.NoMatch, stats.NewControlsLength, stats.OldControlsLength)
-			if inPlace {
+			printStats := func() {
+				fmt.Fprintf(os.Stderr, "Upgrade: %d match, %d possible mismatch, %d related, %d no match (of %d upstream from %d current)\n",
+					stats.Match, stats.PosMisMatch, stats.DupMatch, stats.NoMatch, stats.NewControlsLength, stats.OldControlsLength)
+			}
+			switch {
+			case inPlace:
+				printStats()
 				fmt.Fprintf(os.Stderr, "Updated profile in-place at %s; reports in %s\n", effectiveOutput, reportTarget)
-			} else {
-				fmt.Fprintf(os.Stderr, "Wrote baseline.json + reports to %s\n", effectiveOutput)
+			case effectiveOutput == "":
+				// stdout-streaming mode: stay quiet. Note only disk side-effects.
+				if reportTarget != "" {
+					fmt.Fprintf(os.Stderr, "Wrote delta reports to %s\n", reportTarget)
+				}
+			default:
+				printStats()
+				fmt.Fprintf(os.Stderr, "Wrote baseline.json to %s\n", effectiveOutput)
+				if reportTarget != "" {
+					fmt.Fprintf(os.Stderr, "Wrote delta reports to %s\n", reportTarget)
+				}
 			}
 
 			return nil
 		},
 	}
 
-	// Output destination. Optional for directory inputs (in-place), required for files.
+	// Output destination for the upgraded baseline.
 	cmd.Flags().StringVarP(&outputDir, "output-dir", "o", "",
-		"Where to write outputs. Required when <current> is a file; optional for "+
-			"profile-directory inputs (default: update the profile in place).")
+		"Destination for the upgraded baseline.\n"+
+			"  file input:       with no -o, baseline.json streams to stdout\n"+
+			"                    (pipe-friendly); with -o <dir> it's written to\n"+
+			"                    <dir>/baseline.json.\n"+
+			"  profile directory: with no -o, the profile is updated in place;\n"+
+			"                    with -o <dir> a fresh upgraded copy is written\n"+
+			"                    there and the original is left untouched.")
 	cmd.Flags().StringVar(&reportDir, "report-dir", "",
-		"Override the location for delta reports (delta.json, delta.md, "+
-			"baseline.json). Default: <output>/.upgrade/ for in-place mode; "+
-			"<output>/ for file-input mode.")
+		"Destination for the delta reports (delta.json, delta.md).\n"+
+			"  profile directory: defaults to <profile>/.upgrade/ — reports are\n"+
+			"                    always written there alongside baseline.json.\n"+
+			"  file input:        no default — delta reports are written ONLY\n"+
+			"                    when this flag is given. Without it, you get the\n"+
+			"                    baseline and nothing else.")
 
 	// Matching / merge behavior
 	cmd.Flags().StringVar(&prefer, "prefer", "",
@@ -466,6 +508,19 @@ func buildUpgradeLinkRecords(matchResult matching.MatchResult) []generators.Link
 	}
 
 	return linkRecords
+}
+
+// writeBaselineStdout marshals the upgraded baseline and streams it to
+// stdout. Used for file inputs when no -o is given — pipe-friendly.
+func writeBaselineStdout(result generators.UpgradeResult) error {
+	baselineJSON, err := json.MarshalIndent(result.Baseline, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal baseline: %w", err)
+	}
+	if _, err := os.Stdout.Write(append(baselineJSON, '\n')); err != nil {
+		return fmt.Errorf("failed to write baseline to stdout: %w", err)
+	}
+	return nil
 }
 
 // writeBaselineJSON marshals the upgraded baseline and writes it to dir/baseline.json.
@@ -702,6 +757,45 @@ func remapBaselineIDs(baseline *schema.HDFBaseline, idType string) {
 		if newID != "" {
 			req.ID = newID
 		}
+	}
+}
+
+// startSpinner animates a status message on stderr while a slow,
+// blocking operation runs (e.g. the cinc-auditor shell-out). Call the
+// returned stop function when the operation completes — it clears the
+// spinner line and blocks until the animation goroutine has exited.
+//
+// When stderr is not a terminal (piped, redirected, CI), it prints the
+// message once as a static line and returns a no-op stop function, so
+// log files don't fill with carriage-return frames.
+func startSpinner(message string) func() {
+	info, err := os.Stderr.Stat()
+	isTTY := err == nil && info.Mode()&os.ModeCharDevice != 0
+	if !isTTY {
+		fmt.Fprintln(os.Stderr, message)
+		return func() {}
+	}
+
+	done := make(chan struct{})
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		frames := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		for i := 0; ; i++ {
+			select {
+			case <-done:
+				fmt.Fprint(os.Stderr, "\r\033[K") // clear the spinner line
+				return
+			case <-ticker.C:
+				fmt.Fprintf(os.Stderr, "\r%c %s", frames[i%len(frames)], message)
+			}
+		}
+	}()
+	return func() {
+		close(done)
+		<-finished
 	}
 }
 
