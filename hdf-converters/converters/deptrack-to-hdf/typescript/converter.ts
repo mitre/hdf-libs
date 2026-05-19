@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -12,6 +12,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -182,14 +183,22 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
     }),
   ];
 
-  return createRequirement(
+  const req = createRequirement(
     finding.matrix,
     getTitle(finding),
     descriptions,
     getImpact(finding.vulnerability.severity),
     results,
     { tags },
-  );
+  ) as EvaluatedRequirement;
+  req.verificationMethod = VerificationMethodEnum.Automated;
+
+  const controlType = deriveControlTypeFromTags(nist);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+
+  return req;
 }
 
 /**

@@ -6,6 +6,7 @@ import {
   type EvaluatedRequirement,
   type RequirementResult,
   ResultStatus,
+  VerificationMethodEnum,
 } from '@mitre/hdf-schema';
 import {
   getNiktoNistControl,
@@ -13,7 +14,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
+import {deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
 
 // Nikto JSON input types
 
@@ -68,7 +69,7 @@ function convertVulnToRequirement(vuln: NiktoVulnerability): EvaluatedRequiremen
   }
   const tags = buildNistCciTags(nistTags, cciTags, Object.keys(extras).length > 0 ? extras : undefined);
 
-  return {
+  const req: EvaluatedRequirement = {
     id: vuln.id,
     title: vuln.msg,
     impact: 0.5,
@@ -78,6 +79,12 @@ function convertVulnToRequirement(vuln: NiktoVulnerability): EvaluatedRequiremen
       {label: 'default', data: vuln.msg},
     ],
   };
+  const controlType = deriveControlTypeFromTags(nistTags);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+  return req;
 }
 
 export async function convertNiktoToHdf(input: string): Promise<string> {

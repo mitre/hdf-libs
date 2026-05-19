@@ -35,6 +35,7 @@
             ],
             "ratings": "GITHUB - low"
           },
+          "controlType": "technical",
           "title": "GHSA-5mg8-w23w-74h3 (GITHUB)"
         },
         {
@@ -98,6 +99,7 @@
             ],
             "ratings": "GITHUB - critical"
           },
+          "controlType": "technical",
           "title": "GHSA-5p34-5m6p-p58g (GITHUB)"
         }
       ],
@@ -253,7 +255,7 @@
     "name": "cyclonedx-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:51.844721Z",
+  "timestamp": "2026-05-19T01:39:05.218898929Z",
   "tool": {
     "format": "JSON",
     "name": "CycloneDX"

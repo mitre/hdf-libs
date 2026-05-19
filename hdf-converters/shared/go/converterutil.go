@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -103,6 +104,223 @@ func MapCWEToNIST(cweIDs []string, fallback []string) []string {
 	}
 	sort.Strings(result)
 	return result
+}
+
+// nistTagPattern matches a NIST 800-53 control identifier and captures the
+// family (two letters) and the base sub-control number, ignoring enhancement
+// suffixes like "(1)" or ".1". Used by DeriveControlType to classify a tag.
+var nistTagPattern = regexp.MustCompile(`^([A-Z]{2})-(\d+)`)
+
+// nistFamilyControlType maps each NIST 800-53 Rev 5 family to its HDF
+// controlType per Appendix C / SP 800-53A classification. Families not in
+// this map (e.g., synthetic XCCDF families like "SV") yield nil.
+var nistFamilyControlType = map[string]hdf.ControlType{
+	"AC": hdf.Technical,
+	"AU": hdf.Operational,
+	"CM": hdf.Operational,
+	"CP": hdf.Operational,
+	"IA": hdf.Technical,
+	"IR": hdf.Operational,
+	"MA": hdf.Operational,
+	"MP": hdf.Operational,
+	"PE": hdf.Operational,
+	"PS": hdf.Operational,
+	"PT": hdf.Operational,
+	"AT": hdf.Operational,
+	"SC": hdf.Technical,
+	"SI": hdf.Technical,
+	"CA": hdf.Management,
+	"PL": hdf.Management,
+	"PM": hdf.Management,
+	"RA": hdf.Management,
+	"SA": hdf.Management,
+	"SR": hdf.Management,
+}
+
+// DeriveControlType returns the HDF controlType classification for a NIST
+// 800-53 control identifier using a family-prefix heuristic. Returns nil when
+// the family is unrecognized or the tag is not a NIST control identifier.
+//
+// The heuristic, drawn from NIST SP 800-53 Rev 5 Appendix C and SP 800-53A:
+//
+//   - Management: PM, RA, CA, PL, SA, SR families
+//   - Operational: AT, AU, CM, CP, IR, MA, MP, PE, PS, PT families
+//   - Technical:  AC, IA, SC, SI families
+//   - Policy:     any "-1" sub-control (the per-family policy/procedure
+//     document, regardless of which family it belongs to). Enhancements of
+//     -1 controls (e.g., AC-1(1)) also resolve to policy.
+//
+// The "-1" rule takes precedence over the family rule because a per-family
+// policy/procedure document is more usefully classified by its document
+// nature than by the family it documents.
+//
+// Examples:
+//
+//	DeriveControlType("AC-3")      -> &Technical
+//	DeriveControlType("AC-1")      -> &Policy        (any *-1 is policy)
+//	DeriveControlType("AC-3(1)")   -> &Technical     (enhancement of AC-3)
+//	DeriveControlType("PM-2")      -> &Management
+//	DeriveControlType("SV-238196") -> nil            (not a NIST tag)
+//	DeriveControlType("")          -> nil
+func DeriveControlType(nistTag string) *hdf.ControlType {
+	match := nistTagPattern.FindStringSubmatch(strings.ToUpper(strings.TrimSpace(nistTag)))
+	if match == nil {
+		return nil
+	}
+	family := match[1]
+	subControl := match[2]
+	ct, ok := nistFamilyControlType[family]
+	if !ok {
+		return nil
+	}
+	if subControl == "1" {
+		policy := hdf.Policy
+		return &policy
+	}
+	return &ct
+}
+
+// nistFallbackBundles enumerates NIST tag sets this package uses as
+// per-converter static fallbacks when no real per-finding mapping is
+// available. When DeriveControlTypeFromTags sees an input that exactly
+// matches one of these bundles, it returns nil — the input carries no
+// real per-finding signal, and labeling every requirement with the same
+// derived controlType is misleading.
+//
+// Keep in sync with DefaultStaticAnalysisNIST, DefaultRemediationNIST,
+// DefaultComponentManagementNIST above.
+var nistFallbackBundles = [][]string{
+	{"RA-5", "SA-11"}, // DefaultStaticAnalysisNIST (sorted)
+	{"RA-5", "SI-2"},  // DefaultRemediationNIST (sorted)
+	{"CM-8"},          // DefaultComponentManagementNIST
+}
+
+// tagsMatchFallback reports whether tags exactly matches one of the known
+// per-converter static fallback bundles, after sorting and deduplication.
+func tagsMatchFallback(tags []string) bool {
+	if len(tags) == 0 {
+		return false
+	}
+	seen := make(map[string]bool, len(tags))
+	for _, t := range tags {
+		seen[t] = true
+	}
+	sorted := make([]string, 0, len(seen))
+	for t := range seen {
+		sorted = append(sorted, t)
+	}
+	sort.Strings(sorted)
+	for _, bundle := range nistFallbackBundles {
+		if len(bundle) != len(sorted) {
+			continue
+		}
+		match := true
+		for i, b := range bundle {
+			if b != sorted[i] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+// DeriveControlTypeFromTags returns the controlType for a slice of NIST tags.
+// Resolves each tag via DeriveControlType, then picks the most-specific class
+// by precedence: technical > operational > management > policy. The rationale
+// is that a control enforced via configuration (technical) is more actionable
+// than the same control's management/policy framing — consumers benefit more
+// from the action-oriented label.
+//
+// Returns nil when no tag resolves to a known classification, OR when the
+// input exactly matches a converter-level static-fallback bundle (e.g. the
+// DefaultStaticAnalysisNIST set). The fallback gate prevents converters that
+// have no per-finding NIST signal from stamping every requirement with the
+// same misleading controlType.
+func DeriveControlTypeFromTags(tags []string) *hdf.ControlType {
+	if tagsMatchFallback(tags) {
+		return nil
+	}
+	rank := map[hdf.ControlType]int{
+		hdf.Technical:   0,
+		hdf.Operational: 1,
+		hdf.Management:  2,
+		hdf.Policy:      3,
+		hdf.Procedure:   4,
+	}
+	var best *hdf.ControlType
+	bestRank := len(rank) + 1
+	for _, tag := range tags {
+		ct := DeriveControlType(tag)
+		if ct == nil {
+			continue
+		}
+		if r, ok := rank[*ct]; ok && r < bestRank {
+			bestRank = r
+			best = ct
+		}
+	}
+	return best
+}
+
+// NISTTagsFromMap returns the "nist" tag slice from a converter tags map,
+// or nil when the key is absent. Converters store tags as
+// map[string]interface{} so a type assertion is required. This helper
+// accepts both []string (used by converters that assign tags["nist"]
+// directly) and []interface{} (the JSON-marshaled form produced by
+// BuildNISTCCITags via hdfutil.StringsToInterfaces) and normalizes to
+// []string. An empty slice is treated as "no tags."
+//
+// Use with DeriveControlTypeFromTags to populate Requirement_Core.controlType
+// from whatever NIST tags the converter has already resolved:
+//
+//	req.ControlType = shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags))
+func NISTTagsFromMap(tags map[string]interface{}) []string {
+	raw, present := tags["nist"]
+	if !present {
+		return nil
+	}
+	switch v := raw.(type) {
+	case []string:
+		if len(v) == 0 {
+			return nil
+		}
+		return v
+	case []interface{}:
+		if len(v) == 0 {
+			return nil
+		}
+		out := make([]string, 0, len(v))
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				out = append(out, s)
+			}
+		}
+		if len(out) == 0 {
+			return nil
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+// DeriveVerificationMethod returns the HDF verificationMethod for a
+// requirement based on whether check code is present. Returns &Automated
+// when code is non-nil and non-empty (a check exists and runs without
+// operator action), and nil otherwise — the converter is responsible for
+// distinguishing manual-by-design (statement-form, e.g. FedRAMP 20x KSI)
+// from manual-pending-automation (a check that could be automated but
+// isn't yet) when it has the source-format context to do so.
+func DeriveVerificationMethod(code *string) *hdf.VerificationMethodEnum {
+	if code == nil || *code == "" {
+		return nil
+	}
+	automated := hdf.VerificationMethodEnumAutomated
+	return &automated
 }
 
 // LimitSliceWithWarning returns at most maxItems elements from items and logs

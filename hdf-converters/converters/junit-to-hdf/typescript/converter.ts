@@ -1,5 +1,5 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
-import { inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -10,6 +10,7 @@ import type {
 import {
   Copyright,
   ResultStatus,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -176,9 +177,15 @@ function testCaseToRequirement(
     },
   ];
 
-  return createRequirement(id, tc.name, descriptions, 0.5, [result], {
+  const req = createRequirement(id, tc.name, descriptions, 0.5, [result], {
     tags: { nist: DEFAULT_NIST },
   }) as EvaluatedRequirement;
+  const controlType = deriveControlTypeFromTags(DEFAULT_NIST);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+  return req;
 }
 
 function buildID(tc: JUnitTestCase): string {

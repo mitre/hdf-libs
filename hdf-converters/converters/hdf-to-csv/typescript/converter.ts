@@ -103,6 +103,9 @@ function createRow(
     'Status': String(status),
     'NIST Controls': nistControls,
     'CCI Controls': cciControls,
+    'Control Type': requirement.controlType ?? '',
+    'Verification Method': requirement.verificationMethod ?? '',
+    'Applicability': requirement.applicability ?? '',
     'Result Message': message
   };
 }

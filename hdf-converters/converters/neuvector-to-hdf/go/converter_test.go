@@ -428,3 +428,42 @@ func TestSnapshots(t *testing.T) {
 		return ConvertNeuVectorToHDF(input, "0.1.0")
 	})
 }
+
+func TestConvertNeuVector_ControlType(t *testing.T) {
+	input := loadFixture(t, "input/neuvector-mitre-heimdall.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	// NeuVector resolves NIST tags via CWE→NIST mapping (with
+	// DefaultRemediationNIST as fallback). At least one requirement should
+	// have a derived controlType.
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	assert.True(t, sawDerivation, "at least one NeuVector requirement should have a derived controlType")
+}
+
+func TestConvertNeuVector_VerificationMethod(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+	for _, req := range reqs {
+		require.NotNil(t, req.VerificationMethod, "requirement %q missing verificationMethod", req.ID)
+		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+			"requirement %q: NeuVector is an automated container vulnerability scanner", req.ID)
+	}
+}

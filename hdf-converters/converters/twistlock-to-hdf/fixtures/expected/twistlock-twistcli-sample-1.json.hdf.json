@@ -31,7 +31,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-43529"
+          "title": "CVE-2021-43529",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -62,7 +63,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-43529"
+          "title": "CVE-2021-43529",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -93,7 +95,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-43529"
+          "title": "CVE-2021-43529",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -124,7 +127,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-43529"
+          "title": "CVE-2021-43529",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -155,7 +159,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-43529"
+          "title": "CVE-2021-43529",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -186,7 +191,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-1650"
+          "title": "CVE-2022-1650",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -217,7 +223,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-22824"
+          "title": "CVE-2022-22824",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -248,7 +255,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-22823"
+          "title": "CVE-2022-22823",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -279,7 +287,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-22822"
+          "title": "CVE-2022-22822",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -310,7 +319,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-22827"
+          "title": "CVE-2022-22827",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -341,7 +351,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-22826"
+          "title": "CVE-2022-22826",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -372,7 +383,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-22825"
+          "title": "CVE-2022-22825",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -403,7 +415,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-44569"
+          "title": "CVE-2021-44569",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -434,7 +447,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2017-15412"
+          "title": "CVE-2017-15412",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -465,7 +479,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2016-5131"
+          "title": "CVE-2016-5131",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -496,7 +511,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2017-0663"
+          "title": "CVE-2017-0663",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -527,7 +543,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-46143"
+          "title": "CVE-2021-46143",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -558,7 +575,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-29167"
+          "title": "CVE-2022-29167",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -589,7 +607,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-29167"
+          "title": "CVE-2022-29167",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -620,7 +639,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-29167"
+          "title": "CVE-2022-29167",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -651,7 +671,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-29167"
+          "title": "CVE-2022-29167",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -682,7 +703,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-25314"
+          "title": "CVE-2022-25314",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -713,7 +735,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-24772"
+          "title": "CVE-2022-24772",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -744,7 +767,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-24772"
+          "title": "CVE-2022-24772",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -775,7 +799,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-24772"
+          "title": "CVE-2022-24772",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -806,7 +831,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-24772"
+          "title": "CVE-2022-24772",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -837,7 +863,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-24771"
+          "title": "CVE-2022-24771",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -868,7 +895,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-24771"
+          "title": "CVE-2022-24771",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -899,7 +927,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-24771"
+          "title": "CVE-2022-24771",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -930,7 +959,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-24771"
+          "title": "CVE-2022-24771",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -961,7 +991,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-3580"
+          "title": "CVE-2021-3580",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -992,7 +1023,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2017-9047"
+          "title": "CVE-2017-9047",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1023,7 +1055,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-29824"
+          "title": "CVE-2022-29824",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1054,7 +1087,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-29824"
+          "title": "CVE-2022-29824",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1085,7 +1119,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-1621"
+          "title": "CVE-2022-1621",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1116,7 +1151,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2015-20107"
+          "title": "CVE-2015-20107",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1147,7 +1183,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2015-20107"
+          "title": "CVE-2015-20107",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1178,7 +1215,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-1304"
+          "title": "CVE-2022-1304",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1209,7 +1247,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-1629"
+          "title": "CVE-2022-1629",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1240,7 +1279,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-25313"
+          "title": "CVE-2022-25313",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1271,7 +1311,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-0391"
+          "title": "CVE-2022-0391",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1302,7 +1343,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-0391"
+          "title": "CVE-2022-0391",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1333,7 +1375,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-44577"
+          "title": "CVE-2021-44577",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1364,7 +1407,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-44576"
+          "title": "CVE-2021-44576",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1395,7 +1439,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-44575"
+          "title": "CVE-2021-44575",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1426,7 +1471,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-44573"
+          "title": "CVE-2021-44573",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1457,7 +1503,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-44571"
+          "title": "CVE-2021-44571",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1488,7 +1535,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-3733"
+          "title": "CVE-2021-3733",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1519,7 +1567,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-3733"
+          "title": "CVE-2021-3733",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1550,7 +1599,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-35939"
+          "title": "CVE-2021-35939",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1581,7 +1631,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-35939"
+          "title": "CVE-2021-35939",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1612,7 +1663,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-35939"
+          "title": "CVE-2021-35939",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1643,7 +1695,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-35939"
+          "title": "CVE-2021-35939",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1674,7 +1727,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-35938"
+          "title": "CVE-2021-35938",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1705,7 +1759,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-35938"
+          "title": "CVE-2021-35938",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1736,7 +1791,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-35938"
+          "title": "CVE-2021-35938",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1767,7 +1823,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-35938"
+          "title": "CVE-2021-35938",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1798,7 +1855,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2017-9050"
+          "title": "CVE-2017-9050",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1829,7 +1887,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2017-9049"
+          "title": "CVE-2017-9049",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1860,7 +1919,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2017-7375"
+          "title": "CVE-2017-7375",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1891,7 +1951,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-1292"
+          "title": "CVE-2022-1292",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1922,7 +1983,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-35937"
+          "title": "CVE-2021-35937",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1953,7 +2015,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-35937"
+          "title": "CVE-2021-35937",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1984,7 +2047,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-35937"
+          "title": "CVE-2021-35937",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2015,7 +2079,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-35937"
+          "title": "CVE-2021-35937",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2046,7 +2111,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-27782"
+          "title": "CVE-2022-27782",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2077,7 +2143,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-27782"
+          "title": "CVE-2022-27782",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2108,7 +2175,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-40528"
+          "title": "CVE-2021-40528",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2139,7 +2207,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-44574"
+          "title": "CVE-2021-44574",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2170,7 +2239,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-27943"
+          "title": "CVE-2022-27943",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2201,7 +2271,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-27943"
+          "title": "CVE-2022-27943",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2232,7 +2303,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-1586"
+          "title": "CVE-2022-1586",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2263,7 +2335,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-44570"
+          "title": "CVE-2021-44570",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2294,7 +2367,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-24773"
+          "title": "CVE-2022-24773",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2325,7 +2399,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-24773"
+          "title": "CVE-2022-24773",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2356,7 +2431,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-24773"
+          "title": "CVE-2022-24773",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2387,7 +2463,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-24773"
+          "title": "CVE-2022-24773",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2418,7 +2495,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-4189"
+          "title": "CVE-2021-4189",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2449,7 +2527,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-4189"
+          "title": "CVE-2021-4189",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2480,7 +2559,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2016-4658"
+          "title": "CVE-2016-4658",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2511,7 +2591,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-27774"
+          "title": "CVE-2022-27774",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2542,7 +2623,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-27774"
+          "title": "CVE-2022-27774",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2573,7 +2655,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-22576"
+          "title": "CVE-2022-22576",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2604,7 +2687,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-22576"
+          "title": "CVE-2022-22576",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2635,7 +2719,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-1619"
+          "title": "CVE-2022-1619",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2666,7 +2751,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2020-12401"
+          "title": "CVE-2020-12401",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2697,7 +2783,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2020-12401"
+          "title": "CVE-2020-12401",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2728,7 +2815,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2020-12401"
+          "title": "CVE-2020-12401",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2759,7 +2847,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2020-12401"
+          "title": "CVE-2020-12401",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2790,7 +2879,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2020-12401"
+          "title": "CVE-2020-12401",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2821,7 +2911,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-27776"
+          "title": "CVE-2022-27776",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2852,7 +2943,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2022-27776"
+          "title": "CVE-2022-27776",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2883,7 +2975,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2018-16301"
+          "title": "CVE-2018-16301",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2914,7 +3007,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2017-9048"
+          "title": "CVE-2017-9048",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2945,7 +3039,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2017-18258"
+          "title": "CVE-2017-18258",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2976,7 +3071,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2017-14501"
+          "title": "CVE-2017-14501",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3007,7 +3103,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2017-14166"
+          "title": "CVE-2017-14166",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -3032,7 +3129,7 @@
     "name": "twistlock-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:18:04.3182387Z",
+  "timestamp": "2026-05-15T03:18:23.465717462Z",
   "tool": {
     "format": "JSON",
     "name": "Twistlock"

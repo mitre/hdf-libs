@@ -878,3 +878,51 @@ func TestParseTime(t *testing.T) {
 	ts3 := parseTime("not a timestamp")
 	assert.True(t, ts3.IsZero())
 }
+
+func TestConvertV1ToV2_ControlType(t *testing.T) {
+	inputPath := filepath.Join(getFixturesDir(), "input", "ubi9-scan.json")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	var v1 HDFV1Results
+	require.NoError(t, json.Unmarshal(inputData, &v1))
+
+	v2 := ConvertV1ToV2(&v1)
+	require.NotEmpty(t, v2.Baselines)
+
+	reqs := v2.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	assert.True(t, sawDerivation, "at least one requirement should derive controlType")
+}
+
+func TestConvertV1ToV2_VerificationMethodNotFabricated(t *testing.T) {
+	inputPath := filepath.Join(getFixturesDir(), "input", "ubi9-scan.json")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	var v1 HDFV1Results
+	require.NoError(t, json.Unmarshal(inputData, &v1))
+
+	v2 := ConvertV1ToV2(&v1)
+	require.NotEmpty(t, v2.Baselines)
+	reqs := v2.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+	// legacyhdf is a passthrough/upgrade converter: v1 HDF predates the
+	// verificationMethod field, so the converter must NOT fabricate one.
+	for _, req := range reqs {
+		assert.Nil(t, req.VerificationMethod,
+			"requirement %q: legacyhdf must not invent verificationMethod absent from v1 source", req.ID)
+	}
+}

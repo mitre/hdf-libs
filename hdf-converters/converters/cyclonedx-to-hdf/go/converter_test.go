@@ -49,6 +49,28 @@ func TestConverterContract(t *testing.T) {
 	})
 }
 
+func TestConvertCycloneDX_ControlType(t *testing.T) {
+	input := loadFixture(t, "input/dropwizard-vulns.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	assert.True(t, sawDerivation, "at least one requirement should derive controlType")
+}
+
 func TestConvertCycloneDX_MissingBomFormat(t *testing.T) {
 	_, err := ConvertCycloneDXToHDF([]byte(`{"specVersion":"1.5"}`), testVersion)
 	assert.Error(t, err)
@@ -421,4 +443,21 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "cyclonedx-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertCycloneDXToHDF(input, "0.1.0")
 	})
+}
+
+func TestConvertCycloneDX_VerificationMethodNotSet(t *testing.T) {
+	input := loadFixture(t, "input/dropwizard-vulns.json")
+	result, err := ConvertCycloneDXToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	// CycloneDX carries both automated SBOM vuln data and human-authored VEX
+	// statements; the converter cannot tell them apart, so it must not stamp
+	// a verificationMethod.
+	for _, req := range reqs {
+		assert.Nil(t, req.VerificationMethod,
+			"requirement %q: cyclonedx must not assert verificationMethod (VEX may be human-authored)", req.ID)
+	}
 }

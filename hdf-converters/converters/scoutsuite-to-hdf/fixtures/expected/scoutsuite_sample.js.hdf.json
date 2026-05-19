@@ -24,7 +24,9 @@
               "AU-6"
             ]
           },
-          "title": "Global Service Logging Duplicated"
+          "controlType": "operational",
+          "title": "Global Service Logging Duplicated",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -56,7 +58,9 @@
               "SI-4(2)"
             ]
           },
-          "title": "Trail Is Not Integrated with CloudWatch"
+          "controlType": "technical",
+          "title": "Trail Is Not Integrated with CloudWatch",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -83,7 +87,9 @@
               "AU-12"
             ]
           },
-          "title": "Data Events Logging Not Configured"
+          "controlType": "operational",
+          "title": "Data Events Logging Not Configured",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -111,7 +117,9 @@
               "AU-6"
             ]
           },
-          "title": "CloudTrail Logs Not Encrypted with KMS Customer Master Keys (CMKs)"
+          "controlType": "operational",
+          "title": "CloudTrail Logs Not Encrypted with KMS Customer Master Keys (CMKs)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -138,7 +146,9 @@
               "AU-12"
             ]
           },
-          "title": "Global Service Logging Disabled"
+          "controlType": "operational",
+          "title": "Global Service Logging Disabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -166,7 +176,9 @@
               "AU-6"
             ]
           },
-          "title": "Log File Validation Is Disabled"
+          "controlType": "operational",
+          "title": "Log File Validation Is Disabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -197,7 +209,9 @@
               "AU-12"
             ]
           },
-          "title": "Disabled Trails"
+          "controlType": "operational",
+          "title": "Disabled Trails",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -224,7 +238,9 @@
               "AU-12"
             ]
           },
-          "title": "CloudTrail Service Not Configured"
+          "controlType": "operational",
+          "title": "CloudTrail Service Not Configured",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {

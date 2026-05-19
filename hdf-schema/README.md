@@ -188,6 +188,13 @@ All schemas use **JSON Schema draft/2020-12**.
 Interactive schema reference documentation is published at:
 **<https://mitre.github.io/hdf-libs/schemas/>**
 
+### What's new in v3.2.0
+
+- **`controlType`** field on `Requirement_Core` — optional enum (`policy | procedure | technical | management | operational`) aligning with NIST SP 800-53 / SP 800-53A categories. Replaces heuristic derivation from family conventions.
+- **`verificationMethod`** field on `Requirement_Core` — optional enum (`automated | manual-by-design | manual-pending-automation | hybrid`) disambiguating the two cases that null `code` overloaded: inherently manual vs. automation-could-exist-but-doesn't-yet.
+- **`applicability`** field on `Requirement_Core` — optional enum (`required | optional | advisory`) providing a uniform expression for what FedRAMP `CORE` props, FedRAMP 20x `Optional:` markers, CIS Implementation Groups, and CMMC sublevels each encode incompatibly today.
+- **All three fields are optional and additive.** v3.1.x documents validate cleanly under v3.2.0.
+
 ### What's new in v3.1.0
 
 - **`disposition`** field on `EvaluatedRequirement` — the type of the governing override or POAM (e.g., `waiver`, `falsePositive`, `riskAdjustment`). Indicates why a requirement is in its current state.

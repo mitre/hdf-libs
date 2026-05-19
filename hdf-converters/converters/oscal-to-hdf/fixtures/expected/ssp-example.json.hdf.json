@@ -2,10 +2,6 @@
   "authorizationStatus": "notYetRequested",
   "boundaryDescription": "The description of the authorization boundary would go here.",
   "categorizationLevel": "moderate",
-  "checksum": {
-    "algorithm": "sha256",
-    "value": "36d10a9d3f0f916235caafd8fd27412a79edcb12781ad0b5a7a3d3a6165b983f"
-  },
   "components": [
     {
       "description": "The system described by this SSP.",
@@ -23,7 +19,7 @@
       ],
       "description": "Requires all components to send logs to the enterprise logging solution\n\n*  Requires all components synchronize their time with the appropriate enterprise time service, and at what frequency. \n*  Identifies the events that must be captured \n*  Identifies who is responsible/accountable for performing these functions \n",
       "name": "Enterprise Logging, Monitoring, and Alerting Policy",
-      "type": "other"
+      "type": "application"
     },
     {
       "baselineRefs": [
@@ -31,7 +27,7 @@
       ],
       "description": "Ensures proper integration into the enterprise as new systems are brought into production.",
       "name": "System Integration Process",
-      "type": "other"
+      "type": "application"
     },
     {
       "baselineRefs": [
@@ -39,7 +35,7 @@
       ],
       "description": "Describes how new components are introduced into the system - ensures monitoring teams know about every asset that should be producing logs, thus should be monitored.",
       "name": "Inventory Management Process",
-      "type": "other"
+      "type": "application"
     },
     {
       "baselineRefs": [
@@ -47,16 +43,20 @@
       ],
       "description": "Describes how to configure a component to ensure its logs are transmitted to Splunk in the appropriate format. Also describes how to configure time synchronization.",
       "name": "Configuration Management Guidance",
-      "type": "other"
+      "type": "application"
     }
   ],
   "description": "This is an example of a system that provides enterprise logging and log auditing capabilities.\n\nAuthorization Boundary: The description of the authorization boundary would go here.",
   "generator": {
     "name": "hdf-converters",
-    "version": "0.1.0"
+    "version": "dev"
   },
   "identifier": "d7456980-9277-4dcb-83cf-f8ff0442623b",
   "identifierScheme": "https://ietf.org/rfc/rfc4122",
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "36d10a9d3f0f916235caafd8fd27412a79edcb12781ad0b5a7a3d3a6165b983f"
+  },
   "name": "Enterprise Logging and Auditing System",
   "version": "1.2"
 }

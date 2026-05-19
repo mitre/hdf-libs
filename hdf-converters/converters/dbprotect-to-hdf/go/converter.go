@@ -191,12 +191,14 @@ func buildRequirement(checkID string, findings []finding, hasStatus bool) hdf.Ev
 
 	title := rep["Check"]
 	return hdf.EvaluatedRequirement{
-		ID:           checkID,
-		Title:        &title,
-		Impact:       getImpact(rep["Risk DV"]),
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 checkID,
+		Title:              &title,
+		Impact:             getImpact(rep["Risk DV"]),
+		Tags:               tags,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		Descriptions:       descriptions,
+		Results:            results,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

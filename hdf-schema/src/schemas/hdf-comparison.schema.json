@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.1.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.2.0",
   "type": "object",
   "unevaluatedProperties": false,
   "required": [
@@ -17,7 +17,7 @@
       "description": "Schema version for this comparison format."
     },
     "comparisonMode": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.1.0#/$defs/Comparison_Mode",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.2.0#/$defs/Comparison_Mode",
       "description": "The mode of comparison being performed."
     },
     "timestamp": {
@@ -26,50 +26,50 @@
       "description": "When this comparison was performed."
     },
     "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0#/$defs/Generator",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.2.0#/$defs/Generator",
       "description": "Information about the tool that generated this comparison."
     },
     "sources": {
       "type": "array",
       "minItems": 2,
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.1.0#/$defs/Source"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.2.0#/$defs/Source"
       },
       "description": "The source documents being compared. At least two sources are required."
     },
     "matching": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.1.0#/$defs/Matching_Config",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.2.0#/$defs/Matching_Config",
       "description": "Configuration for how requirements were matched across sources."
     },
     "summary": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.1.0#/$defs/Comparison_Summary",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.2.0#/$defs/Comparison_Summary",
       "description": "Summary statistics for the overall comparison."
     },
     "baselineDiffs": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.1.0#/$defs/Baseline_Diff"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.2.0#/$defs/Baseline_Diff"
       },
       "description": "Comparison of baselines between sources."
     },
     "requirementDiffs": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.1.0#/$defs/Requirement_Diff"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.2.0#/$defs/Requirement_Diff"
       },
       "description": "Detailed comparison of individual requirements between sources."
     },
     "componentDiffs": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.1.0#/$defs/Component_Diff"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.2.0#/$defs/Component_Diff"
       },
       "description": "Comparison of components between two system documents. Used in systemDrift mode."
     },
     "packageDiffs": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.1.0#/$defs/Package_Diff"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.2.0#/$defs/Package_Diff"
       },
       "description": "Comparison of packages between two SBOMs. Used in systemDrift mode for SBOM comparison."
     },
@@ -81,19 +81,19 @@
     "drift": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.1.0#/$defs/Requirement_Diff"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.2.0#/$defs/Requirement_Diff"
       },
       "description": "External/metadata changes separate from status changes (Terraform pattern)."
     },
     "annotations": {
       "type": "object",
       "additionalProperties": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.1.0#/$defs/Annotation"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/comparison/v3.2.0#/$defs/Annotation"
       },
       "description": "Map of annotation IDs to annotation objects, providing context or action items for requirement diffs."
     },
     "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.1.0#/$defs/Integrity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.2.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this comparison document."
     },
     "extensions": {

@@ -24,7 +24,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:spo_idle_session_timeout"
+          "title": "Apps:spo_idle_session_timeout",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -48,7 +49,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:spo_legacy_auth"
+          "title": "Apps:spo_legacy_auth",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -80,7 +82,8 @@
               "RA-5"
             ]
           },
-          "title": "Deploy a log collector to discover shadow IT activity"
+          "title": "Deploy a log collector to discover shadow IT activity",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -112,7 +115,8 @@
               "RA-5"
             ]
           },
-          "title": "Create a custom activity policy to get alerts about suspicious usage patterns"
+          "title": "Create a custom activity policy to get alerts about suspicious usage patterns",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -144,7 +148,8 @@
               "RA-5"
             ]
           },
-          "title": "Create an app discovery policy to identify new and trending cloud apps in your org "
+          "title": "Create an app discovery policy to identify new and trending cloud apps in your org ",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -176,7 +181,8 @@
               "RA-5"
             ]
           },
-          "title": "Create an OAuth app policy to notify you about new OAuth applications"
+          "title": "Create an OAuth app policy to notify you about new OAuth applications",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -208,7 +214,8 @@
               "RA-5"
             ]
           },
-          "title": "Start your Defender for Identity deployment, installing Sensors on Domain Controllers and other eligible servers."
+          "title": "Start your Defender for Identity deployment, installing Sensors on Domain Controllers and other eligible servers.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -240,7 +247,8 @@
               "RA-5"
             ]
           },
-          "title": "Turn on Microsoft Defender for Office 365 in SharePoint, OneDrive, and Microsoft Teams"
+          "title": "Turn on Microsoft Defender for Office 365 in SharePoint, OneDrive, and Microsoft Teams",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -272,7 +280,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure DLP policies are enabled"
+          "title": "Ensure DLP policies are enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -304,7 +313,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure 'External sharing' of calendars is not available"
+          "title": "Ensure 'External sharing' of calendars is not available",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -336,7 +346,8 @@
               "RA-5"
             ]
           },
-          "title": "Turn on Safe Documents for Office Clients"
+          "title": "Turn on Safe Documents for Office Clients",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -368,7 +379,8 @@
               "RA-5"
             ]
           },
-          "title": "Don't add allowed IP addresses in the connection filter policy "
+          "title": "Don't add allowed IP addresses in the connection filter policy ",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -392,7 +404,8 @@
               "RA-5"
             ]
           },
-          "title": "Data:mip_purviewlabelconsent"
+          "title": "Data:mip_purviewlabelconsent",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -424,7 +437,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure the customer lockbox feature is enabled"
+          "title": "Ensure the customer lockbox feature is enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -456,7 +470,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure modern authentication for Exchange Online is enabled"
+          "title": "Ensure modern authentication for Exchange Online is enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -488,7 +503,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure MailTips are enabled for end users"
+          "title": "Ensure MailTips are enabled for end users",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -520,7 +536,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure Spam confidence level (SCL) is configured in mail transport rules with specific domains"
+          "title": "Ensure Spam confidence level (SCL) is configured in mail transport rules with specific domains",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -544,7 +561,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mip_search_auditlog"
+          "title": "Apps:mip_search_auditlog",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -576,7 +594,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure mailbox auditing for all users is Enabled"
+          "title": "Ensure mailbox auditing for all users is Enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -608,7 +627,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure additional storage providers are restricted in Outlook on the web"
+          "title": "Ensure additional storage providers are restricted in Outlook on the web",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -640,7 +660,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure users installing Outlook add-ins is not allowed"
+          "title": "Ensure users installing Outlook add-ins is not allowed",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -664,7 +685,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_zapspam"
+          "title": "Apps:mdo_zapspam",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -688,7 +710,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_zapphish"
+          "title": "Apps:mdo_zapphish",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -712,7 +735,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_zapmalware"
+          "title": "Apps:mdo_zapmalware",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -744,7 +768,8 @@
               "RA-5"
             ]
           },
-          "title": "Turn on Safe Attachments in block mode"
+          "title": "Turn on Safe Attachments in block mode",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -768,7 +793,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_safelinksforemail"
+          "title": "Apps:mdo_safelinksforemail",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -800,7 +826,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure the Common Attachment Types Filter is enabled"
+          "title": "Ensure the Common Attachment Types Filter is enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -824,7 +851,8 @@
               "RA-5"
             ]
           },
-          "title": "Data:mip_sensitivitylabelspolicies"
+          "title": "Data:mip_sensitivitylabelspolicies",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -848,7 +876,8 @@
               "RA-5"
             ]
           },
-          "title": "Data:mip_autosensitivitylabelspolicies"
+          "title": "Data:mip_autosensitivitylabelspolicies",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -880,7 +909,8 @@
               "RA-5"
             ]
           },
-          "title": "Set action to take on high confidence spam detection"
+          "title": "Set action to take on high confidence spam detection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -912,7 +942,8 @@
               "RA-5"
             ]
           },
-          "title": "Set action to take on phishing detection"
+          "title": "Set action to take on phishing detection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -944,7 +975,8 @@
               "RA-5"
             ]
           },
-          "title": "Set action to take on high confidence phishing detection"
+          "title": "Set action to take on high confidence phishing detection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -976,7 +1008,8 @@
               "RA-5"
             ]
           },
-          "title": "Set action to take on bulk spam detection"
+          "title": "Set action to take on bulk spam detection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1008,7 +1041,8 @@
               "RA-5"
             ]
           },
-          "title": "Retain spam in quarantine for 30 days"
+          "title": "Retain spam in quarantine for 30 days",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1040,7 +1074,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure that no sender domains are allowed for anti-spam policies"
+          "title": "Ensure that no sender domains are allowed for anti-spam policies",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1072,7 +1107,8 @@
               "RA-5"
             ]
           },
-          "title": "Set the email bulk complaint level (BCL) threshold to be 6 or lower"
+          "title": "Set the email bulk complaint level (BCL) threshold to be 6 or lower",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1096,7 +1132,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_spamaction"
+          "title": "Apps:mdo_spamaction",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1128,7 +1165,8 @@
               "RA-5"
             ]
           },
-          "title": "Set automatic email forwarding rules to be system controlled"
+          "title": "Set automatic email forwarding rules to be system controlled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1160,7 +1198,8 @@
               "RA-5"
             ]
           },
-          "title": "Set maximum number of external recipients that a user can email per hour"
+          "title": "Set maximum number of external recipients that a user can email per hour",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1192,7 +1231,8 @@
               "RA-5"
             ]
           },
-          "title": "Set maximum number of internal recipients that a user can send to within an hour"
+          "title": "Set maximum number of internal recipients that a user can send to within an hour",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1224,7 +1264,8 @@
               "RA-5"
             ]
           },
-          "title": "Set a daily message limit"
+          "title": "Set a daily message limit",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1248,7 +1289,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_thresholdreachedaction"
+          "title": "Apps:mdo_thresholdreachedaction",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1280,7 +1322,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure that mailbox intelligence is enabled"
+          "title": "Ensure that mailbox intelligence is enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1312,7 +1355,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure that intelligence for impersonation protection is enabled"
+          "title": "Ensure that intelligence for impersonation protection is enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1344,7 +1388,8 @@
               "RA-5"
             ]
           },
-          "title": "Move messages that are detected as impersonated users by mailbox intelligence"
+          "title": "Move messages that are detected as impersonated users by mailbox intelligence",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1376,7 +1421,8 @@
               "RA-5"
             ]
           },
-          "title": "Enable impersonated domain protection"
+          "title": "Enable impersonated domain protection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1408,7 +1454,8 @@
               "RA-5"
             ]
           },
-          "title": "Set the phishing email level threshold at 2 or higher"
+          "title": "Set the phishing email level threshold at 2 or higher",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1432,7 +1479,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_similardomainssafetytips"
+          "title": "Apps:mdo_similardomainssafetytips",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1456,7 +1504,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_similaruserssafetytips"
+          "title": "Apps:mdo_similaruserssafetytips",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1480,7 +1529,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_targeteddomainprotectionaction"
+          "title": "Apps:mdo_targeteddomainprotectionaction",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1504,7 +1554,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_targeteduserprotectionaction"
+          "title": "Apps:mdo_targeteduserprotectionaction",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1528,7 +1579,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_targetedusersprotection"
+          "title": "Apps:mdo_targetedusersprotection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1552,7 +1604,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_unusualcharacterssafetytips"
+          "title": "Apps:mdo_unusualcharacterssafetytips",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1576,7 +1629,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_spam_notifications_only_for_admins"
+          "title": "Apps:mdo_spam_notifications_only_for_admins",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1608,7 +1662,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure Safe Attachments policy is enabled"
+          "title": "Ensure Safe Attachments policy is enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1632,7 +1687,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:mdo_safelinksforOfficeApps"
+          "title": "Apps:mdo_safelinksforOfficeApps",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1664,7 +1720,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure that an anti-phishing policy has been created"
+          "title": "Ensure that an anti-phishing policy has been created",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1696,7 +1753,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure all forms of mail forwarding are blocked and/or disabled"
+          "title": "Ensure all forms of mail forwarding are blocked and/or disabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1728,7 +1786,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure user consent to apps accessing company data on their behalf is not allowed"
+          "title": "Ensure user consent to apps accessing company data on their behalf is not allowed",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1752,7 +1811,8 @@
               "RA-5"
             ]
           },
-          "title": "Identity:PWAgePolicyNew"
+          "title": "Identity:PWAgePolicyNew",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1776,7 +1836,8 @@
               "RA-5"
             ]
           },
-          "title": "Identity:SelfServicePasswordReset"
+          "title": "Identity:SelfServicePasswordReset",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1808,7 +1869,8 @@
               "RA-5"
             ]
           },
-          "title": "Enable Conditional Access policies to block legacy authentication"
+          "title": "Enable Conditional Access policies to block legacy authentication",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1832,7 +1894,8 @@
               "RA-5"
             ]
           },
-          "title": "Identity:MFARegistrationV2"
+          "title": "Identity:MFARegistrationV2",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1864,7 +1927,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure multifactor authentication is enabled for all users in administrative roles"
+          "title": "Ensure multifactor authentication is enabled for all users in administrative roles",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1888,7 +1952,8 @@
               "RA-5"
             ]
           },
-          "title": "Identity:SigninRiskPolicy"
+          "title": "Identity:SigninRiskPolicy",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1912,7 +1977,8 @@
               "RA-5"
             ]
           },
-          "title": "Identity:UserRiskPolicy"
+          "title": "Identity:UserRiskPolicy",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1936,7 +2002,8 @@
               "RA-5"
             ]
           },
-          "title": "Identity:OneAdmin"
+          "title": "Identity:OneAdmin",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1960,7 +2027,8 @@
               "RA-5"
             ]
           },
-          "title": "Identity:RoleOverlap"
+          "title": "Identity:RoleOverlap",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -1986,7 +2054,7 @@
     "name": "msft-secure-score-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:58.5866659Z",
+  "timestamp": "2026-05-15T03:15:07.939571712Z",
   "tool": {
     "format": "JSON",
     "name": "Microsoft Secure Score"

@@ -1,11 +1,11 @@
 {
-  "checksum": {
-    "algorithm": "sha256",
-    "value": "f115bdc4365108f67d4e5503f19f26676338b3b91a353a1fd95b1063ac411758"
-  },
   "generator": {
     "name": "hdf-converters",
-    "version": "0.1.0"
+    "version": "dev"
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "f115bdc4365108f67d4e5503f19f26676338b3b91a353a1fd95b1063ac411758"
   },
   "requirements": [
     {

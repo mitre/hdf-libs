@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -12,6 +12,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -160,14 +161,20 @@ function buildRequirement(entryID: string, entries: XrayEntry[]): EvaluatedRequi
     })
   );
 
-  return createRequirement(
+  const req = createRequirement(
     entryID,
     rep.summary,
     descriptions,
     severityToImpact(rep.severity),
     results,
     { tags }
-  );
+  ) as EvaluatedRequirement;
+  const controlType = deriveControlTypeFromTags(nist);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+  return req;
 }
 
 /**

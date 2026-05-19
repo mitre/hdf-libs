@@ -186,14 +186,16 @@ func convertReportItemToRequirement(item *ReportItem, host *ReportHost) hdf.Eval
 	code := string(codeBytes)
 
 	return hdf.EvaluatedRequirement{
-		ID:           id,
-		Title:        &title,
-		Descriptions: descriptions,
-		Impact:       impact,
-		Tags:         tags,
-		Refs:         refs,
-		Results:      results,
-		Code:         &code,
+		ID:                 id,
+		Title:              &title,
+		Descriptions:       descriptions,
+		Impact:             impact,
+		Tags:               tags,
+		Refs:               refs,
+		Results:            results,
+		Code:               &code,
+		ControlType:        shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
+		VerificationMethod: shared.DeriveVerificationMethod(&code),
 	}
 }
 

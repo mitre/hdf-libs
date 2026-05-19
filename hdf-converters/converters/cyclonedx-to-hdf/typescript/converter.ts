@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -306,9 +306,17 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
       ? `${vuln.id} (${vuln.source.name})`
       : vuln.id;
 
-    requirements.push(
-      createRequirement(vuln.id, title, descriptions, impact, results, { tags })
-    );
+    // verificationMethod is intentionally NOT set. CycloneDX carries both
+    // machine-generated SBOM vulnerability data and human-authored VEX
+    // statements (analyst assertions about CVE exploitability). The converter
+    // cannot reliably distinguish the two, so stamping "automated" would
+    // misclassify VEX-derived requirements.
+    const req = createRequirement(vuln.id, title, descriptions, impact, results, { tags }) as EvaluatedRequirement;
+    const controlType = deriveControlTypeFromTags(nist);
+    if (controlType !== undefined) {
+      req.controlType = controlType;
+    }
+    requirements.push(req);
   }
 
   const baseline = createMinimalBaseline('CycloneDX Scan', requirements, {

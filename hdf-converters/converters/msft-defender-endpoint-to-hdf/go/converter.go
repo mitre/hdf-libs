@@ -200,12 +200,14 @@ func alertToRequirement(alert mdeAlert) hdf.EvaluatedRequirement {
 
 	title := alert.Title
 	return hdf.EvaluatedRequirement{
-		ID:           alert.ID,
-		Title:        &title,
-		Impact:       impact,
-		Tags:         buildTags(alert),
-		Descriptions: descriptions,
-		Results:      []hdf.RequirementResult{result},
+		ID:                 alert.ID,
+		Title:              &title,
+		Impact:             impact,
+		Tags:               buildTags(alert),
+		Descriptions:       descriptions,
+		Results:            []hdf.RequirementResult{result},
+		ControlType:        shared.DeriveControlTypeFromTags(shared.DefaultStaticAnalysisNIST),
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

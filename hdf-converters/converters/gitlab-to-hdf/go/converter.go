@@ -359,12 +359,14 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		}
 
 		req := hdf.EvaluatedRequirement{
-			ID:           vuln.ID,
-			Title:        &title,
-			Impact:       impact,
-			Results:      []hdf.RequirementResult{result},
-			Tags:         tags,
-			Descriptions: descriptions,
+			ID:                 vuln.ID,
+			Title:              &title,
+			Impact:             impact,
+			Results:            []hdf.RequirementResult{result},
+			Tags:               tags,
+			Descriptions:       descriptions,
+			ControlType:        shared.DeriveControlTypeFromTags(nistTags),
+			VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 		}
 
 		requirements = append(requirements, req)

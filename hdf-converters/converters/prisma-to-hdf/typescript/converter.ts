@@ -11,7 +11,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, buildNistCciTags, limitArrayWithWarning, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -22,6 +22,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -169,7 +170,7 @@ function buildRequirement(rec: PrismaRecord): EvaluatedRequirement {
     }),
   ];
 
-  return createRequirement(
+  const req = createRequirement(
     id,
     title,
     descriptions,
@@ -177,6 +178,12 @@ function buildRequirement(rec: PrismaRecord): EvaluatedRequirement {
     results,
     { tags },
   );
+  const controlType = deriveControlTypeFromTags(nist);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+  return req;
 }
 
 /**

@@ -222,12 +222,14 @@ func buildRequirement(rec prismaRecord) hdf.EvaluatedRequirement {
 	}
 
 	return hdf.EvaluatedRequirement{
-		ID:           id,
-		Title:        &title,
-		Impact:       getImpact(rec.Severity),
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      []hdf.RequirementResult{result},
+		ID:                 id,
+		Title:              &title,
+		Impact:             getImpact(rec.Severity),
+		Tags:               tags,
+		Descriptions:       descriptions,
+		Results:            []hdf.RequirementResult{result},
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

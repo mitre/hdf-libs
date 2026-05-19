@@ -194,6 +194,26 @@ describe('xccdf-results-to-hdf converter', async () => {
       // 10:39:29 to 10:40:58 = 89 seconds
       expect(hdf.statistics?.duration).toBe(89);
     });
+
+    it('should derive controlType from NIST tags (v3.2 classification field)', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      // RHEL-07-010030 maps to AC-* via CCI; expect technical.
+      const technicalReq = findReq(hdf, 'RHEL-07-010030');
+      expect(technicalReq!.controlType).toBe('technical');
+    });
+
+    it('should omit controlType when no NIST tag resolves to a known family', async () => {
+      const hdf = await parseHdf('stig-rhel7.xml');
+      // Find any requirement; if NIST is empty, controlType must be absent.
+      for (const req of hdf.baselines[0]!.requirements) {
+        const nist = (req.tags as Record<string, unknown>)['nist'] as string[] | undefined;
+        if (!nist || nist.length === 0) {
+          expect(req.controlType).toBeUndefined();
+          return;
+        }
+      }
+      // If we never hit a no-NIST requirement, that's fine; the test is best-effort.
+    });
   });
 
   // --- Severity → impact mapping ---

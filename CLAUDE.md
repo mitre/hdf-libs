@@ -84,6 +84,9 @@ Hosted at: `https://mitre.github.io/hdf-libs/schemas/`
 - `disposition` — Override_Type of the governing non-expired override (waiver, falsePositive, riskAdjustment, etc.)
 - `effectiveStatus` — Result_Status after overrides (passed, failed, notApplicable, notReviewed, error)
 - `effectiveImpact` — impact score (0.0–1.0) after impact overrides
+- `controlType` — *(v3.2.0)* optional enum on `Requirement_Core`: `policy | procedure | technical | management | operational`. Aligns with NIST SP 800-53A categorization.
+- `verificationMethod` — *(v3.2.0)* optional enum on `Requirement_Core`: `automated | manual-by-design | manual-pending-automation | hybrid`. Disambiguates the two cases that null `code` overloads.
+- `applicability` — *(v3.2.0)* optional enum on `Requirement_Core`: `required | optional | advisory`. Distinct from severity (risk weight) and status (lifecycle state). Maps cleanly onto FedRAMP OSCAL `CORE` prop, FedRAMP 20x inline `Optional:` markers, CMMC sublevels.
 
 ### Schema examples convention
 When adding or modifying a `$defs` type in the schema source files, always add or update the `examples` array on the definition. Examples should:

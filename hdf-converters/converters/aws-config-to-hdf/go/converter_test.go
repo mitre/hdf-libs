@@ -94,6 +94,31 @@ func TestConverterContract(t *testing.T) {
 	})
 }
 
+func TestConvertAWSConfigToHDF_ControlType(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "aws-config-to-hdf", "fixtures", "input", "minimal.json")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertAWSConfigToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	assert.True(t, sawDerivation, "at least one requirement should derive controlType")
+}
+
 func TestConvertAWSConfigToHDF_EmptyRules(t *testing.T) {
 	input := []byte(`{"ConfigRules": []}`)
 	result, err := ConvertAWSConfigToHDF(input, converterVersion)
@@ -425,4 +450,22 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "aws-config-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertAWSConfigToHDF(input, "0.1.0")
 	})
+}
+
+func TestConvertAWSConfigToHDF_VerificationMethod(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "aws-config-to-hdf", "fixtures", "input", "multi-rule.json")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertAWSConfigToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	for _, req := range reqs {
+		require.NotNil(t, req.VerificationMethod, "every requirement must have verificationMethod set")
+		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+			"requirement %q should be marked automated", req.ID)
+	}
 }

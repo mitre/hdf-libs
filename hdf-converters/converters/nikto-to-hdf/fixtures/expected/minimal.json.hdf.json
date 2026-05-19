@@ -26,7 +26,9 @@
               "SI-2"
             ]
           },
-          "title": "Apache/2.4.41 appears to be outdated (current is at least Apache/2.4.54)."
+          "controlType": "technical",
+          "title": "Apache/2.4.41 appears to be outdated (current is at least Apache/2.4.54).",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -54,7 +56,8 @@
               "RA-5"
             ]
           },
-          "title": "The anti-clickjacking X-Frame-Options header is not present."
+          "title": "The anti-clickjacking X-Frame-Options header is not present.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -83,7 +86,8 @@
             ],
             "osvdb": "877"
           },
-          "title": "HTTP TRACE method is active, suggesting the host is vulnerable to XST"
+          "title": "HTTP TRACE method is active, suggesting the host is vulnerable to XST",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -109,7 +113,9 @@
               "SI-10"
             ]
           },
-          "title": "mod_ssl 2.8.7 and lower are vulnerable to a remote buffer overflow. CVE-2002-0082, OSVDB-756."
+          "controlType": "technical",
+          "title": "mod_ssl 2.8.7 and lower are vulnerable to a remote buffer overflow. CVE-2002-0082, OSVDB-756.",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {

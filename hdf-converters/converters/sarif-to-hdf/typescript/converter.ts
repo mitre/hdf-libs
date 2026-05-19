@@ -3,9 +3,9 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description } from '@mitre/hdf-schema';
-import { ResultStatus, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
+import { ResultStatus, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 // --- SARIF 2.1.0 type definitions ---
 
@@ -284,7 +284,13 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
     options.sourceLocation = sourceLocation;
   }
 
-  return createRequirement(ruleId, title, descriptions, impact, results, options);
+  const req = createRequirement(ruleId, title, descriptions, impact, results, options);
+  const controlType = deriveControlTypeFromTags(nistControls);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+  return req;
 }
 
 // Determines the inherent severity level for a rule, independent of per-result kind overrides.

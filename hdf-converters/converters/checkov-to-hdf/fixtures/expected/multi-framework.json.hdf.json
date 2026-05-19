@@ -28,7 +28,8 @@
               "RA-5"
             ]
           },
-          "title": "Disallow policies from using the AWS AdministratorAccess policy"
+          "title": "Disallow policies from using the AWS AdministratorAccess policy",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -56,7 +57,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure no hard coded AWS access key and secret key exists in provider"
+          "title": "Ensure no hard coded AWS access key and secret key exists in provider",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -89,7 +91,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure Terraform module sources use a commit hash"
+          "title": "Ensure Terraform module sources use a commit hash",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -118,7 +121,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure the S3 bucket has access logging enabled"
+          "title": "Ensure the S3 bucket has access logging enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -147,7 +151,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure that S3 bucket has a Public Access block"
+          "title": "Ensure that S3 bucket has a Public Access block",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -175,7 +180,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure From Alias are unique for multistage builds."
+          "title": "Ensure From Alias are unique for multistage builds.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -203,7 +209,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure update instructions are not use alone in the Dockerfile"
+          "title": "Ensure update instructions are not use alone in the Dockerfile",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -231,7 +238,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure the base image uses a non latest version tag"
+          "title": "Ensure the base image uses a non latest version tag",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -259,7 +267,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure that HEALTHCHECK instructions have been added to container images"
+          "title": "Ensure that HEALTHCHECK instructions have been added to container images",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -273,7 +282,7 @@
     "name": "checkov-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-24T14:16:44.261067Z",
+  "timestamp": "2026-05-15T03:10:55.863305532Z",
   "tool": {
     "format": "terraform, dockerfile",
     "name": "Checkov",

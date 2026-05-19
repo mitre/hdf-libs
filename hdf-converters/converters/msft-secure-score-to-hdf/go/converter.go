@@ -216,12 +216,14 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 	}
 
 	return hdf.EvaluatedRequirement{
-		ID:           id,
-		Title:        &title,
-		Impact:       impact,
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 id,
+		Title:              &title,
+		Impact:             impact,
+		Tags:               tags,
+		Descriptions:       descriptions,
+		Results:            results,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

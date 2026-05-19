@@ -153,12 +153,14 @@ func buildRequirement(desc *Description, vulns []Vulnerability, snippetMap map[s
 	results := buildResults(vulns, snippetMap, fvdl)
 
 	return hdf.EvaluatedRequirement{
-		ID:           desc.ClassID,
-		Title:        &titleStr,
-		Impact:       impact,
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 desc.ClassID,
+		Title:              &titleStr,
+		Impact:             impact,
+		Tags:               tags,
+		ControlType:        shared.DeriveControlTypeFromTags(nistTags),
+		Descriptions:       descriptions,
+		Results:            results,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

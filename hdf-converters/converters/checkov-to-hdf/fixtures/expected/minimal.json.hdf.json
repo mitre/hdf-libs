@@ -33,7 +33,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure Terraform module sources use a tag with a version number"
+          "title": "Ensure Terraform module sources use a tag with a version number",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -71,7 +72,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure Terraform module sources use a commit hash"
+          "title": "Ensure Terraform module sources use a commit hash",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -100,7 +102,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure that S3 bucket has a Public Access block"
+          "title": "Ensure that S3 bucket has a Public Access block",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -129,7 +132,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure the S3 bucket has access logging enabled"
+          "title": "Ensure the S3 bucket has access logging enabled",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -143,7 +147,7 @@
     "name": "checkov-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-24T14:16:44.260387Z",
+  "timestamp": "2026-05-15T03:10:55.857169722Z",
   "tool": {
     "format": "terraform",
     "name": "Checkov",

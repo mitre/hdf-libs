@@ -29,7 +29,9 @@
               "SI-10"
             ]
           },
-          "title": "Directory Traversal"
+          "controlType": "technical",
+          "title": "Directory Traversal",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -71,7 +73,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -105,7 +109,8 @@
               "RA-5"
             ]
           },
-          "title": "Prototype Pollution"
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -136,7 +141,8 @@
               "RA-5"
             ]
           },
-          "title": "Prototype Pollution"
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -170,7 +176,9 @@
               "SI-10"
             ]
           },
-          "title": "Arbitrary Code Injection"
+          "controlType": "technical",
+          "title": "Arbitrary Code Injection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -207,7 +215,9 @@
               "SI-10"
             ]
           },
-          "title": "Remote Code Execution (RCE)"
+          "controlType": "technical",
+          "title": "Remote Code Execution (RCE)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -239,7 +249,9 @@
               "SI-10"
             ]
           },
-          "title": "Denial of Service (DoS)"
+          "controlType": "technical",
+          "title": "Denial of Service (DoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -274,7 +286,9 @@
               "SI-10"
             ]
           },
-          "title": "Prototype Pollution"
+          "controlType": "technical",
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -309,7 +323,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -341,7 +357,9 @@
               "SC-8"
             ]
           },
-          "title": "Information Exposure"
+          "controlType": "technical",
+          "title": "Information Exposure",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -376,7 +394,9 @@
               "SI-10"
             ]
           },
-          "title": "Prototype Pollution"
+          "controlType": "technical",
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -407,7 +427,8 @@
               "RA-5"
             ]
           },
-          "title": "Reverse Tabnabbing"
+          "title": "Reverse Tabnabbing",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -443,7 +464,9 @@
               "SI-10"
             ]
           },
-          "title": "Prototype Pollution"
+          "controlType": "technical",
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -478,7 +501,9 @@
               "SI-10"
             ]
           },
-          "title": "Cross-site Scripting (XSS)"
+          "controlType": "technical",
+          "title": "Cross-site Scripting (XSS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -514,7 +539,9 @@
               "SI-10"
             ]
           },
-          "title": "Cross-site Scripting (XSS)"
+          "controlType": "technical",
+          "title": "Cross-site Scripting (XSS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -549,7 +576,9 @@
               "SI-10"
             ]
           },
-          "title": "DLL Injection"
+          "controlType": "technical",
+          "title": "DLL Injection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -581,7 +610,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -616,7 +647,9 @@
               "SI-10"
             ]
           },
-          "title": "Command Injection"
+          "controlType": "technical",
+          "title": "Command Injection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -651,7 +684,9 @@
               "SI-10"
             ]
           },
-          "title": "Prototype Pollution"
+          "controlType": "technical",
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -686,7 +721,9 @@
               "SI-10"
             ]
           },
-          "title": "Prototype Pollution"
+          "controlType": "technical",
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -715,7 +752,9 @@
               "SI-10"
             ]
           },
-          "title": "Prototype Pollution"
+          "controlType": "technical",
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -750,7 +789,9 @@
               "SI-10"
             ]
           },
-          "title": "Prototype Pollution"
+          "controlType": "technical",
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -784,7 +825,8 @@
               "RA-5"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -813,7 +855,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -850,7 +894,8 @@
               "RA-5"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -887,7 +932,8 @@
               "RA-5"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -916,7 +962,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -947,7 +995,8 @@
               "RA-5"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -982,7 +1031,9 @@
               "SI-10"
             ]
           },
-          "title": "Directory Traversal"
+          "controlType": "technical",
+          "title": "Directory Traversal",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1014,7 +1065,9 @@
               "SI-10"
             ]
           },
-          "title": "Denial of Service (DoS)"
+          "controlType": "technical",
+          "title": "Denial of Service (DoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1045,7 +1098,8 @@
               "RA-5"
             ]
           },
-          "title": "Prototype Pollution"
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1077,7 +1131,9 @@
               "SC-8"
             ]
           },
-          "title": "Information Exposure"
+          "controlType": "technical",
+          "title": "Information Exposure",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1111,7 +1167,8 @@
               "RA-5"
             ]
           },
-          "title": "Prototype Pollution"
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1146,7 +1203,9 @@
               "SI-10"
             ]
           },
-          "title": "Prototype Pollution"
+          "controlType": "technical",
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1177,7 +1236,8 @@
               "RA-5"
             ]
           },
-          "title": "Prototype Pollution"
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1228,7 +1288,8 @@
               "RA-5"
             ]
           },
-          "title": "Prototype Pollution"
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1265,7 +1326,9 @@
               "SI-10"
             ]
           },
-          "title": "Prototype Pollution"
+          "controlType": "technical",
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1302,7 +1365,8 @@
               "RA-5"
             ]
           },
-          "title": "Arbitrary File Write via Archive Extraction (Zip Slip)"
+          "title": "Arbitrary File Write via Archive Extraction (Zip Slip)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1338,7 +1402,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1393,7 +1459,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1422,7 +1490,9 @@
               "SI-10"
             ]
           },
-          "title": "Code Injection"
+          "controlType": "technical",
+          "title": "Code Injection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1459,7 +1529,9 @@
               "SI-10"
             ]
           },
-          "title": "Arbitrary Code Execution"
+          "controlType": "technical",
+          "title": "Arbitrary Code Execution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1496,7 +1568,9 @@
               "SI-10"
             ]
           },
-          "title": "Cross-site Scripting (XSS)"
+          "controlType": "technical",
+          "title": "Cross-site Scripting (XSS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1533,7 +1607,9 @@
               "SI-10"
             ]
           },
-          "title": "Denial of Service (DoS)"
+          "controlType": "technical",
+          "title": "Denial of Service (DoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1578,7 +1654,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1614,7 +1692,9 @@
               "SI-10"
             ]
           },
-          "title": "Cross-site Scripting (XSS)"
+          "controlType": "technical",
+          "title": "Cross-site Scripting (XSS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1652,7 +1732,9 @@
               "SI-10"
             ]
           },
-          "title": "Prototype Pollution"
+          "controlType": "technical",
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1687,7 +1769,9 @@
               "SI-10"
             ]
           },
-          "title": "Cross-site Scripting (XSS)"
+          "controlType": "technical",
+          "title": "Cross-site Scripting (XSS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1719,7 +1803,9 @@
               "SI-10"
             ]
           },
-          "title": "Cross-site Scripting (XSS)"
+          "controlType": "technical",
+          "title": "Cross-site Scripting (XSS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1751,7 +1837,9 @@
               "SI-10"
             ]
           },
-          "title": "Cross-site Scripting (XSS)"
+          "controlType": "technical",
+          "title": "Cross-site Scripting (XSS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1783,7 +1871,9 @@
               "SI-10"
             ]
           },
-          "title": "Cross-site Scripting (XSS)"
+          "controlType": "technical",
+          "title": "Cross-site Scripting (XSS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1818,7 +1908,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1851,7 +1943,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1883,7 +1977,9 @@
               "SI-10"
             ]
           },
-          "title": "Denial of Service (DoS)"
+          "controlType": "technical",
+          "title": "Denial of Service (DoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1928,7 +2024,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1957,7 +2055,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1992,7 +2092,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2026,7 +2128,8 @@
               "RA-5"
             ]
           },
-          "title": "Remote Memory Exposure"
+          "title": "Remote Memory Exposure",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2061,7 +2164,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2130,7 +2235,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2175,7 +2282,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2209,7 +2318,8 @@
               "RA-5"
             ]
           },
-          "title": "Uninitialized Memory Exposure"
+          "title": "Uninitialized Memory Exposure",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2249,7 +2359,9 @@
               "SI-10"
             ]
           },
-          "title": "Prototype Override Protection Bypass"
+          "controlType": "technical",
+          "title": "Prototype Override Protection Bypass",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2284,7 +2396,9 @@
               "SI-10"
             ]
           },
-          "title": "Regular Expression Denial of Service (ReDoS)"
+          "controlType": "technical",
+          "title": "Regular Expression Denial of Service (ReDoS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2319,7 +2433,9 @@
               "SI-10"
             ]
           },
-          "title": "Directory Traversal"
+          "controlType": "technical",
+          "title": "Directory Traversal",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2354,7 +2470,9 @@
               "SI-10"
             ]
           },
-          "title": "Open Redirect"
+          "controlType": "technical",
+          "title": "Open Redirect",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -2376,7 +2494,7 @@
     "name": "snyk-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:18:02.2211243Z",
+  "timestamp": "2026-05-15T03:17:52.54510468Z",
   "tool": {
     "format": "JSON",
     "name": "Snyk"

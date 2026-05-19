@@ -43,7 +43,8 @@
             ],
             "userImpact": "Low"
           },
-          "title": "Storage account should use a private link connection"
+          "title": "Storage account should use a private link connection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -86,7 +87,8 @@
             ],
             "userImpact": "Low"
           },
-          "title": "Virtual machines should encrypt temp disks, caches, and data flows"
+          "title": "Virtual machines should encrypt temp disks, caches, and data flows",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -130,7 +132,8 @@
             ],
             "userImpact": "High"
           },
-          "title": "SQL servers should have an Azure Active Directory administrator provisioned"
+          "title": "SQL servers should have an Azure Active Directory administrator provisioned",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -171,7 +174,8 @@
             ],
             "userImpact": "Low"
           },
-          "title": "Web Application should only be accessible over HTTPS"
+          "title": "Web Application should only be accessible over HTTPS",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -212,7 +216,8 @@
             ],
             "userImpact": "Low"
           },
-          "title": "Key Vault should use a virtual network service endpoint"
+          "title": "Key Vault should use a virtual network service endpoint",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -253,7 +258,8 @@
             ],
             "userImpact": "Low"
           },
-          "title": "Log Analytics agent should be installed on virtual machines"
+          "title": "Log Analytics agent should be installed on virtual machines",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -279,7 +285,7 @@
     "name": "msft-defender-cloud-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:57.0078086Z",
+  "timestamp": "2026-05-15T03:15:05.681765449Z",
   "tool": {
     "format": "JSON",
     "name": "Microsoft Defender for Cloud"

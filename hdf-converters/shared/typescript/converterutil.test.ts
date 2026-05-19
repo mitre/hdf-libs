@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { inputChecksum, buildNistCciTags, DEFAULT_STATIC_ANALYSIS_NIST_TAGS, limitArray, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray } from './converterutil.js';
+import { ControlType, VerificationMethodEnum } from '@mitre/hdf-schema';
+import { inputChecksum, buildNistCciTags, DEFAULT_STATIC_ANALYSIS_NIST_TAGS, limitArray, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlType, deriveControlTypeFromTags, deriveVerificationMethod } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -199,5 +200,121 @@ describe('re-exports', () => {
     expect(DEFAULT_STATIC_ANALYSIS_NIST_TAGS).toBeDefined();
     expect(Array.isArray(DEFAULT_STATIC_ANALYSIS_NIST_TAGS)).toBe(true);
     expect(DEFAULT_STATIC_ANALYSIS_NIST_TAGS).toContain('SA-11');
+  });
+});
+
+describe('deriveControlType', () => {
+  it.each<[string, ControlType]>([
+    ['AC-3', ControlType.Technical],
+    ['SC-7', ControlType.Technical],
+    ['SI-2', ControlType.Technical],
+    ['IA-5', ControlType.Technical],
+    ['AC-3(1)', ControlType.Technical],
+    ['AC-3.1', ControlType.Technical],
+    ['AT-2', ControlType.Operational],
+    ['IR-4', ControlType.Operational],
+    ['MA-3', ControlType.Operational],
+    ['AU-12', ControlType.Operational],
+    ['PM-2', ControlType.Management],
+    ['CA-2', ControlType.Management],
+    ['SR-3', ControlType.Management],
+    ['AC-1', ControlType.Policy],
+    ['PM-1', ControlType.Policy],
+    ['SC-1', ControlType.Policy],
+    ['AC-1(1)', ControlType.Policy],
+  ])('should classify %s as %s', (tag, expected) => {
+    expect(deriveControlType(tag)).toBe(expected);
+  });
+
+  it.each<[string]>([
+    ['SV-238196'],
+    ['CCI-000192'],
+    ['XX-9'],
+    [''],
+    ['AC'],
+    ['AC-'],
+  ])('should return undefined for non-NIST tag %s', (tag) => {
+    expect(deriveControlType(tag)).toBeUndefined();
+  });
+
+  it('should normalize case', () => {
+    expect(deriveControlType('ac-3')).toBe(ControlType.Technical);
+  });
+
+  it('should trim whitespace', () => {
+    expect(deriveControlType('  AC-3  ')).toBe(ControlType.Technical);
+  });
+});
+
+describe('deriveControlTypeFromTags', () => {
+  it('returns the single class when one tag', () => {
+    expect(deriveControlTypeFromTags(['AC-3'])).toBe(ControlType.Technical);
+  });
+
+  it('technical beats management', () => {
+    expect(deriveControlTypeFromTags(['PM-2', 'AC-3'])).toBe(ControlType.Technical);
+  });
+
+  it('operational beats management', () => {
+    expect(deriveControlTypeFromTags(['PM-2', 'AT-2'])).toBe(ControlType.Operational);
+  });
+
+  it('technical beats operational', () => {
+    expect(deriveControlTypeFromTags(['AT-2', 'AC-3'])).toBe(ControlType.Technical);
+  });
+
+  it('technical beats policy', () => {
+    expect(deriveControlTypeFromTags(['AC-1', 'SC-7'])).toBe(ControlType.Technical);
+  });
+
+  it('ignores unknown families', () => {
+    expect(deriveControlTypeFromTags(['SV-12345', 'AC-3'])).toBe(ControlType.Technical);
+  });
+
+  it('returns undefined for empty input', () => {
+    expect(deriveControlTypeFromTags([])).toBeUndefined();
+  });
+
+  it('returns undefined when all tags are unknown', () => {
+    expect(deriveControlTypeFromTags(['SV-1', 'CCI-1'])).toBeUndefined();
+  });
+
+  it('static-fallback bundle DEFAULT_STATIC_ANALYSIS_NIST_TAGS returns undefined', () => {
+    expect(deriveControlTypeFromTags(['SA-11', 'RA-5'])).toBeUndefined();
+  });
+
+  it('static-fallback bundle DEFAULT_REMEDIATION_NIST_TAGS returns undefined', () => {
+    expect(deriveControlTypeFromTags(['SI-2', 'RA-5'])).toBeUndefined();
+  });
+
+  it('static-fallback bundle component-management returns undefined', () => {
+    expect(deriveControlTypeFromTags(['CM-8'])).toBeUndefined();
+  });
+
+  it('non-fallback superset bypasses the gate (real signal wins)', () => {
+    expect(deriveControlTypeFromTags(['SA-11', 'RA-5', 'AC-3'])).toBe(ControlType.Technical);
+  });
+
+  it('standalone SA-11 keeps real signal (not the bundle)', () => {
+    expect(deriveControlTypeFromTags(['SA-11'])).toBe(ControlType.Management);
+  });
+});
+
+describe('deriveVerificationMethod', () => {
+  it('non-empty code is automated', () => {
+    expect(deriveVerificationMethod("control 'AC-3' do; impact 0.7; end"))
+      .toBe(VerificationMethodEnum.Automated);
+  });
+
+  it('undefined returns undefined', () => {
+    expect(deriveVerificationMethod(undefined)).toBeUndefined();
+  });
+
+  it('null returns undefined', () => {
+    expect(deriveVerificationMethod(null)).toBeUndefined();
+  });
+
+  it('empty string returns undefined', () => {
+    expect(deriveVerificationMethod('')).toBeUndefined();
   });
 });

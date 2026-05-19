@@ -3,6 +3,7 @@ package legacyhdf
 import (
 	"time"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -197,6 +198,27 @@ func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 		v2.EffectiveStatus = &status
 	}
 
+	// Derive controlType from any nist tags present in v1 tags. JSON
+	// unmarshalling stores arrays as []interface{}, so normalize to []string
+	// before passing to the shared helper.
+	if v1.Tags != nil {
+		if raw, ok := v1.Tags["nist"].([]interface{}); ok {
+			nistStrs := make([]string, 0, len(raw))
+			for _, v := range raw {
+				if s, ok := v.(string); ok {
+					nistStrs = append(nistStrs, s)
+				}
+			}
+			if ct := shared.DeriveControlTypeFromTags(nistStrs); ct != nil {
+				v2.ControlType = ct
+			}
+		} else if nistStrs, ok := v1.Tags["nist"].([]string); ok {
+			if ct := shared.DeriveControlTypeFromTags(nistStrs); ct != nil {
+				v2.ControlType = ct
+			}
+		}
+	}
+
 	// Transform results array
 	if v1.Results != nil {
 		v2.Results = make([]hdf.RequirementResult, len(v1.Results))
@@ -225,6 +247,13 @@ func convertControl(v1 V1Control) hdf.EvaluatedRequirement {
 		sev := impactToSeverity(v1.Impact)
 		v2.Severity = &sev
 	}
+
+	// verificationMethod is intentionally NOT set here. legacyhdf is a v1->v3
+	// passthrough/upgrade converter; v1 HDF predates the verificationMethod
+	// field, so the source carries no such signal. Stamping a value would
+	// fabricate data not present in the input. A v1 control may have come
+	// from an automated InSpec run OR a manual control (impact 0, no
+	// describe block) — the v1 document does not record which.
 
 	return v2
 }

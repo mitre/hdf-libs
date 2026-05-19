@@ -465,13 +465,15 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 	tags := buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls)
 
 	return hdf.EvaluatedRequirement{
-		ID:             ruleID,
-		Title:          &title,
-		Descriptions:   descriptions,
-		Impact:         impact,
-		Tags:           tags,
-		Results:        results,
-		SourceLocation: sourceLocationPtr,
+		ID:                 ruleID,
+		Title:              &title,
+		Descriptions:       descriptions,
+		Impact:             impact,
+		Tags:               tags,
+		Results:            results,
+		SourceLocation:     sourceLocationPtr,
+		ControlType:        shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

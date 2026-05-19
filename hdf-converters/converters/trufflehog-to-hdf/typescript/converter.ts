@@ -1,5 +1,5 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, buildNistCciTags, limitArrayWithWarning, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -10,6 +10,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -216,7 +217,7 @@ function buildRequirement(reqID: string, findings: TrufflehogFinding[]): Evaluat
   const sourceFile = getSourceFile(rep);
   const sourceLine = getSourceLine(rep);
 
-  return createRequirement(
+  const req = createRequirement(
     reqID,
     title,
     descriptions,
@@ -226,7 +227,15 @@ function buildRequirement(reqID: string, findings: TrufflehogFinding[]): Evaluat
       tags,
       sourceLocation: sourceFile ? { ref: sourceFile, line: sourceLine } : undefined,
     }
-  );
+  ) as EvaluatedRequirement;
+
+  const controlType = deriveControlTypeFromTags(TRUFFLEHOG_NIST);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+
+  return req;
 }
 
 /**

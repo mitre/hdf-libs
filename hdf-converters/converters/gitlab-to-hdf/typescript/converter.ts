@@ -9,6 +9,7 @@ import {
   type HdfResults,
   type Component,
   ResultStatus,
+  VerificationMethodEnum,
   severityToImpact,
 } from '@mitre/hdf-schema';
 import {
@@ -17,7 +18,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, limitArray, validateInputSize} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArray, validateInputSize} from '../../../shared/typescript/converterutil.js';
 
 // --- GitLab Security Report input types ---
 
@@ -290,7 +291,13 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
       results: [result],
       tags,
       descriptions,
+      verificationMethod: VerificationMethodEnum.Automated,
     };
+
+    const controlType = deriveControlTypeFromTags(nistTags);
+    if (controlType !== undefined) {
+      req.controlType = controlType;
+    }
 
     requirements.push(req);
   }

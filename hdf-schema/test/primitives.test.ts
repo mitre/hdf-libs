@@ -76,6 +76,110 @@ describe('Primitive Schema Validation', () => {
       });
     });
 
+    describe('Requirement_Core', () => {
+      const validate = ajv.compile({
+        ...schemaRef(commonSchema, 'Requirement_Core'),
+      });
+
+      it('should validate empty object (all fields optional)', () => {
+        expect(validate({})).toBe(true);
+      });
+
+      it('should validate v3.1.x-style requirement with no classification fields', () => {
+        const valid = {
+          id: 'SV-238196',
+          title: 'The Ubuntu OS must enforce password complexity',
+          impact: 0.5,
+          tags: { nist: ['IA-5'], severity: 'medium' },
+          descriptions: [{ label: 'default', data: 'desc' }],
+          code: 'control "SV-238196" do; end',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      describe('controlType (v3.2 classification field)', () => {
+        it.each(['policy', 'procedure', 'technical', 'management', 'operational'])(
+          'should accept controlType=%s',
+          (value: string) => {
+            expect(validate({ id: 'C-1', controlType: value })).toBe(true);
+          },
+        );
+
+        it('should reject unknown controlType', () => {
+          expect(validate({ id: 'C-1', controlType: 'invented' })).toBe(false);
+        });
+
+        it('should reject explicit null controlType', () => {
+          expect(validate({ id: 'C-1', controlType: null })).toBe(false);
+        });
+
+        it('should accept omitted controlType', () => {
+          expect(validate({ id: 'C-1' })).toBe(true);
+        });
+      });
+
+      describe('verificationMethod (v3.2 classification field)', () => {
+        it.each(['automated', 'manual-by-design', 'manual-pending-automation', 'hybrid'])(
+          'should accept verificationMethod=%s',
+          (value: string) => {
+            expect(validate({ id: 'C-1', verificationMethod: value })).toBe(true);
+          },
+        );
+
+        it('should reject unknown verificationMethod', () => {
+          expect(validate({ id: 'C-1', verificationMethod: 'magic' })).toBe(false);
+        });
+
+        it('should reject explicit null verificationMethod', () => {
+          expect(validate({ id: 'C-1', verificationMethod: null })).toBe(false);
+        });
+
+        it('should reject legacy snake_case manual_pending_automation (hyphen form is canonical)', () => {
+          expect(validate({ id: 'C-1', verificationMethod: 'manual_pending_automation' })).toBe(false);
+        });
+
+        it('should accept omitted verificationMethod', () => {
+          expect(validate({ id: 'C-1' })).toBe(true);
+        });
+      });
+
+      describe('applicability (v3.2 classification field)', () => {
+        it.each(['required', 'optional', 'advisory'])(
+          'should accept applicability=%s',
+          (value: string) => {
+            expect(validate({ id: 'C-1', applicability: value })).toBe(true);
+          },
+        );
+
+        it('should reject unknown applicability', () => {
+          expect(validate({ id: 'C-1', applicability: 'mandatory' })).toBe(false);
+        });
+
+        it('should reject explicit null applicability', () => {
+          expect(validate({ id: 'C-1', applicability: null })).toBe(false);
+        });
+
+        it('should accept omitted applicability', () => {
+          expect(validate({ id: 'C-1' })).toBe(true);
+        });
+      });
+
+      it('should validate Requirement_Core with all three classification fields populated', () => {
+        const valid = {
+          id: 'AC-3',
+          title: 'Access Enforcement',
+          impact: 0.7,
+          tags: { nist: ['AC-3'] },
+          descriptions: [{ label: 'default', data: 'Enforce approved authorizations.' }],
+          code: 'control "AC-3" do; end',
+          controlType: 'technical',
+          verificationMethod: 'automated',
+          applicability: 'required',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+
     describe('Dependency', () => {
       const validate = ajv.compile({
         ...schemaRef(commonSchema, 'Dependency'),

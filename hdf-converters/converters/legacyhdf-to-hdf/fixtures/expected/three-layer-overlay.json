@@ -1559,7 +1559,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "This control consistently takes a long time to run and has been disabled\n    using the disable_slow_controls attribute.",
-              "runTime": 1.4285e-05,
+              "runTime": 0.000014285,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -1568,7 +1568,8 @@
             }
           ],
           "effectiveStatus": "notReviewed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "technical"
         },
         {
           "id": "V-71855",
@@ -1618,7 +1619,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "This control consistently takes a long to run and has been disabled\n    using the disable_slow_controls attribute.",
-              "runTime": 8.675e-06,
+              "runTime": 0.000008675,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -1627,7 +1628,8 @@
             }
           ],
           "effectiveStatus": "notReviewed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-71859",
@@ -1682,7 +1684,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The GNOME desktop is not installed",
-              "runTime": 7.091e-06,
+              "runTime": 0.000007091,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -1691,7 +1693,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-71861",
@@ -1746,7 +1749,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GNOME installed",
-              "runTime": 5.985e-06,
+              "runTime": 0.000005985,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -1755,7 +1758,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-71863",
@@ -1828,7 +1832,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71891",
@@ -1882,7 +1887,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GNOME installed",
-              "runTime": 6.798e-06,
+              "runTime": 0.000006798,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -1891,7 +1896,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-71893",
@@ -1941,7 +1947,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GNOME installed",
-              "runTime": 4.607e-06,
+              "runTime": 0.000004607,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -1950,7 +1956,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-71897",
@@ -2019,7 +2026,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71899",
@@ -2069,7 +2077,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GNOME installed",
-              "runTime": 8.448e-06,
+              "runTime": 0.000008448,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -2078,7 +2086,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-71901",
@@ -2128,7 +2137,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GNOME installed",
-              "runTime": 7.923e-06,
+              "runTime": 0.000007923,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -2137,7 +2146,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-71903",
@@ -2195,7 +2205,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71905",
@@ -2253,7 +2264,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71907",
@@ -2311,7 +2323,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71909",
@@ -2369,7 +2382,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71911",
@@ -2427,7 +2441,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71913",
@@ -2485,7 +2500,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71915",
@@ -2542,7 +2558,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71917",
@@ -2599,7 +2616,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71919",
@@ -2665,7 +2683,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71921",
@@ -2723,7 +2742,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71923",
@@ -2781,7 +2801,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71925",
@@ -2839,7 +2860,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71927",
@@ -2906,7 +2928,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71929",
@@ -2964,7 +2987,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71931",
@@ -3030,7 +3054,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71933",
@@ -3088,7 +3113,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "This is Not Applicable for the project since we have an approved risk-based decision on 10/1/2021 allowing reuse of old passwords",
-              "runTime": 1.0459e-05,
+              "runTime": 0.000010459,
               "startTime": "2022-03-06T22:05:48+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -3097,7 +3122,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-71935",
@@ -3163,7 +3189,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71937",
@@ -3458,7 +3485,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-71939",
@@ -3516,7 +3544,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "technical"
         },
         {
           "id": "V-71941",
@@ -3582,7 +3611,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71943",
@@ -3718,7 +3748,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71945",
@@ -3805,7 +3836,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71947",
@@ -3884,7 +3916,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71949",
@@ -3946,7 +3979,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71951",
@@ -4004,7 +4038,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-71953",
@@ -4054,7 +4089,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GDM installed",
-              "runTime": 1.2677e-05,
+              "runTime": 0.000012677,
               "startTime": "2022-03-06T22:05:49+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -4063,7 +4098,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "operational"
         },
         {
           "id": "V-71955",
@@ -4113,7 +4149,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GDM installed",
-              "runTime": 7.698e-06,
+              "runTime": 0.000007698,
               "startTime": "2022-03-06T22:05:49+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -4122,7 +4158,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "operational"
         },
         {
           "id": "V-71957",
@@ -4180,7 +4217,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-71959",
@@ -4238,7 +4276,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-71961",
@@ -4288,7 +4327,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "System running version of RHEL that is equal to or newer than 7.2",
-              "runTime": 8.234e-06,
+              "runTime": 0.000008234,
               "startTime": "2022-03-06T22:05:49+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -4297,7 +4336,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-71963",
@@ -4347,7 +4387,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "System running BIOS",
-              "runTime": 7.806e-06,
+              "runTime": 0.000007806,
               "startTime": "2022-03-06T22:05:49+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -4356,7 +4396,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-71965",
@@ -4441,7 +4482,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71967",
@@ -4498,7 +4540,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-71969",
@@ -4555,7 +4598,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-71971",
@@ -4639,7 +4683,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71973",
@@ -4736,7 +4781,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-71975",
@@ -4823,7 +4869,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-71977",
@@ -4880,7 +4927,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-71979",
@@ -4937,7 +4985,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-71983",
@@ -5012,7 +5061,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71985",
@@ -5094,7 +5144,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-71987",
@@ -5152,7 +5203,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "technical"
         },
         {
           "id": "V-71989",
@@ -5211,7 +5263,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "technical"
         },
         {
           "id": "V-71991",
@@ -5270,7 +5323,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "technical"
         },
         {
           "id": "V-71993",
@@ -5335,7 +5389,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-71995",
@@ -5392,7 +5447,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-71997",
@@ -5449,7 +5505,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-71999",
@@ -5874,7 +5931,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72001",
@@ -6158,7 +6216,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72003",
@@ -6431,7 +6490,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "technical"
         },
         {
           "id": "V-72005",
@@ -6496,7 +6556,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-72007",
@@ -6569,7 +6630,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72009",
@@ -6642,7 +6704,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72011",
@@ -6707,7 +6770,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72013",
@@ -6764,7 +6828,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72015",
@@ -6829,7 +6894,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72017",
@@ -6886,7 +6952,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72019",
@@ -6967,7 +7034,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72021",
@@ -7024,7 +7092,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72023",
@@ -7082,7 +7151,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72025",
@@ -7139,7 +7209,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72027",
@@ -7197,7 +7268,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72029",
@@ -7254,7 +7326,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72031",
@@ -7312,7 +7385,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72033",
@@ -7370,7 +7444,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72035",
@@ -7439,7 +7514,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72037",
@@ -7489,7 +7565,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "This control consistently takes a long to run and has been disabled\n  using the disable_slow_controls attribute.",
-              "runTime": 8.098e-06,
+              "runTime": 0.000008098,
               "startTime": "2022-03-06T22:06:04+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -7498,7 +7574,8 @@
             }
           ],
           "effectiveStatus": "notReviewed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72039",
@@ -7563,7 +7640,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72041",
@@ -7621,7 +7699,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72043",
@@ -7695,7 +7774,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72045",
@@ -7752,7 +7832,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72047",
@@ -7914,7 +7995,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72049",
@@ -7987,7 +8069,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72051",
@@ -8044,7 +8127,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72053",
@@ -8101,7 +8185,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72055",
@@ -8158,7 +8243,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72057",
@@ -8215,7 +8301,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72059",
@@ -8281,7 +8368,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "operational"
         },
         {
           "id": "V-72061",
@@ -8339,7 +8427,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "operational"
         },
         {
           "id": "V-72063",
@@ -8397,7 +8486,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "operational"
         },
         {
           "id": "V-72065",
@@ -8476,7 +8566,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "operational"
         },
         {
           "id": "V-72067",
@@ -8583,7 +8674,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "technical"
         },
         {
           "id": "V-72069",
@@ -8648,7 +8740,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "operational"
         },
         {
           "id": "V-72071",
@@ -8713,7 +8806,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "operational"
         },
         {
           "id": "V-72073",
@@ -8778,7 +8872,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72075",
@@ -8889,7 +8984,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72077",
@@ -8946,7 +9042,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-72079",
@@ -9012,7 +9109,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-72081",
@@ -9073,7 +9171,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72083",
@@ -9127,7 +9226,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "File '/etc/audisp/audisp-remote.conf' cannot be found. This test cannot be checked in a automated fashion and you must check it manually",
-              "runTime": 1.4542e-05,
+              "runTime": 0.000014542,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -9136,7 +9235,8 @@
             }
           ],
           "effectiveStatus": "notReviewed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72085",
@@ -9190,7 +9290,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "Parse Config File /etc/audisp/audisp-remote.conf",
-              "runTime": 1.2562e-05,
+              "runTime": 0.000012562,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/audisp/audisp-remote.conf\"]",
@@ -9199,7 +9299,8 @@
             }
           ],
           "effectiveStatus": "notReviewed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72087",
@@ -9249,7 +9350,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "Parse Config File /etc/audisp/audisp-remote.conf",
-              "runTime": 6.069e-06,
+              "runTime": 0.000006069,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/audisp/audisp-remote.conf\"]",
@@ -9259,7 +9360,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "Parse Config File /etc/audisp/audisp-remote.conf",
-              "runTime": 9.89e-06,
+              "runTime": 0.00000989,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/audisp/audisp-remote.conf\"]",
@@ -9268,7 +9369,8 @@
             }
           ],
           "effectiveStatus": "notReviewed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72089",
@@ -9326,7 +9428,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72091",
@@ -9384,7 +9487,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72093",
@@ -9441,7 +9545,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72095",
@@ -9544,7 +9649,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72097",
@@ -9637,7 +9743,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72099",
@@ -9730,7 +9837,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72101",
@@ -9823,7 +9931,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72103",
@@ -9916,7 +10025,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72105",
@@ -10006,7 +10116,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72107",
@@ -10096,7 +10207,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72109",
@@ -10186,7 +10298,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72111",
@@ -10276,7 +10389,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72113",
@@ -10366,7 +10480,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72115",
@@ -10456,7 +10571,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72117",
@@ -10546,7 +10662,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72119",
@@ -10636,7 +10753,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72121",
@@ -10726,7 +10844,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72123",
@@ -10891,7 +11010,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72125",
@@ -11056,7 +11176,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72127",
@@ -11221,7 +11342,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72129",
@@ -11386,7 +11508,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72131",
@@ -11551,7 +11674,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72133",
@@ -11716,7 +11840,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72135",
@@ -11789,7 +11914,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72137",
@@ -11862,7 +11988,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72139",
@@ -11935,7 +12062,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72141",
@@ -12008,7 +12136,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72145",
@@ -12083,7 +12212,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72147",
@@ -12158,7 +12288,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72149",
@@ -12233,7 +12364,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72151",
@@ -12308,7 +12440,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72153",
@@ -12383,7 +12516,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72155",
@@ -12458,7 +12592,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72157",
@@ -12533,7 +12668,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72159",
@@ -12612,7 +12748,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72161",
@@ -12691,7 +12828,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72163",
@@ -12787,7 +12925,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72165",
@@ -12866,7 +13005,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72167",
@@ -12945,7 +13085,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72171",
@@ -13054,7 +13195,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72173",
@@ -13126,7 +13268,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72175",
@@ -13198,7 +13341,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72177",
@@ -13270,7 +13414,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72179",
@@ -13345,7 +13490,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72183",
@@ -13420,7 +13566,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72185",
@@ -13486,7 +13633,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72187",
@@ -13575,7 +13723,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72189",
@@ -13664,7 +13813,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72191",
@@ -13734,7 +13884,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72197",
@@ -13814,7 +13965,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72199",
@@ -13907,7 +14059,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72201",
@@ -14000,7 +14153,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72203",
@@ -14093,7 +14247,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72205",
@@ -14186,7 +14341,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72207",
@@ -14279,7 +14435,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72209",
@@ -14337,7 +14494,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72211",
@@ -14410,7 +14568,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72213",
@@ -14489,7 +14648,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "technical"
         },
         {
           "id": "V-72217",
@@ -14555,7 +14715,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "technical"
         },
         {
           "id": "V-72219",
@@ -14619,7 +14780,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72221",
@@ -14688,7 +14850,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72223",
@@ -14756,7 +14919,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72225",
@@ -14831,7 +14995,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72227",
@@ -14881,7 +15046,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "LDAP not enabled",
-              "runTime": 1.0836e-05,
+              "runTime": 0.000010836,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -14890,7 +15055,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-72229",
@@ -14940,7 +15106,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "LDAP not enabled",
-              "runTime": 3.4353e-05,
+              "runTime": 0.000034353,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -14949,7 +15115,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-72231",
@@ -14999,7 +15166,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "LDAP not enabled",
-              "runTime": 8.23e-06,
+              "runTime": 0.00000823,
               "startTime": "2022-03-06T22:06:06+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -15008,7 +15175,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-72233",
@@ -15085,7 +15253,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72235",
@@ -15154,7 +15323,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72237",
@@ -15235,7 +15405,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72239",
@@ -15293,7 +15464,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72241",
@@ -15349,7 +15521,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The release is 7.9.2009",
-              "runTime": 1.005e-05,
+              "runTime": 0.00001005,
               "startTime": "2022-03-06T22:06:07+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -15358,7 +15530,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-72243",
@@ -15416,7 +15589,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72245",
@@ -15482,7 +15656,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72247",
@@ -15540,7 +15715,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72249",
@@ -15598,7 +15774,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72251",
@@ -15654,7 +15831,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The release is 7.9.2009",
-              "runTime": 9.681e-06,
+              "runTime": 0.000009681,
               "startTime": "2022-03-06T22:06:07+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -15663,7 +15840,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-72253",
@@ -15721,7 +15899,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72255",
@@ -15778,7 +15957,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72257",
@@ -15851,7 +16031,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72259",
@@ -15917,7 +16098,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72261",
@@ -15983,7 +16165,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72263",
@@ -16041,7 +16224,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72265",
@@ -16110,7 +16294,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72267",
@@ -16179,7 +16364,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72269",
@@ -16275,7 +16461,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72273",
@@ -16365,7 +16552,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72275",
@@ -16442,7 +16630,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "operational"
         },
         {
           "id": "V-72277",
@@ -16499,7 +16688,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-72279",
@@ -16556,7 +16746,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-72281",
@@ -16621,7 +16812,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "operational"
         },
         {
           "id": "V-72283",
@@ -16678,7 +16870,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72285",
@@ -16735,7 +16928,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72287",
@@ -16792,7 +16986,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72289",
@@ -16850,7 +17045,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72291",
@@ -16908,7 +17104,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72293",
@@ -16966,7 +17163,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72295",
@@ -17023,7 +17221,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72297",
@@ -17112,7 +17311,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72299",
@@ -17169,7 +17369,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-72301",
@@ -17234,7 +17435,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-72303",
@@ -17291,7 +17493,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "operational"
         },
         {
           "id": "V-72305",
@@ -17341,7 +17544,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The TFTP package is not installed",
-              "runTime": 1.2685e-05,
+              "runTime": 0.000012685,
               "startTime": "2022-03-06T22:06:09+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -17350,7 +17553,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "operational"
         },
         {
           "id": "V-72307",
@@ -17407,7 +17611,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72309",
@@ -17464,7 +17669,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72311",
@@ -17521,7 +17727,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72313",
@@ -17571,7 +17778,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The `snmpd.conf` does not exist",
-              "runTime": 7.803e-06,
+              "runTime": 0.000007803,
               "startTime": "2022-03-06T22:06:09+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -17580,7 +17787,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "operational"
         },
         {
           "id": "V-72315",
@@ -17637,7 +17845,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72317",
@@ -17687,7 +17896,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have libreswan installed or the ipsec.service isn't running",
-              "runTime": 1.1027e-05,
+              "runTime": 0.000011027,
               "startTime": "2022-03-06T22:06:09+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -17696,7 +17905,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "operational"
         },
         {
           "id": "V-72319",
@@ -17753,7 +17963,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-72417",
@@ -17939,7 +18150,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-72427",
@@ -17998,7 +18210,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The SSSD Package is not installed on the system",
-              "runTime": 9.471e-06,
+              "runTime": 0.000009471,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -18007,7 +18219,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-72433",
@@ -18074,7 +18287,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-73155",
@@ -18124,7 +18338,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The GNOME desktop is not installed",
-              "runTime": 7.159e-06,
+              "runTime": 0.000007159,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -18133,7 +18347,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-73157",
@@ -18183,7 +18398,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The GNOME desktop is not installed",
-              "runTime": 7.752e-06,
+              "runTime": 0.000007752,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -18192,7 +18407,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-73159",
@@ -18265,7 +18481,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-73161",
@@ -18322,7 +18539,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-73163",
@@ -18372,7 +18590,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "Parse Config File /etc/audisp/audisp-remote.conf",
-              "runTime": 8.056e-06,
+              "runTime": 0.000008056,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/etc/audisp/audisp-remote.conf\"]",
@@ -18381,7 +18599,8 @@
             }
           ],
           "effectiveStatus": "notReviewed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-73165",
@@ -18453,7 +18672,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-73167",
@@ -18525,7 +18745,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-73171",
@@ -18597,7 +18818,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-73173",
@@ -18669,7 +18891,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-73175",
@@ -18727,7 +18950,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-73177",
@@ -18788,7 +19012,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-77819",
@@ -18846,7 +19071,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The GNOME desktop is not installed",
-              "runTime": 1.3842e-05,
+              "runTime": 0.000013842,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -18856,7 +19081,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The pcsc-lite package is not installed",
-              "runTime": 1.0141e-05,
+              "runTime": 0.000010141,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -18866,7 +19091,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The esc package is not installed",
-              "runTime": 9.305e-06,
+              "runTime": 0.000009305,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -18875,7 +19100,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-77821",
@@ -18940,7 +19166,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-77823",
@@ -18997,7 +19224,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-77825",
@@ -19054,16 +19282,17 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-78995",
           "impact": 0,
           "title": "The Red Hat Enterprise Linux operating system must prevent a user from\noverriding the screensaver lock-enabled setting for the graphical user\ninterface.",
-          "desc": "A session lock is a temporary action taken when a user stops work and\nmoves away from the immediate physical vicinity of the information system but\ndoes not want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user\u2019s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.",
+          "desc": "A session lock is a temporary action taken when a user stops work and\nmoves away from the immediate physical vicinity of the information system but\ndoes not want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user’s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.",
           "descriptions": [
             {
-              "data": "A session lock is a temporary action taken when a user stops work and\nmoves away from the immediate physical vicinity of the information system but\ndoes not want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user\u2019s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.",
+              "data": "A session lock is a temporary action taken when a user stops work and\nmoves away from the immediate physical vicinity of the information system but\ndoes not want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user’s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.",
               "label": "default"
             },
             {
@@ -19094,7 +19323,7 @@
               "AC-11 a"
             ]
           },
-          "code": "control \"V-78995\" do\n  title \"The Red Hat Enterprise Linux operating system must prevent a user from\noverriding the screensaver lock-enabled setting for the graphical user\ninterface.\"\n  desc  \"A session lock is a temporary action taken when a user stops work and\nmoves away from the immediate physical vicinity of the information system but\ndoes not want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user\u2019s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.\n\n  \"\n  desc  \"rationale\", \"\"\n  desc  \"check\", \"\n    Verify the operating system prevents a user from overriding the screensaver\nlock-enabled setting for the graphical user interface.\n\n    Note: If the system does not have GNOME installed, this requirement is Not\nApplicable. The screen program must be installed to lock sessions on the\nconsole.\n\n    Determine which profile the system database is using with the following\ncommand:\n    # grep system-db /etc/dconf/profile/user\n\n    system-db:local\n\n    Check for the lock-enabled setting with the following command:\n\n    Note: The example below is using the database \\\"local\\\" for the system, so\nthe path is \\\"/etc/dconf/db/local.d\\\". This path must be modified if a database\nother than \\\"local\\\" is being used.\n\n    # grep -i lock-enabled /etc/dconf/db/local.d/locks/*\n\n    /org/gnome/desktop/screensaver/lock-enabled\n\n    If the command does not return a result, this is a finding.\n\n  \"\n  desc  \"fix\", \"\n    Configure the operating system to prevent a user from overriding a\nscreensaver lock after a 15-minute period of inactivity for graphical user\ninterfaces.\n\n    Create a database to contain the system-wide screensaver settings (if it\ndoes not already exist) with the following command:\n\n    Note: The example below is using the database \\\"local\\\" for the system, so\nif the system is using another database in \\\"/etc/dconf/profile/user\\\", the\nfile should be created under the appropriate subdirectory.\n\n    # touch /etc/dconf/db/local.d/locks/session\n\n    Add the setting to lock the screensaver lock-enabled setting:\n\n    /org/gnome/desktop/screensaver/lock-enabled\n\n  \"\n  impact 0.5\n  tag severity: nil\n  tag gtitle: \"SRG-OS-000029-GPOS-00010\"\n  tag gid: \"V-78995\"\n  tag rid: \"SV-93701r3_rule\"\n  tag stig_id: \"RHEL-07-010062\"\n  tag fix_id: \"F-85745r1_fix\"\n  tag cci: [\"CCI-000057\"]\n  tag nist: [\"AC-11 a\"]\n\n  if package('gnome-desktop3').installed?\n    describe command(\"gsettings writable org.gnome.desktop.screensaver lock-enabled\") do\n      its('stdout.strip') { should cmp 'false' }\n    end\n  else\n    impact 0.0\n    describe \"The GNOME desktop is not installed\" do\n      skip \"The GNOME desktop is not installed, this control is Not Applicable.\"\n    end\n  end  \nend\n",
+          "code": "control \"V-78995\" do\n  title \"The Red Hat Enterprise Linux operating system must prevent a user from\noverriding the screensaver lock-enabled setting for the graphical user\ninterface.\"\n  desc  \"A session lock is a temporary action taken when a user stops work and\nmoves away from the immediate physical vicinity of the information system but\ndoes not want to log out because of the temporary nature of the absence.\n\n    The session lock is implemented at the point where session activity can be\ndetermined.\n\n    The ability to enable/disable a session lock is given to the user by\ndefault. Disabling the user’s ability to disengage the graphical user interface\nsession lock provides the assurance that all sessions will lock after the\nspecified period of time.\n\n  \"\n  desc  \"rationale\", \"\"\n  desc  \"check\", \"\n    Verify the operating system prevents a user from overriding the screensaver\nlock-enabled setting for the graphical user interface.\n\n    Note: If the system does not have GNOME installed, this requirement is Not\nApplicable. The screen program must be installed to lock sessions on the\nconsole.\n\n    Determine which profile the system database is using with the following\ncommand:\n    # grep system-db /etc/dconf/profile/user\n\n    system-db:local\n\n    Check for the lock-enabled setting with the following command:\n\n    Note: The example below is using the database \\\"local\\\" for the system, so\nthe path is \\\"/etc/dconf/db/local.d\\\". This path must be modified if a database\nother than \\\"local\\\" is being used.\n\n    # grep -i lock-enabled /etc/dconf/db/local.d/locks/*\n\n    /org/gnome/desktop/screensaver/lock-enabled\n\n    If the command does not return a result, this is a finding.\n\n  \"\n  desc  \"fix\", \"\n    Configure the operating system to prevent a user from overriding a\nscreensaver lock after a 15-minute period of inactivity for graphical user\ninterfaces.\n\n    Create a database to contain the system-wide screensaver settings (if it\ndoes not already exist) with the following command:\n\n    Note: The example below is using the database \\\"local\\\" for the system, so\nif the system is using another database in \\\"/etc/dconf/profile/user\\\", the\nfile should be created under the appropriate subdirectory.\n\n    # touch /etc/dconf/db/local.d/locks/session\n\n    Add the setting to lock the screensaver lock-enabled setting:\n\n    /org/gnome/desktop/screensaver/lock-enabled\n\n  \"\n  impact 0.5\n  tag severity: nil\n  tag gtitle: \"SRG-OS-000029-GPOS-00010\"\n  tag gid: \"V-78995\"\n  tag rid: \"SV-93701r3_rule\"\n  tag stig_id: \"RHEL-07-010062\"\n  tag fix_id: \"F-85745r1_fix\"\n  tag cci: [\"CCI-000057\"]\n  tag nist: [\"AC-11 a\"]\n\n  if package('gnome-desktop3').installed?\n    describe command(\"gsettings writable org.gnome.desktop.screensaver lock-enabled\") do\n      its('stdout.strip') { should cmp 'false' }\n    end\n  else\n    impact 0.0\n    describe \"The GNOME desktop is not installed\" do\n      skip \"The GNOME desktop is not installed, this control is Not Applicable.\"\n    end\n  end  \nend\n",
           "sourceLocation": {
             "line": 2,
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-78995.rb"
@@ -19104,7 +19333,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The GNOME desktop is not installed",
-              "runTime": 9.2067e-05,
+              "runTime": 0.000092067,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -19113,7 +19342,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-78997",
@@ -19163,7 +19393,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The GNOME desktop is not installed",
-              "runTime": 9.117e-06,
+              "runTime": 0.000009117,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -19172,7 +19402,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-78999",
@@ -19261,7 +19492,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-79001",
@@ -19350,7 +19582,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-81003",
@@ -19407,7 +19640,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-81005",
@@ -19457,7 +19691,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "Parse Config File /boot/grub2/user.cfg",
-              "runTime": 1.1909e-05,
+              "runTime": 0.000011909,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "parse_config_file",
               "resourceParams": "[\"/boot/grub2/user.cfg\"]",
@@ -19474,7 +19708,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "high"
+          "severity": "high",
+          "controlType": "technical"
         },
         {
           "id": "V-81007",
@@ -19524,7 +19759,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "System running BIOS",
-              "runTime": 1.0374e-05,
+              "runTime": 0.000010374,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -19533,7 +19768,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "technical"
         },
         {
           "id": "V-81009",
@@ -19590,7 +19826,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "operational"
         },
         {
           "id": "V-81011",
@@ -19647,7 +19884,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "operational"
         },
         {
           "id": "V-81013",
@@ -19705,7 +19943,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "low"
+          "severity": "low",
+          "controlType": "operational"
         },
         {
           "id": "V-81015",
@@ -19759,7 +19998,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "File '/etc/audisp/plugins.d/au-remote.conf' cannot be found. This test cannot be checked in a automated fashion and you must check it manually",
-              "runTime": 1.5853e-05,
+              "runTime": 0.000015853,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -19768,7 +20007,8 @@
             }
           ],
           "effectiveStatus": "notReviewed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-81017",
@@ -19822,7 +20062,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "File '/etc/audisp/plugins.d/au-remote.conf' cannot be found. This test cannot be checked in a automated fashion and you must check it manually",
-              "runTime": 9.621e-06,
+              "runTime": 0.000009621,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -19831,7 +20071,8 @@
             }
           ],
           "effectiveStatus": "notReviewed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-81019",
@@ -19892,7 +20133,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-81021",
@@ -19953,7 +20195,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-92251",
@@ -20010,7 +20253,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-92253",
@@ -20067,7 +20311,8 @@
             }
           ],
           "effectiveStatus": "passed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "operational"
         },
         {
           "id": "V-92255",
@@ -20084,7 +20329,7 @@
               "label": "rationale"
             },
             {
-              "data": "Ask the SA or ISSO if a host-based intrusion detection application is\nloaded on the system. Per OPORD 16-0080, the preferred intrusion detection\nsystem is McAfee HBSS available through the U.S. Cyber Command (USCYBERCOM).\n\n    If another host-based intrusion detection application is in use, such as\nSELinux, this must be documented and approved by the local Authorizing Official.\n\n    Procedure:\n    Examine the system to determine if the Host Intrusion Prevention System\n(HIPS) is installed:\n\n    # rpm -qa | grep MFEhiplsm\n\n    Verify that the McAfee HIPS module is active on the system:\n\n    # ps -ef | grep -i \u201chipclient\u201d\n\n    If the MFEhiplsm package is not installed, check for another intrusion\ndetection system:\n\n    # find / -name <daemon name>\n\n    Where <daemon name> is the name of the primary application daemon to\ndetermine if the application is loaded on the system.\n\n    Determine if the application is active on the system:\n\n    # ps -ef | grep -i <daemon name>\n\n    If the MFEhiplsm package is not installed and an alternate host-based\nintrusion detection application has not been documented for use, this is a\nfinding.\n\n    If no host-based intrusion detection system is installed and running on the\nsystem, this is a finding.",
+              "data": "Ask the SA or ISSO if a host-based intrusion detection application is\nloaded on the system. Per OPORD 16-0080, the preferred intrusion detection\nsystem is McAfee HBSS available through the U.S. Cyber Command (USCYBERCOM).\n\n    If another host-based intrusion detection application is in use, such as\nSELinux, this must be documented and approved by the local Authorizing Official.\n\n    Procedure:\n    Examine the system to determine if the Host Intrusion Prevention System\n(HIPS) is installed:\n\n    # rpm -qa | grep MFEhiplsm\n\n    Verify that the McAfee HIPS module is active on the system:\n\n    # ps -ef | grep -i “hipclient”\n\n    If the MFEhiplsm package is not installed, check for another intrusion\ndetection system:\n\n    # find / -name <daemon name>\n\n    Where <daemon name> is the name of the primary application daemon to\ndetermine if the application is loaded on the system.\n\n    Determine if the application is active on the system:\n\n    # ps -ef | grep -i <daemon name>\n\n    If the MFEhiplsm package is not installed and an alternate host-based\nintrusion detection application has not been documented for use, this is a\nfinding.\n\n    If no host-based intrusion detection system is installed and running on the\nsystem, this is a finding.",
               "label": "check"
             },
             {
@@ -20107,7 +20352,7 @@
               "SI-4 (5)"
             ]
           },
-          "code": "control \"V-92255\" do\n  title \"The Red Hat Enterprise Linux operating system must have a host-based\nintrusion detection tool installed.\"\n  desc  \"Adding host-based intrusion detection tools can provide the capability\nto automatically take actions in response to malicious behavior, which can\nprovide additional agility in reacting to network threats. These tools also\noften include a reporting capability to provide network awareness of the\nsystem, which may not otherwise exist in an organization's systems management\nregime.\"\n  desc  \"rationale\", \"\"\n  desc  \"check\", \"\n    Ask the SA or ISSO if a host-based intrusion detection application is\nloaded on the system. Per OPORD 16-0080, the preferred intrusion detection\nsystem is McAfee HBSS available through the U.S. Cyber Command (USCYBERCOM).\n\n    If another host-based intrusion detection application is in use, such as\nSELinux, this must be documented and approved by the local Authorizing Official.\n\n    Procedure:\n    Examine the system to determine if the Host Intrusion Prevention System\n(HIPS) is installed:\n\n    # rpm -qa | grep MFEhiplsm\n\n    Verify that the McAfee HIPS module is active on the system:\n\n    # ps -ef | grep -i \u201chipclient\u201d\n\n    If the MFEhiplsm package is not installed, check for another intrusion\ndetection system:\n\n    # find / -name <daemon name>\n\n    Where <daemon name> is the name of the primary application daemon to\ndetermine if the application is loaded on the system.\n\n    Determine if the application is active on the system:\n\n    # ps -ef | grep -i <daemon name>\n\n    If the MFEhiplsm package is not installed and an alternate host-based\nintrusion detection application has not been documented for use, this is a\nfinding.\n\n    If no host-based intrusion detection system is installed and running on the\nsystem, this is a finding.\n  \"\n  desc  \"fix\", \"\n    Install and enable the latest McAfee HIPS package, available from\nUSCYBERCOM.\n\n    Note: If the system does not support the McAfee HIPS package, install and\nenable a supported intrusion detection system application and document its use\nwith the Authorizing Official.\n  \"\n  impact 0.5\n  tag severity: nil\n  tag gtitle: \"SRG-OS-000196\"\n  tag gid: \"V-92255\"\n  tag rid: \"SV-102357r1_rule\"\n  tag stig_id: \"RHEL-07-020019\"\n  tag fix_id: \"F-98477r1_fix\"\n  tag cci: [\"CCI-001263\"]\n  tag nist: [\"SI-4 (5)\"]\n\n  custom_hips = input('custom_hips')\n\n  if ! custom_hips\n    describe package('MFEhiplsm') do\n      it { should be_installed }\n    end\n    describe processes(/hipclient/) do\n      it { should exist }\n    end\n  else\n    # Special case for SELinux\n    sel_mode = command('getenforce').stdout.strip\n    custom_hips_daemon = input('custom_hips_daemon')\n    max_daemon_processes = input('max_daemon_processes')\n\n    describe.one do\n      describe \"SELinux mode\" do\n        subject { sel_mode }\n        it { should cmp 'Enforcing' }\n      end\n      describe processes(/#{custom_hips_daemon}/) do\n        it { should exist }\n        its('count') { should be < max_daemon_processes }\n      end\n    end\n  end\nend\n",
+          "code": "control \"V-92255\" do\n  title \"The Red Hat Enterprise Linux operating system must have a host-based\nintrusion detection tool installed.\"\n  desc  \"Adding host-based intrusion detection tools can provide the capability\nto automatically take actions in response to malicious behavior, which can\nprovide additional agility in reacting to network threats. These tools also\noften include a reporting capability to provide network awareness of the\nsystem, which may not otherwise exist in an organization's systems management\nregime.\"\n  desc  \"rationale\", \"\"\n  desc  \"check\", \"\n    Ask the SA or ISSO if a host-based intrusion detection application is\nloaded on the system. Per OPORD 16-0080, the preferred intrusion detection\nsystem is McAfee HBSS available through the U.S. Cyber Command (USCYBERCOM).\n\n    If another host-based intrusion detection application is in use, such as\nSELinux, this must be documented and approved by the local Authorizing Official.\n\n    Procedure:\n    Examine the system to determine if the Host Intrusion Prevention System\n(HIPS) is installed:\n\n    # rpm -qa | grep MFEhiplsm\n\n    Verify that the McAfee HIPS module is active on the system:\n\n    # ps -ef | grep -i “hipclient”\n\n    If the MFEhiplsm package is not installed, check for another intrusion\ndetection system:\n\n    # find / -name <daemon name>\n\n    Where <daemon name> is the name of the primary application daemon to\ndetermine if the application is loaded on the system.\n\n    Determine if the application is active on the system:\n\n    # ps -ef | grep -i <daemon name>\n\n    If the MFEhiplsm package is not installed and an alternate host-based\nintrusion detection application has not been documented for use, this is a\nfinding.\n\n    If no host-based intrusion detection system is installed and running on the\nsystem, this is a finding.\n  \"\n  desc  \"fix\", \"\n    Install and enable the latest McAfee HIPS package, available from\nUSCYBERCOM.\n\n    Note: If the system does not support the McAfee HIPS package, install and\nenable a supported intrusion detection system application and document its use\nwith the Authorizing Official.\n  \"\n  impact 0.5\n  tag severity: nil\n  tag gtitle: \"SRG-OS-000196\"\n  tag gid: \"V-92255\"\n  tag rid: \"SV-102357r1_rule\"\n  tag stig_id: \"RHEL-07-020019\"\n  tag fix_id: \"F-98477r1_fix\"\n  tag cci: [\"CCI-001263\"]\n  tag nist: [\"SI-4 (5)\"]\n\n  custom_hips = input('custom_hips')\n\n  if ! custom_hips\n    describe package('MFEhiplsm') do\n      it { should be_installed }\n    end\n    describe processes(/hipclient/) do\n      it { should exist }\n    end\n  else\n    # Special case for SELinux\n    sel_mode = command('getenforce').stdout.strip\n    custom_hips_daemon = input('custom_hips_daemon')\n    max_daemon_processes = input('max_daemon_processes')\n\n    describe.one do\n      describe \"SELinux mode\" do\n        subject { sel_mode }\n        it { should cmp 'Enforcing' }\n      end\n      describe processes(/#{custom_hips_daemon}/) do\n        it { should exist }\n        its('count') { should be < max_daemon_processes }\n      end\n    end\n  end\nend\n",
           "sourceLocation": {
             "line": 2,
             "ref": "redhat-enterprise-linux-7-stig-baseline-master/controls/V-92255.rb"
@@ -20134,7 +20379,8 @@
             }
           ],
           "effectiveStatus": "failed",
-          "severity": "medium"
+          "severity": "medium",
+          "controlType": "technical"
         },
         {
           "id": "V-94843",
@@ -20184,7 +20430,7 @@
             {
               "status": "notReviewed",
               "codeDesc": "The system does not have GNOME installed",
-              "runTime": 1.088e-05,
+              "runTime": 0.00001088,
               "startTime": "2022-03-06T22:06:10+00:00",
               "resourceClass": "Object",
               "resourceParams": "[]",
@@ -20193,7 +20439,8 @@
             }
           ],
           "effectiveStatus": "notApplicable",
-          "severity": "none"
+          "severity": "none",
+          "controlType": "operational"
         }
       ]
     }

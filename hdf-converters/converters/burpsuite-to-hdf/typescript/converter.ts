@@ -4,6 +4,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {
+  deriveControlTypeFromTags,
   inputChecksum,
   buildNistCciTags,
   limitArray,
@@ -24,6 +25,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
 } from '@mitre/hdf-schema';
 
@@ -264,12 +266,20 @@ function buildRequirement(
 
   const impact = getImpact(rep.severity ?? 'information');
 
-  return {
+  const req: EvaluatedRequirement = {
     id: issueType,
     title: rep.name ?? undefined,
     impact,
     tags,
     descriptions,
     results,
+    verificationMethod: VerificationMethodEnum.Automated,
   };
+
+  const controlType = deriveControlTypeFromTags(nist);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+
+  return req;
 }

@@ -229,12 +229,13 @@ func buildRequirement(assessmentID string, assessments []assessment) hdf.Evaluat
 
 	title := rep.Properties.DisplayName
 	return hdf.EvaluatedRequirement{
-		ID:           assessmentID,
-		Title:        &title,
-		Impact:       impact,
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 assessmentID,
+		Title:              &title,
+		Impact:             impact,
+		Tags:               tags,
+		Descriptions:       descriptions,
+		Results:            results,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

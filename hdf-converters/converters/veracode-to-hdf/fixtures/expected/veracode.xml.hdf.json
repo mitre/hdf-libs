@@ -40,7 +40,9 @@
               "SI-10"
             ]
           },
-          "title": "Command or Argument Injection"
+          "controlType": "technical",
+          "title": "Command or Argument Injection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -140,7 +142,9 @@
               "SI-10"
             ]
           },
-          "title": "SQL Injection"
+          "controlType": "technical",
+          "title": "SQL Injection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -370,7 +374,9 @@
               "SI-10"
             ]
           },
-          "title": "CRLF Injection"
+          "controlType": "technical",
+          "title": "CRLF Injection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -412,7 +418,8 @@
               "RA-5"
             ]
           },
-          "title": "Credentials Management"
+          "title": "Credentials Management",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -624,7 +631,8 @@
               "RA-5"
             ]
           },
-          "title": "Cross-Site Scripting (XSS)"
+          "title": "Cross-Site Scripting (XSS)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -699,7 +707,9 @@
               "SC-13"
             ]
           },
-          "title": "Cryptographic Issues"
+          "controlType": "technical",
+          "title": "Cryptographic Issues",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -754,7 +764,9 @@
               "SI-10"
             ]
           },
-          "title": "Directory Traversal"
+          "controlType": "technical",
+          "title": "Directory Traversal",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -789,7 +801,9 @@
               "SI-10"
             ]
           },
-          "title": "Encapsulation"
+          "controlType": "technical",
+          "title": "Encapsulation",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -834,7 +848,9 @@
               "SI-10"
             ]
           },
-          "title": "Insufficient Input Validation"
+          "controlType": "technical",
+          "title": "Insufficient Input Validation",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -951,7 +967,8 @@
               "RA-5"
             ]
           },
-          "title": "API Abuse"
+          "title": "API Abuse",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -986,7 +1003,9 @@
               "SC-8"
             ]
           },
-          "title": "Cryptographic Issues"
+          "controlType": "technical",
+          "title": "Cryptographic Issues",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1238,7 +1257,8 @@
               "RA-5"
             ]
           },
-          "title": "Information Leakage"
+          "title": "Information Leakage",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1360,7 +1380,8 @@
               "RA-5"
             ]
           },
-          "title": "Code Quality"
+          "title": "Code Quality",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1402,7 +1423,8 @@
               "RA-5"
             ]
           },
-          "title": "Untrusted Initialization"
+          "title": "Untrusted Initialization",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1432,7 +1454,9 @@
               "SI-10"
             ]
           },
-          "title": "CVE-2012-5783"
+          "controlType": "technical",
+          "title": "CVE-2012-5783",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1462,7 +1486,9 @@
               "SI-10"
             ]
           },
-          "title": "CVE-2012-6153"
+          "controlType": "technical",
+          "title": "CVE-2012-6153",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1493,7 +1519,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2014-3577"
+          "title": "CVE-2014-3577",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1525,7 +1552,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2015-5262"
+          "title": "CVE-2015-5262",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1555,7 +1583,9 @@
               "SI-10"
             ]
           },
-          "title": "CVE-2019-2692"
+          "controlType": "technical",
+          "title": "CVE-2019-2692",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1586,7 +1616,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2020-2933"
+          "title": "CVE-2020-2933",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1622,7 +1653,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2020-13935"
+          "title": "CVE-2020-13935",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1652,7 +1684,9 @@
               "SC-13"
             ]
           },
-          "title": "CVE-2013-2172"
+          "controlType": "technical",
+          "title": "CVE-2013-2172",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1684,7 +1718,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2013-4517"
+          "title": "CVE-2013-4517",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1715,7 +1750,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-40690"
+          "title": "CVE-2021-40690",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1746,7 +1782,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-22096"
+          "title": "CVE-2021-22096",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1782,7 +1819,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-42550"
+          "title": "CVE-2021-42550",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1813,7 +1851,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2020-15250"
+          "title": "CVE-2020-15250",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1844,7 +1883,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2015-0254"
+          "title": "CVE-2015-0254",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1875,7 +1915,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2019-17571"
+          "title": "CVE-2019-17571",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1906,7 +1947,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-4104"
+          "title": "CVE-2021-4104",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1936,7 +1978,9 @@
               "SI-10"
             ]
           },
-          "title": "CVE-2015-2944"
+          "controlType": "technical",
+          "title": "CVE-2015-2944",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1966,7 +2010,9 @@
               "SI-10"
             ]
           },
-          "title": "CVE-2015-4852"
+          "controlType": "technical",
+          "title": "CVE-2015-4852",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1996,7 +2042,9 @@
               "SI-10"
             ]
           },
-          "title": "CVE-2015-6420"
+          "controlType": "technical",
+          "title": "CVE-2015-6420",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2027,7 +2075,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2015-0886"
+          "title": "CVE-2015-0886",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2057,7 +2106,9 @@
               "SC-8"
             ]
           },
-          "title": "CVE-2017-2582"
+          "controlType": "technical",
+          "title": "CVE-2017-2582",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2087,7 +2138,9 @@
               "SI-10"
             ]
           },
-          "title": "CVE-2017-2646"
+          "controlType": "technical",
+          "title": "CVE-2017-2646",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2118,7 +2171,8 @@
               "RA-5"
             ]
           },
-          "title": "SRCCLR-SID-2367"
+          "title": "SRCCLR-SID-2367",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2149,7 +2203,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2020-13934"
+          "title": "CVE-2020-13934",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2180,7 +2235,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2020-13943"
+          "title": "CVE-2020-13943",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2211,7 +2267,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2020-17527"
+          "title": "CVE-2020-17527",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2242,7 +2299,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-24122"
+          "title": "CVE-2021-24122",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2273,7 +2331,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-25122"
+          "title": "CVE-2021-25122",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2304,7 +2363,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-25329"
+          "title": "CVE-2021-25329",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2335,7 +2395,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-30640"
+          "title": "CVE-2021-30640",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2366,7 +2427,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-33037"
+          "title": "CVE-2021-33037",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2397,7 +2459,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-29425"
+          "title": "CVE-2021-29425",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2428,7 +2491,8 @@
               "RA-5"
             ]
           },
-          "title": "SRCCLR-SID-5295"
+          "title": "SRCCLR-SID-5295",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2458,7 +2522,9 @@
               "AC-3"
             ]
           },
-          "title": "CVE-2016-1000031"
+          "controlType": "technical",
+          "title": "CVE-2016-1000031",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2488,7 +2554,9 @@
               "SI-10"
             ]
           },
-          "title": "CVE-2018-1002200"
+          "controlType": "technical",
+          "title": "CVE-2018-1002200",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2519,7 +2587,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-42340"
+          "title": "CVE-2021-42340",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2550,7 +2619,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2020-5421"
+          "title": "CVE-2020-5421",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2581,7 +2651,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-22118"
+          "title": "CVE-2021-22118",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2611,7 +2682,9 @@
               "SI-10"
             ]
           },
-          "title": "CVE-2017-1000487"
+          "controlType": "technical",
+          "title": "CVE-2017-1000487",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {

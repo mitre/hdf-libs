@@ -185,12 +185,14 @@ func buildRequirement(entryID string, entries []XrayEntry) hdf.EvaluatedRequirem
 
 	title := rep.Summary
 	return hdf.EvaluatedRequirement{
-		ID:           entryID,
-		Title:        &title,
-		Impact:       getImpact(rep.Severity),
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 entryID,
+		Title:              &title,
+		Impact:             getImpact(rep.Severity),
+		Tags:               tags,
+		Descriptions:       descriptions,
+		Results:            results,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

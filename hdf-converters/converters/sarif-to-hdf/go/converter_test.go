@@ -1304,6 +1304,33 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
+func TestConvertSarifToHDF_ControlType(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("gosec.sarif"))
+	require.NoError(t, err, "Failed to read gosec.sarif fixture")
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	// At least one requirement should have a derived controlType once NIST
+	// tags are present via CWE→NIST mapping (gosec rules carry CWE relationships).
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			// Sanity check: must be one of the known classification values.
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	assert.True(t, sawDerivation, "at least one gosec requirement should have a derived controlType")
+}
+
 func TestConvertSarifToHDF_GosecFixture(t *testing.T) {
 	inputData, err := os.ReadFile(fixturePath("gosec.sarif"))
 	require.NoError(t, err, "Failed to read gosec.sarif fixture")
@@ -1454,5 +1481,22 @@ func TestIsSarif20(t *testing.T) {
 			doc := []byte(`{"version":"` + tt.docVer + `"}`)
 			assert.Equal(t, tt.expected, isSarif20(doc, tt.version))
 		})
+	}
+}
+
+func TestConvertSarifToHDF_VerificationMethod(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("sarif_input.sarif"))
+	require.NoError(t, err)
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	for _, req := range reqs {
+		require.NotNil(t, req.VerificationMethod, "requirement %q missing verificationMethod", req.ID)
+		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+			"requirement %q expected verificationMethod=automated", req.ID)
 	}
 }

@@ -542,8 +542,10 @@ func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequ
 		Severity:     severityPtr,
 		Descriptions: descriptions,
 		Tags:         tags,
+		ControlType:  shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
 	}
 }
+
 
 // buildBaselineDescriptions creates HDF Description entries for a baseline requirement.
 func buildBaselineDescriptions(rule *Rule) []hdf.Description {
@@ -902,6 +904,7 @@ func convertRuleResult(rr *RuleResult, rule *Rule) hdf.EvaluatedRequirement {
 		Impact:       impact,
 		Tags:         tags,
 		Results:      results,
+		ControlType:  shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
 	}
 }
 

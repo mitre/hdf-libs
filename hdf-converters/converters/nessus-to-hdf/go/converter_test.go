@@ -110,6 +110,35 @@ func TestConvertNessusToHDF_Compliance(t *testing.T) {
 	shared.WriteOutput(t, "nessus-to-hdf", "compliance.json", result)
 }
 
+func TestConvertNessusToHDF_ClassificationFields(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "compliance.nessus")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	// Nessus always serializes the item as code -> verificationMethod=automated
+	// applies to every requirement. controlType is derived where NIST tags
+	// resolve to a known family.
+	var sawControlType, sawVerification bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawControlType = true
+		}
+		if req.VerificationMethod != nil {
+			assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+				"every nessus requirement has non-empty code => automated")
+			sawVerification = true
+		}
+	}
+	assert.True(t, sawControlType, "at least one requirement should derive controlType")
+	assert.True(t, sawVerification, "every requirement should have verificationMethod=automated")
+}
+
 func TestConverterContract(t *testing.T) {
 	shared.RunConverterContractTests(t, shared.ConverterContractSpec{
 		ConverterName:  "nessus-to-hdf",

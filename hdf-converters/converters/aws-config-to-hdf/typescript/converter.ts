@@ -3,7 +3,7 @@ import {
   getAwsConfigNistControlByIdentifier,
   getAwsConfigNistControlByName,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import {
   Copyright,
   type EvaluatedBaseline,
@@ -14,6 +14,7 @@ import {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -141,7 +142,7 @@ function buildRequirement(rule: ConfigRule): EvaluatedRequirement {
   const title = `${getAccountId(rule.ConfigRuleArn)} - ${rule.ConfigRuleName}`;
   const results = rule.EvaluationResults.map(buildResult);
 
-  return createRequirement(
+  const req = createRequirement(
     rule.ConfigRuleId,
     title,
     descriptions,
@@ -151,7 +152,15 @@ function buildRequirement(rule: ConfigRule): EvaluatedRequirement {
       tags,
       sourceLocation: { ref: rule.ConfigRuleArn, line: 1 },
     }
-  );
+  ) as EvaluatedRequirement;
+
+  const controlType = deriveControlTypeFromTags(nist);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+
+  return req;
 }
 
 /**
