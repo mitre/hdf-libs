@@ -898,10 +898,15 @@ func copyDir(src, dst string) error {
 		if info.IsDir() {
 			return os.MkdirAll(target, info.Mode())
 		}
-		data, err := os.ReadFile(path) //nolint:gosec // path is within user-supplied src dir
+		// #nosec G122 -- copyDir walks a profile directory the user supplied
+		// and owns; there is no TOCTOU threat model for this local CLI copy.
+		data, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
-		return os.WriteFile(target, data, info.Mode()) //nolint:gosec // target is derived from user-supplied dst dir
+		// #nosec G703 -- target is filepath.Join(dst, rel) where rel comes from
+		// filepath.Rel(src, path) and path is always a descendant of src
+		// (filepath.Walk invariant), so rel never contains "..".
+		return os.WriteFile(target, data, info.Mode())
 	})
 }
