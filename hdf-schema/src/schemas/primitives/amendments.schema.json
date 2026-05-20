@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.1.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.2.0",
   "title": "HDF Amendment Primitives",
   "description": "Types for waivers, attestations, and POA&Ms that modify requirement compliance status.",
   "$defs": {
@@ -62,7 +62,7 @@
           "description": "Name of the baseline containing the requirement. Required when the system has multiple baselines with potentially overlapping requirement IDs."
         },
         "status": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.1.0#/$defs/Result_Status",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.2.0#/$defs/Result_Status",
           "description": "The new status this amendment sets. Optional when only impact is being overridden."
         },
         "impact": {
@@ -74,7 +74,7 @@
           "description": "Justification for this amendment."
         },
         "appliedBy": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Identity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Identity",
           "description": "Identity of who applied this amendment."
         },
         "appliedAt": {
@@ -90,22 +90,22 @@
         "evidence": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Evidence"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Evidence"
           },
           "description": "Supporting evidence (screenshots, logs, URLs, documents)."
         },
         "signature": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Signature",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Signature",
           "description": "Digital signature for non-repudiation."
         },
         "previousChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Checksum",
           "description": "Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null for the first amendment."
         },
         "milestones": {
           "type": "array",
           "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.1.0#/$defs/Milestone"
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Milestone"
           },
           "description": "Remediation milestones (primarily for POA&M type amendments)."
         },

@@ -261,11 +261,13 @@ func buildRequirement(issueType string, issues []BurpIssue, exportTime string) h
 	impact := getImpact(rep.Severity)
 
 	return hdf.EvaluatedRequirement{
-		ID:           issueType,
-		Title:        &rep.Name,
-		Impact:       impact,
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 issueType,
+		Title:              &rep.Name,
+		Impact:             impact,
+		Tags:               tags,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		Descriptions:       descriptions,
+		Results:            results,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }

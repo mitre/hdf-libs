@@ -244,9 +244,10 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 			Descriptions: []hdf.Description{
 				{Label: "default", Data: desc},
 			},
-			Impact: 0.0,
-			Tags:   tags,
-			Code:   hdfutil.Ptr(code),
+			Impact:      0.0,
+			Tags:        tags,
+			ControlType: shared.DeriveControlTypeFromTags(shared.DefaultComponentManagementNIST),
+			Code:        hdfutil.Ptr(code),
 			Results: []hdf.RequirementResult{
 				{
 					Status:    hdf.NotReviewed,
@@ -254,6 +255,7 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 					StartTime: time.Time{},
 				},
 			},
+			VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 		}
 	}
 

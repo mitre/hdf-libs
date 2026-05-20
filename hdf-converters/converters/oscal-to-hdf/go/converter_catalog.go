@@ -99,13 +99,26 @@ func controlToBaselineRequirement(ctrl *Control) hdf.BaselineRequirement {
 	// Determine severity/impact from props
 	impact := catalogControlImpact(ctrl)
 
-	return hdf.BaselineRequirement{
+	req := hdf.BaselineRequirement{
 		ID:           nistTag,
 		Title:        hdfutil.Ptr(ctrl.Title),
 		Impact:       impact,
 		Descriptions: descriptions,
 		Tags:         tags,
+		ControlType:  shared.DeriveControlTypeFromTags([]string{nistTag}),
 	}
+
+	// FedRAMP rev5 marks mandatory controls in a baseline with prop[name=CORE,value=true].
+	// Catalogs typically don't carry CORE props, but resolved profiles (distributed by
+	// FedRAMP as catalogs) do. When present, map CORE=true to applicability=required.
+	// Absence is intentionally left undefined; consumers may interpret omitted as required
+	// by convention. We do NOT map non-CORE to "optional" because catalog-only inputs
+	// omit the prop entirely on all controls, which would be misleading.
+	if val, ok := ExtractPropValue(ctrl.Props, "CORE", ""); ok && val == "true" {
+		req.Applicability = hdfutil.Ptr(hdf.Required)
+	}
+
+	return req
 }
 
 // buildCatalogDescriptions creates HDF Description entries from control parts.

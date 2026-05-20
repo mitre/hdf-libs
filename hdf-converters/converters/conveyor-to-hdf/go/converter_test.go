@@ -54,6 +54,28 @@ func TestConverterContract(t *testing.T) {
 	})
 }
 
+func TestConvertConveyor_ControlType(t *testing.T) {
+	input := loadFixture(t, "input/sample-results.json")
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, result.Baselines)
+	var sawDerivation bool
+	for _, baseline := range result.Baselines {
+		for _, req := range baseline.Requirements {
+			if req.ControlType != nil {
+				sawDerivation = true
+				switch *req.ControlType {
+				case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+				default:
+					t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+				}
+			}
+		}
+	}
+	assert.False(t, sawDerivation, "converter uses static-fallback NIST only; controlType must be omitted per helper gate")
+}
+
 func TestConvertConveyor_MissingApiResponse(t *testing.T) {
 	_, err := ConvertConveyorToHDF([]byte(`{"api_error_message": ""}`), testVersion)
 	assert.Error(t, err)
@@ -333,4 +355,19 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "conveyor-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertConveyorToHDF(input, "0.1.0")
 	})
+}
+
+func TestConvertConveyor_VerificationMethod(t *testing.T) {
+	input := loadFixture(t, "input/sample-results.json")
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+
+	for _, baseline := range result.Baselines {
+		for _, req := range baseline.Requirements {
+			require.NotNil(t, req.VerificationMethod, "every requirement must have verificationMethod set")
+			assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+				"requirement %q should be marked automated", req.ID)
+		}
+	}
 }

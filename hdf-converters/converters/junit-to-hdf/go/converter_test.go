@@ -461,3 +461,37 @@ func TestSnapshots(t *testing.T) {
 		return ConvertJUnitToHDF(input, "0.1.0")
 	})
 }
+
+func TestConvertJUnitToHDF_ControlType(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-failing.xml"), converterVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	assert.True(t, sawDerivation, "at least one requirement should derive controlType")
+}
+
+func TestConvertJUnitToHDF_VerificationMethod(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-failing.xml"), converterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+	for _, req := range reqs {
+		require.NotNil(t, req.VerificationMethod, "requirement %q missing verificationMethod", req.ID)
+		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+			"requirement %q: JUnit reports come from automated CI test runs", req.ID)
+	}
+}

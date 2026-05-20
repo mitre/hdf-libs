@@ -31,7 +31,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-44228"
+          "title": "CVE-2021-44228",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -62,7 +63,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-44832"
+          "title": "CVE-2021-44832",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -93,7 +95,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-45046"
+          "title": "CVE-2021-45046",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -124,7 +127,8 @@
               "RA-5"
             ]
           },
-          "title": "CVE-2021-45105"
+          "title": "CVE-2021-45105",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -149,7 +153,7 @@
     "name": "twistlock-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:18:04.3139711Z",
+  "timestamp": "2026-05-15T03:18:23.463067373Z",
   "tool": {
     "format": "JSON",
     "name": "Twistlock"

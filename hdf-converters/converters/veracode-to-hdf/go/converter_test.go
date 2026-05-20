@@ -238,8 +238,45 @@ func TestConvertVeracodeToHDF_EntityExpansion(t *testing.T) {
 	assert.Contains(t, err.Error(), "entity declarations")
 }
 
+func TestConvertVeracodeToHDF_ControlType(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	assert.True(t, sawDerivation, "at least one requirement should derive controlType")
+}
+
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "veracode-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertVeracodeToHDF(input, "0.1.0")
 	})
+}
+
+func TestConvertVeracodeToHDF_VerificationMethod(t *testing.T) {
+	input := loadFixture(t, "veracode.xml")
+	result, err := ConvertVeracodeToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	for _, req := range reqs {
+		require.NotNil(t, req.VerificationMethod, "requirement %q missing verificationMethod", req.ID)
+		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+			"requirement %q expected verificationMethod=automated", req.ID)
+	}
 }

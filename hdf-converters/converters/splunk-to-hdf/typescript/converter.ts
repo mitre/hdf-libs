@@ -1,5 +1,5 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -12,6 +12,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createDescription,
@@ -242,14 +243,26 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
             options.sourceLocation = control.source_location;
           }
 
-          return createRequirement(
+          const req = createRequirement(
             control.id,
             control.title,
             descriptions,
             control.impact,
             results,
             options,
-          );
+          ) as EvaluatedRequirement;
+
+          const nistTagsRaw = (control.tags as Record<string, unknown> | undefined)?.['nist'];
+          const nistTags = Array.isArray(nistTagsRaw)
+            ? nistTagsRaw.filter((t): t is string => typeof t === 'string')
+            : [];
+          const controlType = deriveControlTypeFromTags(nistTags);
+          if (controlType !== undefined) {
+            req.controlType = controlType;
+          }
+          req.verificationMethod = VerificationMethodEnum.Automated;
+
+          return req;
         },
       );
 

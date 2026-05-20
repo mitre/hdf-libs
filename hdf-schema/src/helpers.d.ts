@@ -68,9 +68,13 @@ export function createSupportedPlatform(
 
 export function createSourceLocation(ref: string, line: number): SourceLocation;
 
+export function severityToImpact(severity: null): null;
 export function severityToImpact(severity: string): number;
+export function severityToImpact(severity: string | null): number | null;
 
+export function impactToSeverity(impact: null): null;
 export function impactToSeverity(impact: number): string;
+export function impactToSeverity(impact: number | null): string | null;
 
 export function computeEffectiveStatus(
   requirement: EvaluatedRequirement

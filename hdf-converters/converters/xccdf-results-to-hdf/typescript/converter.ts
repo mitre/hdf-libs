@@ -1,5 +1,5 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
-import { inputChecksum, inputIntegrity, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   HdfBaseline,
@@ -495,14 +495,13 @@ function ruleToBaselineRequirement(
   }
 
   const tags: Record<string, unknown> = {};
+  let nistTags: string[] = [];
   const cciIds = extractCCIs(rule.ident ?? []);
   if (cciIds.length > 0) {
     tags['cci'] = cciIds;
-    const nistTags = cciIds.flatMap(
-      (cci) => getCCINistMappings(cci) ?? []
-    );
+    nistTags = [...new Set(cciIds.flatMap((cci) => getCCINistMappings(cci) ?? []))];
     if (nistTags.length > 0) {
-      tags['nist'] = [...new Set(nistTags)];
+      tags['nist'] = nistTags;
     }
   }
 
@@ -534,6 +533,11 @@ function ruleToBaselineRequirement(
 
   if (severity) {
     req.severity = severity.toLowerCase() as Severity;
+  }
+
+  const controlType = deriveControlTypeFromTags(nistTags);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
   }
 
   return req;
@@ -788,18 +792,17 @@ function ruleResultToRequirement(
   }) as RequirementResult;
 
   const tags: Record<string, unknown> = {};
+  let nistTags: string[] = [];
   const cciIds = extractCCIs(rr.ident ?? ruleDef?.ident ?? []);
   if (cciIds.length > 0) {
     tags['cci'] = cciIds;
-    const nistTags = cciIds.flatMap(
-      (cci) => getCCINistMappings(cci) ?? []
-    );
+    nistTags = [...new Set(cciIds.flatMap((cci) => getCCINistMappings(cci) ?? []))];
     if (nistTags.length > 0) {
-      tags['nist'] = [...new Set(nistTags)];
+      tags['nist'] = nistTags;
     }
   }
 
-  return createRequirement(
+  const req = createRequirement(
     id,
     title,
     descriptions,
@@ -807,6 +810,13 @@ function ruleResultToRequirement(
     [result],
     { tags }
   ) as EvaluatedRequirement;
+
+  const controlType = deriveControlTypeFromTags(nistTags);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+
+  return req;
 }
 
 /**

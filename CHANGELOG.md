@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.0] - 2026-05-11
+
+### New Features
+
+- **Control classification fields on `Requirement_Core`** — three optional, additive enum fields make catalogs self-describing about how a requirement should be categorized, verified, and applied. All three are optional; v3.1.x documents validate cleanly under v3.2.0 and consumers continue to work unchanged.
+  - **`controlType`**: `policy | procedure | technical | management | operational`. Aligns with NIST SP 800-53 / SP 800-53A categories. Lets cross-framework translation (NIST → CIS → CMMC) preserve fidelity instead of forcing heuristic derivation from family conventions.
+  - **`verificationMethod`**: `automated | manual-by-design | manual-pending-automation | hybrid`. Disambiguates the two distinct cases that null `code` overloads today — inherently manual (e.g. FedRAMP 20x KSIs) versus automation-could-exist-but-doesn't-yet (e.g. a STIG rule lacking a fix). Enables automation-coverage metrics across frameworks from HDF alone.
+  - **`applicability`**: `required | optional | advisory`. Distinct from severity (risk weight) and status (lifecycle state). Provides a uniform expression for the within-baseline applicability that frameworks already carry in incompatible forms (FedRAMP rev5 OSCAL `CORE` prop, FedRAMP 20x inline `Optional:` markers, CIS Implementation Group memberships, CMMC sublevels).
+- **`Requirement_Core` examples expanded** with four scenarios covering: v3.1.x-style (classification fields omitted), all-three-fields populated, manual-by-design KSI-style, and manual-pending-automation STIG-style.
+- **`code` field description** updated to reference `verificationMethod` as the canonical way to disambiguate manual-by-design from manual-pending-automation.
+
+### Architecture Changes
+
+- Schema version bumped from v3.1.0 to v3.2.0 across all `$id`/`$ref` URLs.
+
+### Compatibility
+
+- Fully backward compatible. New fields are optional; existing v3.1.x documents validate without modification.
+- Surfacing the new fields in consumers is opt-in. Heimdall, hdf-converters, and hdf-validators continue to work unchanged.
+- Internal Go consumer note: the `hdf.Automated` constant on `PlanType` was renamed to `hdf.PlanTypeAutomated` by quicktype to disambiguate against the new `VerificationMethodEnum.Automated`. One internal caller (`hdf-converters/oscal-to-hdf/converter_sap.go`) was updated; external Go consumers using the un-prefixed name will see the same compile-time rename.
+
 ## [3.1.1] - 2026-04-23
 
 ### Go Module Changes

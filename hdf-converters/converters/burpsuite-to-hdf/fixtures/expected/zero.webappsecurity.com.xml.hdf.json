@@ -93,7 +93,8 @@
               "RA-5"
             ]
           },
-          "title": "Cross-origin resource sharing"
+          "title": "Cross-origin resource sharing",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -186,7 +187,8 @@
               "RA-5"
             ]
           },
-          "title": "Cross-origin resource sharing: arbitrary origin trusted"
+          "title": "Cross-origin resource sharing: arbitrary origin trusted",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -318,7 +320,9 @@
               "SI-10"
             ]
           },
-          "title": "Input returned in response (reflected)"
+          "controlType": "technical",
+          "title": "Input returned in response (reflected)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -361,7 +365,8 @@
               "RA-5"
             ]
           },
-          "title": "Backup file"
+          "title": "Backup file",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -399,7 +404,8 @@
               "RA-5"
             ]
           },
-          "title": "HTTP TRACE method is enabled"
+          "title": "HTTP TRACE method is enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -433,7 +439,9 @@
               "SC-13"
             ]
           },
-          "title": "TLS certificate"
+          "controlType": "technical",
+          "title": "TLS certificate",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -471,7 +479,8 @@
               "RA-5"
             ]
           },
-          "title": "HTML does not specify charset"
+          "title": "HTML does not specify charset",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -509,7 +518,8 @@
               "RA-5"
             ]
           },
-          "title": "Cacheable HTTPS response"
+          "title": "Cacheable HTTPS response",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -545,7 +555,9 @@
               "SC-8"
             ]
           },
-          "title": "Cross-domain Referer leakage"
+          "controlType": "technical",
+          "title": "Cross-domain Referer leakage",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -588,7 +600,8 @@
               "RA-5"
             ]
           },
-          "title": "Strict transport security not enforced"
+          "title": "Strict transport security not enforced",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -624,7 +637,9 @@
               "SC-8"
             ]
           },
-          "title": "Email addresses disclosed"
+          "controlType": "technical",
+          "title": "Email addresses disclosed",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -672,7 +687,9 @@
               "IA-5"
             ]
           },
-          "title": "Frameable response (potential Clickjacking)"
+          "controlType": "technical",
+          "title": "Frameable response (potential Clickjacking)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -706,7 +723,9 @@
               "SI-11"
             ]
           },
-          "title": "Credit card numbers disclosed"
+          "controlType": "technical",
+          "title": "Credit card numbers disclosed",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -742,12 +761,14 @@
               "SC-12"
             ]
           },
-          "title": "Unencrypted communications"
+          "controlType": "technical",
+          "title": "Unencrypted communications",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
         "algorithm": "sha256",
-        "value": "8f485fc95d8b17c73fd3445822beb052e848f45776e13bc603947f9e175aaae8"
+        "value": "1c33afc547099199b1cc86a0f12277692dd893d47237fb12deb8418c5e46aedc"
       },
       "name": "BurpSuite Scan",
       "title": "BurpSuite Scan: http://zero.webappsecurity.com"
@@ -763,7 +784,7 @@
     "name": "burpsuite-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2020-02-27T09:28:17-05:00",
+  "timestamp": "2020-02-27T09:28:17Z",
   "tool": {
     "format": "XML",
     "name": "BurpSuite",

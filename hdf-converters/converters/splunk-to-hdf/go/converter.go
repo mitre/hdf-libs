@@ -347,17 +347,43 @@ func convertControlToRequirement(ctrl SplunkControl) hdf.EvaluatedRequirement {
 	}
 
 	req := hdf.EvaluatedRequirement{
-		ID:             ctrl.ID,
-		Title:          hdfutil.Ptr(ctrl.Title),
-		Impact:         ctrl.Impact,
-		Code:           hdfutil.Ptr(ctrl.Code),
-		Tags:           ctrl.Tags,
-		Descriptions:   descriptions,
-		Results:        results,
-		SourceLocation: sourceLocation,
+		ID:                 ctrl.ID,
+		Title:              hdfutil.Ptr(ctrl.Title),
+		Impact:             ctrl.Impact,
+		Code:               hdfutil.Ptr(ctrl.Code),
+		Tags:               ctrl.Tags,
+		ControlType:        shared.DeriveControlTypeFromTags(nistTagsFromJSONMap(ctrl.Tags)),
+		Descriptions:       descriptions,
+		Results:            results,
+		SourceLocation:     sourceLocation,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 
 	return req
+}
+
+// nistTagsFromJSONMap extracts NIST tag strings from a tags map populated by
+// JSON unmarshalling. JSON-decoded arrays land in the map as []interface{}, so
+// shared.NISTTagsFromMap (which expects []string) does not match.
+func nistTagsFromJSONMap(tags map[string]interface{}) []string {
+	raw, ok := tags["nist"]
+	if !ok {
+		return nil
+	}
+	switch v := raw.(type) {
+	case []string:
+		return v
+	case []interface{}:
+		out := make([]string, 0, len(v))
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	default:
+		return nil
+	}
 }
 
 // convertSplunkResult maps a SplunkResult to an HDF RequirementResult.

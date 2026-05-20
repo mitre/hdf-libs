@@ -177,12 +177,14 @@ func testCaseToRequirement(tc junitTestCase, suiteTimestamp string) hdf.Evaluate
 	}
 
 	return hdf.EvaluatedRequirement{
-		ID:           id,
-		Title:        hdfutil.Ptr(tc.Name),
-		Descriptions: descriptions,
-		Impact:       0.5,
-		Tags:         tags,
-		Results:      []hdf.RequirementResult{result},
+		ID:                 id,
+		Title:              hdfutil.Ptr(tc.Name),
+		Descriptions:       descriptions,
+		Impact:             0.5,
+		Tags:               tags,
+		Results:            []hdf.RequirementResult{result},
+		ControlType:        shared.DeriveControlTypeFromTags(defaultNIST),
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

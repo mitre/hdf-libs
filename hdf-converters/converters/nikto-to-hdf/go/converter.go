@@ -9,6 +9,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nikto"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // Nikto JSON input structures
@@ -78,6 +79,8 @@ func convertVulnToRequirement(vuln NiktoVulnerability) hdf.EvaluatedRequirement 
 		Descriptions: []hdf.Description{
 			{Label: "default", Data: vuln.Msg},
 		},
+		ControlType:        shared.DeriveControlTypeFromTags(nistTags),
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

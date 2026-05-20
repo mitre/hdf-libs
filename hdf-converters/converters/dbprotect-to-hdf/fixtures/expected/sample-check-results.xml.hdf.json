@@ -33,7 +33,8 @@
               "RA-5"
             ]
           },
-          "title": "Schema ownership"
+          "title": "Schema ownership",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -61,7 +62,8 @@
               "RA-5"
             ]
           },
-          "title": "Symmetric encryption keys"
+          "title": "Symmetric encryption keys",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -89,7 +91,8 @@
               "RA-5"
             ]
           },
-          "title": "Browser Service enabled"
+          "title": "Browser Service enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -122,7 +125,8 @@
               "RA-5"
             ]
           },
-          "title": "Protection of DBMS asymmetric encryption keys"
+          "title": "Protection of DBMS asymmetric encryption keys",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -150,7 +154,8 @@
               "RA-5"
             ]
           },
-          "title": "Permission to configure Server Audit to audit at the server level"
+          "title": "Permission to configure Server Audit to audit at the server level",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -178,7 +183,8 @@
               "RA-5"
             ]
           },
-          "title": "SQL Server Usage and Error Reporting Auditing"
+          "title": "SQL Server Usage and Error Reporting Auditing",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -201,7 +207,7 @@
     "name": "dbprotect-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:51.7461608Z",
+  "timestamp": "2026-05-15T03:15:12.740874734Z",
   "tool": {
     "format": "XML",
     "name": "DBProtect"

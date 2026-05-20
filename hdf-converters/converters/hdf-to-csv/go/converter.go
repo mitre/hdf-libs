@@ -70,6 +70,9 @@ func buildCSVRows(hdfData *hdf.HDFResults) [][]string {
 		"Status",
 		"NIST Controls",
 		"CCI Controls",
+		"Control Type",
+		"Verification Method",
+		"Applicability",
 		"Result Message",
 	}
 	rows = append(rows, header)
@@ -148,6 +151,20 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 		reqTitle = *requirement.Title
 	}
 
+	// v3.2 classification fields — dereference pointers to strings
+	controlType := ""
+	if requirement.ControlType != nil {
+		controlType = string(*requirement.ControlType)
+	}
+	verificationMethod := ""
+	if requirement.VerificationMethod != nil {
+		verificationMethod = string(*requirement.VerificationMethod)
+	}
+	applicability := ""
+	if requirement.Applicability != nil {
+		applicability = string(*requirement.Applicability)
+	}
+
 	// Build row with sanitization
 	return []string{
 		sanitizeCSV(baseline.Name),
@@ -163,6 +180,9 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 		sanitizeCSV(status),
 		sanitizeCSV(nistControls),
 		sanitizeCSV(cciControls),
+		sanitizeCSV(controlType),
+		sanitizeCSV(verificationMethod),
+		sanitizeCSV(applicability),
 		sanitizeCSV(message),
 	}
 }

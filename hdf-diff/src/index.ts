@@ -44,8 +44,13 @@ export {
   createMappedIdStrategy,
   createCciMatchStrategy,
   createFuzzyTitleStrategy,
+  createSrgDeterministicStrategy,
+  createSrgCciTiebreakStrategy,
+  createVendorFuzzyTitleStrategy,
   tokenize,
   jaccardSimilarity,
+  levenshteinDistance,
+  normalizedLevenshtein,
 } from './matching/index.js';
 export type {
   MatchResult,

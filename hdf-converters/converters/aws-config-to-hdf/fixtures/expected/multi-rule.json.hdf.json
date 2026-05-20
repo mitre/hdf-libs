@@ -38,7 +38,9 @@
               "IA-2(1)(11)"
             ]
           },
-          "title": "123456789012 - root-account-mfa-enabled"
+          "controlType": "technical",
+          "title": "123456789012 - root-account-mfa-enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -78,7 +80,9 @@
               "SC-28"
             ]
           },
-          "title": "123456789012 - s3-bucket-server-side-encryption-enabled"
+          "controlType": "technical",
+          "title": "123456789012 - s3-bucket-server-side-encryption-enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -114,7 +118,9 @@
               "AU-12(a)(c)"
             ]
           },
-          "title": "123456789012 - cloudtrail-enabled"
+          "controlType": "technical",
+          "title": "123456789012 - cloudtrail-enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -142,7 +148,8 @@
           "id": "config-rule-jkl012",
           "impact": 0.5,
           "tags": {},
-          "title": "123456789012 - custom-org-rule"
+          "title": "123456789012 - custom-org-rule",
+          "verificationMethod": "automated"
         }
       ],
       "name": "AWS Config",
@@ -166,7 +173,7 @@
     "name": "aws-config-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:50.983582Z",
+  "timestamp": "2026-05-15T03:07:54.872765189Z",
   "tool": {
     "name": "AWS Config"
   }

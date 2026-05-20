@@ -40,8 +40,8 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint src converters shared",
     "lint:fix": "eslint src converters shared --fix",
-    "lint:go": "golangci-lint run ./...",
-    "lint:go:fix": "golangci-lint run --fix ./..."
+    "lint:go": "PATH=\"$PATH:$HOME/go/bin\" golangci-lint run ./...",
+    "lint:go:fix": "PATH=\"$PATH:$HOME/go/bin\" golangci-lint run --fix ./..."
   },
   "repository": {
     "type": "git",

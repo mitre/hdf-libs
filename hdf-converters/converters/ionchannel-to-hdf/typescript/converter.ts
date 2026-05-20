@@ -6,6 +6,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createDescription,
@@ -18,6 +19,7 @@ import {
 import {
   inputChecksum,
   buildNistCciTags,
+  deriveControlTypeFromTags,
   validateInputSize,
   buildHdfResults,
 } from '../../../shared/typescript/converterutil.js';
@@ -256,6 +258,11 @@ export async function convertIonchannelToHdf(input: string): Promise<string> {
       tags,
     }) as EvaluatedRequirement;
     req.code = code;
+    const controlType = deriveControlTypeFromTags(DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS);
+    if (controlType !== undefined) {
+      req.controlType = controlType;
+    }
+    req.verificationMethod = VerificationMethodEnum.Automated;
     return req;
   });
 

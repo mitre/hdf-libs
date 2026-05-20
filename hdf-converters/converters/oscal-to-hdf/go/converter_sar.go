@@ -174,6 +174,7 @@ func findingsToEvaluatedRequirement(
 		Tags:         tags,
 		Descriptions: descriptions,
 		Results:      results,
+		ControlType:  shared.DeriveControlTypeFromTags([]string{nistTag}),
 	}
 }
 

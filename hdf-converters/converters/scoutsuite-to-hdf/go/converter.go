@@ -213,12 +213,14 @@ func buildRequirement(ruleID string, finding Finding, startTime string) hdf.Eval
 
 	title := finding.Description
 	return hdf.EvaluatedRequirement{
-		ID:           ruleID,
-		Title:        &title,
-		Impact:       getImpact(finding.Level),
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      []hdf.RequirementResult{result},
+		ID:                 ruleID,
+		Title:              &title,
+		Impact:             getImpact(finding.Level),
+		Tags:               tags,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		Descriptions:       descriptions,
+		Results:            []hdf.RequirementResult{result},
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

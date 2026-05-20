@@ -5,9 +5,10 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type { HdfBaseline, BaselineRequirement } from '@mitre/hdf-schema';
 import type { Description, RequirementGroup } from '@mitre/hdf-schema';
+import { Applicability } from '@mitre/hdf-schema';
 import type { Oscal, Catalog, Control } from './types.js';
 import {
   controlIdToNistTag,
@@ -114,13 +115,29 @@ function controlToBaselineRequirement(ctrl: Control): BaselineRequirement {
   const descriptions = buildCatalogDescriptions(ctrl);
   const tags = buildCatalogTags(ctrl);
 
-  return {
+  const req: BaselineRequirement = {
     id: nistTag,
     title: ctrl.title,
     impact: 0.5, // default for catalog controls
     descriptions,
     tags,
   };
+
+  const controlType = deriveControlTypeFromTags([nistTag]);
+  if (controlType !== undefined) req.controlType = controlType;
+
+  // FedRAMP rev5 marks mandatory controls in a baseline with prop[name=CORE,value=true].
+  // Catalogs typically don't carry CORE props, but resolved profiles (distributed
+  // by FedRAMP as catalogs) do. When present, map CORE=true to applicability=required.
+  // Absence is intentionally left undefined; consumers may interpret omitted as required
+  // by convention. We do NOT map non-CORE to "optional" because catalog-only inputs
+  // omit the prop entirely on all controls, which would be misleading.
+  const coreProp = extractPropValue(ctrl.props, 'CORE');
+  if (coreProp === 'true') {
+    req.applicability = Applicability.Required;
+  }
+
+  return req;
 }
 
 /** Creates HDF Description entries from control parts. */

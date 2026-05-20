@@ -29,7 +29,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -58,7 +59,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -90,7 +92,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -122,7 +125,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -154,7 +158,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -186,7 +191,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -218,7 +224,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -257,7 +264,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -289,7 +297,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -321,7 +330,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -353,7 +363,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -392,7 +403,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -424,7 +436,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -456,7 +469,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -488,7 +502,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -520,7 +535,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-3.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -559,7 +575,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -588,7 +605,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -620,7 +638,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -652,7 +671,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -684,7 +704,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-4.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -723,7 +744,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-5.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-5.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -755,7 +777,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-5.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-5.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -787,7 +810,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-5.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-5.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -826,7 +850,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -855,7 +880,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -887,7 +913,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -919,7 +946,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -951,7 +979,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-6.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -990,7 +1019,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1022,7 +1052,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1054,7 +1085,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1086,7 +1118,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1118,7 +1151,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-7.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -1157,7 +1191,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1186,7 +1221,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1218,7 +1254,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1250,7 +1287,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1282,7 +1320,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-8.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -1321,7 +1360,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1350,7 +1390,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1382,7 +1423,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1414,7 +1456,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1446,7 +1489,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-9.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -1485,7 +1529,8 @@
               "RA-5"
             ]
           },
-          "title": "localhost-redhat-RHEL7-linux"
+          "title": "localhost-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1514,7 +1559,8 @@
               "RA-5"
             ]
           },
-          "title": "localhost-redhat-RHEL7-linux"
+          "title": "localhost-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1543,7 +1589,8 @@
               "RA-5"
             ]
           },
-          "title": "localhost-redhat-RHEL7-linux"
+          "title": "localhost-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1572,7 +1619,8 @@
               "RA-5"
             ]
           },
-          "title": "localhost-redhat-RHEL7-linux"
+          "title": "localhost-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1601,7 +1649,8 @@
               "RA-5"
             ]
           },
-          "title": "localhost-redhat-RHEL7-linux"
+          "title": "localhost-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1633,7 +1682,8 @@
               "RA-5"
             ]
           },
-          "title": "localhost-redhat-RHEL7-image"
+          "title": "localhost-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1665,7 +1715,8 @@
               "RA-5"
             ]
           },
-          "title": "localhost-redhat-RHEL7-image"
+          "title": "localhost-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1697,7 +1748,8 @@
               "RA-5"
             ]
           },
-          "title": "localhost-redhat-RHEL7-image"
+          "title": "localhost-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1729,7 +1781,8 @@
               "RA-5"
             ]
           },
-          "title": "localhost-redhat-RHEL7-image"
+          "title": "localhost-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1761,7 +1814,8 @@
               "RA-5"
             ]
           },
-          "title": "localhost-redhat-RHEL7-image"
+          "title": "localhost-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1793,7 +1847,8 @@
               "RA-5"
             ]
           },
-          "title": "localhost-redhat-RHEL7-image"
+          "title": "localhost-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -1832,7 +1887,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1861,7 +1917,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1893,7 +1950,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1925,7 +1983,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1957,7 +2016,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1989,7 +2049,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-10.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -2031,7 +2092,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2063,7 +2125,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2095,7 +2158,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2127,7 +2191,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2159,7 +2224,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2191,7 +2257,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-11.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -2230,7 +2297,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2259,7 +2327,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2291,7 +2360,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2323,7 +2393,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2355,7 +2426,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2387,7 +2459,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-12.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -2426,7 +2499,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2455,7 +2529,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2487,7 +2562,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2519,7 +2595,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2551,7 +2628,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2583,7 +2661,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2615,7 +2694,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-13.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -2654,7 +2734,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2683,7 +2764,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2715,7 +2797,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2747,7 +2830,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2779,7 +2863,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2811,7 +2896,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2843,7 +2929,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-14.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -2882,7 +2969,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2911,7 +2999,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-linux"
+          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2943,7 +3032,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2975,7 +3065,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3007,7 +3098,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3039,7 +3131,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3071,7 +3164,8 @@
               "RA-5"
             ]
           },
-          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image"
+          "title": "my-fake-host-15.somewhere.cloud-redhat-RHEL7-image",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -3152,7 +3246,7 @@
     "name": "prisma-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:18:01.1805434Z",
+  "timestamp": "2026-05-15T03:07:30.951156221Z",
   "tool": {
     "format": "CSV",
     "name": "Prisma Cloud"

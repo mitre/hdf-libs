@@ -35,7 +35,8 @@
               "RA-5"
             ]
           },
-          "title": "Low-reputation arbitrary code executed by signed executable"
+          "title": "Low-reputation arbitrary code executed by signed executable",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -60,7 +61,7 @@
     "name": "msft-defender-endpoint-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:57.9206827Z",
+  "timestamp": "2026-05-15T03:15:07.396476825Z",
   "tool": {
     "name": "Microsoft Defender for Endpoint"
   }

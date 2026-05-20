@@ -1,5 +1,5 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -10,6 +10,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -242,7 +243,14 @@ function alertToRequirement(alert: MdeAlert): EvaluatedRequirement {
 
   const tags = buildTags(alert);
 
-  return createRequirement(alert.id, alert.title, descriptions, impact, results, { tags });
+  const req = createRequirement(alert.id, alert.title, descriptions, impact, results, { tags }) as EvaluatedRequirement;
+  const nistTags = tags.nist as string[];
+  const controlType = deriveControlTypeFromTags(nistTags);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+  return req;
 }
 
 /**

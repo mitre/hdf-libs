@@ -33,7 +33,9 @@
               "SI-10"
             ]
           },
-          "title": "SQL Injection"
+          "controlType": "technical",
+          "title": "SQL Injection",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {

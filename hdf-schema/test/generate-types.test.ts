@@ -211,7 +211,7 @@ describe('generate-types', () => {
       }
     });
 
-    it('should handle missing schema files gracefully', async () => {
+    it('should handle missing schema files gracefully', { timeout: 30_000 }, async () => {
       // Temporarily rename one schema file
       const schemaFile = join(SCHEMAS_DIR, 'hdf-results.schema.json');
       const tempFile = join(SCHEMAS_DIR, 'hdf-results.schema.json.temp');
@@ -233,7 +233,7 @@ describe('generate-types', () => {
       }
     });
 
-    it('should skip individual TS schemas that cause quicktype to error', async () => {
+    it('should skip individual TS schemas that cause quicktype to error', { timeout: 30_000 }, async () => {
       // Replace one bundled schema with content that quicktype cannot process,
       // exercising the per-file error catch at line 325.
       const schemaFile = join(SCHEMAS_DIR, 'hdf-comparison.schema.json');

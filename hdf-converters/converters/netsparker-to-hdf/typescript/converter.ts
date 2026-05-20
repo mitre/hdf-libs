@@ -6,6 +6,7 @@ import {
   getCweNistControl,
 } from '@mitre/hdf-mappings';
 import {
+  deriveControlTypeFromTags,
   inputChecksum,
   buildNistCciTags,
   limitArray,
@@ -23,6 +24,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
 } from '@mitre/hdf-schema';
 
@@ -260,7 +262,7 @@ function buildRequirement(
 
   const impact = getImpact(vuln.severity ?? '');
 
-  return {
+  const req: EvaluatedRequirement = {
     id: vuln.LookupId ?? '',
     title: vuln.name ?? undefined,
     impact,
@@ -268,6 +270,12 @@ function buildRequirement(
     descriptions,
     results,
   };
+  const controlType = deriveControlTypeFromTags(nist);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+  return req;
 }
 
 /**

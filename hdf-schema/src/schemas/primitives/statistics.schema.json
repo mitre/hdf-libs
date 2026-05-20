@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.1.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.2.0",
   "title": "HDF Statistics Primitives",
   "description": "Statistics types for tracking assessment run metrics.",
   "$defs": {

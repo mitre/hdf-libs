@@ -23,8 +23,8 @@ type BulkResult struct {
 type BulkProcessFn func(file string) error
 
 // runBulk processes multiple files with the given function.
-// Without -k/--continue-on-error, aborts on first failure.
-// With -k, continues processing all files and reports failures at the end.
+// By default, continues processing all files and reports failures at the end (POSIX convention).
+// With -F/--fail-fast, aborts on first failure.
 func runBulk(files []string, verb, successVerb string, processFn BulkProcessFn) error {
 	var results []BulkResult
 
@@ -57,8 +57,8 @@ func runBulk(files []string, verb, successVerb string, processFn BulkProcessFn) 
 
 		results = append(results, result)
 
-		// Without -k, abort on first failure.
-		if !result.Success && !continueOnError {
+		// With --fail-fast, abort on first failure.
+		if !result.Success && failFast {
 			if jsonOutput {
 				printBulkJSON(results)
 			}

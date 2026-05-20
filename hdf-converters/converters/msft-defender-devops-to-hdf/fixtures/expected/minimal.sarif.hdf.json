@@ -16,7 +16,7 @@
           "results": [
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem LINE : 1 COLUMN : 1",
-              "startTime": "2026-04-03T13:17:57.5631144-04:00",
+              "startTime": "2026-05-15T03:15:06.58169675Z",
               "status": "failed"
             }
           ],
@@ -59,7 +59,8 @@
             ],
             "severity": "error"
           },
-          "title": "X.509 Certificate Private Key"
+          "title": "X.509 Certificate Private Key",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -82,7 +83,7 @@
           "results": [
             {
               "codeDesc": "URL : samples/Dockerfile LINE : 1 COLUMN : 0\nFROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
-              "startTime": "2026-04-03T13:17:57.5631144-04:00",
+              "startTime": "2026-05-15T03:15:06.58169675Z",
               "status": "failed"
             }
           ],
@@ -112,7 +113,8 @@
             ],
             "severity": "note"
           },
-          "title": "Ensure that HEALTHCHECK instructions have been added to container images"
+          "title": "Ensure that HEALTHCHECK instructions have been added to container images",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -124,7 +126,7 @@
           "results": [
             {
               "codeDesc": "URL : samples/Dockerfile LINE : 1 COLUMN : 0\nFROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
-              "startTime": "2026-04-03T13:17:57.5631144-04:00",
+              "startTime": "2026-05-15T03:15:06.58169675Z",
               "status": "failed"
             }
           ],
@@ -154,7 +156,8 @@
             ],
             "severity": "note"
           },
-          "title": "Ensure that a user for the container has been created"
+          "title": "Ensure that a user for the container has been created",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -179,7 +182,7 @@
     "name": "msft-defender-devops-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T13:17:57.5631144-04:00",
+  "timestamp": "2026-05-15T03:15:06.58169675Z",
   "tool": {
     "format": "SARIF",
     "name": "Microsoft Defender for DevOps",

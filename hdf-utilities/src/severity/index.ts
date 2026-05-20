@@ -27,10 +27,14 @@ const severityMap: Record<string, number> = {
 /**
  * Map a severity string to an impact score.
  *
- * @param severity - Severity level (case-insensitive)
- * @returns Impact score between 0.0 and 1.0; defaults to 0.5 for unrecognized values
+ * @param severity - Severity level (case-insensitive), or null for no severity assessment
+ * @returns Impact score between 0.0 and 1.0; null when input is null; defaults to 0.5 for unrecognized values
  */
-export function severityToImpact(severity: string): number {
+export function severityToImpact(severity: null): null;
+export function severityToImpact(severity: string): number;
+export function severityToImpact(severity: string | null): number | null;
+export function severityToImpact(severity: string | null): number | null {
+  if (severity === null) return null;
   const normalized = severity.toLowerCase();
   return severityMap[normalized] ?? 0.5;
 }
@@ -38,10 +42,14 @@ export function severityToImpact(severity: string): number {
 /**
  * Map an impact score to a severity string.
  *
- * @param impact - Impact score (0.0 to 1.0)
- * @returns Severity level string
+ * @param impact - Impact score (0.0 to 1.0), or null for no impact assessment
+ * @returns Severity level string, or null when input is null
  */
-export function impactToSeverity(impact: number): string {
+export function impactToSeverity(impact: null): null;
+export function impactToSeverity(impact: number): string;
+export function impactToSeverity(impact: number | null): string | null;
+export function impactToSeverity(impact: number | null): string | null {
+  if (impact === null) return null;
   if (impact >= 0.9) return 'critical';
   if (impact >= 0.7) return 'high';
   if (impact >= 0.4) return 'medium';

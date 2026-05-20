@@ -3,7 +3,7 @@ import {
   getScoutsuiteNistControl,
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, buildNistCciTags, limitArrayWithWarning, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArrayWithWarning, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -12,6 +12,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -199,14 +200,22 @@ function buildRequirement(
     startTime: startTime ? new Date(startTime) : undefined,
   });
 
-  return createRequirement(
+  const req = createRequirement(
     ruleID,
     finding.description,
     descriptions,
     getImpact(finding.level),
     [resultObj],
     { tags },
-  );
+  ) as EvaluatedRequirement;
+
+  const controlType = deriveControlTypeFromTags(nist);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+
+  return req;
 }
 
 /**

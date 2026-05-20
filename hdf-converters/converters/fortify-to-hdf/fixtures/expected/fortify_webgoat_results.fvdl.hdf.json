@@ -30,7 +30,9 @@
               "SI-10"
             ]
           },
-          "title": "Attackers are able to control the file system path argument to at line , which allows them to access or modify otherwise protected files. Allowing user input to control paths used in file system operations could enable an attacker to access or modify otherwise protected system resources."
+          "controlType": "technical",
+          "title": "Attackers are able to control the file system path argument to at line , which allows them to access or modify otherwise protected files. Allowing user input to control paths used in file system operations could enable an attacker to access or modify otherwise protected system resources.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -60,7 +62,9 @@
               "SI-11"
             ]
           },
-          "title": "The method in ignores an exception on line , which could cause the program to overlook unexpected states and conditions. Ignoring an exception can cause the program to overlook unexpected states and conditions."
+          "controlType": "technical",
+          "title": "The method in ignores an exception on line , which could cause the program to overlook unexpected states and conditions. Ignoring an exception can cause the program to overlook unexpected states and conditions.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -106,7 +110,9 @@
               "AC-4"
             ]
           },
-          "title": "The function in might reveal system data or debugging information by calling on line . The information revealed by could help an adversary form a plan of attack. Revealing system data or debugging information helps an adversary learn about the system and form a plan of attack."
+          "controlType": "technical",
+          "title": "The function in might reveal system data or debugging information by calling on line . The information revealed by could help an adversary form a plan of attack. Revealing system data or debugging information helps an adversary learn about the system and form a plan of attack.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -138,7 +144,8 @@
               "RA-5"
             ]
           },
-          "title": "The field is never used. This field is never used."
+          "title": "The field is never used. This field is never used.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -170,7 +177,8 @@
               "RA-5"
             ]
           },
-          "title": "The method in never uses the value it assigns to the variable on line . The variable's value is assigned but never used, making it a dead store."
+          "title": "The method in never uses the value it assigns to the variable on line . The variable's value is assigned but never used, making it a dead store.",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {

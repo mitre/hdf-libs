@@ -35,6 +35,7 @@
             ],
             "ratings": "GITHUB - low"
           },
+          "controlType": "technical",
           "title": "GHSA-5mg8-w23w-74h3 (GITHUB)"
         },
         {
@@ -98,6 +99,7 @@
             ],
             "ratings": "GITHUB - critical"
           },
+          "controlType": "technical",
           "title": "GHSA-5p34-5m6p-p58g (GITHUB)"
         },
         {
@@ -128,6 +130,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-27xj-rqx5-2255 (GITHUB)"
         },
         {
@@ -158,6 +161,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-58pp-9c76-5625 (GITHUB)"
         },
         {
@@ -188,6 +192,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-v3xw-c963-f5hc (GITHUB)"
         },
         {
@@ -218,6 +223,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-h4rc-386g-6m85 (GITHUB)"
         },
         {
@@ -248,6 +254,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-9vvp-fxw6-jcxr (GITHUB)"
         },
         {
@@ -278,6 +285,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-rf6r-2c4q-2vwg (GITHUB)"
         },
         {
@@ -308,6 +316,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-758m-v56v-grj4 (GITHUB)"
         },
         {
@@ -338,6 +347,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-95cm-88f5-f2c7 (GITHUB)"
         },
         {
@@ -368,6 +378,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-c2q3-4qrh-fm48 (GITHUB)"
         },
         {
@@ -398,6 +409,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-mc6h-4qgp-37qh (GITHUB)"
         },
         {
@@ -428,6 +440,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-j823-4qch-3rgm (GITHUB)"
         },
         {
@@ -458,6 +471,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-c265-37vj-cwcc (GITHUB)"
         },
         {
@@ -488,6 +502,7 @@
             ],
             "ratings": "GITHUB - critical"
           },
+          "controlType": "technical",
           "title": "GHSA-4w82-r329-3q67 (GITHUB)"
         },
         {
@@ -518,6 +533,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-rpr3-cw39-3pxh (GITHUB)"
         },
         {
@@ -548,6 +564,7 @@
             ],
             "ratings": "GITHUB - critical"
           },
+          "controlType": "technical",
           "title": "GHSA-fmmc-742q-jg75 (GITHUB)"
         },
         {
@@ -578,6 +595,7 @@
             ],
             "ratings": "GITHUB - critical"
           },
+          "controlType": "technical",
           "title": "GHSA-gjmw-vf9h-g25v (GITHUB)"
         },
         {
@@ -608,6 +626,7 @@
             ],
             "ratings": "GITHUB - critical"
           },
+          "controlType": "technical",
           "title": "GHSA-mx7p-6679-8g3q (GITHUB)"
         },
         {
@@ -638,6 +657,7 @@
             ],
             "ratings": "GITHUB - critical"
           },
+          "controlType": "technical",
           "title": "GHSA-q93h-jc49-78gg (GITHUB)"
         },
         {
@@ -668,6 +688,7 @@
             ],
             "ratings": "GITHUB - critical"
           },
+          "controlType": "technical",
           "title": "GHSA-p43x-xfjf-5jhr (GITHUB)"
         },
         {
@@ -699,6 +720,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-h3cw-g4mq-c5x2 (GITHUB)"
         },
         {
@@ -729,6 +751,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-qjw2-hr98-qgfh (GITHUB)"
         },
         {
@@ -759,6 +782,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-8w26-6f25-cm9x (GITHUB)"
         },
         {
@@ -789,6 +813,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-m6x4-97wx-4q27 (GITHUB)"
         },
         {
@@ -819,6 +844,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-v585-23hc-c647 (GITHUB)"
         },
         {
@@ -849,6 +875,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-r695-7vr9-jgc2 (GITHUB)"
         },
         {
@@ -879,6 +906,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-vfqx-33qm-g869 (GITHUB)"
         },
         {
@@ -909,6 +937,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-f9xh-2qgp-cq57 (GITHUB)"
         },
         {
@@ -939,6 +968,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-cvm9-fjm9-3572 (GITHUB)"
         },
         {
@@ -969,6 +999,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-9gph-22xh-8x98 (GITHUB)"
         },
         {
@@ -999,6 +1030,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-89qr-369f-5m5x (GITHUB)"
         },
         {
@@ -1029,6 +1061,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-8c4j-34r4-xr8g (GITHUB)"
         },
         {
@@ -1059,6 +1092,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-9m6f-7xcq-8vf8 (GITHUB)"
         },
         {
@@ -1089,6 +1123,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-5r5r-6hpj-8gg9 (GITHUB)"
         },
         {
@@ -1119,6 +1154,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-wh8g-3j2c-rqj5 (GITHUB)"
         },
         {
@@ -1150,6 +1186,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-r3gr-cxrf-hg25 (GITHUB)"
         },
         {
@@ -1181,6 +1218,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-jjjh-jjxp-wpff (GITHUB)"
         },
         {
@@ -1211,6 +1249,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-5949-rw7g-wx7w (GITHUB)"
         },
         {
@@ -1241,6 +1280,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-57j2-w4cx-62h2 (GITHUB)"
         },
         {
@@ -1271,6 +1311,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-288c-cq4h-88gq (GITHUB)"
         },
         {
@@ -1301,6 +1342,7 @@
             ],
             "ratings": "GITHUB - critical"
           },
+          "controlType": "technical",
           "title": "GHSA-gww7-p5w4-wrfv (GITHUB)"
         },
         {
@@ -1332,6 +1374,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-rgv9-q543-rqg4 (GITHUB)"
         },
         {
@@ -1362,6 +1405,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-fqwf-pjwf-7vqv (GITHUB)"
         },
         {
@@ -1489,6 +1533,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-9w3m-gqgf-c4p9 (GITHUB)"
         },
         {
@@ -1520,6 +1565,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-w37g-rhq8-7m4j (GITHUB)"
         },
         {
@@ -1551,6 +1597,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-c4r9-r8fh-9vj2 (GITHUB)"
         },
         {
@@ -1582,6 +1629,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-hhhw-99gj-p3c3 (GITHUB)"
         },
         {
@@ -1613,6 +1661,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-98wm-3w3q-mw94 (GITHUB)"
         },
         {
@@ -1644,6 +1693,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-3mc7-4q67-w48m (GITHUB)"
         },
         {
@@ -1675,6 +1725,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-mjmj-j48q-9wg2 (GITHUB)"
         },
         {
@@ -1705,6 +1756,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-668q-qrv7-99fm (GITHUB)"
         },
         {
@@ -1735,6 +1787,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-vmq6-5m68-f53m (GITHUB)"
         },
         {
@@ -1765,6 +1818,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-vmq6-5m68-f53m (GITHUB)"
         },
         {
@@ -1795,6 +1849,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-m394-8rww-3jr7 (GITHUB)"
         },
         {
@@ -1825,6 +1880,7 @@
             ],
             "ratings": "GITHUB - low"
           },
+          "controlType": "technical",
           "title": "GHSA-m6cp-vxjx-65j6 (GITHUB)"
         },
         {
@@ -1857,6 +1913,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-26vr-8j45-3r4w (GITHUB)"
         },
         {
@@ -1887,6 +1944,7 @@
             ],
             "ratings": "GITHUB - low"
           },
+          "controlType": "technical",
           "title": "GHSA-p26g-97m4-6q7c (GITHUB)"
         },
         {
@@ -1918,6 +1976,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-qw69-rqj8-6qw8 (GITHUB)"
         },
         {
@@ -1948,6 +2007,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-86wm-rrjm-8wh8 (GITHUB)"
         },
         {
@@ -1978,6 +2038,7 @@
             ],
             "ratings": "GITHUB - low"
           },
+          "controlType": "technical",
           "title": "GHSA-cj7v-27pg-wf7q (GITHUB)"
         },
         {
@@ -2074,6 +2135,7 @@
             ],
             "ratings": "GITHUB - low"
           },
+          "controlType": "technical",
           "title": "GHSA-58qw-p7qm-5rvh (GITHUB)"
         },
         {
@@ -2104,6 +2166,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-gwcr-j4wh-j3cq (GITHUB)"
         },
         {
@@ -2169,6 +2232,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-269g-pwp5-87pp (GITHUB)"
         },
         {
@@ -2257,6 +2321,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-j8jw-g6fq-mp7h (GITHUB)"
         },
         {
@@ -2287,6 +2352,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-8grg-q944-cch5 (GITHUB)"
         },
         {
@@ -2317,6 +2383,7 @@
             ],
             "ratings": "GITHUB - critical"
           },
+          "controlType": "technical",
           "title": "GHSA-hwj3-m3p6-hj38 (GITHUB)"
         },
         {
@@ -2347,6 +2414,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-7r82-7xv7-xcpj (GITHUB)"
         },
         {
@@ -2377,6 +2445,7 @@
             ],
             "ratings": "GITHUB - critical"
           },
+          "controlType": "technical",
           "title": "GHSA-jvfv-hrrc-6q72 (GITHUB)"
         },
         {
@@ -2408,6 +2477,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-wgmr-mf83-7x4j (GITHUB)"
         },
         {
@@ -2438,6 +2508,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-qppj-fm5r-hxr3 (GITHUB)"
         },
         {
@@ -2468,6 +2539,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-rggv-cv7r-mw98 (GITHUB)"
         },
         {
@@ -2498,6 +2570,7 @@
             ],
             "ratings": "GITHUB - medium"
           },
+          "controlType": "technical",
           "title": "GHSA-qppj-fm5r-hxr3 (GITHUB)"
         },
         {
@@ -2528,6 +2601,7 @@
             ],
             "ratings": "GITHUB - high"
           },
+          "controlType": "technical",
           "title": "GHSA-wgh7-54f2-x98r (GITHUB)"
         },
         {
@@ -2590,6 +2664,7 @@
             ],
             "ratings": "GITHUB - medium, GITHUB - info"
           },
+          "controlType": "technical",
           "title": "GHSA-mm8h-8587-p46h (GITHUB)"
         },
         {
@@ -2620,6 +2695,7 @@
             ],
             "ratings": "GITHUB - unknown"
           },
+          "controlType": "technical",
           "title": "GHSA-h376-j262-vhq6 (GITHUB)"
         },
         {
@@ -15257,7 +15333,7 @@
     "name": "cyclonedx-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:51.7694842Z",
+  "timestamp": "2026-05-19T01:39:05.204063239Z",
   "tool": {
     "format": "JSON",
     "name": "CycloneDX"

@@ -185,12 +185,14 @@ func buildRequirement(finding DeptrackFinding, timestamp string) hdf.EvaluatedRe
 
 	title := getTitle(finding)
 	return hdf.EvaluatedRequirement{
-		ID:           finding.Matrix,
-		Title:        &title,
-		Impact:       getImpact(finding.Vulnerability.Severity),
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 finding.Matrix,
+		Title:              &title,
+		Impact:             getImpact(finding.Vulnerability.Severity),
+		Tags:               tags,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		Descriptions:       descriptions,
+		Results:            results,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

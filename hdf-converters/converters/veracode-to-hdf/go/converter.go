@@ -435,12 +435,14 @@ func buildCWERequirement(cat Category, impact float64, firstBuildDate string) hd
 
 	title := cat.CategoryName
 	req := hdf.EvaluatedRequirement{
-		ID:           cat.CategoryID,
-		Title:        &title,
-		Impact:       impact,
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 cat.CategoryID,
+		Title:              &title,
+		Impact:             impact,
+		Tags:               tags,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		Descriptions:       descriptions,
+		Results:            results,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 
 	if sourceRef != "" {
@@ -567,12 +569,14 @@ func buildCVERequirement(vuln Vulnerability, components []Component, firstBuildD
 	}
 
 	req := hdf.EvaluatedRequirement{
-		ID:           vuln.CVEID,
-		Title:        &title,
-		Impact:       impact,
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 vuln.CVEID,
+		Title:              &title,
+		Impact:             impact,
+		Tags:               tags,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		Descriptions:       descriptions,
+		Results:            results,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 
 	if sourceRef != "" {

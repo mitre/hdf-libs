@@ -208,6 +208,32 @@ func TestConvertXccdfResultsToHDF_StigBaselineName(t *testing.T) {
 		result.Baselines[0].Name)
 }
 
+func TestConvertXccdfResultsToHDF_StigControlType(t *testing.T) {
+	input := loadFixture(t, "stig-rhel7.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	// At least one requirement should have a derived controlType once NIST
+	// tags are present via CCI mapping. The exact distribution depends on
+	// the source CCIs; this just verifies the pipeline plumbing works.
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			// Sanity check: must be one of the known classification values.
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	assert.True(t, sawDerivation, "at least one stig-rhel7 requirement should have a derived controlType")
+}
+
 func TestConvertXccdfResultsToHDF_StigSeverityToImpact(t *testing.T) {
 	input := loadFixture(t, "stig-rhel7.xml")
 	result, err := ConvertXccdfResultsToHDF(input, converterVersion)

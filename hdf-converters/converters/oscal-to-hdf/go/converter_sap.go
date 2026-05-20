@@ -223,7 +223,7 @@ func determinePlanType(ap *AssessmentPlan) *hdf.PlanType {
 	if aType, ok := ExtractPropValue(ap.Metadata.Props, "assessment-type", ""); ok {
 		switch strings.ToLower(aType) {
 		case "automated":
-			pt := hdf.Automated
+			pt := hdf.PlanTypeAutomated
 			return &pt
 		case "manual":
 			pt := hdf.PlanTypeManual

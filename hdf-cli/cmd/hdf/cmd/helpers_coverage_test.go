@@ -190,9 +190,9 @@ func TestBuildFilters_TagNoColon(t *testing.T) {
 	// A --tag value without a colon should NOT produce a filter
 	old := queryTag
 	defer func() { queryTag = old }()
-	queryTag = "noColonHere"
+	queryTag = []string{"noColonHere"}
 	resetQueryFlags()
-	queryTag = "noColonHere"
+	queryTag = []string{"noColonHere"}
 
 	filters := buildFilters()
 	assert.Empty(t, filters, "tag with no colon should not add a filter")
@@ -200,13 +200,13 @@ func TestBuildFilters_TagNoColon(t *testing.T) {
 
 func TestBuildFilters_AllFilters(t *testing.T) {
 	resetQueryFlags()
-	queryStatus = StatusFailed
-	querySeverity = "high"
+	queryStatus = []string{StatusFailed}
+	querySeverity = []string{"high"}
 	queryImpact = ">0.5"
-	queryCCI = "CCI-000366"
-	queryNIST = "AC-*"
+	queryCCI = []string{"CCI-000366"}
+	queryNIST = []string{"AC-*"}
 	querySTIGID = "V-230221"
-	queryTag = "severity:high"
+	queryTag = []string{"severity:high"}
 	querySearch = "password"
 	defer resetQueryFlags()
 
@@ -709,13 +709,13 @@ func buildResultsFixtureJSON(t *testing.T) []byte {
 
 // resetQueryFlags zeroes out all global query flags.
 func resetQueryFlags() {
-	queryStatus = ""
-	querySeverity = ""
+	queryStatus = nil
+	querySeverity = nil
 	queryImpact = ""
-	queryCCI = ""
-	queryNIST = ""
+	queryCCI = nil
+	queryNIST = nil
 	querySTIGID = ""
-	queryTag = ""
+	queryTag = nil
 	querySearch = ""
 	queryProfile = ""
 	queryCount = false

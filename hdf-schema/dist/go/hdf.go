@@ -338,56 +338,78 @@ type Checksum struct {
 // Core requirement fields shared between baseline requirements and evaluated requirements.
 // Contains the fundamental requirement definition without assessment results.
 type EvaluatedRequirement struct {
-	// Array of labeled descriptions. At least one description with label 'default' must be                            
-	// present. Convention: place default description first. Common labels: 'default', 'check',                        
-	// 'fix', 'rationale'.                                                                                             
-	Descriptions                                                                                []Description          `json:"descriptions"`
-	// The type of the most recent non-expired override or POAM governing this requirement.                            
-	// Indicates why the requirement is in its current state (e.g., waiver, falsePositive,                             
-	// riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or                        
-	// POAMs apply.                                                                                                    
-	Disposition                                                                                 *OverrideType          `json:"disposition,omitempty"`
-	// The current effective impact score (0.0–1.0) after applying the most recent non-expired                         
-	// override with an impact field. Absent when no impact overrides apply; consumers should                          
-	// use the requirement's impact field in that case.                                                                
-	EffectiveImpact                                                                             *float64               `json:"effectiveImpact,omitempty"`
-	// The current effective compliance status of this requirement after applying the most                             
-	// recent non-expired override with a status field, or computed from results (worst-wins) if                       
-	// no status-bearing overrides exist.                                                                              
-	EffectiveStatus                                                                             *ResultStatus          `json:"effectiveStatus,omitempty"`
-	// Supporting evidence for this requirement's findings, such as screenshots, code samples,                         
-	// or log excerpts.                                                                                                
-	Evidence                                                                                    []Evidence             `json:"evidence,omitempty"`
-	// Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance.                         
-	// POAMs do NOT change effectiveStatus - they track the work being done to address a                               
-	// failure. Separate from statusOverrides which DO change status.                                                  
-	Poams                                                                                       []PoamElement          `json:"poams,omitempty"`
-	// The set of all tests within the requirement and their results.                                                  
-	Results                                                                                     []RequirementResult    `json:"results"`
-	// Explicit severity rating. Typically derived from impact score but provided explicitly for                       
-	// clarity.                                                                                                        
-	Severity                                                                                    *Severity              `json:"severity,omitempty"`
-	// The explicit location of the requirement within the source code.                                                
-	SourceLocation                                                                              *SourceLocation        `json:"sourceLocation,omitempty"`
-	// Chronological history of all overrides applied to this requirement. Overrides are                               
-	// intentional changes to the compliance status and/or impact score (waivers, attestations,                        
-	// false positives, risk adjustments). Most recent override should be first in array.                              
-	// Preserves full audit trail.                                                                                     
-	StatusOverrides                                                                             []StatusOverride       `json:"statusOverrides,omitempty"`
-	// The requirement identifier. Example: 'SV-238196'.                                                               
-	ID                                                                                          string                 `json:"id"`
-	// The impactfulness or severity (0.0 to 1.0).                                                                     
-	Impact                                                                                      float64                `json:"impact"`
-	// A set of tags - usually metadata like CCI, STIG ID, severity.                                                   
-	Tags                                                                                        map[string]interface{} `json:"tags"`
-	// The raw source code of the requirement. Set to null for manual-only requirements or                             
-	// requirements not yet implemented. Note that if this is an overlay, it does not include                          
-	// the underlying source code.                                                                                     
-	Code                                                                                        *string                `json:"code,omitempty"`
-	// The set of references to external documents.                                                                    
-	Refs                                                                                        []Reference            `json:"refs,omitempty"`
-	// The title - is nullable.                                                                                        
-	Title                                                                                       *string                `json:"title,omitempty"`
+	// Array of labeled descriptions. At least one description with label 'default' must be                             
+	// present. Convention: place default description first. Common labels: 'default', 'check',                         
+	// 'fix', 'rationale'.                                                                                              
+	Descriptions                                                                                []Description           `json:"descriptions"`
+	// The type of the most recent non-expired override or POAM governing this requirement.                             
+	// Indicates why the requirement is in its current state (e.g., waiver, falsePositive,                              
+	// riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or                         
+	// POAMs apply.                                                                                                     
+	Disposition                                                                                 *OverrideType           `json:"disposition,omitempty"`
+	// The current effective impact score (0.0–1.0) after applying the most recent non-expired                          
+	// override with an impact field. Absent when no impact overrides apply; consumers should                           
+	// use the requirement's impact field in that case.                                                                 
+	EffectiveImpact                                                                             *float64                `json:"effectiveImpact,omitempty"`
+	// The current effective compliance status of this requirement after applying the most                              
+	// recent non-expired override with a status field, or computed from results (worst-wins) if                        
+	// no status-bearing overrides exist.                                                                               
+	EffectiveStatus                                                                             *ResultStatus           `json:"effectiveStatus,omitempty"`
+	// Supporting evidence for this requirement's findings, such as screenshots, code samples,                          
+	// or log excerpts.                                                                                                 
+	Evidence                                                                                    []Evidence              `json:"evidence,omitempty"`
+	// Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance.                          
+	// POAMs do NOT change effectiveStatus - they track the work being done to address a                                
+	// failure. Separate from statusOverrides which DO change status.                                                   
+	Poams                                                                                       []PoamElement           `json:"poams,omitempty"`
+	// The set of all tests within the requirement and their results.                                                   
+	Results                                                                                     []RequirementResult     `json:"results"`
+	// Explicit severity rating. Typically derived from impact score but provided explicitly for                        
+	// clarity.                                                                                                         
+	Severity                                                                                    *Severity               `json:"severity,omitempty"`
+	// The explicit location of the requirement within the source code.                                                 
+	SourceLocation                                                                              *SourceLocation         `json:"sourceLocation,omitempty"`
+	// Chronological history of all overrides applied to this requirement. Overrides are                                
+	// intentional changes to the compliance status and/or impact score (waivers, attestations,                         
+	// false positives, risk adjustments). Most recent override should be first in array.                               
+	// Preserves full audit trail.                                                                                      
+	StatusOverrides                                                                             []StatusOverride        `json:"statusOverrides,omitempty"`
+	// The requirement identifier. Example: 'SV-238196'.                                                                
+	ID                                                                                          string                  `json:"id"`
+	// The impactfulness or severity (0.0 to 1.0).                                                                      
+	Impact                                                                                      float64                 `json:"impact"`
+	// A set of tags - usually metadata like CCI, STIG ID, severity.                                                    
+	Tags                                                                                        map[string]interface{}  `json:"tags"`
+	// Whether the requirement is mandatory within its baseline. Distinct from severity (risk                           
+	// weight) and status (lifecycle state). Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop,                         
+	// FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group                         
+	// memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}).                           
+	// Optional: when omitted, consumers should treat the requirement as 'required' by                                  
+	// convention.                                                                                                      
+	Applicability                                                                               *Applicability          `json:"applicability,omitempty"`
+	// The raw source code of the requirement. Set to null for manual-only requirements or                              
+	// requirements not yet implemented; use verificationMethod to disambiguate manual-by-design                        
+	// from manual-pending-automation. Note that if this is an overlay, it does not include the                         
+	// underlying source code.                                                                                          
+	Code                                                                                        *string                 `json:"code,omitempty"`
+	// Classification of the control's nature, aligning with NIST SP 800-53 / SP 800-53A                                
+	// categories. 'policy' = an authored governance statement; 'procedure' = a documented                              
+	// process; 'technical' = an enforced technical configuration; 'management' = a                                     
+	// programmatic/management activity; 'operational' = a recurring operational activity (e.g.                         
+	// AT, IR, MA families). Optional: when omitted, consumers may infer heuristically from                             
+	// family/id but should not assume a default.                                                                       
+	ControlType                                                                                 *ControlType            `json:"controlType,omitempty"`
+	// The set of references to external documents.                                                                     
+	Refs                                                                                        []Reference             `json:"refs,omitempty"`
+	// The title - is nullable.                                                                                         
+	Title                                                                                       *string                 `json:"title,omitempty"`
+	// How this requirement is intended to be verified. Disambiguates the two cases that null                           
+	// 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable                         
+	// to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could                             
+	// exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and                        
+	// runs without operator action; 'hybrid' = part automated, part manual. Optional: when                             
+	// omitted, consumers should not infer a default.                                                                   
+	VerificationMethod                                                                          *VerificationMethodEnum `json:"verificationMethod,omitempty"`
 }
 
 type Description struct {
@@ -1012,29 +1034,51 @@ type HDFBaseline struct {
 // Core requirement fields shared between baseline requirements and evaluated requirements.
 // Contains the fundamental requirement definition without assessment results.
 type BaselineRequirement struct {
-	// Array of labeled descriptions. At least one description with label 'default' must be                            
-	// present. Convention: place default description first. Common labels: 'default', 'check',                        
-	// 'fix', 'rationale'.                                                                                             
-	Descriptions                                                                                []Description          `json:"descriptions"`
-	// Explicit severity rating. Typically derived from impact score but provided explicitly for                       
-	// clarity.                                                                                                        
-	Severity                                                                                    *Severity              `json:"severity,omitempty"`
-	// The requirement identifier. Example: 'SV-238196'.                                                               
-	ID                                                                                          string                 `json:"id"`
-	// The impactfulness or severity (0.0 to 1.0).                                                                     
-	Impact                                                                                      float64                `json:"impact"`
-	// A set of tags - usually metadata like CCI, STIG ID, severity.                                                   
-	Tags                                                                                        map[string]interface{} `json:"tags"`
-	// The raw source code of the requirement. Set to null for manual-only requirements or                             
-	// requirements not yet implemented. Note that if this is an overlay, it does not include                          
-	// the underlying source code.                                                                                     
-	Code                                                                                        *string                `json:"code,omitempty"`
-	// The set of references to external documents.                                                                    
-	Refs                                                                                        []Reference            `json:"refs,omitempty"`
-	// The explicit location of the requirement within the source code.                                                
-	SourceLocation                                                                              *SourceLocation        `json:"sourceLocation,omitempty"`
-	// The title - is nullable.                                                                                        
-	Title                                                                                       *string                `json:"title,omitempty"`
+	// Array of labeled descriptions. At least one description with label 'default' must be                             
+	// present. Convention: place default description first. Common labels: 'default', 'check',                         
+	// 'fix', 'rationale'.                                                                                              
+	Descriptions                                                                                []Description           `json:"descriptions"`
+	// Explicit severity rating. Typically derived from impact score but provided explicitly for                        
+	// clarity.                                                                                                         
+	Severity                                                                                    *Severity               `json:"severity,omitempty"`
+	// The requirement identifier. Example: 'SV-238196'.                                                                
+	ID                                                                                          string                  `json:"id"`
+	// The impactfulness or severity (0.0 to 1.0).                                                                      
+	Impact                                                                                      float64                 `json:"impact"`
+	// A set of tags - usually metadata like CCI, STIG ID, severity.                                                    
+	Tags                                                                                        map[string]interface{}  `json:"tags"`
+	// Whether the requirement is mandatory within its baseline. Distinct from severity (risk                           
+	// weight) and status (lifecycle state). Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop,                         
+	// FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group                         
+	// memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}).                           
+	// Optional: when omitted, consumers should treat the requirement as 'required' by                                  
+	// convention.                                                                                                      
+	Applicability                                                                               *Applicability          `json:"applicability,omitempty"`
+	// The raw source code of the requirement. Set to null for manual-only requirements or                              
+	// requirements not yet implemented; use verificationMethod to disambiguate manual-by-design                        
+	// from manual-pending-automation. Note that if this is an overlay, it does not include the                         
+	// underlying source code.                                                                                          
+	Code                                                                                        *string                 `json:"code,omitempty"`
+	// Classification of the control's nature, aligning with NIST SP 800-53 / SP 800-53A                                
+	// categories. 'policy' = an authored governance statement; 'procedure' = a documented                              
+	// process; 'technical' = an enforced technical configuration; 'management' = a                                     
+	// programmatic/management activity; 'operational' = a recurring operational activity (e.g.                         
+	// AT, IR, MA families). Optional: when omitted, consumers may infer heuristically from                             
+	// family/id but should not assume a default.                                                                       
+	ControlType                                                                                 *ControlType            `json:"controlType,omitempty"`
+	// The set of references to external documents.                                                                     
+	Refs                                                                                        []Reference             `json:"refs,omitempty"`
+	// The explicit location of the requirement within the source code.                                                 
+	SourceLocation                                                                              *SourceLocation         `json:"sourceLocation,omitempty"`
+	// The title - is nullable.                                                                                         
+	Title                                                                                       *string                 `json:"title,omitempty"`
+	// How this requirement is intended to be verified. Disambiguates the two cases that null                           
+	// 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable                         
+	// to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could                             
+	// exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and                        
+	// runs without operator action; 'hybrid' = part automated, part manual. Optional: when                             
+	// omitted, consumers should not infer a default.                                                                   
+	VerificationMethod                                                                          *VerificationMethodEnum `json:"verificationMethod,omitempty"`
 }
 
 // Structured comparison between two or more HDF security assessment documents. Supports
@@ -1740,6 +1784,36 @@ const (
 	Sha512 HashAlgorithm = "sha512"
 )
 
+// Whether the requirement is mandatory within its baseline. Distinct from severity (risk
+// weight) and status (lifecycle state). Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop,
+// FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group
+// memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}).
+// Optional: when omitted, consumers should treat the requirement as 'required' by
+// convention.
+type Applicability string
+
+const (
+	Advisory Applicability = "advisory"
+	Optional Applicability = "optional"
+	Required Applicability = "required"
+)
+
+// Classification of the control's nature, aligning with NIST SP 800-53 / SP 800-53A
+// categories. 'policy' = an authored governance statement; 'procedure' = a documented
+// process; 'technical' = an enforced technical configuration; 'management' = a
+// programmatic/management activity; 'operational' = a recurring operational activity (e.g.
+// AT, IR, MA families). Optional: when omitted, consumers may infer heuristically from
+// family/id but should not assume a default.
+type ControlType string
+
+const (
+	Management  ControlType = "management"
+	Operational ControlType = "operational"
+	Policy      ControlType = "policy"
+	Procedure   ControlType = "procedure"
+	Technical   ControlType = "technical"
+)
+
 // The type of the most recent non-expired override or POAM governing this requirement.
 // Indicates why the requirement is in its current state (e.g., waiver, falsePositive,
 // riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or
@@ -1857,6 +1931,28 @@ const (
 	Medium        Severity = "medium"
 	SeverityHigh  Severity = "high"
 	SeverityLow   Severity = "low"
+)
+
+// How this requirement is intended to be verified. Disambiguates the two cases that null
+// 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable
+// to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could
+// exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and
+// runs without operator action; 'hybrid' = part automated, part manual. Optional: when
+// omitted, consumers should not infer a default.
+//
+// How a requirement is intended to be verified. Disambiguates the two cases that null
+// 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable
+// to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could
+// exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and
+// runs without operator action; 'hybrid' = part automated, part manual. Named '_Enum' to
+// disambiguate from the unrelated Verification_Method DID-context struct.
+type VerificationMethodEnum string
+
+const (
+	ManualByDesign                  VerificationMethodEnum = "manual-by-design"
+	ManualPendingAutomation         VerificationMethodEnum = "manual-pending-automation"
+	VerificationMethodEnumAutomated VerificationMethodEnum = "automated"
+	VerificationMethodEnumHybrid    VerificationMethodEnum = "hybrid"
 )
 
 type CloudProvider string
@@ -2109,9 +2205,9 @@ const (
 type PlanType string
 
 const (
-	Automated      PlanType = "automated"
-	PlanTypeHybrid PlanType = "hybrid"
-	PlanTypeManual PlanType = "manual"
+	PlanTypeAutomated PlanType = "automated"
+	PlanTypeHybrid    PlanType = "hybrid"
+	PlanTypeManual    PlanType = "manual"
 )
 
 // The type of HDF document being referenced.

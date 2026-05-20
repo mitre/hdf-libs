@@ -50,7 +50,7 @@ func TestConvertHDFToCSV_Minimal(t *testing.T) {
 	row2 := records[2]
 	assert.Equal(t, "SV-123457", row2[5])                        // Requirement ID
 	assert.Equal(t, "failed", row2[10])                          // Status
-	assert.Equal(t, "Audit logging is not configured", row2[13]) // Message
+	assert.Equal(t, "Audit logging is not configured", row2[16]) // Result Message (after Control Type / Verification Method / Applicability)
 }
 
 func TestConvertHDFToCSV_EmptyBaselines(t *testing.T) {

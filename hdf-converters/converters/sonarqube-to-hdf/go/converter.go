@@ -285,12 +285,14 @@ func convertRuleToRequirement(
 	}
 
 	req := hdf.EvaluatedRequirement{
-		ID:           ruleKey,
-		Title:        &title,
-		Descriptions: descriptions,
-		Impact:       impact,
-		Results:      results,
-		Tags:         tags,
+		ID:                 ruleKey,
+		Title:              &title,
+		Descriptions:       descriptions,
+		Impact:             impact,
+		Results:            results,
+		Tags:               tags,
+		ControlType:        shared.DeriveControlTypeFromTags(nistControls),
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 
 	if sourceLocation != nil {

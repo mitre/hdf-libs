@@ -34,7 +34,8 @@
               "RA-5"
             ]
           },
-          "title": "Suspicious process executed"
+          "title": "Suspicious process executed",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -67,7 +68,8 @@
               "RA-5"
             ]
           },
-          "title": "Suspicious remote WMI execution"
+          "title": "Suspicious remote WMI execution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -99,7 +101,8 @@
               "RA-5"
             ]
           },
-          "title": "Unusual network connection established"
+          "title": "Unusual network connection established",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -135,7 +138,8 @@
               "RA-5"
             ]
           },
-          "title": "Malware detected and quarantined"
+          "title": "Malware detected and quarantined",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -187,7 +191,7 @@
     "name": "msft-defender-endpoint-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:57.9216887Z",
+  "timestamp": "2026-05-15T03:15:07.397070744Z",
   "tool": {
     "name": "Microsoft Defender for Endpoint"
   }

@@ -3,7 +3,7 @@ import { DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -12,6 +12,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
+  VerificationMethodEnum,
   severityToImpact,
   createMinimalBaseline,
   createRequirement,
@@ -120,7 +121,15 @@ function buildRequirement(checkId: string, checks: CheckovCheck[]): EvaluatedReq
 
   const results = checks.map(checkToResult);
 
-  return createRequirement(checkId, rep.check_name, descriptions, impact, results, { tags });
+  const req = createRequirement(checkId, rep.check_name, descriptions, impact, results, { tags }) as EvaluatedRequirement;
+  req.verificationMethod = VerificationMethodEnum.Automated;
+
+  const controlType = deriveControlTypeFromTags([...DEFAULT_STATIC_ANALYSIS_NIST_TAGS]);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+
+  return req;
 }
 
 /**

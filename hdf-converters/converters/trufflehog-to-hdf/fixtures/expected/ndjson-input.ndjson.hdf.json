@@ -13,7 +13,7 @@
             {
               "codeDesc": "{\"Data\":{\"Filesystem\":{\"file\":\".git/config\",\"line\":13}}}",
               "message": "{\"Redacted\":\"https://gitlab-ci-token:********@gitlab.my_domain.dev\",\"VerificationError\":\"dialing local IP addresses is not allowed\",\"Verified\":false}",
-              "startTime": "2026-04-03T17:18:04.03196Z",
+              "startTime": "2026-05-15T03:18:17.806424923Z",
               "status": "failed"
             }
           ],
@@ -33,7 +33,9 @@
               "IA-5 (7)"
             ]
           },
-          "title": "Found URI secret using PLAIN decoder"
+          "controlType": "technical",
+          "title": "Found URI secret using PLAIN decoder",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -46,13 +48,13 @@
             {
               "codeDesc": "{\"Data\":{\"Filesystem\":{\"file\":\"github.com/jackc/pgx/v5/pgxpool/pool.go\",\"line\":297}}}",
               "message": "{\"ExtraData\":{\"sslmode\":\"verify-ca\"},\"Redacted\":\"\",\"VerificationError\":\"lookup pg.example.com on 10.96.0.10:53: server misbehaving\",\"Verified\":false}",
-              "startTime": "2026-04-03T17:18:04.03196Z",
+              "startTime": "2026-05-15T03:18:17.806433369Z",
               "status": "failed"
             },
             {
               "codeDesc": "{\"Data\":{\"Filesystem\":{\"file\":\"github.com/jackc/pgx/v5/pgconn/config.go\",\"line\":1}}}",
               "message": "{\"ExtraData\":{\"sslmode\":\"\\u003cunset\\u003e\"},\"Redacted\":\"\",\"VerificationError\":\"lookup foo.example.com:5432,bar.example.com:5432: no such host\",\"Verified\":false}",
-              "startTime": "2026-04-03T17:18:04.03196Z",
+              "startTime": "2026-05-15T03:18:17.806437447Z",
               "status": "failed"
             }
           ],
@@ -72,7 +74,9 @@
               "IA-5 (7)"
             ]
           },
-          "title": "Found Postgres secret using PLAIN decoder"
+          "controlType": "technical",
+          "title": "Found Postgres secret using PLAIN decoder",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -87,7 +91,7 @@
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:18:04.03196Z",
+  "timestamp": "2026-05-15T03:18:17.806439651Z",
   "tool": {
     "format": "JSON",
     "name": "TruffleHog"

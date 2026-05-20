@@ -33,7 +33,8 @@
               "RA-5"
             ]
           },
-          "title": "Acorn regexp.js Regular Expression Validation UTF-16 Surrogate Handling Infinite Loop DoS"
+          "title": "Acorn regexp.js Regular Expression Validation UTF-16 Surrogate Handling Infinite Loop DoS",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -66,7 +67,8 @@
               "RA-5"
             ]
           },
-          "title": "Lodash Package for Node.js .internal/baseZipObject.js baseZipObject() Function Property Manipulation Resource Exhaustion DoS"
+          "title": "Lodash Package for Node.js .internal/baseZipObject.js baseZipObject() Function Property Manipulation Resource Exhaustion DoS",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -99,7 +101,8 @@
               "RA-5"
             ]
           },
-          "title": "node-handlebars Template Handling Prototype Manipulation Remote Code Execution"
+          "title": "node-handlebars Template Handling Prototype Manipulation Remote Code Execution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -132,7 +135,8 @@
               "RA-5"
             ]
           },
-          "title": "Handlebars.js lib/handlebars/helpers/lookup.js Template Handling Prototype Manipulation Arbitrary Code Execution"
+          "title": "Handlebars.js lib/handlebars/helpers/lookup.js Template Handling Prototype Manipulation Arbitrary Code Execution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -165,7 +169,8 @@
               "RA-5"
             ]
           },
-          "title": "Arbitrary Code Execution"
+          "title": "Arbitrary Code Execution",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -201,7 +206,8 @@
               "RA-5"
             ]
           },
-          "title": "Versions of handlebars prior to 4.3.0 are vulnerable to Prototype Pollution leading to Remote Code Execution. Templates may alter an Object's __proto__ and __defineGetter__ properties, which may allow an attacker to execute arbitrary code through crafted payloads."
+          "title": "Versions of handlebars prior to 4.3.0 are vulnerable to Prototype Pollution leading to Remote Code Execution. Templates may alter an Object's __proto__ and __defineGetter__ properties, which may allow an attacker to execute arbitrary code through crafted payloads.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -234,7 +240,8 @@
               "RA-5"
             ]
           },
-          "title": "Lodash Package for Node.js lodash.js baseSet() Function Prototype Pollution DoS"
+          "title": "Lodash Package for Node.js lodash.js baseSet() Function Prototype Pollution DoS",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -270,7 +277,8 @@
               "RA-5"
             ]
           },
-          "title": "Handlebars before 4.4.5 allows Regular Expression Denial of Service (ReDoS) because of eager matching. The parser may be forced into an endless loop while processing crafted templates. This may allow attackers to exhaust system resources."
+          "title": "Handlebars before 4.4.5 allows Regular Expression Denial of Service (ReDoS) because of eager matching. The parser may be forced into an endless loop while processing crafted templates. This may allow attackers to exhaust system resources.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -298,7 +306,8 @@
               "RA-5"
             ]
           },
-          "title": "Lodash Package for Node.js lodash.js safeGet() Function Object Prototype Manipulation Unspecified Issue"
+          "title": "Lodash Package for Node.js lodash.js safeGet() Function Object Prototype Manipulation Unspecified Issue",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -329,7 +338,8 @@
               "RA-5"
             ]
           },
-          "title": "ctorName in index.js in kind-of v6.0.2 allows external user input to overwrite certain internal attributes via a conflicting name, as demonstrated by 'constructor': {'name':'Symbol'}. Hence, a crafted payload can overwrite this builtin attribute to manipulate the type detection result."
+          "title": "ctorName in index.js in kind-of v6.0.2 allows external user input to overwrite certain internal attributes via a conflicting name, as demonstrated by 'constructor': {'name':'Symbol'}. Hence, a crafted payload can overwrite this builtin attribute to manipulate the type detection result.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -358,7 +368,9 @@
               "SI-10"
             ]
           },
-          "title": "An issue was discovered in ajv.validate() in Ajv (aka Another JSON Schema Validator) 6.12.2. A carefully crafted JSON schema could be provided that allows execution of other code by prototype pollution. (While untrusted schemas are recommended against, the worst case of an untrusted schema should be a denial of service, not execution of code.)"
+          "controlType": "technical",
+          "title": "An issue was discovered in ajv.validate() in Ajv (aka Another JSON Schema Validator) 6.12.2. A carefully crafted JSON schema could be provided that allows execution of other code by prototype pollution. (While untrusted schemas are recommended against, the worst case of an untrusted schema should be a denial of service, not execution of code.)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -387,7 +399,9 @@
               "SI-10"
             ]
           },
-          "title": "minimist before 1.2.2 could be tricked into adding or modifying properties of Object.prototype using a \"constructor\" or \"__proto__\" payload."
+          "controlType": "technical",
+          "title": "minimist before 1.2.2 could be tricked into adding or modifying properties of Object.prototype using a \"constructor\" or \"__proto__\" payload.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -415,7 +429,8 @@
               "RA-5"
             ]
           },
-          "title": "braces Package for Node.js lib/parsers.js Regular Expression Handling DoS"
+          "title": "braces Package for Node.js lib/parsers.js Regular Expression Handling DoS",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -454,7 +469,9 @@
               "SI-10"
             ]
           },
-          "title": "yargs-parser could be tricked into adding or modifying properties of Object.prototype using a \"__proto__\" payload."
+          "controlType": "technical",
+          "title": "yargs-parser could be tricked into adding or modifying properties of Object.prototype using a \"__proto__\" payload.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -482,7 +499,8 @@
               "RA-5"
             ]
           },
-          "title": "mem Package for Node.js index.js Cache Handling Memory Exhaustion Remote DoS Weakness"
+          "title": "mem Package for Node.js index.js Cache Handling Memory Exhaustion Remote DoS Weakness",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -511,7 +529,9 @@
               "SI-10"
             ]
           },
-          "title": "Handlebars before 3.0.8 and 4.x before 4.5.3 is vulnerable to Arbitrary Code Execution. The lookup helper fails to properly validate templates, allowing attackers to submit templates that execute arbitrary JavaScript. This can be used to run arbitrary code on a server processing Handlebars templates or in a victim's browser (effectively serving as XSS)."
+          "controlType": "technical",
+          "title": "Handlebars before 3.0.8 and 4.x before 4.5.3 is vulnerable to Arbitrary Code Execution. The lookup helper fails to properly validate templates, allowing attackers to submit templates that execute arbitrary JavaScript. This can be used to run arbitrary code on a server processing Handlebars templates or in a victim's browser (effectively serving as XSS).",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -539,7 +559,8 @@
               "RA-5"
             ]
           },
-          "title": "Prototype Pollution"
+          "title": "Prototype Pollution",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -559,7 +580,7 @@
     "name": "jfrog-xray-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:56.9817885Z",
+  "timestamp": "2026-05-15T03:15:04.314337225Z",
   "tool": {
     "format": "JSON",
     "name": "JFrog Xray"

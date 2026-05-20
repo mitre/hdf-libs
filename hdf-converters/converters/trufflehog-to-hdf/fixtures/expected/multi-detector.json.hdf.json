@@ -39,7 +39,9 @@
               "IA-5 (7)"
             ]
           },
-          "title": "Found AWS secret using PLAIN decoder"
+          "controlType": "technical",
+          "title": "Found AWS secret using PLAIN decoder",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -72,7 +74,9 @@
               "IA-5 (7)"
             ]
           },
-          "title": "Found URI secret using PLAIN decoder"
+          "controlType": "technical",
+          "title": "Found URI secret using PLAIN decoder",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -93,7 +97,7 @@
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:18:04.0312729Z",
+  "timestamp": "2026-05-15T03:18:17.805830543Z",
   "tool": {
     "format": "JSON",
     "name": "TruffleHog"

@@ -25,7 +25,9 @@
               "SA-11"
             ]
           },
-          "title": "test"
+          "controlType": "management",
+          "title": "test",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -45,7 +47,7 @@
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:57.1417989Z",
+  "timestamp": "2026-05-15T03:15:04.871291124Z",
   "tool": {
     "format": "XML",
     "name": "JUnit XML"

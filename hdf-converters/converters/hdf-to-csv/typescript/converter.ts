@@ -20,6 +20,9 @@ interface CsvRow {
   'Status': string;
   'NIST Controls': string;
   'CCI Controls': string;
+  'Control Type': string;
+  'Verification Method': string;
+  'Applicability': string;
   'Result Message': string;
 }
 
@@ -103,6 +106,9 @@ function createRow(
     'Status': String(status),
     'NIST Controls': nistControls,
     'CCI Controls': cciControls,
+    'Control Type': requirement.controlType ?? '',
+    'Verification Method': requirement.verificationMethod ?? '',
+    'Applicability': requirement.applicability ?? '',
     'Result Message': message
   };
 }

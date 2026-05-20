@@ -6,7 +6,7 @@ import {
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -15,6 +15,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -105,14 +106,22 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[]): EvaluatedRequireme
     })
   );
 
-  return createRequirement(
+  const req = createRequirement(
     vulnID,
     rep.title,
     descriptions,
     severityToImpact(rep.severity),
     results,
     { tags }
-  );
+  ) as EvaluatedRequirement;
+
+  const controlType = deriveControlTypeFromTags(nist);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+
+  return req;
 }
 
 /**

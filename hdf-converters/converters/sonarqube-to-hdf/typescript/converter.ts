@@ -2,7 +2,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import {
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -12,6 +12,7 @@ import type {
 import {
   Copyright,
   ResultStatus,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createDescription,
@@ -297,14 +298,22 @@ function convertRuleToRequirement(
     options.sourceLocation = sourceLocation;
   }
 
-  return createRequirement(
+  const req = createRequirement(
     ruleKey,
     title,
     [createDescription('default', description)],
     impact,
     results,
     options
-  );
+  ) as EvaluatedRequirement;
+
+  const controlType = deriveControlTypeFromTags(nistControls);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+
+  return req;
 }
 
 function extractDescription(rule: SonarQubeRule | undefined): string {

@@ -36,7 +36,9 @@
               "SI-10"
             ]
           },
-          "title": "Command Injection"
+          "controlType": "technical",
+          "title": "Command Injection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -69,7 +71,9 @@
               "SI-10"
             ]
           },
-          "title": "Insecure Deserialization"
+          "controlType": "technical",
+          "title": "Insecure Deserialization",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -101,7 +105,8 @@
               "RA-5"
             ]
           },
-          "title": "Information Exposure Through Debug Log"
+          "title": "Information Exposure Through Debug Log",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
