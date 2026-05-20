@@ -15,8 +15,8 @@ func TestDetectHDFDocumentType(t *testing.T) {
 		{"amendments", `{"name": "waivers", "overrides": []}`, "amendments"},
 		{"evidence-package", `{"name": "pkg", "contents": []}`, "evidence-package"},
 		{"comparison", `{"comparisonMode": "temporal", "requirementDiffs": []}`, "comparison"},
-		{"empty object", `{}`, "results"},
-		{"invalid JSON", `not json`, "results"},
+		{"empty object", `{}`, ""},
+		{"invalid JSON", `not json`, ""},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

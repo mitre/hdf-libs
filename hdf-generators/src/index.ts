@@ -1,5 +1,11 @@
 export type { GeneratorOptions, ProfileMetadata, InSpecProfile } from './types.js';
+export type { LinkRecord, DeltaStatistics, UpgradeResult, UpgradeOptions, DeltaResult, DeltaOptions } from './delta-types.js';
+export type { PreferSide } from './merge.js';
 export { escapeQuotes } from './ruby-escape.js';
 export { generateControlStub } from './control-stub.js';
 export { generateInSpecYml } from './inspec-yml.js';
 export { generateInSpecProfile } from './profile-generator.js';
+export { mergeRequirement, mergeTags, mergeDescriptions, mergeRefs } from './merge.js';
+export { generateUpgrade, generateDelta } from './delta.js';
+export { generateDeltaJson, generateDeltaMarkdown } from './delta-report.js';
+export type { DeltaJsonReport } from './delta-report.js';

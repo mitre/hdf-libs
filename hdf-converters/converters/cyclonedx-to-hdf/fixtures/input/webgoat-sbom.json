@@ -52,7 +52,7 @@
       },
       {
         "name": "cdx:bom:componentSrcFiles",
-        "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml\\n/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml\\n/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/welcome.yml\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-1.10.2.min.js\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-ui-1.10.4.custom.min.js\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-2.1.4.min.js\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-ui.min.js\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery.min.js\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/modernizr.min.js\\n/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/plugins/nanoScroller/jquery.nanoscroller.min.js\\njar-deps-sC3pEc/maven-wrapper.jar\\nmaven-wrapper.jar"
+        "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml\\n/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml\\n/Users/user/repos/sample_apps/WebGoat/.github/workflows/welcome.yml\\n/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-1.10.2.min.js\\n/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-ui-1.10.4.custom.min.js\\n/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-2.1.4.min.js\\n/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-ui.min.js\\n/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery.min.js\\n/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/modernizr.min.js\\n/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/plugins/nanoScroller/jquery.nanoscroller.min.js\\njar-deps-sC3pEc/maven-wrapper.jar\\nmaven-wrapper.jar"
       }
     ]
   },
@@ -68,7 +68,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/plugins/nanoScroller/jquery.nanoscroller.min.js"
+          "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/plugins/nanoScroller/jquery.nanoscroller.min.js"
         }
       ],
       "evidence": {
@@ -80,10 +80,10 @@
               {
                 "technique": "filename",
                 "confidence": 0.25,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/plugins/nanoScroller/jquery.nanoscroller.min.js"
+                "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/plugins/nanoScroller/jquery.nanoscroller.min.js"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/plugins/nanoScroller/jquery.nanoscroller.min.js"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/plugins/nanoScroller/jquery.nanoscroller.min.js"
           }
         ]
       }
@@ -99,7 +99,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/modernizr.min.js"
+          "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/modernizr.min.js"
         }
       ],
       "evidence": {
@@ -111,10 +111,10 @@
               {
                 "technique": "filename",
                 "confidence": 0.25,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/modernizr.min.js"
+                "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/modernizr.min.js"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/modernizr.min.js"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/modernizr.min.js"
           }
         ]
       }
@@ -130,7 +130,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery.min.js"
+          "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery.min.js"
         },
         {
           "name": "ImportedModules",
@@ -146,10 +146,10 @@
               {
                 "technique": "filename",
                 "confidence": 0.25,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery.min.js"
+                "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery.min.js"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery.min.js"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery.min.js"
           }
         ],
         "occurrences": [
@@ -170,7 +170,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-ui.min.js"
+          "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-ui.min.js"
         }
       ],
       "evidence": {
@@ -182,10 +182,10 @@
               {
                 "technique": "filename",
                 "confidence": 0.25,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-ui.min.js"
+                "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-ui.min.js"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-ui.min.js"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-ui.min.js"
           }
         ]
       }
@@ -201,7 +201,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-2.1.4.min.js"
+          "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-2.1.4.min.js"
         },
         {
           "name": "ImportedModules",
@@ -217,10 +217,10 @@
               {
                 "technique": "filename",
                 "confidence": 0.25,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-2.1.4.min.js"
+                "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-2.1.4.min.js"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-2.1.4.min.js"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/libs/jquery-2.1.4.min.js"
           }
         ],
         "occurrences": [
@@ -241,7 +241,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-ui-1.10.4.custom.min.js"
+          "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-ui-1.10.4.custom.min.js"
         }
       ],
       "evidence": {
@@ -253,10 +253,10 @@
               {
                 "technique": "filename",
                 "confidence": 0.25,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-ui-1.10.4.custom.min.js"
+                "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-ui-1.10.4.custom.min.js"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-ui-1.10.4.custom.min.js"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-ui-1.10.4.custom.min.js"
           }
         ]
       }
@@ -272,7 +272,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-1.10.2.min.js"
+          "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-1.10.2.min.js"
         },
         {
           "name": "ImportedModules",
@@ -288,10 +288,10 @@
               {
                 "technique": "filename",
                 "confidence": 0.25,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-1.10.2.min.js"
+                "value": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-1.10.2.min.js"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-1.10.2.min.js"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/src/main/resources/webgoat/static/js/jquery/jquery-1.10.2.min.js"
           }
         ],
         "occurrences": [
@@ -311,7 +311,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/welcome.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/welcome.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -355,10 +355,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/welcome.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/welcome.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/welcome.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/welcome.yml"
           }
         ]
       },
@@ -378,7 +378,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -430,10 +430,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
           }
         ]
       },
@@ -453,7 +453,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -505,10 +505,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
           }
         ]
       },
@@ -526,7 +526,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -578,10 +578,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
           }
         ]
       },
@@ -599,7 +599,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -651,10 +651,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
           }
         ]
       },
@@ -672,7 +672,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -724,10 +724,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
           }
         ]
       },
@@ -745,7 +745,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -797,10 +797,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
           }
         ]
       },
@@ -818,7 +818,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -866,10 +866,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
           }
         ]
       },
@@ -887,7 +887,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -935,10 +935,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/release.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/release.yml"
           }
         ]
       },
@@ -956,7 +956,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -1004,10 +1004,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml"
           }
         ]
       },
@@ -1027,7 +1027,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -1075,10 +1075,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml"
           }
         ]
       },
@@ -1098,7 +1098,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -1142,10 +1142,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml"
           }
         ]
       },
@@ -1163,7 +1163,7 @@
       "properties": [
         {
           "name": "SrcFile",
-          "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+          "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml"
         },
         {
           "name": "cdx:github:workflow:name",
@@ -1211,10 +1211,10 @@
               {
                 "technique": "source-code-analysis",
                 "confidence": 0.6,
-                "value": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+                "value": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml"
               }
             ],
-            "concludedValue": "/Users/wdower/repos/sample_apps/WebGoat/.github/workflows/build.yml"
+            "concludedValue": "/Users/user/repos/sample_apps/WebGoat/.github/workflows/build.yml"
           }
         ]
       },

@@ -93,7 +93,8 @@ Examples:
   hdf convert --from nessus --to hdf scan.nessus       # Explicit formats
   hdf convert --from sarif@2.0 scan.sarif              # Explicit version
   hdf convert scan1.nessus scan2.xml -o output-dir/    # Bulk convert to directory
-  hdf convert *.sarif -o converted/ -k                 # Bulk, skip failures
+  hdf convert *.sarif -o converted/                     # Bulk, continues past failures
+  hdf convert *.sarif -o converted/ -F                 # Bulk, abort on first failure
   cat scan.json | hdf convert -                        # Read from stdin`)
 
 	return sb.String()
