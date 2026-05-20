@@ -2,7 +2,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, stripHTML, buildNistCciTags, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, limitArray, stripHTML, buildNistCciTags, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -11,6 +11,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -202,14 +203,20 @@ function buildRequirement(
     }),
   ];
 
-  return createRequirement(
+  const req = createRequirement(
     id,
     title,
     descriptions,
     impact,
     results,
     { tags },
-  );
+  ) as EvaluatedRequirement;
+  const controlType = deriveControlTypeFromTags(nist);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+  return req;
 }
 
 /**

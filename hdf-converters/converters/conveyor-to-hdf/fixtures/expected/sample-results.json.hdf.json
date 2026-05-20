@@ -28,7 +28,8 @@
               "RA-5"
             ]
           },
-          "title": "Capa.stigma"
+          "title": "Capa.stigma",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -56,7 +57,8 @@
               "RA-5"
             ]
           },
-          "title": "Capa.hipcheck"
+          "title": "Capa.hipcheck",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -94,7 +96,8 @@
               "RA-5"
             ]
           },
-          "title": "Capa.stigma"
+          "title": "Capa.stigma",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -122,7 +125,8 @@
               "RA-5"
             ]
           },
-          "title": "Capa.hipcheck"
+          "title": "Capa.hipcheck",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -160,7 +164,8 @@
               "RA-5"
             ]
           },
-          "title": "Capa.moldy"
+          "title": "Capa.moldy",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -188,7 +193,8 @@
               "RA-5"
             ]
           },
-          "title": "Notepad++.moldy"
+          "title": "Notepad++.moldy",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -231,7 +237,8 @@
               "RA-5"
             ]
           },
-          "title": "Capa.stigma"
+          "title": "Capa.stigma",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -264,7 +271,8 @@
               "RA-5"
             ]
           },
-          "title": "Geographical-Adventures.stigma"
+          "title": "Geographical-Adventures.stigma",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -285,7 +293,7 @@
     "name": "conveyor-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:51.7705273Z",
+  "timestamp": "2026-05-15T03:12:26.830118892Z",
   "tool": {
     "format": "JSON",
     "name": "Conveyor"

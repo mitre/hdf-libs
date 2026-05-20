@@ -1,11 +1,11 @@
 {
   "baselines": [
     {
-      "checksum": {
-        "algorithm": "sha256",
-        "value": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
-      },
       "description": "Brief assessment description.",
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
+      },
       "requirements": [
         {
           "descriptions": [
@@ -45,6 +45,7 @@
               "AC-1"
             ]
           },
+          "controlType": "policy",
           "title": "[EXAMPLE]TCW Objective AC-1(a)(1)[1] (Examine)"
         },
         {
@@ -72,6 +73,7 @@
               "AU-1"
             ]
           },
+          "controlType": "policy",
           "title": "[EXAMPLE]Issue With AU-1 Statement"
         },
         {
@@ -99,6 +101,7 @@
               "RA-5"
             ]
           },
+          "controlType": "management",
           "title": "Discovery Scan Results"
         },
         {
@@ -127,6 +130,7 @@
               "CM-2 (1)"
             ]
           },
+          "controlType": "operational",
           "title": "[EXAMPLE]Infrastructure Scan Unique Vulnerability"
         },
         {
@@ -154,6 +158,7 @@
               "AT-2"
             ]
           },
+          "controlType": "operational",
           "title": "[EXAMPLE]Spear Phishing Results"
         },
         {
@@ -182,6 +187,7 @@
               "CA-8 (1)"
             ]
           },
+          "controlType": "management",
           "title": "[EXAMPLE]Penetration Test Result"
         }
       ],
@@ -192,46 +198,16 @@
       "name": "2023-annual-assessment",
       "status": "loaded",
       "title": "2023 Annual Assessment"
-    },
-    {
-      "checksum": {
-        "algorithm": "sha256",
-        "value": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
-      },
-      "description": "Description",
-      "requirements": [],
-      "resultsChecksum": {
-        "algorithm": "sha256",
-        "value": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
-      },
-      "name": "2022-annual-assessment",
-      "status": "loaded",
-      "title": "2022 Annual Assessment"
-    },
-    {
-      "checksum": {
-        "algorithm": "sha256",
-        "value": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
-      },
-      "description": "Description",
-      "requirements": [],
-      "resultsChecksum": {
-        "algorithm": "sha256",
-        "value": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
-      },
-      "name": "initial-2021-assessment",
-      "status": "loaded",
-      "title": "Initial (2021) Assessment"
     }
   ],
+  "generator": {
+    "name": "oscal-assessment-results-to-hdf",
+    "version": "dev"
+  },
+  "planRef": "#5cce2310-8fcc-49f8-8cae-8e31dc8048f1",
+  "timestamp": "2024-09-24T02:24:00Z",
   "tool": {
     "format": "OSCAL",
     "name": "OSCAL Assessment Results"
-  },
-  "generator": {
-    "name": "oscal-assessment-results-to-hdf",
-    "version": "0.1.0"
-  },
-  "planRef": "#5cce2310-8fcc-49f8-8cae-8e31dc8048f1",
-  "timestamp": "2024-09-24T02:24:00Z"
+  }
 }

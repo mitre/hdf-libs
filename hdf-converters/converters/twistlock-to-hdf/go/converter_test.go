@@ -354,8 +354,45 @@ func TestConvertTwistlock_StartTime(t *testing.T) {
 	assert.Equal(t, expected, req.Results[0].StartTime)
 }
 
+func TestConvertTwistlock_ControlType(t *testing.T) {
+	input := loadFixture(t, "input/twistlock-twistcli-sample-1.json")
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	assert.False(t, sawDerivation, "converter uses static-fallback NIST only; controlType must be omitted per helper gate")
+}
+
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "twistlock-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertTwistlockToHDF(input, "0.1.0")
 	})
+}
+
+func TestConvertTwistlock_VerificationMethod(t *testing.T) {
+	input := loadFixture(t, "input/twistlock-twistcli-sample-1.json")
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	for _, req := range reqs {
+		require.NotNil(t, req.VerificationMethod, "requirement %q missing verificationMethod", req.ID)
+		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+			"requirement %q expected verificationMethod=automated", req.ID)
+	}
 }

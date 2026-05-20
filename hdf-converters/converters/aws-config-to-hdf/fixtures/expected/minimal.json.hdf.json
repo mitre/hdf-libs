@@ -44,7 +44,9 @@
               "AC-2(j)"
             ]
           },
-          "title": "123456789012 - access-keys-rotated"
+          "controlType": "technical",
+          "title": "123456789012 - access-keys-rotated",
+          "verificationMethod": "automated"
         }
       ],
       "name": "AWS Config",
@@ -68,7 +70,7 @@
     "name": "aws-config-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:50.983582Z",
+  "timestamp": "2026-05-15T03:07:54.867771933Z",
   "tool": {
     "name": "AWS Config"
   }

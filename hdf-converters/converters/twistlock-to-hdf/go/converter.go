@@ -144,12 +144,14 @@ func buildRequirement(vuln TwistlockVuln) hdf.EvaluatedRequirement {
 
 	title := vuln.ID
 	return hdf.EvaluatedRequirement{
-		ID:           vuln.ID,
-		Title:        &title,
-		Impact:       getImpact(vuln.Severity),
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 vuln.ID,
+		Title:              &title,
+		Impact:             getImpact(vuln.Severity),
+		Tags:               tags,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		Descriptions:       descriptions,
+		Results:            results,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

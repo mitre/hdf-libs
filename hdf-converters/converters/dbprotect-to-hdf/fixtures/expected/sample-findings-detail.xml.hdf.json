@@ -33,7 +33,8 @@
               "RA-5"
             ]
           },
-          "title": "Protection of DBMS asymmetric encryption keys"
+          "title": "Protection of DBMS asymmetric encryption keys",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -61,7 +62,8 @@
               "RA-5"
             ]
           },
-          "title": "System Table Permissions"
+          "title": "System Table Permissions",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -89,7 +91,8 @@
               "RA-5"
             ]
           },
-          "title": "Symmetric encryption keys"
+          "title": "Symmetric encryption keys",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -112,7 +115,7 @@
     "name": "dbprotect-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:51.748668Z",
+  "timestamp": "2026-05-15T03:15:12.741428989Z",
   "tool": {
     "format": "XML",
     "name": "DBProtect"

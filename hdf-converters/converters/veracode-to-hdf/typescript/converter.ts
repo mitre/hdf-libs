@@ -13,7 +13,7 @@
 
 import { parseXml } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
-import { inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -23,6 +23,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -246,14 +247,22 @@ function buildCWERequirement(cat: Record<string, unknown>, impact: number, first
     }));
   });
 
-  return createRequirement(
+  const req = createRequirement(
     attr(cat, 'categoryid'),
     attr(cat, 'categoryname'),
     descriptions,
     impact,
     results,
     { tags },
-  );
+  ) as EvaluatedRequirement;
+
+  const controlType = deriveControlTypeFromTags(nist);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+
+  return req;
 }
 
 /** Build CVE-based requirements from SCA components. */
@@ -341,14 +350,22 @@ function buildCVERequirement(
     { label: 'default', data: cveSummary || '' },
   ];
 
-  return createRequirement(
+  const req = createRequirement(
     cveId,
     cveId,
     descriptions,
     impact,
     results,
     { tags },
-  );
+  ) as EvaluatedRequirement;
+
+  const controlType = deriveControlTypeFromTags(nist);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  req.verificationMethod = VerificationMethodEnum.Automated;
+
+  return req;
 }
 
 // ---- Main converter ----

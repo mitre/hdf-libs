@@ -1,6 +1,7 @@
 import { parseXml } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
 import {
+  deriveControlTypeFromTags,
   inputChecksum,
   buildNistCciTags,
   limitArray,
@@ -21,6 +22,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
 } from '@mitre/hdf-schema';
 
@@ -255,14 +257,22 @@ function buildRequirement(
     startTime: new Date(startTimeStr),
   }));
 
-  return {
+  const req: EvaluatedRequirement = {
     id: desc.classID ?? 'unknown',
     title,
     impact,
     tags,
     descriptions,
     results,
+    verificationMethod: VerificationMethodEnum.Automated,
   };
+
+  const controlType = deriveControlTypeFromTags(nistTags);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+
+  return req;
 }
 
 // --- Main converter ---

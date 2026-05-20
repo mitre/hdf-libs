@@ -239,13 +239,15 @@ func buildRequirement(reqID string, findings []TrufflehogFinding) hdf.EvaluatedR
 	}
 
 	return hdf.EvaluatedRequirement{
-		ID:             reqID,
-		Title:          &title,
-		Impact:         0.5,
-		Tags:           tags,
-		Descriptions:   descriptions,
-		Results:        results,
-		SourceLocation: sourceLocation,
+		ID:                 reqID,
+		Title:              &title,
+		Impact:             0.5,
+		Tags:               tags,
+		ControlType:        shared.DeriveControlTypeFromTags(trufflehogNIST),
+		Descriptions:       descriptions,
+		Results:            results,
+		SourceLocation:     sourceLocation,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

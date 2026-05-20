@@ -267,12 +267,14 @@ func buildRequirement(vuln *NetsparkerVuln, initiated string) hdf.EvaluatedRequi
 	title := vuln.Name
 
 	return hdf.EvaluatedRequirement{
-		ID:           vuln.LookupID,
-		Title:        &title,
-		Impact:       impact,
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      []hdf.RequirementResult{result},
+		ID:                 vuln.LookupID,
+		Title:              &title,
+		Impact:             impact,
+		Tags:               tags,
+		Descriptions:       descriptions,
+		Results:            []hdf.RequirementResult{result},
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

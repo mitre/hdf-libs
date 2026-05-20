@@ -37,7 +37,9 @@
               "SI-10"
             ]
           },
-          "title": "pkg:npm/timespan@2.3.0 - Regular Expression Denial of Service"
+          "controlType": "technical",
+          "title": "pkg:npm/timespan@2.3.0 - Regular Expression Denial of Service",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -74,7 +76,9 @@
               "SI-10"
             ]
           },
-          "title": "pkg:npm/uglify-js@2.4.24 - Regular Expression Denial of Service"
+          "controlType": "technical",
+          "title": "pkg:npm/uglify-js@2.4.24 - Regular Expression Denial of Service",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -96,7 +100,7 @@
     "name": "deptrack-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:51.8058862Z",
+  "timestamp": "2026-05-15T03:16:29.93670671Z",
   "tool": {
     "format": "JSON",
     "name": "Dependency-Track"

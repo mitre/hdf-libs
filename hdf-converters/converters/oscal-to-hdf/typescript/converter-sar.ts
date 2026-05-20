@@ -5,7 +5,7 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -174,7 +174,10 @@ function findingsToEvaluatedRequirement(
     nist: [nistTag],
   };
 
-  return createRequirement(nistTag, title, descriptions, impact, results, { tags });
+  const req = createRequirement(nistTag, title, descriptions, impact, results, { tags }) as EvaluatedRequirement;
+  const controlType = deriveControlTypeFromTags([nistTag]);
+  if (controlType !== undefined) req.controlType = controlType;
+  return req;
 }
 
 function findingToRequirementResult(

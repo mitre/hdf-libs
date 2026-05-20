@@ -35,7 +35,9 @@
             ],
             "owasp": "A6"
           },
-          "title": "Weak Ciphers Enabled"
+          "controlType": "technical",
+          "title": "Weak Ciphers Enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -68,7 +70,9 @@
             ],
             "owasp": "A5"
           },
-          "title": "HTTP Strict Transport Security (HSTS) Errors and Warnings"
+          "controlType": "technical",
+          "title": "HTTP Strict Transport Security (HSTS) Errors and Warnings",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -105,7 +109,9 @@
             ],
             "owasp": "A5"
           },
-          "title": "Missing X-Frame-Options Header"
+          "controlType": "technical",
+          "title": "Missing X-Frame-Options Header",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {

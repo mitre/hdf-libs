@@ -56,7 +56,9 @@
               "SC-13"
             ]
           },
-          "title": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)"
+          "controlType": "technical",
+          "title": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -118,7 +120,9 @@
               "SI-10"
             ]
           },
-          "title": "Potential file inclusion via variable"
+          "controlType": "technical",
+          "title": "Potential file inclusion via variable",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -181,7 +185,8 @@
               "RA-5"
             ]
           },
-          "title": "Expect file permissions to be 0600 or less"
+          "title": "Expect file permissions to be 0600 or less",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -220,7 +225,8 @@
               "RA-5"
             ]
           },
-          "title": "Expect directory permissions to be 0750 or less"
+          "title": "Expect directory permissions to be 0750 or less",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1171,7 +1177,8 @@
               "RA-5"
             ]
           },
-          "title": "Errors unhandled."
+          "title": "Errors unhandled.",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -1185,7 +1192,7 @@
     "name": "gosec-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:53.0908929Z",
+  "timestamp": "2026-05-15T03:36:27.833649018Z",
   "tool": {
     "name": "gosec",
     "version": "dev"

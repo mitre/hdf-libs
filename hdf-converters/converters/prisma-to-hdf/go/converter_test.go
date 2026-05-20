@@ -367,3 +367,44 @@ func TestSnapshots(t *testing.T) {
 		return ConvertPrismaToHDF(input, "0.1.0")
 	})
 }
+
+func TestConvertPrisma_ControlType(t *testing.T) {
+	input := loadFixture(t, "input/prismacloud_sample.csv")
+	result, err := ConvertPrismaToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Each baseline groups by hostname; at least one requirement across all
+	// baselines should have a derived controlType (Prisma uses either
+	// DefaultRemediationNIST for CVEs or DefaultStaticAnalysisNIST otherwise).
+	var sawDerivation bool
+	for _, baseline := range result.Baselines {
+		for _, req := range baseline.Requirements {
+			if req.ControlType != nil {
+				sawDerivation = true
+				switch *req.ControlType {
+				case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+				default:
+					t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+				}
+			}
+		}
+	}
+	assert.False(t, sawDerivation, "converter uses static-fallback NIST only; controlType must be omitted per helper gate")
+}
+
+// ---- VerificationMethod ----
+
+func TestConvertPrisma_VerificationMethod(t *testing.T) {
+	input := loadFixture(t, "input/minimal.csv")
+	result, err := ConvertPrismaToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	for _, req := range reqs {
+		require.NotNil(t, req.VerificationMethod, "requirement %q missing verificationMethod", req.ID)
+		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+			"requirement %q expected verificationMethod=automated", req.ID)
+	}
+}

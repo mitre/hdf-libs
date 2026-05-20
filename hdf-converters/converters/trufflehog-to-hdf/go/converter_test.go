@@ -298,8 +298,45 @@ func TestConvertTrufflehogToHDF_OutputIsValidJSON(t *testing.T) {
 	require.NoError(t, json.Unmarshal(output, &parsed))
 }
 
+func TestConvertTrufflehogToHDF_ControlType(t *testing.T) {
+	input := loadFixture(t, "input/multi-detector.json")
+	result, err := ConvertTrufflehogToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	assert.True(t, sawDerivation, "at least one requirement should derive controlType")
+}
+
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "trufflehog-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertTrufflehogToHDF(input, "0.1.0")
 	})
+}
+
+func TestConvertTrufflehogToHDF_VerificationMethod(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertTrufflehogToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	for _, req := range reqs {
+		require.NotNil(t, req.VerificationMethod, "requirement %q missing verificationMethod", req.ID)
+		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+			"requirement %q expected verificationMethod=automated", req.ID)
+	}
 }

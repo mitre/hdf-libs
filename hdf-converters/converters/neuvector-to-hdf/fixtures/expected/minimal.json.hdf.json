@@ -29,7 +29,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-36159 in apk-tools/2.10.5-r1."
+          "title": "NeuVector found a vulnerability to CVE-2021-36159 in apk-tools/2.10.5-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -58,7 +59,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-25235 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-25235 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -87,7 +89,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-30139 in apk-tools/2.10.5-r1."
+          "title": "NeuVector found a vulnerability to CVE-2021-30139 in apk-tools/2.10.5-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -116,7 +119,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-36217 in avahi/0.8-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-36217 in avahi/0.8-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -146,7 +150,9 @@
               "SI-10"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2018-25032 in ruby:nokogiri/1.10.9."
+          "controlType": "technical",
+          "title": "NeuVector found a vulnerability to CVE-2018-25032 in ruby:nokogiri/1.10.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -175,7 +181,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2018-25032 in zlib/1.2.11-r3."
+          "title": "NeuVector found a vulnerability to CVE-2018-25032 in zlib/1.2.11-r3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -205,7 +212,9 @@
               "SI-10"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-25613 in ruby:webrick/1.4.2."
+          "controlType": "technical",
+          "title": "NeuVector found a vulnerability to CVE-2020-25613 in ruby:webrick/1.4.2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -234,7 +243,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2023-37920 in ca-certificates/2023.2.60_v7.0.306-80.0.el8_8."
+          "title": "NeuVector found a vulnerability to CVE-2023-37920 in ca-certificates/2023.2.60_v7.0.306-80.0.el8_8.",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -259,7 +269,7 @@
     "name": "neuvector-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:18:00.4641251Z",
+  "timestamp": "2026-05-15T03:15:08.898357288Z",
   "tool": {
     "format": "JSON",
     "name": "NeuVector"

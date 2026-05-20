@@ -129,7 +129,9 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
-          "title": "Insecure HTTP Method - MKCOL"
+          "controlType": "technical",
+          "title": "Insecure HTTP Method - MKCOL",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -200,7 +202,8 @@
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
-          "title": "Cookie No HttpOnly Flag"
+          "title": "Cookie No HttpOnly Flag",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -351,7 +354,8 @@
             "riskdesc": "Medium (Medium)",
             "wascid": "34"
           },
-          "title": "Backup File Disclosure"
+          "title": "Backup File Disclosure",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -480,7 +484,9 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
-          "title": "Insecure HTTP Method - COPY"
+          "controlType": "technical",
+          "title": "Insecure HTTP Method - COPY",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -609,7 +615,9 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
-          "title": "Insecure HTTP Method - MOVE"
+          "controlType": "technical",
+          "title": "Insecure HTTP Method - MOVE",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -738,7 +746,9 @@
             "riskdesc": "Medium (Medium)",
             "wascid": "45"
           },
-          "title": "Insecure HTTP Method - PUT"
+          "controlType": "technical",
+          "title": "Insecure HTTP Method - PUT",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -867,7 +877,9 @@
             "riskdesc": "Low (Medium)",
             "wascid": "9"
           },
-          "title": "Absence of Anti-CSRF Tokens"
+          "controlType": "technical",
+          "title": "Absence of Anti-CSRF Tokens",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -996,7 +1008,9 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "13"
           },
-          "title": "Information Disclosure - Suspicious Comments"
+          "controlType": "technical",
+          "title": "Information Disclosure - Suspicious Comments",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1125,7 +1139,9 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
-          "title": "Insecure HTTP Method - PROPPATCH"
+          "controlType": "technical",
+          "title": "Insecure HTTP Method - PROPPATCH",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1254,7 +1270,9 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
-          "title": "Insecure HTTP Method - PROPFIND"
+          "controlType": "technical",
+          "title": "Insecure HTTP Method - PROPFIND",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1313,7 +1331,9 @@
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
-          "title": "Information Disclosure - Debug Error Messages"
+          "controlType": "technical",
+          "title": "Information Disclosure - Debug Error Messages",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1372,7 +1392,9 @@
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
-          "title": "Information Disclosure - Debug Error Messages"
+          "controlType": "technical",
+          "title": "Information Disclosure - Debug Error Messages",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1431,7 +1453,9 @@
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
-          "title": "Information Disclosure - Debug Error Messages"
+          "controlType": "technical",
+          "title": "Information Disclosure - Debug Error Messages",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1560,7 +1584,9 @@
             "riskdesc": "Medium (Medium)",
             "wascid": "45"
           },
-          "title": "Insecure HTTP Method - PATCH"
+          "controlType": "technical",
+          "title": "Insecure HTTP Method - PATCH",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1689,7 +1715,9 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
-          "title": "Insecure HTTP Method - UNLOCK"
+          "controlType": "technical",
+          "title": "Insecure HTTP Method - UNLOCK",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1743,7 +1771,9 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "13"
           },
-          "title": "Information Disclosure - Sensitive Informations in URL"
+          "controlType": "technical",
+          "title": "Information Disclosure - Sensitive Informations in URL",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1872,7 +1902,9 @@
             "riskdesc": "Informational (Medium)",
             "wascid": "45"
           },
-          "title": "Insecure HTTP Method - LOCK"
+          "controlType": "technical",
+          "title": "Insecure HTTP Method - LOCK",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1931,7 +1963,9 @@
             "riskdesc": "Medium (Medium)",
             "wascid": "13"
           },
-          "title": "Application Error Disclosure"
+          "controlType": "technical",
+          "title": "Application Error Disclosure",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1974,7 +2008,8 @@
             "riskdesc": "High (Low)",
             "wascid": "34"
           },
-          "title": "Source Code Disclosure - SVN"
+          "title": "Source Code Disclosure - SVN",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2015,7 +2050,8 @@
             "riskdesc": "Low (Medium)",
             "wascid": "14"
           },
-          "title": "Web Browser XSS Protection Not Enabled"
+          "title": "Web Browser XSS Protection Not Enabled",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2129,7 +2165,9 @@
             "riskdesc": "High (Medium)",
             "wascid": "9"
           },
-          "title": "Anti CSRF Tokens Scanner"
+          "controlType": "technical",
+          "title": "Anti CSRF Tokens Scanner",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2168,7 +2206,9 @@
             "riskdesc": "Medium (Low)",
             "wascid": "20"
           },
-          "title": "HTTP Parameter Override"
+          "controlType": "technical",
+          "title": "HTTP Parameter Override",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2233,7 +2273,9 @@
             "riskdesc": "High (Medium)",
             "wascid": "19"
           },
-          "title": "SQL Injection"
+          "controlType": "technical",
+          "title": "SQL Injection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2272,7 +2314,9 @@
             "riskdesc": "Low (Medium)",
             "wascid": "13"
           },
-          "title": "Private IP Disclosure"
+          "controlType": "technical",
+          "title": "Private IP Disclosure",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2308,7 +2352,8 @@
             "riskdesc": "Informational (Low)",
             "wascid": "15"
           },
-          "title": "Charset Mismatch (Header Versus Meta Content-Type Charset)"
+          "title": "Charset Mismatch (Header Versus Meta Content-Type Charset)",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {

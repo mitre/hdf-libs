@@ -24,7 +24,8 @@
               "RA-5"
             ]
           },
-          "title": "Apps:spo_idle_session_timeout"
+          "title": "Apps:spo_idle_session_timeout",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -56,7 +57,8 @@
               "RA-5"
             ]
           },
-          "title": "Deploy a log collector to discover shadow IT activity"
+          "title": "Deploy a log collector to discover shadow IT activity",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -88,7 +90,8 @@
               "RA-5"
             ]
           },
-          "title": "Ensure DLP policies are enabled"
+          "title": "Ensure DLP policies are enabled",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -114,7 +117,7 @@
     "name": "msft-secure-score-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:58.589756Z",
+  "timestamp": "2026-05-15T03:15:07.950456471Z",
   "tool": {
     "format": "JSON",
     "name": "Microsoft Secure Score"

@@ -29,7 +29,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-36159 in apk-tools/2.10.5-r1."
+          "title": "NeuVector found a vulnerability to CVE-2021-36159 in apk-tools/2.10.5-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -58,7 +59,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-25235 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-25235 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -87,7 +89,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-22824 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-22824 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -116,7 +119,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-45960 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2021-45960 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -145,7 +149,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-25236 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-25236 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -174,7 +179,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-22823 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-22823 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -203,7 +209,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-25315 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-25315 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -232,7 +239,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-22822 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-22822 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -261,7 +269,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23852 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-23852 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -290,7 +299,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-27404 in freetype/2.10.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2022-27404 in freetype/2.10.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -319,7 +329,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-15900 in ghostscript/9.52-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-15900 in ghostscript/9.52-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -348,7 +359,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-20232 in gnutls/3.6.15-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-20232 in gnutls/3.6.15-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -377,7 +389,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-20231 in gnutls/3.6.15-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-20231 in gnutls/3.6.15-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -406,7 +419,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-31535 in libx11/1.6.12-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-31535 in libx11/1.6.12-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -435,7 +449,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-7774 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-7774 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -464,7 +479,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-22931 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-22931 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -493,7 +509,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-22930 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-22930 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -522,7 +539,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3711 in openssl/1.1.1g-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-3711 in openssl/1.1.1g-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -551,7 +569,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-37434 in zlib/1.2.11-r3."
+          "title": "NeuVector found a vulnerability to CVE-2022-37434 in zlib/1.2.11-r3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -580,7 +599,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-30139 in apk-tools/2.10.5-r1."
+          "title": "NeuVector found a vulnerability to CVE-2021-30139 in apk-tools/2.10.5-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -609,7 +629,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-42378 in busybox/1.31.1-r19."
+          "title": "NeuVector found a vulnerability to CVE-2021-42378 in busybox/1.31.1-r19.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -638,7 +659,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-42379 in busybox/1.31.1-r19."
+          "title": "NeuVector found a vulnerability to CVE-2021-42379 in busybox/1.31.1-r19.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -667,7 +689,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-42381 in busybox/1.31.1-r19."
+          "title": "NeuVector found a vulnerability to CVE-2021-42381 in busybox/1.31.1-r19.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -696,7 +719,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-42384 in busybox/1.31.1-r19."
+          "title": "NeuVector found a vulnerability to CVE-2021-42384 in busybox/1.31.1-r19.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -725,7 +749,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-42385 in busybox/1.31.1-r19."
+          "title": "NeuVector found a vulnerability to CVE-2021-42385 in busybox/1.31.1-r19.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -754,7 +779,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-42383 in busybox/1.31.1-r19."
+          "title": "NeuVector found a vulnerability to CVE-2021-42383 in busybox/1.31.1-r19.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -783,7 +809,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-42386 in busybox/1.31.1-r19."
+          "title": "NeuVector found a vulnerability to CVE-2021-42386 in busybox/1.31.1-r19.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -812,7 +839,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-28831 in busybox/1.31.1-r19."
+          "title": "NeuVector found a vulnerability to CVE-2021-28831 in busybox/1.31.1-r19.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -841,7 +869,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-42380 in busybox/1.31.1-r19."
+          "title": "NeuVector found a vulnerability to CVE-2021-42380 in busybox/1.31.1-r19.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -870,7 +899,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-28391 in busybox/1.31.1-r19."
+          "title": "NeuVector found a vulnerability to CVE-2022-28391 in busybox/1.31.1-r19.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -899,7 +929,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-42382 in busybox/1.31.1-r19."
+          "title": "NeuVector found a vulnerability to CVE-2021-42382 in busybox/1.31.1-r19.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -928,7 +959,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-35492 in cairo/1.16.0-r2."
+          "title": "NeuVector found a vulnerability to CVE-2020-35492 in cairo/1.16.0-r2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -957,7 +989,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-24407 in cyrus-sasl/2.1.27-r6."
+          "title": "NeuVector found a vulnerability to CVE-2022-24407 in cyrus-sasl/2.1.27-r6.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -986,7 +1019,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-46143 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2021-46143 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1015,7 +1049,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-22825 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-22825 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1044,7 +1079,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-22826 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-22826 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1073,7 +1109,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-22827 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-22827 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1102,7 +1139,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-25314 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-25314 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1131,7 +1169,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23990 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-23990 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1160,7 +1199,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-27406 in freetype/2.10.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2022-27406 in freetype/2.10.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1189,7 +1229,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-27405 in freetype/2.10.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2022-27405 in freetype/2.10.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1218,7 +1259,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-20240 in gdk-pixbuf/2.40.0-r2."
+          "title": "NeuVector found a vulnerability to CVE-2021-20240 in gdk-pixbuf/2.40.0-r2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1247,7 +1289,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-43618 in gmp/6.2.0-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-43618 in gmp/6.2.0-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1276,7 +1319,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-29599 in imagemagick6/6.9.11.25-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-29599 in imagemagick6/6.9.11.25-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1305,7 +1349,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3518 in libxml2/2.9.10-r5."
+          "title": "NeuVector found a vulnerability to CVE-2021-3518 in libxml2/2.9.10-r5.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1334,7 +1379,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3517 in libxml2/2.9.10-r5."
+          "title": "NeuVector found a vulnerability to CVE-2021-3517 in libxml2/2.9.10-r5.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1363,7 +1409,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23308 in libxml2/2.9.10-r5."
+          "title": "NeuVector found a vulnerability to CVE-2022-23308 in libxml2/2.9.10-r5.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1392,7 +1439,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-39537 in ncurses/6.2_p20200523-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-39537 in ncurses/6.2_p20200523-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1421,7 +1469,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3580 in nettle/3.5.1-r1."
+          "title": "NeuVector found a vulnerability to CVE-2021-3580 in nettle/3.5.1-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1450,7 +1499,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-39135 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-39135 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1479,7 +1529,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-8277 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-8277 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1508,7 +1559,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-21824 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2022-21824 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1537,7 +1589,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-39134 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-39134 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1566,7 +1619,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-37713 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-37713 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1595,7 +1649,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-22883 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-22883 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1624,7 +1679,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-8265 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-8265 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1653,7 +1709,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-44531 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-44531 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1682,7 +1739,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-37701 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-37701 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1711,7 +1769,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-37712 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-37712 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1740,7 +1799,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-22884 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-22884 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1769,7 +1829,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-25692 in openldap/2.4.50-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-25692 in openldap/2.4.50-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1798,7 +1859,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-25709 in openldap/2.4.50-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-25709 in openldap/2.4.50-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1827,7 +1889,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-25710 in openldap/2.4.50-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-25710 in openldap/2.4.50-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1856,7 +1919,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-27212 in openldap/2.4.50-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-27212 in openldap/2.4.50-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1885,7 +1949,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-23840 in openssl/1.1.1g-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-23840 in openssl/1.1.1g-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1914,7 +1979,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-0778 in openssl/1.1.1g-r0."
+          "title": "NeuVector found a vulnerability to CVE-2022-0778 in openssl/1.1.1g-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1943,7 +2009,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3450 in openssl/1.1.1g-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-3450 in openssl/1.1.1g-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -1972,7 +2039,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3712 in openssl/1.1.1g-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-3712 in openssl/1.1.1g-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2001,7 +2069,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-29363 in p11-kit/0.23.20-r5."
+          "title": "NeuVector found a vulnerability to CVE-2020-29363 in p11-kit/0.23.20-r5.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2030,7 +2099,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-29361 in p11-kit/0.23.20-r5."
+          "title": "NeuVector found a vulnerability to CVE-2020-29361 in p11-kit/0.23.20-r5.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2059,7 +2129,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-25696 in postgresql/12.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-25696 in postgresql/12.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2088,7 +2159,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-25695 in postgresql/12.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-25695 in postgresql/12.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2117,7 +2189,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-23214 in postgresql/12.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-23214 in postgresql/12.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2146,7 +2219,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-25694 in postgresql/12.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-25694 in postgresql/12.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2175,7 +2249,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-32027 in postgresql/12.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-32027 in postgresql/12.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2204,7 +2279,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-1271 in xz/5.2.5-r0."
+          "title": "NeuVector found a vulnerability to CVE-2022-1271 in xz/5.2.5-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2233,7 +2309,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2018-25032 in zlib/1.2.11-r3."
+          "title": "NeuVector found a vulnerability to CVE-2018-25032 in zlib/1.2.11-r3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2262,7 +2339,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-36217 in avahi/0.8-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-36217 in avahi/0.8-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2291,7 +2369,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3468 in avahi/0.8-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-3468 in avahi/0.8-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2320,7 +2399,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-42374 in busybox/1.31.1-r19."
+          "title": "NeuVector found a vulnerability to CVE-2021-42374 in busybox/1.31.1-r19.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2349,7 +2429,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3672 in c-ares/1.16.1-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-3672 in c-ares/1.16.1-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2378,7 +2459,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2019-6462 in cairo/1.16.0-r2."
+          "title": "NeuVector found a vulnerability to CVE-2019-6462 in cairo/1.16.0-r2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2407,7 +2489,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-25313 in expat/2.2.9-r1."
+          "title": "NeuVector found a vulnerability to CVE-2022-25313 in expat/2.2.9-r1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2436,7 +2519,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-29385 in gdk-pixbuf/2.40.0-r2."
+          "title": "NeuVector found a vulnerability to CVE-2020-29385 in gdk-pixbuf/2.40.0-r2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2465,7 +2549,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-27560 in imagemagick6/6.9.11.25-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-27560 in imagemagick6/6.9.11.25-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2494,7 +2579,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-20205 in libjpeg-turbo/2.0.5-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-20205 in libjpeg-turbo/2.0.5-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2523,7 +2609,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-29824 in libxml2/2.9.10-r5."
+          "title": "NeuVector found a vulnerability to CVE-2022-29824 in libxml2/2.9.10-r5.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2552,7 +2639,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3537 in libxml2/2.9.10-r5."
+          "title": "NeuVector found a vulnerability to CVE-2021-3537 in libxml2/2.9.10-r5.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2581,7 +2669,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3541 in libxml2/2.9.10-r5."
+          "title": "NeuVector found a vulnerability to CVE-2021-3541 in libxml2/2.9.10-r5.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2610,7 +2699,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-28928 in musl/1.1.24-r9."
+          "title": "NeuVector found a vulnerability to CVE-2020-28928 in musl/1.1.24-r9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2639,7 +2729,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-22960 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-22960 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2668,7 +2759,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-22959 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-22959 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2697,7 +2789,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-44533 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-44533 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2726,7 +2819,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-44532 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-44532 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2755,7 +2849,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-22939 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-22939 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2784,7 +2879,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-8287 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-8287 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2813,7 +2909,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-22918 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-22918 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2842,7 +2939,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3672 in nodejs/12.18.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-3672 in nodejs/12.18.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2871,7 +2969,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3449 in openssl/1.1.1g-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-3449 in openssl/1.1.1g-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2900,7 +2999,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-23839 in openssl/1.1.1g-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-23839 in openssl/1.1.1g-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2929,7 +3029,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-1971 in openssl/1.1.1g-r0."
+          "title": "NeuVector found a vulnerability to CVE-2020-1971 in openssl/1.1.1g-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2958,7 +3059,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-23841 in openssl/1.1.1g-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-23841 in openssl/1.1.1g-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -2987,7 +3089,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-29362 in p11-kit/0.23.20-r5."
+          "title": "NeuVector found a vulnerability to CVE-2020-29362 in p11-kit/0.23.20-r5.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3016,7 +3119,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-32028 in postgresql/12.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-32028 in postgresql/12.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3045,7 +3149,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-20229 in postgresql/12.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-20229 in postgresql/12.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3074,7 +3179,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3393 in postgresql/12.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-3393 in postgresql/12.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3103,7 +3209,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-32029 in postgresql/12.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-32029 in postgresql/12.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3132,7 +3239,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3677 in postgresql/12.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-3677 in postgresql/12.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3161,7 +3269,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-23222 in postgresql/12.4-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-23222 in postgresql/12.4-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3190,7 +3299,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-0563 in util-linux/2.35.2-r0."
+          "title": "NeuVector found a vulnerability to CVE-2022-0563 in util-linux/2.35.2-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3219,7 +3329,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3995 in util-linux/2.35.2-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-3995 in util-linux/2.35.2-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3248,7 +3359,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3996 in util-linux/2.35.2-r0."
+          "title": "NeuVector found a vulnerability to CVE-2021-3996 in util-linux/2.35.2-r0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3277,7 +3389,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-32224 in ruby:activerecord/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2022-32224 in ruby:activerecord/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3306,7 +3419,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-21831 in ruby:activestorage/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2022-21831 in ruby:activestorage/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3335,7 +3449,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-36327 in ruby:bundler/2.1.4."
+          "title": "NeuVector found a vulnerability to CVE-2020-36327 in ruby:bundler/2.1.4.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3364,7 +3479,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-43809 in ruby:bundler/2.1.4."
+          "title": "NeuVector found a vulnerability to CVE-2021-43809 in ruby:bundler/2.1.4.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3393,7 +3509,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-36327 in ruby:bundler/1.17.2."
+          "title": "NeuVector found a vulnerability to CVE-2020-36327 in ruby:bundler/1.17.2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3422,7 +3539,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2016-7954 in ruby:bundler/1.17.2."
+          "title": "NeuVector found a vulnerability to CVE-2016-7954 in ruby:bundler/1.17.2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3451,7 +3569,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-43809 in ruby:bundler/1.17.2."
+          "title": "NeuVector found a vulnerability to CVE-2021-43809 in ruby:bundler/1.17.2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3480,7 +3599,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-32511 in ruby:jmespath/1.4.0."
+          "title": "NeuVector found a vulnerability to CVE-2022-32511 in ruby:jmespath/1.4.0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3509,7 +3629,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-25765 in ruby:pdfkit/0.8.4.1."
+          "title": "NeuVector found a vulnerability to CVE-2022-25765 in ruby:pdfkit/0.8.4.1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3538,7 +3659,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-24790 in ruby:puma/3.12.6."
+          "title": "NeuVector found a vulnerability to CVE-2022-24790 in ruby:puma/3.12.6.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3567,7 +3689,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-30123 in ruby:rack/2.2.3."
+          "title": "NeuVector found a vulnerability to CVE-2022-30123 in ruby:rack/2.2.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3596,7 +3719,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-27280 in ruby:stringio/0.0.2."
+          "title": "NeuVector found a vulnerability to CVE-2024-27280 in ruby:stringio/0.0.2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3625,7 +3749,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-22885 in ruby:actionpack/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2021-22885 in ruby:actionpack/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3654,7 +3779,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-22904 in ruby:actionpack/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2021-22904 in ruby:actionpack/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3683,7 +3809,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2023-22795 in ruby:actionpack/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2023-22795 in ruby:actionpack/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3712,7 +3839,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23633 in ruby:actionpack/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2022-23633 in ruby:actionpack/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3741,7 +3869,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2023-22792 in ruby:actionpack/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2023-22792 in ruby:actionpack/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3770,7 +3899,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2023-23913 in ruby:actionview/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2023-23913 in ruby:actionview/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3799,7 +3929,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-44566 in ruby:activerecord/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2022-44566 in ruby:activerecord/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3828,7 +3959,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2023-22796 in ruby:activesupport/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2023-22796 in ruby:activesupport/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3857,7 +3989,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-32740 in ruby:addressable/2.6.0."
+          "title": "NeuVector found a vulnerability to CVE-2021-32740 in ruby:addressable/2.6.0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3886,7 +4019,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2019-3881 in ruby:bundler/1.17.2."
+          "title": "NeuVector found a vulnerability to CVE-2019-3881 in ruby:bundler/1.17.2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3915,7 +4049,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-21305 in ruby:carrierwave/1.3.1."
+          "title": "NeuVector found a vulnerability to CVE-2021-21305 in ruby:carrierwave/1.3.1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3944,7 +4079,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-41817 in ruby:date/2.0.0."
+          "title": "NeuVector found a vulnerability to CVE-2021-41817 in ruby:date/2.0.0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -3973,7 +4109,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2023-22799 in ruby:globalid/0.4.2."
+          "title": "NeuVector found a vulnerability to CVE-2023-22799 in ruby:globalid/0.4.2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4002,7 +4139,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-10663 in ruby:json/2.1.0."
+          "title": "NeuVector found a vulnerability to CVE-2020-10663 in ruby:json/2.1.0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4031,7 +4169,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23514 in ruby:loofah/2.5.0."
+          "title": "NeuVector found a vulnerability to CVE-2022-23514 in ruby:loofah/2.5.0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4060,7 +4199,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23516 in ruby:loofah/2.5.0."
+          "title": "NeuVector found a vulnerability to CVE-2022-23516 in ruby:loofah/2.5.0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4089,7 +4229,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-24836 in ruby:nokogiri/1.10.9."
+          "title": "NeuVector found a vulnerability to CVE-2022-24836 in ruby:nokogiri/1.10.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4119,7 +4260,9 @@
               "SI-10"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2018-25032 in ruby:nokogiri/1.10.9."
+          "controlType": "technical",
+          "title": "NeuVector found a vulnerability to CVE-2018-25032 in ruby:nokogiri/1.10.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4149,7 +4292,9 @@
               "SI-10"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23437 in ruby:nokogiri/1.10.9."
+          "controlType": "technical",
+          "title": "NeuVector found a vulnerability to CVE-2022-23437 in ruby:nokogiri/1.10.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4178,7 +4323,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3517 in ruby:nokogiri/1.10.9."
+          "title": "NeuVector found a vulnerability to CVE-2021-3517 in ruby:nokogiri/1.10.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4207,7 +4353,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-29181 in ruby:nokogiri/1.10.9."
+          "title": "NeuVector found a vulnerability to CVE-2022-29181 in ruby:nokogiri/1.10.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4236,7 +4383,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-30560 in ruby:nokogiri/1.10.9."
+          "title": "NeuVector found a vulnerability to CVE-2021-30560 in ruby:nokogiri/1.10.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4265,7 +4413,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3518 in ruby:nokogiri/1.10.9."
+          "title": "NeuVector found a vulnerability to CVE-2021-3518 in ruby:nokogiri/1.10.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4294,7 +4443,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-41098 in ruby:nokogiri/1.10.9."
+          "title": "NeuVector found a vulnerability to CVE-2021-41098 in ruby:nokogiri/1.10.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4324,7 +4474,9 @@
               "SI-10"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-24839 in ruby:nokogiri/1.10.9."
+          "controlType": "technical",
+          "title": "NeuVector found a vulnerability to CVE-2022-24839 in ruby:nokogiri/1.10.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4353,7 +4505,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23634 in ruby:puma/3.12.6."
+          "title": "NeuVector found a vulnerability to CVE-2022-23634 in ruby:puma/3.12.6.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4382,7 +4535,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-29509 in ruby:puma/3.12.6."
+          "title": "NeuVector found a vulnerability to CVE-2021-29509 in ruby:puma/3.12.6.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4411,7 +4565,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-44571 in ruby:rack/2.2.3."
+          "title": "NeuVector found a vulnerability to CVE-2022-44571 in ruby:rack/2.2.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4440,7 +4595,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-44572 in ruby:rack/2.2.3."
+          "title": "NeuVector found a vulnerability to CVE-2022-44572 in ruby:rack/2.2.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4469,7 +4625,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2023-27530 in ruby:rack/2.2.3."
+          "title": "NeuVector found a vulnerability to CVE-2023-27530 in ruby:rack/2.2.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4498,7 +4655,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-44570 in ruby:rack/2.2.3."
+          "title": "NeuVector found a vulnerability to CVE-2022-44570 in ruby:rack/2.2.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4527,7 +4685,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-30122 in ruby:rack/2.2.3."
+          "title": "NeuVector found a vulnerability to CVE-2022-30122 in ruby:rack/2.2.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4556,7 +4715,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23517 in ruby:rails-html-sanitizer/1.3.0."
+          "title": "NeuVector found a vulnerability to CVE-2022-23517 in ruby:rails-html-sanitizer/1.3.0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4585,7 +4745,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-31799 in ruby:rdoc/6.1.2."
+          "title": "NeuVector found a vulnerability to CVE-2021-31799 in ruby:rdoc/6.1.2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4614,7 +4775,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-28965 in ruby:rexml/3.1.9."
+          "title": "NeuVector found a vulnerability to CVE-2021-28965 in ruby:rexml/3.1.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4643,7 +4805,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-31163 in ruby:tzinfo/1.2.7."
+          "title": "NeuVector found a vulnerability to CVE-2022-31163 in ruby:tzinfo/1.2.7.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4673,7 +4836,9 @@
               "SI-10"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-25613 in ruby:webrick/1.4.2."
+          "controlType": "technical",
+          "title": "NeuVector found a vulnerability to CVE-2020-25613 in ruby:webrick/1.4.2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4702,7 +4867,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-22577 in ruby:actionpack/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2022-22577 in ruby:actionpack/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4731,7 +4897,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-27777 in ruby:actionview/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2022-27777 in ruby:actionview/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4760,7 +4927,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-15169 in ruby:actionview/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2020-15169 in ruby:actionview/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4789,7 +4957,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-22880 in ruby:activerecord/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2021-22880 in ruby:activerecord/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4818,7 +4987,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-26144 in ruby:activestorage/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2024-26144 in ruby:activestorage/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4847,7 +5017,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-21288 in ruby:carrierwave/1.3.1."
+          "title": "NeuVector found a vulnerability to CVE-2021-21288 in ruby:carrierwave/1.3.1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4876,7 +5047,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2023-49090 in ruby:carrierwave/1.3.1."
+          "title": "NeuVector found a vulnerability to CVE-2023-49090 in ruby:carrierwave/1.3.1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4905,7 +5077,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-29034 in ruby:carrierwave/1.3.1."
+          "title": "NeuVector found a vulnerability to CVE-2024-29034 in ruby:carrierwave/1.3.1.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4934,7 +5107,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23515 in ruby:loofah/2.5.0."
+          "title": "NeuVector found a vulnerability to CVE-2022-23515 in ruby:loofah/2.5.0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4963,7 +5137,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-3537 in ruby:nokogiri/1.10.9."
+          "title": "NeuVector found a vulnerability to CVE-2021-3537 in ruby:nokogiri/1.10.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -4992,7 +5167,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2020-26247 in ruby:nokogiri/1.10.9."
+          "title": "NeuVector found a vulnerability to CVE-2020-26247 in ruby:nokogiri/1.10.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5021,7 +5197,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2023-40175 in ruby:puma/3.12.6."
+          "title": "NeuVector found a vulnerability to CVE-2023-40175 in ruby:puma/3.12.6.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5050,7 +5227,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-21647 in ruby:puma/3.12.6."
+          "title": "NeuVector found a vulnerability to CVE-2024-21647 in ruby:puma/3.12.6.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5079,7 +5257,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-26141 in ruby:rack/2.2.3."
+          "title": "NeuVector found a vulnerability to CVE-2024-26141 in ruby:rack/2.2.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5108,7 +5287,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2023-27539 in ruby:rack/2.2.3."
+          "title": "NeuVector found a vulnerability to CVE-2023-27539 in ruby:rack/2.2.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5137,7 +5317,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-25126 in ruby:rack/2.2.3."
+          "title": "NeuVector found a vulnerability to CVE-2024-25126 in ruby:rack/2.2.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5166,7 +5347,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-26146 in ruby:rack/2.2.3."
+          "title": "NeuVector found a vulnerability to CVE-2024-26146 in ruby:rack/2.2.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5195,7 +5377,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2014-0081 in ruby:rails/5.2.4.3."
+          "title": "NeuVector found a vulnerability to CVE-2014-0081 in ruby:rails/5.2.4.3.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5224,7 +5407,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23518 in ruby:rails-html-sanitizer/1.3.0."
+          "title": "NeuVector found a vulnerability to CVE-2022-23518 in ruby:rails-html-sanitizer/1.3.0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5253,7 +5437,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-32209 in ruby:rails-html-sanitizer/1.3.0."
+          "title": "NeuVector found a vulnerability to CVE-2022-32209 in ruby:rails-html-sanitizer/1.3.0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5282,7 +5467,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23519 in ruby:rails-html-sanitizer/1.3.0."
+          "title": "NeuVector found a vulnerability to CVE-2022-23519 in ruby:rails-html-sanitizer/1.3.0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5311,7 +5497,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2022-23520 in ruby:rails-html-sanitizer/1.3.0."
+          "title": "NeuVector found a vulnerability to CVE-2022-23520 in ruby:rails-html-sanitizer/1.3.0.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5340,7 +5527,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-27281 in ruby:rdoc/6.1.2."
+          "title": "NeuVector found a vulnerability to CVE-2024-27281 in ruby:rdoc/6.1.2.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5369,7 +5557,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-39908 in ruby:rexml/3.1.9."
+          "title": "NeuVector found a vulnerability to CVE-2024-39908 in ruby:rexml/3.1.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5398,7 +5587,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-35176 in ruby:rexml/3.1.9."
+          "title": "NeuVector found a vulnerability to CVE-2024-35176 in ruby:rexml/3.1.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5427,7 +5617,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-43398 in ruby:rexml/3.1.9."
+          "title": "NeuVector found a vulnerability to CVE-2024-43398 in ruby:rexml/3.1.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5456,7 +5647,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-41123 in ruby:rexml/3.1.9."
+          "title": "NeuVector found a vulnerability to CVE-2024-41123 in ruby:rexml/3.1.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5485,7 +5677,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2024-41946 in ruby:rexml/3.1.9."
+          "title": "NeuVector found a vulnerability to CVE-2024-41946 in ruby:rexml/3.1.9.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -5514,7 +5707,8 @@
               "RA-5"
             ]
           },
-          "title": "NeuVector found a vulnerability to CVE-2021-41136 in ruby:puma/3.12.6."
+          "title": "NeuVector found a vulnerability to CVE-2021-41136 in ruby:puma/3.12.6.",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -5539,7 +5733,7 @@
     "name": "neuvector-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:18:00.4777613Z",
+  "timestamp": "2026-05-15T03:15:08.920750049Z",
   "tool": {
     "format": "JSON",
     "name": "NeuVector"

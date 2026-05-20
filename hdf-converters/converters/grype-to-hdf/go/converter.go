@@ -313,12 +313,14 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool) hdf.EvaluatedRe
 	}
 
 	requirement := hdf.EvaluatedRequirement{
-		ID:           requirementID,
-		Impact:       impact,
-		Results:      []hdf.RequirementResult{result},
-		Tags:         tags,
-		Descriptions: descriptions,
-		Refs:         hdfRefs,
+		ID:                 requirementID,
+		Impact:             impact,
+		Results:            []hdf.RequirementResult{result},
+		Tags:               tags,
+		Descriptions:       descriptions,
+		Refs:               hdfRefs,
+		ControlType:        shared.DeriveControlTypeFromTags(shared.DefaultStaticAnalysisNIST),
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 
 	return requirement

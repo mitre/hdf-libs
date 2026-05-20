@@ -33,6 +33,7 @@
   "name": "ms-windows-server-2022-stig",
   "requirements": [
     {
+      "controlType": "operational",
       "descriptions": [
         {
           "data": "Using a privileged account to perform routine functions makes the computer vulnerable to malicious software inadvertently introduced during a session that has been granted full privileges.",
@@ -69,6 +70,7 @@
       "title": "Windows Server 2022 users with Administrative privileges must have separate accounts for administrative duties and normal operational tasks."
     },
     {
+      "controlType": "technical",
       "descriptions": [
         {
           "data": "The longer a password is in use, the greater the opportunity for someone to gain unauthorized knowledge of the password.",
@@ -106,6 +108,7 @@
       "title": "Windows Server 2022 passwords for the built-in Administrator account must be changed at least every 60 days."
     },
     {
+      "controlType": "technical",
       "descriptions": [
         {
           "data": "Using applications that access the internet or have potential internet sources using administrative privileges exposes a system to compromise.",

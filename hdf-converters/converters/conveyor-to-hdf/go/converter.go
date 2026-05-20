@@ -250,12 +250,14 @@ func buildRequirement(result ConveyorResult, filename string) hdf.EvaluatedRequi
 
 	title := filename
 	return hdf.EvaluatedRequirement{
-		ID:           result.SHA256,
-		Title:        &title,
-		Impact:       scoreToImpact(score),
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 result.SHA256,
+		Title:              &title,
+		Impact:             scoreToImpact(score),
+		Tags:               tags,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		Descriptions:       descriptions,
+		Results:            results,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

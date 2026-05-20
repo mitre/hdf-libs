@@ -382,3 +382,42 @@ func TestSnapshots(t *testing.T) {
 		return ConvertMsftDefenderEndpointToHDF(input, "0.1.0")
 	})
 }
+
+func TestConvert_ControlType(t *testing.T) {
+	input := loadFixture(t, "input/sample.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	// Every alert resolves via the static default NIST tags (SA-11, RA-5)
+	// which classify as "management". Each requirement should carry the
+	// same controlType.
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	assert.False(t, sawDerivation, "converter uses static-fallback NIST only; controlType must be omitted per helper gate")
+}
+
+func TestConvertMsftDefenderEndpoint_VerificationMethod(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+	for _, req := range reqs {
+		require.NotNil(t, req.VerificationMethod, "requirement %q missing verificationMethod", req.ID)
+		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+			"requirement %q: MDE alerts come from automated EDR detection", req.ID)
+	}
+}

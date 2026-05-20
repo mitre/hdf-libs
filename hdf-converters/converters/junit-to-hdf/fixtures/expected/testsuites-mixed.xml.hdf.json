@@ -24,7 +24,9 @@
               "SA-11"
             ]
           },
-          "title": "testAddition"
+          "controlType": "management",
+          "title": "testAddition",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -49,7 +51,9 @@
               "SA-11"
             ]
           },
-          "title": "testDivisionByZero"
+          "controlType": "management",
+          "title": "testDivisionByZero",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -74,7 +78,9 @@
               "SA-11"
             ]
           },
-          "title": "testSquareRoot"
+          "controlType": "management",
+          "title": "testSquareRoot",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -98,7 +104,9 @@
               "SA-11"
             ]
           },
-          "title": "testConcat"
+          "controlType": "management",
+          "title": "testConcat",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -123,7 +131,9 @@
               "SA-11"
             ]
           },
-          "title": "testParseInt"
+          "controlType": "management",
+          "title": "testParseInt",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -143,7 +153,7 @@
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:57.146433Z",
+  "timestamp": "2026-05-15T03:15:04.874255391Z",
   "tool": {
     "format": "XML",
     "name": "JUnit XML"

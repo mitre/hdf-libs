@@ -6,10 +6,11 @@ import {
   type EvaluatedRequirement,
   type RequirementResult,
   ResultStatus,
+  VerificationMethodEnum,
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
 
 // Input types for Grype JSON
 
@@ -303,7 +304,13 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
       {label: 'check', data: cvssInfo},
     ],
     refs: refs.length > 0 ? refs.map(url => ({url})) : undefined,
+    verificationMethod: VerificationMethodEnum.Automated,
   };
+
+  const controlType = deriveControlTypeFromTags(DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
+  if (controlType !== undefined) {
+    requirement.controlType = controlType;
+  }
 
   return requirement;
 }

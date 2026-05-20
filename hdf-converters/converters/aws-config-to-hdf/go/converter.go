@@ -159,11 +159,13 @@ func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 		Descriptions: descriptions,
 		Impact:       0.5,
 		Tags:         tags,
+		ControlType:  shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
 		SourceLocation: &hdf.SourceLocation{
 			Ref:  &arnRef,
 			Line: &line,
 		},
-		Results: reqResults,
+		Results:            reqResults,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

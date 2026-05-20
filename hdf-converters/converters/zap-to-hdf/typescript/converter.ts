@@ -8,6 +8,7 @@ import {
   type RequirementResult,
   type HdfResults,
   ResultStatus,
+  VerificationMethodEnum,
 } from '@mitre/hdf-schema';
 import {
   getCweNistControl,
@@ -18,7 +19,7 @@ import {parseJSON} from '@mitre/hdf-utilities';
 import {detectConverter} from '../../../shared/typescript/fingerprint.js';
 import {registerAllFingerprints} from '../../../shared/typescript/register-all.js';
 import {convertSarifToHdf} from '../../sarif-to-hdf/typescript/converter.js';
-import {inputChecksum, buildNistCciTags, limitArray, stripHTML, validateInputSize} from '../../../shared/typescript/converterutil.js';
+import {deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, stripHTML, validateInputSize} from '../../../shared/typescript/converterutil.js';
 
 // --- ZAP JSON input types ---
 
@@ -277,7 +278,13 @@ export async function convertZapToHdf(input: string): Promise<string> {
       results,
       tags,
       descriptions,
+      verificationMethod: VerificationMethodEnum.Automated,
     };
+
+    const controlType = deriveControlTypeFromTags(nistTags);
+    if (controlType !== undefined) {
+      req.controlType = controlType;
+    }
 
     requirements.push(req);
   }

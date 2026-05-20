@@ -25,7 +25,9 @@
               "SA-11"
             ]
           },
-          "title": "defaultTestValueIs_Value"
+          "controlType": "management",
+          "title": "defaultTestValueIs_Value",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -50,7 +52,9 @@
               "SA-11"
             ]
           },
-          "title": "setTestAndRetrieveValue"
+          "controlType": "management",
+          "title": "setTestAndRetrieveValue",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -70,7 +74,7 @@
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:57.1440172Z",
+  "timestamp": "2026-05-15T03:15:04.87210804Z",
   "tool": {
     "format": "XML",
     "name": "JUnit XML"

@@ -264,6 +264,56 @@ describe('hdf-baseline.schema.json (refactored)', () => {
       });
       expect(validate(doc)).toBe(true);
     });
+
+    describe('classification fields (v3.2)', () => {
+      it('should accept requirement with all three classification fields populated', () => {
+        const doc = createMinimalBaselineDoc({
+          requirements: [
+            createMinimalBaselineRequirement({
+              controlType: 'technical',
+              verificationMethod: 'automated',
+              applicability: 'required',
+            }),
+          ],
+        });
+        expect(validate(doc)).toBe(true);
+      });
+
+      it('should accept requirement with only controlType populated', () => {
+        const doc = createMinimalBaselineDoc({
+          requirements: [createMinimalBaselineRequirement({ controlType: 'policy' })],
+        });
+        expect(validate(doc)).toBe(true);
+      });
+
+      it('should reject requirement with unknown controlType', () => {
+        const doc = createMinimalBaselineDoc({
+          requirements: [createMinimalBaselineRequirement({ controlType: 'invented' })],
+        });
+        expect(validate(doc)).toBe(false);
+      });
+
+      it('should reject requirement with unknown verificationMethod', () => {
+        const doc = createMinimalBaselineDoc({
+          requirements: [createMinimalBaselineRequirement({ verificationMethod: 'magic' })],
+        });
+        expect(validate(doc)).toBe(false);
+      });
+
+      it('should reject requirement with unknown applicability', () => {
+        const doc = createMinimalBaselineDoc({
+          requirements: [createMinimalBaselineRequirement({ applicability: 'mandatory' })],
+        });
+        expect(validate(doc)).toBe(false);
+      });
+
+      it('should accept requirement with no classification fields (backward compatible with v3.1.x)', () => {
+        const doc = createMinimalBaselineDoc({
+          requirements: [createMinimalBaselineRequirement({})],
+        });
+        expect(validate(doc)).toBe(true);
+      });
+    });
   });
 
   describe('inputs/attributes array', () => {

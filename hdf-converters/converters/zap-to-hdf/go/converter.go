@@ -280,12 +280,14 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 			impact := riskCodeToImpact(alert.RiskCode)
 
 			req := hdf.EvaluatedRequirement{
-				ID:           reqID,
-				Title:        &alert.AlertName,
-				Impact:       impact,
-				Results:      results,
-				Tags:         tags,
-				Descriptions: descriptions,
+				ID:                 reqID,
+				Title:              &alert.AlertName,
+				Impact:             impact,
+				Results:            results,
+				Tags:               tags,
+				ControlType:        shared.DeriveControlTypeFromTags(nistTags),
+				Descriptions:       descriptions,
+				VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 			}
 
 			requirements = append(requirements, req)

@@ -112,12 +112,14 @@ func buildRequirement(vulnID string, vulns []SnykVuln) hdf.EvaluatedRequirement 
 
 	title := rep.Title
 	return hdf.EvaluatedRequirement{
-		ID:           vulnID,
-		Title:        &title,
-		Impact:       getImpact(rep.Severity),
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 vulnID,
+		Title:              &title,
+		Impact:             getImpact(rep.Severity),
+		Tags:               tags,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		Descriptions:       descriptions,
+		Results:            results,
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

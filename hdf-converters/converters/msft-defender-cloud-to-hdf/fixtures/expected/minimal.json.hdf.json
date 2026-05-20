@@ -43,7 +43,8 @@
             ],
             "userImpact": "Low"
           },
-          "title": "Storage account should use a private link connection"
+          "title": "Storage account should use a private link connection",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -86,7 +87,8 @@
             ],
             "userImpact": "Low"
           },
-          "title": "Virtual machines should encrypt temp disks, caches, and data flows"
+          "title": "Virtual machines should encrypt temp disks, caches, and data flows",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -112,7 +114,7 @@
     "name": "msft-defender-cloud-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:57.0072545Z",
+  "timestamp": "2026-05-15T03:15:05.680782443Z",
   "tool": {
     "format": "JSON",
     "name": "Microsoft Defender for Cloud"

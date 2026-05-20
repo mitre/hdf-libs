@@ -1,11 +1,7 @@
 {
-  "checksum": {
-    "algorithm": "sha256",
-    "value": "e0aed6ef276c00717e803445e9f70d6baa38eb93895e89973822fda325425c09"
-  },
   "generator": {
     "name": "hdf-converters",
-    "version": "0.1.0"
+    "version": "dev"
   },
   "groups": [
     {
@@ -404,6 +400,10 @@
       "title": "Supply Chain Risk Management"
     }
   ],
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "e0aed6ef276c00717e803445e9f70d6baa38eb93895e89973822fda325425c09"
+  },
   "requirements": [
     {
       "descriptions": [
@@ -429,6 +429,7 @@
         ],
         "sort-id": "ac-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -455,6 +456,7 @@
         ],
         "sort-id": "ac-02"
       },
+      "controlType": "technical",
       "title": "Account Management"
     },
     {
@@ -481,6 +483,7 @@
         ],
         "sort-id": "ac-02.01"
       },
+      "controlType": "technical",
       "title": "Automated System Account Management"
     },
     {
@@ -507,6 +510,7 @@
         ],
         "sort-id": "ac-02.02"
       },
+      "controlType": "technical",
       "title": "Automated Temporary and Emergency Account Management"
     },
     {
@@ -533,6 +537,7 @@
         ],
         "sort-id": "ac-02.03"
       },
+      "controlType": "technical",
       "title": "Disable Accounts"
     },
     {
@@ -559,6 +564,7 @@
         ],
         "sort-id": "ac-02.04"
       },
+      "controlType": "technical",
       "title": "Automated Audit Actions"
     },
     {
@@ -585,6 +591,7 @@
         ],
         "sort-id": "ac-02.05"
       },
+      "controlType": "technical",
       "title": "Inactivity Logout"
     },
     {
@@ -611,6 +618,7 @@
         ],
         "sort-id": "ac-02.13"
       },
+      "controlType": "technical",
       "title": "Disable Accounts for High-risk Individuals"
     },
     {
@@ -637,6 +645,7 @@
         ],
         "sort-id": "ac-03"
       },
+      "controlType": "technical",
       "title": "Access Enforcement"
     },
     {
@@ -663,6 +672,7 @@
         ],
         "sort-id": "ac-04"
       },
+      "controlType": "technical",
       "title": "Information Flow Enforcement"
     },
     {
@@ -689,6 +699,7 @@
         ],
         "sort-id": "ac-05"
       },
+      "controlType": "technical",
       "title": "Separation of Duties"
     },
     {
@@ -715,6 +726,7 @@
         ],
         "sort-id": "ac-06"
       },
+      "controlType": "technical",
       "title": "Least Privilege"
     },
     {
@@ -741,6 +753,7 @@
         ],
         "sort-id": "ac-06.01"
       },
+      "controlType": "technical",
       "title": "Authorize Access to Security Functions"
     },
     {
@@ -767,6 +780,7 @@
         ],
         "sort-id": "ac-06.02"
       },
+      "controlType": "technical",
       "title": "Non-privileged Access for Nonsecurity Functions"
     },
     {
@@ -793,6 +807,7 @@
         ],
         "sort-id": "ac-06.05"
       },
+      "controlType": "technical",
       "title": "Privileged Accounts"
     },
     {
@@ -819,6 +834,7 @@
         ],
         "sort-id": "ac-06.07"
       },
+      "controlType": "technical",
       "title": "Review of User Privileges"
     },
     {
@@ -845,6 +861,7 @@
         ],
         "sort-id": "ac-06.09"
       },
+      "controlType": "technical",
       "title": "Log Use of Privileged Functions"
     },
     {
@@ -871,6 +888,7 @@
         ],
         "sort-id": "ac-06.10"
       },
+      "controlType": "technical",
       "title": "Prohibit Non-privileged Users from Executing Privileged Functions"
     },
     {
@@ -897,6 +915,7 @@
         ],
         "sort-id": "ac-07"
       },
+      "controlType": "technical",
       "title": "Unsuccessful Logon Attempts"
     },
     {
@@ -923,6 +942,7 @@
         ],
         "sort-id": "ac-08"
       },
+      "controlType": "technical",
       "title": "System Use Notification"
     },
     {
@@ -949,6 +969,7 @@
         ],
         "sort-id": "ac-11"
       },
+      "controlType": "technical",
       "title": "Device Lock"
     },
     {
@@ -975,6 +996,7 @@
         ],
         "sort-id": "ac-11.01"
       },
+      "controlType": "technical",
       "title": "Pattern-hiding Displays"
     },
     {
@@ -1001,6 +1023,7 @@
         ],
         "sort-id": "ac-12"
       },
+      "controlType": "technical",
       "title": "Session Termination"
     },
     {
@@ -1027,6 +1050,7 @@
         ],
         "sort-id": "ac-14"
       },
+      "controlType": "technical",
       "title": "Permitted Actions Without Identification or Authentication"
     },
     {
@@ -1053,6 +1077,7 @@
         ],
         "sort-id": "ac-17"
       },
+      "controlType": "technical",
       "title": "Remote Access"
     },
     {
@@ -1079,6 +1104,7 @@
         ],
         "sort-id": "ac-17.01"
       },
+      "controlType": "technical",
       "title": "Monitoring and Control"
     },
     {
@@ -1105,6 +1131,7 @@
         ],
         "sort-id": "ac-17.02"
       },
+      "controlType": "technical",
       "title": "Protection of Confidentiality and Integrity Using Encryption"
     },
     {
@@ -1131,6 +1158,7 @@
         ],
         "sort-id": "ac-17.03"
       },
+      "controlType": "technical",
       "title": "Managed Access Control Points"
     },
     {
@@ -1157,6 +1185,7 @@
         ],
         "sort-id": "ac-17.04"
       },
+      "controlType": "technical",
       "title": "Privileged Commands and Access"
     },
     {
@@ -1183,6 +1212,7 @@
         ],
         "sort-id": "ac-18"
       },
+      "controlType": "technical",
       "title": "Wireless Access"
     },
     {
@@ -1209,6 +1239,7 @@
         ],
         "sort-id": "ac-18.01"
       },
+      "controlType": "technical",
       "title": "Authentication and Encryption"
     },
     {
@@ -1235,6 +1266,7 @@
         ],
         "sort-id": "ac-18.03"
       },
+      "controlType": "technical",
       "title": "Disable Wireless Networking"
     },
     {
@@ -1261,6 +1293,7 @@
         ],
         "sort-id": "ac-19"
       },
+      "controlType": "technical",
       "title": "Access Control for Mobile Devices"
     },
     {
@@ -1287,6 +1320,7 @@
         ],
         "sort-id": "ac-19.05"
       },
+      "controlType": "technical",
       "title": "Full Device or Container-based Encryption"
     },
     {
@@ -1313,6 +1347,7 @@
         ],
         "sort-id": "ac-20"
       },
+      "controlType": "technical",
       "title": "Use of External Systems"
     },
     {
@@ -1339,6 +1374,7 @@
         ],
         "sort-id": "ac-20.01"
       },
+      "controlType": "technical",
       "title": "Limits on Authorized Use"
     },
     {
@@ -1365,6 +1401,7 @@
         ],
         "sort-id": "ac-20.02"
       },
+      "controlType": "technical",
       "title": "Portable Storage Devices — Restricted Use"
     },
     {
@@ -1391,6 +1428,7 @@
         ],
         "sort-id": "ac-21"
       },
+      "controlType": "technical",
       "title": "Information Sharing"
     },
     {
@@ -1417,6 +1455,7 @@
         ],
         "sort-id": "ac-22"
       },
+      "controlType": "technical",
       "title": "Publicly Accessible Content"
     },
     {
@@ -1443,6 +1482,7 @@
         ],
         "sort-id": "at-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -1469,6 +1509,7 @@
         ],
         "sort-id": "at-02"
       },
+      "controlType": "operational",
       "title": "Literacy Training and Awareness"
     },
     {
@@ -1495,6 +1536,7 @@
         ],
         "sort-id": "at-02.02"
       },
+      "controlType": "operational",
       "title": "Insider Threat"
     },
     {
@@ -1521,6 +1563,7 @@
         ],
         "sort-id": "at-02.03"
       },
+      "controlType": "operational",
       "title": "Social Engineering and Mining"
     },
     {
@@ -1547,6 +1590,7 @@
         ],
         "sort-id": "at-03"
       },
+      "controlType": "operational",
       "title": "Role-based Training"
     },
     {
@@ -1573,6 +1617,7 @@
         ],
         "sort-id": "at-04"
       },
+      "controlType": "operational",
       "title": "Training Records"
     },
     {
@@ -1599,6 +1644,7 @@
         ],
         "sort-id": "au-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -1625,6 +1671,7 @@
         ],
         "sort-id": "au-02"
       },
+      "controlType": "operational",
       "title": "Event Logging"
     },
     {
@@ -1651,6 +1698,7 @@
         ],
         "sort-id": "au-03"
       },
+      "controlType": "operational",
       "title": "Content of Audit Records"
     },
     {
@@ -1677,6 +1725,7 @@
         ],
         "sort-id": "au-03.01"
       },
+      "controlType": "operational",
       "title": "Additional Audit Information"
     },
     {
@@ -1703,6 +1752,7 @@
         ],
         "sort-id": "au-04"
       },
+      "controlType": "operational",
       "title": "Audit Log Storage Capacity"
     },
     {
@@ -1729,6 +1779,7 @@
         ],
         "sort-id": "au-05"
       },
+      "controlType": "operational",
       "title": "Response to Audit Logging Process Failures"
     },
     {
@@ -1755,6 +1806,7 @@
         ],
         "sort-id": "au-06"
       },
+      "controlType": "operational",
       "title": "Audit Record Review, Analysis, and Reporting"
     },
     {
@@ -1781,6 +1833,7 @@
         ],
         "sort-id": "au-06.01"
       },
+      "controlType": "operational",
       "title": "Automated Process Integration"
     },
     {
@@ -1807,6 +1860,7 @@
         ],
         "sort-id": "au-06.03"
       },
+      "controlType": "operational",
       "title": "Correlate Audit Record Repositories"
     },
     {
@@ -1833,6 +1887,7 @@
         ],
         "sort-id": "au-07"
       },
+      "controlType": "operational",
       "title": "Audit Record Reduction and Report Generation"
     },
     {
@@ -1859,6 +1914,7 @@
         ],
         "sort-id": "au-07.01"
       },
+      "controlType": "operational",
       "title": "Automatic Processing"
     },
     {
@@ -1885,6 +1941,7 @@
         ],
         "sort-id": "au-08"
       },
+      "controlType": "operational",
       "title": "Time Stamps"
     },
     {
@@ -1911,6 +1968,7 @@
         ],
         "sort-id": "au-09"
       },
+      "controlType": "operational",
       "title": "Protection of Audit Information"
     },
     {
@@ -1937,6 +1995,7 @@
         ],
         "sort-id": "au-09.04"
       },
+      "controlType": "operational",
       "title": "Access by Subset of Privileged Users"
     },
     {
@@ -1963,6 +2022,7 @@
         ],
         "sort-id": "au-11"
       },
+      "controlType": "operational",
       "title": "Audit Record Retention"
     },
     {
@@ -1989,6 +2049,7 @@
         ],
         "sort-id": "au-12"
       },
+      "controlType": "operational",
       "title": "Audit Record Generation"
     },
     {
@@ -2015,6 +2076,7 @@
         ],
         "sort-id": "ca-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -2041,6 +2103,7 @@
         ],
         "sort-id": "ca-02"
       },
+      "controlType": "management",
       "title": "Control Assessments"
     },
     {
@@ -2067,6 +2130,7 @@
         ],
         "sort-id": "ca-02.01"
       },
+      "controlType": "management",
       "title": "Independent Assessors"
     },
     {
@@ -2093,6 +2157,7 @@
         ],
         "sort-id": "ca-03"
       },
+      "controlType": "management",
       "title": "Information Exchange"
     },
     {
@@ -2119,6 +2184,7 @@
         ],
         "sort-id": "ca-05"
       },
+      "controlType": "management",
       "title": "Plan of Action and Milestones"
     },
     {
@@ -2145,6 +2211,7 @@
         ],
         "sort-id": "ca-06"
       },
+      "controlType": "management",
       "title": "Authorization"
     },
     {
@@ -2171,6 +2238,7 @@
         ],
         "sort-id": "ca-07"
       },
+      "controlType": "management",
       "title": "Continuous Monitoring"
     },
     {
@@ -2197,6 +2265,7 @@
         ],
         "sort-id": "ca-07.01"
       },
+      "controlType": "management",
       "title": "Independent Assessment"
     },
     {
@@ -2223,6 +2292,7 @@
         ],
         "sort-id": "ca-07.04"
       },
+      "controlType": "management",
       "title": "Risk Monitoring"
     },
     {
@@ -2249,6 +2319,7 @@
         ],
         "sort-id": "ca-09"
       },
+      "controlType": "management",
       "title": "Internal System Connections"
     },
     {
@@ -2275,6 +2346,7 @@
         ],
         "sort-id": "cm-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -2301,6 +2373,7 @@
         ],
         "sort-id": "cm-02"
       },
+      "controlType": "operational",
       "title": "Baseline Configuration"
     },
     {
@@ -2327,6 +2400,7 @@
         ],
         "sort-id": "cm-02.02"
       },
+      "controlType": "operational",
       "title": "Automation Support for Accuracy and Currency"
     },
     {
@@ -2353,6 +2427,7 @@
         ],
         "sort-id": "cm-02.03"
       },
+      "controlType": "operational",
       "title": "Retention of Previous Configurations"
     },
     {
@@ -2379,6 +2454,7 @@
         ],
         "sort-id": "cm-02.07"
       },
+      "controlType": "operational",
       "title": "Configure Systems and Components for High-risk Areas"
     },
     {
@@ -2405,6 +2481,7 @@
         ],
         "sort-id": "cm-03"
       },
+      "controlType": "operational",
       "title": "Configuration Change Control"
     },
     {
@@ -2431,6 +2508,7 @@
         ],
         "sort-id": "cm-03.02"
       },
+      "controlType": "operational",
       "title": "Testing, Validation, and Documentation of Changes"
     },
     {
@@ -2457,6 +2535,7 @@
         ],
         "sort-id": "cm-03.04"
       },
+      "controlType": "operational",
       "title": "Security and Privacy Representatives"
     },
     {
@@ -2483,6 +2562,7 @@
         ],
         "sort-id": "cm-04"
       },
+      "controlType": "operational",
       "title": "Impact Analyses"
     },
     {
@@ -2509,6 +2589,7 @@
         ],
         "sort-id": "cm-04.02"
       },
+      "controlType": "operational",
       "title": "Verification of Controls"
     },
     {
@@ -2535,6 +2616,7 @@
         ],
         "sort-id": "cm-05"
       },
+      "controlType": "operational",
       "title": "Access Restrictions for Change"
     },
     {
@@ -2561,6 +2643,7 @@
         ],
         "sort-id": "cm-06"
       },
+      "controlType": "operational",
       "title": "Configuration Settings"
     },
     {
@@ -2587,6 +2670,7 @@
         ],
         "sort-id": "cm-07"
       },
+      "controlType": "operational",
       "title": "Least Functionality"
     },
     {
@@ -2613,6 +2697,7 @@
         ],
         "sort-id": "cm-07.01"
       },
+      "controlType": "operational",
       "title": "Periodic Review"
     },
     {
@@ -2639,6 +2724,7 @@
         ],
         "sort-id": "cm-07.02"
       },
+      "controlType": "operational",
       "title": "Prevent Program Execution"
     },
     {
@@ -2665,6 +2751,7 @@
         ],
         "sort-id": "cm-07.05"
       },
+      "controlType": "operational",
       "title": "Authorized Software — Allow-by-exception"
     },
     {
@@ -2691,6 +2778,7 @@
         ],
         "sort-id": "cm-08"
       },
+      "controlType": "operational",
       "title": "System Component Inventory"
     },
     {
@@ -2717,6 +2805,7 @@
         ],
         "sort-id": "cm-08.01"
       },
+      "controlType": "operational",
       "title": "Updates During Installation and Removal"
     },
     {
@@ -2743,6 +2832,7 @@
         ],
         "sort-id": "cm-08.03"
       },
+      "controlType": "operational",
       "title": "Automated Unauthorized Component Detection"
     },
     {
@@ -2769,6 +2859,7 @@
         ],
         "sort-id": "cm-09"
       },
+      "controlType": "operational",
       "title": "Configuration Management Plan"
     },
     {
@@ -2795,6 +2886,7 @@
         ],
         "sort-id": "cm-10"
       },
+      "controlType": "operational",
       "title": "Software Usage Restrictions"
     },
     {
@@ -2821,6 +2913,7 @@
         ],
         "sort-id": "cm-11"
       },
+      "controlType": "operational",
       "title": "User-installed Software"
     },
     {
@@ -2847,6 +2940,7 @@
         ],
         "sort-id": "cm-12"
       },
+      "controlType": "operational",
       "title": "Information Location"
     },
     {
@@ -2873,6 +2967,7 @@
         ],
         "sort-id": "cm-12.01"
       },
+      "controlType": "operational",
       "title": "Automated Tools to Support Information Location"
     },
     {
@@ -2899,6 +2994,7 @@
         ],
         "sort-id": "cp-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -2925,6 +3021,7 @@
         ],
         "sort-id": "cp-02"
       },
+      "controlType": "operational",
       "title": "Contingency Plan"
     },
     {
@@ -2951,6 +3048,7 @@
         ],
         "sort-id": "cp-02.01"
       },
+      "controlType": "operational",
       "title": "Coordinate with Related Plans"
     },
     {
@@ -2977,6 +3075,7 @@
         ],
         "sort-id": "cp-02.03"
       },
+      "controlType": "operational",
       "title": "Resume Mission and Business Functions"
     },
     {
@@ -3003,6 +3102,7 @@
         ],
         "sort-id": "cp-02.08"
       },
+      "controlType": "operational",
       "title": "Identify Critical Assets"
     },
     {
@@ -3029,6 +3129,7 @@
         ],
         "sort-id": "cp-03"
       },
+      "controlType": "operational",
       "title": "Contingency Training"
     },
     {
@@ -3055,6 +3156,7 @@
         ],
         "sort-id": "cp-04"
       },
+      "controlType": "operational",
       "title": "Contingency Plan Testing"
     },
     {
@@ -3081,6 +3183,7 @@
         ],
         "sort-id": "cp-04.01"
       },
+      "controlType": "operational",
       "title": "Coordinate with Related Plans"
     },
     {
@@ -3107,6 +3210,7 @@
         ],
         "sort-id": "cp-06"
       },
+      "controlType": "operational",
       "title": "Alternate Storage Site"
     },
     {
@@ -3133,6 +3237,7 @@
         ],
         "sort-id": "cp-06.01"
       },
+      "controlType": "operational",
       "title": "Separation from Primary Site"
     },
     {
@@ -3159,6 +3264,7 @@
         ],
         "sort-id": "cp-06.03"
       },
+      "controlType": "operational",
       "title": "Accessibility"
     },
     {
@@ -3185,6 +3291,7 @@
         ],
         "sort-id": "cp-07"
       },
+      "controlType": "operational",
       "title": "Alternate Processing Site"
     },
     {
@@ -3211,6 +3318,7 @@
         ],
         "sort-id": "cp-07.01"
       },
+      "controlType": "operational",
       "title": "Separation from Primary Site"
     },
     {
@@ -3237,6 +3345,7 @@
         ],
         "sort-id": "cp-07.02"
       },
+      "controlType": "operational",
       "title": "Accessibility"
     },
     {
@@ -3263,6 +3372,7 @@
         ],
         "sort-id": "cp-07.03"
       },
+      "controlType": "operational",
       "title": "Priority of Service"
     },
     {
@@ -3289,6 +3399,7 @@
         ],
         "sort-id": "cp-08"
       },
+      "controlType": "operational",
       "title": "Telecommunications Services"
     },
     {
@@ -3315,6 +3426,7 @@
         ],
         "sort-id": "cp-08.01"
       },
+      "controlType": "operational",
       "title": "Priority of Service Provisions"
     },
     {
@@ -3341,6 +3453,7 @@
         ],
         "sort-id": "cp-08.02"
       },
+      "controlType": "operational",
       "title": "Single Points of Failure"
     },
     {
@@ -3367,6 +3480,7 @@
         ],
         "sort-id": "cp-09"
       },
+      "controlType": "operational",
       "title": "System Backup"
     },
     {
@@ -3393,6 +3507,7 @@
         ],
         "sort-id": "cp-09.01"
       },
+      "controlType": "operational",
       "title": "Testing for Reliability and Integrity"
     },
     {
@@ -3419,6 +3534,7 @@
         ],
         "sort-id": "cp-09.08"
       },
+      "controlType": "operational",
       "title": "Cryptographic Protection"
     },
     {
@@ -3445,6 +3561,7 @@
         ],
         "sort-id": "cp-10"
       },
+      "controlType": "operational",
       "title": "System Recovery and Reconstitution"
     },
     {
@@ -3471,6 +3588,7 @@
         ],
         "sort-id": "cp-10.02"
       },
+      "controlType": "operational",
       "title": "Transaction Recovery"
     },
     {
@@ -3497,6 +3615,7 @@
         ],
         "sort-id": "ia-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -3523,6 +3642,7 @@
         ],
         "sort-id": "ia-02"
       },
+      "controlType": "technical",
       "title": "Identification and Authentication (Organizational Users)"
     },
     {
@@ -3549,6 +3669,7 @@
         ],
         "sort-id": "ia-02.01"
       },
+      "controlType": "technical",
       "title": "Multi-factor Authentication to Privileged Accounts"
     },
     {
@@ -3575,6 +3696,7 @@
         ],
         "sort-id": "ia-02.02"
       },
+      "controlType": "technical",
       "title": "Multi-factor Authentication to Non-privileged Accounts"
     },
     {
@@ -3601,6 +3723,7 @@
         ],
         "sort-id": "ia-02.08"
       },
+      "controlType": "technical",
       "title": "Access to Accounts — Replay Resistant"
     },
     {
@@ -3627,6 +3750,7 @@
         ],
         "sort-id": "ia-02.12"
       },
+      "controlType": "technical",
       "title": "Acceptance of PIV Credentials"
     },
     {
@@ -3653,6 +3777,7 @@
         ],
         "sort-id": "ia-03"
       },
+      "controlType": "technical",
       "title": "Device Identification and Authentication"
     },
     {
@@ -3679,6 +3804,7 @@
         ],
         "sort-id": "ia-04"
       },
+      "controlType": "technical",
       "title": "Identifier Management"
     },
     {
@@ -3705,6 +3831,7 @@
         ],
         "sort-id": "ia-04.04"
       },
+      "controlType": "technical",
       "title": "Identify User Status"
     },
     {
@@ -3731,6 +3858,7 @@
         ],
         "sort-id": "ia-05"
       },
+      "controlType": "technical",
       "title": "Authenticator Management"
     },
     {
@@ -3757,6 +3885,7 @@
         ],
         "sort-id": "ia-05.01"
       },
+      "controlType": "technical",
       "title": "Password-based Authentication"
     },
     {
@@ -3783,6 +3912,7 @@
         ],
         "sort-id": "ia-05.02"
       },
+      "controlType": "technical",
       "title": "Public Key-based Authentication"
     },
     {
@@ -3809,6 +3939,7 @@
         ],
         "sort-id": "ia-05.06"
       },
+      "controlType": "technical",
       "title": "Protection of Authenticators"
     },
     {
@@ -3835,6 +3966,7 @@
         ],
         "sort-id": "ia-06"
       },
+      "controlType": "technical",
       "title": "Authentication Feedback"
     },
     {
@@ -3861,6 +3993,7 @@
         ],
         "sort-id": "ia-07"
       },
+      "controlType": "technical",
       "title": "Cryptographic Module Authentication"
     },
     {
@@ -3887,6 +4020,7 @@
         ],
         "sort-id": "ia-08"
       },
+      "controlType": "technical",
       "title": "Identification and Authentication (Non-organizational Users)"
     },
     {
@@ -3913,6 +4047,7 @@
         ],
         "sort-id": "ia-08.01"
       },
+      "controlType": "technical",
       "title": "Acceptance of PIV Credentials from Other Agencies"
     },
     {
@@ -3939,6 +4074,7 @@
         ],
         "sort-id": "ia-08.02"
       },
+      "controlType": "technical",
       "title": "Acceptance of External Authenticators"
     },
     {
@@ -3965,6 +4101,7 @@
         ],
         "sort-id": "ia-08.04"
       },
+      "controlType": "technical",
       "title": "Use of Defined Profiles"
     },
     {
@@ -3991,6 +4128,7 @@
         ],
         "sort-id": "ia-11"
       },
+      "controlType": "technical",
       "title": "Re-authentication"
     },
     {
@@ -4017,6 +4155,7 @@
         ],
         "sort-id": "ia-12"
       },
+      "controlType": "technical",
       "title": "Identity Proofing"
     },
     {
@@ -4043,6 +4182,7 @@
         ],
         "sort-id": "ia-12.02"
       },
+      "controlType": "technical",
       "title": "Identity Evidence"
     },
     {
@@ -4069,6 +4209,7 @@
         ],
         "sort-id": "ia-12.03"
       },
+      "controlType": "technical",
       "title": "Identity Evidence Validation and Verification"
     },
     {
@@ -4095,6 +4236,7 @@
         ],
         "sort-id": "ia-12.05"
       },
+      "controlType": "technical",
       "title": "Address Confirmation"
     },
     {
@@ -4121,6 +4263,7 @@
         ],
         "sort-id": "ir-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -4147,6 +4290,7 @@
         ],
         "sort-id": "ir-02"
       },
+      "controlType": "operational",
       "title": "Incident Response Training"
     },
     {
@@ -4173,6 +4317,7 @@
         ],
         "sort-id": "ir-03"
       },
+      "controlType": "operational",
       "title": "Incident Response Testing"
     },
     {
@@ -4199,6 +4344,7 @@
         ],
         "sort-id": "ir-03.02"
       },
+      "controlType": "operational",
       "title": "Coordination with Related Plans"
     },
     {
@@ -4225,6 +4371,7 @@
         ],
         "sort-id": "ir-04"
       },
+      "controlType": "operational",
       "title": "Incident Handling"
     },
     {
@@ -4251,6 +4398,7 @@
         ],
         "sort-id": "ir-04.01"
       },
+      "controlType": "operational",
       "title": "Automated Incident Handling Processes"
     },
     {
@@ -4277,6 +4425,7 @@
         ],
         "sort-id": "ir-05"
       },
+      "controlType": "operational",
       "title": "Incident Monitoring"
     },
     {
@@ -4303,6 +4452,7 @@
         ],
         "sort-id": "ir-06"
       },
+      "controlType": "operational",
       "title": "Incident Reporting"
     },
     {
@@ -4329,6 +4479,7 @@
         ],
         "sort-id": "ir-06.01"
       },
+      "controlType": "operational",
       "title": "Automated Reporting"
     },
     {
@@ -4355,6 +4506,7 @@
         ],
         "sort-id": "ir-06.03"
       },
+      "controlType": "operational",
       "title": "Supply Chain Coordination"
     },
     {
@@ -4381,6 +4533,7 @@
         ],
         "sort-id": "ir-07"
       },
+      "controlType": "operational",
       "title": "Incident Response Assistance"
     },
     {
@@ -4407,6 +4560,7 @@
         ],
         "sort-id": "ir-07.01"
       },
+      "controlType": "operational",
       "title": "Automation Support for Availability of Information and Support"
     },
     {
@@ -4433,6 +4587,7 @@
         ],
         "sort-id": "ir-08"
       },
+      "controlType": "operational",
       "title": "Incident Response Plan"
     },
     {
@@ -4459,6 +4614,7 @@
         ],
         "sort-id": "ma-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -4485,6 +4641,7 @@
         ],
         "sort-id": "ma-02"
       },
+      "controlType": "operational",
       "title": "Controlled Maintenance"
     },
     {
@@ -4511,6 +4668,7 @@
         ],
         "sort-id": "ma-03"
       },
+      "controlType": "operational",
       "title": "Maintenance Tools"
     },
     {
@@ -4537,6 +4695,7 @@
         ],
         "sort-id": "ma-03.01"
       },
+      "controlType": "operational",
       "title": "Inspect Tools"
     },
     {
@@ -4563,6 +4722,7 @@
         ],
         "sort-id": "ma-03.02"
       },
+      "controlType": "operational",
       "title": "Inspect Media"
     },
     {
@@ -4589,6 +4749,7 @@
         ],
         "sort-id": "ma-03.03"
       },
+      "controlType": "operational",
       "title": "Prevent Unauthorized Removal"
     },
     {
@@ -4615,6 +4776,7 @@
         ],
         "sort-id": "ma-04"
       },
+      "controlType": "operational",
       "title": "Nonlocal Maintenance"
     },
     {
@@ -4641,6 +4803,7 @@
         ],
         "sort-id": "ma-05"
       },
+      "controlType": "operational",
       "title": "Maintenance Personnel"
     },
     {
@@ -4667,6 +4830,7 @@
         ],
         "sort-id": "ma-06"
       },
+      "controlType": "operational",
       "title": "Timely Maintenance"
     },
     {
@@ -4693,6 +4857,7 @@
         ],
         "sort-id": "mp-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -4719,6 +4884,7 @@
         ],
         "sort-id": "mp-02"
       },
+      "controlType": "operational",
       "title": "Media Access"
     },
     {
@@ -4745,6 +4911,7 @@
         ],
         "sort-id": "mp-03"
       },
+      "controlType": "operational",
       "title": "Media Marking"
     },
     {
@@ -4771,6 +4938,7 @@
         ],
         "sort-id": "mp-04"
       },
+      "controlType": "operational",
       "title": "Media Storage"
     },
     {
@@ -4797,6 +4965,7 @@
         ],
         "sort-id": "mp-05"
       },
+      "controlType": "operational",
       "title": "Media Transport"
     },
     {
@@ -4823,6 +4992,7 @@
         ],
         "sort-id": "mp-06"
       },
+      "controlType": "operational",
       "title": "Media Sanitization"
     },
     {
@@ -4849,6 +5019,7 @@
         ],
         "sort-id": "mp-07"
       },
+      "controlType": "operational",
       "title": "Media Use"
     },
     {
@@ -4875,6 +5046,7 @@
         ],
         "sort-id": "pe-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -4901,6 +5073,7 @@
         ],
         "sort-id": "pe-02"
       },
+      "controlType": "operational",
       "title": "Physical Access Authorizations"
     },
     {
@@ -4927,6 +5100,7 @@
         ],
         "sort-id": "pe-03"
       },
+      "controlType": "operational",
       "title": "Physical Access Control"
     },
     {
@@ -4953,6 +5127,7 @@
         ],
         "sort-id": "pe-04"
       },
+      "controlType": "operational",
       "title": "Access Control for Transmission"
     },
     {
@@ -4979,6 +5154,7 @@
         ],
         "sort-id": "pe-05"
       },
+      "controlType": "operational",
       "title": "Access Control for Output Devices"
     },
     {
@@ -5005,6 +5181,7 @@
         ],
         "sort-id": "pe-06"
       },
+      "controlType": "operational",
       "title": "Monitoring Physical Access"
     },
     {
@@ -5031,6 +5208,7 @@
         ],
         "sort-id": "pe-06.01"
       },
+      "controlType": "operational",
       "title": "Intrusion Alarms and Surveillance Equipment"
     },
     {
@@ -5057,6 +5235,7 @@
         ],
         "sort-id": "pe-08"
       },
+      "controlType": "operational",
       "title": "Visitor Access Records"
     },
     {
@@ -5083,6 +5262,7 @@
         ],
         "sort-id": "pe-09"
       },
+      "controlType": "operational",
       "title": "Power Equipment and Cabling"
     },
     {
@@ -5109,6 +5289,7 @@
         ],
         "sort-id": "pe-10"
       },
+      "controlType": "operational",
       "title": "Emergency Shutoff"
     },
     {
@@ -5135,6 +5316,7 @@
         ],
         "sort-id": "pe-11"
       },
+      "controlType": "operational",
       "title": "Emergency Power"
     },
     {
@@ -5161,6 +5343,7 @@
         ],
         "sort-id": "pe-12"
       },
+      "controlType": "operational",
       "title": "Emergency Lighting"
     },
     {
@@ -5187,6 +5370,7 @@
         ],
         "sort-id": "pe-13"
       },
+      "controlType": "operational",
       "title": "Fire Protection"
     },
     {
@@ -5213,6 +5397,7 @@
         ],
         "sort-id": "pe-13.01"
       },
+      "controlType": "operational",
       "title": "Detection Systems — Automatic Activation and Notification"
     },
     {
@@ -5239,6 +5424,7 @@
         ],
         "sort-id": "pe-14"
       },
+      "controlType": "operational",
       "title": "Environmental Controls"
     },
     {
@@ -5265,6 +5451,7 @@
         ],
         "sort-id": "pe-15"
       },
+      "controlType": "operational",
       "title": "Water Damage Protection"
     },
     {
@@ -5291,6 +5478,7 @@
         ],
         "sort-id": "pe-16"
       },
+      "controlType": "operational",
       "title": "Delivery and Removal"
     },
     {
@@ -5317,6 +5505,7 @@
         ],
         "sort-id": "pe-17"
       },
+      "controlType": "operational",
       "title": "Alternate Work Site"
     },
     {
@@ -5343,6 +5532,7 @@
         ],
         "sort-id": "pl-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -5369,6 +5559,7 @@
         ],
         "sort-id": "pl-02"
       },
+      "controlType": "management",
       "title": "System Security and Privacy Plans"
     },
     {
@@ -5395,6 +5586,7 @@
         ],
         "sort-id": "pl-04"
       },
+      "controlType": "management",
       "title": "Rules of Behavior"
     },
     {
@@ -5421,6 +5613,7 @@
         ],
         "sort-id": "pl-04.01"
       },
+      "controlType": "management",
       "title": "Social Media and External Site/Application Usage Restrictions"
     },
     {
@@ -5447,6 +5640,7 @@
         ],
         "sort-id": "pl-08"
       },
+      "controlType": "management",
       "title": "Security and Privacy Architectures"
     },
     {
@@ -5473,6 +5667,7 @@
         ],
         "sort-id": "pl-10"
       },
+      "controlType": "management",
       "title": "Baseline Selection"
     },
     {
@@ -5499,6 +5694,7 @@
         ],
         "sort-id": "pl-11"
       },
+      "controlType": "management",
       "title": "Baseline Tailoring"
     },
     {
@@ -5525,6 +5721,7 @@
         ],
         "sort-id": "ps-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -5551,6 +5748,7 @@
         ],
         "sort-id": "ps-02"
       },
+      "controlType": "operational",
       "title": "Position Risk Designation"
     },
     {
@@ -5577,6 +5775,7 @@
         ],
         "sort-id": "ps-03"
       },
+      "controlType": "operational",
       "title": "Personnel Screening"
     },
     {
@@ -5603,6 +5802,7 @@
         ],
         "sort-id": "ps-04"
       },
+      "controlType": "operational",
       "title": "Personnel Termination"
     },
     {
@@ -5629,6 +5829,7 @@
         ],
         "sort-id": "ps-05"
       },
+      "controlType": "operational",
       "title": "Personnel Transfer"
     },
     {
@@ -5655,6 +5856,7 @@
         ],
         "sort-id": "ps-06"
       },
+      "controlType": "operational",
       "title": "Access Agreements"
     },
     {
@@ -5681,6 +5883,7 @@
         ],
         "sort-id": "ps-07"
       },
+      "controlType": "operational",
       "title": "External Personnel Security"
     },
     {
@@ -5707,6 +5910,7 @@
         ],
         "sort-id": "ps-08"
       },
+      "controlType": "operational",
       "title": "Personnel Sanctions"
     },
     {
@@ -5733,6 +5937,7 @@
         ],
         "sort-id": "ps-09"
       },
+      "controlType": "operational",
       "title": "Position Descriptions"
     },
     {
@@ -5759,6 +5964,7 @@
         ],
         "sort-id": "ra-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -5785,6 +5991,7 @@
         ],
         "sort-id": "ra-02"
       },
+      "controlType": "management",
       "title": "Security Categorization"
     },
     {
@@ -5811,6 +6018,7 @@
         ],
         "sort-id": "ra-03"
       },
+      "controlType": "management",
       "title": "Risk Assessment"
     },
     {
@@ -5837,6 +6045,7 @@
         ],
         "sort-id": "ra-03.01"
       },
+      "controlType": "management",
       "title": "Supply Chain Risk Assessment"
     },
     {
@@ -5863,6 +6072,7 @@
         ],
         "sort-id": "ra-05"
       },
+      "controlType": "management",
       "title": "Vulnerability Monitoring and Scanning"
     },
     {
@@ -5889,6 +6099,7 @@
         ],
         "sort-id": "ra-05.02"
       },
+      "controlType": "management",
       "title": "Update Vulnerabilities to Be Scanned"
     },
     {
@@ -5915,6 +6126,7 @@
         ],
         "sort-id": "ra-05.05"
       },
+      "controlType": "management",
       "title": "Privileged Access"
     },
     {
@@ -5941,6 +6153,7 @@
         ],
         "sort-id": "ra-05.11"
       },
+      "controlType": "management",
       "title": "Public Disclosure Program"
     },
     {
@@ -5967,6 +6180,7 @@
         ],
         "sort-id": "ra-07"
       },
+      "controlType": "management",
       "title": "Risk Response"
     },
     {
@@ -5993,6 +6207,7 @@
         ],
         "sort-id": "ra-09"
       },
+      "controlType": "management",
       "title": "Criticality Analysis"
     },
     {
@@ -6019,6 +6234,7 @@
         ],
         "sort-id": "sa-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -6045,6 +6261,7 @@
         ],
         "sort-id": "sa-02"
       },
+      "controlType": "management",
       "title": "Allocation of Resources"
     },
     {
@@ -6071,6 +6288,7 @@
         ],
         "sort-id": "sa-03"
       },
+      "controlType": "management",
       "title": "System Development Life Cycle"
     },
     {
@@ -6097,6 +6315,7 @@
         ],
         "sort-id": "sa-04"
       },
+      "controlType": "management",
       "title": "Acquisition Process"
     },
     {
@@ -6123,6 +6342,7 @@
         ],
         "sort-id": "sa-04.01"
       },
+      "controlType": "management",
       "title": "Functional Properties of Controls"
     },
     {
@@ -6149,6 +6369,7 @@
         ],
         "sort-id": "sa-04.02"
       },
+      "controlType": "management",
       "title": "Design and Implementation Information for Controls"
     },
     {
@@ -6175,6 +6396,7 @@
         ],
         "sort-id": "sa-04.09"
       },
+      "controlType": "management",
       "title": "Functions, Ports, Protocols, and Services in Use"
     },
     {
@@ -6201,6 +6423,7 @@
         ],
         "sort-id": "sa-04.10"
       },
+      "controlType": "management",
       "title": "Use of Approved PIV Products"
     },
     {
@@ -6227,6 +6450,7 @@
         ],
         "sort-id": "sa-05"
       },
+      "controlType": "management",
       "title": "System Documentation"
     },
     {
@@ -6253,6 +6477,7 @@
         ],
         "sort-id": "sa-08"
       },
+      "controlType": "management",
       "title": "Security and Privacy Engineering Principles"
     },
     {
@@ -6279,6 +6504,7 @@
         ],
         "sort-id": "sa-09"
       },
+      "controlType": "management",
       "title": "External System Services"
     },
     {
@@ -6305,6 +6531,7 @@
         ],
         "sort-id": "sa-09.02"
       },
+      "controlType": "management",
       "title": "Identification of Functions, Ports, Protocols, and Services"
     },
     {
@@ -6331,6 +6558,7 @@
         ],
         "sort-id": "sa-10"
       },
+      "controlType": "management",
       "title": "Developer Configuration Management"
     },
     {
@@ -6357,6 +6585,7 @@
         ],
         "sort-id": "sa-11"
       },
+      "controlType": "management",
       "title": "Developer Testing and Evaluation"
     },
     {
@@ -6383,6 +6612,7 @@
         ],
         "sort-id": "sa-15"
       },
+      "controlType": "management",
       "title": "Development Process, Standards, and Tools"
     },
     {
@@ -6409,6 +6639,7 @@
         ],
         "sort-id": "sa-15.03"
       },
+      "controlType": "management",
       "title": "Criticality Analysis"
     },
     {
@@ -6435,6 +6666,7 @@
         ],
         "sort-id": "sa-22"
       },
+      "controlType": "management",
       "title": "Unsupported System Components"
     },
     {
@@ -6461,6 +6693,7 @@
         ],
         "sort-id": "sc-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -6487,6 +6720,7 @@
         ],
         "sort-id": "sc-02"
       },
+      "controlType": "technical",
       "title": "Separation of System and User Functionality"
     },
     {
@@ -6513,6 +6747,7 @@
         ],
         "sort-id": "sc-04"
       },
+      "controlType": "technical",
       "title": "Information in Shared System Resources"
     },
     {
@@ -6539,6 +6774,7 @@
         ],
         "sort-id": "sc-05"
       },
+      "controlType": "technical",
       "title": "Denial-of-service Protection"
     },
     {
@@ -6565,6 +6801,7 @@
         ],
         "sort-id": "sc-07"
       },
+      "controlType": "technical",
       "title": "Boundary Protection"
     },
     {
@@ -6591,6 +6828,7 @@
         ],
         "sort-id": "sc-07.03"
       },
+      "controlType": "technical",
       "title": "Access Points"
     },
     {
@@ -6617,6 +6855,7 @@
         ],
         "sort-id": "sc-07.04"
       },
+      "controlType": "technical",
       "title": "External Telecommunications Services"
     },
     {
@@ -6643,6 +6882,7 @@
         ],
         "sort-id": "sc-07.05"
       },
+      "controlType": "technical",
       "title": "Deny by Default — Allow by Exception"
     },
     {
@@ -6669,6 +6909,7 @@
         ],
         "sort-id": "sc-07.07"
       },
+      "controlType": "technical",
       "title": "Split Tunneling for Remote Devices"
     },
     {
@@ -6695,6 +6936,7 @@
         ],
         "sort-id": "sc-07.08"
       },
+      "controlType": "technical",
       "title": "Route Traffic to Authenticated Proxy Servers"
     },
     {
@@ -6721,6 +6963,7 @@
         ],
         "sort-id": "sc-08"
       },
+      "controlType": "technical",
       "title": "Transmission Confidentiality and Integrity"
     },
     {
@@ -6747,6 +6990,7 @@
         ],
         "sort-id": "sc-08.01"
       },
+      "controlType": "technical",
       "title": "Cryptographic Protection"
     },
     {
@@ -6773,6 +7017,7 @@
         ],
         "sort-id": "sc-10"
       },
+      "controlType": "technical",
       "title": "Network Disconnect"
     },
     {
@@ -6799,6 +7044,7 @@
         ],
         "sort-id": "sc-12"
       },
+      "controlType": "technical",
       "title": "Cryptographic Key Establishment and Management"
     },
     {
@@ -6825,6 +7071,7 @@
         ],
         "sort-id": "sc-13"
       },
+      "controlType": "technical",
       "title": "Cryptographic Protection"
     },
     {
@@ -6851,6 +7098,7 @@
         ],
         "sort-id": "sc-15"
       },
+      "controlType": "technical",
       "title": "Collaborative Computing Devices and Applications"
     },
     {
@@ -6877,6 +7125,7 @@
         ],
         "sort-id": "sc-17"
       },
+      "controlType": "technical",
       "title": "Public Key Infrastructure Certificates"
     },
     {
@@ -6903,6 +7152,7 @@
         ],
         "sort-id": "sc-18"
       },
+      "controlType": "technical",
       "title": "Mobile Code"
     },
     {
@@ -6929,6 +7179,7 @@
         ],
         "sort-id": "sc-20"
       },
+      "controlType": "technical",
       "title": "Secure Name/Address Resolution Service (Authoritative Source)"
     },
     {
@@ -6955,6 +7206,7 @@
         ],
         "sort-id": "sc-21"
       },
+      "controlType": "technical",
       "title": "Secure Name/Address Resolution Service (Recursive or Caching Resolver)"
     },
     {
@@ -6981,6 +7233,7 @@
         ],
         "sort-id": "sc-22"
       },
+      "controlType": "technical",
       "title": "Architecture and Provisioning for Name/Address Resolution Service"
     },
     {
@@ -7007,6 +7260,7 @@
         ],
         "sort-id": "sc-23"
       },
+      "controlType": "technical",
       "title": "Session Authenticity"
     },
     {
@@ -7033,6 +7287,7 @@
         ],
         "sort-id": "sc-28"
       },
+      "controlType": "technical",
       "title": "Protection of Information at Rest"
     },
     {
@@ -7059,6 +7314,7 @@
         ],
         "sort-id": "sc-28.01"
       },
+      "controlType": "technical",
       "title": "Cryptographic Protection"
     },
     {
@@ -7085,6 +7341,7 @@
         ],
         "sort-id": "sc-39"
       },
+      "controlType": "technical",
       "title": "Process Isolation"
     },
     {
@@ -7111,6 +7368,7 @@
         ],
         "sort-id": "si-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -7137,6 +7395,7 @@
         ],
         "sort-id": "si-02"
       },
+      "controlType": "technical",
       "title": "Flaw Remediation"
     },
     {
@@ -7163,6 +7422,7 @@
         ],
         "sort-id": "si-02.02"
       },
+      "controlType": "technical",
       "title": "Automated Flaw Remediation Status"
     },
     {
@@ -7189,6 +7449,7 @@
         ],
         "sort-id": "si-03"
       },
+      "controlType": "technical",
       "title": "Malicious Code Protection"
     },
     {
@@ -7215,6 +7476,7 @@
         ],
         "sort-id": "si-04"
       },
+      "controlType": "technical",
       "title": "System Monitoring"
     },
     {
@@ -7241,6 +7503,7 @@
         ],
         "sort-id": "si-04.02"
       },
+      "controlType": "technical",
       "title": "Automated Tools and Mechanisms for Real-time Analysis"
     },
     {
@@ -7267,6 +7530,7 @@
         ],
         "sort-id": "si-04.04"
       },
+      "controlType": "technical",
       "title": "Inbound and Outbound Communications Traffic"
     },
     {
@@ -7293,6 +7557,7 @@
         ],
         "sort-id": "si-04.05"
       },
+      "controlType": "technical",
       "title": "System-generated Alerts"
     },
     {
@@ -7319,6 +7584,7 @@
         ],
         "sort-id": "si-05"
       },
+      "controlType": "technical",
       "title": "Security Alerts, Advisories, and Directives"
     },
     {
@@ -7345,6 +7611,7 @@
         ],
         "sort-id": "si-07"
       },
+      "controlType": "technical",
       "title": "Software, Firmware, and Information Integrity"
     },
     {
@@ -7371,6 +7638,7 @@
         ],
         "sort-id": "si-07.01"
       },
+      "controlType": "technical",
       "title": "Integrity Checks"
     },
     {
@@ -7397,6 +7665,7 @@
         ],
         "sort-id": "si-07.07"
       },
+      "controlType": "technical",
       "title": "Integration of Detection and Response"
     },
     {
@@ -7423,6 +7692,7 @@
         ],
         "sort-id": "si-08"
       },
+      "controlType": "technical",
       "title": "Spam Protection"
     },
     {
@@ -7449,6 +7719,7 @@
         ],
         "sort-id": "si-08.02"
       },
+      "controlType": "technical",
       "title": "Automatic Updates"
     },
     {
@@ -7475,6 +7746,7 @@
         ],
         "sort-id": "si-10"
       },
+      "controlType": "technical",
       "title": "Information Input Validation"
     },
     {
@@ -7501,6 +7773,7 @@
         ],
         "sort-id": "si-11"
       },
+      "controlType": "technical",
       "title": "Error Handling"
     },
     {
@@ -7527,6 +7800,7 @@
         ],
         "sort-id": "si-12"
       },
+      "controlType": "technical",
       "title": "Information Management and Retention"
     },
     {
@@ -7553,6 +7827,7 @@
         ],
         "sort-id": "si-16"
       },
+      "controlType": "technical",
       "title": "Memory Protection"
     },
     {
@@ -7579,6 +7854,7 @@
         ],
         "sort-id": "sr-01"
       },
+      "controlType": "policy",
       "title": "Policy and Procedures"
     },
     {
@@ -7605,6 +7881,7 @@
         ],
         "sort-id": "sr-02"
       },
+      "controlType": "management",
       "title": "Supply Chain Risk Management Plan"
     },
     {
@@ -7631,6 +7908,7 @@
         ],
         "sort-id": "sr-02.01"
       },
+      "controlType": "management",
       "title": "Establish SCRM Team"
     },
     {
@@ -7657,6 +7935,7 @@
         ],
         "sort-id": "sr-03"
       },
+      "controlType": "management",
       "title": "Supply Chain Controls and Processes"
     },
     {
@@ -7683,6 +7962,7 @@
         ],
         "sort-id": "sr-05"
       },
+      "controlType": "management",
       "title": "Acquisition Strategies, Tools, and Methods"
     },
     {
@@ -7709,6 +7989,7 @@
         ],
         "sort-id": "sr-06"
       },
+      "controlType": "management",
       "title": "Supplier Assessments and Reviews"
     },
     {
@@ -7735,6 +8016,7 @@
         ],
         "sort-id": "sr-08"
       },
+      "controlType": "management",
       "title": "Notification Agreements"
     },
     {
@@ -7761,6 +8043,7 @@
         ],
         "sort-id": "sr-10"
       },
+      "controlType": "management",
       "title": "Inspection of Systems or Components"
     },
     {
@@ -7787,6 +8070,7 @@
         ],
         "sort-id": "sr-11"
       },
+      "controlType": "management",
       "title": "Component Authenticity"
     },
     {
@@ -7813,6 +8097,7 @@
         ],
         "sort-id": "sr-11.01"
       },
+      "controlType": "management",
       "title": "Anti-counterfeit Training"
     },
     {
@@ -7839,6 +8124,7 @@
         ],
         "sort-id": "sr-11.02"
       },
+      "controlType": "management",
       "title": "Configuration Control for Component Service and Repair"
     },
     {
@@ -7865,6 +8151,7 @@
         ],
         "sort-id": "sr-12"
       },
+      "controlType": "management",
       "title": "Component Disposal"
     }
   ],

@@ -2,7 +2,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { inputChecksum, limitArray, validateInputSize, mapCWEToNIST, DEFAULT_REMEDIATION_NIST_TAGS, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize, mapCWEToNIST, DEFAULT_REMEDIATION_NIST_TAGS, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -11,6 +11,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -132,7 +133,13 @@ function buildRequirement(ruleId: string, issues: GosecIssue[]): EvaluatedRequir
     { label: 'check', data: `CWE-${rep.cwe.id}: ${rep.cwe.url}` },
   ];
 
-  return createRequirement(ruleId, rep.details, descriptions, impact, results, { tags });
+  const req = createRequirement(ruleId, rep.details, descriptions, impact, results, { tags }) as EvaluatedRequirement;
+  req.verificationMethod = VerificationMethodEnum.Automated;
+  const controlType = deriveControlTypeFromTags(nist);
+  if (controlType !== undefined) {
+    req.controlType = controlType;
+  }
+  return req;
 }
 
 /**

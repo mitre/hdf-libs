@@ -307,11 +307,17 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 			title = fmt.Sprintf("%s (%s)", vuln.ID, vuln.Source.Name)
 		}
 
+		// verificationMethod is intentionally NOT set. CycloneDX carries both
+		// machine-generated SBOM vulnerability data and human-authored VEX
+		// statements (analyst assertions about CVE exploitability). The
+		// converter cannot reliably distinguish the two, so stamping
+		// "automated" would misclassify VEX-derived requirements.
 		requirements = append(requirements, hdf.EvaluatedRequirement{
 			ID:           vuln.ID,
 			Title:        &title,
 			Impact:       impact,
 			Tags:         tags,
+			ControlType:  shared.DeriveControlTypeFromTags(nist),
 			Descriptions: descriptions,
 			Results:      results,
 		})

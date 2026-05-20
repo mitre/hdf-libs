@@ -10,6 +10,7 @@ import type {
 import {
   ResultStatus,
   Copyright,
+  VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -151,7 +152,9 @@ function buildRequirement(assessmentID: string, assessments: Assessment[]): Eval
 
   const results = assessments.map(buildResultFromAssessment);
 
-  return createRequirement(assessmentID, rep.properties.displayName, descriptions, impact, results, { tags });
+  const req = createRequirement(assessmentID, rep.properties.displayName, descriptions, impact, results, { tags }) as EvaluatedRequirement;
+  req.verificationMethod = VerificationMethodEnum.Automated;
+  return req;
 }
 
 /**

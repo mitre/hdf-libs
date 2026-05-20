@@ -36,7 +36,8 @@
             "version": "n/a"
           },
           "code": "{\n  \"latest_version\": \"n/a\",\n  \"org\": \"n/a\",\n  \"name\": \"-e\",\n  \"type\": \"pypi\",\n  \"package\": \"egg\",\n  \"version\": \"n/a\",\n  \"scope\": \"runtime\",\n  \"requirement\": \"n/a\",\n  \"file\": \"requirements.txt\",\n  \"outdated_version\": {\n    \"major_behind\": 0,\n    \"minor_behind\": 0,\n    \"patch_behind\": 0\n  },\n  \"dependencies\": []\n}",
-          "title": "Python requirements file requirements.txt"
+          "title": "Python requirements file requirements.txt",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -68,7 +69,8 @@
             "version": "2.31.0"
           },
           "code": "{\n  \"latest_version\": \"3.1.0\",\n  \"org\": \"n/a\",\n  \"name\": \"requests\",\n  \"type\": \"pypi\",\n  \"package\": \"pypi\",\n  \"version\": \"2.31.0\",\n  \"scope\": \"runtime\",\n  \"requirement\": \"n/a\",\n  \"file\": \"requirements.txt\",\n  \"outdated_version\": {\n    \"major_behind\": 1,\n    \"minor_behind\": 0,\n    \"patch_behind\": 0\n  },\n  \"dependencies\": []\n}",
-          "title": "Dependency requests @ 2.31.0"
+          "title": "Dependency requests @ 2.31.0",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -100,7 +102,8 @@
             "version": "n/a"
           },
           "code": "{\n  \"latest_version\": \"1.0.0\",\n  \"org\": \"example-corp\",\n  \"name\": \"internal-lib\",\n  \"type\": \"pypi\",\n  \"package\": \"pypi\",\n  \"version\": \"n/a\",\n  \"scope\": \"runtime\",\n  \"requirement\": \"\\u003e=0.5.0\",\n  \"file\": \"requirements.txt\",\n  \"outdated_version\": {\n    \"major_behind\": 0,\n    \"minor_behind\": 0,\n    \"patch_behind\": 0\n  },\n  \"dependencies\": []\n}",
-          "title": "Dependency internal-lib from example-corp (Required \u003e=0.5.0)"
+          "title": "Dependency internal-lib from example-corp (Required \u003e=0.5.0)",
+          "verificationMethod": "automated"
         }
       ],
       "name": "Ion Channel SBOM Analysis",

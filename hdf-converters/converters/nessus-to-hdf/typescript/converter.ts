@@ -1,6 +1,6 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HdfResults,
   EvaluatedBaseline,
@@ -239,8 +239,11 @@ function convertReportItemToRequirement(item: ReportItem, host: ReportHost): Eva
   const refs = buildRefs(item);
   const results = [buildResult(item, host, isCompliance)];
   const code = JSON.stringify(item, null, 2);
+  const nistTags = (tags as Record<string, unknown>)['nist'] as string[] | undefined;
+  const controlType = deriveControlTypeFromTags(nistTags ?? []);
+  const verificationMethod = deriveVerificationMethod(code);
 
-  return {
+  const req: EvaluatedRequirement = {
     id,
     title,
     descriptions,
@@ -250,6 +253,9 @@ function convertReportItemToRequirement(item: ReportItem, host: ReportHost): Eva
     results,
     code,
   };
+  if (controlType !== undefined) req.controlType = controlType;
+  if (verificationMethod !== undefined) req.verificationMethod = verificationMethod;
+  return req;
 }
 
 function buildDescriptions(item: ReportItem, isCompliance: boolean): Description[] {

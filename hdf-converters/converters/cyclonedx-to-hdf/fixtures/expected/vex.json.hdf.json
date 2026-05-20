@@ -34,6 +34,7 @@
             ],
             "ratings": "NVD - high, SNYK - high, Acme Inc - none"
           },
+          "controlType": "technical",
           "title": "CVE-2020-25649 (NVD)"
         }
       ],
@@ -154,7 +155,7 @@
     "name": "cyclonedx-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:51.847023Z",
+  "timestamp": "2026-05-19T01:39:05.219601854Z",
   "tool": {
     "format": "JSON",
     "name": "CycloneDX"

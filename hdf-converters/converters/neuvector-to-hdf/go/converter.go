@@ -143,12 +143,14 @@ func buildRequirement(vuln NeuVectorVuln) hdf.EvaluatedRequirement {
 
 	title := vulnTitle(vuln)
 	return hdf.EvaluatedRequirement{
-		ID:           vulnID(vuln),
-		Title:        &title,
-		Impact:       getImpact(vuln),
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 vulnID(vuln),
+		Title:              &title,
+		Impact:             getImpact(vuln),
+		Tags:               tags,
+		Descriptions:       descriptions,
+		Results:            results,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

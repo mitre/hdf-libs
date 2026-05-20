@@ -28,7 +28,8 @@
               "RA-5"
             ]
           },
-          "title": "Retrieved access-control-allow-origin header: *"
+          "title": "Retrieved access-control-allow-origin header: *",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -56,7 +57,8 @@
               "RA-5"
             ]
           },
-          "title": "Server may leak inodes via ETags, header found with file /, inode: 150562, size: 44, mtime: Fri Jul  7 04:07:28 2006"
+          "title": "Server may leak inodes via ETags, header found with file /, inode: 150562, size: 44, mtime: Fri Jul  7 04:07:28 2006",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -84,7 +86,8 @@
               "RA-5"
             ]
           },
-          "title": "The anti-clickjacking X-Frame-Options header is not present."
+          "title": "The anti-clickjacking X-Frame-Options header is not present.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -112,7 +115,8 @@
               "RA-5"
             ]
           },
-          "title": "The X-XSS-Protection header is not defined. This header can hint to the user agent to protect against some forms of XSS"
+          "title": "The X-XSS-Protection header is not defined. This header can hint to the user agent to protect against some forms of XSS",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -140,7 +144,8 @@
               "RA-5"
             ]
           },
-          "title": "The site uses SSL and the Strict-Transport-Security HTTP header is not defined."
+          "title": "The site uses SSL and the Strict-Transport-Security HTTP header is not defined.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -168,7 +173,8 @@
               "RA-5"
             ]
           },
-          "title": "The site uses SSL and Expect-CT header is not present."
+          "title": "The site uses SSL and Expect-CT header is not present.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -196,7 +202,8 @@
               "RA-5"
             ]
           },
-          "title": "The X-Content-Type-Options header is not set. This could allow the user agent to render the content of the site in a different fashion to the MIME type."
+          "title": "The X-Content-Type-Options header is not set. This could allow the user agent to render the content of the site in a different fashion to the MIME type.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -222,7 +229,9 @@
               "SI-2"
             ]
           },
-          "title": "mod_jk/1.2.40 appears to be outdated (current is at least 1.2.46)"
+          "controlType": "technical",
+          "title": "mod_jk/1.2.40 appears to be outdated (current is at least 1.2.46)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -248,7 +257,9 @@
               "SI-2"
             ]
           },
-          "title": "mod_ssl/2.2.6 appears to be outdated (current is at least 2.8.31) (may depend on server version)"
+          "controlType": "technical",
+          "title": "mod_ssl/2.2.6 appears to be outdated (current is at least 2.8.31) (may depend on server version)",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -274,7 +285,9 @@
               "SI-2"
             ]
           },
-          "title": "Apache/2.2.6 appears to be outdated (current is at least Apache/2.4.41). Apache 2.2.34 is the EOL for the 2.x branch."
+          "controlType": "technical",
+          "title": "Apache/2.2.6 appears to be outdated (current is at least Apache/2.4.41). Apache 2.2.34 is the EOL for the 2.x branch.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -300,7 +313,9 @@
               "SI-2"
             ]
           },
-          "title": "OpenSSL/0.9.8e appears to be outdated (current is at least 1.1.1d). OpenSSL 1.0.0o and 0.9.8zc are also current."
+          "controlType": "technical",
+          "title": "OpenSSL/0.9.8e appears to be outdated (current is at least 1.1.1d). OpenSSL 1.0.0o and 0.9.8zc are also current.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -326,7 +341,9 @@
               "SI-10"
             ]
           },
-          "title": "mod_ssl/2.2.6 OpenSSL/0.9.8e mod_jk/1.2.40 - mod_ssl 2.8.7 and lower are vulnerable to a remote buffer overflow which may allow a remote shell. CVE-2002-0082, OSVDB-756."
+          "controlType": "technical",
+          "title": "mod_ssl/2.2.6 OpenSSL/0.9.8e mod_jk/1.2.40 - mod_ssl 2.8.7 and lower are vulnerable to a remote buffer overflow which may allow a remote shell. CVE-2002-0082, OSVDB-756.",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -354,7 +371,8 @@
               "RA-5"
             ]
           },
-          "title": "Allowed HTTP Methods: GET, HEAD, POST, OPTIONS, TRACE "
+          "title": "Allowed HTTP Methods: GET, HEAD, POST, OPTIONS, TRACE ",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -383,7 +401,8 @@
             ],
             "osvdb": "877"
           },
-          "title": "HTTP TRACE method is active, suggesting the host is vulnerable to XST"
+          "title": "HTTP TRACE method is active, suggesting the host is vulnerable to XST",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {

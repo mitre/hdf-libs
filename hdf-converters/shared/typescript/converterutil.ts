@@ -8,8 +8,12 @@
 
 import { sha256 } from '@mitre/hdf-utilities';
 import type { Checksum, Component, EvaluatedBaseline, HdfResults, Integrity, Statistics } from '@mitre/hdf-schema';
-import { HashAlgorithm } from '@mitre/hdf-schema';
+import { Applicability, ControlType, HashAlgorithm, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl } from '@mitre/hdf-mappings';
+
+// Re-export the v3.2 classification enums so converters can reach them from
+// the same import path used for every other shared converter utility.
+export { Applicability, ControlType, VerificationMethodEnum };
 
 /**
  * Compute a SHA-256 checksum of raw converter input.
@@ -274,4 +278,148 @@ export function buildHdfResults(opts: HdfResultsOptions): string {
   if (opts.statistics) hdf.statistics = opts.statistics;
 
   return JSON.stringify(hdf, null, 2);
+}
+
+/**
+ * Captures a NIST 800-53 control identifier and its base sub-control number,
+ * ignoring enhancement suffixes like "(1)" or ".1". Mirrors the Go pattern
+ * in shared/go/converterutil.go.
+ */
+const NIST_TAG_PATTERN = /^([A-Z]{2})-(\d+)/;
+
+/**
+ * Maps each recognized NIST 800-53 Rev 5 family to its HDF controlType per
+ * SP 800-53 Appendix C / SP 800-53A classification. Unknown families resolve
+ * to undefined.
+ */
+const NIST_FAMILY_CONTROL_TYPE: Record<string, ControlType> = {
+  AC: ControlType.Technical,
+  AT: ControlType.Operational,
+  AU: ControlType.Operational,
+  CA: ControlType.Management,
+  CM: ControlType.Operational,
+  CP: ControlType.Operational,
+  IA: ControlType.Technical,
+  IR: ControlType.Operational,
+  MA: ControlType.Operational,
+  MP: ControlType.Operational,
+  PE: ControlType.Operational,
+  PL: ControlType.Management,
+  PM: ControlType.Management,
+  PS: ControlType.Operational,
+  PT: ControlType.Operational,
+  RA: ControlType.Management,
+  SA: ControlType.Management,
+  SC: ControlType.Technical,
+  SI: ControlType.Technical,
+  SR: ControlType.Management,
+};
+
+/**
+ * Derive the HDF `controlType` for a single NIST 800-53 control identifier
+ * using a family-prefix heuristic. Returns undefined when the family is
+ * unrecognized or the tag is not a NIST control identifier.
+ *
+ * Heuristic, per NIST SP 800-53 Rev 5 Appendix C and SP 800-53A:
+ * - Management: PM, RA, CA, PL, SA, SR families
+ * - Operational: AT, AU, CM, CP, IR, MA, MP, PE, PS, PT families
+ * - Technical:  AC, IA, SC, SI families
+ * - Policy:     any "-1" sub-control (the per-family policy/procedure
+ *   document, regardless of which family it belongs to). Enhancements of
+ *   -1 controls (e.g., AC-1(1)) also resolve to policy.
+ *
+ * The "-1" rule takes precedence over the family rule because the per-family
+ * policy/procedure document is more usefully classified by its document
+ * nature than by the family it documents.
+ *
+ * @example
+ *   deriveControlType("AC-3")      // ControlType.Technical
+ *   deriveControlType("AC-1")      // ControlType.Policy   (any *-1 is policy)
+ *   deriveControlType("AC-3(1)")   // ControlType.Technical (enhancement of AC-3)
+ *   deriveControlType("PM-2")      // ControlType.Management
+ *   deriveControlType("SV-238196") // undefined            (not a NIST tag)
+ */
+export function deriveControlType(nistTag: string): ControlType | undefined {
+  const match = NIST_TAG_PATTERN.exec(nistTag.trim().toUpperCase());
+  if (!match || match[1] === undefined || match[2] === undefined) return undefined;
+  const family = match[1];
+  const subControl = match[2];
+  const familyClass = NIST_FAMILY_CONTROL_TYPE[family];
+  if (familyClass === undefined) return undefined;
+  if (subControl === '1') return ControlType.Policy;
+  return familyClass;
+}
+
+/**
+ * NIST tag sets this package uses as per-converter static fallbacks when no
+ * real per-finding mapping is available. When deriveControlTypeFromTags sees
+ * an input that exactly matches one of these bundles, it returns undefined —
+ * the input carries no real per-finding signal, and stamping every
+ * requirement with the same derived controlType is misleading.
+ *
+ * Keep in sync with DEFAULT_STATIC_ANALYSIS_NIST_TAGS, DEFAULT_REMEDIATION_NIST_TAGS.
+ */
+const NIST_FALLBACK_BUNDLES: string[][] = [
+  ['RA-5', 'SA-11'], // DEFAULT_STATIC_ANALYSIS_NIST_TAGS (sorted)
+  ['RA-5', 'SI-2'],  // DEFAULT_REMEDIATION_NIST_TAGS (sorted)
+  ['CM-8'],          // DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS
+];
+
+function tagsMatchFallback(tags: string[]): boolean {
+  if (tags.length === 0) return false;
+  const sorted = [...new Set(tags)].sort();
+  return NIST_FALLBACK_BUNDLES.some(
+    (bundle) =>
+      bundle.length === sorted.length &&
+      bundle.every((b, i) => b === sorted[i]),
+  );
+}
+
+/**
+ * Derive the HDF `controlType` for a slice of NIST tags. Resolves each tag
+ * via {@link deriveControlType}, then picks the most-specific class by
+ * precedence: technical > operational > management > policy > procedure.
+ * The rationale is that a control enforced via configuration (technical)
+ * is more actionable than the same control's management/policy framing.
+ *
+ * Returns undefined when no tag resolves to a known classification, OR when
+ * the input exactly matches a converter-level static-fallback bundle (e.g.
+ * the DEFAULT_STATIC_ANALYSIS_NIST_TAGS set). The fallback gate prevents
+ * converters that have no per-finding NIST signal from stamping every
+ * requirement with the same misleading controlType.
+ */
+export function deriveControlTypeFromTags(tags: string[]): ControlType | undefined {
+  if (tagsMatchFallback(tags)) return undefined;
+  const rank: Record<ControlType, number> = {
+    [ControlType.Technical]: 0,
+    [ControlType.Operational]: 1,
+    [ControlType.Management]: 2,
+    [ControlType.Policy]: 3,
+    [ControlType.Procedure]: 4,
+  };
+  let best: ControlType | undefined;
+  let bestRank = Number.POSITIVE_INFINITY;
+  for (const tag of tags) {
+    const ct = deriveControlType(tag);
+    if (ct === undefined) continue;
+    const r = rank[ct];
+    if (r < bestRank) {
+      bestRank = r;
+      best = ct;
+    }
+  }
+  return best;
+}
+
+/**
+ * Derive the HDF `verificationMethod` for a requirement based on whether
+ * check code is present. Returns `automated` when code is non-empty (a check
+ * exists and runs without operator action), and undefined otherwise — the
+ * converter is responsible for distinguishing manual-by-design (statement-form,
+ * e.g. FedRAMP 20x KSI) from manual-pending-automation (a check that could
+ * be automated but isn't yet) when it has the source-format context to do so.
+ */
+export function deriveVerificationMethod(code: string | undefined | null): VerificationMethodEnum | undefined {
+  if (code === undefined || code === null || code === '') return undefined;
+  return VerificationMethodEnum.Automated;
 }

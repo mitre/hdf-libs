@@ -36,7 +36,8 @@
             "riskdesc": "Low (Medium)",
             "wascid": "15"
           },
-          "title": "X-Content-Type-Options Header Missing"
+          "title": "X-Content-Type-Options Header Missing",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -77,7 +78,8 @@
             "riskdesc": "Medium (Low)",
             "wascid": "13"
           },
-          "title": "Application Error Disclosure"
+          "title": "Application Error Disclosure",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {

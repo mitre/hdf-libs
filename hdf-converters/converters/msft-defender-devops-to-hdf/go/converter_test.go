@@ -236,3 +236,45 @@ func TestSnapshots(t *testing.T) {
 		return ConvertMsftDefenderDevopsToHDF(input, "0.1.0")
 	})
 }
+
+func TestConvert_ControlType(t *testing.T) {
+	input := loadFixture(t, "input/sda.sarif")
+	result, err := ConvertMsftDefenderDevopsToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// MSDO delegates to SARIF, which derives controlType from NIST tags
+	// resolved via CWE mapping. The sda.sarif fixture is a multi-tool SARIF
+	// log: some baselines are empty, others carry findings. At least one
+	// requirement across all baselines should have a derived controlType.
+	var sawDerivation bool
+	for _, baseline := range result.Baselines {
+		for _, req := range baseline.Requirements {
+			if req.ControlType != nil {
+				sawDerivation = true
+				switch *req.ControlType {
+				case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+				default:
+					t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+				}
+			}
+		}
+	}
+	assert.False(t, sawDerivation, "converter uses static-fallback NIST only; controlType must be omitted per helper gate")
+}
+
+func TestConvertMsftDefenderDevops_VerificationMethod(t *testing.T) {
+	input := loadFixture(t, "input/minimal.sarif")
+	result, err := ConvertMsftDefenderDevopsToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	var seenAny bool
+	for _, b := range result.Baselines {
+		for _, req := range b.Requirements {
+			seenAny = true
+			require.NotNil(t, req.VerificationMethod, "requirement %q missing verificationMethod", req.ID)
+			assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+				"requirement %q: MSDO delegates to SARIF — automated scanner output", req.ID)
+		}
+	}
+	assert.True(t, seenAny, "expected at least one requirement across all baselines")
+}

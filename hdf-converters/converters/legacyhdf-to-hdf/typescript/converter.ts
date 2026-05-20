@@ -11,7 +11,7 @@
 
 import { flattenOverlays } from '@mitre/hdf-parsers';
 import type { HdfResults } from '@mitre/hdf-schema';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
 
@@ -367,6 +367,21 @@ function convertControl(v1Control: V1Control): V2Requirement {
   // fall back to impact-derived. InSpec sets impact=0 for NA controls, losing
   // the original severity — tags.severity preserves it.
   v2Req.severity = tagSeverityToSeverity(v1Control.tags?.severity) ?? impactToSeverity(v1Control.impact);
+
+  // Derive controlType from v1 tags.nist if present.
+  const rawNist = v1Control.tags?.nist;
+  if (Array.isArray(rawNist)) {
+    const nistStrs = rawNist.filter((v): v is string => typeof v === 'string');
+    const controlType = deriveControlTypeFromTags(nistStrs);
+    if (controlType !== undefined) {
+      v2Req.controlType = controlType;
+    }
+  }
+
+  // verificationMethod is intentionally NOT set here. legacyhdf is a v1->v3
+  // passthrough/upgrade converter; v1 HDF predates the verificationMethod
+  // field, so the source carries no such signal. Stamping a value would
+  // fabricate data not present in the input.
 
   // Preserve any other fields
   const knownFields = new Set([

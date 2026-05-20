@@ -345,3 +345,41 @@ func TestSnapshots(t *testing.T) {
 		return ConvertMsftSecureScoreToHDF(input, "0.1.0")
 	})
 }
+
+func TestConvertMsftSecureScore_ControlType(t *testing.T) {
+	input := loadFixture(t, "input/combined.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+
+	// Every control uses the static default NIST tags (SA-11, RA-5) which
+	// classify as "management". Each requirement should carry the controlType.
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	assert.False(t, sawDerivation, "converter uses static-fallback NIST only; controlType must be omitted per helper gate")
+}
+
+func TestConvertMsftSecureScore_VerificationMethod(t *testing.T) {
+	input := loadFixture(t, "input/minimal.json")
+	result, err := ConvertMsftSecureScoreToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotEmpty(t, result.Baselines)
+	reqs := result.Baselines[0].Requirements
+	require.NotEmpty(t, reqs)
+	for _, req := range reqs {
+		require.NotNil(t, req.VerificationMethod, "requirement %q missing verificationMethod", req.ID)
+		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
+			"requirement %q: Secure Score controls are evaluated automatically by Microsoft Graph", req.ID)
+	}
+}

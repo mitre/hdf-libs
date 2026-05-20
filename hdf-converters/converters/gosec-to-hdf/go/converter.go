@@ -185,12 +185,14 @@ func buildRequirement(ruleID string, issues []GosecIssue) hdf.EvaluatedRequireme
 
 	title := rep.Details
 	return hdf.EvaluatedRequirement{
-		ID:           ruleID,
-		Title:        &title,
-		Impact:       getImpact(rep.Severity),
-		Tags:         tags,
-		Descriptions: descriptions,
-		Results:      results,
+		ID:                 ruleID,
+		Title:              &title,
+		Impact:             getImpact(rep.Severity),
+		Tags:               tags,
+		Descriptions:       descriptions,
+		Results:            results,
+		ControlType:        shared.DeriveControlTypeFromTags(nist),
+		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
 }
 

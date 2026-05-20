@@ -24,7 +24,9 @@
               "SA-11"
             ]
           },
-          "title": "testFlaky"
+          "controlType": "management",
+          "title": "testFlaky",
+          "verificationMethod": "automated"
         },
         {
           "descriptions": [
@@ -48,7 +50,9 @@
               "SA-11"
             ]
           },
-          "title": "testStable"
+          "controlType": "management",
+          "title": "testStable",
+          "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
@@ -68,7 +72,7 @@
     "name": "hdf-converters",
     "version": "0.1.0"
   },
-  "timestamp": "2026-04-03T17:17:57.1453365Z",
+  "timestamp": "2026-05-15T03:15:04.87371939Z",
   "tool": {
     "format": "XML",
     "name": "JUnit XML"

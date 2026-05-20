@@ -487,3 +487,57 @@ func TestSnapshots(t *testing.T) {
 		return ConvertGrypeToHDF(input, "0.1.0")
 	})
 }
+
+func TestConvertGrypeToHDF_ControlType(t *testing.T) {
+	input := loadFixture(t, "input/amazon.json")
+	result, err := ConvertGrypeToHDF(input, testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+
+	reqs := result.Baselines[0].Requirements
+	if len(reqs) == 0 {
+		t.Fatal("expected at least one requirement")
+	}
+
+	var sawDerivation bool
+	for _, req := range reqs {
+		if req.ControlType != nil {
+			sawDerivation = true
+			switch *req.ControlType {
+			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+			default:
+				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
+			}
+		}
+	}
+	if sawDerivation {
+		t.Error("grype uses static-fallback NIST only; controlType must be omitted per helper gate")
+	}
+}
+
+func TestConvertGrypeToHDF_VerificationMethod(t *testing.T) {
+	input := loadFixture(t, "input/amazon.json")
+	result, err := ConvertGrypeToHDF(input, testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+	if len(result.Baselines) == 0 {
+		t.Fatal("expected at least one baseline")
+	}
+	reqs := result.Baselines[0].Requirements
+	if len(reqs) == 0 {
+		t.Fatal("expected at least one requirement")
+	}
+
+	for _, req := range reqs {
+		if req.VerificationMethod == nil {
+			t.Errorf("requirement %q is missing verificationMethod", req.ID)
+			continue
+		}
+		if *req.VerificationMethod != hdf.VerificationMethodEnumAutomated {
+			t.Errorf("requirement %q has verificationMethod %q, want automated",
+				req.ID, *req.VerificationMethod)
+		}
+	}
+}
