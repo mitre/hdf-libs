@@ -89,6 +89,10 @@ describe('Severity Utilities', () => {
       // Whitespace is not trimmed, so " critical " is unrecognized
       expect(severityToImpact(' critical ')).toBe(0.5);
     });
+
+    it('should return null for null input', () => {
+      expect(severityToImpact(null)).toBeNull();
+    });
   });
 
   describe('impactToSeverity', () => {
@@ -176,6 +180,10 @@ describe('Severity Utilities', () => {
 
     it('should return "informational" for -1', () => {
       expect(impactToSeverity(-1)).toBe('informational');
+    });
+
+    it('should return null for null input', () => {
+      expect(impactToSeverity(null)).toBeNull();
     });
 
     // Values above 1.0 (edge case)

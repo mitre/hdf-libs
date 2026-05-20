@@ -23,6 +23,11 @@ var standardSeverityMap = map[string]float64{
 // Case-insensitive. Returns defaultVal if severity is not recognized.
 // Standard mappings: critical=0.9, high=0.7, medium=0.5, low=0.3,
 // info/none/informational/information=0.0.
+//
+// For documents with no severity assessment (NIST 800-53 catalogs, FedRAMP
+// baselines, etc.), callers should branch on absence at the call site rather
+// than calling this function — Go has no null-input pathway analogous to the
+// TypeScript counterpart's `severityToImpact(null) → null` overload.
 func SeverityToImpact(severity string, defaultVal float64) float64 {
 	if impact, ok := standardSeverityMap[strings.ToLower(severity)]; ok {
 		return impact
@@ -50,6 +55,11 @@ func SeverityToImpactWithAliases(severity string, aliases map[string]float64, de
 //
 //	>=0.9 = critical, [0.7,0.9) = high, [0.4,0.7) = medium,
 //	(0,0.4) = low, 0.0 = informational
+//
+// For documents with no impact assessment, callers should branch on absence at
+// the call site rather than passing a placeholder — Go has no null-input
+// pathway analogous to the TypeScript counterpart's
+// `impactToSeverity(null) → null` overload.
 func ImpactToSeverity(impact float64) string {
 	switch {
 	case impact >= 0.9:
