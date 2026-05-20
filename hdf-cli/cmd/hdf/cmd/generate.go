@@ -14,11 +14,14 @@ JSON or XCCDF Benchmark XML.
 
 Available subcommands:
   inspec-profile    Generate InSpec profile from HDF Baseline or XCCDF Benchmark
-  threshold         Generate compliance threshold template from HDF results`,
+  threshold         Generate compliance threshold template from HDF results
+  upgrade           Upgrade baseline with new upstream metadata, preserving customizations
+                    (alias: delta)`,
 	}
 
 	cmd.AddCommand(newGenerateInSpecProfileCmd())
 	cmd.AddCommand(newGenerateThresholdCmd())
+	cmd.AddCommand(newGenerateUpgradeCmd())
 
 	return cmd
 }

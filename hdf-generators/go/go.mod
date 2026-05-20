@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-libs/hdf-generators/go/v3
 
-go 1.26
+go 1.26.3
 
 require (
 	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.1.1

@@ -53,6 +53,10 @@ describe('severityToImpact', () => {
     expect(severityToImpact('unknown')).toBe(0.5);
     expect(severityToImpact('')).toBe(0.5);
   });
+
+  it('should return null for null input', () => {
+    expect(severityToImpact(null)).toBeNull();
+  });
 });
 
 describe('impactToSeverity', () => {
@@ -96,6 +100,10 @@ describe('impactToSeverity', () => {
 
   it('should map 0.0 to informational', () => {
     expect(impactToSeverity(0.0)).toBe('informational');
+  });
+
+  it('should return null for null input', () => {
+    expect(impactToSeverity(null)).toBeNull();
   });
 
   // Sub-band precision: values within a band should all map to the same severity

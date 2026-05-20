@@ -21,6 +21,20 @@ func createStrategy(name string, opts Options) (Strategy, error) {
 		return NewCCIMatchStrategy(), nil
 	case "fuzzyTitle":
 		return NewFuzzyTitleStrategy(opts.MinConfidence), nil
+	case "srgDeterministic":
+		return NewSRGDeterministicStrategy(), nil
+	case "srgCciTiebreak":
+		return NewSRGCCITiebreakStrategy(), nil
+	case "vendorFuzzyTitle":
+		// vendorFuzzyTitle is parameterized by a max normalized Levenshtein
+		// distance, not a min confidence. Translate (confidence = 1 - distance).
+		// A zero MinConfidence is passed through as 0 so the strategy applies
+		// its own default threshold.
+		acceptThreshold := 0.0
+		if opts.MinConfidence > 0 {
+			acceptThreshold = 1 - opts.MinConfidence
+		}
+		return NewVendorFuzzyTitleStrategy(acceptThreshold), nil
 	default:
 		return nil, fmt.Errorf("unknown matching strategy: '%s'", name)
 	}

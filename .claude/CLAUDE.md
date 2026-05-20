@@ -8,7 +8,7 @@
 - **Never commit without explicit permission** for each individual commit. Prepare detailed commit messages for approval first.
 - **Never push.** User handles all pushes.
 - **No authorship attribution.** Do not add "written by Claude Code", "Co-Authored-By: Claude", or similar to commits, comments, or documentation.
-- **Verbose commit messages.** Use a short subject line (conventional commit format), then a blank line, then a body that explains *what* changed and *why*. List affected files or modules when helpful. A reviewer reading only the commit log should understand the change without opening the diff.
+- **Brief commit messages.** Conventional-commit subject line, a blank line, then a short body (a few sentences) covering *what* changed and *why*. Don't list affected files — that's `git diff`'s job. Don't restate the subject in the body. Default to brevity; only substantial features warrant longer bodies.
 - **Run lint before proposing a commit.** At minimum run `golangci-lint run` (for Go changes) and/or `pnpm lint` (for TS changes) and fix all issues before asking the user to approve. The pre-commit hook will catch failures anyway, but catching them early avoids wasted time.
 
 ## Development Practices

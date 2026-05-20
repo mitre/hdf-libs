@@ -2,11 +2,17 @@ package generators
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
+
+// fullControlBlockRegex detects when a code string already starts with
+// `control 'ID' do` (any quote style), meaning it's a complete InSpec
+// control file — not a body fragment. ID is captured for verification.
+var fullControlBlockRegex = regexp.MustCompile(`^\s*control\s+['"]([^'"]+)['"]\s+do\b`)
 
 // GenerateControlStub generates a Ruby InSpec control stub from an HDF BaselineRequirement.
 //
@@ -21,6 +27,23 @@ import (
 //	  <code or stub comment>
 //	end
 func GenerateControlStub(req hdf.BaselineRequirement) string {
+	// If code is already a complete `control 'ID' do ... end` block (e.g.
+	// from `-c controls/` reading whole .rb files), emit it as-is — wrapping
+	// it again would produce nested control blocks, which InSpec rejects.
+	// When the inner ID differs from req.ID (e.g. an upgrade rename match
+	// where current's code was carried into a renamed requirement), rewrite
+	// the wrapper to match req.ID so the file remains valid InSpec.
+	if req.Code != nil {
+		if m := fullControlBlockRegex.FindStringSubmatchIndex(*req.Code); m != nil {
+			innerID := (*req.Code)[m[2]:m[3]]
+			if innerID == req.ID {
+				return *req.Code
+			}
+			rewritten := (*req.Code)[:m[2]] + req.ID + (*req.Code)[m[3]:]
+			return rewritten
+		}
+	}
+
 	var lines []string
 
 	lines = append(lines, fmt.Sprintf("control '%s' do", req.ID))

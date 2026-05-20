@@ -13,13 +13,13 @@ import (
 
 // Global flag variables for query command (used by runQuery).
 var (
-	queryStatus   string
-	querySeverity string
+	queryStatus   []string
+	querySeverity []string
 	queryImpact   string
-	queryCCI      string
-	queryNIST     string
+	queryCCI      []string
+	queryNIST     []string
 	querySTIGID   string
-	queryTag      string
+	queryTag      []string
 	querySearch   string
 	queryProfile  string
 	queryCount    bool
@@ -30,13 +30,13 @@ var (
 func NewQueryCmd() *cobra.Command {
 	// Local flag variables for this command instance
 	var (
-		localQueryStatus   string
-		localQuerySeverity string
+		localQueryStatus   []string
+		localQuerySeverity []string
 		localQueryImpact   string
-		localQueryCCI      string
-		localQueryNIST     string
+		localQueryCCI      []string
+		localQueryNIST     []string
 		localQuerySTIGID   string
-		localQueryTag      string
+		localQueryTag      []string
 		localQuerySearch   string
 		localQueryProfile  string
 		localQueryCount    bool
@@ -48,15 +48,18 @@ func NewQueryCmd() *cobra.Command {
 		Short: "Search and filter requirements in an HDF document",
 		Long: `Search and filter requirements based on status, severity, tags, and text.
 
-Filters can be combined (AND logic). Use multiple flags to narrow results.
+Different flags are combined with AND logic. Repeating the same flag
+uses OR logic within that filter.
 
 Examples:
   hdf query results.json --status failed
+  hdf query results.json --status failed --status not_reviewed
   hdf query results.json --status failed --severity high
-  hdf query results.json --cci CCI-000366
-  hdf query results.json --nist "AC-2"
+  hdf query results.json --severity high --severity critical
+  hdf query results.json --cci CCI-000366 --cci CCI-000172
+  hdf query results.json --nist "AC-2" --nist "CM-6*"
   hdf query results.json --id V-230221
-  hdf query results.json --tag "severity:high"
+  hdf query results.json --tag "severity:high" --tag "severity:critical"
   hdf query results.json --search "password"
   hdf query results.json --impact ">0.5" --status failed
   hdf query results.json --baseline "RHEL9-STIG"
@@ -86,13 +89,13 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVarP(&localQueryStatus, "status", "s", "", "Filter by status (passed, failed, error, not_applicable, not_reviewed)")
-	cmd.Flags().StringVar(&localQuerySeverity, "severity", "", "Filter by severity (high, medium, low, none)")
+	cmd.Flags().StringArrayVarP(&localQueryStatus, "status", "s", nil, "Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed")
+	cmd.Flags().StringArrayVar(&localQuerySeverity, "severity", nil, "Filter by severity (repeatable, OR logic): critical, high, medium, low, informational")
 	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by impact (e.g., \">0.5\", \">=0.7\", \"0.5\")")
-	cmd.Flags().StringVar(&localQueryCCI, "cci", "", "Filter by CCI identifier (e.g., CCI-000366)")
-	cmd.Flags().StringVar(&localQueryNIST, "nist", "", "Filter by NIST control (e.g., AC-2, CM-6*)")
+	cmd.Flags().StringArrayVar(&localQueryCCI, "cci", nil, "Filter by CCI identifier (repeatable, OR logic)")
+	cmd.Flags().StringArrayVar(&localQueryNIST, "nist", nil, "Filter by NIST control (repeatable, OR logic; supports globs)")
 	cmd.Flags().StringVar(&localQuerySTIGID, "id", "", "Filter by requirement ID, STIG ID, GID, or group title")
-	cmd.Flags().StringVarP(&localQueryTag, "tag", "t", "", "Filter by tag key:value (e.g., severity:high)")
+	cmd.Flags().StringArrayVarP(&localQueryTag, "tag", "t", nil, "Filter by tag key:value (repeatable, OR logic)")
 	cmd.Flags().StringVar(&localQuerySearch, "search", "", "Search in title and description")
 	cmd.Flags().StringVarP(&localQueryProfile, "baseline", "p", "", "Filter by profile name")
 	cmd.Flags().BoolVarP(&localQueryCount, "count", "c", false, "Show only the count of matching requirements")
@@ -240,19 +243,35 @@ type filterFunc func(control hdf.EvaluatedRequirement, status, severity string) 
 func buildFilters() []filterFunc {
 	var filters []filterFunc
 
-	// Status filter
-	if queryStatus != "" {
-		status := strings.ToLower(queryStatus)
+	// Status filter (OR across values)
+	if len(queryStatus) > 0 {
+		statuses := make([]string, len(queryStatus))
+		for i, s := range queryStatus {
+			statuses[i] = strings.ToLower(s)
+		}
 		filters = append(filters, func(_ hdf.EvaluatedRequirement, s, _ string) bool {
-			return s == status
+			for _, status := range statuses {
+				if s == status {
+					return true
+				}
+			}
+			return false
 		})
 	}
 
-	// Severity filter
-	if querySeverity != "" {
-		sev := strings.ToLower(querySeverity)
+	// Severity filter (OR across values)
+	if len(querySeverity) > 0 {
+		severities := make([]string, len(querySeverity))
+		for i, s := range querySeverity {
+			severities[i] = strings.ToLower(s)
+		}
 		filters = append(filters, func(_ hdf.EvaluatedRequirement, _, severity string) bool {
-			return severity == sev
+			for _, sev := range severities {
+				if severity == sev {
+					return true
+				}
+			}
+			return false
 		})
 	}
 
@@ -264,19 +283,31 @@ func buildFilters() []filterFunc {
 		})
 	}
 
-	// CCI filter
-	if queryCCI != "" {
-		cci := strings.ToUpper(queryCCI)
+	// CCI filter (OR across values)
+	if len(queryCCI) > 0 {
+		ccis := make([]string, len(queryCCI))
+		for i, c := range queryCCI {
+			ccis[i] = strings.ToUpper(c)
+		}
 		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-			return tagContains(c.Tags, "cci", cci)
+			for _, cci := range ccis {
+				if tagContains(c.Tags, "cci", cci) {
+					return true
+				}
+			}
+			return false
 		})
 	}
 
-	// NIST filter
-	if queryNIST != "" {
-		nist := queryNIST
+	// NIST filter (OR across values)
+	if len(queryNIST) > 0 {
 		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-			return tagMatchesGlob(c.Tags, "nist", nist)
+			for _, nist := range queryNIST {
+				if tagMatchesGlob(c.Tags, "nist", nist) {
+					return true
+				}
+			}
+			return false
 		})
 	}
 
@@ -292,13 +323,26 @@ func buildFilters() []filterFunc {
 		})
 	}
 
-	// Generic tag filter (key:value)
-	if queryTag != "" {
-		parts := strings.SplitN(queryTag, ":", 2)
-		if len(parts) == 2 {
-			key, value := parts[0], parts[1]
+	// Generic tag filter (OR across values)
+	if len(queryTag) > 0 {
+		type tagFilter struct {
+			key, value string
+		}
+		var tagFilters []tagFilter
+		for _, t := range queryTag {
+			parts := strings.SplitN(t, ":", 2)
+			if len(parts) == 2 {
+				tagFilters = append(tagFilters, tagFilter{key: parts[0], value: parts[1]})
+			}
+		}
+		if len(tagFilters) > 0 {
 			filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-				return tagMatchesGlob(c.Tags, key, value)
+				for _, tf := range tagFilters {
+					if tagMatchesGlob(c.Tags, tf.key, tf.value) {
+						return true
+					}
+				}
+				return false
 			})
 		}
 	}

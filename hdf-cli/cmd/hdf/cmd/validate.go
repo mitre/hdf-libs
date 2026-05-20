@@ -81,16 +81,22 @@ func runValidate(_ *cobra.Command, args []string) error {
 
 	printDebug("Read %d bytes", len(data))
 
+	// Determine display name for output
+	displayName := filename
+	if filename == "-" {
+		displayName = "<stdin>"
+	}
+
 	// Auto-detect document type if --type not provided
 	if schemaType == "" {
 		schemaType = detectHDFDocumentType(data)
 		printDebug("Auto-detected document type: %s", schemaType)
 	}
 
-	// Determine display name for output
-	displayName := filename
-	if filename == "-" {
-		displayName = "<stdin>"
+	if schemaType == "" {
+		fmt.Fprintf(os.Stderr, "✗ %s — input not recognized as any HDF document type\n", displayName)
+		fmt.Fprintf(os.Stderr, "  Use --type to specify: results, baseline, comparison, system, plan, amendments, evidence-package\n")
+		return &exitCodeError{code: 1, message: fmt.Sprintf("unrecognized document type for %s", displayName)}
 	}
 
 	// Validate against schema — use the validator directly for structured errors
@@ -176,7 +182,6 @@ func outputValidationHuman(displayName, schemaType string, vr *validators.Valida
 			fmt.Fprintf(os.Stderr, "    %s\n", e.Description)
 		}
 	}
-	fmt.Fprintf(os.Stderr, "\n  Hint: ensure the file conforms to the HDF %s schema\n", schemaType)
 }
 
 // outputValidationJSON prints validation errors in JSON format,
