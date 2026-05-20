@@ -119,4 +119,28 @@ describe('generateDeltaMarkdown', () => {
     expect(md).not.toContain('Mapping Results');
     expect(md).not.toContain('Match Details');
   });
+
+  it.each([
+    ['vendorFuzzyTitle', 'Vendor fuzzy title (confidence=90%)'],
+    ['exactId', 'Exact ID'],
+    ['cciMatch', 'CCI match'],
+    ['fuzzyTitle', 'Fuzzy title (confidence=90%)'],
+    ['unknownStrategy', 'unknownStrategy'],
+  ])('formats match method %s in delta.md', (method, expected) => {
+    const links: LinkRecord[] = [
+      {
+        oldId: 'V-001', newId: 'SV-001', matchMethod: method,
+        confidence: 0.9, relationship: 'primary', potentialMismatch: false,
+      },
+    ];
+    const result = makeDeltaResult({
+      linkRecords: links,
+      statistics: {
+        oldControlsLength: 1, newControlsLength: 1, totalMappedControls: 1,
+        match: 1, posMisMatch: 0, dupMatch: 0, noMatch: 0,
+      },
+    });
+
+    expect(generateDeltaMarkdown(result)).toContain(expected);
+  });
 });

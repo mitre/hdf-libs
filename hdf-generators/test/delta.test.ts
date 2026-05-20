@@ -242,6 +242,26 @@ describe('generateDelta', () => {
     expect(ids).toContain('SV-099');
   });
 
+  it('counts links with potentialMismatch into posMisMatch (not match)', () => {
+    const current = makeBaseline({
+      name: 'current',
+      requirements: [makeRequirement({ id: 'SV-001' })],
+    });
+    const upstream = makeBaseline({
+      name: 'upstream',
+      requirements: [makeRequirement({ id: 'SV-001' })],
+    });
+    const links: LinkRecord[] = [
+      { oldId: 'SV-001', newId: 'SV-001', matchMethod: 'srgCciTiebreak',
+        confidence: 0.55, relationship: 'primary', potentialMismatch: true },
+    ];
+
+    const result = generateUpgrade(current, upstream, links, {});
+
+    expect(result.statistics.posMisMatch).toBe(1);
+    expect(result.statistics.match).toBe(0);
+  });
+
   it('should handle singleFile option', () => {
     const newBaseline = makeBaseline({
       name: 'test-profile',
