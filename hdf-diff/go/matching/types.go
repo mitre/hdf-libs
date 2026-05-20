@@ -5,10 +5,11 @@ import hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 
 // MatchPair represents a matched pair of requirements.
 type MatchPair struct {
-	OldReq     hdf.EvaluatedRequirement
-	NewReq     hdf.EvaluatedRequirement
-	Strategy   string
-	Confidence float64
+	OldReq       hdf.EvaluatedRequirement
+	NewReq       hdf.EvaluatedRequirement
+	Strategy     string
+	Confidence   float64
+	Relationship string // "primary", "related", or "" (backward compat)
 }
 
 // MatchResult holds the output of a matching operation.

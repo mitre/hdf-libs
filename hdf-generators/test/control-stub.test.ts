@@ -126,6 +126,33 @@ describe('generateControlStub', () => {
     expect(ruby).toContain('it { should exist }');
   });
 
+  it('does not double-wrap code that is already a full control block', () => {
+    // When code already contains a full `control 'ID' do ... end` wrapper
+    // (e.g. from `-c controls/` reading whole .rb files), the stub generator
+    // must not wrap it again — that produces invalid nested control blocks.
+    const req = makeRequirement({
+      id: 'SV-12345',
+      code: "control 'SV-12345' do\n  describe file('/etc/passwd') do\n    it { should exist }\n  end\nend\n",
+    });
+    const ruby = generateControlStub(req);
+    const matches = ruby.match(/control 'SV-12345' do/g) || [];
+    expect(matches.length).toBe(1);
+  });
+
+  it('rewrites the inner control ID when renamed by an upgrade match', () => {
+    // When upgrade matches a rename (current SV-OLD merges with upstream
+    // SV-NEW), the merged requirement adopts the new ID but inherits
+    // current's full .rb body — which still wraps with `control 'SV-OLD'`.
+    // The stub generator must rewrite the wrapper ID to match req.id.
+    const req = makeRequirement({
+      id: 'SV-268322',
+      code: "control 'SV-244540' do\n  describe file('/etc/pam.d/system-auth') do\n    its('content') { should_not match(/nullok/) }\n  end\nend\n",
+    });
+    const ruby = generateControlStub(req);
+    expect((ruby.match(/control 'SV-268322' do/g) || []).length).toBe(1);
+    expect((ruby.match(/control 'SV-244540' do/g) || []).length).toBe(0);
+  });
+
   it('adds stub comment when no code is provided', () => {
     const req = makeRequirement({ id: 'SV-014' });
     const ruby = generateControlStub(req);

@@ -14,7 +14,7 @@ import (
 func detectHDFDocumentType(data []byte) string {
 	var doc map[string]interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
-		return string(validators.TypeResults)
+		return ""
 	}
 
 	// Most specific first — check for key combinations unique to each type
@@ -40,7 +40,7 @@ func detectHDFDocumentType(data []byte) string {
 	if _, ok := doc["requirements"]; ok {
 		return string(validators.TypeBaseline)
 	}
-	return string(validators.TypeResults)
+	return ""
 }
 
 // requireDocumentType reads raw JSON, detects its type, and returns an error
