@@ -546,7 +546,6 @@ func convertRuleToBaselineRequirement(rule *Rule, group *Group) hdf.BaselineRequ
 	}
 }
 
-
 // buildBaselineDescriptions creates HDF Description entries for a baseline requirement.
 func buildBaselineDescriptions(rule *Rule) []hdf.Description {
 	var descriptions []hdf.Description

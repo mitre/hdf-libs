@@ -341,7 +341,7 @@ const NIST_FAMILY_CONTROL_TYPE: Record<string, ControlType> = {
  */
 export function deriveControlType(nistTag: string): ControlType | undefined {
   const match = NIST_TAG_PATTERN.exec(nistTag.trim().toUpperCase());
-  if (!match) return undefined;
+  if (!match || match[1] === undefined || match[2] === undefined) return undefined;
   const family = match[1];
   const subControl = match[2];
   const familyClass = NIST_FAMILY_CONTROL_TYPE[family];

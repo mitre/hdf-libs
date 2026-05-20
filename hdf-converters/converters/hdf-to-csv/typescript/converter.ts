@@ -20,6 +20,9 @@ interface CsvRow {
   'Status': string;
   'NIST Controls': string;
   'CCI Controls': string;
+  'Control Type': string;
+  'Verification Method': string;
+  'Applicability': string;
   'Result Message': string;
 }
 
