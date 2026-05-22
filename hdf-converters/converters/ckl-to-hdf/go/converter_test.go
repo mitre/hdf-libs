@@ -205,28 +205,6 @@ func TestConvertCKLToHDF_OversizedInput(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestMapStatus(t *testing.T) {
-	cases := map[string]hdf.ResultStatus{
-		"Open":           hdf.Failed,
-		"NotAFinding":    hdf.Passed,
-		"Not_Applicable": hdf.NotApplicable,
-		"Not_Reviewed":   hdf.NotReviewed,
-		"":               hdf.NotReviewed,
-		"bogus":          hdf.NotReviewed,
-	}
-	for in, want := range cases {
-		assert.Equalf(t, want, mapStatus(in), "mapStatus(%q)", in)
-	}
-}
-
-func TestStigDataValue(t *testing.T) {
-	v := &Vuln{StigData: []StigData{
-		{Attribute: "Vuln_Num", Data: "V-1"},
-		{Attribute: "Severity", Data: "high"},
-		{Attribute: "CCI_REF", Data: "CCI-1"},
-		{Attribute: "CCI_REF", Data: "CCI-2"},
-	}}
-	assert.Equal(t, "V-1", stigDataValue(v, "Vuln_Num"))
-	assert.Equal(t, "", stigDataValue(v, "Missing"))
-	assert.Equal(t, []string{"CCI-1", "CCI-2"}, stigDataValues(v, "CCI_REF"))
-}
+// Status, parsing, and field-mapping helpers are unit-tested in the shared
+// checklist package (shared/go/checklist); these converter tests exercise the
+// public ConvertCKLToHDF entry point against the committed fixture.
