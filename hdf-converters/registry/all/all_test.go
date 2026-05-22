@@ -77,8 +77,8 @@ var fixtureTests = []struct {
 	{"junit-to-hdf", "testsuites-mixed.xml", "junit-to-hdf"},
 	// SARIF
 	{"sarif-to-hdf", "sarif_input.sarif", "sarif-to-hdf"},
-	// HDF v2
-	{"hdf-to-xml", "minimal.json", "hdf-v2-passthrough"},
+	// HDF native
+	{"hdf-to-xml", "minimal.json", "hdf-passthrough"},
 }
 
 func TestDetectConverterFixtures(t *testing.T) {

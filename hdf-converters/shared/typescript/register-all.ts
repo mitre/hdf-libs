@@ -50,7 +50,7 @@ import { cklbFingerprint } from '../../converters/cklb-to-hdf/typescript/fingerp
 import { prismaFingerprint } from '../../converters/prisma-to-hdf/typescript/fingerprint.js';
 
 // HDF native detection
-import { hdfV2Fingerprint } from '../../converters/hdf-v2-passthrough/typescript/fingerprint.js';
+import { hdfFingerprint } from '../../converters/hdf-passthrough/typescript/fingerprint.js';
 import { legacyHdfFingerprint } from '../../converters/legacyhdf-to-hdf/typescript/fingerprint.js';
 
 // OSCAL converters (7 fingerprints in one array)
@@ -102,7 +102,7 @@ const allFingerprints: ConverterFingerprint[] = [
   // Text/CSV ingest
   prismaFingerprint,
   // HDF native
-  hdfV2Fingerprint,
+  hdfFingerprint,
   legacyHdfFingerprint,
   // OSCAL (7 fingerprints)
   ...oscalFingerprints,

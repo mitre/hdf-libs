@@ -52,7 +52,7 @@ import (
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/prisma-to-hdf/go"
 
 	// HDF native detection.
-	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-v2-passthrough/go"
+	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-passthrough/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 
 	// OSCAL converters.
