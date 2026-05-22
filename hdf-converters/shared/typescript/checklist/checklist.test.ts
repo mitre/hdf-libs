@@ -117,6 +117,19 @@ describe('checklist shared model', () => {
     expect(cv.ruleTitle).toBe(bv.ruleTitle);
   });
 
+  it('strips HTML from descriptions (parity with the Go mapping)', () => {
+    const ckl = `<?xml version="1.0"?><CHECKLIST><ASSET><HOST_NAME>H</HOST_NAME></ASSET><STIGS><iSTIG><STIG_INFO><SI_DATA><SID_NAME>stigid</SID_NAME><SID_DATA>S</SID_DATA></SI_DATA></STIG_INFO><VULN><STIG_DATA><VULN_ATTRIBUTE>Vuln_Num</VULN_ATTRIBUTE><ATTRIBUTE_DATA>V-1</ATTRIBUTE_DATA></STIG_DATA><STIG_DATA><VULN_ATTRIBUTE>Vuln_Discuss</VULN_ATTRIBUTE><ATTRIBUTE_DATA>Use &lt;b&gt;bold&lt;/b&gt; markup.</ATTRIBUTE_DATA></STIG_DATA><STATUS>Open</STATUS></VULN></iSTIG></STIGS></CHECKLIST>`;
+    const hdf = checklistToHdf(parseCkl(ckl), CHECKSUM);
+    const data = hdf.baselines[0].requirements[0].descriptions[0].data;
+    expect(data).toBe('Use bold markup.');
+    expect(data).not.toContain('<b>');
+  });
+
+  it('omits a per-finding startTime (CKL has no timestamp; deterministic)', () => {
+    const hdf = checklistToHdf(parseCkl(SAMPLE_CKL), CHECKSUM);
+    expect(hdf.baselines[0].requirements[0].results[0].startTime).toBeUndefined();
+  });
+
   it('maps checklist to HDF with controlType and no verificationMethod', () => {
     const hdf = checklistToHdf(parseCkl(SAMPLE_CKL), CHECKSUM);
     expect(hdf.baselines).toHaveLength(1);

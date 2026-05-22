@@ -139,9 +139,13 @@ func buildDescriptions(v *Vuln) []hdf.Description {
 
 func buildResult(v *Vuln) hdf.RequirementResult {
 	result := hdf.RequirementResult{
-		Status:    v.Status.ToHDF(),
-		CodeDesc:  "STIG rule " + v.RuleVer,
-		StartTime: time.Now().UTC(),
+		Status:   v.Status.ToHDF(),
+		CodeDesc: "STIG rule " + v.RuleVer,
+		// CKL/CKLB carry no per-finding execution timestamp. Leave StartTime as
+		// the zero value rather than time.Now() so conversion is deterministic
+		// and the output doesn't misrepresent when the assessment occurred.
+		// (The TS mapping likewise omits startTime via createResult.)
+		StartTime: time.Time{},
 	}
 	var parts []string
 	if fd := strings.TrimSpace(v.FindingDetails); fd != "" {

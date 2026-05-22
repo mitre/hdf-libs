@@ -52,7 +52,13 @@ const CORE_VULN_ATTR = new Set([
 
 /** Parse CKL XML into the format-neutral Checklist model. */
 export function parseCkl(input: string): Checklist {
-  const parsed = parseXmlWithArrays(input, ARRAY_TAGS) as CklParsed;
+  // processEntities decodes XML entities (&lt; &gt; &amp; …) so CKL text matches
+  // Go's encoding/xml (which decodes by default); without it, entity-encoded
+  // markup like "&lt;b&gt;" survives and stripHTML in checklistToHdf can't act
+  // on it — diverging from the Go output.
+  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, {
+    processEntities: true,
+  }) as CklParsed;
   const checklist = parsed.CHECKLIST;
   const istigs = checklist?.STIGS?.iSTIG;
   if (!checklist || !istigs || istigs.length === 0) {

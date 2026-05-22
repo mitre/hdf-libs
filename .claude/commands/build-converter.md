@@ -740,8 +740,11 @@ default.
 ControlType: shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
 ```
 ```typescript
-// TypeScript:
-controlType: deriveControlTypeFromTags(nistTagsFromMap(tags)),
+// TypeScript — pass the NIST tag array you already computed (there is no
+// nistTagsFromMap helper in TS; build the array from your CCI->NIST lookup):
+const nistTags = [...new Set(cciIds.flatMap((c) => getCCINistMappings(c) ?? []))].sort();
+const controlType = deriveControlTypeFromTags(nistTags);
+if (controlType !== undefined) req.controlType = controlType;
 ```
 
 The helper returns nil/undefined when the tag set carries no signal (e.g. it

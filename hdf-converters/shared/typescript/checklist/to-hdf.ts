@@ -15,7 +15,7 @@ import {
   severityToImpact,
 } from '@mitre/hdf-schema';
 import { getCCINistMappings } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags } from '../converterutil.js';
+import { deriveControlTypeFromTags, stripHTML } from '../converterutil.js';
 import { Asset, Checklist, Stig, Vuln } from './model.js';
 import { statusToHdf } from './status.js';
 
@@ -61,11 +61,12 @@ function vulnToRequirement(v: Vuln): EvaluatedRequirement {
   const severity = (v.severity ?? '').toLowerCase();
   const impact = severity ? severityToImpact(severity) : 0.5;
 
+  // stripHTML for parity with the Go mapping (CKL text can embed markup).
   const descriptions: Description[] = [
-    { label: 'default', data: v.vulnDiscuss ?? '' },
+    { label: 'default', data: stripHTML(v.vulnDiscuss ?? '') },
   ];
-  if (v.checkContent) descriptions.push({ label: 'check', data: v.checkContent });
-  if (v.fixText) descriptions.push({ label: 'fix', data: v.fixText });
+  if (v.checkContent) descriptions.push({ label: 'check', data: stripHTML(v.checkContent) });
+  if (v.fixText) descriptions.push({ label: 'fix', data: stripHTML(v.fixText) });
 
   const message = [v.findingDetails, v.comments]
     .map((s) => (s ?? '').trim())
