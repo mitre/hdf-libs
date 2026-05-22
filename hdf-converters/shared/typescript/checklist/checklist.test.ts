@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { HdfResults } from '@mitre/hdf-schema';
-import { CheckStatus } from './model.js';
+import { CheckStatus, Checklist } from './model.js';
 import {
   parseStatus,
   statusToCkl,
@@ -222,5 +222,141 @@ describe('checklist shared model', () => {
     expect(() => parseCklb('not json')).toThrow();
     expect(() => parseCklb('{"stigs":[]}')).toThrow();
     expect(() => hdfToChecklist('{"baselines":[]}')).toThrow();
+  });
+
+  // --- field/branch variations -------------------------------------------
+
+  it('component name falls back to FQDN then IP when host name is absent', () => {
+    const fqdnOnly = checklistToHdf(
+      { format: 'ckl', asset: { hostFQDN: 'h.example.com' }, stigs: [{ vulns: [] }] },
+      CHECKSUM,
+    );
+    expect(fqdnOnly.components?.[0].name).toBe('h.example.com');
+
+    const ipOnly = checklistToHdf(
+      { format: 'ckl', asset: { hostIP: '192.0.2.10' }, stigs: [{ vulns: [] }] },
+      CHECKSUM,
+    );
+    expect(ipOnly.components?.[0].name).toBe('192.0.2.10');
+  });
+
+  it('omits the component when the asset has no host identity', () => {
+    const hdf = checklistToHdf({ format: 'ckl', asset: {}, stigs: [{ vulns: [] }] }, CHECKSUM);
+    expect(hdf.components).toBeUndefined();
+  });
+
+  it('coerces CKLB null fields to undefined (e.g. classification: null)', () => {
+    const cklb = JSON.stringify({
+      cklb_version: '1.0',
+      target_data: { host_name: 'H', classification: null, role: null },
+      stigs: [{ stig_id: 'S', rules: [{ group_id: 'V-1', status: 'open', ccis: null, classification: null }] }],
+    });
+    const cl = parseCklb(cklb);
+    expect(cl.asset.classification).toBeUndefined();
+    expect(cl.asset.role).toBeUndefined();
+    expect(cl.stigs[0].vulns[0].ccis).toEqual([]);
+    expect(cl.stigs[0].vulns[0].classification).toBeUndefined();
+  });
+
+  it('serializeCklb emits has_path and snake_case scaffolding', () => {
+    const out = serializeCklb({ format: 'cklb', asset: {}, stigs: [{ vulns: [] }] });
+    const doc = JSON.parse(out);
+    expect(doc.has_path).toBe(false);
+    expect(doc.active).toBe(false);
+    expect(doc.cklb_version).toBe('1.0');
+    expect(doc.target_data.role).toBe('None');
+    expect(doc.target_data.target_type).toBe('Computing');
+  });
+
+  it('serializeCkl applies safe defaults and emits core attrs for sparse vulns', () => {
+    const cl: Checklist = {
+      format: 'ckl',
+      asset: {},
+      stigs: [{ vulns: [{ vulnNum: 'V-1', ccis: [], status: CheckStatus.NotReviewed }] }],
+    };
+    const xml = serializeCkl(cl);
+    expect(xml).toContain('<ROLE>None</ROLE>');
+    expect(xml).toContain('<ASSET_TYPE>Computing</ASSET_TYPE>');
+    // Weight/Class are STIG_DATA attribute pairs with safe defaults.
+    expect(xml).toMatch(/<VULN_ATTRIBUTE>Weight<\/VULN_ATTRIBUTE>\s*<ATTRIBUTE_DATA>10\.0<\/ATTRIBUTE_DATA>/);
+    expect(xml).toMatch(/<VULN_ATTRIBUTE>Class<\/VULN_ATTRIBUTE>\s*<ATTRIBUTE_DATA>Unclass<\/ATTRIBUTE_DATA>/);
+    expect(xml).toContain('<STATUS>Not_Reviewed</STATUS>');
+  });
+
+  it('round-trips extra fields and legacy IDs through ckl + cklb', () => {
+    const cl: Checklist = {
+      format: 'cklb',
+      asset: { hostName: 'H', webOrDatabase: true },
+      stigs: [{
+        stigID: 'S',
+        vulns: [{
+          vulnNum: 'V-1', ruleID: 'SV-1', ccis: ['CCI-000366'], legacyIDs: ['V-9'],
+          status: CheckStatus.NotAFinding, extra: { Third_Party_Tools: 'blob', Responsibility: 'admin' },
+        }],
+      }],
+    };
+    const cklbDoc = JSON.parse(serializeCklb(cl));
+    expect(cklbDoc.stigs[0].rules[0].legacy_ids).toEqual(['V-9']);
+    expect(cklbDoc.stigs[0].rules[0].third_party_tools).toBe('blob');
+    expect(cklbDoc.target_data.is_web_database).toBe(true);
+    // extras survive into CKL XML as STIG_DATA attributes
+    expect(serializeCkl(cl)).toContain('<ATTRIBUTE_DATA>admin</ATTRIBUTE_DATA>');
+  });
+
+  it('hdfToChecklist derives severity from impact tiers when no severity tag', () => {
+    const mk = (impact: number) =>
+      hdfToChecklist(JSON.stringify({
+        baselines: [{ name: 'b', requirements: [{ id: 'V-1', impact, tags: {}, descriptions: [], results: [{ status: 'failed', codeDesc: '' }] }] }],
+      })).stigs[0].vulns[0].severity;
+    expect(mk(0.7)).toBe('high');
+    expect(mk(0.5)).toBe('medium');
+    expect(mk(0.3)).toBe('low');
+    expect(mk(0)).toBe('');
+  });
+
+  it('stashes all asset extras + STIG metadata in extensions and round-trips them', () => {
+    const cl: Checklist = {
+      format: 'cklb',
+      cklbVersion: '1.0',
+      asset: {
+        hostName: 'H', role: 'Member Server', assetType: 'Computing', marking: 'CUI',
+        targetKey: '2350', techArea: 'area', targetComment: 'tc',
+        webDBSite: 'site', webDBInstance: 'inst', classification: 'UNCLASSIFIED',
+        webOrDatabase: true,
+      },
+      stigs: [{
+        stigID: 'S', title: 'T', version: '2', uuid: 'u-1', releaseInfo: 'R: 3',
+        displayName: 'disp', referenceIdentifier: 'ref', classification: 'UNCLASSIFIED',
+        vulns: [{ vulnNum: 'V-1', ccis: [], status: CheckStatus.Open }],
+      }],
+    };
+    const hdf = checklistToHdf(cl, CHECKSUM);
+    const ext = hdf.extensions as Record<string, unknown>;
+    expect((ext.assetExtras as Record<string, unknown>).marking).toBe('CUI');
+    expect((ext.assetExtras as Record<string, unknown>).webOrDatabase).toBe(true);
+    expect(ext.cklbVersion).toBe('1.0');
+    const blExt = hdf.baselines[0].extensions as Record<string, unknown>;
+    expect(blExt.stigid).toBe('S');
+    expect(blExt.referenceIdentifier).toBe('ref');
+
+    // survives the reverse trip
+    const rt = hdfToChecklist(JSON.stringify(hdf));
+    expect(rt.asset.marking).toBe('CUI');
+    expect(rt.asset.webOrDatabase).toBe(true);
+    expect(rt.cklbVersion).toBe('1.0');
+    expect(rt.stigs[0].uuid).toBe('u-1');
+    expect(rt.stigs[0].referenceIdentifier).toBe('ref');
+  });
+
+  it('hdfToChecklist prefers explicit cci tags over nist reverse, and omits both when absent', () => {
+    const withCci = hdfToChecklist(JSON.stringify({
+      baselines: [{ name: 'b', requirements: [{ id: 'V-1', impact: 0.5, tags: { cci: ['CCI-000001'], nist: ['SI-2'] }, descriptions: [], results: [{ status: 'failed', codeDesc: '' }] }] }],
+    }));
+    expect(withCci.stigs[0].vulns[0].ccis).toEqual(['CCI-000001']);
+
+    const noTags = hdfToChecklist(JSON.stringify({
+      baselines: [{ name: 'b', requirements: [{ id: 'V-1', impact: 0.5, tags: {}, descriptions: [], results: [{ status: 'failed', codeDesc: '' }] }] }],
+    }));
+    expect(noTags.stigs[0].vulns[0].ccis).toEqual([]);
   });
 });

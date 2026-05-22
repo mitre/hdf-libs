@@ -164,7 +164,16 @@ func assetToComponent(a *Asset) (hdf.Component, bool) {
 	if a.HostName == "" && a.HostIP == "" && a.HostFQDN == "" {
 		return hdf.Component{}, false
 	}
-	c := hdf.Component{Name: a.HostName, Type: hdf.Host}
+	// Name falls back to FQDN then IP so the component always has a usable
+	// identity (a checklist may carry only HOST_IP / HOST_FQDN).
+	name := a.HostName
+	if name == "" {
+		name = a.HostFQDN
+	}
+	if name == "" {
+		name = a.HostIP
+	}
+	c := hdf.Component{Name: name, Type: hdf.Host}
 	if a.HostIP != "" {
 		c.IPAddress = hdfutil.Ptr(a.HostIP)
 	}

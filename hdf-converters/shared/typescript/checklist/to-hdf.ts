@@ -111,7 +111,10 @@ function vulnToRequirement(v: Vuln): EvaluatedRequirement {
 
 function assetToComponent(a: Asset): Component | undefined {
   if (!a.hostName && !a.hostIP && !a.hostFQDN) return undefined;
-  const c: Component = { name: a.hostName ?? '', type: Copyright.Host };
+  // Name falls back to FQDN then IP so the component always has a usable
+  // identity (a checklist may carry only HOST_IP / HOST_FQDN).
+  const name = a.hostName || a.hostFQDN || a.hostIP || '';
+  const c: Component = { name, type: Copyright.Host };
   if (a.hostIP) c.ipAddress = a.hostIP;
   if (a.hostFQDN) c.fqdn = a.hostFQDN;
   if (a.hostMAC) c.macAddress = a.hostMAC;

@@ -327,6 +327,25 @@ func TestRoundTripPreservesExtrasAndAssetFlags(t *testing.T) {
 	assert.Equal(t, StatusNotAFinding, v.Status)
 }
 
+func TestComponentNameFallback(t *testing.T) {
+	mk := func(a Asset) *hdf.Component {
+		cl := &Checklist{Asset: a, Stigs: []Stig{{Vulns: []Vuln{{VulnNum: "V-1", Status: StatusOpen}}}}}
+		r := ChecklistToHDF(cl, shared.InputChecksum([]byte("x")), "1.0.0")
+		if len(r.Components) == 0 {
+			return nil
+		}
+		return &r.Components[0]
+	}
+	// hostname wins
+	assert.Equal(t, "H", mk(Asset{HostName: "H", HostIP: "192.0.2.1"}).Name)
+	// FQDN fallback when no hostname
+	assert.Equal(t, "h.example.com", mk(Asset{HostFQDN: "h.example.com", HostIP: "192.0.2.1"}).Name)
+	// IP fallback when neither hostname nor FQDN
+	assert.Equal(t, "192.0.2.1", mk(Asset{HostIP: "192.0.2.1"}).Name)
+	// no host identity -> no component
+	assert.Nil(t, mk(Asset{}))
+}
+
 func TestResolveSeverityFromImpact(t *testing.T) {
 	mk := func(impact float64) *hdf.EvaluatedRequirement {
 		return &hdf.EvaluatedRequirement{Impact: impact, Tags: map[string]interface{}{}}
