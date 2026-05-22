@@ -149,9 +149,17 @@ describe('checklist shared model', () => {
     expect(n.ccis).toEqual(o.ccis);
     expect(n.status).toBe(o.status);
 
-    const reparsed = parseCkl(serializeCkl(rt));
+    const xml = serializeCkl(rt);
+    const reparsed = parseCkl(xml);
     expect(reparsed.stigs[0].vulns[0].vulnNum).toBe(o.vulnNum);
     expect(reparsed.stigs[0].vulns[0].status).toBe(o.status);
+    // Fields must serialize as child ELEMENTS, not VULN/ASSET attributes —
+    // STIG Viewer rejects the attribute form. (Regression guard: with the
+    // hdf-utilities default empty attribute prefix, fast-xml-parser would emit
+    // scalar leaves as attributes.)
+    expect(xml).toContain('<STATUS>Open</STATUS>');
+    expect(xml).toContain('<HOST_NAME>EXAMPLE-HOST</HOST_NAME>');
+    expect(xml).not.toMatch(/STATUS="/);
   });
 
   it('round-trips CKLB -> HDF -> model -> CKLB with snake_case status', () => {

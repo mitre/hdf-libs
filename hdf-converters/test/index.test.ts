@@ -5,6 +5,9 @@ import {
   convertJunitToHdf,
   convertXccdfResultsToHdf,
   convertCklToHdf,
+  convertCklbToHdf,
+  convertHdfToCkl,
+  convertHdfToCklb,
   convertSnykToHdf,
   convertGrypeToHdf,
   convertNessusToHdf,
@@ -87,6 +90,21 @@ describe('Main exports', () => {
   it('should export convertCklToHdf from main index', () => {
     expect(convertCklToHdf).toBeDefined();
     expect(typeof convertCklToHdf).toBe('function');
+  });
+
+  it('should export convertCklbToHdf from main index', () => {
+    expect(convertCklbToHdf).toBeDefined();
+    expect(typeof convertCklbToHdf).toBe('function');
+  });
+
+  it('should export convertHdfToCkl from main index', () => {
+    expect(convertHdfToCkl).toBeDefined();
+    expect(typeof convertHdfToCkl).toBe('function');
+  });
+
+  it('should export convertHdfToCklb from main index', () => {
+    expect(convertHdfToCklb).toBeDefined();
+    expect(typeof convertHdfToCklb).toBe('function');
   });
 
   it('should export convertSnykToHdf from main index', () => {

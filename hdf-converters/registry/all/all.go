@@ -12,6 +12,7 @@ package all
 import (
 	// JSON ingest converters.
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/aws-config-to-hdf/go"
+	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/cklb-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/conveyor-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/cyclonedx-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/deptrack-to-hdf/go"

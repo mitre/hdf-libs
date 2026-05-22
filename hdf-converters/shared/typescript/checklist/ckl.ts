@@ -4,7 +4,12 @@ import { parseStatus, statusToCkl } from './status.js';
 
 const ARRAY_TAGS = ['iSTIG', 'VULN', 'STIG_DATA', 'SI_DATA'];
 
+// attributeNamePrefix is set to a token none of our element keys use, so every
+// plain key renders as a child ELEMENT (with the hdf-utilities default of '',
+// fast-xml-parser would emit scalar leaves like STATUS/HOST_NAME as attributes,
+// producing malformed CKL).
 const BUILD_OPTIONS = {
+  attributeNamePrefix: '@_',
   textNodeName: '#text',
   ignoreAttributes: false,
   format: true,

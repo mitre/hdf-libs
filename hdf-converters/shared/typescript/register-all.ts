@@ -44,6 +44,7 @@ import { netsparkerFingerprint } from '../../converters/netsparker-to-hdf/typesc
 import { veracodeFingerprint } from '../../converters/veracode-to-hdf/typescript/fingerprint.js';
 import { xccdfFingerprint } from '../../converters/xccdf-results-to-hdf/typescript/fingerprint.js';
 import { cklFingerprint } from '../../converters/ckl-to-hdf/typescript/fingerprint.js';
+import { cklbFingerprint } from '../../converters/cklb-to-hdf/typescript/fingerprint.js';
 
 // Text/CSV ingest converters
 import { prismaFingerprint } from '../../converters/prisma-to-hdf/typescript/fingerprint.js';
@@ -64,6 +65,7 @@ import { hdfToOscalPoamFingerprint } from '../../converters/hdf-to-oscal-poam/ty
 const allFingerprints: ConverterFingerprint[] = [
   // JSON ingest
   awsConfigFingerprint,
+  cklbFingerprint,
   checkovFingerprint,
   conveyorFingerprint,
   cyclonedxFingerprint,

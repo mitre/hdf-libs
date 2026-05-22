@@ -44,6 +44,7 @@ var fixtureTests = []struct {
 }{
 	// JSON ingest
 	{"aws-config-to-hdf", "minimal.json", "aws-config-to-hdf"},
+	{"cklb-to-hdf", "firefox-stig.cklb", "cklb-to-hdf"},
 	{"cyclonedx-to-hdf", "minimal-vulns.json", "cyclonedx-to-hdf"},
 	{"conveyor-to-hdf", "sample-results.json", "conveyor-to-hdf"},
 	{"deptrack-to-hdf", "fpf-default.json", "deptrack-to-hdf"},
