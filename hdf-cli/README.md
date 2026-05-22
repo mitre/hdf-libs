@@ -381,6 +381,7 @@ These flags apply to all commands.
 |--------------|---------|-------------|
 | `aws-config` | | AWS Config compliance evaluation results (JSON) |
 | `burpsuite` | | PortSwigger BurpSuite web scanner (XML) |
+| `ckl` | | DISA STIG Viewer checklist (`.ckl` XML) |
 | `conveyor` | | Conveyor container security (JSON) |
 | `cyclonedx` | | CycloneDX SBOM/VEX (JSON) |
 | `dbprotect` | | DbProtect database scanner (XML) |

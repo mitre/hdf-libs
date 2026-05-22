@@ -21,6 +21,9 @@ export { convertJunitToHdf } from '../converters/junit-to-hdf/typescript/index.j
 // XCCDF Results to HDF converter
 export { convertXccdfResultsToHdf } from '../converters/xccdf-results-to-hdf/typescript/index.js';
 
+// CKL (DISA STIG Viewer checklist) to HDF converter
+export { convertCklToHdf } from '../converters/ckl-to-hdf/typescript/index.js';
+
 // Snyk to HDF converter
 export { convertSnykToHdf } from '../converters/snyk-to-hdf/typescript/index.js';
 

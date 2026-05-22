@@ -71,6 +71,7 @@ var fixtureTests = []struct {
 	{"dbprotect-to-hdf", "sample-check-results.xml", "dbprotect-to-hdf"},
 	{"xccdf-results-to-hdf", "minimal.xml", "xccdf-results-to-hdf"},
 	{"xccdf-results-to-hdf", "arf-minimal.xml", "xccdf-results-to-hdf"},
+	{"ckl-to-hdf", "firefox-stig.ckl", "ckl-to-hdf"},
 	{"veracode-to-hdf", "veracode.xml", "veracode-to-hdf"},
 	{"junit-to-hdf", "testsuites-mixed.xml", "junit-to-hdf"},
 	// SARIF

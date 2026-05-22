@@ -38,6 +38,7 @@ import (
 
 	// XML ingest converters.
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/burpsuite-to-hdf/go"
+	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/ckl-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/dbprotect-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/fortify-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/junit-to-hdf/go"
