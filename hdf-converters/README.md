@@ -14,6 +14,8 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 |---|---|---|
 | AWS Config | `convertAwsConfigToHdf` | JSON |
 | BurpSuite | `convertBurpsuiteToHdf` | XML |
+| CKL (DISA STIG Viewer checklist) | `convertCklToHdf` | XML |
+| CKLB (DISA STIG Viewer 3.x checklist) | `convertCklbToHdf` | JSON |
 | Conveyor | `convertConveyorToHdf` | JSON |
 | CycloneDX (SBOM/VEX) | `convertCyclonedxToHdf` | JSON |
 | DBProtect | `convertDbprotectToHdf` | XML |
@@ -59,6 +61,8 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | CSV | `convertHdfToCsv` |
 | XML | `convertHdfToXml` |
 | XCCDF | `convertHdfToXccdf` |
+| CKL (DISA STIG Viewer checklist) | `convertHdfToCkl` |
+| CKLB (DISA STIG Viewer 3.x checklist) | `convertHdfToCklb` |
 | OSCAL SAR | `convertHdfToOscalSar` |
 | OSCAL POA&M | `convertHdfToOscalPoam` |
 

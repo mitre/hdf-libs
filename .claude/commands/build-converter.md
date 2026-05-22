@@ -717,6 +717,85 @@ Add two integration tests per language:
 
 ---
 
+## Step 4d — v3.2 Classification Fields (`controlType`, `verificationMethod`, `applicability`)
+
+Schema v3.2.0 added three optional enum fields to `Requirement_Core`. Every
+new converter MUST make a deliberate decision for each one — populate it only
+when the **source format carries real per-finding signal** for that axis.
+Blanket-stamping a constant with no signal is an anti-pattern (it's why
+`DeriveControlTypeFromTags` gates out the static-fallback NIST bundles).
+Omitting is always safe: consumers treat an omitted field as the conventional
+default.
+
+| Field | Enum | Set it when… |
+|-------|------|-------------|
+| `controlType` | `policy \| procedure \| technical \| management \| operational` | The finding has a real NIST 800-53 tag. Derive via the shared helper — never hand-roll. |
+| `verificationMethod` | `automated \| manual-by-design \| manual-pending-automation \| hybrid` | The **source format guarantees** how verification happened. |
+| `applicability` | `required \| optional \| advisory` | The source encodes a within-baseline applicability marker (e.g. FedRAMP OSCAL `CORE` prop, FedRAMP 20x `Optional:`). |
+
+### `controlType` — derive from NIST tags
+
+```go
+// Go — after building the tags map with nist[] populated:
+ControlType: shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
+```
+```typescript
+// TypeScript — pass the NIST tag array you already computed (there is no
+// nistTagsFromMap helper in TS; build the array from your CCI->NIST lookup):
+const nistTags = [...new Set(cciIds.flatMap((c) => getCCINistMappings(c) ?? []))].sort();
+const controlType = deriveControlTypeFromTags(nistTags);
+if (controlType !== undefined) req.controlType = controlType;
+```
+
+The helper returns nil/undefined when the tag set carries no signal (e.g. it
+exactly matches a static-fallback bundle like `["RA-5","SA-11"]`), so a finding
+with no real NIST mapping correctly gets no `controlType` rather than a
+misleading one. Leave it that way — do not substitute a default.
+
+### `verificationMethod` — only when provenance guarantees it
+
+This is the field most easily misused. It describes the **requirement's
+verification nature**, disambiguating the two cases that null `code` overloads:
+inherently manual (`manual-by-design`) vs. automatable-but-not-yet
+(`manual-pending-automation`). Set it ONLY when the source format *guarantees*
+the answer:
+
+- **Automated scanners** (Nessus, Burp, ZAP, Snyk, …) → `automated`, as a
+  per-converter constant. Justified because the artifact is, by provenance,
+  automated-scanner output: every finding *was* produced by automated
+  execution. The format guarantees the claim.
+
+- **A format merely associated with a manual workflow does NOT guarantee
+  `manual-by-design`.** Worked example — the **CKL (DISA STIG Viewer
+  checklist)** converter does **NOT** set `verificationMethod`, even though
+  CKL is the hand-fill checklist format. Reasons, and the transferable test:
+  1. A CKL rule could have been hand-assessed, *or* automated via SCAP/OVAL and
+     exported to CKL by a tool, *or* mixed — the format has no field saying which.
+  2. Most STIG rules are automatable, so `manual-by-design` (which asserts
+     *inherently* manual) overclaims; we also can't assert
+     `manual-pending-automation` per-rule.
+  3. "The artifact is in the manual-workflow format" ≠ "this requirement is
+     inherently manual." Provenance does not guarantee the claim, so omit.
+
+  **The test:** does the source format *guarantee* the verification nature of
+  each finding? Scanner output → yes (`automated`). A workflow-associated
+  container format → usually no → omit.
+
+### `applicability` — only on an explicit marker
+
+Omit unless the source encodes a real within-baseline applicability signal.
+A per-assessment *status* of `notApplicable` is NOT an `applicability` signal —
+status is the assessment outcome, `applicability` is the baseline-level
+designation. They are different axes; do not map one to the other.
+
+### Done-checklist additions
+
+- [ ] `controlType` derived from NIST tags via `DeriveControlTypeFromTags` (never hand-rolled); omitted when no NIST signal
+- [ ] `verificationMethod` set only when the source format guarantees it (scanner provenance → `automated`); omitted otherwise
+- [ ] `applicability` set only on an explicit source marker; `notApplicable` status NOT mapped to applicability
+
+---
+
 ## Step 5 — CLI Integration
 
 File: `hdf-cli/cmd/hdf/cmd/converter_<snake>.go`

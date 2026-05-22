@@ -381,6 +381,8 @@ These flags apply to all commands.
 |--------------|---------|-------------|
 | `aws-config` | | AWS Config compliance evaluation results (JSON) |
 | `burpsuite` | | PortSwigger BurpSuite web scanner (XML) |
+| `ckl` | | DISA STIG Viewer checklist (`.ckl` XML) |
+| `cklb` | | DISA STIG Viewer 3.x checklist (`.cklb` JSON) |
 | `conveyor` | | Conveyor container security (JSON) |
 | `cyclonedx` | | CycloneDX SBOM/VEX (JSON) |
 | `dbprotect` | | DbProtect database scanner (XML) |
@@ -428,6 +430,8 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | `hdf` | `csv` | Export requirements to CSV spreadsheet |
 | `hdf` | `xml` | Export requirements to XML |
 | `hdf` | `xccdf` | Export to XCCDF results XML |
+| `hdf` | `ckl` | Export to DISA STIG Viewer checklist (`.ckl` XML) |
+| `hdf` | `cklb` | Export to DISA STIG Viewer 3.x checklist (`.cklb` JSON) |
 | `hdf` | `oscal-sar` | Export to OSCAL Assessment Results |
 | `hdf` | `oscal-poam` | Export to OSCAL Plan of Action and Milestones |
 

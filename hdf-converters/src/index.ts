@@ -21,6 +21,16 @@ export { convertJunitToHdf } from '../converters/junit-to-hdf/typescript/index.j
 // XCCDF Results to HDF converter
 export { convertXccdfResultsToHdf } from '../converters/xccdf-results-to-hdf/typescript/index.js';
 
+// CKL (DISA STIG Viewer checklist) to HDF converter
+export { convertCklToHdf } from '../converters/ckl-to-hdf/typescript/index.js';
+
+// CKLB (DISA STIG Viewer 3.x JSON checklist) to HDF converter
+export { convertCklbToHdf } from '../converters/cklb-to-hdf/typescript/index.js';
+
+// HDF to CKL / CKLB (DISA STIG Viewer checklist) converters
+export { convertHdfToCkl } from '../converters/hdf-to-ckl/typescript/index.js';
+export { convertHdfToCklb } from '../converters/hdf-to-cklb/typescript/index.js';
+
 // Snyk to HDF converter
 export { convertSnykToHdf } from '../converters/snyk-to-hdf/typescript/index.js';
 

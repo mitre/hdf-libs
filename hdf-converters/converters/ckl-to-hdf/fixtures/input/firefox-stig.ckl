@@ -1,0 +1,810 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--DISA STIG Viewer :: 3.6.0 -->
+<CHECKLIST>
+	<ASSET>
+		<ROLE>None</ROLE>
+		<ASSET_TYPE>Computing</ASSET_TYPE>
+		<HOST_NAME>EXAMPLE-HOST</HOST_NAME>
+		<HOST_IP>192.0.2.10</HOST_IP>
+		<HOST_MAC>00:00:00:00:00:00</HOST_MAC>
+		<HOST_FQDN>host.example.com</HOST_FQDN>
+		<TARGET_COMMENT></TARGET_COMMENT>
+		<TECH_AREA></TECH_AREA>
+		<TARGET_KEY></TARGET_KEY>
+		<WEB_OR_DATABASE>false</WEB_OR_DATABASE>
+		<WEB_DB_SITE></WEB_DB_SITE>
+		<WEB_DB_INSTANCE></WEB_DB_INSTANCE>
+	</ASSET>
+	<STIGS>
+		<iSTIG>
+			<STIG_INFO>
+				<SI_DATA>
+					<SID_NAME>version</SID_NAME>
+					<SID_DATA>1</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>classification</SID_NAME>
+					<SID_DATA>UNCLASSIFIED</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>customname</SID_NAME>
+					<SID_DATA></SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>stigid</SID_NAME>
+					<SID_DATA>MOZ_Firefox_STIG</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>description</SID_NAME>
+					<SID_DATA></SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>releaseinfo</SID_NAME>
+					<SID_DATA>Release: 7 Benchmark Date: 05 Jan 2026</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>title</SID_NAME>
+					<SID_DATA>Mozilla Firefox Security Technical Implementation Guide</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>uuid</SID_NAME>
+					<SID_DATA>add7e8af-33db-420d-aeb6-923f648b0698</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>notice</SID_NAME>
+					<SID_DATA>terms-of-use</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>source</SID_NAME>
+					<SID_DATA>Unknown</SID_DATA>
+				</SI_DATA>
+			</STIG_INFO>
+			<VULN>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Num</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>V-251545</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Severity</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>high</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Group_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SRG-APP-000456</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_ID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SV-251545r1117151_rule</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Ver</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>FFOX-00-000001</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>The installed version of Firefox must be supported.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Discuss</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Using versions of an application that are not supported by the vendor is not permitted. Vendors respond to security flaws with updates and patches. These updates are not available for unsupported versions, which can leave the application vulnerable to attack.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>IA_Controls</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Run Firefox. Click the ellipsis button &gt;&gt; Help &gt;&gt; About Firefox, and view the version number.
+
+If the Firefox version is not a supported version, this is a finding.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Fix_Text</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Upgrade the version of the browser to an approved version by obtaining software from the vendor or other trusted source.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>False_Positives</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>False_Negatives</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Documentable</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>false</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Mitigations</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Potential_Impact</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Third_Party_Tools</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Mitigation_Control</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Responsibility</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Security_Override_Guidance</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content_Ref</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>M</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Weight</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>10.0</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Class</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Unclassified</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>STIG_UUID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>77f30218-d027-4389-b505-e006a80bd35f</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>CCI_REF</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>CCI-002605</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STATUS>Open</STATUS>
+				<FINDING_DETAILS>Installed Firefox version is end-of-life and unsupported.</FINDING_DETAILS>
+				<COMMENTS>Synthetic checklist for hdf-libs converter test fixture - not a real assessment.</COMMENTS>
+				<SEVERITY_OVERRIDE></SEVERITY_OVERRIDE>
+				<SEVERITY_JUSTIFICATION></SEVERITY_JUSTIFICATION>
+			</VULN>
+			<VULN>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Num</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>V-251546</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Severity</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>high</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Group_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SRG-APP-000560</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_ID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SV-251546r961869_rule</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Ver</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>FFOX-00-000002</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Firefox must be configured to allow only TLS 1.2 or above.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Discuss</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Use of versions prior to TLS 1.2 are not permitted. SSL 2.0 and SSL 3.0 contain a number of security flaws. These versions must be disabled in compliance with the Network Infrastructure and Secure Remote Computing STIGs.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>IA_Controls</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Type "about:policies" in the browser window. 
+
+If "SSLVersionMin" is not displayed under Policy Name or the Policy Value is not "tls1.2" or "tls1.3", this is a finding.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Fix_Text</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Windows group policy:
+1. Open the group policy editor tool with "gpedit.msc".
+2. Navigate to Policy Path: Computer Configuration\Administrative Templates\Mozilla\Firefox\
+Policy Name: Minimum SSL version enabled
+Policy State: Enabled
+Policy Value: TLS 1.2   (or TLS 1.3)
+
+macOS "plist" file:
+Add the following:
+&lt;key&gt;SSLVersionMin&lt;/key&gt;
+&lt;string&gt;tls1.2&lt;/string&gt;   (or &lt;string&gt;tls1.3&lt;/string&gt;)
+
+Linux "policies.json" file:
+Add the following in the policies section:
+"SSLVersionMin": "tls1.2"   or ("SSLVersionMin": "tls1.3")</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>False_Positives</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>False_Negatives</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Documentable</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>false</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Mitigations</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Potential_Impact</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Third_Party_Tools</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Mitigation_Control</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Responsibility</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Security_Override_Guidance</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content_Ref</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>M</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Weight</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>10.0</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Class</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Unclassified</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>STIG_UUID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>36db5946-11ce-4072-baf0-6f8798ca925d</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>CCI_REF</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>CCI-001453</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STATUS>NotAFinding</STATUS>
+				<FINDING_DETAILS></FINDING_DETAILS>
+				<COMMENTS></COMMENTS>
+				<SEVERITY_OVERRIDE></SEVERITY_OVERRIDE>
+				<SEVERITY_JUSTIFICATION></SEVERITY_JUSTIFICATION>
+			</VULN>
+			<VULN>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Num</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>V-251547</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Severity</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>medium</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Group_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SRG-APP-000177</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_ID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SV-251547r1067550_rule</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Ver</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>FFOX-00-000003</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Firefox must be configured to ask which certificate to present to a website when a certificate is required.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Discuss</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>When a website asks for a certificate for user authentication, Firefox must be configured to have the user choose which certificate to present. Websites within DOD require user authentication for access, which increases security for DOD information. Access will be denied to the user if certificate management is not configured.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>IA_Controls</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Type "about:policies" in the browser address bar. 
+
+If "Preferences" is not displayed under Policy Name and the Policy Value does not include "security.default_personal_cert" with a value of "Ask Every Time" and status of "locked", this is a finding.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Fix_Text</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Windows group policy:
+1. Open the group policy editor tool with "gpedit.msc".
+2. Navigate to Policy Path: Computer Configuration\Administrative Templates\Mozilla\Firefox\
+Policy Name: Preferences
+Policy State: Enabled
+Policy Value:
+{
+  "security.default_personal_cert": {
+    "Value": "Ask Every Time",
+    "Status": "locked"
+  }
+}
+
+macOS "plist" file:
+Add the following:
+&lt;key&gt;Preferences&lt;/key&gt;
+&lt;dict&gt;
+  &lt;key&gt;security.default_personal_cert&lt;/key&gt;
+  &lt;dict&gt;
+    &lt;key&gt;Value&lt;/key&gt;
+    &lt;string&gt;Ask Every Time&lt;/string&gt;
+    &lt;key&gt;Status&lt;/key&gt;
+    &lt;string&gt;locked&lt;/string&gt;
+  &lt;/dict&gt;
+&lt;/dict&gt;
+
+Linux "policies.json" file:
+Add the following in the policies section:
+"Preferences": {
+  "security.default_personal_cert": {
+    "Value": "Ask Every Time",
+    "Status": "locked"
+  }
+}</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>False_Positives</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>False_Negatives</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Documentable</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>false</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Mitigations</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Potential_Impact</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Third_Party_Tools</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Mitigation_Control</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Responsibility</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Security_Override_Guidance</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content_Ref</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>M</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Weight</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>10.0</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Class</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Unclassified</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>STIG_UUID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>b8bc13e1-b5a6-43f3-b321-310594a6e47b</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>CCI_REF</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>CCI-000187</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STATUS>Not_Applicable</STATUS>
+				<FINDING_DETAILS></FINDING_DETAILS>
+				<COMMENTS></COMMENTS>
+				<SEVERITY_OVERRIDE></SEVERITY_OVERRIDE>
+				<SEVERITY_JUSTIFICATION></SEVERITY_JUSTIFICATION>
+			</VULN>
+			<VULN>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Num</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>V-251548</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Severity</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>medium</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Group_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SRG-APP-000141</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_ID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SV-251548r1067552_rule</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Ver</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>FFOX-00-000004</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Firefox must be configured to not automatically check for updated versions of installed search plugins.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Discuss</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Updates must be controlled and installed from authorized and trusted servers. This setting overrides a number of other settings that may direct the application to access external URLs.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>IA_Controls</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Type "about:policies" in the browser address bar. 
+
+If "Preferences" is not displayed under Policy Name or the Policy Value does not include "browser.search.update" with a value of  "false" and status of "locked", this is a finding.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Fix_Text</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Windows group policy:
+1. Open the group policy editor tool with "gpedit.msc".
+2. Navigate to Policy Path: Computer Configuration\Administrative Templates\Mozilla\Firefox\
+Policy Name: Preferences
+Policy State: Enabled
+Policy Value:
+{
+  "browser.search.update": {
+    "Value": false,
+    "Status": "locked"
+  }
+}
+
+macOS "plist" file:
+Add the following:
+&lt;key&gt;Preferences&lt;/key&gt;
+&lt;dict&gt;
+  &lt;key&gt;browser.search.update&lt;/key&gt;
+  &lt;dict&gt;
+    &lt;key&gt;Value&lt;/key&gt;
+    &lt;false/&gt;
+    &lt;key&gt;Status&lt;/key&gt;
+    &lt;string&gt;locked&lt;/string&gt;
+  &lt;/dict&gt;
+&lt;/dict&gt;
+
+Linux "policies.json" file:
+Add the following in the policies section:
+"Preferences": {
+  "browser.search.update": {
+    "Value": false,
+    "Status": "locked"
+  }
+}</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>False_Positives</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>False_Negatives</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Documentable</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>false</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Mitigations</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Potential_Impact</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Third_Party_Tools</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Mitigation_Control</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Responsibility</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Security_Override_Guidance</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content_Ref</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>M</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Weight</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>10.0</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Class</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Unclassified</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>STIG_UUID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>0f511524-225c-430b-a4bc-8b0256b5e28a</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>CCI_REF</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>CCI-000381</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STATUS>NotAFinding</STATUS>
+				<FINDING_DETAILS></FINDING_DETAILS>
+				<COMMENTS></COMMENTS>
+				<SEVERITY_OVERRIDE></SEVERITY_OVERRIDE>
+				<SEVERITY_JUSTIFICATION></SEVERITY_JUSTIFICATION>
+			</VULN>
+			<VULN>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Num</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>V-251559</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Severity</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>low</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Group_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SRG-APP-000266</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_ID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SV-251559r961167_rule</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Ver</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>FFOX-00-000015</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Firefox development tools must be disabled.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Discuss</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Information needed by an attacker to begin looking for possible vulnerabilities in a web browser includes any information about the web browser and plug-ins or modules being used. When debugging or trace information is enabled in a production web browser, information about the web browser, such as web browser type, version, patches installed, plug-ins and modules installed, type of code being used by the hosted application, and any back ends being used for data storage may be displayed. Because this information may be placed in logs and general messages during normal operation of the web browser, an attacker does not have to cause an error condition to gain this information.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>IA_Controls</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Type "about:policies" in the browser window. 
+
+If "DisableDeveloperTools" is not displayed under Policy Name or the Policy Value is not "true", this is a finding.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Fix_Text</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Windows group policy:
+1. Open the group policy editor tool with "gpedit.msc".
+2. Navigate to Policy Path: Computer Configuration\Administrative Templates\Mozilla\Firefox
+Policy Name: Disable Developer Tools
+Policy State: Enabled
+
+macOS "plist" file:
+Add the following:
+&lt;key&gt;DisableDeveloperTools&lt;/key&gt;
+&lt;true/&gt;
+
+Linux "policies.json" file:
+Add the following in the policies section:
+"DisableDeveloperTools": true</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>False_Positives</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>False_Negatives</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Documentable</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>false</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Mitigations</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Potential_Impact</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Third_Party_Tools</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Mitigation_Control</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Responsibility</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Security_Override_Guidance</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content_Ref</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>M</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Weight</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>10.0</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Class</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Unclassified</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>STIG_UUID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>f4d406c9-d583-4f7c-928c-bb4841e2590a</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>CCI_REF</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>CCI-001312</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STATUS>Not_Reviewed</STATUS>
+				<FINDING_DETAILS></FINDING_DETAILS>
+				<COMMENTS></COMMENTS>
+				<SEVERITY_OVERRIDE></SEVERITY_OVERRIDE>
+				<SEVERITY_JUSTIFICATION></SEVERITY_JUSTIFICATION>
+			</VULN>
+			<VULN>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Num</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>V-251565</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Severity</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>low</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Group_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SRG-APP-000141</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_ID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SV-251565r960963_rule</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Ver</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>FFOX-00-000021</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Firefox autoplay must be disabled.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Discuss</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Autoplay allows the user to control whether videos can play automatically (without user consent) with audio content. The user must be able to select content that is run within the browser window.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>IA_Controls</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Type "about:policies" in the browser address bar. 
+
+If "Permissions" is not displayed under Policy Name or the Policy Value is not "Autoplay" with a value of "Default" and "Block-audio-video", this is a finding.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Fix_Text</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Windows group policy:
+1. Open the group policy editor tool with "gpedit.msc".
+2. Navigate to Policy Path: Computer Configuration\Administrative Templates\Mozilla\Firefox\Permissions\Autoplay
+Policy Name: Default autoplay level
+Policy State: Enabled
+Policy Value: Block Audio and Video
+
+macOS "plist" file:
+Add the following:
+&lt;key&gt;Permissions&lt;/key&gt;
+&lt;dict&gt;
+  &lt;key&gt;Autoplay&lt;/key&gt;
+  &lt;dict&gt;
+    &lt;string&gt;block-audio-video&lt;/string&gt;
+  &lt;/dict&gt;
+&lt;/dict&gt;
+ 
+Linux "policies.json" file:
+Add the following in the policies section:
+"Permissions": {
+  "Autoplay": {
+    "Default": "block-audio-video"
+  }
+}</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>False_Positives</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>False_Negatives</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Documentable</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>false</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Mitigations</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Potential_Impact</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Third_Party_Tools</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Mitigation_Control</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Responsibility</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Security_Override_Guidance</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA></ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content_Ref</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>M</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Weight</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>10.0</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Class</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Unclassified</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>STIG_UUID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>49760e99-557f-42d1-a07c-df3c02623340</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>CCI_REF</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>CCI-000381</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STATUS>Open</STATUS>
+				<FINDING_DETAILS></FINDING_DETAILS>
+				<COMMENTS></COMMENTS>
+				<SEVERITY_OVERRIDE></SEVERITY_OVERRIDE>
+				<SEVERITY_JUSTIFICATION></SEVERITY_JUSTIFICATION>
+			</VULN>
+		</iSTIG>
+	</STIGS>
+</CHECKLIST>
