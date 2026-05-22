@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	hdfpassthrough "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-passthrough/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/registry/all" // register all fingerprints via init()
 	"github.com/spf13/cobra"
@@ -136,6 +137,19 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		if fromVersion == "" {
 			fromVersion = detectedVersion
 		}
+
+		// Native HDF input fingerprints as the passthrough id, which matches no
+		// converter (exports are registered under the "hdf" source). When the
+		// user asked for a specific export target, normalize so hdf→<target>
+		// resolves. When they didn't, there is nothing to convert to — guide
+		// them to --to instead of attempting an hdf→hdf no-op or dumping the
+		// converter registry.
+		if fromFormat == hdfpassthrough.FingerprintID {
+			if !cmd.Flags().Changed("to") {
+				return buildAlreadyHDFError()
+			}
+			fromFormat = "hdf"
+		}
 	}
 
 	// Get converter
@@ -240,6 +254,26 @@ func autoDetectFormat(data []byte, inputPath string) (format, version string, er
 		fmt.Fprintf(os.Stderr, "Detected: %s (confidence: %.0f%%)\n", result.Fingerprint.Label, result.Confidence*100)
 	}
 	return format, version, nil
+}
+
+// buildAlreadyHDFError reports that the input is already HDF and lists the
+// export targets the "hdf" source can convert to. Used when native-HDF input
+// is auto-detected and no --to was given, so the user gets actionable guidance
+// instead of an hdf→hdf no-op or a registry dump.
+func buildAlreadyHDFError() error {
+	var targets []string
+	for _, pair := range ListConverters() {
+		if strings.EqualFold(pair.Source, "hdf") && !strings.EqualFold(pair.Dest, "hdf") {
+			targets = append(targets, pair.Dest)
+		}
+	}
+	sort.Strings(targets)
+
+	if len(targets) == 0 {
+		return fmt.Errorf("input is already HDF; specify --to <format> to export it")
+	}
+	return fmt.Errorf("input is already HDF; specify --to <format> to export it (e.g. %s)",
+		strings.Join(targets, ", "))
 }
 
 // buildConverterNotFoundError creates a helpful error message when a converter is not found.

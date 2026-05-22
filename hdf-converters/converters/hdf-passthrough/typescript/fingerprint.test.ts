@@ -1,22 +1,22 @@
 import { runFingerprintTests } from '../../../shared/typescript/fptest.js';
-import { register, hdfV2Fingerprint } from './fingerprint.js';
+import { register, hdfFingerprint, HDF_PASSTHROUGH_ID } from './fingerprint.js';
 
 runFingerprintTests({
-  id: 'hdf-v2-passthrough',
-  label: 'HDF v2',
+  id: HDF_PASSTHROUGH_ID,
+  label: 'HDF',
   direction: 'ingest',
   inputFamily: 'json',
   outputType: 'results',
-  fingerprint: hdfV2Fingerprint,
+  fingerprint: hdfFingerprint,
   register,
   positive: [
     {
-      name: 'detects minimal HDF v2 at confidence 0.8',
+      name: 'detects minimal HDF at confidence 0.8',
       input: JSON.stringify({ baselines: [{ name: 'test-baseline', requirements: [] }] }),
       confidence: 0.8,
     },
     {
-      name: 'detects full HDF v2 at confidence 0.8',
+      name: 'detects full HDF at confidence 0.8',
       input: JSON.stringify({
         baselines: [
           {

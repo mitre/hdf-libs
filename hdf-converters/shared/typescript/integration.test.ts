@@ -236,10 +236,10 @@ describe('integration: detectConverter with real fixtures', () => {
     expect(result!.fingerprint.id).toBe('legacyhdf-to-hdf');
   });
 
-  it('detects hdf-v2 (passthrough)', () => {
+  it('detects native HDF (passthrough)', () => {
     const result = detectConverter(fixture('hdf-to-xml', 'minimal.json'));
     expect(result).toBeDefined();
-    expect(result!.fingerprint.id).toBe('hdf-v2-passthrough');
+    expect(result!.fingerprint.id).toBe('hdf-passthrough');
   });
 
   // === Edge cases ===

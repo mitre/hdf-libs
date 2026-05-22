@@ -281,6 +281,44 @@ func TestConvertCommand_OverwriteProtection(t *testing.T) {
 	})
 }
 
+// TestConvertCommand_AlreadyHDF covers the UX for native-HDF input (a baselines[]
+// document). Auto-detection fingerprints these as the HDF passthrough; the convert
+// routing must not attempt an hdf→hdf no-op or dump the converter registry.
+func TestConvertCommand_AlreadyHDF(t *testing.T) {
+	fixture := converterFixturePath(t, "hdf-to-xccdf", "input/minimal.json")
+
+	t.Run("no --to prints export guidance, not a registry dump", func(t *testing.T) {
+		_, stderr, err := executeCommand("convert", fixture)
+		require.Error(t, err, "expected guidance error for already-HDF input with no --to")
+		assert.Contains(t, stderr, "already HDF", "should tell the user the input is already HDF")
+		assert.Contains(t, stderr, "--to", "should point the user at --to")
+		// Should list real export targets, not the full ingest registry.
+		assert.Contains(t, stderr, "xccdf")
+		assert.Contains(t, stderr, "csv")
+		// Must NOT spill the "convert to hdf" ingest list or the stale passthrough id.
+		assert.NotContains(t, stderr, "Formats that can convert to")
+		assert.NotContains(t, stderr, "hdf-v2-passthrough")
+		assert.NotContains(t, stderr, "hdf-passthrough")
+	})
+
+	t.Run("explicit --to export resolves auto-detected hdf source", func(t *testing.T) {
+		stdout, stderr, err := executeCommand("convert", fixture, "--to", "xccdf")
+		require.NoErrorf(t, err, "auto-detected HDF → xccdf should succeed (stderr: %s)", stderr)
+		assert.Contains(t, stdout, "<?xml", "xccdf export should produce XML")
+		// Detection banner uses the corrected label, not the stale "HDF v2".
+		assert.Contains(t, stderr, "Detected: HDF ")
+		assert.NotContains(t, stderr, "HDF v2")
+	})
+
+	t.Run("explicit --to hdf still allows passthrough", func(t *testing.T) {
+		stdout, stderr, err := executeCommand("convert", fixture, "--to", "hdf")
+		require.NoErrorf(t, err, "explicit hdf→hdf passthrough should succeed (stderr: %s)", stderr)
+		var result map[string]any
+		require.NoError(t, json.Unmarshal([]byte(stdout), &result))
+		assert.Contains(t, result, "baselines")
+	})
+}
+
 func TestCheckOutputOverwritesInput(t *testing.T) {
 	t.Run("same absolute paths", func(t *testing.T) {
 		err := checkOutputOverwritesInput("/tmp/test.json", "/tmp/test.json")

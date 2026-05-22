@@ -1,8 +1,8 @@
 /**
- * HDF v2 native format fingerprint.
+ * Native HDF format fingerprint.
  *
- * Detects HDF v2.0 JSON files (the most common upload format). These have
- * a baselines[] array at the top level — no conversion needed, just passthrough.
+ * Detects HDF JSON files (the most common upload format). These have a
+ * baselines[] array at the top level — no conversion needed, just passthrough.
  *
  * Confidence 0.8: lower than tool-specific formats so that if a file matches
  * a more specific converter (e.g. SARIF, TruffleHog), that wins.
@@ -12,9 +12,12 @@
 
 import { registerFingerprint, getFingerprint, type ConverterFingerprint } from '../../../shared/typescript/registry.js';
 
-export const hdfV2Fingerprint: ConverterFingerprint = {
-  id: 'hdf-v2-passthrough',
-  label: 'HDF v2',
+/** Detection ID for native (already-HDF) input. */
+export const HDF_PASSTHROUGH_ID = 'hdf-passthrough';
+
+export const hdfFingerprint: ConverterFingerprint = {
+  id: HDF_PASSTHROUGH_ID,
+  label: 'HDF',
   direction: 'ingest',
   inputFamily: 'json',
   outputType: 'results',
@@ -27,6 +30,6 @@ export const hdfV2Fingerprint: ConverterFingerprint = {
 };
 
 export function register(): void {
-  if (getFingerprint('hdf-v2-passthrough')) return;
-  registerFingerprint(hdfV2Fingerprint);
+  if (getFingerprint(HDF_PASSTHROUGH_ID)) return;
+  registerFingerprint(hdfFingerprint);
 }
