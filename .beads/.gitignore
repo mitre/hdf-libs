@@ -44,12 +44,24 @@ dolt-server.pid
 dolt-server.log
 dolt-server.lock
 dolt-server.port
+dolt-server.activity
 
 # Corrupt backup directories (created by bd doctor --fix recovery)
 *.corrupt.backup/
 
 # Backup data (auto-exported JSONL, local-only)
 backup/
+issues-backup.jsonl
+issues.jsonl.backup-*
+issues.jsonl.broken-backup
+issues.jsonl.pre-restore-*
+
+# Git hook backups (br/bd writes these when it updates hooks; local-only)
+hooks/*.backup
+
+# Session-state recovery files (written by breadcrumbs:prepare-compact)
+recovery-prompt.md
+recovery-context.md
 
 # Beads Rust (br) history snapshots (local, per-machine timestamped backups)
 .br_history/
