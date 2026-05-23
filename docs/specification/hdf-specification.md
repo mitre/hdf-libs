@@ -1,6 +1,6 @@
-# Heimdall Data Format (HDF) v3.1.0 Specification
+# Heimdall Data Format (HDF) v3.2.0 Specification
 
-**Version**: 3.1.0
+**Version**: 3.2.0
 **Schema**: JSON Schema draft 2020-12
 **License**: Apache-2.0 | The MITRE Corporation
 
@@ -35,7 +35,7 @@ Documents reference each other via URI strings: `systemRef`, `planRef`.
 
 Assessment findings from running security checks against target systems.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.1.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.2.0`
 
 ### Top-Level Fields
 
@@ -108,6 +108,9 @@ A single security requirement with test results. Each requirement maps to one te
 | evidence | Evidence[] | no | Screenshots, logs, code samples |
 | disposition | OverrideType | no | Override disposition applied to this requirement |
 | effectiveImpact | number | no | Effective impact after overrides (0.0–1.0) |
+| controlType | ControlType | no | NIST SP 800-53 / SP 800-53A categorization: `policy` \| `procedure` \| `technical` \| `management` \| `operational` *(v3.2.0)* |
+| verificationMethod | VerificationMethod | no | How this requirement is verified: `automated` \| `manual-by-design` \| `manual-pending-automation` \| `hybrid`. Disambiguates the two cases that null `code` previously overloaded *(v3.2.0)* |
+| applicability | Applicability | no | Within-baseline applicability: `required` \| `optional` \| `advisory`. Distinct from severity (risk weight) and status (lifecycle) *(v3.2.0)* |
 
 ### RequirementResult
 
@@ -164,7 +167,7 @@ The system element that was assessed. Components are polymorphic — each has a 
 
 Security requirements without results (before assessment).
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.1.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.2.0`
 
 Shares most fields with Evaluated_Baseline but uses `Baseline_Requirement` (no results, no effectiveStatus) instead of `Evaluated_Requirement`.
 
@@ -206,6 +209,9 @@ A security requirement before assessment. Structurally identical to Evaluated_Re
 | severity | Severity | no | Explicit severity rating |
 | sourceLocation | SourceLocation | no | File path and line number |
 | refs | Reference[] | no | External document references |
+| controlType | ControlType | no | NIST SP 800-53 / SP 800-53A categorization: `policy` \| `procedure` \| `technical` \| `management` \| `operational` *(v3.2.0)* |
+| verificationMethod | VerificationMethod | no | How this requirement is verified: `automated` \| `manual-by-design` \| `manual-pending-automation` \| `hybrid` *(v3.2.0)* |
+| applicability | Applicability | no | Within-baseline applicability: `required` \| `optional` \| `advisory` *(v3.2.0)* |
 
 ---
 
@@ -213,7 +219,7 @@ A security requirement before assessment. Structurally identical to Evaluated_Re
 
 Describes a system under assessment. A system document defines the authorization boundary, including what components make up the system, its security categorization (FIPS 199), and its authorization status (ATO). This corresponds to a FedRAMP system or an OSCAL SSP's system characteristics. Results and amendments reference the system via `systemRef` to establish which system the assessment applies to.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.1.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.2.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -270,7 +276,7 @@ Declares a control's designation within the system — whether it is common (pro
 
 Assessment plan defining what to assess and how. A plan document describes the scope, methodology, and schedule for an upcoming security assessment. It references the system under test via `systemRef` and lists the individual assessments to be performed. This corresponds to an OSCAL SAP (Security Assessment Plan) or a FedRAMP test plan.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.1.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.2.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -304,7 +310,7 @@ A single assessment within a plan — defines which baseline to run against whic
 
 Status overrides applied after assessment (waivers, attestations, POAMs).
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.1.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.2.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -342,7 +348,7 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 
 Diff between two or more assessment documents. A comparison captures how compliance posture changed between scans, across environments, or between baseline versions. The `comparisonMode` indicates the type of analysis (temporal drift, fleet comparison, baseline evolution, etc.). Each requirement diff records whether a control is new, absent, fixed, regressed, or unchanged. Comparisons are produced by `hdf diff` and consumed by dashboards to show trend data.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.1.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.2.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -369,7 +375,7 @@ Diff between two or more assessment documents. A comparison captures how complia
 
 Bundles references to assessment artifacts for audit and compliance submission. An evidence package collects results, baselines, amendments, system descriptions, and supporting materials (screenshots, logs, SBOMs) into a single auditable unit. This corresponds to a FedRAMP security package or an OSCAL POA&M submission bundle. The `completenessCheck` field validates that all expected artifacts are present.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.1.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.2.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
