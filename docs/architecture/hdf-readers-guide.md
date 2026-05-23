@@ -674,8 +674,7 @@ not competing schemas:
 
 ## Implementation Status
 
-> As of 2026-04-02. See `docs/plans/2026-03-14-hdf-ecosystem-plan.md` for the
-> full implementation plan with beads card references.
+> As of 2026-04-02.
 
 | What | Status |
 |------|--------|
@@ -708,6 +707,5 @@ not competing schemas:
 |----------|---------------|
 | [Architecture](hdf-document-ecosystem.md) | Full ecosystem vision, all 7 types, JSON examples |
 | Design decisions | (archived) — 12 design decisions with research rationale |
-| [Developer Guide](../design/developer-guide.md) | Contributor patterns, dual impl, testing |
-| [Implementation Plan](../plans/2026-03-14-hdf-ecosystem-plan.md) | Phase-by-phase plan with beads cards |
+| [Developer Guide](../contributing/developer-guide.md) | Contributor patterns, dual impl, testing |
 | SBOM Research | (archived) — CycloneDX/SPDX library landscape |

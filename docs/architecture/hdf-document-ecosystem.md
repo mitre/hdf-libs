@@ -1048,8 +1048,7 @@ generator backends.
 | `docs/architecture/hdf-readers-guide.md` | **Start here** — narrative guide with walkthroughs |
 | `docs/architecture/hdf-document-ecosystem.md` | This file — full ecosystem vision |
 | Design decisions | (archived) — 12 design decisions with research rationale |
-| `docs/design/developer-guide.md` | Patterns for contributors (dual impl, testing, cross-platform) |
-| `docs/plans/2026-03-14-hdf-ecosystem-plan.md` | Implementation plan with phase cards |
+| `docs/contributing/developer-guide.md` | Patterns for contributors (dual impl, testing, cross-platform) |
 | SBOM library research | (archived) |
 | Docs consistency review | (archived) |
 | Memory audit | (archived) |

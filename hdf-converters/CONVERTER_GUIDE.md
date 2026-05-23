@@ -255,8 +255,7 @@ Tests run automatically on pull requests:
 - Coverage: Upload to Codecov
 ```
 
-**Branch protection** enforces all checks must pass before merge to `main`.
-See [Branch Protection Setup](../docs/BRANCH_PROTECTION.md) for configuration.
+**Branch protection** on `main` requires all CI checks to pass before merge.
 
 ## Tips
 
