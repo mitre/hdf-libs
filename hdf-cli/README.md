@@ -49,7 +49,7 @@ curl -sL https://github.com/mitre/hdf-libs/releases/latest/download/hdf_linux_am
 sudo mv hdf /usr/local/bin/
 ```
 
-Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.1.1_darwin_arm64.tar.gz`).
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.2.0_darwin_arm64.tar.gz`).
 
 ### Build from source
 
