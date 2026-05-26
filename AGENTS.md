@@ -12,31 +12,9 @@ bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
 
-## Landing the Plane (Session Completion)
+## Git Policy
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd sync
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+The user owns every commit and push in this repo. Do not commit without explicit per-commit approval and do not run `git push`. The bd-tool's standard "session completion" workflow (which mandates `git push`) is overridden here — see `.claude/CLAUDE.md` "Git Policy" for the authoritative rule. `bd dolt push` / `bd dolt pull` is a separate concept (issue-tracker remote sync) and follows the dolt-sync rule in `.claude/CLAUDE.md`.
 
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:full hash:e07235d4 -->
@@ -138,28 +116,6 @@ For more details, see README.md and docs/QUICKSTART.md.
 
 ## Session Completion
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd dolt push
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+When ending a session, ensure beads cards reflect reality (`bd ready`, close completed work, update in-progress notes). The bd-tool's default session-completion workflow ends with a mandatory `git push`; that does not apply in this repo. See `.claude/CLAUDE.md` "Git Policy" — the user owns every commit and push. `bd dolt push` for issue-tracker sync follows the dolt-sync rule there and is unrelated to `git push`.
 
 <!-- END BEADS INTEGRATION -->
