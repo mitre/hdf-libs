@@ -19,20 +19,44 @@
 
 ## Issue Tracking (Beads)
 
-Use `bd` CLI commands to interact with beads. **Never edit `.beads/issues.jsonl` directly.**
+This project uses `bd` (gastownhall/beads, the Go mainline, NOT the Rust fork `br`) with an **embedded Dolt** backend (per-project DB; do not share with other repos).
+**Never edit `.beads/issues.jsonl` directly** — it is the auto-export. Always go through `bd`.
 
 Common commands:
 ```bash
 bd show <id>                        # Show issue details
 bd list                             # List open issues
+bd ready                            # Show issues ready to work (no blockers)
 bd close <id> -r "reason"           # Close an issue
-bd update <id> --status in_progress # Update status
-bd update <id> -d "description"     # Update description
+bd update <id> --status in_progress # Reserve an issue
+bd update <id> --description "..."  # Update description
 bd create --title "..." -d "..."    # Create new issue
+bd dep add <issue> <depends-on>     # Add a dependency
 ```
 
-If bd errors with "Database out of sync", run `bd sync --import-only` first.
-If bd errors with "LEGACY DATABASE DETECTED", run `bd migrate --update-repo-id` first.
+### Dolt sync on reserve/complete
+
+Whenever you **reserve** (claim / move to `in_progress`) or **complete** (close)
+a card, bracket the write with a Dolt pull and push so the remote stays in
+sync with other clones working on this repo:
+
+```bash
+bd dolt pull                       # rebase any other-clone changes
+bd update <id> --status in_progress  # or:  bd close <id> -r "..."
+bd dolt push                       # publish the change
+```
+
+Same pattern for creating + immediately reserving a new card. This is for the
+Dolt issue-tracker remote only; it has no relationship to `git push` (which
+the user handles separately for code changes).
+
+The injected "Beads Issue Tracker" section in the root `CLAUDE.md` came from
+`bd init` and includes generic "MANDATORY: git push" language. That language
+does NOT apply here — see "Git Policy" above ("Never push. User handles all
+pushes."). The dolt push/pull rule in this file is the project-specific
+truth.
+
+If bd errors with "Database out of sync", run `bd dolt pull` first.
 
 ## Converter Requirements
 - **HDF CLI integration required.** Converters are not considered fully implemented until integrated into hdf-cli.
