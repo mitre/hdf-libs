@@ -150,11 +150,19 @@ jobs:
         #   no-resolution: sub-path exports (./helpers, ./hdf-results)
         #     require the "exports" map, which node10 does not support.
         #     We target Node 22+ (see engines field in package.json).
+        #
+        # `pnpm exec` (not dlx): attw is a root devDependency so we get
+        # the lockfile-pinned version. dlx pulls each transitive dep
+        # fresh and bypasses the fflate@0.8.3 → 0.8.2 override below
+        # that works around upstream attw bug:
+        # arethetypeswrong/arethetypeswrong.github.io#258, #262, PR #261
+        # (open). When that PR ships in a new attw release, drop both
+        # the fflate override and this comment.
         run: |
           FAIL=0
           for tb in /tmp/tarballs/*.tgz; do
             echo "::group::attw $(basename "$tb")"
-            pnpm dlx @arethetypeswrong/cli --ignore-rules cjs-resolves-to-esm no-resolution -- "$tb" || FAIL=1
+            pnpm exec attw --ignore-rules cjs-resolves-to-esm no-resolution -- "$tb" || FAIL=1
             echo "::endgroup::"
           done
           exit $FAIL
