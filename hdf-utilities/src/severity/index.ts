@@ -56,3 +56,30 @@ export function impactToSeverity(impact: number | null): string | null {
   if (impact > 0.0) return 'low';
   return 'informational';
 }
+
+/**
+ * Map a raw CVSS base score (0.0–10.0) to a FIRST qualitative severity band.
+ *
+ * Bands per FIRST CVSS v3.x / v4.0 spec:
+ *   none     = 0.0
+ *   low      = 0.1 – 3.9
+ *   medium   = 4.0 – 6.9
+ *   high     = 7.0 – 8.9
+ *   critical = 9.0 – 10.0
+ *
+ * Out-of-range inputs are clamped: scores < 0.1 → "none" (band floor),
+ * scores > 10.0 → "critical". This matches scanner behavior of treating
+ * malformed scores as informational/critical extremes rather than throwing.
+ *
+ * @param score - CVSS base score
+ * @returns FIRST severity band label
+ */
+export function cvssScoreToSeverity(
+  score: number,
+): 'none' | 'low' | 'medium' | 'high' | 'critical' {
+  if (!Number.isFinite(score) || score < 0.1) return 'none';
+  if (score < 4.0) return 'low';
+  if (score < 7.0) return 'medium';
+  if (score < 9.0) return 'high';
+  return 'critical';
+}

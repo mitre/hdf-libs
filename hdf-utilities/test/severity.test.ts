@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { severityToImpact, impactToSeverity } from '../src/severity/index.js';
+import { severityToImpact, impactToSeverity, cvssScoreToSeverity } from '../src/severity/index.js';
 
 describe('Severity Utilities', () => {
   describe('severityToImpact', () => {
@@ -253,6 +253,52 @@ describe('Severity Utilities', () => {
       for (const label of infoLabels) {
         expect(severityToImpact(label)).toBe(0.0);
       }
+    });
+  });
+
+  describe('cvssScoreToSeverity', () => {
+    it('maps 0.0 to "none"', () => {
+      expect(cvssScoreToSeverity(0.0)).toBe('none');
+    });
+
+    it('maps 0.1 to "low" (low band floor)', () => {
+      expect(cvssScoreToSeverity(0.1)).toBe('low');
+    });
+
+    it('maps 3.9 to "low" (low band ceiling)', () => {
+      expect(cvssScoreToSeverity(3.9)).toBe('low');
+    });
+
+    it('maps 4.0 to "medium" (medium band floor)', () => {
+      expect(cvssScoreToSeverity(4.0)).toBe('medium');
+    });
+
+    it('maps 6.9 to "medium" (medium band ceiling)', () => {
+      expect(cvssScoreToSeverity(6.9)).toBe('medium');
+    });
+
+    it('maps 7.0 to "high" (high band floor)', () => {
+      expect(cvssScoreToSeverity(7.0)).toBe('high');
+    });
+
+    it('maps 8.9 to "high" (high band ceiling)', () => {
+      expect(cvssScoreToSeverity(8.9)).toBe('high');
+    });
+
+    it('maps 9.0 to "critical" (critical band floor)', () => {
+      expect(cvssScoreToSeverity(9.0)).toBe('critical');
+    });
+
+    it('maps 10.0 to "critical" (max)', () => {
+      expect(cvssScoreToSeverity(10.0)).toBe('critical');
+    });
+
+    it('clamps negative values to "none"', () => {
+      expect(cvssScoreToSeverity(-2)).toBe('none');
+    });
+
+    it('clamps values > 10 to "critical"', () => {
+      expect(cvssScoreToSeverity(15)).toBe('critical');
     });
   });
 });

@@ -130,6 +130,28 @@ func TestImpactToSeverity(t *testing.T) {
 	}
 }
 
+func TestCvssScoreToSeverity_Bands(t *testing.T) {
+	cases := []struct {
+		score    float64
+		expected string
+	}{
+		{0.0, "none"},
+		{0.1, "low"},
+		{3.9, "low"},
+		{4.0, "medium"},
+		{6.9, "medium"},
+		{7.0, "high"},
+		{8.9, "high"},
+		{9.0, "critical"},
+		{10.0, "critical"},
+		{-3, "none"},       // clamped
+		{12.5, "critical"}, // clamped
+	}
+	for _, c := range cases {
+		assert.Equal(t, c.expected, CvssScoreToSeverity(c.score), "CvssScoreToSeverity(%v)", c.score)
+	}
+}
+
 func TestImpactToSeverity_RoundTrip(t *testing.T) {
 	// SeverityToImpact -> ImpactToSeverity should return the original label
 	for _, sev := range []string{"critical", "high", "medium", "low", "informational"} {

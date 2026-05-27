@@ -50,6 +50,33 @@ func SeverityToImpactWithAliases(severity string, aliases map[string]float64, de
 	return defaultVal
 }
 
+// CvssScoreToSeverity maps a raw CVSS base score (0.0–10.0) to a FIRST
+// qualitative severity band:
+//
+//	none     = 0.0
+//	low      = 0.1 – 3.9
+//	medium   = 4.0 – 6.9
+//	high     = 7.0 – 8.9
+//	critical = 9.0 – 10.0
+//
+// Out-of-range scores are clamped: anything below the low-band floor (0.1)
+// becomes "none"; anything above 10.0 becomes "critical". This mirrors
+// scanner behavior and avoids throwing on malformed inputs.
+func CvssScoreToSeverity(score float64) string {
+	switch {
+	case score < 0.1:
+		return "none"
+	case score < 4.0:
+		return "low"
+	case score < 7.0:
+		return "medium"
+	case score < 9.0:
+		return "high"
+	default:
+		return "critical"
+	}
+}
+
 // ImpactToSeverity maps an HDF impact score (0.0–1.0) to a severity string.
 // This is the inverse of SeverityToImpact. Threshold ranges:
 //

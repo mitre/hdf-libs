@@ -51,4 +51,18 @@ export { findValuesByKey, extractColumn, findRows } from './object/index.js';
 export { stripHtml, parseTimestamp } from './string/index.js';
 
 // Severity/impact mapping
-export { severityToImpact, impactToSeverity } from './severity/index.js';
+export { severityToImpact, impactToSeverity, cvssScoreToSeverity } from './severity/index.js';
+
+// CVSS vector parsing + validation
+export {
+  parseCvssVector,
+  validateCvssVector,
+  type ParsedCvssVector,
+  type CvssValidationResult,
+} from './cvss/index.js';
+
+// CPE 2.3 URI parser
+export { parseCpe, type ParsedCpe, type CpePart } from './cpe/index.js';
+
+// PURL (Package URL) parser
+export { parsePurl, type ParsedPurl } from './purl/index.js';
