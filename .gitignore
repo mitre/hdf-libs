@@ -77,3 +77,6 @@ hdf-cli/SAF_CLI_COMPARISON.md
 
 # Beads / Dolt files (added by bd init)
 .beads-credential-key
+
+# Local development smoke test docs (not part of release artifact)
+*-smoke-test.md
