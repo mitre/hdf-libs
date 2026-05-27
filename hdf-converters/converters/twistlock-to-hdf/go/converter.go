@@ -160,17 +160,18 @@ func cvssSeverityFromScore(score float64) *hdf.CVSSSeverity {
 }
 
 // buildCvss assembles a Cvss entry from the Twistlock vulnerability fields.
-// Returns nil when neither a score nor a vector is available.
+// Returns nil when the vector is empty — the schema requires a non-empty
+// baseVector (Cvss.required: ["version", "baseVector", "baseScore"]) and
+// the pattern rejects empty strings. The score is still preserved via the
+// legacy tags.cvss_base_score tag emitted alongside.
 func buildCvss(vuln TwistlockVuln) *hdf.Cvss {
-	if vuln.Vector == "" && vuln.CVSS == 0 {
+	if vuln.Vector == "" {
 		return nil
 	}
 	cv := hdf.Cvss{
-		Version:   cvssVersionFromVector(vuln.Vector),
-		BaseScore: vuln.CVSS,
-	}
-	if vuln.Vector != "" {
-		cv.BaseVector = vuln.Vector
+		Version:    cvssVersionFromVector(vuln.Vector),
+		BaseScore:  vuln.CVSS,
+		BaseVector: vuln.Vector,
 	}
 	source := vuln.CVE
 	if source == "" {

@@ -163,17 +163,18 @@ export function cvssSeverityFromScore(score: number): CVSSSeverity | undefined {
 
 /**
  * Builds a Cvss entry from a Twistlock vulnerability. Returns undefined when
- * neither a score nor a vector are present.
+ * the vector is empty — the schema requires a non-empty baseVector and
+ * rejects empty strings via pattern. The score is still preserved via the
+ * legacy tags.cvss_base_score tag emitted alongside.
  */
 export function buildCvss(vuln: TwistlockVuln): Cvss | undefined {
-  const hasScore = typeof vuln.cvss === 'number' && vuln.cvss > 0;
-  const hasVector = !!vuln.vector;
-  if (!hasScore && !hasVector) return undefined;
+  if (!vuln.vector) return undefined;
 
+  const hasScore = typeof vuln.cvss === 'number' && vuln.cvss > 0;
   const cv: Cvss = {
     version: cvssVersionFromVector(vuln.vector),
     baseScore: hasScore ? (vuln.cvss as number) : 0,
-    baseVector: vuln.vector ?? '',
+    baseVector: vuln.vector,
   };
   const source = vuln.cve ?? vuln.id;
   if (source) cv.source = source;

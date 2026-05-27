@@ -446,24 +446,26 @@ func TestConvertTwistlock_CvssSeverityBands(t *testing.T) {
 	}
 }
 
-func TestConvertTwistlock_CvssOmittedWhenAbsent(t *testing.T) {
-	// CVE without a vector or score in input fixture: CVE-2022-1650 from
-	// sample-1 has cvss=8.1 but no vector. Our converter still emits a Cvss
-	// entry because score is present — verify exactly that.
+func TestConvertTwistlock_CvssOmittedWhenVectorAbsent(t *testing.T) {
+	// The schema requires a non-empty baseVector on Cvss; when the source
+	// vulnerability has no vector, we omit the entire Cvss entry rather than
+	// emitting one that would fail validation. The score is still preserved
+	// via the legacy tags.cvss_base_score tag emitted alongside.
 	input := loadFixture(t, "input/twistlock-twistcli-sample-1.json")
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	// Synthesize a finding with no cvss/vector to exercise the omit path.
-	noScore := TwistlockVuln{ID: "CVE-TEST", Severity: "low"}
-	assert.Nil(t, buildCvss(noScore))
+	// Synthesize a finding with no vector to exercise the omit path.
+	noVector := TwistlockVuln{ID: "CVE-TEST", Severity: "low", CVSS: 8.1}
+	assert.Nil(t, buildCvss(noVector))
 
-	// CVE-2022-1650 has a score but no vector → entry present, no BaseVector.
+	// CVE-2022-1650 has a score but no vector → Cvss entry is omitted, but
+	// the score is still surfaced via the legacy tag.
 	req := findRequirement(result.Baselines[0].Requirements, "CVE-2022-1650")
 	require.NotNil(t, req)
-	require.Len(t, req.Cvss, 1)
-	assert.Empty(t, req.Cvss[0].BaseVector)
-	assert.InDelta(t, 8.1, req.Cvss[0].BaseScore, 0.001)
+	assert.Empty(t, req.Cvss)
+	require.NotNil(t, req.Tags)
+	assert.InDelta(t, 8.1, req.Tags["cvss_base_score"], 0.001)
 }
 
 func TestConvertTwistlock_AffectedPackagesMavenEcosystem(t *testing.T) {
