@@ -27,37 +27,30 @@ const SCHEMA_META = {
   'hdf-results': {
     title: 'HDF Results',
     description: 'Assessment results from running security checks against a target system.',
-    icon: '📊',
   },
   'hdf-baseline': {
     title: 'HDF Baseline',
     description: 'Security requirement definitions without results — the "what to check" document.',
-    icon: '📋',
   },
   'hdf-system': {
     title: 'HDF System',
     description: 'System authorization boundary, components, data flows, and control designations.',
-    icon: '🏗️',
   },
   'hdf-plan': {
     title: 'HDF Plan',
     description: 'Assessment plan defining what baselines to run against which components.',
-    icon: '📅',
   },
   'hdf-amendments': {
     title: 'HDF Amendments',
     description: 'Waivers, attestations, POA&Ms, and other status overrides applied to findings.',
-    icon: '📝',
   },
   'hdf-evidence-package': {
     title: 'HDF Evidence Package',
     description: 'Bundle of references to all HDF documents for a complete assessment record.',
-    icon: '📦',
   },
   'hdf-comparison': {
     title: 'HDF Comparison',
     description: 'Differential analysis of two or more assessment results.',
-    icon: '🔀',
   },
 };
 
@@ -97,9 +90,9 @@ const indexLines = [
 ];
 
 for (const { name, schema } of schemas) {
-  const meta = SCHEMA_META[name] || { title: name, description: schema.description || '', icon: '📄' };
+  const meta = SCHEMA_META[name] || { title: name, description: schema.description || '' };
   const version = schema.$id.split('/').pop();
-  indexLines.push(`### ${meta.icon} [${meta.title}](/schemas/${name})`);
+  indexLines.push(`### [${meta.title}](/schemas/${name})`);
   indexLines.push('');
   indexLines.push(meta.description);
   indexLines.push('');
@@ -124,7 +117,7 @@ fs.writeFileSync(path.join(OUTPUT_DIR, 'index.md'), indexLines.join('\n'));
 // --- Generate per-schema pages ---
 
 for (const { name, schema } of schemas) {
-  const meta = SCHEMA_META[name] || { title: name, description: '', icon: '📄' };
+  const meta = SCHEMA_META[name] || { title: name, description: '' };
   const version = schema.$id.split('/').pop();
   const lines = [
     '---',
