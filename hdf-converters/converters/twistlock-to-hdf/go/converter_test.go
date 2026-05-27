@@ -394,7 +394,8 @@ func TestConvertTwistlock_CvssPopulated_CodeRepo(t *testing.T) {
 	require.Len(t, req.Cvss, 1, "expected a single cvss entry")
 	cv := req.Cvss[0]
 	assert.Equal(t, hdf.The31, cv.Version)
-	assert.Equal(t, "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H", cv.BaseVector)
+	require.NotNil(t, cv.BaseVector)
+	assert.Equal(t, "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H", *cv.BaseVector)
 	assert.InDelta(t, 10.0, cv.BaseScore, 0.001)
 	require.NotNil(t, cv.BaseSeverity)
 	assert.Equal(t, hdf.CVSSSeverityCritical, *cv.BaseSeverity)
@@ -446,24 +447,29 @@ func TestConvertTwistlock_CvssSeverityBands(t *testing.T) {
 	}
 }
 
-func TestConvertTwistlock_CvssOmittedWhenVectorAbsent(t *testing.T) {
-	// The schema requires a non-empty baseVector on Cvss; when the source
-	// vulnerability has no vector, we omit the entire Cvss entry rather than
-	// emitting one that would fail validation. The score is still preserved
-	// via the legacy tags.cvss_base_score tag emitted alongside.
+func TestConvertTwistlock_CvssEmittedScoreOnlyWhenVectorAbsent(t *testing.T) {
+	// When the vendor emits a score but no vector (common in Twistlock /
+	// Prisma Cloud output), we still emit a Cvss entry — baseVector is
+	// optional on the schema precisely so vendor-final-score data isn't
+	// dropped. Cannot be recomputed by consumers, but it IS structurally
+	// preserved.
 	input := loadFixture(t, "input/twistlock-twistcli-sample-1.json")
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	// Synthesize a finding with no vector to exercise the omit path.
-	noVector := TwistlockVuln{ID: "CVE-TEST", Severity: "low", CVSS: 8.1}
-	assert.Nil(t, buildCvss(noVector))
+	// Synthesize a finding with neither score nor vector to exercise the
+	// only path that returns nil.
+	empty := TwistlockVuln{ID: "CVE-TEST", Severity: "low"}
+	assert.Nil(t, buildCvss(empty))
 
-	// CVE-2022-1650 has a score but no vector → Cvss entry is omitted, but
-	// the score is still surfaced via the legacy tag.
+	// CVE-2022-1650 has a score but no vector → Cvss entry is emitted with
+	// baseScore + baseSeverity set, baseVector absent.
 	req := findRequirement(result.Baselines[0].Requirements, "CVE-2022-1650")
 	require.NotNil(t, req)
-	assert.Empty(t, req.Cvss)
+	require.Len(t, req.Cvss, 1)
+	assert.InDelta(t, 8.1, req.Cvss[0].BaseScore, 0.001)
+	assert.Nil(t, req.Cvss[0].BaseVector)
+	require.NotNil(t, req.Cvss[0].BaseSeverity)
 	require.NotNil(t, req.Tags)
 	assert.InDelta(t, 8.1, req.Tags["cvss_base_score"], 0.001)
 }

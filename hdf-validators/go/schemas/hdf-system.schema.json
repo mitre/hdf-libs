@@ -2765,9 +2765,9 @@
           "unevaluatedProperties": false,
           "required": [
             "version",
-            "baseVector",
             "baseScore"
           ],
+          "$comment": "baseVector is OPTIONAL because some vendor tools (e.g. Twistlock/Prisma Cloud) emit the final base score without the vector that derived it. When baseVector is absent, baseScore is the vendor-reported scalar and cannot be recomputed or decomposed by consumers — but the score itself is still useful for prioritization and is captured structurally rather than being lost to a legacy tag. Vendors and CNAs publishing fresh CVSS data SHOULD provide the vector; vendors passing through pre-computed scores MAY omit it.",
           "properties": {
             "version": {
               "type": "string",
@@ -2790,9 +2790,9 @@
             },
             "baseVector": {
               "type": "string",
-              "$comment": "Permissive umbrella pattern accepting any FIRST CVSS vector shape — version prefix is optional (CVSS 2.0 has no prefix), metric tokens are alphanumeric uppercase pairs separated by '/'. Strict per-version semantic validation belongs in a separate utility (hdf-utilities `validateCvssVector`), not in the schema. See https://www.first.org/cvss/v4.0/specification-document for the v4 grammar and earlier-version documents for v2/v3.",
+              "$comment": "Optional. Permissive umbrella pattern accepting any FIRST CVSS vector shape — version prefix is optional (CVSS 2.0 has no prefix), metric tokens are alphanumeric uppercase pairs separated by '/'. Strict per-version semantic validation belongs in a separate utility (hdf-utilities `validateCvssVector`), not in the schema. See https://www.first.org/cvss/v4.0/specification-document for the v4 grammar and earlier-version documents for v2/v3.",
               "pattern": "^(CVSS:[234]\\.[01]/)?[A-Za-z]+:[A-Za-z]+(/[A-Za-z]+:[A-Za-z]+)*$",
-              "description": "The Base metric group vector string as emitted by the source (e.g., 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'). For CVSS 2.0 the version prefix is omitted. The pattern accepts any version-prefixed or prefix-less metric token sequence; semantic validity of individual metrics is checked by hdf-utilities, not by the schema."
+              "description": "Optional Base metric group vector string as emitted by the source (e.g., 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'). For CVSS 2.0 the version prefix is omitted. Some vendor tools emit a final baseScore without the vector — in that case this field is absent and the score cannot be recomputed or decomposed. The pattern accepts any version-prefixed or prefix-less metric token sequence; semantic validity of individual metrics is checked by hdf-utilities, not by the schema."
             },
             "baseScore": {
               "type": "number",

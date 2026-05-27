@@ -751,7 +751,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 		v2 := ConvertV1ToV2(v1)
 		req := v2.Baselines[0].Requirements[0]
 		require.NotNil(t, req.Severity, "severity should be set")
-		assert.Equal(t, hdf.Medium, *req.Severity)
+		assert.Equal(t, hdf.SeverityMedium, *req.Severity)
 		require.NotNil(t, req.EffectiveStatus)
 		assert.Equal(t, hdf.NotApplicable, *req.EffectiveStatus)
 	})
@@ -860,7 +860,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 		require.NotNil(t, sv257779.EffectiveStatus)
 		assert.Equal(t, hdf.NotApplicable, *sv257779.EffectiveStatus)
 		require.NotNil(t, sv257779.Severity)
-		assert.Equal(t, hdf.Medium, *sv257779.Severity)
+		assert.Equal(t, hdf.SeverityMedium, *sv257779.Severity)
 	})
 }
 

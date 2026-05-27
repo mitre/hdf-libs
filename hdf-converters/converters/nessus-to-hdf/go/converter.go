@@ -517,7 +517,8 @@ func buildCvssEntries(item *ReportItem) []hdf.Cvss {
 
 	if hasV3 {
 		c.Version = detectV3Version(item.CVSS3Vector)
-		c.BaseVector = item.CVSS3Vector
+		bv := item.CVSS3Vector
+		c.BaseVector = &bv
 		c.BaseScore = parseFloatOrZero(item.CVSS3BaseScore)
 		if tv := stripVersionPrefix(item.CVSS3TemporalVector); tv != "" {
 			c.ThreatVector = &tv
@@ -529,7 +530,8 @@ func buildCvssEntries(item *ReportItem) []hdf.Cvss {
 		}
 	} else {
 		c.Version = hdf.The20
-		c.BaseVector = stripV2Prefix(item.CVSSVector)
+		bv := stripV2Prefix(item.CVSSVector)
+		c.BaseVector = &bv
 		c.BaseScore = parseFloatOrZero(item.CVSSBaseScore)
 		if tv := stripV2Prefix(item.CVSSTemporalVector); tv != "" {
 			c.ThreatVector = &tv

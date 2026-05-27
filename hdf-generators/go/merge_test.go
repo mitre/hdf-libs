@@ -286,7 +286,7 @@ func TestMergeRefs_PreferUpstreamKeepsUpstream(t *testing.T) {
 
 func TestMergeRequirement_SeverityFromUpstream(t *testing.T) {
 	high := hdf.SeverityHigh
-	medium := hdf.Medium
+	medium := hdf.SeverityMedium
 	current := hdf.BaselineRequirement{
 		ID:       "V-001",
 		Impact:   0.5,

@@ -152,6 +152,8 @@ func TestConvertCLI_Nessus_PopulatesCVEFields(t *testing.T) {
 		first := req.Cvss[0]
 		assert.Greaterf(t, first.BaseScore, 0.0,
 			"expected cvss[0].baseScore > 0 on %s, got %v", req.ID, first.BaseScore)
+		assert.NotEmptyf(t, first.BaseVector,
+			"cvss[0].baseVector on %s should be present on Nessus (always emits vectors)", req.ID)
 		assert.Regexpf(t, cvssVectorPrefixed, first.BaseVector,
 			"cvss[0].baseVector on %s must match FIRST vector grammar, got %q", req.ID, first.BaseVector)
 		assert.Regexpf(t, cveIDPattern, first.Source,
@@ -201,7 +203,7 @@ func TestConvertCLI_Twistlock_PopulatesCVEFields(t *testing.T) {
 			"cvss[0].source should be a CVE ID on %s, got %q", req.ID, first.Source)
 		assert.NotEmptyf(t, first.Version, "cvss[0].version must be set on %s", req.ID)
 		// Twistlock sometimes omits baseVector (PCC scan doesn't always include
-		// the vector string). Only assert format when present.
+		// the vector string). Schema now allows this; only assert format when present.
 		if first.BaseVector != "" {
 			assert.Regexpf(t, cvssVectorPrefixed, first.BaseVector,
 				"baseVector on %s must match FIRST grammar when present, got %q",
@@ -248,6 +250,8 @@ func TestConvertCLI_Grype_PopulatesCVEFields(t *testing.T) {
 		first := req.Cvss[0]
 		assert.Greaterf(t, first.BaseScore, 0.0,
 			"cvss[0].baseScore should be > 0 on %s, got %v", req.ID, first.BaseScore)
+		assert.NotEmptyf(t, first.BaseVector,
+			"cvss[0].baseVector on %s should be present on Grype (always emits vectors)", req.ID)
 		assert.Regexpf(t, cvssVectorPrefixed, first.BaseVector,
 			"cvss[0].baseVector on %s must match FIRST grammar, got %q", req.ID, first.BaseVector)
 		assert.Regexpf(t, cveIDPattern, first.Source,

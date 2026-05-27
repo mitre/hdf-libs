@@ -3450,13 +3450,17 @@ describe('Primitive Schema Validation', () => {
       });
 
       describe('invalid Cvss objects', () => {
-        it('should reject Cvss missing required baseVector', () => {
-          const invalid = {
+        it('should accept Cvss without baseVector (vendor-final-score case)', () => {
+          // Some vendor tools (Twistlock/Prisma Cloud) emit a final score
+          // without the vector that derived it. The schema makes baseVector
+          // optional so this data is captured structurally rather than lost.
+          const valid = {
             version: '3.1',
             baseScore: 7.5,
+            baseSeverity: 'high',
+            source: 'CVE-2024-12345',
           };
-          expect(validate(invalid)).toBe(false);
-          expect(validate.errors).not.toBeNull();
+          expect(validate(valid)).toBe(true);
         });
 
         it('should reject Cvss missing required version', () => {

@@ -162,20 +162,24 @@ export function cvssSeverityFromScore(score: number): CVSSSeverity | undefined {
 }
 
 /**
- * Builds a Cvss entry from a Twistlock vulnerability. Returns undefined when
- * the vector is empty — the schema requires a non-empty baseVector and
- * rejects empty strings via pattern. The score is still preserved via the
- * legacy tags.cvss_base_score tag emitted alongside.
+ * Builds a Cvss entry from a Twistlock vulnerability. Returns undefined only
+ * when neither a score nor a vector is available. When the vendor emits a
+ * score but no vector (common in Twistlock/Prisma Cloud output), the Cvss
+ * entry is still emitted — the schema makes baseVector optional precisely
+ * so vendor-final-score data isn't dropped.
  */
 export function buildCvss(vuln: TwistlockVuln): Cvss | undefined {
-  if (!vuln.vector) return undefined;
-
   const hasScore = typeof vuln.cvss === 'number' && vuln.cvss > 0;
+  const hasVector = !!vuln.vector;
+  if (!hasScore && !hasVector) return undefined;
+
   const cv: Cvss = {
     version: cvssVersionFromVector(vuln.vector),
     baseScore: hasScore ? (vuln.cvss as number) : 0,
-    baseVector: vuln.vector,
   };
+  if (hasVector) {
+    cv.baseVector = vuln.vector as string;
+  }
   const source = vuln.cve ?? vuln.id;
   if (source) cv.source = source;
   if (hasScore) {

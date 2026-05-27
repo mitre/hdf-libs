@@ -45,8 +45,8 @@ func TestStructuredCvss_SingleEntry(t *testing.T) {
 		t.Errorf("Expected source CVE-2024-7592, got %v", entry.Source)
 	}
 	expectedVector := "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
-	if entry.BaseVector != expectedVector {
-		t.Errorf("Expected baseVector %q, got %q", expectedVector, entry.BaseVector)
+	if entry.BaseVector == nil || *entry.BaseVector != expectedVector {
+		t.Errorf("Expected baseVector %q, got %v", expectedVector, entry.BaseVector)
 	}
 	if entry.BaseScore != 7.5 {
 		t.Errorf("Expected baseScore 7.5, got %v", entry.BaseScore)

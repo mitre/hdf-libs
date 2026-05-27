@@ -310,9 +310,12 @@ func buildCvssEntries(vuln GrypeVulnerability) []hdf.Cvss {
 		source := vuln.ID
 		entry := hdf.Cvss{
 			Version:      cvssVersionToSchema(c.Version),
-			BaseVector:   c.Vector,
 			BaseScore:    baseScore,
 			BaseSeverity: &severity,
+		}
+		if c.Vector != "" {
+			bv := c.Vector
+			entry.BaseVector = &bv
 		}
 		if source != "" {
 			entry.Source = &source

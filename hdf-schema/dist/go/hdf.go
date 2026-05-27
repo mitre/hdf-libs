@@ -481,11 +481,13 @@ type Cvss struct {
 	// Qualitative severity band corresponding to baseScore. CVSS 2.0 does not natively use                   
 	// 'none' or 'critical' bands; map accordingly when populating.                                           
 	BaseSeverity                                                                                *CVSSSeverity `json:"baseSeverity,omitempty"`
-	// The Base metric group vector string as emitted by the source (e.g.,                                    
+	// Optional Base metric group vector string as emitted by the source (e.g.,                               
 	// 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'). For CVSS 2.0 the version prefix is                    
-	// omitted. The pattern accepts any version-prefixed or prefix-less metric token sequence;                
-	// semantic validity of individual metrics is checked by hdf-utilities, not by the schema.                
-	BaseVector                                                                                  string        `json:"baseVector"`
+	// omitted. Some vendor tools emit a final baseScore without the vector — in that case this               
+	// field is absent and the score cannot be recomputed or decomposed. The pattern accepts any              
+	// version-prefixed or prefix-less metric token sequence; semantic validity of individual                 
+	// metrics is checked by hdf-utilities, not by the schema.                                                
+	BaseVector                                                                                  *string       `json:"baseVector,omitempty"`
 	// Optional final score after combining Base + Threat + Environmental metrics. This is the                
 	// score consumers should treat as authoritative for risk decisions when present.                         
 	ComputedScore                                                                               *float64      `json:"computedScore,omitempty"`

@@ -10,6 +10,14 @@
               "version": "3.67.0-7.el8_5"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "source": "CVE-2021-43529",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A remote code execution flaw was found in the way NSS verifies certificates. This flaw allows an attacker posing as an SSL/TLS server to trigger this issue in a client application compiled with NSS when it tries to initiate an SSL/TLS connection.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client, triggering the flaw. The highest threat to this vulnerability is confidentiality, integrity, as well as system availability.              STATEMENT: The issue is not limited to TLS. Any applications that use NSS certificate verification are vulnerable; S/MIME is impacted as well.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client.  Firefox is not vulnerable to this flaw as it uses the mozilla::pkix for certificate verification. Thunderbird is affected when parsing email with the S/MIME signature.  Thunderbird on Red Hat Enterprise Linux 8.4 and later does not need to be updated since it uses the system NSS library, but earlier Red Hat Enterprise Linux 8 extended life streams will need to update Thunderbird as well as NSS.             MITIGATION: Red Hat has investigated whether a possible mitigation exists for this issue, and has not been able to identify a practical example. Please update the affec",
@@ -48,6 +56,14 @@
               "ecosystem": "rpm",
               "name": "nss-sysinit",
               "version": "3.67.0-7.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "source": "CVE-2021-43529",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -90,6 +106,14 @@
               "version": "3.67.0-7.el8_5"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "source": "CVE-2021-43529",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A remote code execution flaw was found in the way NSS verifies certificates. This flaw allows an attacker posing as an SSL/TLS server to trigger this issue in a client application compiled with NSS when it tries to initiate an SSL/TLS connection.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client, triggering the flaw. The highest threat to this vulnerability is confidentiality, integrity, as well as system availability.              STATEMENT: The issue is not limited to TLS. Any applications that use NSS certificate verification are vulnerable; S/MIME is impacted as well.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client.  Firefox is not vulnerable to this flaw as it uses the mozilla::pkix for certificate verification. Thunderbird is affected when parsing email with the S/MIME signature.  Thunderbird on Red Hat Enterprise Linux 8.4 and later does not need to be updated since it uses the system NSS library, but earlier Red Hat Enterprise Linux 8 extended life streams will need to update Thunderbird as well as NSS.             MITIGATION: Red Hat has investigated whether a possible mitigation exists for this issue, and has not been able to identify a practical example. Please update the affec",
@@ -128,6 +152,14 @@
               "ecosystem": "rpm",
               "name": "nss-softokn",
               "version": "3.67.0-7.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "source": "CVE-2021-43529",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -170,6 +202,14 @@
               "version": "3.67.0-7.el8_5"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "source": "CVE-2021-43529",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A remote code execution flaw was found in the way NSS verifies certificates. This flaw allows an attacker posing as an SSL/TLS server to trigger this issue in a client application compiled with NSS when it tries to initiate an SSL/TLS connection.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client, triggering the flaw. The highest threat to this vulnerability is confidentiality, integrity, as well as system availability.              STATEMENT: The issue is not limited to TLS. Any applications that use NSS certificate verification are vulnerable; S/MIME is impacted as well.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client.  Firefox is not vulnerable to this flaw as it uses the mozilla::pkix for certificate verification. Thunderbird is affected when parsing email with the S/MIME signature.  Thunderbird on Red Hat Enterprise Linux 8.4 and later does not need to be updated since it uses the system NSS library, but earlier Red Hat Enterprise Linux 8 extended life streams will need to update Thunderbird as well as NSS.             MITIGATION: Red Hat has investigated whether a possible mitigation exists for this issue, and has not been able to identify a practical example. Please update the affec",
@@ -208,6 +248,14 @@
               "ecosystem": "rpm",
               "name": "dotnet-host",
               "version": "6.0.5-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.1,
+              "baseSeverity": "high",
+              "source": "CVE-2022-1650",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2357,6 +2405,14 @@
               "version": "4.14.3-23.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-35939",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: It was found that the fix for CVE-2017-7500 and CVE-2017-7501 was incomplete: the check was only implemented for the parent directory of the file to be created. A local unprivileged user who owns another ancestor directory could potentially use this flaw to gain root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -2397,6 +2453,14 @@
               "version": "4.14.3-23.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-35939",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: It was found that the fix for CVE-2017-7500 and CVE-2017-7501 was incomplete: the check was only implemented for the parent directory of the file to be created. A local unprivileged user who owns another ancestor directory could potentially use this flaw to gain root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -2435,6 +2499,14 @@
               "ecosystem": "rpm",
               "name": "rpm-build-libs",
               "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-35939",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2477,6 +2549,14 @@
               "version": "4.14.3-23.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-35939",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: It was found that the fix for CVE-2017-7500 and CVE-2017-7501 was incomplete: the check was only implemented for the parent directory of the file to be created. A local unprivileged user who owns another ancestor directory could potentially use this flaw to gain root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -2515,6 +2595,14 @@
               "ecosystem": "pypi",
               "name": "rpm",
               "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-35938",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2557,6 +2645,14 @@
               "version": "4.14.3-23.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-35938",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A symbolic link issue was found in rpm. It occurs when rpm sets the desired permissions and credentials after installing a file. A local unprivileged user could use this flaw to exchange the original file with a symbolic link to a security-critical file and escalate their privileges on the system. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -2597,6 +2693,14 @@
               "version": "4.14.3-23.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-35938",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A symbolic link issue was found in rpm. It occurs when rpm sets the desired permissions and credentials after installing a file. A local unprivileged user could use this flaw to exchange the original file with a symbolic link to a security-critical file and escalate their privileges on the system. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -2635,6 +2739,14 @@
               "ecosystem": "rpm",
               "name": "rpm-build-libs",
               "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-35938",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2873,6 +2985,14 @@
               "version": "4.14.3-23.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.3,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-35937",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A race condition vulnerability was found in rpm. A local unprivileged user could use this flaw to bypass the checks that were introduced in response to CVE-2017-7500 and CVE-2017-7501, potentially gaining root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -2911,6 +3031,14 @@
               "ecosystem": "rpm",
               "name": "rpm-build-libs",
               "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.3,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-35937",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -2953,6 +3081,14 @@
               "version": "4.14.3-23.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6.3,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-35937",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A race condition vulnerability was found in rpm. A local unprivileged user could use this flaw to bypass the checks that were introduced in response to CVE-2017-7500 and CVE-2017-7501, potentially gaining root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -2991,6 +3127,14 @@
               "ecosystem": "rpm",
               "name": "python3-rpm",
               "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.3,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-35937",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3033,6 +3177,14 @@
               "version": "7.61.1-22.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 6,
+              "baseSeverity": "medium",
+              "source": "CVE-2022-27782",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -3071,6 +3223,14 @@
               "ecosystem": "rpm",
               "name": "libcurl",
               "version": "7.61.1-22.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6,
+              "baseSeverity": "medium",
+              "source": "CVE-2022-27782",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3307,6 +3467,14 @@
               "ecosystem": "rpm",
               "name": "pcre2",
               "version": "10.32-2.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "source": "CVE-2022-1586",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3594,6 +3762,14 @@
               "version": "3.6.8-45.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-4189",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -3632,6 +3808,14 @@
               "ecosystem": "rpm",
               "name": "python3-libs",
               "version": "3.6.8-45.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "source": "CVE-2021-4189",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -3723,6 +3907,14 @@
               "version": "7.61.1-22.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "source": "CVE-2022-27774",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -3763,6 +3955,14 @@
               "version": "7.61.1-22.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "source": "CVE-2022-27774",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -3803,6 +4003,14 @@
               "version": "7.61.1-22.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 4.6,
+              "baseSeverity": "medium",
+              "source": "CVE-2022-22576",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2022-22576.",
@@ -3841,6 +4049,14 @@
               "ecosystem": "rpm",
               "name": "curl",
               "version": "7.61.1-22.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.6,
+              "baseSeverity": "medium",
+              "source": "CVE-2022-22576",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4177,6 +4393,14 @@
               "version": "7.61.1-22.el8"
             }
           ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "source": "CVE-2022-27776",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -4215,6 +4439,14 @@
               "ecosystem": "rpm",
               "name": "libcurl",
               "version": "7.61.1-22.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "source": "CVE-2022-27776",
+              "version": "3.1"
             }
           ],
           "descriptions": [
@@ -4517,7 +4749,7 @@
     "name": "twistlock-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-05-27T02:17:01.786172Z",
+  "timestamp": "2026-05-27T03:05:53.342002Z",
   "tool": {
     "format": "JSON",
     "name": "Twistlock"
