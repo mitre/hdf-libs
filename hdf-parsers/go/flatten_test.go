@@ -416,7 +416,7 @@ func TestFlattenOverlays_MergeSemantics(t *testing.T) {
 	})
 
 	t.Run("severity from overlay wins over base", func(t *testing.T) {
-		medium := hdf.Medium
+		medium := hdf.SeverityMedium
 		high := hdf.SeverityHigh
 		results := makeResults([]hdf.EvaluatedBaseline{
 			makeBaseline("overlay", []hdf.EvaluatedRequirement{
@@ -429,7 +429,7 @@ func TestFlattenOverlays_MergeSemantics(t *testing.T) {
 		flat := FlattenOverlays(results)
 		req := flat.Results.Baselines[0].Requirements[0]
 		require.NotNil(t, req.Severity)
-		assert.Equal(t, hdf.Medium, *req.Severity)
+		assert.Equal(t, hdf.SeverityMedium, *req.Severity)
 	})
 
 	t.Run("base severity preserved when overlay has none", func(t *testing.T) {
@@ -449,7 +449,7 @@ func TestFlattenOverlays_MergeSemantics(t *testing.T) {
 	})
 
 	t.Run("severity survives three-layer merge", func(t *testing.T) {
-		medium := hdf.Medium
+		medium := hdf.SeverityMedium
 		high := hdf.SeverityHigh
 		results := makeResults([]hdf.EvaluatedBaseline{
 			makeBaseline("top", []hdf.EvaluatedRequirement{
@@ -465,7 +465,7 @@ func TestFlattenOverlays_MergeSemantics(t *testing.T) {
 		flat := FlattenOverlays(results)
 		req := flat.Results.Baselines[0].Requirements[0]
 		require.NotNil(t, req.Severity)
-		assert.Equal(t, hdf.Medium, *req.Severity)
+		assert.Equal(t, hdf.SeverityMedium, *req.Severity)
 	})
 
 	t.Run("effectiveStatus from overlay wins when overlay has results", func(t *testing.T) {

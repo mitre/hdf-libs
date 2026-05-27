@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { validateResults, validateBaseline, ValidationResult } from './index.js';
+import {
+  validateResults,
+  validateBaseline,
+  validateAmendments,
+  ValidationResult,
+} from './index.js';
 
 /** Minimal requirement that satisfies EvaluatedBaseline.requirements minItems: 1. */
 const minReq = {
@@ -7,6 +12,36 @@ const minReq = {
   descriptions: [{ label: 'default', data: 'Test' }],
   results: [{ status: 'passed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }],
 };
+
+/**
+ * Helper: wrap an Evaluated_Requirement in a minimal-valid hdf-results document.
+ * Used by the CVE-ecosystem accept/reject tests below so each case only has to
+ * vary the requirement fields under test.
+ */
+function resultsWith(req: Record<string, unknown>): Record<string, unknown> {
+  return {
+    baselines: [
+      {
+        name: 'CVE-Ecosystem Test Baseline',
+        checksum: { algorithm: 'sha256', value: 'abc123' },
+        requirements: [
+          {
+            id: 'CVE-2024-12345',
+            descriptions: [{ label: 'default', data: 'Test CVE finding' }],
+            impact: 0.7,
+            tags: {},
+            results: [
+              { status: 'failed', codeDesc: 'Vulnerable', startTime: '2026-05-26T00:00:00Z' },
+            ],
+            ...req,
+          },
+        ],
+      },
+    ],
+    targets: [],
+    statistics: {},
+  };
+}
 
 describe('HDF Results Validation', () => {
   describe('Valid documents', () => {
@@ -359,5 +394,437 @@ describe('ValidationResult', () => {
     };
 
     expect(result.getErrorMessage()).toBe('');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CVE-ecosystem primitives (Cvss, Epss, Kev, AffectedPackage, cwe[]).
+// Wave 1 of epic hdf-libs-8zn0 / bead hdf-libs-tilc.
+//
+// These tests exercise the validator integration: real bundled schemas + real
+// Ajv setup + real HDF document shape. A failure here indicates either a
+// schema or a wiring bug, not a test setup bug — flag, do not paper over.
+// ---------------------------------------------------------------------------
+
+describe('CVE-ecosystem: cvss[]', () => {
+  describe('Accepts', () => {
+    it('accepts a full Base+Threat+Environmental CVSS entry', () => {
+      const data = resultsWith({
+        cvss: [
+          {
+            version: '3.1',
+            source: 'CVE-2024-3094',
+            baseVector: 'CVSS:3.1/AV:L/AC:H/PR:H/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 6.7,
+            baseSeverity: 'medium',
+            threatVector: 'E:A/RL:O/RC:C',
+            threatScore: 6.5,
+            environmentalVector: 'MAV:N/CR:H/IR:H/AR:H',
+            environmentalScore: 9.0,
+            computedScore: 9.0,
+            computedSeverity: 'critical',
+          },
+        ],
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    it('accepts multiple CVSS entries on one requirement (Nessus plugin → multiple CVEs)', () => {
+      const data = resultsWith({
+        cvss: [
+          {
+            version: '3.1',
+            source: 'CVE-2024-12345',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 9.8,
+            baseSeverity: 'critical',
+          },
+          {
+            version: '3.1',
+            source: 'CVE-2024-12346',
+            baseVector: 'CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N',
+            baseScore: 4.7,
+            baseSeverity: 'medium',
+          },
+          {
+            version: '2.0',
+            source: 'CVE-2014-0160',
+            baseVector: 'AV:N/AC:L/Au:N/C:P/I:N/A:N',
+            baseScore: 5.0,
+          },
+        ],
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+  });
+
+  describe('Rejects', () => {
+    it('rejects a malformed baseVector string', () => {
+      const data = resultsWith({
+        cvss: [
+          {
+            version: '3.1',
+            source: 'CVE-2024-12345',
+            baseVector: 'not a vector',
+            baseScore: 9.8,
+          },
+        ],
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some(
+          e => e.field.includes('baseVector') || e.message.toLowerCase().includes('pattern'),
+        ),
+      ).toBe(true);
+    });
+
+    it('rejects a CVSS entry missing the required version field', () => {
+      const data = resultsWith({
+        cvss: [
+          {
+            source: 'CVE-2024-12345',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 9.8,
+          },
+        ],
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.field.includes('version'))).toBe(true);
+    });
+
+    it('rejects a baseScore outside 0.0–10.0', () => {
+      const data = resultsWith({
+        cvss: [
+          {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 12.5,
+          },
+        ],
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.field.includes('baseScore'))).toBe(true);
+    });
+  });
+});
+
+describe('CVE-ecosystem: epss', () => {
+  describe('Accepts', () => {
+    it('accepts a fully-populated EPSS object', () => {
+      const data = resultsWith({
+        epss: { score: 0.97532, percentile: 0.99987, date: '2026-05-26' },
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+  });
+
+  describe('Rejects', () => {
+    it('rejects EPSS score above 1.0', () => {
+      const data = resultsWith({
+        epss: { score: 1.5, percentile: 0.5, date: '2026-05-26' },
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.field.includes('score'))).toBe(true);
+    });
+
+    it('rejects EPSS score below 0.0', () => {
+      const data = resultsWith({
+        epss: { score: -0.1, percentile: 0.5, date: '2026-05-26' },
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.field.includes('score'))).toBe(true);
+    });
+
+    it('rejects EPSS missing the required date field', () => {
+      const data = resultsWith({
+        epss: { score: 0.5, percentile: 0.5 },
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.field.includes('date'))).toBe(true);
+    });
+
+    it('rejects EPSS percentile outside 0.0–1.0', () => {
+      const data = resultsWith({
+        epss: { score: 0.5, percentile: 1.01, date: '2026-05-26' },
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.field.includes('percentile'))).toBe(true);
+    });
+  });
+});
+
+describe('CVE-ecosystem: kev', () => {
+  describe('Accepts', () => {
+    it('accepts inKev:true with required dateAdded + dueDate', () => {
+      const data = resultsWith({
+        kev: {
+          inKev: true,
+          dateAdded: '2026-03-15',
+          dueDate: '2026-04-05',
+          notes: 'Active ransomware exploitation observed.',
+        },
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    it('accepts inKev:false without dateAdded/dueDate (conditional-required test)', () => {
+      const data = resultsWith({ kev: { inKev: false } });
+      const result = validateResults(data);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+  });
+
+  describe('Rejects', () => {
+    it('rejects inKev:true with missing dateAdded', () => {
+      const data = resultsWith({
+        kev: { inKev: true, dueDate: '2026-04-05' },
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.field.includes('dateAdded'))).toBe(true);
+    });
+
+    it('rejects inKev:true with missing dueDate', () => {
+      const data = resultsWith({
+        kev: { inKev: true, dateAdded: '2026-03-15' },
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.field.includes('dueDate'))).toBe(true);
+    });
+  });
+});
+
+describe('CVE-ecosystem: cwe[]', () => {
+  describe('Accepts', () => {
+    it('accepts three valid CWE IDs', () => {
+      const data = resultsWith({ cwe: ['CWE-79', 'CWE-89', 'CWE-352'] });
+      const result = validateResults(data);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    it('accepts an empty cwe array (no CWEs assigned)', () => {
+      const data = resultsWith({ cwe: [] });
+      const result = validateResults(data);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+  });
+
+  describe('Rejects', () => {
+    it('rejects lowercase cwe-79', () => {
+      const data = resultsWith({ cwe: ['cwe-79'] });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some(e => e.field.includes('cwe') || e.message.toLowerCase().includes('pattern')),
+      ).toBe(true);
+    });
+
+    it('rejects bare numeric "79" with no CWE- prefix', () => {
+      const data = resultsWith({ cwe: ['79'] });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some(e => e.field.includes('cwe') || e.message.toLowerCase().includes('pattern')),
+      ).toBe(true);
+    });
+
+    it('rejects CWE-0 (zero is not a valid CWE ID)', () => {
+      const data = resultsWith({ cwe: ['CWE-0'] });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some(e => e.field.includes('cwe') || e.message.toLowerCase().includes('pattern')),
+      ).toBe(true);
+    });
+
+    it('rejects CWE-079 (leading-zero formatting)', () => {
+      const data = resultsWith({ cwe: ['CWE-079'] });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some(e => e.field.includes('cwe') || e.message.toLowerCase().includes('pattern')),
+      ).toBe(true);
+    });
+  });
+});
+
+describe('CVE-ecosystem: affectedPackages[]', () => {
+  describe('Accepts', () => {
+    it('accepts rpm + npm + maven entries together', () => {
+      const data = resultsWith({
+        affectedPackages: [
+          {
+            name: 'openssl',
+            version: '1.1.1k-7.el8_4',
+            ecosystem: 'rpm',
+            cpe: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*',
+            purl: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64',
+            fixedInVersion: '1.1.1l',
+          },
+          {
+            name: 'lodash',
+            version: '4.17.20',
+            ecosystem: 'npm',
+            purl: 'pkg:npm/lodash@4.17.20',
+            fixedInVersion: '4.17.21',
+          },
+          {
+            name: 'org.apache.logging.log4j:log4j-core',
+            version: '2.14.1',
+            ecosystem: 'maven',
+            cpe: 'cpe:2.3:a:apache:log4j:2.14.1:*:*:*:*:*:*:*',
+            purl: 'pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1',
+            fixedInVersion: '2.17.1',
+          },
+        ],
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+  });
+
+  describe('Rejects', () => {
+    it('rejects an AffectedPackage missing the required ecosystem field', () => {
+      const data = resultsWith({
+        affectedPackages: [{ name: 'openssl', version: '1.1.1k' }],
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.field.includes('ecosystem'))).toBe(true);
+    });
+
+    it('rejects an AffectedPackage with a CPE missing the "cpe:2.3:" prefix', () => {
+      const data = resultsWith({
+        affectedPackages: [
+          {
+            name: 'openssl',
+            version: '1.1.1k',
+            ecosystem: 'rpm',
+            cpe: 'openssl:1.0',
+          },
+        ],
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some(e => e.field.includes('cpe') || e.message.toLowerCase().includes('pattern')),
+      ).toBe(true);
+    });
+
+    it('rejects an AffectedPackage with a PURL missing the "pkg:" prefix', () => {
+      const data = resultsWith({
+        affectedPackages: [
+          {
+            name: 'foo',
+            version: '1.0',
+            ecosystem: 'npm',
+            purl: 'foo@1.0',
+          },
+        ],
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some(e => e.field.includes('purl') || e.message.toLowerCase().includes('pattern')),
+      ).toBe(true);
+    });
+
+    it('rejects an AffectedPackage with an unknown ecosystem enum value', () => {
+      const data = resultsWith({
+        affectedPackages: [
+          { name: 'thing', version: '1.0', ecosystem: 'snapcraft' },
+        ],
+      });
+      const result = validateResults(data);
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some(e => e.field.includes('ecosystem') || e.message.toLowerCase().includes('enum')),
+      ).toBe(true);
+    });
+  });
+});
+
+describe('CVE-ecosystem: Status_Override.cvss', () => {
+  it('accepts a riskAdjustment Status_Override with an attached cvss block', () => {
+    const data = resultsWith({
+      overrides: [
+        {
+          type: 'riskAdjustment',
+          impact: { value: 0.5 },
+          reason: 'Environmental exposure reduced — service reachable only via internal VPN.',
+          appliedBy: { type: 'email', identifier: 'sec@org.gov' },
+          appliedAt: '2026-04-14T10:00:00Z',
+          expiresAt: '2026-10-14T00:00:00Z',
+          cvss: {
+            version: '3.1',
+            source: 'CVE-2024-12345',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 9.8,
+            baseSeverity: 'critical',
+            environmentalVector: 'MAV:A/CR:M/IR:M/AR:M',
+            environmentalScore: 5.0,
+            computedScore: 5.0,
+            computedSeverity: 'medium',
+          },
+        },
+      ],
+    });
+    const result = validateResults(data);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
+});
+
+describe('CVE-ecosystem: Standalone_Override.cvss in an amendments document', () => {
+  it('accepts a riskAdjustment Standalone_Override with an attached cvss block', () => {
+    const doc = {
+      name: 'CVE-Ecosystem Amendments',
+      overrides: [
+        {
+          type: 'riskAdjustment',
+          requirementId: 'CVE-2024-12345',
+          baselineRef: 'Test',
+          impact: { value: 0.5 },
+          reason: 'Environmental enrichment — internal-only exposure reduces base score.',
+          appliedBy: { type: 'email', identifier: 'sec@org.gov' },
+          appliedAt: '2026-04-14T10:00:00Z',
+          expiresAt: '2026-10-14T00:00:00Z',
+          cvss: {
+            version: '3.1',
+            source: 'CVE-2024-12345',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 9.8,
+            baseSeverity: 'critical',
+            environmentalVector: 'MAV:A/CR:M/IR:M/AR:M',
+            environmentalScore: 5.0,
+            computedScore: 5.0,
+            computedSeverity: 'medium',
+          },
+        },
+      ],
+    };
+    const result = validateAmendments(doc);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toEqual([]);
   });
 });
