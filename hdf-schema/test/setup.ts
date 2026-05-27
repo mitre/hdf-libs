@@ -23,6 +23,10 @@ export function createAjvWithPrimitives(): Ajv2020 {
     'runner.schema.json',
     'statistics.schema.json',
     'result.schema.json',
+    'cvss.schema.json',         // before amendments + extensions (both $ref the Cvss type)
+    'epss.schema.json',
+    'kev.schema.json',
+    'affected-package.schema.json',
     'amendments.schema.json',   // before extensions (extensions.$ref → amendments Override_Type)
     'extensions.schema.json',
     'parameter.schema.json',

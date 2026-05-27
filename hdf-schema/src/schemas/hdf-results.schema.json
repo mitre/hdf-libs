@@ -305,6 +305,36 @@
             "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Evidence"
           },
           "description": "Supporting evidence for this requirement's findings, such as screenshots, code samples, or log excerpts."
+        },
+        "cvss": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.2.0#/$defs/Cvss"
+          },
+          "description": "Structured CVSS scoring data for vulnerability findings. One entry per CVE — a finding may match multiple CVEs (common in vulnerability scanners). Captures vendor-supplied Base metrics plus optional consumer-owned Threat / Environmental / Supplemental groups for risk adjustment. See cvss.schema.json."
+        },
+        "epss": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.2.0#/$defs/Epss",
+          "description": "FIRST.org EPSS (Exploit Prediction Scoring System) score for this CVE finding. Used alongside CVSS for prioritization — captures the probability the vulnerability will be exploited."
+        },
+        "kev": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.2.0#/$defs/Kev",
+          "description": "CISA Known Exploited Vulnerabilities (KEV) catalog status. When inKev=true, dateAdded and dueDate carry the federal patching deadline."
+        },
+        "cwe": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^CWE-[1-9]\\d*$"
+          },
+          "description": "Common Weakness Enumeration IDs associated with this finding. Use CWE-N format with no leading zeros (matches the MITRE catalog convention). For NIST control mappings derived from CWE, see tags.nist."
+        },
+        "affectedPackages": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.2.0#/$defs/Affected_Package"
+          },
+          "description": "Packages affected by this vulnerability finding. Vulnerability-finding-scoped — see components[] on hdf-system for component-level package inventories. One entry per matched package signature (scanners often report multiple CPE variations per CVE)."
         }
       },
       "examples": [

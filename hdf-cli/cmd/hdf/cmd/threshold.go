@@ -191,11 +191,11 @@ func addCount(counts *StatusCounts, status hdf.ResultStatus, severity string) {
 
 	sc.Total++
 	switch severity {
-	case string(hdf.Critical):
+	case string(hdf.SeverityCritical):
 		sc.Critical++
 	case string(hdf.SeverityHigh):
 		sc.High++
-	case string(hdf.Medium):
+	case string(hdf.SeverityMedium):
 		sc.Medium++
 	case string(hdf.SeverityLow):
 		sc.Low++

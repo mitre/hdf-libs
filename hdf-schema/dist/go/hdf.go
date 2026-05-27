@@ -338,6 +338,19 @@ type Checksum struct {
 // Core requirement fields shared between baseline requirements and evaluated requirements.
 // Contains the fundamental requirement definition without assessment results.
 type EvaluatedRequirement struct {
+	// Packages affected by this vulnerability finding. Vulnerability-finding-scoped — see                              
+	// components[] on hdf-system for component-level package inventories. One entry per matched                        
+	// package signature (scanners often report multiple CPE variations per CVE).                                       
+	AffectedPackages                                                                            []AffectedPackage       `json:"affectedPackages,omitempty"`
+	// Structured CVSS scoring data for vulnerability findings. One entry per CVE — a finding                           
+	// may match multiple CVEs (common in vulnerability scanners). Captures vendor-supplied Base                        
+	// metrics plus optional consumer-owned Threat / Environmental / Supplemental groups for                            
+	// risk adjustment. See cvss.schema.json.                                                                           
+	Cvss                                                                                        []Cvss                  `json:"cvss,omitempty"`
+	// Common Weakness Enumeration IDs associated with this finding. Use CWE-N format with no                           
+	// leading zeros (matches the MITRE catalog convention). For NIST control mappings derived                          
+	// from CWE, see tags.nist.                                                                                         
+	Cwe                                                                                         []string                `json:"cwe,omitempty"`
 	// Array of labeled descriptions. At least one description with label 'default' must be                             
 	// present. Convention: place default description first. Common labels: 'default', 'check',                         
 	// 'fix', 'rationale'.                                                                                              
@@ -355,9 +368,16 @@ type EvaluatedRequirement struct {
 	// recent non-expired override with a status field, or computed from results (worst-wins) if                        
 	// no status-bearing overrides exist.                                                                               
 	EffectiveStatus                                                                             *ResultStatus           `json:"effectiveStatus,omitempty"`
+	// FIRST.org EPSS (Exploit Prediction Scoring System) score for this CVE finding. Used                              
+	// alongside CVSS for prioritization — captures the probability the vulnerability will be                           
+	// exploited.                                                                                                       
+	Epss                                                                                        *Epss                   `json:"epss,omitempty"`
 	// Supporting evidence for this requirement's findings, such as screenshots, code samples,                          
 	// or log excerpts.                                                                                                 
 	Evidence                                                                                    []Evidence              `json:"evidence,omitempty"`
+	// CISA Known Exploited Vulnerabilities (KEV) catalog status. When inKev=true, dateAdded and                        
+	// dueDate carry the federal patching deadline.                                                                     
+	Kev                                                                                         *Kev                    `json:"kev,omitempty"`
 	// Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance.                          
 	// POAMs do NOT change effectiveStatus - they track the work being done to address a                                
 	// failure. Separate from statusOverrides which DO change status.                                                   
@@ -412,12 +432,117 @@ type EvaluatedRequirement struct {
 	VerificationMethod                                                                          *VerificationMethodEnum `json:"verificationMethod,omitempty"`
 }
 
+// Represents a package affected by a vulnerability finding. Scoped to the vulnerability —
+// this lives on Evaluated_Requirement to say 'this CVE affects this package version'. NOT a
+// component identifier (see `components[]` on hdf-system for those). One
+// Evaluated_Requirement may have multiple AffectedPackage entries when the CVE matches
+// multiple package signatures.
+type AffectedPackage struct {
+	// Optional CPE 2.3 URI identifying the affected product. Validated leniently: only the               
+	// 'cpe:2.3:' prefix and the part-type letter ('a' application, 'h' hardware, 'o' operating           
+	// system) are enforced here. Use `hdf-utilities.parseCpe` for full-grammar parsing.                  
+	// Example: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*'.                                         
+	Cpe                                                                                         *string   `json:"cpe,omitempty"`
+	// The packaging ecosystem the package belongs to. Use 'generic' for hardware, firmware, or           
+	// anything outside the listed language/OS package managers.                                          
+	Ecosystem                                                                                   Ecosystem `json:"ecosystem"`
+	// Optional version string identifying the first release that contains the fix for the                
+	// vulnerability. Use the same version syntax as `version`. Example: '1.1.1l' fixes                   
+	// 'openssl@1.1.1k'.                                                                                  
+	FixedInVersion                                                                              *string   `json:"fixedInVersion,omitempty"`
+	// The package name as published in its ecosystem. Examples: 'openssl' (rpm), 'lodash'                
+	// (npm), 'org.apache.logging.log4j:log4j-core' (maven, group:artifact).                              
+	Name                                                                                        string    `json:"name"`
+	// Optional Package URL (PURL) identifying the affected package. Validated leniently: only            
+	// the 'pkg:TYPE/' scheme prefix is enforced here (where TYPE is the package type, e.g. npm,          
+	// rpm, pypi). Use `hdf-utilities.parsePurl` for full PURL grammar. Example:                          
+	// 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'.                                               
+	Purl                                                                                        *string   `json:"purl,omitempty"`
+	// The exact version of the package that the vulnerability scanner observed. Use the                  
+	// ecosystem's native version string verbatim (e.g., '1.1.1k-7.el8_4' for rpm, '4.17.20' for          
+	// npm).                                                                                              
+	Version                                                                                     string    `json:"version"`
+}
+
+// A CVSS (Common Vulnerability Scoring System) score record for a vulnerability finding.
+// Captures the vendor-supplied Base metric group and optional consumer-supplied Threat,
+// Environmental, and Supplemental metric groups. Supports all four CVSS major versions
+// (2.0, 3.0, 3.1, 4.0). Vector strings are validated against a permissive umbrella grammar;
+// semantic validation (correct metrics per version, correct values per metric) is performed
+// by the hdf-utilities `validateCvssVector` helper rather than at the schema layer.
+//
+// Structured CVSS scoring data backing this override. Captures the rubric (which
+// Environmental/Threat metrics the consumer modified, the recomputed score) used to justify
+// a riskAdjustment. For other override types this is optional context.
+type Cvss struct {
+	// The Base score (0.0–10.0) computed from the base vector. Reflects the intrinsic,                       
+	// vendor-published severity before consumer enrichment.                                                  
+	BaseScore                                                                                   float64       `json:"baseScore"`
+	// Qualitative severity band corresponding to baseScore. CVSS 2.0 does not natively use                   
+	// 'none' or 'critical' bands; map accordingly when populating.                                           
+	BaseSeverity                                                                                *CVSSSeverity `json:"baseSeverity,omitempty"`
+	// The Base metric group vector string as emitted by the source (e.g.,                                    
+	// 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'). For CVSS 2.0 the version prefix is                    
+	// omitted. The pattern accepts any version-prefixed or prefix-less metric token sequence;                
+	// semantic validity of individual metrics is checked by hdf-utilities, not by the schema.                
+	BaseVector                                                                                  string        `json:"baseVector"`
+	// Optional final score after combining Base + Threat + Environmental metrics. This is the                
+	// score consumers should treat as authoritative for risk decisions when present.                         
+	ComputedScore                                                                               *float64      `json:"computedScore,omitempty"`
+	// Qualitative severity band corresponding to computedScore. Same band convention as                      
+	// baseSeverity.                                                                                          
+	ComputedSeverity                                                                            *CVSSSeverity `json:"computedSeverity,omitempty"`
+	// Optional score (0.0–10.0) recomputed after applying Environmental metrics.                             
+	EnvironmentalScore                                                                          *float64      `json:"environmentalScore,omitempty"`
+	// Optional Environmental metric group vector segment (e.g., 'MAV:N/CR:H/IR:H/AR:H').                     
+	// Consumer-supplied — reflects the deployment context (criticality, mitigations, network                 
+	// exposure).                                                                                             
+	EnvironmentalVector                                                                         *string       `json:"environmentalVector,omitempty"`
+	// Optional identifier the CVSS data is associated with — most commonly a CVE ID (e.g.,                   
+	// 'CVE-2024-12345'), but may also be a vendor advisory ID, GHSA, or similar.                             
+	Source                                                                                      *string       `json:"source,omitempty"`
+	// Optional Supplemental metric group vector segment (CVSS 4.0 only). Examples:                           
+	// 'S:P/AU:N/V:C/RE:M/U:Amber'. Per CVSS 4.0 spec, supplemental metrics convey additional                 
+	// context but have no impact on the computed score.                                                      
+	SupplementalVector                                                                          *string       `json:"supplementalVector,omitempty"`
+	// Optional score (0.0–10.0) recomputed after applying Threat metrics. Always less than or                
+	// equal to baseScore in practice.                                                                        
+	ThreatScore                                                                                 *float64      `json:"threatScore,omitempty"`
+	// Optional Threat metric group vector segment (e.g., 'E:U/RL:O/RC:C' for CVSS 3.1, or 'E:A'              
+	// for CVSS 4.0). Consumer-supplied — captures real-world exploitation and remediation                    
+	// context the vendor cannot know.                                                                        
+	ThreatVector                                                                                *string       `json:"threatVector,omitempty"`
+	// The CVSS specification version this entry conforms to. Vendor scanners typically emit 3.1              
+	// or 4.0; legacy data may use 2.0 or 3.0.                                                                
+	Version                                                                                     Version       `json:"version"`
+}
+
 type Description struct {
 	// The description text content.                                                                   
 	Data                                                                                        string `json:"data"`
 	// Description category. The 'default' label is required for the primary description. Common       
 	// labels: 'default', 'check', 'fix', 'rationale'. Tools may use custom labels.                    
 	Label                                                                                       string `json:"label"`
+}
+
+// FIRST.org EPSS (Exploit Prediction Scoring System) score for this CVE finding. Used
+// alongside CVSS for prioritization — captures the probability the vulnerability will be
+// exploited.
+//
+// FIRST.org Exploit Prediction Scoring System (EPSS) data for a single vulnerability. All
+// three fields are required when an Epss object is present; the date disambiguates which
+// day's score this is, since EPSS recomputes daily.
+type Epss struct {
+	// ISO 8601 date (YYYY-MM-DD) on which FIRST.org published this EPSS score.                        
+	Date                                                                                       string  `json:"date"`
+	// Rank of this score relative to all scored CVEs, expressed as a value between 0.0 and 1.0        
+	// inclusive. A percentile of 0.99 means this CVE is scored at or above 99% of all scored          
+	// CVEs.                                                                                           
+	Percentile                                                                                 float64 `json:"percentile"`
+	// Exploit probability as a value between 0.0 and 1.0 inclusive. Higher values indicate            
+	// greater predicted likelihood of exploitation in the next 30 days. Example: 0.97532 means        
+	// roughly a 97.5% predicted probability.                                                          
+	Score                                                                                      float64 `json:"score"`
 }
 
 // Supporting evidence for a finding or override, such as screenshots, code samples, log
@@ -487,6 +612,23 @@ type Identity struct {
 	// 'system' for automated systems, 'simple' for basic string identifiers without additional           
 	// classification, or 'other' for custom identity systems.                                            
 	Type                                                                                        OwnerType `json:"type"`
+}
+
+// CISA Known Exploited Vulnerabilities (KEV) catalog status. When inKev=true, dateAdded and
+// dueDate carry the federal patching deadline.
+type Kev struct {
+	// ISO 8601 calendar date (YYYY-MM-DD) the vulnerability was added to the CISA KEV catalog.          
+	// Required when inKev is true.                                                                      
+	DateAdded                                                                                    *string `json:"dateAdded,omitempty"`
+	// ISO 8601 calendar date (YYYY-MM-DD) by which federal agencies must remediate per CISA BOD         
+	// 22-01. Normally later than dateAdded, but the schema does not enforce ordering because            
+	// CISA occasionally adjusts published dates. Required when inKev is true.                           
+	DueDate                                                                                      *string `json:"dueDate,omitempty"`
+	// Whether this vulnerability is currently in the CISA Known Exploited Vulnerabilities               
+	// catalog. When true, dateAdded and dueDate are required.                                           
+	InKev                                                                                        bool    `json:"inKev"`
+	// CISA's notes describing the vulnerability, observed exploitation, or remediation guidance.        
+	Notes                                                                                        *string `json:"notes,omitempty"`
 }
 
 // Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance.
@@ -646,6 +788,10 @@ type StatusOverride struct {
 	// Identity of who applied this override. For simple cases, use type 'simple' with just an                  
 	// identifier.                                                                                              
 	AppliedBy                                                                                   Identity        `json:"appliedBy"`
+	// Structured CVSS scoring data backing this override. Captures the rubric (which                           
+	// Environmental/Threat metrics the consumer modified, the recomputed score) used to justify                
+	// a riskAdjustment. For other override types this is optional context.                                     
+	Cvss                                                                                        *Cvss           `json:"cvss,omitempty"`
 	// Supporting evidence for this override, such as screenshots demonstrating manual                          
 	// verification for attestations.                                                                           
 	Evidence                                                                                    []Evidence      `json:"evidence,omitempty"`
@@ -1628,6 +1774,10 @@ type StandaloneOverride struct {
 	// componentId of the component this amendment is scoped to. When set, the amendment only                   
 	// applies to the specified component. When omitted, the amendment applies system-wide.                     
 	ComponentRef                                                                                *string         `json:"componentRef,omitempty"`
+	// Structured CVSS scoring data backing this override. Captures the rubric (which                           
+	// Environmental/Threat metrics the consumer modified, the recomputed score) used to justify                
+	// a riskAdjustment. For other override types this is optional context.                                     
+	Cvss                                                                                        *Cvss           `json:"cvss,omitempty"`
 	// Supporting evidence (screenshots, logs, URLs, documents).                                                
 	Evidence                                                                                    []Evidence      `json:"evidence,omitempty"`
 	// When this amendment expires and must be reviewed. No permanent amendments. ISO 8601                      
@@ -1784,6 +1934,23 @@ const (
 	Sha512 HashAlgorithm = "sha512"
 )
 
+// The packaging ecosystem the package belongs to. Use 'generic' for hardware, firmware, or
+// anything outside the listed language/OS package managers.
+type Ecosystem string
+
+const (
+	Cargo   Ecosystem = "cargo"
+	Deb     Ecosystem = "deb"
+	Gem     Ecosystem = "gem"
+	Generic Ecosystem = "generic"
+	Go      Ecosystem = "go"
+	Maven   Ecosystem = "maven"
+	Npm     Ecosystem = "npm"
+	Nuget   Ecosystem = "nuget"
+	Pypi    Ecosystem = "pypi"
+	RPM     Ecosystem = "rpm"
+)
+
 // Whether the requirement is mandatory within its baseline. Distinct from severity (risk
 // weight) and status (lifecycle state). Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop,
 // FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group
@@ -1812,6 +1979,36 @@ const (
 	Policy      ControlType = "policy"
 	Procedure   ControlType = "procedure"
 	Technical   ControlType = "technical"
+)
+
+// Qualitative severity band corresponding to baseScore. CVSS 2.0 does not natively use
+// 'none' or 'critical' bands; map accordingly when populating.
+//
+// Qualitative CVSS severity band. Aligns with FIRST/NVD bands: none=0.0, low=0.1-3.9,
+// medium=4.0-6.9, high=7.0-8.9, critical=9.0-10.0. Distinct from the broader Severity enum
+// used on Requirement_Core (which includes 'informational').
+//
+// Qualitative severity band corresponding to computedScore. Same band convention as
+// baseSeverity.
+type CVSSSeverity string
+
+const (
+	CVSSSeverityCritical CVSSSeverity = "critical"
+	CVSSSeverityHigh     CVSSSeverity = "high"
+	CVSSSeverityLow      CVSSSeverity = "low"
+	CVSSSeverityMedium   CVSSSeverity = "medium"
+	None                 CVSSSeverity = "none"
+)
+
+// The CVSS specification version this entry conforms to. Vendor scanners typically emit 3.1
+// or 4.0; legacy data may use 2.0 or 3.0.
+type Version string
+
+const (
+	The20 Version = "2.0"
+	The30 Version = "3.0"
+	The31 Version = "3.1"
+	The40 Version = "4.0"
 )
 
 // The type of the most recent non-expired override or POAM governing this requirement.
@@ -1926,11 +2123,11 @@ const (
 type Severity string
 
 const (
-	Critical      Severity = "critical"
-	Informational Severity = "informational"
-	Medium        Severity = "medium"
-	SeverityHigh  Severity = "high"
-	SeverityLow   Severity = "low"
+	Informational    Severity = "informational"
+	SeverityCritical Severity = "critical"
+	SeverityHigh     Severity = "high"
+	SeverityLow      Severity = "low"
+	SeverityMedium   Severity = "medium"
 )
 
 // How this requirement is intended to be verified. Disambiguates the two cases that null

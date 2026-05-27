@@ -27,6 +27,10 @@ import {
   comparisonSchema,
   componentSchema,
   dataFlowSchema,
+  cvssSchema,
+  epssSchema,
+  kevSchema,
+  affectedPackageSchema,
 } from '@mitre/hdf-schema';
 
 /**
@@ -70,6 +74,10 @@ function createValidator(): Ajv {
   ajv.addSchema(statisticsSchema);
   ajv.addSchema(targetSchema);
   ajv.addSchema(parameterSchema);
+  ajv.addSchema(cvssSchema);         // CVE-ecosystem primitives: referenced by Evaluated_Requirement + overrides
+  ajv.addSchema(epssSchema);
+  ajv.addSchema(kevSchema);
+  ajv.addSchema(affectedPackageSchema);
   ajv.addSchema(amendmentsSchema);   // before extensions (extensions $refs amendments Override_Type)
   ajv.addSchema(extensionsSchema);
   ajv.addSchema(systemSchema);

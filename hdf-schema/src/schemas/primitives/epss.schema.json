@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.2.0",
+  "title": "HDF EPSS Primitive",
+  "description": "Type for representing FIRST.org's Exploit Prediction Scoring System (EPSS) data for a vulnerability. EPSS estimates the probability that a CVE will be exploited in the wild in the next 30 days. See https://www.first.org/epss/ for the underlying model and methodology.",
+  "$defs": {
+    "Epss": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "score",
+        "percentile",
+        "date"
+      ],
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Exploit probability as a value between 0.0 and 1.0 inclusive. Higher values indicate greater predicted likelihood of exploitation in the next 30 days. Example: 0.97532 means roughly a 97.5% predicted probability."
+        },
+        "percentile": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Rank of this score relative to all scored CVEs, expressed as a value between 0.0 and 1.0 inclusive. A percentile of 0.99 means this CVE is scored at or above 99% of all scored CVEs."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "$comment": "This is the date FIRST.org published the score, not the date the underlying CVE was discovered or disclosed. EPSS scores are recomputed daily and shift as new exploitation evidence is observed.",
+          "description": "ISO 8601 date (YYYY-MM-DD) on which FIRST.org published this EPSS score."
+        }
+      },
+      "examples": [
+        {
+          "$comment": "High exploit probability and high percentile, characteristic of a widely-exploited vulnerability like Log4Shell (CVE-2021-44228) shortly after disclosure.",
+          "score": 0.97532,
+          "percentile": 0.99987,
+          "date": "2026-05-26"
+        },
+        {
+          "$comment": "Low score but moderate percentile, the common case for CVEs that have some observed exploitation evidence but are not under active mass exploitation.",
+          "score": 0.04521,
+          "percentile": 0.78432,
+          "date": "2026-05-26"
+        },
+        {
+          "$comment": "Very low score, typical of a CVE with no known exploitation activity or proof-of-concept availability.",
+          "score": 0.00042,
+          "percentile": 0.10215,
+          "date": "2026-05-26"
+        }
+      ],
+      "description": "FIRST.org Exploit Prediction Scoring System (EPSS) data for a single vulnerability. All three fields are required when an Epss object is present; the date disambiguates which day's score this is, since EPSS recomputes daily.",
+      "title": "EPSS"
+    }
+  }
+}

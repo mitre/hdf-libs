@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.2.0",
+  "title": "HDF Affected Package Primitives",
+  "description": "Types for representing the software package(s) affected by a vulnerability finding.",
+  "$defs": {
+    "Affected_Package": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "name",
+        "version",
+        "ecosystem"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The package name as published in its ecosystem. Examples: 'openssl' (rpm), 'lodash' (npm), 'org.apache.logging.log4j:log4j-core' (maven, group:artifact)."
+        },
+        "version": {
+          "type": "string",
+          "description": "The exact version of the package that the vulnerability scanner observed. Use the ecosystem's native version string verbatim (e.g., '1.1.1k-7.el8_4' for rpm, '4.17.20' for npm)."
+        },
+        "ecosystem": {
+          "type": "string",
+          "enum": [
+            "npm",
+            "pypi",
+            "rpm",
+            "deb",
+            "maven",
+            "gem",
+            "nuget",
+            "go",
+            "cargo",
+            "generic"
+          ],
+          "description": "The packaging ecosystem the package belongs to. Use 'generic' for hardware, firmware, or anything outside the listed language/OS package managers."
+        },
+        "cpe": {
+          "type": "string",
+          "pattern": "^cpe:2\\.3:[aho]:.*",
+          "description": "Optional CPE 2.3 URI identifying the affected product. Validated leniently: only the 'cpe:2.3:' prefix and the part-type letter ('a' application, 'h' hardware, 'o' operating system) are enforced here. Use `hdf-utilities.parseCpe` for full-grammar parsing. Example: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*'."
+        },
+        "purl": {
+          "type": "string",
+          "pattern": "^pkg:[a-z]+/.*",
+          "description": "Optional Package URL (PURL) identifying the affected package. Validated leniently: only the 'pkg:TYPE/' scheme prefix is enforced here (where TYPE is the package type, e.g. npm, rpm, pypi). Use `hdf-utilities.parsePurl` for full PURL grammar. Example: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'."
+        },
+        "fixedInVersion": {
+          "type": "string",
+          "description": "Optional version string identifying the first release that contains the fix for the vulnerability. Use the same version syntax as `version`. Example: '1.1.1l' fixes 'openssl@1.1.1k'."
+        }
+      },
+      "examples": [
+        {
+          "$comment": "RPM ecosystem with full CPE + PURL — typical Grype/Trivy output for a RHEL host scan.",
+          "name": "openssl",
+          "version": "1.1.1k-7.el8_4",
+          "ecosystem": "rpm",
+          "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*",
+          "purl": "pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64",
+          "fixedInVersion": "1.1.1l"
+        },
+        {
+          "$comment": "NPM ecosystem with PURL only — the JavaScript world rarely emits CPEs; PURL is the canonical identifier.",
+          "name": "lodash",
+          "version": "4.17.20",
+          "ecosystem": "npm",
+          "purl": "pkg:npm/lodash@4.17.20",
+          "fixedInVersion": "4.17.21"
+        },
+        {
+          "$comment": "Minimal valid AffectedPackage — only the three required fields. Use when the scanner reports a package by name+version without emitting CPE or PURL strings.",
+          "name": "requests",
+          "version": "2.28.1",
+          "ecosystem": "pypi"
+        },
+        {
+          "$comment": "Maven ecosystem with full identifiers + fixedInVersion — log4j Log4Shell-style finding showing the patch path from vulnerable to fixed.",
+          "name": "org.apache.logging.log4j:log4j-core",
+          "version": "2.14.1",
+          "ecosystem": "maven",
+          "cpe": "cpe:2.3:a:apache:log4j:2.14.1:*:*:*:*:*:*:*",
+          "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+          "fixedInVersion": "2.17.1"
+        }
+      ],
+      "description": "Represents a package affected by a vulnerability finding. Scoped to the vulnerability — this lives on Evaluated_Requirement to say 'this CVE affects this package version'. NOT a component identifier (see `components[]` on hdf-system for those). One Evaluated_Requirement may have multiple AffectedPackage entries when the CVE matches multiple package signatures.",
+      "title": "Affected Package"
+    }
+  }
+}

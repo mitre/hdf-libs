@@ -102,6 +102,11 @@
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Checksum",
           "description": "Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null for the first amendment."
         },
+        "cvss": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.2.0#/$defs/Cvss",
+          "$comment": "When present alongside impact.value on a riskAdjustment override, impact.value should be approximately cvss.computedScore / 10.0. Soft consistency rule — validators may warn but should not error. The cvss block makes Environmental/Threat enrichment auditable.",
+          "description": "Structured CVSS scoring data backing this override. Captures the rubric (which Environmental/Threat metrics the consumer modified, the recomputed score) used to justify a riskAdjustment. For other override types this is optional context."
+        },
         "milestones": {
           "type": "array",
           "items": {

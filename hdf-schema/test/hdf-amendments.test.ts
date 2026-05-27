@@ -5,6 +5,7 @@ import commonSchema from '../src/schemas/primitives/common.schema.json';
 import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
 import resultSchema from '../src/schemas/primitives/result.schema.json';
 import amendmentsSchema from '../src/schemas/primitives/amendments.schema.json';
+import cvssSchema from '../src/schemas/primitives/cvss.schema.json';
 import hdfAmendmentsSchema from '../src/schemas/hdf-amendments.schema.json';
 import { schemaRef } from './schema-ref';
 
@@ -14,6 +15,7 @@ describe('hdf-amendments.schema.json', () => {
 
   ajv.addSchema(commonSchema);
   ajv.addSchema(resultSchema);
+  ajv.addSchema(cvssSchema);
   ajv.addSchema(extensionsSchema);
   ajv.addSchema(amendmentsSchema);
   const validate = ajv.compile(hdfAmendmentsSchema);
@@ -132,6 +134,7 @@ describe('amendments.schema.json — Standalone_Override', () => {
   addFormats(ajv);
   ajv.addSchema(commonSchema);
   ajv.addSchema(resultSchema);
+  ajv.addSchema(cvssSchema);
   ajv.addSchema(extensionsSchema);
   ajv.addSchema(amendmentsSchema);
 

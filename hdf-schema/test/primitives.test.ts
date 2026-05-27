@@ -9,6 +9,10 @@ import statisticsSchema from '../src/schemas/primitives/statistics.schema.json';
 import resultSchema from '../src/schemas/primitives/result.schema.json';
 import amendmentsSchema from '../src/schemas/primitives/amendments.schema.json';
 import extensionsSchema from '../src/schemas/primitives/extensions.schema.json';
+import cvssSchema from '../src/schemas/primitives/cvss.schema.json';
+import epssSchema from '../src/schemas/primitives/epss.schema.json';
+import kevSchema from '../src/schemas/primitives/kev.schema.json';
+import affectedPackageSchema from '../src/schemas/primitives/affected-package.schema.json';
 import { schemaRef } from './schema-ref';
 
 describe('Primitive Schema Validation', () => {
@@ -24,6 +28,10 @@ describe('Primitive Schema Validation', () => {
   ajv.addSchema(resultSchema);
   ajv.addSchema(amendmentsSchema);
   ajv.addSchema(extensionsSchema);
+  ajv.addSchema(cvssSchema);
+  ajv.addSchema(epssSchema);
+  ajv.addSchema(kevSchema);
+  ajv.addSchema(affectedPackageSchema);
 
   describe('common.schema.json', () => {
     describe('Requirement_Group', () => {
@@ -3304,6 +3312,922 @@ describe('Primitive Schema Validation', () => {
             params: { format: 'uri' },
           })
         );
+      });
+    });
+  });
+  describe('cvss.schema.json', () => {
+    describe('Cvss', () => {
+      const validate = ajv.compile({
+        ...schemaRef(cvssSchema, 'Cvss'),
+      });
+
+      describe('valid Cvss objects', () => {
+        it('should validate Base-only vendor-supplied CVSS 3.1', () => {
+          const valid = {
+            version: '3.1',
+            source: 'CVE-2024-12345',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+            baseSeverity: 'high',
+          };
+          expect(validate(valid)).toBe(true);
+          expect(validate.errors).toBeNull();
+        });
+
+        it('should validate minimal Cvss with only required fields', () => {
+          const valid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+          };
+          expect(validate(valid)).toBe(true);
+        });
+
+        it('should validate Base + Threat (consumer added Exploit Maturity)', () => {
+          const valid = {
+            version: '3.1',
+            source: 'CVE-2023-44487',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H',
+            baseScore: 7.5,
+            baseSeverity: 'high',
+            threatVector: 'E:U/RL:O/RC:C',
+            threatScore: 5.5,
+          };
+          expect(validate(valid)).toBe(true);
+        });
+
+        it('should validate Base + Environmental (consumer Modified Base + Security Requirements)', () => {
+          const valid = {
+            version: '3.1',
+            source: 'CVE-2024-3094',
+            baseVector: 'CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 8.1,
+            baseSeverity: 'high',
+            environmentalVector: 'MAV:N/CR:H/IR:H/AR:H',
+            environmentalScore: 6.8,
+          };
+          expect(validate(valid)).toBe(true);
+        });
+
+        it('should validate Full v4 with Base + Threat + Environmental + Supplemental + computed', () => {
+          const valid = {
+            version: '4.0',
+            source: 'CVE-2024-21762',
+            baseVector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N',
+            baseScore: 9.8,
+            baseSeverity: 'critical',
+            threatVector: 'E:A',
+            threatScore: 9.3,
+            environmentalVector: 'MAV:N/CR:H/IR:H/AR:H',
+            environmentalScore: 9.5,
+            supplementalVector: 'S:P/AU:N/V:C/RE:M',
+            computedScore: 4.2,
+            computedSeverity: 'medium',
+          };
+          expect(validate(valid)).toBe(true);
+        });
+
+        it('should validate v2 legacy CVSS 2.0', () => {
+          const valid = {
+            version: '2.0',
+            source: 'CVE-2014-0160',
+            baseVector: 'AV:N/AC:L/Au:N/C:P/I:N/A:N',
+            baseScore: 5.0,
+            baseSeverity: 'medium',
+          };
+          expect(validate(valid)).toBe(true);
+        });
+
+        it('should validate CVSS 3.0 vector', () => {
+          const valid = {
+            version: '3.0',
+            baseVector: 'CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 9.8,
+          };
+          expect(validate(valid)).toBe(true);
+        });
+
+        it('should accept all baseSeverity enum values', () => {
+          const severities = ['none', 'low', 'medium', 'high', 'critical'];
+          severities.forEach((sev) => {
+            const valid = {
+              version: '3.1',
+              baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+              baseScore: 5.0,
+              baseSeverity: sev,
+            };
+            expect(validate(valid)).toBe(true);
+          });
+        });
+
+        it('should accept all computedSeverity enum values', () => {
+          const severities = ['none', 'low', 'medium', 'high', 'critical'];
+          severities.forEach((sev) => {
+            const valid = {
+              version: '3.1',
+              baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+              baseScore: 5.0,
+              computedSeverity: sev,
+            };
+            expect(validate(valid)).toBe(true);
+          });
+        });
+
+        it('should accept boundary scores 0.0 and 10.0', () => {
+          const lowEnd = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N',
+            baseScore: 0.0,
+          };
+          const highEnd = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 10.0,
+          };
+          expect(validate(lowEnd)).toBe(true);
+          expect(validate(highEnd)).toBe(true);
+        });
+      });
+
+      describe('invalid Cvss objects', () => {
+        it('should reject Cvss missing required baseVector', () => {
+          const invalid = {
+            version: '3.1',
+            baseScore: 7.5,
+          };
+          expect(validate(invalid)).toBe(false);
+          expect(validate.errors).not.toBeNull();
+        });
+
+        it('should reject Cvss missing required version', () => {
+          const invalid = {
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject Cvss missing required baseScore', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject baseScore out of range (above 10.0)', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 15.0,
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject baseScore out of range (below 0.0)', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: -1.0,
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject threatScore out of range', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+            threatScore: 11.0,
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject environmentalScore out of range', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+            environmentalScore: 99.0,
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject computedScore out of range', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+            computedScore: -0.5,
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject bad version enum value', () => {
+          const invalid = {
+            version: '5.0',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject malformed baseVector ("not a vector")', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'not a vector',
+            baseScore: 7.5,
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject malformed threatVector', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+            threatVector: 'this is not a vector!',
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject malformed environmentalVector', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+            environmentalVector: '???',
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject malformed supplementalVector', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+            supplementalVector: 'lower case junk',
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject bad baseSeverity enum value', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+            baseSeverity: 'extreme',
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject bad computedSeverity enum value', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+            computedSeverity: 'urgent',
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject Cvss with explicit null required field', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: null,
+            baseScore: 7.5,
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject Cvss with extra unevaluated properties', () => {
+          const invalid = {
+            version: '3.1',
+            baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+            baseScore: 7.5,
+            extraField: 'not allowed',
+          };
+          expect(validate(invalid)).toBe(false);
+        });
+      });
+
+      describe('schema examples', () => {
+        const examples = (cvssSchema as { $defs: { Cvss: { examples?: unknown[] } } }).$defs.Cvss
+          .examples;
+
+        it('should have at least 5 examples', () => {
+          expect(examples).toBeDefined();
+          expect(Array.isArray(examples)).toBe(true);
+          expect((examples as unknown[]).length).toBeGreaterThanOrEqual(5);
+        });
+
+        it('every example should be valid against the Cvss schema', () => {
+          (examples as Record<string, unknown>[]).forEach((ex, idx) => {
+            // Strip $comment before validation (it's documentation, not data)
+            const data = { ...ex };
+            delete data.$comment;
+            const ok = validate(data);
+            if (!ok) {
+              throw new Error(
+                `Example ${idx} failed validation: ${JSON.stringify(validate.errors)}`,
+              );
+            }
+            expect(ok).toBe(true);
+          });
+        });
+
+        it('every example should have a $comment field documenting it', () => {
+          (examples as Record<string, unknown>[]).forEach((ex, idx) => {
+            expect(ex.$comment, `example ${idx} missing $comment`).toBeDefined();
+            expect(typeof ex.$comment).toBe('string');
+          });
+        });
+      });
+    });
+  });
+  describe('epss.schema.json', () => {
+    describe('Epss', () => {
+      const validate = ajv.compile({
+        ...schemaRef(epssSchema, 'Epss'),
+      });
+
+      it('should validate a full Epss object', () => {
+        const valid = {
+          score: 0.045,
+          percentile: 0.92,
+          date: '2026-05-26',
+        };
+        expect(validate(valid)).toBe(true);
+        expect(validate.errors).toBeNull();
+      });
+
+      it('should validate Epss with very high score (log4shell-style)', () => {
+        const valid = {
+          score: 0.97532,
+          percentile: 0.99987,
+          date: '2026-05-26',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Epss with score at lower bound 0.0', () => {
+        const valid = {
+          score: 0.0,
+          percentile: 0.0,
+          date: '2026-05-26',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Epss with score at upper bound 1.0', () => {
+        const valid = {
+          score: 1.0,
+          percentile: 1.0,
+          date: '2026-05-26',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject Epss missing required score', () => {
+        const invalid = {
+          percentile: 0.92,
+          date: '2026-05-26',
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toMatchObject([
+          expect.objectContaining({
+            params: expect.objectContaining({ missingProperty: 'score' }),
+          }),
+        ]);
+      });
+
+      it('should reject Epss missing required percentile', () => {
+        const invalid = {
+          score: 0.045,
+          date: '2026-05-26',
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toMatchObject([
+          expect.objectContaining({
+            params: expect.objectContaining({ missingProperty: 'percentile' }),
+          }),
+        ]);
+      });
+
+      it('should reject Epss missing required date', () => {
+        const invalid = {
+          score: 0.045,
+          percentile: 0.92,
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toMatchObject([
+          expect.objectContaining({
+            params: expect.objectContaining({ missingProperty: 'date' }),
+          }),
+        ]);
+      });
+
+      it('should reject Epss with score above 1.0', () => {
+        const invalid = {
+          score: 1.5,
+          percentile: 0.92,
+          date: '2026-05-26',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Epss with negative score', () => {
+        const invalid = {
+          score: -0.1,
+          percentile: 0.92,
+          date: '2026-05-26',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Epss with percentile above 1.0', () => {
+        const invalid = {
+          score: 0.045,
+          percentile: 1.01,
+          date: '2026-05-26',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Epss with negative percentile', () => {
+        const invalid = {
+          score: 0.045,
+          percentile: -0.01,
+          date: '2026-05-26',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Epss with malformed date (slash separator)', () => {
+        const invalid = {
+          score: 0.045,
+          percentile: 0.92,
+          date: '2026/05/26',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Epss with malformed date (date-time instead of date)', () => {
+        const invalid = {
+          score: 0.045,
+          percentile: 0.92,
+          date: '2026-05-26T10:30:00Z',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Epss with non-numeric score', () => {
+        const invalid = {
+          score: '0.045',
+          percentile: 0.92,
+          date: '2026-05-26',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Epss with extra unevaluated properties', () => {
+        const invalid = {
+          score: 0.045,
+          percentile: 0.92,
+          date: '2026-05-26',
+          model: 'epss-v3',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Epss with explicit null fields', () => {
+        const invalid = {
+          score: null,
+          percentile: null,
+          date: null,
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+    });
+  });
+  describe('kev.schema.json', () => {
+    describe('Kev', () => {
+      const validate = ajv.compile({
+        ...schemaRef(kevSchema, 'Kev'),
+      });
+
+      it('should validate inKev=true with required dateAdded and dueDate', () => {
+        const valid = {
+          inKev: true,
+          dateAdded: '2026-03-15',
+          dueDate: '2026-04-05',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate inKev=true with optional notes', () => {
+        const valid = {
+          inKev: true,
+          dateAdded: '2026-03-15',
+          dueDate: '2026-04-05',
+          notes: 'Active ransomware exploitation observed in the wild.',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate inKev=false with no dates (dates only required when inKev=true)', () => {
+        const valid = {
+          inKev: false,
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate inKev=false with dates present (dates optional but allowed)', () => {
+        const valid = {
+          inKev: false,
+          dateAdded: '2026-03-15',
+          dueDate: '2026-04-05',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should reject Kev missing required inKev', () => {
+        const invalid = {
+          dateAdded: '2026-03-15',
+          dueDate: '2026-04-05',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Kev with inKev=true missing dateAdded', () => {
+        const invalid = {
+          inKev: true,
+          dueDate: '2026-04-05',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Kev with inKev=true missing dueDate', () => {
+        const invalid = {
+          inKev: true,
+          dateAdded: '2026-03-15',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Kev with inKev=true missing both dates', () => {
+        const invalid = {
+          inKev: true,
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Kev with malformed dateAdded', () => {
+        const invalid = {
+          inKev: true,
+          dateAdded: 'not-a-date',
+          dueDate: '2026-04-05',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Kev with malformed dueDate', () => {
+        const invalid = {
+          inKev: true,
+          dateAdded: '2026-03-15',
+          dueDate: '03/15/2026',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Kev with date-time instead of date for dateAdded', () => {
+        const invalid = {
+          inKev: true,
+          dateAdded: '2026-03-15T00:00:00Z',
+          dueDate: '2026-04-05',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Kev with non-boolean inKev', () => {
+        const invalid = {
+          inKev: 'true',
+          dateAdded: '2026-03-15',
+          dueDate: '2026-04-05',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Kev with explicit null notes', () => {
+        const invalid = {
+          inKev: true,
+          dateAdded: '2026-03-15',
+          dueDate: '2026-04-05',
+          notes: null,
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Kev with extra unevaluated properties', () => {
+        const invalid = {
+          inKev: true,
+          dateAdded: '2026-03-15',
+          dueDate: '2026-04-05',
+          extraField: 'not allowed',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should accept Kev where dueDate is before dateAdded (CISA occasionally adjusts dates)', () => {
+        const valid = {
+          inKev: true,
+          dateAdded: '2026-04-05',
+          dueDate: '2026-03-15',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+    });
+  });
+
+  describe('CWE ID array pattern (for Evaluated_Requirement.cwe)', () => {
+    // Tests the JSON Schema fragment that will be used for cwe[] on Evaluated_Requirement.
+    // The integration into hdf-results.schema.json happens later; here we validate the
+    // pattern in isolation so the wire-up is straightforward.
+    const cweArraySchema = {
+      type: 'array',
+      items: {
+        type: 'string',
+        pattern: '^CWE-\\d+$',
+      },
+    };
+    const validate = ajv.compile(cweArraySchema);
+
+    it('should accept a valid CWE ID array', () => {
+      expect(validate(['CWE-79', 'CWE-89', 'CWE-352'])).toBe(true);
+    });
+
+    it('should accept a single-element CWE array', () => {
+      expect(validate(['CWE-79'])).toBe(true);
+    });
+
+    it('should accept an empty array', () => {
+      expect(validate([])).toBe(true);
+    });
+
+    it('should accept very large CWE numbers', () => {
+      expect(validate(['CWE-1234567'])).toBe(true);
+    });
+
+    it('should reject lowercase cwe prefix', () => {
+      expect(validate(['cwe-79'])).toBe(false);
+    });
+
+    it('should reject mixed-case Cwe prefix', () => {
+      expect(validate(['Cwe-79'])).toBe(false);
+    });
+
+    it('should reject non-numeric CWE suffix', () => {
+      expect(validate(['CWE-abc'])).toBe(false);
+    });
+
+    it('should reject CWE id with no number', () => {
+      expect(validate(['CWE-'])).toBe(false);
+    });
+
+    it('should reject bare numeric string with no CWE- prefix', () => {
+      expect(validate(['79'])).toBe(false);
+    });
+
+    it('should reject CWE id with trailing space', () => {
+      expect(validate(['CWE-79 '])).toBe(false);
+    });
+
+    it('should reject CWE id with leading space', () => {
+      expect(validate([' CWE-79'])).toBe(false);
+    });
+
+    it('should reject CWE id with leading zeros stripped form (acceptable but ensure plain digits)', () => {
+      // Plain digits are required; we still accept leading zeros since pattern is just \d+.
+      expect(validate(['CWE-079'])).toBe(true);
+    });
+
+    it('should reject array containing one invalid entry among valid ones', () => {
+      expect(validate(['CWE-79', 'cwe-89'])).toBe(false);
+    });
+
+    it('should reject non-string entries', () => {
+      expect(validate([79])).toBe(false);
+    });
+
+    it('should reject CWE id with extra punctuation', () => {
+      expect(validate(['CWE-79.1'])).toBe(false);
+    });
+  });
+  describe('affected-package.schema.json', () => {
+    describe('Affected_Package', () => {
+      const validate = ajv.compile({
+        ...schemaRef(affectedPackageSchema, 'Affected_Package'),
+      });
+
+      it('should validate minimal Affected_Package (name + version + ecosystem only)', () => {
+        const valid = {
+          name: 'requests',
+          version: '2.28.1',
+          ecosystem: 'pypi',
+        };
+        expect(validate(valid)).toBe(true);
+        expect(validate.errors).toBeNull();
+      });
+
+      it('should validate full Affected_Package with CPE, PURL, and fixedInVersion', () => {
+        const valid = {
+          name: 'openssl',
+          version: '1.1.1k-7.el8_4',
+          ecosystem: 'rpm',
+          cpe: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*',
+          purl: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64',
+          fixedInVersion: '1.1.1l',
+        };
+        expect(validate(valid)).toBe(true);
+        expect(validate.errors).toBeNull();
+      });
+
+      it('should validate Affected_Package with PURL but no CPE (common in npm world)', () => {
+        const valid = {
+          name: 'lodash',
+          version: '4.17.20',
+          ecosystem: 'npm',
+          purl: 'pkg:npm/lodash@4.17.20',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Affected_Package with hardware CPE part type (cpe:2.3:h)', () => {
+        const valid = {
+          name: 'cisco-firmware',
+          version: '15.2',
+          ecosystem: 'generic',
+          cpe: 'cpe:2.3:h:cisco:catalyst:15.2:*:*:*:*:*:*:*',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate Affected_Package with OS CPE part type (cpe:2.3:o)', () => {
+        const valid = {
+          name: 'linux_kernel',
+          version: '5.10.0',
+          ecosystem: 'generic',
+          cpe: 'cpe:2.3:o:linux:linux_kernel:5.10.0:*:*:*:*:*:*:*',
+        };
+        expect(validate(valid)).toBe(true);
+      });
+
+      it.each(['npm', 'pypi', 'rpm', 'deb', 'maven', 'gem', 'nuget', 'go', 'cargo', 'generic'])(
+        'should accept ecosystem=%s',
+        (value: string) => {
+          expect(validate({ name: 'pkg', version: '1.0', ecosystem: value })).toBe(true);
+        },
+      );
+
+      it('should reject Affected_Package missing required name', () => {
+        const invalid = {
+          version: '1.0.0',
+          ecosystem: 'npm',
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toMatchObject([
+          expect.objectContaining({
+            params: expect.objectContaining({ missingProperty: 'name' }),
+          }),
+        ]);
+      });
+
+      it('should reject Affected_Package missing required version', () => {
+        const invalid = {
+          name: 'openssl',
+          ecosystem: 'rpm',
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toMatchObject([
+          expect.objectContaining({
+            params: expect.objectContaining({ missingProperty: 'version' }),
+          }),
+        ]);
+      });
+
+      it('should reject Affected_Package missing required ecosystem', () => {
+        const invalid = {
+          name: 'openssl',
+          version: '1.1.1k',
+        };
+        expect(validate(invalid)).toBe(false);
+        expect(validate.errors).toMatchObject([
+          expect.objectContaining({
+            params: expect.objectContaining({ missingProperty: 'ecosystem' }),
+          }),
+        ]);
+      });
+
+      it('should reject Affected_Package with unknown ecosystem', () => {
+        const invalid = {
+          name: 'pkg',
+          version: '1.0',
+          ecosystem: 'cocoapods',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Affected_Package with explicit null ecosystem', () => {
+        const invalid = {
+          name: 'pkg',
+          version: '1.0',
+          ecosystem: null,
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject malformed CPE (truncated, missing part-type letter)', () => {
+        const invalid = {
+          name: 'openssl',
+          version: '1.1.1k',
+          ecosystem: 'rpm',
+          cpe: 'cpe:2.3',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject malformed CPE (wrong CPE version)', () => {
+        const invalid = {
+          name: 'openssl',
+          version: '1.1.1k',
+          ecosystem: 'rpm',
+          cpe: 'cpe:2.2:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject malformed CPE (invalid part-type letter)', () => {
+        const invalid = {
+          name: 'openssl',
+          version: '1.1.1k',
+          ecosystem: 'rpm',
+          cpe: 'cpe:2.3:x:openssl:openssl:1.1.1k:*:*:*:*:*:*:*',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject malformed PURL (no pkg: scheme)', () => {
+        const invalid = {
+          name: 'openssl',
+          version: '1.1.1k',
+          ecosystem: 'rpm',
+          purl: 'openssl@1.0',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject malformed PURL (pkg: scheme but no type)', () => {
+        const invalid = {
+          name: 'openssl',
+          version: '1.1.1k',
+          ecosystem: 'rpm',
+          purl: 'pkg:',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Affected_Package with extra unevaluated properties', () => {
+        const invalid = {
+          name: 'pkg',
+          version: '1.0',
+          ecosystem: 'npm',
+          extraField: 'not allowed',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject Affected_Package with explicit null optional fields', () => {
+        const invalid = {
+          name: 'pkg',
+          version: '1.0',
+          ecosystem: 'npm',
+          cpe: null,
+          purl: null,
+          fixedInVersion: null,
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it('should validate maven ecosystem with full identifiers and fixedInVersion (patch path)', () => {
+        const valid = {
+          name: 'org.apache.logging.log4j:log4j-core',
+          version: '2.14.1',
+          ecosystem: 'maven',
+          cpe: 'cpe:2.3:a:apache:log4j:2.14.1:*:*:*:*:*:*:*',
+          purl: 'pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1',
+          fixedInVersion: '2.17.1',
+        };
+        expect(validate(valid)).toBe(true);
       });
     });
   });

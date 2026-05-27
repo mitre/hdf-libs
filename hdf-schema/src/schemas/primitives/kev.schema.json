@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.2.0",
+  "title": "HDF Kev Primitives",
+  "description": "Types for representing CISA Known Exploited Vulnerabilities (KEV) catalog membership. The KEV catalog (https://www.cisa.gov/known-exploited-vulnerabilities-catalog) flags CVEs that are confirmed actively exploited in the wild and drives federal patching urgency under CISA Binding Operational Directive 22-01.",
+  "$defs": {
+    "Kev": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "inKev"
+      ],
+      "if": {
+        "properties": {
+          "inKev": { "const": true }
+        },
+        "required": ["inKev"]
+      },
+      "then": {
+        "required": ["dateAdded", "dueDate"]
+      },
+      "properties": {
+        "inKev": {
+          "type": "boolean",
+          "description": "Whether this vulnerability is currently in the CISA Known Exploited Vulnerabilities catalog. When true, dateAdded and dueDate are required."
+        },
+        "dateAdded": {
+          "type": "string",
+          "format": "date",
+          "description": "ISO 8601 calendar date (YYYY-MM-DD) the vulnerability was added to the CISA KEV catalog. Required when inKev is true."
+        },
+        "dueDate": {
+          "type": "string",
+          "format": "date",
+          "description": "ISO 8601 calendar date (YYYY-MM-DD) by which federal agencies must remediate per CISA BOD 22-01. Normally later than dateAdded, but the schema does not enforce ordering because CISA occasionally adjusts published dates. Required when inKev is true."
+        },
+        "notes": {
+          "type": "string",
+          "description": "CISA's notes describing the vulnerability, observed exploitation, or remediation guidance."
+        }
+      },
+      "examples": [
+        {
+          "$comment": "High-urgency case: recently added KEV entry with a short federal patching deadline.",
+          "inKev": true,
+          "dateAdded": "2026-03-15",
+          "dueDate": "2026-04-05",
+          "notes": "Active ransomware exploitation observed; apply vendor patch immediately."
+        },
+        {
+          "$comment": "Older KEV entry whose due date has already passed — useful for reporting overdue remediation.",
+          "inKev": true,
+          "dateAdded": "2023-11-07",
+          "dueDate": "2023-11-28",
+          "notes": "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable."
+        },
+        {
+          "$comment": "Vulnerability evaluated against the KEV catalog and confirmed not present — dateAdded/dueDate are not required when inKev is false.",
+          "inKev": false
+        }
+      ],
+      "title": "Kev"
+    }
+  }
+}
