@@ -93,6 +93,9 @@ importers:
 
   hdf-diff:
     dependencies:
+      '@mitre/hdf-utilities':
+        specifier: workspace:^
+        version: link:../hdf-utilities
       '@mitre/hdf-validators':
         specifier: workspace:^
         version: link:../hdf-validators

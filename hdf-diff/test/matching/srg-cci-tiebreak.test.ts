@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { createSrgCciTiebreakStrategy } from '../../src/matching/srg-cci-tiebreak.js';
+import {
+  createSrgCciTiebreakStrategy,
+  extractCwes,
+} from '../../src/matching/srg-cci-tiebreak.js';
 
 /** Helper to build a requirement with gtitle, CCI tags, and title. */
 function reqWithSRG(id: string, gtitle: string, ccis: string[] = [], title?: string) {
@@ -134,5 +137,100 @@ describe('SrgCciTiebreakStrategy', () => {
   it('should handle empty inputs', () => {
     const result = strategy.match([], []);
     expect(result.matched).toHaveLength(0);
+  });
+
+  // ── CWE tiebreaker (structured req.cwe[] preferred over tags.cwe) ──────
+
+  it('should use CWE as a tiebreaker when CCI+title scores are equal', () => {
+    // Both new candidates have identical CCI and title overlap with the
+    // ambiguous old gtitle group, but only one shares a CWE with an old req.
+    const oldReqs = [
+      {
+        id: 'V-001',
+        impact: 0.7,
+        title: 'Enable logging',
+        tags: { gtitle: 'SRG-OS-000001', cci: ['CCI-000366'] },
+        cwe: ['CWE-79'],
+      },
+      {
+        id: 'V-002',
+        impact: 0.7,
+        title: 'Enable logging',
+        tags: { gtitle: 'SRG-OS-000001', cci: ['CCI-000366'] },
+        cwe: ['CWE-89'],
+      },
+    ];
+    const newReqs = [
+      {
+        id: 'NEW-A',
+        impact: 0.7,
+        title: 'Enable logging',
+        tags: { gtitle: 'SRG-OS-000001', cci: ['CCI-000366'] },
+        cwe: ['CWE-89'],
+      },
+    ];
+
+    const result = strategy.match(oldReqs, newReqs);
+
+    expect(result.matched).toHaveLength(1);
+    // CWE-89 tiebreaker should pick V-002, not V-001.
+    expect(result.matched[0]!.oldReq['id']).toBe('V-002');
+    expect(result.matched[0]!.newReq['id']).toBe('NEW-A');
+  });
+
+  it('should still tiebreak via CWE when reading legacy tags.cwe', () => {
+    const oldReqs = [
+      {
+        id: 'V-001',
+        impact: 0.7,
+        title: 'Enable logging',
+        tags: { gtitle: 'SRG-OS-000001', cci: ['CCI-000366'], cwe: ['CWE-79'] },
+      },
+      {
+        id: 'V-002',
+        impact: 0.7,
+        title: 'Enable logging',
+        tags: { gtitle: 'SRG-OS-000001', cci: ['CCI-000366'], cwe: ['CWE-89'] },
+      },
+    ];
+    const newReqs = [
+      {
+        id: 'NEW-A',
+        impact: 0.7,
+        title: 'Enable logging',
+        tags: { gtitle: 'SRG-OS-000001', cci: ['CCI-000366'], cwe: ['CWE-89'] },
+      },
+    ];
+
+    const result = strategy.match(oldReqs, newReqs);
+
+    expect(result.matched).toHaveLength(1);
+    expect(result.matched[0]!.oldReq['id']).toBe('V-002');
+  });
+});
+
+describe('extractCwes (srg-cci-tiebreak)', () => {
+  it('prefers structured req.cwe[] over tags.cwe', () => {
+    const req = { cwe: ['CWE-79'], tags: { cwe: ['CWE-999'] } };
+    expect(extractCwes(req)).toEqual(new Set(['CWE-79']));
+  });
+
+  it('falls back to tags.cwe when req.cwe[] is absent', () => {
+    const req = { tags: { cwe: ['CWE-79', 'CWE-89'] } };
+    expect(extractCwes(req)).toEqual(new Set(['CWE-79', 'CWE-89']));
+  });
+
+  it('falls back to tags.cwe when req.cwe[] is empty', () => {
+    const req = { cwe: [], tags: { cwe: ['CWE-79'] } };
+    expect(extractCwes(req)).toEqual(new Set(['CWE-79']));
+  });
+
+  it('handles string-valued tags.cwe', () => {
+    expect(extractCwes({ tags: { cwe: 'CWE-79' } })).toEqual(new Set(['CWE-79']));
+  });
+
+  it('returns empty set when no CWE data is present', () => {
+    expect(extractCwes({})).toEqual(new Set());
+    expect(extractCwes({ tags: {} })).toEqual(new Set());
   });
 });

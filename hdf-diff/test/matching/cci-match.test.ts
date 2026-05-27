@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createCciMatchStrategy } from '../../src/matching/cci-match.js';
+import { createCciMatchStrategy, extractCwes } from '../../src/matching/cci-match.js';
 
 describe('CciMatchStrategy', () => {
   const strategy = createCciMatchStrategy();
@@ -196,5 +196,121 @@ describe('CciMatchStrategy', () => {
     expect(result.matched[0]!.oldReq['id']).toBe('V-001');
     expect(result.unmatchedOld).toHaveLength(2);
     expect(result.unmatchedNew).toHaveLength(1);
+  });
+
+  // ── CWE fallback (structured req.cwe[] preferred over tags.cwe) ────────
+
+  it('should match requirements sharing a CWE when no CCI match exists', () => {
+    const oldReqs = [
+      { id: 'OLD-1', cwe: ['CWE-79'], impact: 0.7 },
+    ];
+    const newReqs = [
+      { id: 'NEW-1', cwe: ['CWE-79'], impact: 0.7 },
+    ];
+
+    const result = strategy.match(oldReqs, newReqs);
+
+    expect(result.matched).toHaveLength(1);
+    expect(result.matched[0]!.oldReq['id']).toBe('OLD-1');
+    expect(result.matched[0]!.newReq['id']).toBe('NEW-1');
+  });
+
+  it('should prefer CCI matches over CWE matches when both are available', () => {
+    // V-001/RHEL-001 share CCI-000366 (unambiguous) AND CWE-79
+    // V-002/RHEL-002 share only CWE-89
+    // CCI is the primary signal; CWE is the fallback.
+    const oldReqs = [
+      { id: 'V-001', tags: { cci: ['CCI-000366'] }, cwe: ['CWE-79'], impact: 0.7 },
+      { id: 'V-002', cwe: ['CWE-89'], impact: 0.5 },
+    ];
+    const newReqs = [
+      { id: 'RHEL-001', tags: { cci: ['CCI-000366'] }, cwe: ['CWE-79'], impact: 0.7 },
+      { id: 'RHEL-002', cwe: ['CWE-89'], impact: 0.5 },
+    ];
+
+    const result = strategy.match(oldReqs, newReqs);
+
+    expect(result.matched).toHaveLength(2);
+    const byOldId = Object.fromEntries(
+      result.matched.map((m) => [m.oldReq['id'], m.newReq['id']]),
+    );
+    expect(byOldId).toEqual({ 'V-001': 'RHEL-001', 'V-002': 'RHEL-002' });
+    // CCI matches should have higher confidence than CWE matches.
+    const v001Match = result.matched.find((m) => m.oldReq['id'] === 'V-001')!;
+    const v002Match = result.matched.find((m) => m.oldReq['id'] === 'V-002')!;
+    expect(v001Match.confidence).toBeGreaterThan(v002Match.confidence);
+  });
+
+  it('should skip ambiguous CWE matches the same way as CCI', () => {
+    const oldReqs = [
+      { id: 'OLD-A', cwe: ['CWE-79'], impact: 0.7 },
+      { id: 'OLD-B', cwe: ['CWE-79'], impact: 0.5 },
+    ];
+    const newReqs = [
+      { id: 'NEW-X', cwe: ['CWE-79'], impact: 0.7 },
+    ];
+
+    const result = strategy.match(oldReqs, newReqs);
+
+    // Two old reqs share CWE-79 — ambiguous, skipped.
+    expect(result.matched).toHaveLength(0);
+    expect(result.unmatchedOld).toHaveLength(2);
+    expect(result.unmatchedNew).toHaveLength(1);
+  });
+
+  it('should not double-match: a CCI-matched req should not also CWE-match', () => {
+    // V-001 matches RHEL-001 via CCI. V-001 ALSO shares CWE-79 with RHEL-002.
+    // We should not re-pair already-claimed reqs.
+    const oldReqs = [
+      { id: 'V-001', tags: { cci: ['CCI-000366'] }, cwe: ['CWE-79'], impact: 0.7 },
+    ];
+    const newReqs = [
+      { id: 'RHEL-001', tags: { cci: ['CCI-000366'] }, impact: 0.7 },
+      { id: 'RHEL-002', cwe: ['CWE-79'], impact: 0.5 },
+    ];
+
+    const result = strategy.match(oldReqs, newReqs);
+
+    expect(result.matched).toHaveLength(1);
+    expect(result.matched[0]!.oldReq['id']).toBe('V-001');
+    expect(result.matched[0]!.newReq['id']).toBe('RHEL-001');
+    expect(result.unmatchedNew).toHaveLength(1);
+    expect(result.unmatchedNew[0]!['id']).toBe('RHEL-002');
+  });
+});
+
+describe('extractCwes', () => {
+  it('prefers structured req.cwe[] over tags.cwe when present', () => {
+    const req = {
+      cwe: ['CWE-79', 'CWE-89'],
+      tags: { cwe: ['CWE-999'] },
+    };
+    expect(extractCwes(req)).toEqual(['CWE-79', 'CWE-89']);
+  });
+
+  it('falls back to tags.cwe when req.cwe[] is absent', () => {
+    const req = { tags: { cwe: ['CWE-79'] } };
+    expect(extractCwes(req)).toEqual(['CWE-79']);
+  });
+
+  it('falls back to tags.cwe when req.cwe[] is empty (length 0)', () => {
+    const req = { cwe: [], tags: { cwe: ['CWE-79'] } };
+    expect(extractCwes(req)).toEqual(['CWE-79']);
+  });
+
+  it('tolerates string tags.cwe (single-value form)', () => {
+    const req = { tags: { cwe: 'CWE-79' } };
+    expect(extractCwes(req)).toEqual(['CWE-79']);
+  });
+
+  it('returns empty array when no CWE data is available', () => {
+    expect(extractCwes({})).toEqual([]);
+    expect(extractCwes({ tags: {} })).toEqual([]);
+    expect(extractCwes({ cwe: 'not-an-array' as unknown as string[] })).toEqual([]);
+  });
+
+  it('filters non-string entries from arrays', () => {
+    const req = { cwe: ['CWE-79', 42, null, 'CWE-89'] as unknown as string[] };
+    expect(extractCwes(req)).toEqual(['CWE-79', 'CWE-89']);
   });
 });

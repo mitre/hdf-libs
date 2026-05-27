@@ -16,6 +16,33 @@ function extractCcis(req: Record<string, unknown>): Set<string> {
 }
 
 /**
+ * Extract CWE identifiers from a requirement.
+ *
+ * Prefers the structured `req.cwe[]` field (introduced in Evaluated_Requirement
+ * Wave 1) when present and non-empty. Falls back to `tags.cwe` (array or string)
+ * for compatibility with HDF files emitted before the structured field existed.
+ *
+ * Exported so callers and tests can verify the preference order directly.
+ */
+export function extractCwes(req: Record<string, unknown>): Set<string> {
+  const cwe = req['cwe'];
+  if (Array.isArray(cwe)) {
+    const filtered = cwe.filter((c): c is string => typeof c === 'string');
+    if (filtered.length > 0) return new Set(filtered);
+  }
+  const tags = req['tags'] as Record<string, unknown> | undefined;
+  if (!tags) return new Set();
+  const tagCwe = tags['cwe'];
+  if (Array.isArray(tagCwe)) {
+    return new Set(tagCwe.filter((c): c is string => typeof c === 'string'));
+  }
+  if (typeof tagCwe === 'string') {
+    return new Set([tagCwe]);
+  }
+  return new Set();
+}
+
+/**
  * Extract tags.gtitle from a requirement.
  */
 function extractGtitle(req: Record<string, unknown>): string | null {
@@ -128,30 +155,43 @@ export function createSrgCciTiebreakStrategy(): MatchStrategy {
 
           const newCcis = extractCcis(newReqs[ni]!);
           const newTitle = safeTitle(newReqs[ni]!);
+          const newCwes = extractCwes(newReqs[ni]!);
 
           let bestIdx = -1;
           let bestComposite = -1;
           let bestCci = 0;
+          let bestCwe = -1;
           let bestIsUnclaimed = false;
 
           for (const oi of oldIdxList) {
             const oldCcis = extractCcis(oldReqs[oi]!);
             const oldTitle = safeTitle(oldReqs[oi]!);
+            const oldCwes = extractCwes(oldReqs[oi]!);
 
             const cci = cciJaccard(newCcis, oldCcis);
             const title = tokenJaccard(newTitle, oldTitle);
+            // CWE Jaccard is used purely as a tiebreaker — it does NOT
+            // change composite scoring weights, so existing tests that
+            // depend on CCI+title ordering are unaffected.
+            const cwe = cciJaccard(newCwes, oldCwes);
             const composite = CCI_WEIGHT * cci + TITLE_WEIGHT * title;
             const isUnclaimed = !matchedOldIndices.has(oi);
 
-            // Prefer unclaimed candidates; among same claim status, prefer higher composite
+            // Prefer unclaimed candidates; among same claim status, prefer
+            // higher composite; among equal composites, prefer higher CWE
+            // Jaccard (tiebreaker added Wave 2).
             if (
               bestIdx === -1 ||
               (isUnclaimed && !bestIsUnclaimed) ||
-              (isUnclaimed === bestIsUnclaimed && composite > bestComposite)
+              (isUnclaimed === bestIsUnclaimed && composite > bestComposite) ||
+              (isUnclaimed === bestIsUnclaimed &&
+                composite === bestComposite &&
+                cwe > bestCwe)
             ) {
               bestIdx = oi;
               bestComposite = composite;
               bestCci = cci;
+              bestCwe = cwe;
               bestIsUnclaimed = isUnclaimed;
             }
           }

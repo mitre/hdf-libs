@@ -62,12 +62,44 @@ export type RequirementState =
 export interface FieldChange {
   /** The operation type: add, remove, or replace */
   op: 'add' | 'remove' | 'replace';
-  /** Dot-notation path to the changed field (e.g., 'impact', 'tags.cci') */
+  /**
+   * Dot-notation path to the changed field. For CVE-ecosystem types the path
+   * uses bracket notation to identify matched entries by their natural key,
+   * e.g.:
+   *   - `cvss[CVE-2024-1234].baseScore`
+   *   - `cvss[CVE-2024-1234].baseVector.AV`
+   *   - `affectedPackages[openssl@1.1.1].fixedInVersion`
+   *   - `cwe`, `epss`, `epss.score`, `kev`, `kev.inKev`
+   */
   path: string;
   /** Value in the old evaluation (undefined for 'add' operations) */
   oldValue?: unknown;
   /** Value in the new evaluation (undefined for 'remove' operations) */
   newValue?: unknown;
+  /**
+   * Optional human-readable annotation for changes that need extra context
+   * beyond raw old/new values (e.g., "Newly added to CISA KEV catalog as
+   * of 2024-01-20"). Renderers should surface this prominently when present.
+   */
+  message?: string;
+}
+
+/**
+ * A single per-metric change inside a CVSS vector. Surfaced via FieldChange
+ * entries with paths like `cvss[CVE-...].baseVector.AV`, where this type
+ * documents the shape of those records' values.
+ */
+export interface CvssMetricChange {
+  /** The CVSS vector kind: base, threat, environmental, or supplemental */
+  vector: 'baseVector' | 'threatVector' | 'environmentalVector' | 'supplementalVector';
+  /** The CVE / scoring source identifier (e.g., 'CVE-2024-1234', 'nvd@NIST') */
+  source: string;
+  /** Metric short code, e.g. 'AV' (Attack Vector), 'E' (Exploit Code Maturity) */
+  metric: string;
+  /** Old metric value (single-character code, e.g. 'N', 'L', 'U', 'F'). Undefined if metric was added. */
+  oldValue?: string;
+  /** New metric value. Undefined if metric was removed. */
+  newValue?: string;
 }
 
 /**

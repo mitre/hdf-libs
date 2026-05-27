@@ -13,6 +13,82 @@ function extractCcis(req: Record<string, unknown>): string[] {
 }
 
 /**
+ * Extract CWE identifiers from a requirement.
+ *
+ * Prefers the structured `req.cwe[]` field (introduced in Evaluated_Requirement
+ * Wave 1) when present and non-empty. Falls back to `tags.cwe` for compatibility
+ * with HDF files emitted before the structured field existed. `tags.cwe` may be
+ * either an array of strings or a single string.
+ *
+ * Exported for reuse by sibling matchers (e.g. srg-cci-tiebreak) and to make
+ * the preference order directly testable.
+ */
+export function extractCwes(req: Record<string, unknown>): string[] {
+  const cwe = req['cwe'];
+  if (Array.isArray(cwe)) {
+    const filtered = cwe.filter((c): c is string => typeof c === 'string');
+    if (filtered.length > 0) return filtered;
+  }
+  const tags = req['tags'] as Record<string, unknown> | undefined;
+  if (!tags) return [];
+  const tagCwe = tags['cwe'];
+  if (Array.isArray(tagCwe)) {
+    return tagCwe.filter((c): c is string => typeof c === 'string');
+  }
+  if (typeof tagCwe === 'string') {
+    return [tagCwe];
+  }
+  return [];
+}
+
+/**
+ * Build a key → [requirement-indices] map for unambiguous-pair lookup.
+ */
+function indexByKey(
+  reqs: Record<string, unknown>[],
+  keys: (req: Record<string, unknown>) => string[],
+): Map<string, number[]> {
+  const map = new Map<string, number[]>();
+  for (let i = 0; i < reqs.length; i++) {
+    for (const key of keys(reqs[i]!)) {
+      const list = map.get(key);
+      if (list) {
+        list.push(i);
+      } else {
+        map.set(key, [i]);
+      }
+    }
+  }
+  return map;
+}
+
+/**
+ * Pair indices by an unambiguous shared key (exactly 1 old + 1 new per key),
+ * skipping any indices already claimed in `matchedOld` / `matchedNew`.
+ */
+function pairUnambiguous(
+  oldMap: Map<string, number[]>,
+  newMap: Map<string, number[]>,
+  matchedOld: Set<number>,
+  matchedNew: Set<number>,
+): Array<{ oldIdx: number; newIdx: number }> {
+  const pairs: Array<{ oldIdx: number; newIdx: number }> = [];
+  const allKeys = new Set([...oldMap.keys(), ...newMap.keys()]);
+  for (const key of allKeys) {
+    const oldIndices = oldMap.get(key) ?? [];
+    const newIndices = newMap.get(key) ?? [];
+    if (oldIndices.length !== 1 || newIndices.length !== 1) continue;
+    const oldIdx = oldIndices[0]!;
+    const newIdx = newIndices[0]!;
+    if (matchedOld.has(oldIdx) || matchedNew.has(newIdx)) continue;
+    pairs.push({ oldIdx, newIdx });
+    matchedOld.add(oldIdx);
+    matchedNew.add(newIdx);
+  }
+  return pairs;
+}
+
+/**
  * Create a CCI-based matching strategy.
  *
  * Matches requirements that share the same CCI identifier in `tags.cci`.
@@ -21,91 +97,69 @@ function extractCcis(req: Record<string, unknown>): string[] {
  * by multiple old or multiple new requirements) are skipped, and those
  * requirements are left unmatched.
  *
- * Confidence is 0.8 for unambiguous matches.
+ * As a fallback, also pairs unambiguous CWE matches (preferring the
+ * structured `req.cwe[]` field over the legacy `tags.cwe`). This catches
+ * CVE-ecosystem findings where CCI is absent but CWE is present.
+ *
+ * Confidence is 0.8 for CCI matches and 0.6 for CWE-fallback matches.
  */
 export function createCciMatchStrategy(): MatchStrategy {
   return {
     name: 'cciMatch',
     match(oldReqs: Record<string, unknown>[], newReqs: Record<string, unknown>[]): MatchResult {
-      const result: MatchResult = {
-        matched: [],
-        unmatchedOld: [],
-        unmatchedNew: [],
-      };
-
-      // Build CCI -> requirement indices for old and new
-      const oldCciMap = new Map<string, number[]>();
-      for (let i = 0; i < oldReqs.length; i++) {
-        for (const cci of extractCcis(oldReqs[i]!)) {
-          const list = oldCciMap.get(cci);
-          if (list) {
-            list.push(i);
-          } else {
-            oldCciMap.set(cci, [i]);
-          }
-        }
-      }
-
-      const newCciMap = new Map<string, number[]>();
-      for (let i = 0; i < newReqs.length; i++) {
-        for (const cci of extractCcis(newReqs[i]!)) {
-          const list = newCciMap.get(cci);
-          if (list) {
-            list.push(i);
-          } else {
-            newCciMap.set(cci, [i]);
-          }
-        }
-      }
-
-      // Track which indices have been matched
       const matchedOldIndices = new Set<number>();
       const matchedNewIndices = new Set<number>();
+      const matched: MatchResult['matched'] = [];
 
-      // Find unambiguous CCI matches: exactly 1 old and 1 new share the CCI
-      // Collect all CCIs from both maps
-      const allCcis = new Set([...oldCciMap.keys(), ...newCciMap.keys()]);
-
-      for (const cci of allCcis) {
-        const oldIndices = oldCciMap.get(cci) ?? [];
-        const newIndices = newCciMap.get(cci) ?? [];
-
-        if (oldIndices.length !== 1 || newIndices.length !== 1) {
-          // Ambiguous or one-sided — skip
-          continue;
-        }
-
-        const oldIdx = oldIndices[0]!;
-        const newIdx = newIndices[0]!;
-
-        // Don't double-match
-        if (matchedOldIndices.has(oldIdx) || matchedNewIndices.has(newIdx)) {
-          continue;
-        }
-
-        result.matched.push({
+      // Primary signal: CCI.
+      const oldCciMap = indexByKey(oldReqs, extractCcis);
+      const newCciMap = indexByKey(newReqs, extractCcis);
+      for (const { oldIdx, newIdx } of pairUnambiguous(
+        oldCciMap,
+        newCciMap,
+        matchedOldIndices,
+        matchedNewIndices,
+      )) {
+        matched.push({
           oldReq: oldReqs[oldIdx]!,
           newReq: newReqs[newIdx]!,
           strategy: 'cciMatch',
           confidence: 0.8,
         });
-        matchedOldIndices.add(oldIdx);
-        matchedNewIndices.add(newIdx);
       }
 
-      // Collect unmatched
+      // Fallback signal: CWE (structured field preferred over tags.cwe).
+      // Only considers reqs not already claimed by CCI pairing.
+      const oldCweMap = indexByKey(oldReqs, (r) =>
+        // Filter to unclaimed reqs by intersecting on index outside this scope;
+        // implementation: still index everything, but pairUnambiguous skips claimed.
+        extractCwes(r),
+      );
+      const newCweMap = indexByKey(newReqs, (r) => extractCwes(r));
+      for (const { oldIdx, newIdx } of pairUnambiguous(
+        oldCweMap,
+        newCweMap,
+        matchedOldIndices,
+        matchedNewIndices,
+      )) {
+        matched.push({
+          oldReq: oldReqs[oldIdx]!,
+          newReq: newReqs[newIdx]!,
+          strategy: 'cciMatch',
+          confidence: 0.6,
+        });
+      }
+
+      const unmatchedOld: Record<string, unknown>[] = [];
       for (let i = 0; i < oldReqs.length; i++) {
-        if (!matchedOldIndices.has(i)) {
-          result.unmatchedOld.push(oldReqs[i]!);
-        }
+        if (!matchedOldIndices.has(i)) unmatchedOld.push(oldReqs[i]!);
       }
+      const unmatchedNew: Record<string, unknown>[] = [];
       for (let i = 0; i < newReqs.length; i++) {
-        if (!matchedNewIndices.has(i)) {
-          result.unmatchedNew.push(newReqs[i]!);
-        }
+        if (!matchedNewIndices.has(i)) unmatchedNew.push(newReqs[i]!);
       }
 
-      return result;
+      return { matched, unmatchedOld, unmatchedNew };
     },
   };
 }

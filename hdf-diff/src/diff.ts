@@ -13,6 +13,7 @@ import { matchRequirements } from './matching/index.js';
 import type { MatchOptions } from './matching/index.js';
 import { validateComparison } from './validate.js';
 import { diffSboms } from './sbom.js';
+import { parseCvssVector as parseCvssVectorUtil } from '@mitre/hdf-utilities';
 import type { PackageDiff } from './sbom.js';
 
 /**
@@ -493,9 +494,16 @@ function comparePair(
   return { baselineDiffs, requirementDiffs };
 }
 
+/** Field names handled by dedicated CVE-ecosystem diff handlers (not generic JSON compare). */
+const CVE_ECOSYSTEM_FIELDS = new Set(['cvss', 'epss', 'kev', 'cwe', 'affectedPackages']);
+
 /**
  * Compute field-level changes for tracked fields between two requirements.
  * Uses JSON Patch-like op/path format.
+ *
+ * Always runs the CVE-ecosystem handlers (cvss, epss, kev, cwe, affectedPackages)
+ * in addition to whatever scalar fields are in trackedFields, since these
+ * structured types need richer diff than generic JSON comparison provides.
  */
 function computeFieldChanges(
   oldReq: RequirementLike,
@@ -505,6 +513,9 @@ function computeFieldChanges(
   const changes: FieldChange[] = [];
 
   for (const field of trackedFields) {
+    // CVE-ecosystem fields are handled below by dedicated handlers
+    if (CVE_ECOSYSTEM_FIELDS.has(field)) continue;
+
     const oldVal = oldReq[field];
     const newVal = newReq[field];
 
@@ -533,6 +544,359 @@ function computeFieldChanges(
     }
   }
 
+  // Always run CVE-ecosystem handlers — these fields are part of the v3.x
+  // Evaluated_Requirement structured types and need typed diffing regardless
+  // of the trackedFields setting.
+  changes.push(...diffCvssArray(oldReq['cvss'], newReq['cvss']));
+  changes.push(...diffEpss(oldReq['epss'], newReq['epss']));
+  changes.push(...diffKev(oldReq['kev'], newReq['kev']));
+  changes.push(...diffCweSet(oldReq['cwe'], newReq['cwe']));
+  changes.push(...diffAffectedPackages(oldReq['affectedPackages'], newReq['affectedPackages']));
+
+  return changes;
+}
+
+// ── CVE-ecosystem diff handlers ─────────────────────────────────────────
+
+interface CvssEntry {
+  source?: string;
+  baseScore?: number;
+  baseSeverity?: string;
+  baseVector?: string;
+  threatScore?: number;
+  threatVector?: string;
+  environmentalScore?: number;
+  environmentalVector?: string;
+  supplementalVector?: string;
+  [key: string]: unknown;
+}
+
+const CVSS_VECTOR_FIELDS = [
+  'baseVector',
+  'threatVector',
+  'environmentalVector',
+  'supplementalVector',
+] as const;
+
+/**
+ * Parse a CVSS vector string into a map of metric-code → value.
+ *
+ * Accepts both v3.x ("CVSS:3.1/AV:N/AC:L/...") and v4.0 ("CVSS:4.0/AV:N/...")
+ * shapes, plus partial vectors that omit the version prefix (e.g., the
+ * `threatVector` field is conventionally just the threat metrics).
+ *
+ * Returns `null` for inputs that don't look like CVSS vectors so callers
+ * can fall back to a scalar string compare.
+ *
+ * Delegates to `parseCvssVector` from `@mitre/hdf-utilities` but adapts the
+ * return shape: returns null for empty/unparseable inputs so call sites can
+ * fall back to scalar string compare.
+ */
+function parseCvssVector(vec: string): { version?: string; metrics: Map<string, string> } | null {
+  if (typeof vec !== 'string' || vec.length === 0) return null;
+  const parsed = parseCvssVectorUtil(vec);
+  if (parsed.metrics.size === 0) return null;
+  return {
+    version: parsed.version === 'unknown' ? undefined : parsed.version,
+    metrics: parsed.metrics,
+  };
+}
+
+/**
+ * Diff a single pair of cvss entries (same source). Emits per-field changes
+ * including decomposed per-metric vector diffs.
+ */
+function diffCvssEntry(
+  source: string,
+  oldEntry: CvssEntry,
+  newEntry: CvssEntry,
+): FieldChange[] {
+  const changes: FieldChange[] = [];
+  const allKeys = new Set([...Object.keys(oldEntry), ...Object.keys(newEntry)]);
+
+  for (const key of allKeys) {
+    if (key === 'source') continue;
+    const oldVal = oldEntry[key];
+    const newVal = newEntry[key];
+    if (JSON.stringify(oldVal) === JSON.stringify(newVal)) continue;
+
+    // Vector fields: decompose into per-metric records when both parse cleanly
+    if ((CVSS_VECTOR_FIELDS as readonly string[]).includes(key)) {
+      if (typeof oldVal === 'string' && typeof newVal === 'string') {
+        const oldParsed = parseCvssVector(oldVal);
+        const newParsed = parseCvssVector(newVal);
+        if (oldParsed && newParsed) {
+          const metricKeys = new Set<string>([
+            ...oldParsed.metrics.keys(), ...newParsed.metrics.keys(),
+          ]);
+          for (const m of metricKeys) {
+            const o = oldParsed.metrics.get(m);
+            const n = newParsed.metrics.get(m);
+            if (o === n) continue;
+            if (o === undefined && n !== undefined) {
+              changes.push({ op: 'add', path: `cvss[${source}].${key}.${m}`, newValue: n });
+            } else if (o !== undefined && n === undefined) {
+              changes.push({ op: 'remove', path: `cvss[${source}].${key}.${m}`, oldValue: o });
+            } else {
+              changes.push({
+                op: 'replace', path: `cvss[${source}].${key}.${m}`, oldValue: o, newValue: n,
+              });
+            }
+          }
+          continue;
+        }
+      } else if (oldVal === undefined && typeof newVal === 'string') {
+        // Whole vector added — decompose into per-metric add records
+        const parsed = parseCvssVector(newVal);
+        if (parsed) {
+          for (const [m, v] of parsed.metrics) {
+            changes.push({ op: 'add', path: `cvss[${source}].${key}.${m}`, newValue: v });
+          }
+          continue;
+        }
+      } else if (typeof oldVal === 'string' && newVal === undefined) {
+        const parsed = parseCvssVector(oldVal);
+        if (parsed) {
+          for (const [m, v] of parsed.metrics) {
+            changes.push({ op: 'remove', path: `cvss[${source}].${key}.${m}`, oldValue: v });
+          }
+          continue;
+        }
+      }
+      // Fall through to scalar replace for unparseable / mixed-type cases
+    }
+
+    if (oldVal === undefined) {
+      changes.push({ op: 'add', path: `cvss[${source}].${key}`, newValue: newVal });
+    } else if (newVal === undefined) {
+      changes.push({ op: 'remove', path: `cvss[${source}].${key}`, oldValue: oldVal });
+    } else {
+      changes.push({
+        op: 'replace', path: `cvss[${source}].${key}`, oldValue: oldVal, newValue: newVal,
+      });
+    }
+  }
+
+  return changes;
+}
+
+/**
+ * Diff old vs new cvss[] arrays. Entries are matched by `source` (CVE ID
+ * or scoring authority); added/removed entries emit whole-entry add/remove
+ * records; matched pairs are decomposed via diffCvssEntry.
+ */
+function diffCvssArray(oldField: unknown, newField: unknown): FieldChange[] {
+  const oldArr = Array.isArray(oldField) ? (oldField as CvssEntry[]) : [];
+  const newArr = Array.isArray(newField) ? (newField as CvssEntry[]) : [];
+  if (oldArr.length === 0 && newArr.length === 0) return [];
+
+  const oldBySource = new Map<string, CvssEntry>();
+  for (const e of oldArr) {
+    if (typeof e?.source === 'string') oldBySource.set(e.source, e);
+  }
+  const newBySource = new Map<string, CvssEntry>();
+  for (const e of newArr) {
+    if (typeof e?.source === 'string') newBySource.set(e.source, e);
+  }
+
+  const changes: FieldChange[] = [];
+  const allSources = new Set([...oldBySource.keys(), ...newBySource.keys()]);
+  for (const source of allSources) {
+    const o = oldBySource.get(source);
+    const n = newBySource.get(source);
+    if (o && !n) {
+      changes.push({ op: 'remove', path: `cvss[${source}]`, oldValue: o });
+    } else if (!o && n) {
+      changes.push({ op: 'add', path: `cvss[${source}]`, newValue: n });
+    } else if (o && n) {
+      changes.push(...diffCvssEntry(source, o, n));
+    }
+  }
+  return changes;
+}
+
+/** Diff the optional `epss` object (score, percentile, date). */
+function diffEpss(oldField: unknown, newField: unknown): FieldChange[] {
+  if (oldField === undefined && newField === undefined) return [];
+  if (oldField === undefined) {
+    return [{ op: 'add', path: 'epss', newValue: newField }];
+  }
+  if (newField === undefined) {
+    return [{ op: 'remove', path: 'epss', oldValue: oldField }];
+  }
+  if (typeof oldField !== 'object' || typeof newField !== 'object' || oldField === null || newField === null) {
+    if (JSON.stringify(oldField) === JSON.stringify(newField)) return [];
+    return [{ op: 'replace', path: 'epss', oldValue: oldField, newValue: newField }];
+  }
+  const oldObj = oldField as Record<string, unknown>;
+  const newObj = newField as Record<string, unknown>;
+  const changes: FieldChange[] = [];
+  const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+  for (const key of allKeys) {
+    const o = oldObj[key];
+    const n = newObj[key];
+    if (JSON.stringify(o) === JSON.stringify(n)) continue;
+    if (o === undefined) {
+      changes.push({ op: 'add', path: `epss.${key}`, newValue: n });
+    } else if (n === undefined) {
+      changes.push({ op: 'remove', path: `epss.${key}`, oldValue: o });
+    } else {
+      changes.push({ op: 'replace', path: `epss.${key}`, oldValue: o, newValue: n });
+    }
+  }
+  return changes;
+}
+
+/**
+ * Diff the optional `kev` object. Flips of `inKev` from false→true (or
+ * fresh add with `inKev: true`) get an annotated `message` field calling
+ * out the CISA KEV catalog inclusion.
+ */
+function diffKev(oldField: unknown, newField: unknown): FieldChange[] {
+  if (oldField === undefined && newField === undefined) return [];
+  if (oldField === undefined) {
+    const change: FieldChange = { op: 'add', path: 'kev', newValue: newField };
+    const nObj = newField as Record<string, unknown> | null;
+    if (nObj && nObj['inKev'] === true) {
+      const dateAdded = typeof nObj['dateAdded'] === 'string' ? nObj['dateAdded'] : 'unknown date';
+      change.message = `Newly added to CISA KEV catalog as of ${dateAdded}`;
+    }
+    return [change];
+  }
+  if (newField === undefined) {
+    return [{ op: 'remove', path: 'kev', oldValue: oldField }];
+  }
+  if (typeof oldField !== 'object' || typeof newField !== 'object' || oldField === null || newField === null) {
+    if (JSON.stringify(oldField) === JSON.stringify(newField)) return [];
+    return [{ op: 'replace', path: 'kev', oldValue: oldField, newValue: newField }];
+  }
+  const oldObj = oldField as Record<string, unknown>;
+  const newObj = newField as Record<string, unknown>;
+  const changes: FieldChange[] = [];
+  const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+  for (const key of allKeys) {
+    const o = oldObj[key];
+    const n = newObj[key];
+    if (JSON.stringify(o) === JSON.stringify(n)) continue;
+    let change: FieldChange;
+    if (o === undefined) {
+      change = { op: 'add', path: `kev.${key}`, newValue: n };
+    } else if (n === undefined) {
+      change = { op: 'remove', path: `kev.${key}`, oldValue: o };
+    } else {
+      change = { op: 'replace', path: `kev.${key}`, oldValue: o, newValue: n };
+    }
+    // Annotate the significant false→true inKev flip
+    if (key === 'inKev' && o === false && n === true) {
+      const dateAdded = typeof newObj['dateAdded'] === 'string' ? newObj['dateAdded'] : 'unknown date';
+      change.message = `Newly added to CISA KEV catalog as of ${dateAdded}`;
+    }
+    changes.push(change);
+  }
+  return changes;
+}
+
+/** Diff the `cwe[]` field as a set — order does not matter. */
+function diffCweSet(oldField: unknown, newField: unknown): FieldChange[] {
+  const toSet = (v: unknown): Set<string> => {
+    if (!Array.isArray(v)) return new Set();
+    return new Set(v.filter((x): x is string => typeof x === 'string'));
+  };
+  const oldSet = toSet(oldField);
+  const newSet = toSet(newField);
+  if (oldSet.size === 0 && newSet.size === 0) return [];
+  const changes: FieldChange[] = [];
+  for (const c of newSet) {
+    if (!oldSet.has(c)) changes.push({ op: 'add', path: 'cwe', newValue: c });
+  }
+  for (const c of oldSet) {
+    if (!newSet.has(c)) changes.push({ op: 'remove', path: 'cwe', oldValue: c });
+  }
+  return changes;
+}
+
+interface AffectedPackage {
+  name?: string;
+  version?: string;
+  cpe?: string;
+  purl?: string;
+  fixedInVersion?: string;
+  [key: string]: unknown;
+}
+
+/** Build the natural key for an AffectedPackage: `name@version`. */
+function packageKey(pkg: AffectedPackage): string | null {
+  const name = pkg?.name;
+  const version = pkg?.version;
+  if (typeof name !== 'string' || name.length === 0) return null;
+  if (typeof version !== 'string' || version.length === 0) return null;
+  return `${name}@${version}`;
+}
+
+/**
+ * Diff a single pair of affectedPackages entries (matched by name+version).
+ * Emits per-field changes for cpe / purl / fixedInVersion and any other
+ * non-key fields that differ.
+ */
+function diffAffectedPackageEntry(
+  key: string,
+  oldPkg: AffectedPackage,
+  newPkg: AffectedPackage,
+): FieldChange[] {
+  const changes: FieldChange[] = [];
+  const allKeys = new Set([...Object.keys(oldPkg), ...Object.keys(newPkg)]);
+  for (const k of allKeys) {
+    if (k === 'name' || k === 'version') continue; // part of the match key
+    const o = oldPkg[k];
+    const n = newPkg[k];
+    if (JSON.stringify(o) === JSON.stringify(n)) continue;
+    if (o === undefined) {
+      changes.push({ op: 'add', path: `affectedPackages[${key}].${k}`, newValue: n });
+    } else if (n === undefined) {
+      changes.push({ op: 'remove', path: `affectedPackages[${key}].${k}`, oldValue: o });
+    } else {
+      changes.push({
+        op: 'replace', path: `affectedPackages[${key}].${k}`, oldValue: o, newValue: n,
+      });
+    }
+  }
+  return changes;
+}
+
+/**
+ * Diff old vs new affectedPackages[] arrays. Entries are matched by the
+ * `name@version` tuple; added/removed packages emit whole-entry records;
+ * matched pairs are decomposed via diffAffectedPackageEntry.
+ */
+function diffAffectedPackages(oldField: unknown, newField: unknown): FieldChange[] {
+  const oldArr = Array.isArray(oldField) ? (oldField as AffectedPackage[]) : [];
+  const newArr = Array.isArray(newField) ? (newField as AffectedPackage[]) : [];
+  if (oldArr.length === 0 && newArr.length === 0) return [];
+
+  const oldByKey = new Map<string, AffectedPackage>();
+  for (const p of oldArr) {
+    const k = packageKey(p);
+    if (k) oldByKey.set(k, p);
+  }
+  const newByKey = new Map<string, AffectedPackage>();
+  for (const p of newArr) {
+    const k = packageKey(p);
+    if (k) newByKey.set(k, p);
+  }
+
+  const changes: FieldChange[] = [];
+  const allKeys = new Set([...oldByKey.keys(), ...newByKey.keys()]);
+  for (const key of allKeys) {
+    const o = oldByKey.get(key);
+    const n = newByKey.get(key);
+    if (o && !n) {
+      changes.push({ op: 'remove', path: `affectedPackages[${key}]`, oldValue: o });
+    } else if (!o && n) {
+      changes.push({ op: 'add', path: `affectedPackages[${key}]`, newValue: n });
+    } else if (o && n) {
+      changes.push(...diffAffectedPackageEntry(key, o, n));
+    }
+  }
   return changes;
 }
 

@@ -37,6 +37,7 @@
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
   "dependencies": {
+    "@mitre/hdf-utilities": "workspace:^",
     "@mitre/hdf-validators": "workspace:^"
   },
   "engines": {
