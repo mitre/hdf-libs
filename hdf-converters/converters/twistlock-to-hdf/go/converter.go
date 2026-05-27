@@ -3,6 +3,7 @@ package twistlock
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -26,15 +27,27 @@ type TwistlockResult struct {
 	Name                      string                 `json:"name"`
 	Repository                string                 `json:"repository"`
 	Distro                    string                 `json:"distro"`
+	DistroRelease             string                 `json:"distroRelease"`
 	Collections               []string               `json:"collections"`
+	Packages                  []TwistlockPackage     `json:"packages"`
 	Vulnerabilities           []TwistlockVuln        `json:"vulnerabilities"`
 	VulnerabilityDistribution *TwistlockDistribution `json:"vulnerabilityDistribution"`
 	ComplianceDistribution    *TwistlockDistribution `json:"complianceDistribution"`
 }
 
+// TwistlockPackage represents an entry from the result-level "packages" array.
+// Used to derive AffectedPackage.ecosystem because the per-vulnerability
+// entries do not carry a package-type field of their own.
+type TwistlockPackage struct {
+	Type    string `json:"type"`
+	Name    string `json:"name"`
+	Version string `json:"version"`
+}
+
 // TwistlockVuln represents a single vulnerability entry.
 type TwistlockVuln struct {
 	ID               string   `json:"id"`
+	CVE              string   `json:"cve"`
 	Status           string   `json:"status"`
 	CVSS             float64  `json:"cvss"`
 	Vector           string   `json:"vector"`
@@ -42,7 +55,10 @@ type TwistlockVuln struct {
 	Severity         string   `json:"severity"`
 	PackageName      string   `json:"packageName"`
 	PackageVersion   string   `json:"packageVersion"`
+	PackageType      string   `json:"packageType"`
+	CWE              string   `json:"cwe"`
 	Link             string   `json:"link"`
+	FixedBy          string   `json:"fixedBy"`
 	RiskFactors      []string `json:"riskFactors"`
 	ImpactedVersions []string `json:"impactedVersions"`
 	PublishedDate    string   `json:"publishedDate"`
@@ -104,6 +120,216 @@ func buildSummary(result TwistlockResult) string {
 		vulnTotal, complianceTotal)
 }
 
+// cvssVersionFromVector returns the schema CVSS Version enum corresponding to a
+// vector string prefix (CVSS:2.0/, CVSS:3.0/, CVSS:3.1/, CVSS:4.0/). When the
+// prefix is absent or unrecognized, defaults to "3.1" since modern Twistlock
+// exclusively emits 3.x output.
+func cvssVersionFromVector(vector string) hdf.Version {
+	switch {
+	case strings.HasPrefix(vector, "CVSS:2.0/"):
+		return hdf.The20
+	case strings.HasPrefix(vector, "CVSS:3.0/"):
+		return hdf.The30
+	case strings.HasPrefix(vector, "CVSS:4.0/"):
+		return hdf.The40
+	default:
+		return hdf.The31
+	}
+}
+
+// cvssSeverityFromScore converts the band string returned by
+// hdfutil.CvssScoreToSeverity into the schema CVSSSeverity enum.
+func cvssSeverityFromScore(score float64) *hdf.CVSSSeverity {
+	band := hdfutil.CvssScoreToSeverity(score)
+	var sev hdf.CVSSSeverity
+	switch band {
+	case "none":
+		sev = hdf.None
+	case "low":
+		sev = hdf.CVSSSeverityLow
+	case "medium":
+		sev = hdf.CVSSSeverityMedium
+	case "high":
+		sev = hdf.CVSSSeverityHigh
+	case "critical":
+		sev = hdf.CVSSSeverityCritical
+	default:
+		return nil
+	}
+	return &sev
+}
+
+// buildCvss assembles a Cvss entry from the Twistlock vulnerability fields.
+// Returns nil when neither a score nor a vector is available.
+func buildCvss(vuln TwistlockVuln) *hdf.Cvss {
+	if vuln.Vector == "" && vuln.CVSS == 0 {
+		return nil
+	}
+	cv := hdf.Cvss{
+		Version:   cvssVersionFromVector(vuln.Vector),
+		BaseScore: vuln.CVSS,
+	}
+	if vuln.Vector != "" {
+		cv.BaseVector = vuln.Vector
+	}
+	source := vuln.CVE
+	if source == "" {
+		source = vuln.ID
+	}
+	if source != "" {
+		cv.Source = &source
+	}
+	if vuln.CVSS > 0 {
+		cv.BaseSeverity = cvssSeverityFromScore(vuln.CVSS)
+	}
+	return &cv
+}
+
+// cwePattern matches a CWE identifier (case-insensitive prefix, capturing the
+// numeric portion). Used to normalize various Twistlock spellings ("CWE-79",
+// "cwe-79", "79") to the canonical "CWE-79" form.
+var cwePattern = regexp.MustCompile(`(?i)cwe[-_]?(\d+)`)
+
+// parseCwes extracts CWE identifiers from a free-form string and returns them
+// in canonical "CWE-N" format. Empty input yields a nil slice (omitted from
+// JSON output).
+func parseCwes(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	matches := cwePattern.FindAllStringSubmatch(raw, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	out := make([]string, 0, len(matches))
+	for _, m := range matches {
+		id := "CWE-" + m[1]
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	return out
+}
+
+// rhelEcosystem returns true when the distro string looks like a Red Hat / RHEL /
+// CentOS / Fedora / Amazon Linux derivative.
+func rhelEcosystem(distro string) bool {
+	low := strings.ToLower(distro)
+	for _, marker := range []string{"red hat", "rhel", "centos", "fedora", "amazon linux", "oracle linux", "rocky", "alma"} {
+		if strings.Contains(low, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+// debEcosystem returns true when the distro string looks like a Debian / Ubuntu
+// derivative.
+func debEcosystem(distro string) bool {
+	low := strings.ToLower(distro)
+	for _, marker := range []string{"debian", "ubuntu"} {
+		if strings.Contains(low, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+// resolveEcosystem maps a Twistlock package type plus the result's distro to a
+// schema Ecosystem value. Defaults to "generic" when the type is unknown.
+func resolveEcosystem(packageType, distro string) hdf.Ecosystem {
+	switch strings.ToLower(packageType) {
+	case "os":
+		switch {
+		case rhelEcosystem(distro):
+			return hdf.RPM
+		case debEcosystem(distro):
+			return hdf.Deb
+		default:
+			return hdf.Generic
+		}
+	case "rpm":
+		return hdf.RPM
+	case "deb":
+		return hdf.Deb
+	case "jar", "maven":
+		return hdf.Maven
+	case "python", "pypi":
+		return hdf.Pypi
+	case "nodejs", "npm":
+		return hdf.Npm
+	case "gem":
+		return hdf.Gem
+	case "nuget":
+		return hdf.Nuget
+	case "go":
+		return hdf.Go
+	case "cargo":
+		return hdf.Cargo
+	default:
+		return hdf.Generic
+	}
+}
+
+// fixVersionRegex extracts the first version-looking token from a status string
+// such as "fixed in 2.15.0, 2.12.2".
+var fixVersionRegex = regexp.MustCompile(`\d+(\.\d+)+[A-Za-z0-9._+\-]*`)
+
+// extractFixedInVersion pulls the first version token from explicit fixedBy
+// field, falling back to status when the status indicates a fix is available.
+func extractFixedInVersion(vuln TwistlockVuln) string {
+	if vuln.FixedBy != "" {
+		return vuln.FixedBy
+	}
+	status := strings.ToLower(vuln.Status)
+	if !strings.Contains(status, "fixed") {
+		return ""
+	}
+	if m := fixVersionRegex.FindString(vuln.Status); m != "" {
+		return m
+	}
+	return ""
+}
+
+// buildAffectedPackage constructs an AffectedPackage from the per-vulnerability
+// fields plus a lookup of result-level package types. Returns nil when there is
+// no package name + version pair (the two required AffectedPackage fields).
+func buildAffectedPackage(vuln TwistlockVuln, packageTypes map[string]string, distro string) *hdf.AffectedPackage {
+	if vuln.PackageName == "" || vuln.PackageVersion == "" {
+		return nil
+	}
+	pkgType := vuln.PackageType
+	if pkgType == "" {
+		pkgType = packageTypes[vuln.PackageName]
+	}
+	pkg := hdf.AffectedPackage{
+		Name:      vuln.PackageName,
+		Version:   vuln.PackageVersion,
+		Ecosystem: resolveEcosystem(pkgType, distro),
+	}
+	if fixed := extractFixedInVersion(vuln); fixed != "" {
+		pkg.FixedInVersion = &fixed
+	}
+	return &pkg
+}
+
+// buildPackageTypeIndex collects package name → type mappings from the
+// result-level "packages" array. Used to resolve ecosystem for per-vuln
+// findings that lack their own packageType field.
+func buildPackageTypeIndex(pkgs []TwistlockPackage) map[string]string {
+	idx := make(map[string]string, len(pkgs))
+	for _, p := range pkgs {
+		if p.Name == "" || p.Type == "" {
+			continue
+		}
+		idx[p.Name] = p.Type
+	}
+	return idx
+}
+
 // formatCodeDesc builds the code_desc string for a vulnerability result.
 func formatCodeDesc(vuln TwistlockVuln) string {
 	packageName := vuln.PackageName
@@ -119,12 +345,20 @@ func formatCodeDesc(vuln TwistlockVuln) string {
 }
 
 // buildRequirement converts a single vulnerability into an EvaluatedRequirement.
-func buildRequirement(vuln TwistlockVuln) hdf.EvaluatedRequirement {
+// The packageTypes map and distro provide context for resolving the package
+// ecosystem when the per-vulnerability entry doesn't include packageType.
+func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro string) hdf.EvaluatedRequirement {
 	nist := shared.DefaultRemediationNIST
 	cciTags := cci.NISTToCCI(nist)
 
 	extras := map[string]interface{}{
 		"cveid": []interface{}{vuln.ID},
+	}
+	// Legacy: retain the cvss_base_score tag for one release so existing
+	// downstream queries keep working. Marked for removal in v3.4.0 (see
+	// CHANGELOG note in epic hdf-libs-8zn0).
+	if vuln.CVSS > 0 {
+		extras["cvss_base_score"] = vuln.CVSS
 	}
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cciTags, extras)
 
@@ -143,7 +377,7 @@ func buildRequirement(vuln TwistlockVuln) hdf.EvaluatedRequirement {
 	}
 
 	title := vuln.ID
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 vuln.ID,
 		Title:              &title,
 		Impact:             getImpact(vuln.Severity),
@@ -153,6 +387,18 @@ func buildRequirement(vuln TwistlockVuln) hdf.EvaluatedRequirement {
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+
+	if cv := buildCvss(vuln); cv != nil {
+		req.Cvss = []hdf.Cvss{*cv}
+	}
+	if cwes := parseCwes(vuln.CWE); len(cwes) > 0 {
+		req.Cwe = cwes
+	}
+	if pkg := buildAffectedPackage(vuln, packageTypes, distro); pkg != nil {
+		req.AffectedPackages = []hdf.AffectedPackage{*pkg}
+	}
+
+	return req
 }
 
 // convertSingleResult converts one TwistlockResult to an EvaluatedBaseline.
@@ -164,9 +410,11 @@ func convertSingleResult(result TwistlockResult, checksum *hdf.Checksum) hdf.Eva
 
 	limitedVulns := shared.LimitSliceWithWarning(vulns, 0, "vulnerability")
 
+	packageTypes := buildPackageTypeIndex(result.Packages)
+
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedVulns))
 	for i, vuln := range limitedVulns {
-		requirements[i] = buildRequirement(vuln)
+		requirements[i] = buildRequirement(vuln, packageTypes, result.Distro)
 	}
 
 	baseline := hdf.EvaluatedBaseline{

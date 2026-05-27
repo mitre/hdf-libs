@@ -2,9 +2,18 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
-import { convertTwistlockToHdf } from './converter.js';
+import {
+  convertTwistlockToHdf,
+  cvssVersionFromVector,
+  cvssSeverityFromScore,
+  buildCvss,
+  parseCwes,
+  resolveEcosystem,
+  extractFixedInVersion,
+  buildAffectedPackage,
+} from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import { CVSSSeverity, Ecosystem, Version as CvssVersion, type HdfResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -239,6 +248,142 @@ describe('twistlock to HDF converter', async () => {
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228');
       expect(req).toBeDefined();
       expect(req!.results[0]?.startTime).toBe('2021-12-10T10:15:00.000Z');
+    });
+  });
+
+  describe('structured CVE-ecosystem fields', () => {
+    it('populates cvss[] for findings with a vector + score', async () => {
+      const hdf = JSON.parse(
+        await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
+      ) as HdfResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228')!;
+      expect(req.cvss).toBeDefined();
+      expect(req.cvss).toHaveLength(1);
+      const cv = req.cvss![0]!;
+      expect(cv.version).toBe('3.1');
+      expect(cv.baseVector).toBe('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H');
+      expect(cv.baseScore).toBe(10);
+      expect(cv.baseSeverity).toBe('critical');
+      expect(cv.source).toBe('CVE-2021-44228');
+    });
+
+    it('populates affectedPackages[] with maven ecosystem for jar packages', async () => {
+      const hdf = JSON.parse(
+        await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
+      ) as HdfResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228')!;
+      expect(req.affectedPackages).toBeDefined();
+      expect(req.affectedPackages).toHaveLength(1);
+      const pkg = req.affectedPackages![0]!;
+      expect(pkg.name).toBe('org.apache.logging.log4j_log4j-core');
+      expect(pkg.version).toBe('2.14.1');
+      expect(pkg.ecosystem).toBe('maven');
+      expect(pkg.fixedInVersion).toBe('2.15.0');
+    });
+
+    it('populates affectedPackages[] with rpm ecosystem for RHEL os packages', async () => {
+      const hdf = JSON.parse(
+        await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'))
+      ) as HdfResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-43529')!;
+      expect(req.affectedPackages).toBeDefined();
+      const pkg = req.affectedPackages![0]!;
+      expect(pkg.name).toBe('nss-util');
+      expect(pkg.ecosystem).toBe('rpm');
+    });
+
+    it('retains legacy cvss_base_score tag for one release', async () => {
+      const hdf = JSON.parse(
+        await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
+      ) as HdfResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228')!;
+      expect(req.tags?.['cvss_base_score']).toBe(10);
+    });
+
+    it('populates cwe[] from synthetic input with cwe field', async () => {
+      const input = JSON.stringify({
+        results: [{
+          name: 'synthetic',
+          distro: 'Red Hat Enterprise Linux 8',
+          packages: [{ type: 'os', name: 'openssl', version: '1.0' }],
+          vulnerabilities: [{
+            id: 'CVE-2099-0001',
+            severity: 'high',
+            description: 'synthetic',
+            cvss: 7.5,
+            vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H',
+            cwe: 'CWE-79',
+            packageName: 'openssl',
+            packageVersion: '1.0',
+            status: 'fixed in 1.1',
+          }],
+        }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.cwe).toEqual(['CWE-79']);
+    });
+  });
+
+  describe('helper unit tests', () => {
+    it('cvssVersionFromVector detects all prefixes', () => {
+      expect(cvssVersionFromVector('CVSS:2.0/AV:N')).toBe(CvssVersion.The20);
+      expect(cvssVersionFromVector('CVSS:3.0/AV:N')).toBe(CvssVersion.The30);
+      expect(cvssVersionFromVector('CVSS:3.1/AV:N')).toBe(CvssVersion.The31);
+      expect(cvssVersionFromVector('CVSS:4.0/AV:N')).toBe(CvssVersion.The40);
+      expect(cvssVersionFromVector(undefined)).toBe(CvssVersion.The31);
+      expect(cvssVersionFromVector('')).toBe(CvssVersion.The31);
+      expect(cvssVersionFromVector('AV:N/AC:L')).toBe(CvssVersion.The31);
+    });
+
+    it('cvssSeverityFromScore returns FIRST bands', () => {
+      expect(cvssSeverityFromScore(0)).toBe(CVSSSeverity.None);
+      expect(cvssSeverityFromScore(0.1)).toBe(CVSSSeverity.Low);
+      expect(cvssSeverityFromScore(3.9)).toBe(CVSSSeverity.Low);
+      expect(cvssSeverityFromScore(4.0)).toBe(CVSSSeverity.Medium);
+      expect(cvssSeverityFromScore(7.0)).toBe(CVSSSeverity.High);
+      expect(cvssSeverityFromScore(9.0)).toBe(CVSSSeverity.Critical);
+      expect(cvssSeverityFromScore(10.0)).toBe(CVSSSeverity.Critical);
+    });
+
+    it('buildCvss returns undefined for vulns lacking score+vector', () => {
+      expect(buildCvss({ id: 'X', severity: 'low', description: '' })).toBeUndefined();
+    });
+
+    it('parseCwes normalizes mixed-case input and dedupes', () => {
+      expect(parseCwes(undefined)).toEqual([]);
+      expect(parseCwes('')).toEqual([]);
+      expect(parseCwes('no cwe here')).toEqual([]);
+      expect(parseCwes('CWE-79')).toEqual(['CWE-79']);
+      expect(parseCwes('cwe-79')).toEqual(['CWE-79']);
+      expect(parseCwes('CWE-79 and CWE-89')).toEqual(['CWE-79', 'CWE-89']);
+      expect(parseCwes('CWE-79, CWE-79')).toEqual(['CWE-79']);
+    });
+
+    it('resolveEcosystem matrix', () => {
+      expect(resolveEcosystem('os', 'Red Hat Enterprise Linux release 8.6')).toBe(Ecosystem.RPM);
+      expect(resolveEcosystem('os', 'Ubuntu 22.04')).toBe(Ecosystem.Deb);
+      expect(resolveEcosystem('os', 'Alpine Linux')).toBe(Ecosystem.Generic);
+      expect(resolveEcosystem('jar', '')).toBe(Ecosystem.Maven);
+      expect(resolveEcosystem('python', '')).toBe(Ecosystem.Pypi);
+      expect(resolveEcosystem('nodejs', '')).toBe(Ecosystem.Npm);
+      expect(resolveEcosystem('gem', '')).toBe(Ecosystem.Gem);
+      expect(resolveEcosystem('nuget', '')).toBe(Ecosystem.Nuget);
+      expect(resolveEcosystem('go', '')).toBe(Ecosystem.Go);
+      expect(resolveEcosystem('unknown-type', '')).toBe(Ecosystem.Generic);
+      expect(resolveEcosystem(undefined, undefined)).toBe(Ecosystem.Generic);
+    });
+
+    it('extractFixedInVersion prefers fixedBy then status', () => {
+      expect(extractFixedInVersion({ id: 'X', severity: '', description: '', fixedBy: '1.2.3', status: 'fixed in 9.9.9' })).toBe('1.2.3');
+      expect(extractFixedInVersion({ id: 'X', severity: '', description: '', status: 'fixed in 2.15.0, 2.12.2' })).toBe('2.15.0');
+      expect(extractFixedInVersion({ id: 'X', severity: '', description: '', status: 'affected' })).toBe('');
+      expect(extractFixedInVersion({ id: 'X', severity: '', description: '' })).toBe('');
+    });
+
+    it('buildAffectedPackage returns undefined when name+version missing', () => {
+      expect(buildAffectedPackage({ id: 'X', severity: '', description: '' }, new Map(), undefined)).toBeUndefined();
+      expect(buildAffectedPackage({ id: 'X', severity: '', description: '', packageName: 'pkg' }, new Map(), undefined)).toBeUndefined();
     });
   });
 

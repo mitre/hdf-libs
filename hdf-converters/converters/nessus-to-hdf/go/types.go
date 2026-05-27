@@ -78,6 +78,22 @@ type ReportItem struct {
 	CVSS3BaseScore         string `xml:"cvss3_base_score"`
 	CVE                    string `xml:"cve"`
 
+	// Structured CVSS data (Wave 2: CVE-ecosystem)
+	CVSSVector          string `xml:"cvss_vector"`
+	CVSS3Vector         string `xml:"cvss3_vector"`
+	CVSSTemporalVector  string `xml:"cvss_temporal_vector"`
+	CVSS3TemporalVector string `xml:"cvss3_temporal_vector"`
+	CVSSTemporalScore   string `xml:"cvss_temporal_score"`
+	CVSS3TemporalScore  string `xml:"cvss3_temporal_score"`
+	CVSSScoreSource     string `xml:"cvss_score_source"`
+
+	// EPSS (newer Tenable plugins emit these inline)
+	EPSSScore      string `xml:"epss_score"`
+	EPSSPercentile string `xml:"epss_percentile"`
+
+	// CWE references (Nessus may emit multiple <cwe> elements)
+	CWE []string `xml:"cwe"`
+
 	// Compliance-specific fields (with cm: namespace)
 	ComplianceReference   string `xml:"http://www.nessus.org/cm compliance-reference"`
 	ComplianceCheckName   string `xml:"http://www.nessus.org/cm compliance-check-name"`

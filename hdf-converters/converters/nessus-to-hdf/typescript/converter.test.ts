@@ -592,4 +592,195 @@ describe('Nessus to HDF Converter', async () => {
       expect(result.baselines[0].requirements[0].results[0].message).toBeUndefined();
     });
   });
+
+  describe('CVE-ecosystem structured fields', () => {
+    // Plugin 156888 in sample.nessus carries full v3 base + temporal + v2
+    // base + temporal vectors and score-source CVE-2022-21291.
+    it('populates cvss[] for v3 + temporal vectors and keeps legacy tags', async () => {
+      const nessusXml = readFileSync(join(FIXTURES_DIR, 'input', 'sample.nessus'), 'utf-8');
+      const result = await convertNessusToHdf(nessusXml);
+      const req = findReqAcrossBaselines(result, '156888');
+      expect(req).toBeDefined();
+
+      expect(req!.cvss).toBeDefined();
+      expect(req!.cvss).toHaveLength(1);
+      const c = req!.cvss![0];
+      expect(c.version).toBe('3.0');
+      expect(c.source).toBe('CVE-2022-21291');
+      expect(c.baseVector).toBe('CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N');
+      expect(c.baseScore).toBeCloseTo(5.3, 3);
+      expect(c.baseSeverity).toBe('medium');
+      // CVSS:3.0/ prefix must be stripped from temporal vector.
+      expect(c.threatVector).toBe('E:U/RL:O/RC:C');
+      expect(c.threatScore).toBeCloseTo(4.6, 3);
+      // Temporal score is the post-threat-enrichment computed score.
+      expect(c.computedScore).toBeCloseTo(4.6, 3);
+      expect(c.computedSeverity).toBe('medium');
+
+      // Legacy back-compat tags preserved for one release.
+      expect(req!.tags.cvss3_base_score).toBe('5.3');
+      expect(req!.tags.cvss_base_score).toBe('5.0');
+    });
+
+    // Plugin 10114 (ICMP Timestamp) has <cwe>200</cwe> + CVE-1999-0524 with
+    // a 0.0 base score (CVSS "none" band).
+    it('populates cwe[] in CWE-N format and cvss source for CVE findings', async () => {
+      const nessusXml = readFileSync(join(FIXTURES_DIR, 'input', 'sample.nessus'), 'utf-8');
+      const result = await convertNessusToHdf(nessusXml);
+      const req = findReqAcrossBaselines(result, '10114');
+      expect(req).toBeDefined();
+
+      expect(req!.cwe).toEqual(['CWE-200']);
+
+      expect(req!.cvss).toHaveLength(1);
+      const c = req!.cvss![0];
+      expect(c.source).toBe('CVE-1999-0524');
+      expect(c.version).toBe('3.0');
+      expect(c.baseVector).toBe('CVSS:3.0/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N');
+      expect(c.baseScore).toBeCloseTo(0.0, 3);
+      expect(c.baseSeverity).toBe('none');
+      // No temporal data on this finding.
+      expect(c.threatVector).toBeUndefined();
+      expect(c.threatScore).toBeUndefined();
+      expect(c.computedScore).toBeUndefined();
+    });
+
+    // Plugin 57582 (SSL Self-Signed Certificate) has v2 base score + vector
+    // but no <cvss_score_source>, no <cve>. Should NOT emit cvss[] — that
+    // field is reserved for CVE findings.
+    it('does not emit cvss[] for non-CVE findings, only legacy tag', async () => {
+      const nessusXml = readFileSync(join(FIXTURES_DIR, 'input', 'sample.nessus'), 'utf-8');
+      const result = await convertNessusToHdf(nessusXml);
+      const req = findReqAcrossBaselines(result, '57582');
+      expect(req).toBeDefined();
+
+      expect(req!.cvss === undefined || req!.cvss!.length === 0).toBe(true);
+      expect(req!.cwe === undefined || req!.cwe!.length === 0).toBe(true);
+      // Legacy tag is still present.
+      expect(req!.tags.cvss_base_score).toBe('6.4');
+    });
+
+    // Synthetic v2-only ReportItem: tests the legacy CVSS v2 branch +
+    // CVSS:3.1/ version detection + EPSS + multi-CWE pipe-delimited input.
+    // Real Nessus output occasionally lacks v3 fields for older plugins.
+    it('handles v2-only CVE finding with EPSS, CVSS:3.1, multi-CWE', async () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Synthetic</policyName>
+    <Preferences><ServerPreferences/></Preferences>
+  </Policy>
+  <Report name="Synthetic">
+    <ReportHost name="10.0.0.1">
+      <HostProperties>
+        <tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="999999" pluginName="Synthetic V2-Only Finding" pluginFamily="Misc.">
+        <cvss_base_score>9.8</cvss_base_score>
+        <cvss_score_source>CVE-2024-99999</cvss_score_source>
+        <cvss_vector>CVSS2#AV:N/AC:L/Au:N/C:C/I:C/A:C</cvss_vector>
+        <cvss_temporal_score>8.5</cvss_temporal_score>
+        <cvss_temporal_vector>CVSS2#E:F/RL:OF/RC:C</cvss_temporal_vector>
+        <epss_score>0.91234</epss_score>
+        <epss_percentile>0.98</epss_percentile>
+        <cwe>79|89</cwe>
+        <cwe>352</cwe>
+        <description>Synthetic v2-only finding for branch coverage.</description>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+      const result = await convertNessusToHdf(xml);
+      const req = findReqAcrossBaselines(result, '999999');
+      expect(req).toBeDefined();
+
+      // v2-only branch fires when no cvss3_vector/cvss3_base_score present.
+      expect(req!.cvss).toHaveLength(1);
+      const c = req!.cvss![0];
+      expect(c.version).toBe('2.0');
+      expect(c.baseVector).toBe('AV:N/AC:L/Au:N/C:C/I:C/A:C'); // CVSS2# stripped
+      expect(c.baseScore).toBeCloseTo(9.8, 3);
+      expect(c.baseSeverity).toBe('critical');
+      expect(c.threatVector).toBe('E:F/RL:OF/RC:C');
+      expect(c.threatScore).toBeCloseTo(8.5, 3);
+      expect(c.computedSeverity).toBe('high');
+
+      // EPSS populated with both score + percentile; date derived from
+      // host HOST_START.
+      expect(req!.epss).toBeDefined();
+      expect(req!.epss!.score).toBeCloseTo(0.91234, 4);
+      expect(req!.epss!.percentile).toBeCloseTo(0.98, 3);
+      expect(req!.epss!.date).toBe('2024-01-29');
+
+      // CWE extraction from pipe-delimited + separate elements; deduped,
+      // sorted, formatted as CWE-N.
+      expect(req!.cwe).toEqual(['CWE-352', 'CWE-79', 'CWE-89']);
+    });
+
+    // CVSS:3.1 vector detection (real-world but absent from this fixture).
+    it('detects CVSS:3.1 vector prefix', async () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>P</policyName><Preferences><ServerPreferences/></Preferences></Policy>
+  <Report name="R">
+    <ReportHost name="h">
+      <HostProperties><tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag></HostProperties>
+      <ReportItem port="0" svc_name="g" protocol="tcp" severity="3" pluginID="31" pluginName="V3.1" pluginFamily="X">
+        <cvss3_base_score>7.5</cvss3_base_score>
+        <cvss3_vector>CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N</cvss3_vector>
+        <cvss_score_source>CVE-2024-0003</cvss_score_source>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+      const result = await convertNessusToHdf(xml);
+      const req = findReqAcrossBaselines(result, '31');
+      expect(req!.cvss![0].version).toBe('3.1');
+      expect(req!.cvss![0].baseSeverity).toBe('high');
+    });
+
+    // Low-band severity (1.0-3.9) + ensures the 'low' switch case in
+    // mapCvssSeverity is exercised.
+    it('maps low CVSS band to low severity', async () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>P</policyName><Preferences><ServerPreferences/></Preferences></Policy>
+  <Report name="R">
+    <ReportHost name="h">
+      <HostProperties><tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag></HostProperties>
+      <ReportItem port="0" svc_name="g" protocol="tcp" severity="1" pluginID="20" pluginName="Low" pluginFamily="X">
+        <cvss3_base_score>2.5</cvss3_base_score>
+        <cvss3_vector>CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L</cvss3_vector>
+        <cvss_score_source>CVE-2024-0020</cvss_score_source>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+      const result = await convertNessusToHdf(xml);
+      const req = findReqAcrossBaselines(result, '20');
+      expect(req!.cvss![0].baseSeverity).toBe('low');
+    });
+
+    // CVSS:4.0 prefix stripping (edge case in stripVersionPrefix).
+    it('strips CVSS:4.0 prefix from temporal vector', async () => {
+      const xml = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>P</policyName><Preferences><ServerPreferences/></Preferences></Policy>
+  <Report name="R">
+    <ReportHost name="h">
+      <HostProperties><tag name="HOST_START">Mon Jan 29 10:00:00 2024</tag></HostProperties>
+      <ReportItem port="0" svc_name="g" protocol="tcp" severity="2" pluginID="40" pluginName="V4" pluginFamily="X">
+        <cvss3_base_score>5.0</cvss3_base_score>
+        <cvss3_vector>CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N</cvss3_vector>
+        <cvss3_temporal_vector>CVSS:4.0/E:A</cvss3_temporal_vector>
+        <cvss_score_source>CVE-2024-0004</cvss_score_source>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+      const result = await convertNessusToHdf(xml);
+      const req = findReqAcrossBaselines(result, '40');
+      expect(req!.cvss![0].threatVector).toBe('E:A');
+    });
+  });
 });

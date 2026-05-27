@@ -1,4 +1,4 @@
-import { parseXmlWithArrays } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, cvssScoreToSeverity } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
 import { deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
@@ -11,8 +11,13 @@ import type {
   Reference,
   Checksum,
   Tool,
+  Cvss,
+  Epss,
 } from '@mitre/hdf-schema';
-import { ResultStatus, Copyright as TargetType, createMinimalBaseline } from '@mitre/hdf-schema';
+import { ResultStatus, Copyright as TargetType, createMinimalBaseline, CVSSSeverity, Version as CvssVersion } from '@mitre/hdf-schema';
+
+const CVE_SOURCE_RE = /^CVE-\d{4}-\d{4,}$/;
+const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
 // Per-converter version (matches the pattern used by the other 32 converters).
 // Bumped manually when the nessus converter's output format changes in a way
 // consumers might notice. Distinct from the package's npm version.
@@ -70,7 +75,20 @@ interface ReportItem {
   plugin_output?: string;
   cvss_base_score?: string;
   cvss3_base_score?: string;
-  cve?: string;
+  cve?: string | string[];
+  // Structured CVSS fields (Wave 2: CVE-ecosystem)
+  cvss_vector?: string;
+  cvss3_vector?: string;
+  cvss_temporal_vector?: string;
+  cvss3_temporal_vector?: string;
+  cvss_temporal_score?: string;
+  cvss3_temporal_score?: string;
+  cvss_score_source?: string;
+  // EPSS (newer Tenable plugins emit these inline)
+  epss_score?: string;
+  epss_percentile?: string;
+  // CWE references — Nessus sometimes emits multiple <cwe> elements
+  cwe?: string | string[];
   // Compliance fields
   'compliance-reference'?: string;
   'compliance-check-name'?: string;
@@ -107,7 +125,7 @@ export async function convertNessusToHdf(nessusXml: string): Promise<HdfResults>
   // Calculate checksum of source scan data for integrity verification
   const resultsChecksum: Checksum = await inputChecksum(nessusXml);
 
-  const parsed = parseXmlWithArrays(nessusXml, ['preference', 'tag', 'ReportItem', 'ReportHost']) as unknown as NessusXml;
+  const parsed = parseXmlWithArrays(nessusXml, ['preference', 'tag', 'ReportItem', 'ReportHost', 'cwe', 'cve']) as unknown as NessusXml;
 
   const policyName = parsed.NessusClientData_v2.Policy.policyName;
   const version = extractVersion(parsed);
@@ -255,7 +273,162 @@ function convertReportItemToRequirement(item: ReportItem, host: ReportHost): Eva
   };
   if (controlType !== undefined) req.controlType = controlType;
   if (verificationMethod !== undefined) req.verificationMethod = verificationMethod;
+
+  // Structured CVE-ecosystem fields. Only populated for non-compliance items
+  // whose cvss_score_source is a CVE identifier.
+  if (!isCompliance) {
+    const cvssEntries = buildCvssEntries(item);
+    if (cvssEntries.length > 0) req.cvss = cvssEntries;
+
+    const cweIDs = buildCweIDs(item);
+    if (cweIDs.length > 0) req.cwe = cweIDs;
+
+    const epss = buildEpss(item, host);
+    if (epss !== undefined) req.epss = epss;
+  }
+
   return req;
+}
+
+/**
+ * Build a structured Cvss entry for a CVE finding. Returns an array because
+ * the schema models cvss as a multi-entry array (Nessus emits one entry per
+ * item; multi-vendor convergence may yield more).
+ */
+function buildCvssEntries(item: ReportItem): Cvss[] {
+  const source = (item.cvss_score_source || '').trim();
+  if (!source || !CVE_SOURCE_RE.test(source)) return [];
+
+  const hasV3 = !!(item.cvss3_vector || item.cvss3_base_score);
+  const hasV2 = !!(item.cvss_vector || item.cvss_base_score);
+  if (!hasV3 && !hasV2) return [];
+
+  let version: CvssVersion;
+  let baseVector: string;
+  let baseScore: number;
+  let threatVector: string | undefined;
+  let threatScore: number | undefined;
+
+  if (hasV3) {
+    version = detectV3Version(item.cvss3_vector ?? '');
+    baseVector = item.cvss3_vector ?? '';
+    baseScore = parseFloatSafe(item.cvss3_base_score);
+    threatVector = stripVersionPrefix(item.cvss3_temporal_vector);
+    threatScore = item.cvss3_temporal_score ? parseFloatSafe(item.cvss3_temporal_score) : undefined;
+  } else {
+    version = CvssVersion.The20;
+    baseVector = stripV2Prefix(item.cvss_vector ?? '');
+    baseScore = parseFloatSafe(item.cvss_base_score);
+    threatVector = stripV2Prefix(item.cvss_temporal_vector ?? '') || undefined;
+    threatScore = item.cvss_temporal_score ? parseFloatSafe(item.cvss_temporal_score) : undefined;
+  }
+
+  const entry: Cvss = {
+    version,
+    baseVector,
+    baseScore,
+    source,
+  };
+  const baseSeverity = mapCvssSeverity(baseScore);
+  if (baseSeverity !== undefined) entry.baseSeverity = baseSeverity;
+  if (threatVector !== undefined && threatVector !== '') entry.threatVector = threatVector;
+  if (threatScore !== undefined) {
+    entry.threatScore = threatScore;
+    // Per the spec, the temporal score IS the post-threat-enrichment
+    // computed score for both v2 and v3.
+    entry.computedScore = threatScore;
+    const computedSeverity = mapCvssSeverity(threatScore);
+    if (computedSeverity !== undefined) entry.computedSeverity = computedSeverity;
+  }
+
+  return [entry];
+}
+
+function detectV3Version(vector: string): CvssVersion {
+  if (vector.startsWith('CVSS:3.1/')) return CvssVersion.The31;
+  if (vector.startsWith('CVSS:3.0/')) return CvssVersion.The30;
+  // Default to 3.0 (Nessus historically emits CVSS:3.0).
+  return CvssVersion.The30;
+}
+
+function stripVersionPrefix(vector: string | undefined): string | undefined {
+  if (!vector) return undefined;
+  for (const prefix of ['CVSS:3.0/', 'CVSS:3.1/', 'CVSS:4.0/']) {
+    if (vector.startsWith(prefix)) {
+      return vector.slice(prefix.length);
+    }
+  }
+  return vector;
+}
+
+function stripV2Prefix(vector: string): string {
+  return vector.startsWith('CVSS2#') ? vector.slice('CVSS2#'.length) : vector;
+}
+
+function parseFloatSafe(s: string | undefined): number {
+  if (!s) return 0;
+  const f = Number.parseFloat(s);
+  return Number.isFinite(f) ? f : 0;
+}
+
+function mapCvssSeverity(score: number): CVSSSeverity | undefined {
+  switch (cvssScoreToSeverity(score)) {
+    case 'critical': return CVSSSeverity.Critical;
+    case 'high':     return CVSSSeverity.High;
+    case 'medium':   return CVSSSeverity.Medium;
+    case 'low':      return CVSSSeverity.Low;
+    case 'none':     return CVSSSeverity.None;
+    default:         return undefined;
+  }
+}
+
+/**
+ * Extract CWE IDs from a ReportItem's <cwe> elements. Nessus emits bare
+ * numeric IDs (e.g. <cwe>200</cwe>); occasionally pipe-separated or prefixed
+ * forms appear. Output is "CWE-N" form per schema convention.
+ */
+function buildCweIDs(item: ReportItem): string[] {
+  if (!item.cwe) return [];
+  const raws = Array.isArray(item.cwe) ? item.cwe : [item.cwe];
+  const seen = new Set<string>();
+  for (const raw of raws) {
+    const text = String(raw);
+    // Match "CWE-N" / "CWE N" / "cweN" patterns.
+    for (const m of text.matchAll(CWE_PATTERN)) {
+      if (m[1]) seen.add(m[1]);
+    }
+    // Fallback: bare numeric tokens (Nessus' typical form).
+    for (const tok of text.split(/[^0-9]+/)) {
+      if (tok !== '') seen.add(tok);
+    }
+  }
+  if (seen.size === 0) return [];
+  return [...seen].sort().map(id => `CWE-${id}`);
+}
+
+/**
+ * Build a structured Epss entry when the ReportItem includes EPSS data.
+ * The date is derived from the host's HOST_START in YYYY-MM-DD form.
+ */
+function buildEpss(item: ReportItem, host: ReportHost): Epss | undefined {
+  const hasScore = item.epss_score !== undefined && item.epss_score !== '';
+  const hasPct = item.epss_percentile !== undefined && item.epss_percentile !== '';
+  if (!hasScore && !hasPct) return undefined;
+  const score = hasScore ? parseFloatSafe(item.epss_score) : 0;
+  const percentile = hasPct ? parseFloatSafe(item.epss_percentile) : 0;
+  const date = epssDate(host);
+  return { date: date as unknown as Date, score, percentile };
+}
+
+function epssDate(host: ReportHost): string {
+  const hs = getHostPropertyValue(host, 'HOST_START');
+  if (hs) {
+    const d = new Date(hs);
+    if (!Number.isNaN(d.getTime())) {
+      return d.toISOString().slice(0, 10);
+    }
+  }
+  return new Date().toISOString().slice(0, 10);
 }
 
 function buildDescriptions(item: ReportItem, isCompliance: boolean): Description[] {

@@ -3,6 +3,22 @@
     {
       "requirements": [
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "nss-util",
+              "version": "3.67.0-7.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "",
+              "source": "CVE-2021-43529",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A remote code execution flaw was found in the way NSS verifies certificates. This flaw allows an attacker posing as an SSL/TLS server to trigger this issue in a client application compiled with NSS when it tries to initiate an SSL/TLS connection.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client, triggering the flaw. The highest threat to this vulnerability is confidentiality, integrity, as well as system availability.              STATEMENT: The issue is not limited to TLS. Any applications that use NSS certificate verification are vulnerable; S/MIME is impacted as well.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client.  Firefox is not vulnerable to this flaw as it uses the mozilla::pkix for certificate verification. Thunderbird is affected when parsing email with the S/MIME signature.  Thunderbird on Red Hat Enterprise Linux 8.4 and later does not need to be updated since it uses the system NSS library, but earlier Red Hat Enterprise Linux 8 extended life streams will need to update Thunderbird as well as NSS.             MITIGATION: Red Hat has investigated whether a possible mitigation exists for this issue, and has not been able to identify a practical example. Please update the affec",
@@ -26,6 +42,7 @@
             "cveid": [
               "CVE-2021-43529"
             ],
+            "cvss_base_score": 9.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -35,6 +52,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "nss-sysinit",
+              "version": "3.67.0-7.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "",
+              "source": "CVE-2021-43529",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A remote code execution flaw was found in the way NSS verifies certificates. This flaw allows an attacker posing as an SSL/TLS server to trigger this issue in a client application compiled with NSS when it tries to initiate an SSL/TLS connection.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client, triggering the flaw. The highest threat to this vulnerability is confidentiality, integrity, as well as system availability.              STATEMENT: The issue is not limited to TLS. Any applications that use NSS certificate verification are vulnerable; S/MIME is impacted as well.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client.  Firefox is not vulnerable to this flaw as it uses the mozilla::pkix for certificate verification. Thunderbird is affected when parsing email with the S/MIME signature.  Thunderbird on Red Hat Enterprise Linux 8.4 and later does not need to be updated since it uses the system NSS library, but earlier Red Hat Enterprise Linux 8 extended life streams will need to update Thunderbird as well as NSS.             MITIGATION: Red Hat has investigated whether a possible mitigation exists for this issue, and has not been able to identify a practical example. Please update the affec",
@@ -58,6 +91,7 @@
             "cveid": [
               "CVE-2021-43529"
             ],
+            "cvss_base_score": 9.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -67,6 +101,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "nss",
+              "version": "3.67.0-7.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "",
+              "source": "CVE-2021-43529",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A remote code execution flaw was found in the way NSS verifies certificates. This flaw allows an attacker posing as an SSL/TLS server to trigger this issue in a client application compiled with NSS when it tries to initiate an SSL/TLS connection.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client, triggering the flaw. The highest threat to this vulnerability is confidentiality, integrity, as well as system availability.              STATEMENT: The issue is not limited to TLS. Any applications that use NSS certificate verification are vulnerable; S/MIME is impacted as well.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client.  Firefox is not vulnerable to this flaw as it uses the mozilla::pkix for certificate verification. Thunderbird is affected when parsing email with the S/MIME signature.  Thunderbird on Red Hat Enterprise Linux 8.4 and later does not need to be updated since it uses the system NSS library, but earlier Red Hat Enterprise Linux 8 extended life streams will need to update Thunderbird as well as NSS.             MITIGATION: Red Hat has investigated whether a possible mitigation exists for this issue, and has not been able to identify a practical example. Please update the affec",
@@ -90,6 +140,7 @@
             "cveid": [
               "CVE-2021-43529"
             ],
+            "cvss_base_score": 9.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -99,6 +150,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "nss-softokn",
+              "version": "3.67.0-7.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "",
+              "source": "CVE-2021-43529",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A remote code execution flaw was found in the way NSS verifies certificates. This flaw allows an attacker posing as an SSL/TLS server to trigger this issue in a client application compiled with NSS when it tries to initiate an SSL/TLS connection.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client, triggering the flaw. The highest threat to this vulnerability is confidentiality, integrity, as well as system availability.              STATEMENT: The issue is not limited to TLS. Any applications that use NSS certificate verification are vulnerable; S/MIME is impacted as well.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client.  Firefox is not vulnerable to this flaw as it uses the mozilla::pkix for certificate verification. Thunderbird is affected when parsing email with the S/MIME signature.  Thunderbird on Red Hat Enterprise Linux 8.4 and later does not need to be updated since it uses the system NSS library, but earlier Red Hat Enterprise Linux 8 extended life streams will need to update Thunderbird as well as NSS.             MITIGATION: Red Hat has investigated whether a possible mitigation exists for this issue, and has not been able to identify a practical example. Please update the affec",
@@ -122,6 +189,7 @@
             "cveid": [
               "CVE-2021-43529"
             ],
+            "cvss_base_score": 9.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -131,6 +199,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "nss-softokn-freebl",
+              "version": "3.67.0-7.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "",
+              "source": "CVE-2021-43529",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A remote code execution flaw was found in the way NSS verifies certificates. This flaw allows an attacker posing as an SSL/TLS server to trigger this issue in a client application compiled with NSS when it tries to initiate an SSL/TLS connection.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client, triggering the flaw. The highest threat to this vulnerability is confidentiality, integrity, as well as system availability.              STATEMENT: The issue is not limited to TLS. Any applications that use NSS certificate verification are vulnerable; S/MIME is impacted as well.  Similarly, a server application compiled with NSS, which processes client certificates, can receive a malicious certificate via a client.  Firefox is not vulnerable to this flaw as it uses the mozilla::pkix for certificate verification. Thunderbird is affected when parsing email with the S/MIME signature.  Thunderbird on Red Hat Enterprise Linux 8.4 and later does not need to be updated since it uses the system NSS library, but earlier Red Hat Enterprise Linux 8 extended life streams will need to update Thunderbird as well as NSS.             MITIGATION: Red Hat has investigated whether a possible mitigation exists for this issue, and has not been able to identify a practical example. Please update the affec",
@@ -154,6 +238,7 @@
             "cveid": [
               "CVE-2021-43529"
             ],
+            "cvss_base_score": 9.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -163,6 +248,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-host",
+              "version": "6.0.5-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.1,
+              "baseSeverity": "high",
+              "baseVector": "",
+              "source": "CVE-2022-1650",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Exposure of Sensitive Information to an Unauthorized Actor in GitHub repository eventsource/eventsource prior to v2.0.2.",
@@ -186,6 +287,7 @@
             "cveid": [
               "CVE-2022-1650"
             ],
+            "cvss_base_score": 8.1,
             "nist": [
               "SI-2",
               "RA-5"
@@ -195,6 +297,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "expat",
+              "version": "2.2.5-8.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-22824",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "defineAttribute in xmlparse.c in Expat (aka libexpat) before 2.4.3 has an integer overflow.",
@@ -218,6 +336,7 @@
             "cveid": [
               "CVE-2022-22824"
             ],
+            "cvss_base_score": 9.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -227,6 +346,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "expat",
+              "version": "2.2.5-8.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-22823",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "build_model in xmlparse.c in Expat (aka libexpat) before 2.4.3 has an integer overflow.",
@@ -250,6 +385,7 @@
             "cveid": [
               "CVE-2022-22823"
             ],
+            "cvss_base_score": 9.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -259,6 +395,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "expat",
+              "version": "2.2.5-8.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-22822",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "addBinding in xmlparse.c in Expat (aka libexpat) before 2.4.3 has an integer overflow.",
@@ -282,6 +434,7 @@
             "cveid": [
               "CVE-2022-22822"
             ],
+            "cvss_base_score": 9.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -291,6 +444,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "expat",
+              "version": "2.2.5-8.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-22827",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "storeAtts in xmlparse.c in Expat (aka libexpat) before 2.4.3 has an integer overflow.",
@@ -314,6 +483,7 @@
             "cveid": [
               "CVE-2022-22827"
             ],
+            "cvss_base_score": 8.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -323,6 +493,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "expat",
+              "version": "2.2.5-8.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-22826",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "nextScaffoldPart in xmlparse.c in Expat (aka libexpat) before 2.4.3 has an integer overflow.",
@@ -346,6 +532,7 @@
             "cveid": [
               "CVE-2022-22826"
             ],
+            "cvss_base_score": 8.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -355,6 +542,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "expat",
+              "version": "2.2.5-8.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-22825",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "lookup in xmlparse.c in Expat (aka libexpat) before 2.4.3 has an integer overflow.",
@@ -378,6 +581,7 @@
             "cveid": [
               "CVE-2022-22825"
             ],
+            "cvss_base_score": 8.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -387,6 +591,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libsolv",
+              "version": "0.7.20-1.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2021-44569",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A heap-buffer openSUSE libsolv through 13 Dec 2020 exists in the solver_solve function at src/solver.c: line 3445.",
@@ -410,6 +630,7 @@
             "cveid": [
               "CVE-2021-44569"
             ],
+            "cvss_base_score": 8.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -419,6 +640,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libxml2",
+              "version": "2.9.7-13.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2017-15412",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "Use after free in libxml2 before 2.9.5, as used in Google Chrome prior to 63.0.3239.84 and other products, allowed a remote attacker to potentially exploit heap corruption via a crafted HTML page.",
@@ -442,6 +679,7 @@
             "cveid": [
               "CVE-2017-15412"
             ],
+            "cvss_base_score": 8.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -451,6 +689,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libxml2",
+              "version": "2.9.7-13.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2016-5131",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "Use-after-free vulnerability in libxml2 through 2.9.4, as used in Google Chrome before 52.0.2743.82, allows remote attackers to cause a denial of service or possibly have unspecified other impact via vectors related to the XPointer range-to function.",
@@ -474,6 +728,7 @@
             "cveid": [
               "CVE-2016-5131"
             ],
+            "cvss_base_score": 8.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -483,6 +738,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libxml2",
+              "version": "2.9.7-13.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 8.1,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.0/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2017-0663",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "A remote code execution vulnerability in libxml2 could enable an attacker using a specially crafted file to execute arbitrary code within the context of an unprivileged process. This issue is rated as High due to the possibility of remote code execution in an application that uses this library. Product: Android. Versions: 4.4.4, 5.0.2, 5.1.1, 6.0, 6.0.1, 7.0, 7.1.1, 7.1.2. Android ID: A-37104170.",
@@ -506,6 +777,7 @@
             "cveid": [
               "CVE-2017-0663"
             ],
+            "cvss_base_score": 8.1,
             "nist": [
               "SI-2",
               "RA-5"
@@ -515,6 +787,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "expat",
+              "version": "2.2.5-8.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.8,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2021-46143",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "In doProlog in xmlparse.c in Expat (aka libexpat) before 2.4.3, an integer overflow exists for m_groupSize.",
@@ -538,6 +826,7 @@
             "cveid": [
               "CVE-2021-46143"
             ],
+            "cvss_base_score": 7.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -547,6 +836,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "aspnetcore-runtime-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-29167",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Hawk is an HTTP authentication scheme providing mechanisms for making authenticated HTTP requests with partial cryptographic verification of the request and response, covering the HTTP method, request URI, host, and optionally the request payload. Hawk used a regular expression to parse `Host` HTTP header (`Hawk.utils.parseHost()`), which was subject to regular expression DoS attack - meaning each added character in the attacker\\'s input increases the computation time exponentially. `parseHost()` was patched in `9.0.1` to use built-in `URL` class to parse hostname instead. `Hawk.authenticate()` accepts `options` argument. If that contains `host` and `port`, those would be used instead of a call to `utils.parseHost()`.",
@@ -570,6 +875,7 @@
             "cveid": [
               "CVE-2022-29167"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -579,6 +885,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-host",
+              "version": "6.0.5-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-29167",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Hawk is an HTTP authentication scheme providing mechanisms for making authenticated HTTP requests with partial cryptographic verification of the request and response, covering the HTTP method, request URI, host, and optionally the request payload. Hawk used a regular expression to parse `Host` HTTP header (`Hawk.utils.parseHost()`), which was subject to regular expression DoS attack - meaning each added character in the attacker\\'s input increases the computation time exponentially. `parseHost()` was patched in `9.0.1` to use built-in `URL` class to parse hostname instead. `Hawk.authenticate()` accepts `options` argument. If that contains `host` and `port`, those would be used instead of a call to `utils.parseHost()`.",
@@ -602,6 +924,7 @@
             "cveid": [
               "CVE-2022-29167"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -611,6 +934,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-hostfxr-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-29167",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Hawk is an HTTP authentication scheme providing mechanisms for making authenticated HTTP requests with partial cryptographic verification of the request and response, covering the HTTP method, request URI, host, and optionally the request payload. Hawk used a regular expression to parse `Host` HTTP header (`Hawk.utils.parseHost()`), which was subject to regular expression DoS attack - meaning each added character in the attacker\\'s input increases the computation time exponentially. `parseHost()` was patched in `9.0.1` to use built-in `URL` class to parse hostname instead. `Hawk.authenticate()` accepts `options` argument. If that contains `host` and `port`, those would be used instead of a call to `utils.parseHost()`.",
@@ -634,6 +973,7 @@
             "cveid": [
               "CVE-2022-29167"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -643,6 +983,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-runtime-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-29167",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Hawk is an HTTP authentication scheme providing mechanisms for making authenticated HTTP requests with partial cryptographic verification of the request and response, covering the HTTP method, request URI, host, and optionally the request payload. Hawk used a regular expression to parse `Host` HTTP header (`Hawk.utils.parseHost()`), which was subject to regular expression DoS attack - meaning each added character in the attacker\\'s input increases the computation time exponentially. `parseHost()` was patched in `9.0.1` to use built-in `URL` class to parse hostname instead. `Hawk.authenticate()` accepts `options` argument. If that contains `host` and `port`, those would be used instead of a call to `utils.parseHost()`.",
@@ -666,6 +1022,7 @@
             "cveid": [
               "CVE-2022-29167"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -675,6 +1032,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "expat",
+              "version": "2.2.5-8.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-25314",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "In Expat (aka libexpat) before 2.4.5, there is an integer overflow in copyString.",
@@ -698,6 +1071,7 @@
             "cveid": [
               "CVE-2022-25314"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -707,6 +1081,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-runtime-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24772",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code does not check for tailing garbage bytes after decoding a `DigestInfo` ASN.1 structure. This can allow padding bytes to be removed and garbage data added to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
@@ -730,6 +1120,7 @@
             "cveid": [
               "CVE-2022-24772"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -739,6 +1130,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-hostfxr-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24772",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code does not check for tailing garbage bytes after decoding a `DigestInfo` ASN.1 structure. This can allow padding bytes to be removed and garbage data added to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
@@ -762,6 +1169,7 @@
             "cveid": [
               "CVE-2022-24772"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -771,6 +1179,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "aspnetcore-runtime-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24772",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code does not check for tailing garbage bytes after decoding a `DigestInfo` ASN.1 structure. This can allow padding bytes to be removed and garbage data added to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
@@ -794,6 +1218,7 @@
             "cveid": [
               "CVE-2022-24772"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -803,6 +1228,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-host",
+              "version": "6.0.5-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24772",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code does not check for tailing garbage bytes after decoding a `DigestInfo` ASN.1 structure. This can allow padding bytes to be removed and garbage data added to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
@@ -826,6 +1267,7 @@
             "cveid": [
               "CVE-2022-24772"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -835,6 +1277,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-host",
+              "version": "6.0.5-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24771",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code is lenient in checking the digest algorithm structure. This can allow a crafted structure that steals padding bytes and uses unchecked portion of the PKCS#1 encoded message to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
@@ -858,6 +1316,7 @@
             "cveid": [
               "CVE-2022-24771"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -867,6 +1326,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-hostfxr-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24771",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code is lenient in checking the digest algorithm structure. This can allow a crafted structure that steals padding bytes and uses unchecked portion of the PKCS#1 encoded message to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
@@ -890,6 +1365,7 @@
             "cveid": [
               "CVE-2022-24771"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -899,6 +1375,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "aspnetcore-runtime-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24771",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code is lenient in checking the digest algorithm structure. This can allow a crafted structure that steals padding bytes and uses unchecked portion of the PKCS#1 encoded message to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
@@ -922,6 +1414,7 @@
             "cveid": [
               "CVE-2022-24771"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -931,6 +1424,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-runtime-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24771",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code is lenient in checking the digest algorithm structure. This can allow a crafted structure that steals padding bytes and uses unchecked portion of the PKCS#1 encoded message to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
@@ -954,6 +1463,7 @@
             "cveid": [
               "CVE-2022-24771"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -963,6 +1473,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "nettle",
+              "version": "3.4.1-7.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-3580",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A flaw was found in the way nettle\\'s RSA decryption functions handled specially crafted ciphertext. An attacker could use this flaw to provide a manipulated ciphertext leading to application crash and denial of service.",
@@ -986,6 +1512,7 @@
             "cveid": [
               "CVE-2021-3580"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -995,6 +1522,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libxml2",
+              "version": "2.9.7-13.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2017-9047",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "A buffer overflow was discovered in libxml2 20904-GITv2.9.4-16-g0741801. The function xmlSnprintfElementContent in valid.c is supposed to recursively dump the element content definition into a char buffer \\'buf\\' of size \\'size\\'. The variable len is assigned strlen(buf). If the content-\u003etype is XML_ELEMENT_CONTENT_ELEMENT, then (i) the content-\u003eprefix is appended to buf (if it actually fits) whereupon (ii) content-\u003ename is written to the buffer. However, the check for whether the content-\u003ename actually fits also uses \\'len\\' rather than the updated buffer length strlen(buf). This allows us to write about \\\"size\\\" many bytes beyond the allocated memory. This vulnerability causes programs that use libxml2, such as PHP, to crash.",
@@ -1018,6 +1561,7 @@
             "cveid": [
               "CVE-2017-9047"
             ],
+            "cvss_base_score": 7.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1027,6 +1571,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libxml2",
+              "version": "2.9.7-13.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.4,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-29824",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "In libxml2 before 2.9.14, several buffer handling functions in buf.c (xmlBuf*) and tree.c (xmlBuffer*) don\\'t check for integer overflows. This can result in out-of-bounds memory writes. Exploitation requires a victim to open a crafted, multi-gigabyte XML file. Other software using libxml2\\'s buffer functions, for example libxslt through 1.1.35, is affected as well.",
@@ -1050,6 +1610,7 @@
             "cveid": [
               "CVE-2022-29824"
             ],
+            "cvss_base_score": 7.4,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1059,6 +1620,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libxml2",
+              "version": "2.9.7-13.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.4,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-29824",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "In libxml2 before 2.9.14, several buffer handling functions in buf.c (xmlBuf*) and tree.c (xmlBuffer*) don\\'t check for integer overflows. This can result in out-of-bounds memory writes. Exploitation requires a victim to open a crafted, multi-gigabyte XML file. Other software using libxml2\\'s buffer functions, for example libxslt through 1.1.35, is affected as well.",
@@ -1082,6 +1659,7 @@
             "cveid": [
               "CVE-2022-29824"
             ],
+            "cvss_base_score": 7.4,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1091,6 +1669,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "vim-minimal",
+              "version": "8.0.1763-16.el8_5.13"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.3,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-1621",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Heap buffer overflow in vim_strncpy find_word in GitHub repository vim/vim prior to 8.2.4919. This vulnerability is capable of crashing software, Bypass Protection Mechanism, Modify Memory, and possible remote execution",
@@ -1114,6 +1708,7 @@
             "cveid": [
               "CVE-2022-1621"
             ],
+            "cvss_base_score": 7.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1123,6 +1718,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "platform-python",
+              "version": "3.6.8-45.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.1,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2015-20107",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "In Python (aka CPython) through 3.10.4, the mailcap module does not add escape characters into commands discovered in the system mailcap file. This may allow attackers to inject shell commands into applications that call mailcap.findmatch with untrusted input (if they lack validation of user-provided filenames or arguments).",
@@ -1146,6 +1757,7 @@
             "cveid": [
               "CVE-2015-20107"
             ],
+            "cvss_base_score": 7.1,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1155,6 +1767,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libs",
+              "version": "3.6.8-45.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.1,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2015-20107",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "In Python (aka CPython) through 3.10.4, the mailcap module does not add escape characters into commands discovered in the system mailcap file. This may allow attackers to inject shell commands into applications that call mailcap.findmatch with untrusted input (if they lack validation of user-provided filenames or arguments).",
@@ -1178,6 +1806,7 @@
             "cveid": [
               "CVE-2015-20107"
             ],
+            "cvss_base_score": 7.1,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1187,6 +1816,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libcom_err",
+              "version": "1.45.6-4.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-1304",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "An out-of-bounds read/write vulnerability was found in e2fsprogs 1.46.5. This issue leads to a segmentation fault and possibly arbitrary code execution via a specially crafted filesystem.",
@@ -1210,6 +1855,7 @@
             "cveid": [
               "CVE-2022-1304"
             ],
+            "cvss_base_score": 7,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1219,6 +1865,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "vim-minimal",
+              "version": "8.0.1763-16.el8_5.13"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.6,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-1629",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Buffer Over-read in function find_next_quote in GitHub repository vim/vim prior to 8.2.4925. This vulnerabilities are capable of crashing software, Modify Memory, and possible remote execution",
@@ -1242,6 +1904,7 @@
             "cveid": [
               "CVE-2022-1629"
             ],
+            "cvss_base_score": 6.6,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1251,6 +1914,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "expat",
+              "version": "2.2.5-8.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-25313",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "In Expat (aka libexpat) before 2.4.5, an attacker can trigger stack exhaustion in build_model via a large nesting depth in the DTD element.",
@@ -1274,6 +1953,7 @@
             "cveid": [
               "CVE-2022-25313"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1283,6 +1963,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libs",
+              "version": "3.6.8-45.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-0391",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A flaw was found in Python, specifically within the urllib.parse module. This module helps break Uniform Resource Locator (URL) strings into components. The issue involves how the urlparse method does not sanitize input and allows characters like \\'\\r\\' and \\'\\n\\' in the URL path. This flaw allows an attacker to input a crafted URL, leading to injection attacks. This flaw affects Python versions prior to 3.10.0b1, 3.9.5, 3.8.11, 3.7.11 and 3.6.14.",
@@ -1306,6 +2002,7 @@
             "cveid": [
               "CVE-2022-0391"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1315,6 +2012,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "platform-python",
+              "version": "3.6.8-45.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-0391",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A flaw was found in Python, specifically within the urllib.parse module. This module helps break Uniform Resource Locator (URL) strings into components. The issue involves how the urlparse method does not sanitize input and allows characters like \\'\\r\\' and \\'\\n\\' in the URL path. This flaw allows an attacker to input a crafted URL, leading to injection attacks. This flaw affects Python versions prior to 3.10.0b1, 3.9.5, 3.8.11, 3.7.11 and 3.6.14.",
@@ -1338,6 +2051,7 @@
             "cveid": [
               "CVE-2022-0391"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1347,6 +2061,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libsolv",
+              "version": "0.7.20-1.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-44577",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Two heap-overflow vulnerabilities exist in openSUSE libsolv through 13 Dec 2020 bugs in the propagate function at src/solver.c: line 490 and 524.",
@@ -1370,6 +2100,7 @@
             "cveid": [
               "CVE-2021-44577"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1379,6 +2110,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libsolv",
+              "version": "0.7.20-1.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-44576",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Two memory vulnerabilities exists in openSUSE libsolv through 13 Dec 2020 in the resolve_weak function at src/solver.c: line 2222 and 2249.",
@@ -1402,6 +2149,7 @@
             "cveid": [
               "CVE-2021-44576"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1411,6 +2159,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libsolv",
+              "version": "0.7.20-1.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-44575",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Two heap-overflow vulnerabilities exists in openSUSE libsolv through 13 Dec 2020 in the makeruledecisions function at src/solver.c: line 147 and 307.",
@@ -1434,6 +2198,7 @@
             "cveid": [
               "CVE-2021-44575"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1443,6 +2208,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libsolv",
+              "version": "0.7.20-1.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-44573",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Two heap overflow vulnerabilities exist in oenSUSE libsolv through 13 Dec 2020 in the resolve_installed function at src/solver.c: line 1728 \u0026 1766.",
@@ -1466,6 +2247,7 @@
             "cveid": [
               "CVE-2021-44573"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1475,6 +2257,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libsolv",
+              "version": "0.7.20-1.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-44571",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A heap overflow vulnerability exisfts in openSUSE libsolv through 13 Dec 2020 in the prefer_suggested function at src/policy.c: line 442.",
@@ -1498,6 +2296,7 @@
             "cveid": [
               "CVE-2021-44571"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1507,6 +2306,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "platform-python",
+              "version": "3.6.8-45.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-3733",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "There\\'s a flaw in urllib\\'s AbstractBasicAuthHandler class. An attacker who controls a malicious HTTP server that an HTTP client (such as web browser) connects to, could trigger a Regular Expression Denial of Service (ReDOS) during an authentication request with a specially crafted payload that is sent by the server to the client. The greatest threat that this flaw poses is to application availability.",
@@ -1530,6 +2345,7 @@
             "cveid": [
               "CVE-2021-3733"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1539,6 +2355,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libs",
+              "version": "3.6.8-45.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-3733",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "There\\'s a flaw in urllib\\'s AbstractBasicAuthHandler class. An attacker who controls a malicious HTTP server that an HTTP client (such as web browser) connects to, could trigger a Regular Expression Denial of Service (ReDOS) during an authentication request with a specially crafted payload that is sent by the server to the client. The greatest threat that this flaw poses is to application availability.",
@@ -1562,6 +2394,7 @@
             "cveid": [
               "CVE-2021-3733"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1571,6 +2404,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-rpm",
+              "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-35939",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: It was found that the fix for CVE-2017-7500 and CVE-2017-7501 was incomplete: the check was only implemented for the parent directory of the file to be created. A local unprivileged user who owns another ancestor directory could potentially use this flaw to gain root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -1594,6 +2443,7 @@
             "cveid": [
               "CVE-2021-35939"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1603,6 +2453,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "rpm-libs",
+              "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-35939",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: It was found that the fix for CVE-2017-7500 and CVE-2017-7501 was incomplete: the check was only implemented for the parent directory of the file to be created. A local unprivileged user who owns another ancestor directory could potentially use this flaw to gain root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -1626,6 +2492,7 @@
             "cveid": [
               "CVE-2021-35939"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1635,6 +2502,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "rpm-build-libs",
+              "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-35939",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: It was found that the fix for CVE-2017-7500 and CVE-2017-7501 was incomplete: the check was only implemented for the parent directory of the file to be created. A local unprivileged user who owns another ancestor directory could potentially use this flaw to gain root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -1658,6 +2541,7 @@
             "cveid": [
               "CVE-2021-35939"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1667,6 +2551,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "rpm",
+              "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-35939",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: It was found that the fix for CVE-2017-7500 and CVE-2017-7501 was incomplete: the check was only implemented for the parent directory of the file to be created. A local unprivileged user who owns another ancestor directory could potentially use this flaw to gain root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -1690,6 +2590,7 @@
             "cveid": [
               "CVE-2021-35939"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1699,6 +2600,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "rpm",
+              "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-35938",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A symbolic link issue was found in rpm. It occurs when rpm sets the desired permissions and credentials after installing a file. A local unprivileged user could use this flaw to exchange the original file with a symbolic link to a security-critical file and escalate their privileges on the system. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -1722,6 +2639,7 @@
             "cveid": [
               "CVE-2021-35938"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1731,6 +2649,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-rpm",
+              "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-35938",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A symbolic link issue was found in rpm. It occurs when rpm sets the desired permissions and credentials after installing a file. A local unprivileged user could use this flaw to exchange the original file with a symbolic link to a security-critical file and escalate their privileges on the system. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -1754,6 +2688,7 @@
             "cveid": [
               "CVE-2021-35938"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1763,6 +2698,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "rpm-libs",
+              "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-35938",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A symbolic link issue was found in rpm. It occurs when rpm sets the desired permissions and credentials after installing a file. A local unprivileged user could use this flaw to exchange the original file with a symbolic link to a security-critical file and escalate their privileges on the system. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -1786,6 +2737,7 @@
             "cveid": [
               "CVE-2021-35938"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1795,6 +2747,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "rpm-build-libs",
+              "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-35938",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A symbolic link issue was found in rpm. It occurs when rpm sets the desired permissions and credentials after installing a file. A local unprivileged user could use this flaw to exchange the original file with a symbolic link to a security-critical file and escalate their privileges on the system. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -1818,6 +2786,7 @@
             "cveid": [
               "CVE-2021-35938"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1827,6 +2796,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libxml2",
+              "version": "2.9.7-13.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2017-9050",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "libxml2 20904-GITv2.9.4-16-g0741801 is vulnerable to a heap-based buffer over-read in the xmlDictAddString function in dict.c. This vulnerability causes programs that use libxml2, such as PHP, to crash. This vulnerability exists because of an incomplete fix for CVE-2016-1839.",
@@ -1850,6 +2835,7 @@
             "cveid": [
               "CVE-2017-9050"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1859,6 +2845,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libxml2",
+              "version": "2.9.7-13.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2017-9049",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "libxml2 20904-GITv2.9.4-16-g0741801 is vulnerable to a heap-based buffer over-read in the xmlDictComputeFastKey function in dict.c. This vulnerability causes programs that use libxml2, such as PHP, to crash. This vulnerability exists because of an incomplete fix for libxml2 Bug 759398.",
@@ -1882,6 +2884,7 @@
             "cveid": [
               "CVE-2017-9049"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1891,6 +2894,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libxml2",
+              "version": "2.9.7-13.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2017-7375",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "A flaw in libxml2 allows remote XML entity inclusion with default parser flags (i.e., when the caller did not request entity substitution, DTD validation, external DTD subset loading, or default DTD attributes). Depending on the context, this may expose a higher-risk attack surface in libxml2 not usually reachable with default parser flags, and expose content from local files, HTTP, or FTP servers (which might be otherwise unreachable).",
@@ -1914,6 +2933,7 @@
             "cveid": [
               "CVE-2017-7375"
             ],
+            "cvss_base_score": 6.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1923,6 +2943,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "openssl-libs",
+              "version": "1.1.1k-6.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-1292",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "The c_rehash script does not properly sanitise shell metacharacters to prevent command injection. This script is distributed by some operating systems in a manner where it is automatically executed. On such operating systems, an attacker could execute arbitrary commands with the privileges of the script. Use of the c_rehash script is considered obsolete and should be replaced by the OpenSSL rehash command line tool. Fixed in OpenSSL 3.0.3 (Affected 3.0.0,3.0.1,3.0.2). Fixed in OpenSSL 1.1.1o (Affected 1.1.1-1.1.1n). Fixed in OpenSSL 1.0.2ze (Affected 1.0.2-1.0.2zd).",
@@ -1946,6 +2982,7 @@
             "cveid": [
               "CVE-2022-1292"
             ],
+            "cvss_base_score": 6.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1955,6 +2992,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "rpm-libs",
+              "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.3,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-35937",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A race condition vulnerability was found in rpm. A local unprivileged user could use this flaw to bypass the checks that were introduced in response to CVE-2017-7500 and CVE-2017-7501, potentially gaining root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -1978,6 +3031,7 @@
             "cveid": [
               "CVE-2021-35937"
             ],
+            "cvss_base_score": 6.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -1987,6 +3041,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "rpm-build-libs",
+              "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.3,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-35937",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A race condition vulnerability was found in rpm. A local unprivileged user could use this flaw to bypass the checks that were introduced in response to CVE-2017-7500 and CVE-2017-7501, potentially gaining root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -2010,6 +3080,7 @@
             "cveid": [
               "CVE-2021-35937"
             ],
+            "cvss_base_score": 6.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2019,6 +3090,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "pypi",
+              "name": "rpm",
+              "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.3,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-35937",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A race condition vulnerability was found in rpm. A local unprivileged user could use this flaw to bypass the checks that were introduced in response to CVE-2017-7500 and CVE-2017-7501, potentially gaining root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -2042,6 +3129,7 @@
             "cveid": [
               "CVE-2021-35937"
             ],
+            "cvss_base_score": 6.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2051,6 +3139,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-rpm",
+              "version": "4.14.3-23.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6.3,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-35937",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A race condition vulnerability was found in rpm. A local unprivileged user could use this flaw to bypass the checks that were introduced in response to CVE-2017-7500 and CVE-2017-7501, potentially gaining root privileges. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: System and service accounts may have the required permissions to exploit this flaw. Conversely, regular user accounts should not be allowed to manipulate RPM artifacts during installation, thus reducing the attack surface and hence the impact of this flaw considerably.             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -2074,6 +3178,7 @@
             "cveid": [
               "CVE-2021-35937"
             ],
+            "cvss_base_score": 6.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2083,6 +3188,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "curl",
+              "version": "7.61.1-22.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2022-27782",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -2106,6 +3227,7 @@
             "cveid": [
               "CVE-2022-27782"
             ],
+            "cvss_base_score": 6,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2115,6 +3237,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libcurl",
+              "version": "7.61.1-22.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 6,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2022-27782",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -2138,6 +3276,7 @@
             "cveid": [
               "CVE-2022-27782"
             ],
+            "cvss_base_score": 6,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2147,6 +3286,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libgcrypt",
+              "version": "1.8.5-6.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.9,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
+              "source": "CVE-2021-40528",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "The ElGamal implementation in Libgcrypt before 1.9.4 allows plaintext recovery because, during interaction between two cryptographic libraries, a certain dangerous combination of the prime defined by the receiver\\'s public key, the generator defined by the receiver\\'s public key, and the sender\\'s ephemeral exponents can lead to a cross-configuration attack against OpenPGP.",
@@ -2170,6 +3325,7 @@
             "cveid": [
               "CVE-2021-40528"
             ],
+            "cvss_base_score": 5.9,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2179,6 +3335,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libsolv",
+              "version": "0.7.20-1.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.6,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-44574",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "A heap-overflow vulnerability exists in openSUSE libsolv through 13 Dec 2020 in the resolve_jobrules function at src/solver.c at line 1599.",
@@ -2202,6 +3374,7 @@
             "cveid": [
               "CVE-2021-44574"
             ],
+            "cvss_base_score": 5.6,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2211,6 +3384,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libgcc",
+              "version": "8.5.0-10.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-27943",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "libiberty/rust-demangle.c in GNU GCC 11.2 allows stack consumption in demangle_const, as demonstrated by nm-new.",
@@ -2234,6 +3423,7 @@
             "cveid": [
               "CVE-2022-27943"
             ],
+            "cvss_base_score": 5.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2243,6 +3433,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libstdc++",
+              "version": "8.5.0-10.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2022-27943",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "libiberty/rust-demangle.c in GNU GCC 11.2 allows stack consumption in demangle_const, as demonstrated by nm-new.",
@@ -2266,6 +3472,7 @@
             "cveid": [
               "CVE-2022-27943"
             ],
+            "cvss_base_score": 5.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2275,6 +3482,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "pcre2",
+              "version": "10.32-2.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2022-1586",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "An out-of-bounds read vulnerability was discovered in the PCRE2 library in the compile_xclass_matchingpath() function of the pcre2_jit_compile.c file. This involves a unicode property matching issue in JIT-compiled regular expressions. The issue occurs because the character was not fully read in case-less matching within JIT.",
@@ -2298,6 +3521,7 @@
             "cveid": [
               "CVE-2022-1586"
             ],
+            "cvss_base_score": 5.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2307,6 +3531,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libsolv",
+              "version": "0.7.20-1.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.5,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2021-44570",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Two heap-overflow vulnerabilities exists in openSUSE/libsolv through 13 Dec 2020 in the bugs in the solver_get_recommendations funtion function at src/solver.c: line 4286 \u0026 line 4305 FOR_PROVIDES.",
@@ -2330,6 +3570,7 @@
             "cveid": [
               "CVE-2021-44570"
             ],
+            "cvss_base_score": 5.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2339,6 +3580,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "aspnetcore-runtime-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+              "source": "CVE-2022-24773",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code does not properly check `DigestInfo` for a proper ASN.1 structure. This can lead to successful verification with signatures that contain invalid structures but a valid digest. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
@@ -2362,6 +3619,7 @@
             "cveid": [
               "CVE-2022-24773"
             ],
+            "cvss_base_score": 5.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2371,6 +3629,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-host",
+              "version": "6.0.5-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+              "source": "CVE-2022-24773",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code does not properly check `DigestInfo` for a proper ASN.1 structure. This can lead to successful verification with signatures that contain invalid structures but a valid digest. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
@@ -2394,6 +3668,7 @@
             "cveid": [
               "CVE-2022-24773"
             ],
+            "cvss_base_score": 5.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2403,6 +3678,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-hostfxr-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+              "source": "CVE-2022-24773",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code does not properly check `DigestInfo` for a proper ASN.1 structure. This can lead to successful verification with signatures that contain invalid structures but a valid digest. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
@@ -2426,6 +3717,7 @@
             "cveid": [
               "CVE-2022-24773"
             ],
+            "cvss_base_score": 5.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2435,6 +3727,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-runtime-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+              "source": "CVE-2022-24773",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code does not properly check `DigestInfo` for a proper ASN.1 structure. This can lead to successful verification with signatures that contain invalid structures but a valid digest. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
@@ -2458,6 +3766,7 @@
             "cveid": [
               "CVE-2022-24773"
             ],
+            "cvss_base_score": 5.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2467,6 +3776,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "platform-python",
+              "version": "3.6.8-45.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-4189",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -2490,6 +3815,7 @@
             "cveid": [
               "CVE-2021-4189"
             ],
+            "cvss_base_score": 5.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2499,6 +3825,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libs",
+              "version": "3.6.8-45.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2021-4189",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -2522,6 +3864,7 @@
             "cveid": [
               "CVE-2021-4189"
             ],
+            "cvss_base_score": 5.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2531,6 +3874,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libxml2",
+              "version": "2.9.7-13.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2016-4658",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "xpointer.c in libxml2 before 2.9.5 (as used in Apple iOS before 10, OS X before 10.12, tvOS before 10, and watchOS before 3, and other products) does not forbid namespace nodes in XPointer ranges, which allows remote attackers to execute arbitrary code or cause a denial of service (use-after-free and memory corruption) via a crafted XML document.",
@@ -2554,6 +3913,7 @@
             "cveid": [
               "CVE-2016-4658"
             ],
+            "cvss_base_score": 5.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2563,6 +3923,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "curl",
+              "version": "7.61.1-22.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2022-27774",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -2586,6 +3962,7 @@
             "cveid": [
               "CVE-2022-27774"
             ],
+            "cvss_base_score": 5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2595,6 +3972,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libcurl",
+              "version": "7.61.1-22.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2022-27774",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -2618,6 +4011,7 @@
             "cveid": [
               "CVE-2022-27774"
             ],
+            "cvss_base_score": 5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2627,6 +4021,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libcurl",
+              "version": "7.61.1-22.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.6,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2022-22576",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2022-22576.",
@@ -2650,6 +4060,7 @@
             "cveid": [
               "CVE-2022-22576"
             ],
+            "cvss_base_score": 4.6,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2659,6 +4070,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "curl",
+              "version": "7.61.1-22.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.6,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2022-22576",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2022-22576.",
@@ -2682,6 +4109,7 @@
             "cveid": [
               "CVE-2022-22576"
             ],
+            "cvss_base_score": 4.6,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2691,6 +4119,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "vim-minimal",
+              "version": "8.0.1763-16.el8_5.13"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.4,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-1619",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Heap-based Buffer Overflow in function cmdline_erase_chars in GitHub repository vim/vim prior to 8.2.4899. This vulnerabilities are capable of crashing software, modify memory, and possible remote execution",
@@ -2714,6 +4158,7 @@
             "cveid": [
               "CVE-2022-1619"
             ],
+            "cvss_base_score": 4.4,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2723,6 +4168,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "nss",
+              "version": "3.67.0-7.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.4,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N",
+              "source": "CVE-2020-12401",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "During ECDSA signature generation, padding applied in the nonce designed to ensure constant-time scalar multiplication was removed, resulting in variable-time execution dependent on secret data. This vulnerability affects Firefox \u003c 80 and Firefox for Android \u003c 80.",
@@ -2746,6 +4207,7 @@
             "cveid": [
               "CVE-2020-12401"
             ],
+            "cvss_base_score": 4.4,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2755,6 +4217,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "nss-softokn",
+              "version": "3.67.0-7.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.4,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N",
+              "source": "CVE-2020-12401",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "During ECDSA signature generation, padding applied in the nonce designed to ensure constant-time scalar multiplication was removed, resulting in variable-time execution dependent on secret data. This vulnerability affects Firefox \u003c 80 and Firefox for Android \u003c 80.",
@@ -2778,6 +4256,7 @@
             "cveid": [
               "CVE-2020-12401"
             ],
+            "cvss_base_score": 4.4,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2787,6 +4266,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "nss-util",
+              "version": "3.67.0-7.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.4,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N",
+              "source": "CVE-2020-12401",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "During ECDSA signature generation, padding applied in the nonce designed to ensure constant-time scalar multiplication was removed, resulting in variable-time execution dependent on secret data. This vulnerability affects Firefox \u003c 80 and Firefox for Android \u003c 80.",
@@ -2810,6 +4305,7 @@
             "cveid": [
               "CVE-2020-12401"
             ],
+            "cvss_base_score": 4.4,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2819,6 +4315,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "nss-sysinit",
+              "version": "3.67.0-7.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.4,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N",
+              "source": "CVE-2020-12401",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "During ECDSA signature generation, padding applied in the nonce designed to ensure constant-time scalar multiplication was removed, resulting in variable-time execution dependent on secret data. This vulnerability affects Firefox \u003c 80 and Firefox for Android \u003c 80.",
@@ -2842,6 +4354,7 @@
             "cveid": [
               "CVE-2020-12401"
             ],
+            "cvss_base_score": 4.4,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2851,6 +4364,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "nss-softokn-freebl",
+              "version": "3.67.0-7.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.4,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N",
+              "source": "CVE-2020-12401",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "During ECDSA signature generation, padding applied in the nonce designed to ensure constant-time scalar multiplication was removed, resulting in variable-time execution dependent on secret data. This vulnerability affects Firefox \u003c 80 and Firefox for Android \u003c 80.",
@@ -2874,6 +4403,7 @@
             "cveid": [
               "CVE-2020-12401"
             ],
+            "cvss_base_score": 4.4,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2883,6 +4413,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "curl",
+              "version": "7.61.1-22.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2022-27776",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -2906,6 +4452,7 @@
             "cveid": [
               "CVE-2022-27776"
             ],
+            "cvss_base_score": 4.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2915,6 +4462,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libcurl",
+              "version": "7.61.1-22.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.3,
+              "baseSeverity": "medium",
+              "baseVector": "",
+              "source": "CVE-2022-27776",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: No description is available for this CVE.",
@@ -2938,6 +4501,7 @@
             "cveid": [
               "CVE-2022-27776"
             ],
+            "cvss_base_score": 4.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2947,6 +4511,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libpcap",
+              "version": "1.9.1-5.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 5.3,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+              "source": "CVE-2018-16301",
+              "version": "3.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "The command-line argument parser in tcpdump before 4.99.0 has a buffer overflow in tcpdump.c:read_infile(). To trigger this vulnerability the attacker needs to create a 4GB file on the local filesystem and to specify the file name as the value of the -F command-line argument of tcpdump.",
@@ -2970,6 +4550,7 @@
             "cveid": [
               "CVE-2018-16301"
             ],
+            "cvss_base_score": 5.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -2979,6 +4560,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libxml2",
+              "version": "2.9.7-13.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 4.8,
+              "baseSeverity": "medium",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "source": "CVE-2017-9048",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "libxml2 20904-GITv2.9.4-16-g0741801 is vulnerable to a stack-based buffer overflow. The function xmlSnprintfElementContent in valid.c is supposed to recursively dump the element content definition into a char buffer \\'buf\\' of size \\'size\\'. At the end of the routine, the function may strcat two more characters without checking whether the current strlen(buf) + 2 \u003c size. This vulnerability causes programs that use libxml2, such as PHP, to crash.",
@@ -3002,6 +4599,7 @@
             "cveid": [
               "CVE-2017-9048"
             ],
+            "cvss_base_score": 4.8,
             "nist": [
               "SI-2",
               "RA-5"
@@ -3011,6 +4609,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python3-libxml2",
+              "version": "2.9.7-13.el8"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 3.5,
+              "baseSeverity": "low",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2017-18258",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "The xz_head function in xzlib.c in libxml2 before 2.9.6 allows remote attackers to cause a denial of service (memory consumption) via a crafted LZMA file, because the decoder functionality does not restrict memory usage to what is required for a legitimate file.",
@@ -3034,6 +4648,7 @@
             "cveid": [
               "CVE-2017-18258"
             ],
+            "cvss_base_score": 3.5,
             "nist": [
               "SI-2",
               "RA-5"
@@ -3043,6 +4658,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libarchive",
+              "version": "3.3.3-3.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 3.3,
+              "baseSeverity": "low",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2017-14501",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "An out-of-bounds read flaw exists in parse_file_info in archive_read_support_format_iso9660.c in libarchive 3.3.2 when extracting a specially crafted iso9660 iso file, related to archive_read_format_iso9660_read_header.",
@@ -3066,6 +4697,7 @@
             "cveid": [
               "CVE-2017-14501"
             ],
+            "cvss_base_score": 3.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -3075,6 +4707,22 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libarchive",
+              "version": "3.3.3-3.el8_5"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 3.3,
+              "baseSeverity": "low",
+              "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+              "source": "CVE-2017-14166",
+              "version": "3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "libarchive 3.3.2 allows remote attackers to cause a denial of service (xml_data heap-based buffer over-read and application crash) via a crafted xar archive, related to the mishandling of empty strings in the atol8 function in archive_read_support_format_xar.c.",
@@ -3098,6 +4746,7 @@
             "cveid": [
               "CVE-2017-14166"
             ],
+            "cvss_base_score": 3.3,
             "nist": [
               "SI-2",
               "RA-5"
@@ -3129,7 +4778,7 @@
     "name": "twistlock-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-05-15T03:18:23.465717462Z",
+  "timestamp": "2026-05-27T01:36:25.478739Z",
   "tool": {
     "format": "JSON",
     "name": "Twistlock"

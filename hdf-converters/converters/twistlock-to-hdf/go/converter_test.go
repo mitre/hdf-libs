@@ -382,6 +382,230 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
+// ---- Structured CVE-ecosystem fields (cvss[], cwe[], affectedPackages[]) ----
+
+func TestConvertTwistlock_CvssPopulated_CodeRepo(t *testing.T) {
+	input := loadFixture(t, "input/twistlock-twistcli-coderepo-scan-sample.json")
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "CVE-2021-44228")
+	require.NotNil(t, req)
+	require.Len(t, req.Cvss, 1, "expected a single cvss entry")
+	cv := req.Cvss[0]
+	assert.Equal(t, hdf.The31, cv.Version)
+	assert.Equal(t, "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H", cv.BaseVector)
+	assert.InDelta(t, 10.0, cv.BaseScore, 0.001)
+	require.NotNil(t, cv.BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityCritical, *cv.BaseSeverity)
+	require.NotNil(t, cv.Source)
+	assert.Equal(t, "CVE-2021-44228", *cv.Source)
+}
+
+func TestConvertTwistlock_CvssVersionDetect(t *testing.T) {
+	tests := []struct {
+		name   string
+		vector string
+		want   hdf.Version
+	}{
+		{"v3.1 prefix", "CVSS:3.1/AV:N", hdf.The31},
+		{"v3.0 prefix", "CVSS:3.0/AV:N", hdf.The30},
+		{"v4.0 prefix", "CVSS:4.0/AV:N", hdf.The40},
+		{"v2.0 prefix", "CVSS:2.0/AV:N", hdf.The20},
+		{"no prefix defaults to 3.1", "AV:N/AC:L", hdf.The31},
+		{"empty defaults to 3.1", "", hdf.The31},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, cvssVersionFromVector(tc.vector))
+		})
+	}
+}
+
+func TestConvertTwistlock_CvssSeverityBands(t *testing.T) {
+	tests := []struct {
+		score float64
+		want  hdf.CVSSSeverity
+	}{
+		{0.0, hdf.None},
+		{0.1, hdf.CVSSSeverityLow},
+		{3.9, hdf.CVSSSeverityLow},
+		{4.0, hdf.CVSSSeverityMedium},
+		{6.9, hdf.CVSSSeverityMedium},
+		{7.0, hdf.CVSSSeverityHigh},
+		{8.9, hdf.CVSSSeverityHigh},
+		{9.0, hdf.CVSSSeverityCritical},
+		{10.0, hdf.CVSSSeverityCritical},
+	}
+	for _, tc := range tests {
+		t.Run("", func(t *testing.T) {
+			got := cvssSeverityFromScore(tc.score)
+			require.NotNil(t, got)
+			assert.Equal(t, tc.want, *got)
+		})
+	}
+}
+
+func TestConvertTwistlock_CvssOmittedWhenAbsent(t *testing.T) {
+	// CVE without a vector or score in input fixture: CVE-2022-1650 from
+	// sample-1 has cvss=8.1 but no vector. Our converter still emits a Cvss
+	// entry because score is present — verify exactly that.
+	input := loadFixture(t, "input/twistlock-twistcli-sample-1.json")
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Synthesize a finding with no cvss/vector to exercise the omit path.
+	noScore := TwistlockVuln{ID: "CVE-TEST", Severity: "low"}
+	assert.Nil(t, buildCvss(noScore))
+
+	// CVE-2022-1650 has a score but no vector → entry present, no BaseVector.
+	req := findRequirement(result.Baselines[0].Requirements, "CVE-2022-1650")
+	require.NotNil(t, req)
+	require.Len(t, req.Cvss, 1)
+	assert.Empty(t, req.Cvss[0].BaseVector)
+	assert.InDelta(t, 8.1, req.Cvss[0].BaseScore, 0.001)
+}
+
+func TestConvertTwistlock_AffectedPackagesMavenEcosystem(t *testing.T) {
+	input := loadFixture(t, "input/twistlock-twistcli-coderepo-scan-sample.json")
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "CVE-2021-44228")
+	require.NotNil(t, req)
+	require.Len(t, req.AffectedPackages, 1)
+	pkg := req.AffectedPackages[0]
+	assert.Equal(t, "org.apache.logging.log4j_log4j-core", pkg.Name)
+	assert.Equal(t, "2.14.1", pkg.Version)
+	assert.Equal(t, hdf.Maven, pkg.Ecosystem)
+	require.NotNil(t, pkg.FixedInVersion)
+	assert.Equal(t, "2.15.0", *pkg.FixedInVersion)
+}
+
+func TestConvertTwistlock_AffectedPackagesRpmEcosystem(t *testing.T) {
+	input := loadFixture(t, "input/twistlock-twistcli-sample-1.json")
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// CVE-2021-43529 from sample-1 affects nss-util (os type → rpm via RHEL distro).
+	req := findRequirement(result.Baselines[0].Requirements, "CVE-2021-43529")
+	require.NotNil(t, req)
+	require.Len(t, req.AffectedPackages, 1)
+	pkg := req.AffectedPackages[0]
+	assert.Equal(t, "nss-util", pkg.Name)
+	assert.Equal(t, hdf.RPM, pkg.Ecosystem)
+}
+
+func TestConvertTwistlock_AffectedPackageOmittedWhenNoName(t *testing.T) {
+	v := TwistlockVuln{ID: "CVE-X", Severity: "low"}
+	assert.Nil(t, buildAffectedPackage(v, map[string]string{}, ""))
+}
+
+func TestConvertTwistlock_ResolveEcosystemMatrix(t *testing.T) {
+	tests := []struct {
+		pkgType string
+		distro  string
+		want    hdf.Ecosystem
+	}{
+		{"os", "Red Hat Enterprise Linux release 8.6 (Ootpa)", hdf.RPM},
+		{"os", "Ubuntu 22.04", hdf.Deb},
+		{"os", "Alpine Linux 3.18", hdf.Generic},
+		{"jar", "", hdf.Maven},
+		{"python", "", hdf.Pypi},
+		{"nodejs", "", hdf.Npm},
+		{"gem", "", hdf.Gem},
+		{"nuget", "", hdf.Nuget},
+		{"go", "", hdf.Go},
+		{"", "", hdf.Generic},
+		{"unknown-type", "", hdf.Generic},
+	}
+	for _, tc := range tests {
+		t.Run(tc.pkgType+"/"+tc.distro, func(t *testing.T) {
+			assert.Equal(t, tc.want, resolveEcosystem(tc.pkgType, tc.distro))
+		})
+	}
+}
+
+func TestConvertTwistlock_FixedInVersionFromStatus(t *testing.T) {
+	tests := []struct {
+		name string
+		vuln TwistlockVuln
+		want string
+	}{
+		{"explicit fixedBy wins", TwistlockVuln{FixedBy: "1.2.3", Status: "fixed in 9.9.9"}, "1.2.3"},
+		{"status fixed in", TwistlockVuln{Status: "fixed in 2.15.0, 2.12.2"}, "2.15.0"},
+		{"status affected", TwistlockVuln{Status: "affected"}, ""},
+		{"empty", TwistlockVuln{}, ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, extractFixedInVersion(tc.vuln))
+		})
+	}
+}
+
+func TestConvertTwistlock_ParseCwes(t *testing.T) {
+	tests := []struct {
+		in   string
+		want []string
+	}{
+		{"", nil},
+		{"no cwe here", nil},
+		{"CWE-79", []string{"CWE-79"}},
+		{"cwe-79", []string{"CWE-79"}},
+		{"CWE-79 and CWE-89", []string{"CWE-79", "CWE-89"}},
+		{"CWE-79, CWE-79", []string{"CWE-79"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.in, func(t *testing.T) {
+			assert.Equal(t, tc.want, parseCwes(tc.in))
+		})
+	}
+}
+
+func TestConvertTwistlock_CweFromVuln(t *testing.T) {
+	// Synthetic input with cwe field to exercise the populated path,
+	// since real Twistlock fixtures don't include it.
+	input := []byte(`{
+		"results": [{
+			"name": "synthetic",
+			"distro": "Red Hat Enterprise Linux 8",
+			"packages": [{"type": "os", "name": "openssl", "version": "1.0"}],
+			"vulnerabilities": [{
+				"id": "CVE-2099-0001",
+				"severity": "high",
+				"description": "synthetic",
+				"cvss": 7.5,
+				"vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+				"cwe": "CWE-79",
+				"packageName": "openssl",
+				"packageVersion": "1.0",
+				"status": "fixed in 1.1"
+			}]
+		}]
+	}`)
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+	req := findRequirement(result.Baselines[0].Requirements, "CVE-2099-0001")
+	require.NotNil(t, req)
+	assert.Equal(t, []string{"CWE-79"}, req.Cwe)
+}
+
+func TestConvertTwistlock_LegacyCvssBaseScoreTagRetained(t *testing.T) {
+	input := loadFixture(t, "input/twistlock-twistcli-coderepo-scan-sample.json")
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := findRequirement(result.Baselines[0].Requirements, "CVE-2021-44228")
+	require.NotNil(t, req)
+	// Legacy tag retained for backward compatibility (removed in v3.4.0).
+	got, ok := req.Tags["cvss_base_score"]
+	require.True(t, ok, "expected legacy cvss_base_score tag to remain populated")
+	score, ok := got.(float64)
+	require.True(t, ok, "cvss_base_score should be numeric, got %T", got)
+	assert.InDelta(t, 10.0, score, 0.001)
+}
+
 func TestConvertTwistlock_VerificationMethod(t *testing.T) {
 	input := loadFixture(t, "input/twistlock-twistcli-sample-1.json")
 	result, err := ConvertTwistlockToHDF(input, testVersion)

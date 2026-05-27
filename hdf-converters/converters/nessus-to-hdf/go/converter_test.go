@@ -354,3 +354,229 @@ func TestSnapshots(t *testing.T) {
 		return ConvertNessusToHDF(input, converterVersion)
 	})
 }
+
+// TestConvertNessusToHDF_CvssV3WithTemporal verifies that a finding carrying
+// both CVSS v2 and v3 vectors (with a temporal vector) emits a single Cvss
+// entry on the version derived from the v3 vector prefix, with the temporal
+// metric segment stripped of its "CVSS:3.x/" prefix. Plugin 156888 in
+// sample.nessus has score-source CVE-2022-21291 and full v3 + temporal data.
+func TestConvertNessusToHDF_CvssV3WithTemporal(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := findReqAcrossBaselines(result, "156888")
+	require.NotNil(t, req, "plugin 156888 should be present in some host baseline")
+
+	require.Len(t, req.Cvss, 1, "CVE finding should emit exactly one Cvss entry")
+	c := req.Cvss[0]
+	assert.Equal(t, hdf.The30, c.Version, "v3 prefix CVSS:3.0 => version 3.0")
+	require.NotNil(t, c.Source)
+	assert.Equal(t, "CVE-2022-21291", *c.Source)
+	assert.Equal(t, "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N", c.BaseVector)
+	assert.InDelta(t, 5.3, c.BaseScore, 0.001)
+	require.NotNil(t, c.BaseSeverity)
+	assert.Equal(t, hdf.CVSSSeverityMedium, *c.BaseSeverity)
+	require.NotNil(t, c.ThreatVector, "v3 temporal_vector should populate threatVector")
+	assert.Equal(t, "E:U/RL:O/RC:C", *c.ThreatVector, "CVSS:3.0/ prefix must be stripped")
+	require.NotNil(t, c.ThreatScore)
+	assert.InDelta(t, 4.6, *c.ThreatScore, 0.001)
+	require.NotNil(t, c.ComputedScore, "v3 temporal_score is the computed (post-threat) score")
+	assert.InDelta(t, 4.6, *c.ComputedScore, 0.001)
+	require.NotNil(t, c.ComputedSeverity)
+	assert.Equal(t, hdf.CVSSSeverityMedium, *c.ComputedSeverity)
+
+	// Legacy back-compat tags preserved for one release.
+	assert.Equal(t, "5.3", req.Tags["cvss3_base_score"])
+	assert.Equal(t, "5.0", req.Tags["cvss_base_score"])
+}
+
+// TestConvertNessusToHDF_CweCveAttribution verifies that a finding emitting
+// a <cwe> element populates the structured cwe[] field in "CWE-N" format,
+// and the cvss[] entry's source is the cvss_score_source CVE.
+// Plugin 10114 (ICMP Timestamp) in sample.nessus has CWE-200 + CVE-1999-0524.
+func TestConvertNessusToHDF_CweCveAttribution(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := findReqAcrossBaselines(result, "10114")
+	require.NotNil(t, req, "plugin 10114 should be present")
+	assert.Equal(t, []string{"CWE-200"}, req.Cwe, "<cwe>200</cwe> should yield CWE-200")
+
+	require.Len(t, req.Cvss, 1)
+	c := req.Cvss[0]
+	require.NotNil(t, c.Source)
+	assert.Equal(t, "CVE-1999-0524", *c.Source)
+	assert.Equal(t, hdf.The30, c.Version)
+	assert.Equal(t, "CVSS:3.0/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N", c.BaseVector)
+	assert.InDelta(t, 0.0, c.BaseScore, 0.001)
+	// 0.0 score → "none" severity band per FIRST CVSS v3.
+	require.NotNil(t, c.BaseSeverity)
+	assert.Equal(t, hdf.None, *c.BaseSeverity)
+	// No temporal data on this finding → no threat fields.
+	assert.Nil(t, c.ThreatVector)
+	assert.Nil(t, c.ThreatScore)
+	assert.Nil(t, c.ComputedScore)
+}
+
+// TestConvertNessusToHDF_NonCveSkipsCvss verifies that a finding with no
+// CVE-shaped cvss_score_source (e.g. plugin 57582 SSL Self-Signed Cert,
+// which has v2 vector + base score but no CVE source) does NOT emit a Cvss
+// entry — the structured cvss[] field is reserved for CVE findings.
+func TestConvertNessusToHDF_NonCveSkipsCvss(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
+	input, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(input, converterVersion)
+	require.NoError(t, err)
+
+	req := findReqAcrossBaselines(result, "57582")
+	require.NotNil(t, req, "plugin 57582 should be present")
+	assert.Empty(t, req.Cvss, "non-CVE finding should not emit Cvss entries")
+	assert.Empty(t, req.Cwe, "no <cwe> element => empty cwe[]")
+	// Legacy tag still present.
+	assert.Equal(t, "6.4", req.Tags["cvss_base_score"])
+}
+
+func TestBuildCvssEntries_V2OnlyWithCVE(t *testing.T) {
+	item := &ReportItem{
+		CVSSScoreSource:    "CVE-2020-12345",
+		CVSSVector:         "CVSS2#AV:N/AC:L/Au:N/C:P/I:P/A:N",
+		CVSSBaseScore:      "6.4",
+		CVSSTemporalVector: "CVSS2#E:U/RL:OF/RC:C",
+		CVSSTemporalScore:  "5.1",
+	}
+	entries := buildCvssEntries(item)
+	require.Len(t, entries, 1)
+	c := entries[0]
+	assert.Equal(t, hdf.The20, c.Version)
+	// CVSS2# prefix must be stripped.
+	assert.Equal(t, "AV:N/AC:L/Au:N/C:P/I:P/A:N", c.BaseVector)
+	assert.InDelta(t, 6.4, c.BaseScore, 0.001)
+	require.NotNil(t, c.ThreatVector)
+	assert.Equal(t, "E:U/RL:OF/RC:C", *c.ThreatVector)
+	require.NotNil(t, c.ThreatScore)
+	assert.InDelta(t, 5.1, *c.ThreatScore, 0.001)
+	require.NotNil(t, c.ComputedScore)
+	assert.InDelta(t, 5.1, *c.ComputedScore, 0.001)
+}
+
+func TestBuildCvssEntries_NoCVEScoreSource(t *testing.T) {
+	// Non-CVE score source ("Tenable" or empty) should return nil.
+	assert.Nil(t, buildCvssEntries(&ReportItem{CVSSScoreSource: "Tenable", CVSSBaseScore: "5.0"}))
+	assert.Nil(t, buildCvssEntries(&ReportItem{CVSSScoreSource: "", CVSSBaseScore: "5.0"}))
+	// CVE source but no vector/score data → nil.
+	assert.Nil(t, buildCvssEntries(&ReportItem{CVSSScoreSource: "CVE-2020-1"}))
+}
+
+func TestDetectV3Version(t *testing.T) {
+	assert.Equal(t, hdf.The31, detectV3Version("CVSS:3.1/AV:N"))
+	assert.Equal(t, hdf.The30, detectV3Version("CVSS:3.0/AV:N"))
+	// No prefix → default 3.0.
+	assert.Equal(t, hdf.The30, detectV3Version("AV:N/AC:L"))
+	assert.Equal(t, hdf.The30, detectV3Version(""))
+}
+
+func TestStripVersionPrefix(t *testing.T) {
+	assert.Equal(t, "E:U/RL:O", stripVersionPrefix("CVSS:3.0/E:U/RL:O"))
+	assert.Equal(t, "E:U/RL:O", stripVersionPrefix("CVSS:3.1/E:U/RL:O"))
+	assert.Equal(t, "E:A", stripVersionPrefix("CVSS:4.0/E:A"))
+	// No prefix → unchanged.
+	assert.Equal(t, "E:U/RL:O", stripVersionPrefix("E:U/RL:O"))
+	assert.Equal(t, "", stripVersionPrefix(""))
+}
+
+func TestStripV2Prefix(t *testing.T) {
+	assert.Equal(t, "AV:N/AC:L", stripV2Prefix("CVSS2#AV:N/AC:L"))
+	assert.Equal(t, "AV:N/AC:L", stripV2Prefix("AV:N/AC:L"))
+	assert.Equal(t, "", stripV2Prefix(""))
+}
+
+func TestParseFloatHelpers(t *testing.T) {
+	assert.Equal(t, 0.0, parseFloatOrZero(""))
+	assert.Equal(t, 0.0, parseFloatOrZero("garbage"))
+	assert.InDelta(t, 5.3, parseFloatOrZero("5.3"), 0.001)
+	assert.Nil(t, parseFloatPtr(""))
+	assert.Nil(t, parseFloatPtr("garbage"))
+	p := parseFloatPtr("4.6")
+	require.NotNil(t, p)
+	assert.InDelta(t, 4.6, *p, 0.001)
+}
+
+func TestCvssSeverityMapping(t *testing.T) {
+	tests := []struct {
+		score float64
+		want  hdf.CVSSSeverity
+	}{
+		{0.0, hdf.None},
+		{2.0, hdf.CVSSSeverityLow},
+		{5.5, hdf.CVSSSeverityMedium},
+		{8.0, hdf.CVSSSeverityHigh},
+		{9.5, hdf.CVSSSeverityCritical},
+	}
+	for _, tt := range tests {
+		got := cvssSeverity(tt.score)
+		require.NotNil(t, got, "score %v should map to severity", tt.score)
+		assert.Equal(t, tt.want, *got)
+	}
+}
+
+func TestBuildCweIDs(t *testing.T) {
+	// Bare numeric (Nessus' typical form).
+	assert.Equal(t, []string{"CWE-200"}, buildCweIDs(&ReportItem{CWE: []string{"200"}}))
+	// Multiple, deduplicated + sorted.
+	assert.Equal(t, []string{"CWE-200", "CWE-89"}, buildCweIDs(&ReportItem{CWE: []string{"200", "89", "200"}}))
+	// Prefixed form.
+	assert.Equal(t, []string{"CWE-79"}, buildCweIDs(&ReportItem{CWE: []string{"CWE-79"}}))
+	// Empty.
+	assert.Nil(t, buildCweIDs(&ReportItem{CWE: nil}))
+	assert.Nil(t, buildCweIDs(&ReportItem{CWE: []string{""}}))
+}
+
+func TestBuildEpss(t *testing.T) {
+	host := &ReportHost{HostProperties: HostProperties{Tags: []HostPropertyTag{
+		{Name: "HOST_START", Value: "Mon Jan 29 10:00:00 2024"},
+	}}}
+	// No EPSS data → nil.
+	assert.Nil(t, buildEpss(&ReportItem{}, host))
+	// Score only.
+	e := buildEpss(&ReportItem{EPSSScore: "0.75"}, host)
+	require.NotNil(t, e)
+	assert.InDelta(t, 0.75, e.Score, 0.001)
+	assert.Equal(t, 0.0, e.Percentile)
+	assert.Equal(t, "2024-01-29", e.Date)
+	// Both fields.
+	e = buildEpss(&ReportItem{EPSSScore: "0.5", EPSSPercentile: "0.9"}, host)
+	require.NotNil(t, e)
+	assert.InDelta(t, 0.5, e.Score, 0.001)
+	assert.InDelta(t, 0.9, e.Percentile, 0.001)
+}
+
+func TestEpssDate_FallsBackToToday(t *testing.T) {
+	host := &ReportHost{}
+	got := epssDate(host)
+	// Should be a YYYY-MM-DD shape (10 chars).
+	assert.Len(t, got, 10)
+	assert.Equal(t, "-", got[4:5])
+	assert.Equal(t, "-", got[7:8])
+}
+
+// findReqAcrossBaselines searches all baselines for a requirement by ID.
+func findReqAcrossBaselines(result *hdf.HDFResults, id string) *hdf.EvaluatedRequirement {
+	for bi := range result.Baselines {
+		for ri := range result.Baselines[bi].Requirements {
+			if result.Baselines[bi].Requirements[ri].ID == id {
+				return &result.Baselines[bi].Requirements[ri]
+			}
+		}
+	}
+	return nil
+}

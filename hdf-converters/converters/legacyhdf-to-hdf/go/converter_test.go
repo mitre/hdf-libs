@@ -798,9 +798,9 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 			impact   float64
 			expected hdf.Severity
 		}{
-			{0.9, hdf.Critical},
+			{0.9, hdf.SeverityCritical},
 			{0.7, hdf.SeverityHigh},
-			{0.5, hdf.Medium},
+			{0.5, hdf.SeverityMedium},
 			{0.3, hdf.SeverityLow},
 		}
 		for _, tc := range cases {

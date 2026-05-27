@@ -1,4 +1,4 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, cvssScoreToSeverity } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
@@ -8,11 +8,16 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
+  Cvss,
+  AffectedPackage,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
   Copyright,
   VerificationMethodEnum,
+  CVSSSeverity,
+  Ecosystem,
+  Version as CvssVersion,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -35,14 +40,23 @@ interface TwistlockResult {
   name?: string;
   repository?: string;
   distro?: string;
+  distroRelease?: string;
   collections?: string[];
+  packages?: TwistlockPackage[];
   vulnerabilities?: TwistlockVuln[] | null;
   vulnerabilityDistribution?: TwistlockDistribution;
   complianceDistribution?: TwistlockDistribution;
 }
 
+interface TwistlockPackage {
+  type?: string;
+  name?: string;
+  version?: string;
+}
+
 interface TwistlockVuln {
   id: string;
+  cve?: string;
   status?: string;
   cvss?: number;
   vector?: string;
@@ -50,7 +64,10 @@ interface TwistlockVuln {
   severity: string;
   packageName?: string;
   packageVersion?: string;
+  packageType?: string;
+  cwe?: string;
   link?: string;
+  fixedBy?: string;
   riskFactors?: string[];
   impactedVersions?: string[];
   publishedDate?: string;
@@ -118,6 +135,160 @@ function buildSummary(result: TwistlockResult): string {
 }
 
 /**
+ * Detects CVSS schema version enum from the vector prefix. Defaults to 3.1
+ * since modern Twistlock exclusively emits 3.x output.
+ */
+export function cvssVersionFromVector(vector: string | undefined): CvssVersion {
+  if (!vector) return CvssVersion.The31;
+  if (vector.startsWith('CVSS:2.0/')) return CvssVersion.The20;
+  if (vector.startsWith('CVSS:3.0/')) return CvssVersion.The30;
+  if (vector.startsWith('CVSS:4.0/')) return CvssVersion.The40;
+  return CvssVersion.The31;
+}
+
+/**
+ * Maps cvssScoreToSeverity('low'|'medium'|...) into the CVSSSeverity enum.
+ */
+export function cvssSeverityFromScore(score: number): CVSSSeverity | undefined {
+  const band = cvssScoreToSeverity(score);
+  switch (band) {
+    case 'none': return CVSSSeverity.None;
+    case 'low': return CVSSSeverity.Low;
+    case 'medium': return CVSSSeverity.Medium;
+    case 'high': return CVSSSeverity.High;
+    case 'critical': return CVSSSeverity.Critical;
+    default: return undefined;
+  }
+}
+
+/**
+ * Builds a Cvss entry from a Twistlock vulnerability. Returns undefined when
+ * neither a score nor a vector are present.
+ */
+export function buildCvss(vuln: TwistlockVuln): Cvss | undefined {
+  const hasScore = typeof vuln.cvss === 'number' && vuln.cvss > 0;
+  const hasVector = !!vuln.vector;
+  if (!hasScore && !hasVector) return undefined;
+
+  const cv: Cvss = {
+    version: cvssVersionFromVector(vuln.vector),
+    baseScore: hasScore ? (vuln.cvss as number) : 0,
+    baseVector: vuln.vector ?? '',
+  };
+  const source = vuln.cve ?? vuln.id;
+  if (source) cv.source = source;
+  if (hasScore) {
+    const sev = cvssSeverityFromScore(vuln.cvss as number);
+    if (sev !== undefined) cv.baseSeverity = sev;
+  }
+  return cv;
+}
+
+const CWE_REGEX = /cwe[-_]?(\d+)/gi;
+
+/**
+ * Extracts canonical CWE-N identifiers from a free-form string.
+ */
+export function parseCwes(raw: string | undefined): string[] {
+  if (!raw) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const m of raw.matchAll(CWE_REGEX)) {
+    const id = `CWE-${m[1]}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
+function rhelDistro(distro: string): boolean {
+  const low = distro.toLowerCase();
+  return ['red hat', 'rhel', 'centos', 'fedora', 'amazon linux', 'oracle linux', 'rocky', 'alma']
+    .some(m => low.includes(m));
+}
+
+function debDistro(distro: string): boolean {
+  const low = distro.toLowerCase();
+  return ['debian', 'ubuntu'].some(m => low.includes(m));
+}
+
+/**
+ * Maps a Twistlock package type plus the result's distro string to a schema
+ * Ecosystem value. Defaults to 'generic' for unknown types.
+ */
+export function resolveEcosystem(packageType: string | undefined, distro: string | undefined): Ecosystem {
+  const t = (packageType ?? '').toLowerCase();
+  const d = distro ?? '';
+  switch (t) {
+    case 'os':
+      if (rhelDistro(d)) return Ecosystem.RPM;
+      if (debDistro(d)) return Ecosystem.Deb;
+      return Ecosystem.Generic;
+    case 'rpm': return Ecosystem.RPM;
+    case 'deb': return Ecosystem.Deb;
+    case 'jar':
+    case 'maven': return Ecosystem.Maven;
+    case 'python':
+    case 'pypi': return Ecosystem.Pypi;
+    case 'nodejs':
+    case 'npm': return Ecosystem.Npm;
+    case 'gem': return Ecosystem.Gem;
+    case 'nuget': return Ecosystem.Nuget;
+    case 'go': return Ecosystem.Go;
+    case 'cargo': return Ecosystem.Cargo;
+    default: return Ecosystem.Generic;
+  }
+}
+
+const FIX_VERSION_REGEX = /\d+(?:\.\d+)+[A-Za-z0-9._+\-]*/;
+
+/**
+ * Extracts the first version-looking token from fixedBy or a "fixed in X"
+ * status string. Returns empty string when no fix info is present.
+ */
+export function extractFixedInVersion(vuln: TwistlockVuln): string {
+  if (vuln.fixedBy) return vuln.fixedBy;
+  const status = (vuln.status ?? '').toLowerCase();
+  if (!status.includes('fixed')) return '';
+  const m = (vuln.status ?? '').match(FIX_VERSION_REGEX);
+  return m ? m[0] : '';
+}
+
+/**
+ * Builds an AffectedPackage entry from per-vulnerability fields. Returns
+ * undefined when packageName or packageVersion are missing (both required).
+ */
+export function buildAffectedPackage(
+  vuln: TwistlockVuln,
+  packageTypes: Map<string, string>,
+  distro: string | undefined,
+): AffectedPackage | undefined {
+  if (!vuln.packageName || !vuln.packageVersion) return undefined;
+  const pkgType = vuln.packageType ?? packageTypes.get(vuln.packageName);
+  const pkg: AffectedPackage = {
+    name: vuln.packageName,
+    version: vuln.packageVersion,
+    ecosystem: resolveEcosystem(pkgType, distro),
+  };
+  const fixed = extractFixedInVersion(vuln);
+  if (fixed) pkg.fixedInVersion = fixed;
+  return pkg;
+}
+
+/**
+ * Indexes packageName → packageType from the result-level packages array.
+ */
+function buildPackageTypeIndex(pkgs: TwistlockPackage[] | undefined): Map<string, string> {
+  const idx = new Map<string, string>();
+  if (!pkgs) return idx;
+  for (const p of pkgs) {
+    if (p.name && p.type) idx.set(p.name, p.type);
+  }
+  return idx;
+}
+
+/**
  * Builds the code_desc string for a vulnerability result.
  */
 function formatCodeDesc(vuln: TwistlockVuln): string {
@@ -130,14 +301,28 @@ function formatCodeDesc(vuln: TwistlockVuln): string {
 
 /**
  * Converts a single vulnerability into an EvaluatedRequirement.
+ *
+ * @param vuln - The Twistlock vulnerability object
+ * @param packageTypes - name→type lookup built from the enclosing result's packages array
+ * @param distro - the enclosing result's distro string, used to disambiguate "os" packages
  */
-function buildRequirement(vuln: TwistlockVuln): EvaluatedRequirement {
+function buildRequirement(
+  vuln: TwistlockVuln,
+  packageTypes: Map<string, string>,
+  distro: string | undefined,
+): EvaluatedRequirement {
   const nist = DEFAULT_REMEDIATION_NIST_TAGS;
   const cciTags = nistToCci(nist);
 
-  const tags = buildNistCciTags(nist, cciTags, {
-    cveid: [vuln.id],
-  });
+  const extras: Record<string, unknown> = { cveid: [vuln.id] };
+  // Legacy: retain the cvss_base_score tag for one release so existing
+  // downstream queries keep working. Marked for removal in v3.4.0 (see
+  // CHANGELOG note in epic hdf-libs-8zn0).
+  if (typeof vuln.cvss === 'number' && vuln.cvss > 0) {
+    extras['cvss_base_score'] = vuln.cvss;
+  }
+
+  const tags = buildNistCciTags(nist, cciTags, extras);
 
   const descriptions: Description[] = [
     { label: 'default', data: vuln.description },
@@ -167,6 +352,13 @@ function buildRequirement(vuln: TwistlockVuln): EvaluatedRequirement {
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
 
+  const cv = buildCvss(vuln);
+  if (cv) req.cvss = [cv];
+  const cwes = parseCwes(vuln.cwe);
+  if (cwes.length > 0) req.cwe = cwes;
+  const pkg = buildAffectedPackage(vuln, packageTypes, distro);
+  if (pkg) req.affectedPackages = [pkg];
+
   return req;
 }
 
@@ -185,8 +377,9 @@ function convertSingleResult(
     console.warn(`WARNING: Input truncated at ${limitedVulns.length} vulnerability items (original: ${vulns.length})`);
   }
 
+  const packageTypes = buildPackageTypeIndex(result.packages);
   const requirements: EvaluatedRequirement[] = limitedVulns.map(vuln =>
-    buildRequirement(vuln)
+    buildRequirement(vuln, packageTypes, result.distro)
   );
 
   const title = buildTitle(result);

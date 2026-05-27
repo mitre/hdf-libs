@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +16,13 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
+
+// cveSourcePattern matches a CVE-shaped identifier (e.g. CVE-2022-21291).
+var cveSourcePattern = regexp.MustCompile(`^CVE-\d{4}-\d{4,}$`)
+
+// cwePattern matches a CWE identifier in any common form (CWE-79, CWE 79,
+// cwe79). The capture group is the numeric ID.
+var cwePattern = regexp.MustCompile(`(?i)CWE[- ]?(\d+)`)
 
 // nessusAliases maps Nessus numeric severity levels and CAT compliance categories
 // to HDF impact values. Canonical reference: heimdall2 nessus-mapper.ts.
@@ -185,7 +195,7 @@ func convertReportItemToRequirement(item *ReportItem, host *ReportHost) hdf.Eval
 	codeBytes, _ := json.MarshalIndent(item, "", "  ")
 	code := string(codeBytes)
 
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 id,
 		Title:              &title,
 		Descriptions:       descriptions,
@@ -197,6 +207,23 @@ func convertReportItemToRequirement(item *ReportItem, host *ReportHost) hdf.Eval
 		ControlType:        shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
 		VerificationMethod: shared.DeriveVerificationMethod(&code),
 	}
+
+	// Structured CVE-ecosystem fields. Populate only when the source is a CVE
+	// (cvss_score_source matches "CVE-YYYY-N+"). Non-CVE findings keep the
+	// legacy tags["cvss*_base_score"] for back-compat but do not get cvss[].
+	if !isCompliance {
+		if cvssEntries := buildCvssEntries(item); len(cvssEntries) > 0 {
+			req.Cvss = cvssEntries
+		}
+		if cweIDs := buildCweIDs(item); len(cweIDs) > 0 {
+			req.Cwe = cweIDs
+		}
+		if epss := buildEpss(item, host); epss != nil {
+			req.Epss = epss
+		}
+	}
+
+	return req
 }
 
 func buildDescriptions(item *ReportItem, isCompliance bool) []hdf.Description {
@@ -468,6 +495,218 @@ func isFQDN(s string) bool {
 	}
 
 	return true
+}
+
+// buildCvssEntries returns a structured Cvss entry for a ReportItem when the
+// item's cvss_score_source is a CVE identifier. Prefers v3 fields when both
+// v2 and v3 are present (Nessus emits both for legacy scoring). Returns nil
+// if no CVE-shaped score source is present or no CVSS data exists.
+func buildCvssEntries(item *ReportItem) []hdf.Cvss {
+	source := strings.TrimSpace(item.CVSSScoreSource)
+	if source == "" || !cveSourcePattern.MatchString(source) {
+		return nil
+	}
+
+	hasV3 := item.CVSS3Vector != "" || item.CVSS3BaseScore != ""
+	hasV2 := item.CVSSVector != "" || item.CVSSBaseScore != ""
+	if !hasV3 && !hasV2 {
+		return nil
+	}
+
+	c := hdf.Cvss{Source: &source}
+
+	if hasV3 {
+		c.Version = detectV3Version(item.CVSS3Vector)
+		c.BaseVector = item.CVSS3Vector
+		c.BaseScore = parseFloatOrZero(item.CVSS3BaseScore)
+		if tv := stripVersionPrefix(item.CVSS3TemporalVector); tv != "" {
+			c.ThreatVector = &tv
+		}
+		if ts := parseFloatPtr(item.CVSS3TemporalScore); ts != nil {
+			c.ThreatScore = ts
+			// The v3 temporal score IS the post-threat-enrichment computed score.
+			c.ComputedScore = ts
+		}
+	} else {
+		c.Version = hdf.The20
+		c.BaseVector = stripV2Prefix(item.CVSSVector)
+		c.BaseScore = parseFloatOrZero(item.CVSSBaseScore)
+		if tv := stripV2Prefix(item.CVSSTemporalVector); tv != "" {
+			c.ThreatVector = &tv
+		}
+		if ts := parseFloatPtr(item.CVSSTemporalScore); ts != nil {
+			c.ThreatScore = ts
+			c.ComputedScore = ts
+		}
+	}
+
+	if sev := cvssSeverity(c.BaseScore); sev != nil {
+		c.BaseSeverity = sev
+	}
+	if c.ComputedScore != nil {
+		if sev := cvssSeverity(*c.ComputedScore); sev != nil {
+			c.ComputedSeverity = sev
+		}
+	}
+
+	return []hdf.Cvss{c}
+}
+
+// detectV3Version inspects the CVSS:3.x prefix on a v3 vector and returns
+// the corresponding schema Version enum. Defaults to 3.0 when the prefix is
+// absent or unrecognized (Nessus historically emitted CVSS:3.0).
+func detectV3Version(vector string) hdf.Version {
+	switch {
+	case strings.HasPrefix(vector, "CVSS:3.1/"):
+		return hdf.The31
+	case strings.HasPrefix(vector, "CVSS:3.0/"):
+		return hdf.The30
+	default:
+		return hdf.The30
+	}
+}
+
+// stripVersionPrefix removes a leading "CVSS:X.Y/" segment from a CVSS
+// temporal/environmental vector, leaving just the metric portion. Returns
+// the input unchanged if no recognized prefix is present.
+func stripVersionPrefix(vector string) string {
+	if vector == "" {
+		return ""
+	}
+	for _, prefix := range []string{"CVSS:3.0/", "CVSS:3.1/", "CVSS:4.0/"} {
+		if strings.HasPrefix(vector, prefix) {
+			return strings.TrimPrefix(vector, prefix)
+		}
+	}
+	return vector
+}
+
+// stripV2Prefix removes the "CVSS2#" prefix that Nessus puts on v2 vectors.
+func stripV2Prefix(vector string) string {
+	return strings.TrimPrefix(vector, "CVSS2#")
+}
+
+// parseFloatOrZero parses a CVSS score, returning 0 on parse error.
+func parseFloatOrZero(s string) float64 {
+	if s == "" {
+		return 0
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return f
+}
+
+// parseFloatPtr parses a CVSS score and returns a pointer; nil when the
+// input is empty or unparseable.
+func parseFloatPtr(s string) *float64 {
+	if s == "" {
+		return nil
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return nil
+	}
+	return &f
+}
+
+// cvssSeverity maps a CVSS base/computed score to the schema's CVSSSeverity
+// enum via hdfutil. Returns nil when the score is the zero default and no
+// score was actually provided — callers should check before calling.
+func cvssSeverity(score float64) *hdf.CVSSSeverity {
+	sev := hdfutil.CvssScoreToSeverity(score)
+	var out hdf.CVSSSeverity
+	switch sev {
+	case "critical":
+		out = hdf.CVSSSeverityCritical
+	case "high":
+		out = hdf.CVSSSeverityHigh
+	case "medium":
+		out = hdf.CVSSSeverityMedium
+	case "low":
+		out = hdf.CVSSSeverityLow
+	case "none":
+		out = hdf.None
+	default:
+		return nil
+	}
+	return &out
+}
+
+// buildCweIDs returns a sorted, deduplicated slice of CWE IDs in "CWE-N"
+// form from a ReportItem's <cwe> elements. Nessus sometimes pipe-separates
+// multiple IDs inside a single element; we extract all numeric IDs from
+// each via shared.ExtractCWEIDs.
+func buildCweIDs(item *ReportItem) []string {
+	if len(item.CWE) == 0 {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	for _, raw := range item.CWE {
+		// Match "CWE-N" / "CWE N" / "cweN" patterns first.
+		for _, m := range cwePattern.FindAllStringSubmatch(raw, -1) {
+			if len(m) >= 2 {
+				seen[m[1]] = struct{}{}
+			}
+		}
+		// Fallback: scan for bare numeric tokens (Nessus' typical form is
+		// <cwe>200</cwe> — the prefix-bearing pattern above won't match a
+		// bare integer).
+		for _, tok := range strings.FieldsFunc(raw, func(r rune) bool { return r < '0' || r > '9' }) {
+			if tok != "" {
+				seen[tok] = struct{}{}
+			}
+		}
+	}
+	if len(seen) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(seen))
+	for id := range seen {
+		out = append(out, "CWE-"+id)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// buildEpss returns a structured Epss entry when the ReportItem includes
+// EPSS data (newer Tenable plugins). The date is derived from the host's
+// scan start in YYYY-MM-DD form. Returns nil when neither score nor
+// percentile is present.
+func buildEpss(item *ReportItem, host *ReportHost) *hdf.Epss {
+	scorePtr := parseFloatPtr(item.EPSSScore)
+	pctPtr := parseFloatPtr(item.EPSSPercentile)
+	if scorePtr == nil && pctPtr == nil {
+		return nil
+	}
+	score := 0.0
+	if scorePtr != nil {
+		score = *scorePtr
+	}
+	pct := 0.0
+	if pctPtr != nil {
+		pct = *pctPtr
+	}
+	date := epssDate(host)
+	return &hdf.Epss{
+		Date:       date,
+		Score:      score,
+		Percentile: pct,
+	}
+}
+
+// epssDate returns the host's scan start formatted as YYYY-MM-DD, or
+// today's date if the host has no parseable HOST_START.
+func epssDate(host *ReportHost) string {
+	if host != nil {
+		if hs := getHostPropertyValue(host, "HOST_START"); hs != "" {
+			if t := hdfutil.ParseTimestamp(hs); !t.IsZero() {
+				return t.UTC().Format("2006-01-02")
+			}
+		}
+	}
+	return time.Now().UTC().Format("2006-01-02")
 }
 
 func isIPAddress(s string) bool {

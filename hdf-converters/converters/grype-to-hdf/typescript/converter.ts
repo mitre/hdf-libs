@@ -1,15 +1,22 @@
 import {
+  type AffectedPackage,
   type Checksum,
   Copyright,
   createMinimalBaseline,
+  type Cvss,
+  CVSSSeverity,
+  Ecosystem,
+  type Epss,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
+  type Kev,
   type RequirementResult,
   ResultStatus,
   VerificationMethodEnum,
+  Version as CvssVersion,
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
-import {parseJSON} from '@mitre/hdf-utilities';
+import {cvssScoreToSeverity, parseJSON} from '@mitre/hdf-utilities';
 import {inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
 
 // Input types for Grype JSON
@@ -58,6 +65,23 @@ interface GrypeVulnerability {
   cvss?: GrypeCVSS[];
   fix?: GrypeFix;
   advisories?: unknown[];
+  cwe?: string[];
+  epss?: GrypeEpssEntry[];
+  kev?: GrypeKev;
+}
+
+interface GrypeEpssEntry {
+  cve?: string;
+  epss?: number;
+  percentile?: number;
+  date?: string;
+}
+
+interface GrypeKev {
+  inKev?: boolean;
+  dateAdded?: string;
+  dueDate?: string;
+  notes?: string;
 }
 
 interface GrypeRelatedVulnerability {
@@ -71,6 +95,8 @@ interface GrypeRelatedVulnerability {
 }
 
 interface GrypeCVSS {
+  source?: string;
+  type?: string;
   version?: string;
   vector?: string;
   metrics?: {
@@ -244,6 +270,128 @@ function buildCodeDesc(match: GrypeMatch): string {
   return parts.join(' | ');
 }
 
+// cvssVersionToSchema maps Grype's CVSS version string ("2.0"/"3.0"/"3.1"/"4.0")
+// to the schema Version enum. Unrecognized values default to "3.1".
+function cvssVersionToSchema(v?: string): CvssVersion {
+  switch (v) {
+    case '2.0': return CvssVersion.The20;
+    case '3.0': return CvssVersion.The30;
+    case '4.0': return CvssVersion.The40;
+    default: return CvssVersion.The31;
+  }
+}
+
+// cvssBandSeverity converts a CVSS base score to the schema CVSSSeverity enum
+// via hdf-utilities' band thresholds.
+function cvssBandSeverity(score: number): CVSSSeverity {
+  switch (cvssScoreToSeverity(score)) {
+    case 'critical': return CVSSSeverity.Critical;
+    case 'high': return CVSSSeverity.High;
+    case 'medium': return CVSSSeverity.Medium;
+    case 'low': return CVSSSeverity.Low;
+    default: return CVSSSeverity.None;
+  }
+}
+
+// buildCvssEntries emits one schema Cvss entry per element of
+// vulnerability.cvss[]. Related-vulnerability CVSS arrays are NOT merged in;
+// the schema contract is "one entry per source-CVE metric set".
+function buildCvssEntries(vuln: GrypeVulnerability): Cvss[] | undefined {
+  if (!vuln.cvss || vuln.cvss.length === 0) {
+    return undefined;
+  }
+  return vuln.cvss.map(c => {
+    const baseScore = c.metrics?.baseScore ?? 0;
+    const entry: Cvss = {
+      version: cvssVersionToSchema(c.version),
+      baseVector: c.vector ?? '',
+      baseScore,
+      baseSeverity: cvssBandSeverity(baseScore),
+    };
+    if (vuln.id) {
+      entry.source = vuln.id;
+    }
+    return entry;
+  });
+}
+
+// mapGrypeTypeToEcosystem translates Grype artifact.type to schema Ecosystem.
+// Anything outside the schema's published enum (apk, binary, future types)
+// falls back to "generic".
+export function mapGrypeTypeToEcosystem(grypeType?: string): Ecosystem {
+  switch ((grypeType ?? '').toLowerCase()) {
+    case 'rpm': return Ecosystem.RPM;
+    case 'deb': return Ecosystem.Deb;
+    case 'npm': return Ecosystem.Npm;
+    case 'python': return Ecosystem.Pypi;
+    case 'gem': return Ecosystem.Gem;
+    case 'go-module': return Ecosystem.Go;
+    case 'java-archive':
+    case 'jenkins-plugin':
+      return Ecosystem.Maven;
+    case 'dotnet': return Ecosystem.Nuget;
+    case 'rust-crate': return Ecosystem.Cargo;
+    default: return Ecosystem.Generic;
+  }
+}
+
+// buildAffectedPackages produces a single AffectedPackage from match.artifact.
+// First cpes[] element is taken (Grype lists alias-generator variants; the
+// first matches the package's canonical vendor:product identity).
+function buildAffectedPackages(match: GrypeMatch): AffectedPackage[] {
+  const artifact = match.artifact;
+  const pkg: AffectedPackage = {
+    name: artifact.name,
+    version: artifact.version,
+    ecosystem: mapGrypeTypeToEcosystem(artifact.type),
+  };
+  if (artifact.cpes && artifact.cpes.length > 0 && artifact.cpes[0]) {
+    pkg.cpe = artifact.cpes[0];
+  }
+  if (artifact.purl) {
+    pkg.purl = artifact.purl;
+  }
+  const fix = match.vulnerability.fix;
+  if (fix && fix.state === 'fixed' && fix.versions && fix.versions.length > 0 && fix.versions[0]) {
+    pkg.fixedInVersion = fix.versions[0];
+  }
+  return [pkg];
+}
+
+// Valid canonical CWE-N identifier (MITRE catalog convention: no leading zeros).
+const CWE_ID_PATTERN = /^CWE-[1-9]\d*$/;
+
+// extractCwe filters Grype's vulnerability.cwe[] to valid CWE-N entries.
+// Malformed entries are dropped silently — the schema layer would reject them.
+function extractCwe(raw?: string[]): string[] | undefined {
+  if (!raw || raw.length === 0) return undefined;
+  const out = raw.filter(c => CWE_ID_PATTERN.test(c));
+  return out.length === 0 ? undefined : out;
+}
+
+// buildEpss picks the most-recent entry from vulnerability.epss[]. Grype's
+// array is typically ordered newest-first; we trust that and take index 0.
+function buildEpss(entries?: GrypeEpssEntry[]): Epss | undefined {
+  if (!entries || entries.length === 0) return undefined;
+  const e = entries[0]!;
+  if (!e.date) return undefined;
+  return {
+    score: e.epss ?? 0,
+    percentile: e.percentile ?? 0,
+    date: e.date,
+  };
+}
+
+// buildKev maps Grype's vulnerability.kev block to the schema Kev primitive.
+function buildKev(k?: GrypeKev): Kev | undefined {
+  if (!k) return undefined;
+  const out: Kev = {inKev: Boolean(k.inKev)};
+  if (k.dateAdded) out.dateAdded = k.dateAdded;
+  if (k.dueDate) out.dueDate = k.dueDate;
+  if (k.notes) out.notes = k.notes;
+  return out;
+}
+
 function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): EvaluatedRequirement {
   const vuln = match.vulnerability;
   const cveId = vuln.id;
@@ -311,6 +459,18 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean): Evalu
   if (controlType !== undefined) {
     requirement.controlType = controlType;
   }
+
+  // Structured CVE-ecosystem fields (omit when empty/absent so output stays
+  // tight; the schema treats all five as optional).
+  const cvss = buildCvssEntries(vuln);
+  if (cvss) requirement.cvss = cvss;
+  requirement.affectedPackages = buildAffectedPackages(match);
+  const cwe = extractCwe(vuln.cwe);
+  if (cwe) requirement.cwe = cwe;
+  const epss = buildEpss(vuln.epss);
+  if (epss) requirement.epss = epss;
+  const kev = buildKev(vuln.kev);
+  if (kev) requirement.kev = kev;
 
   return requirement;
 }
