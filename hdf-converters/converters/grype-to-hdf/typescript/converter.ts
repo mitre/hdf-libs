@@ -378,7 +378,8 @@ function buildEpss(entries?: GrypeEpssEntry[]): Epss | undefined {
   return {
     score: e.epss ?? 0,
     percentile: e.percentile ?? 0,
-    date: e.date,
+    // format: date (YYYY-MM-DD) string; quicktype types it as Date.
+    date: e.date as unknown as Date,
   };
 }
 
@@ -386,8 +387,9 @@ function buildEpss(entries?: GrypeEpssEntry[]): Epss | undefined {
 function buildKev(k?: GrypeKev): Kev | undefined {
   if (!k) return undefined;
   const out: Kev = {inKev: Boolean(k.inKev)};
-  if (k.dateAdded) out.dateAdded = k.dateAdded;
-  if (k.dueDate) out.dueDate = k.dueDate;
+  // format: date (YYYY-MM-DD) strings; quicktype types them as Date.
+  if (k.dateAdded) out.dateAdded = k.dateAdded as unknown as Date;
+  if (k.dueDate) out.dueDate = k.dueDate as unknown as Date;
   if (k.notes) out.notes = k.notes;
   return out;
 }
