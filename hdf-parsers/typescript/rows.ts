@@ -36,7 +36,9 @@ function fillCveColumns(row: Row, r: EvaluatedRequirement): void {
   // cvss[] — first entry drives cvss_base_score / cvss_computed_score.
   if (r.cvss && r.cvss.length > 0) {
     const first = r.cvss[0] as Cvss;
-    row.cvss_base_score = formatNumber(first.baseScore);
+    if (first.baseScore !== undefined && first.baseScore !== null) {
+      row.cvss_base_score = formatNumber(first.baseScore);
+    }
     if (first.computedScore !== undefined && first.computedScore !== null) {
       row.cvss_computed_score = formatNumber(first.computedScore);
     }

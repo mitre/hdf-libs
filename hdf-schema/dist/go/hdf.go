@@ -464,20 +464,20 @@ type AffectedPackage struct {
 	Version                                                                                     string    `json:"version"`
 }
 
+// Structured CVSS scoring data backing this override. Captures the rubric (which
+// Environmental/Threat metrics the consumer modified, the recomputed score) used to justify
+// a riskAdjustment. For other override types this is optional context.
+//
 // A CVSS (Common Vulnerability Scoring System) score record for a vulnerability finding.
 // Captures the vendor-supplied Base metric group and optional consumer-supplied Threat,
 // Environmental, and Supplemental metric groups. Supports all four CVSS major versions
 // (2.0, 3.0, 3.1, 4.0). Vector strings are validated against a permissive umbrella grammar;
 // semantic validation (correct metrics per version, correct values per metric) is performed
 // by the hdf-utilities `validateCvssVector` helper rather than at the schema layer.
-//
-// Structured CVSS scoring data backing this override. Captures the rubric (which
-// Environmental/Threat metrics the consumer modified, the recomputed score) used to justify
-// a riskAdjustment. For other override types this is optional context.
 type Cvss struct {
 	// The Base score (0.0–10.0) computed from the base vector. Reflects the intrinsic,                       
 	// vendor-published severity before consumer enrichment.                                                  
-	BaseScore                                                                                   float64       `json:"baseScore"`
+	BaseScore                                                                                   *float64      `json:"baseScore,omitempty"`
 	// Qualitative severity band corresponding to baseScore. CVSS 2.0 does not natively use                   
 	// 'none' or 'critical' bands; map accordingly when populating.                                           
 	BaseSeverity                                                                                *CVSSSeverity `json:"baseSeverity,omitempty"`

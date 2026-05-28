@@ -48,7 +48,7 @@ func TestStructuredCvss_SingleEntry(t *testing.T) {
 	if entry.BaseVector == nil || *entry.BaseVector != expectedVector {
 		t.Errorf("Expected baseVector %q, got %v", expectedVector, entry.BaseVector)
 	}
-	if entry.BaseScore != 7.5 {
+	if entry.BaseScore == nil || *entry.BaseScore != 7.5 {
 		t.Errorf("Expected baseScore 7.5, got %v", entry.BaseScore)
 	}
 	if entry.BaseSeverity == nil || *entry.BaseSeverity != hdf.CVSSSeverityHigh {
@@ -190,7 +190,11 @@ func TestStructuredCvss_BaseSeverityBands(t *testing.T) {
 				t.Errorf("requirement %s: cvss entry missing baseSeverity", req.ID)
 				continue
 			}
-			score := c.BaseScore
+			if c.BaseScore == nil {
+				t.Errorf("requirement %s: cvss entry missing baseScore", req.ID)
+				continue
+			}
+			score := *c.BaseScore
 			var expected hdf.CVSSSeverity
 			switch {
 			case score < 0.1:

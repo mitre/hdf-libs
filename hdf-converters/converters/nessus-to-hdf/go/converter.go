@@ -519,7 +519,7 @@ func buildCvssEntries(item *ReportItem) []hdf.Cvss {
 		c.Version = detectV3Version(item.CVSS3Vector)
 		bv := item.CVSS3Vector
 		c.BaseVector = &bv
-		c.BaseScore = parseFloatOrZero(item.CVSS3BaseScore)
+		c.BaseScore = parseFloatPtr(item.CVSS3BaseScore)
 		if tv := stripVersionPrefix(item.CVSS3TemporalVector); tv != "" {
 			c.ThreatVector = &tv
 		}
@@ -532,7 +532,7 @@ func buildCvssEntries(item *ReportItem) []hdf.Cvss {
 		c.Version = hdf.The20
 		bv := stripV2Prefix(item.CVSSVector)
 		c.BaseVector = &bv
-		c.BaseScore = parseFloatOrZero(item.CVSSBaseScore)
+		c.BaseScore = parseFloatPtr(item.CVSSBaseScore)
 		if tv := stripV2Prefix(item.CVSSTemporalVector); tv != "" {
 			c.ThreatVector = &tv
 		}
@@ -542,8 +542,10 @@ func buildCvssEntries(item *ReportItem) []hdf.Cvss {
 		}
 	}
 
-	if sev := cvssSeverity(c.BaseScore); sev != nil {
-		c.BaseSeverity = sev
+	if c.BaseScore != nil {
+		if sev := cvssSeverity(*c.BaseScore); sev != nil {
+			c.BaseSeverity = sev
+		}
 	}
 	if c.ComputedScore != nil {
 		if sev := cvssSeverity(*c.ComputedScore); sev != nil {
@@ -586,18 +588,6 @@ func stripVersionPrefix(vector string) string {
 // stripV2Prefix removes the "CVSS2#" prefix that Nessus puts on v2 vectors.
 func stripV2Prefix(vector string) string {
 	return strings.TrimPrefix(vector, "CVSS2#")
-}
-
-// parseFloatOrZero parses a CVSS score, returning 0 on parse error.
-func parseFloatOrZero(s string) float64 {
-	if s == "" {
-		return 0
-	}
-	f, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		return 0
-	}
-	return f
 }
 
 // parseFloatPtr parses a CVSS score and returns a pointer; nil when the

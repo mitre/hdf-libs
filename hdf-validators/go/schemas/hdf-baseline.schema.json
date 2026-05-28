@@ -2039,10 +2039,51 @@
           "type": "object",
           "unevaluatedProperties": false,
           "required": [
-            "version",
-            "baseScore"
+            "version"
           ],
-          "$comment": "baseVector is OPTIONAL because some vendor tools (e.g. Twistlock/Prisma Cloud) emit the final base score without the vector that derived it. When baseVector is absent, baseScore is the vendor-reported scalar and cannot be recomputed or decomposed by consumers — but the score itself is still useful for prioritization and is captured structurally rather than being lost to a legacy tag. Vendors and CNAs publishing fresh CVSS data SHOULD provide the vector; vendors passing through pre-computed scores MAY omit it.",
+          "anyOf": [
+            {
+              "required": [
+                "baseScore"
+              ]
+            },
+            {
+              "required": [
+                "baseVector"
+              ]
+            },
+            {
+              "required": [
+                "threatVector"
+              ]
+            },
+            {
+              "required": [
+                "threatScore"
+              ]
+            },
+            {
+              "required": [
+                "environmentalVector"
+              ]
+            },
+            {
+              "required": [
+                "environmentalScore"
+              ]
+            },
+            {
+              "required": [
+                "supplementalVector"
+              ]
+            },
+            {
+              "required": [
+                "computedScore"
+              ]
+            }
+          ],
+          "$comment": "Only `version` is required; every metric/score field is optional because a single Cvss instance may represent vendor-supplied Base data (on a finding's cvss[]), consumer-supplied enrichment (on a riskAdjustment override — Environmental/Threat/Supplemental deltas with NO base, since base is the finding's scan-specific vendor data), or a fully-resolved effectiveCvss. The Base/Threat/Environmental/Supplemental groups do not partition cleanly into vendor-vs-consumer (Threat straddles: vendor temporal data and consumer exploit-maturity both live here), so a single permissive type is more honest than separate vendor/consumer types. The anyOf guardrail rejects a content-free object (e.g. {version} alone) by requiring at least one substantive metric or score. baseVector remains optional even when baseScore is present: some vendor tools (Twistlock/Prisma Cloud) emit a final score without the vector that derived it — that score is captured structurally rather than lost.",
           "properties": {
             "version": {
               "type": "string",

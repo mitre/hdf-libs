@@ -169,8 +169,11 @@ func buildCvss(vuln TwistlockVuln) *hdf.Cvss {
 		return nil
 	}
 	cv := hdf.Cvss{
-		Version:   cvssVersionFromVector(vuln.Vector),
-		BaseScore: vuln.CVSS,
+		Version: cvssVersionFromVector(vuln.Vector),
+	}
+	if vuln.CVSS > 0 {
+		score := vuln.CVSS
+		cv.BaseScore = &score
 	}
 	if vuln.Vector != "" {
 		v := vuln.Vector

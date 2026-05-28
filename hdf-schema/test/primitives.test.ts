@@ -3471,11 +3471,37 @@ describe('Primitive Schema Validation', () => {
           expect(validate(invalid)).toBe(false);
         });
 
-        it('should reject Cvss missing required baseScore', () => {
-          const invalid = {
+        it('should accept Cvss with baseVector but no baseScore', () => {
+          // baseScore is optional — a Cvss instance may carry only a vector.
+          const valid = {
             version: '3.1',
             baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
           };
+          expect(validate(valid)).toBe(true);
+        });
+
+        it('should accept consumer-enrichment Cvss (environmental only, no base)', () => {
+          // A riskAdjustment override carries consumer deltas with no base —
+          // base belongs to the finding, merged at apply time.
+          const valid = {
+            version: '3.1',
+            source: 'CVE-2021-44228',
+            environmentalVector: 'MAV:A/CR:H/IR:M/AR:L',
+            computedScore: 5.2,
+            computedSeverity: 'medium',
+          };
+          expect(validate(valid)).toBe(true);
+        });
+
+        it('should reject content-free Cvss (version only, no metric/score)', () => {
+          // The anyOf guardrail requires at least one substantive field.
+          const invalid = { version: '3.1' };
+          expect(validate(invalid)).toBe(false);
+        });
+
+        it('should reject Cvss with only a severity band (no score/vector)', () => {
+          // baseSeverity alone is not a substantive CVSS metric per the anyOf.
+          const invalid = { version: '3.1', baseSeverity: 'high' };
           expect(validate(invalid)).toBe(false);
         });
 

@@ -378,7 +378,8 @@ func TestConvertNessusToHDF_CvssV3WithTemporal(t *testing.T) {
 	assert.Equal(t, "CVE-2022-21291", *c.Source)
 	require.NotNil(t, c.BaseVector)
 	assert.Equal(t, "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N", *c.BaseVector)
-	assert.InDelta(t, 5.3, c.BaseScore, 0.001)
+	require.NotNil(t, c.BaseScore)
+	assert.InDelta(t, 5.3, *c.BaseScore, 0.001)
 	require.NotNil(t, c.BaseSeverity)
 	assert.Equal(t, hdf.CVSSSeverityMedium, *c.BaseSeverity)
 	require.NotNil(t, c.ThreatVector, "v3 temporal_vector should populate threatVector")
@@ -418,7 +419,8 @@ func TestConvertNessusToHDF_CweCveAttribution(t *testing.T) {
 	assert.Equal(t, hdf.The30, c.Version)
 	require.NotNil(t, c.BaseVector)
 	assert.Equal(t, "CVSS:3.0/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N", *c.BaseVector)
-	assert.InDelta(t, 0.0, c.BaseScore, 0.001)
+	require.NotNil(t, c.BaseScore)
+	assert.InDelta(t, 0.0, *c.BaseScore, 0.001)
 	// 0.0 score → "none" severity band per FIRST CVSS v3.
 	require.NotNil(t, c.BaseSeverity)
 	assert.Equal(t, hdf.None, *c.BaseSeverity)
@@ -463,7 +465,8 @@ func TestBuildCvssEntries_V2OnlyWithCVE(t *testing.T) {
 	// CVSS2# prefix must be stripped.
 	require.NotNil(t, c.BaseVector)
 	assert.Equal(t, "AV:N/AC:L/Au:N/C:P/I:P/A:N", *c.BaseVector)
-	assert.InDelta(t, 6.4, c.BaseScore, 0.001)
+	require.NotNil(t, c.BaseScore)
+	assert.InDelta(t, 6.4, *c.BaseScore, 0.001)
 	require.NotNil(t, c.ThreatVector)
 	assert.Equal(t, "E:U/RL:OF/RC:C", *c.ThreatVector)
 	require.NotNil(t, c.ThreatScore)
@@ -504,9 +507,6 @@ func TestStripV2Prefix(t *testing.T) {
 }
 
 func TestParseFloatHelpers(t *testing.T) {
-	assert.Equal(t, 0.0, parseFloatOrZero(""))
-	assert.Equal(t, 0.0, parseFloatOrZero("garbage"))
-	assert.InDelta(t, 5.3, parseFloatOrZero("5.3"), 0.001)
 	assert.Nil(t, parseFloatPtr(""))
 	assert.Nil(t, parseFloatPtr("garbage"))
 	p := parseFloatPtr("4.6")

@@ -9,6 +9,7 @@ import (
 )
 
 func ptrFloat(f float64) *float64 { return &f }
+func ptrStr(s string) *string     { return &s }
 
 // withCveStruct installs structured CVE-ecosystem data (cvss[], epss, kev,
 // cwe[], affectedPackages[]) directly on the typed Evaluated_Requirement
@@ -66,8 +67,8 @@ func TestFlattenToRows_FullStructuredCveData(t *testing.T) {
 		makeBaseline("base", []hdf.EvaluatedRequirement{
 			makeReq("CVE-1", withCveStruct(cveData{
 				cvss: []hdf.Cvss{{
-					BaseScore:     7.5,
-					BaseVector:    "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+					BaseScore:     ptrFloat(7.5),
+					BaseVector:    ptrStr("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"),
 					Version:       hdf.The31,
 					ComputedScore: ptrFloat(8.1),
 				}},
@@ -113,7 +114,7 @@ func TestFlattenToRows_StructuredOverridesLegacy(t *testing.T) {
 	results := makeResults([]hdf.EvaluatedBaseline{
 		makeBaseline("base", []hdf.EvaluatedRequirement{
 			makeReq("CVE-Both",
-				withCveStruct(cveData{cvss: []hdf.Cvss{{BaseScore: 9.8, BaseVector: "CVSS:3.1/AV:N", Version: hdf.The31}}}),
+				withCveStruct(cveData{cvss: []hdf.Cvss{{BaseScore: ptrFloat(9.8), BaseVector: ptrStr("CVSS:3.1/AV:N"), Version: hdf.The31}}}),
 				withLegacyTag("cvss_base_score", "3.2"),
 			),
 		}),
@@ -129,8 +130,8 @@ func TestFlattenToRows_MultipleCvssEntriesFirstWins(t *testing.T) {
 		makeBaseline("base", []hdf.EvaluatedRequirement{
 			makeReq("CVE-Multi", withCveStruct(cveData{
 				cvss: []hdf.Cvss{
-					{BaseScore: 7.5, BaseVector: "CVSS:3.1/AV:N", Version: hdf.The31},
-					{BaseScore: 3.1, BaseVector: "CVSS:3.1/AV:L", Version: hdf.The31},
+					{BaseScore: ptrFloat(7.5), BaseVector: ptrStr("CVSS:3.1/AV:N"), Version: hdf.The31},
+					{BaseScore: ptrFloat(3.1), BaseVector: ptrStr("CVSS:3.1/AV:L"), Version: hdf.The31},
 				},
 			})),
 		}),
@@ -219,11 +220,11 @@ func TestFlattenToRows_KevFalse(t *testing.T) {
 func TestFlattenToRows_MultipleRequirementsAndBaselines(t *testing.T) {
 	results := makeResults([]hdf.EvaluatedBaseline{
 		makeBaseline("baseline-A", []hdf.EvaluatedRequirement{
-			makeReq("CVE-A1", withCveStruct(cveData{cvss: []hdf.Cvss{{BaseScore: 5.0, BaseVector: "CVSS:3.1/AV:N", Version: hdf.The31}}})),
+			makeReq("CVE-A1", withCveStruct(cveData{cvss: []hdf.Cvss{{BaseScore: ptrFloat(5.0), BaseVector: ptrStr("CVSS:3.1/AV:N"), Version: hdf.The31}}})),
 			makeReq("CVE-A2"),
 		}),
 		makeBaseline("baseline-B", []hdf.EvaluatedRequirement{
-			makeReq("CVE-B1", withCveStruct(cveData{cvss: []hdf.Cvss{{BaseScore: 9.5, BaseVector: "CVSS:3.1/AV:N", Version: hdf.The31}}})),
+			makeReq("CVE-B1", withCveStruct(cveData{cvss: []hdf.Cvss{{BaseScore: ptrFloat(9.5), BaseVector: ptrStr("CVSS:3.1/AV:N"), Version: hdf.The31}}})),
 		}),
 	})
 

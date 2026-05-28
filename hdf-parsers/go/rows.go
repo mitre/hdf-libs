@@ -42,7 +42,9 @@ func fillCveColumns(row Row, r hdf.EvaluatedRequirement) {
 	// cvss[] — first entry drives cvss_base_score / cvss_computed_score.
 	if len(r.Cvss) > 0 {
 		first := r.Cvss[0]
-		row["cvss_base_score"] = strconv.FormatFloat(first.BaseScore, 'f', -1, 64)
+		if first.BaseScore != nil {
+			row["cvss_base_score"] = strconv.FormatFloat(*first.BaseScore, 'f', -1, 64)
+		}
 		if first.ComputedScore != nil {
 			row["cvss_computed_score"] = strconv.FormatFloat(*first.ComputedScore, 'f', -1, 64)
 		}
