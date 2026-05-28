@@ -173,6 +173,9 @@ export function parseCvssVector(vector: string): ParsedCvssVector {
   let version = '2.0';
   let start = 0;
   const first = segments[0];
+  if (first === undefined) {
+    return { version: 'unknown', metrics };
+  }
   if (first.startsWith('CVSS:')) {
     version = first.slice(5);
     start = 1;
@@ -183,6 +186,9 @@ export function parseCvssVector(vector: string): ParsedCvssVector {
 
   for (let i = start; i < segments.length; i++) {
     const seg = segments[i];
+    if (seg === undefined) {
+      continue;
+    }
     const colon = seg.indexOf(':');
     if (colon <= 0 || colon === seg.length - 1) {
       // Skip malformed segments (no colon, empty key, or empty value).

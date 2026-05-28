@@ -144,18 +144,20 @@ export function parseCpe(cpeUri: string): ParsedCpe | null {
     fields.push(padValue);
   }
 
+  // fields is padded to PRODUCT_FIELD_COUNT above, so every slot is present;
+  // the destructuring defaults only satisfy the compiler's indexed-access check.
   const [
-    part,
-    vendor,
-    product,
-    version,
-    update,
-    edition,
-    language,
-    swEdition,
-    targetSw,
-    targetHw,
-    other,
+    part = '',
+    vendor = '',
+    product = '',
+    version = '',
+    update = '',
+    edition = '',
+    language = '',
+    swEdition = '',
+    targetSw = '',
+    targetHw = '',
+    other = '',
   ] = fields;
 
   if (!VALID_PARTS.has(part)) {
