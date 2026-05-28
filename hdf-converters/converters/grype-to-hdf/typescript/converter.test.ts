@@ -191,6 +191,123 @@ describe('Grype Converter', async () => {
       expect(hdf.baselines[0].requirements).toHaveLength(0);
     });
 
+    it('should populate CVE-ecosystem fields from enriched Grype output', async () => {
+      // Inline fixture: the static sample fixtures predate Grype's EPSS/KEV
+      // enrichment, so they never exercise buildEpss/buildKev/extractCwe. This
+      // input follows the anchore/grype JSON output shape (vulnerability.epss[],
+      // vulnerability.kev, vulnerability.cwe[]) for a real CVE (Log4Shell).
+      const enriched = JSON.stringify({
+        descriptor: {name: 'grype', version: '0.85.0'},
+        source: {target: {userInput: 'enriched-image'}},
+        matches: [{
+          vulnerability: {
+            id: 'CVE-2021-44228',
+            severity: 'Critical',
+            urls: ['https://nvd.nist.gov/vuln/detail/CVE-2021-44228'],
+            description: 'Log4Shell remote code execution',
+            cvss: [{
+              source: 'nvd@nist.gov',
+              type: 'Primary',
+              version: '3.1',
+              vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H',
+              metrics: {baseScore: 10.0},
+            }],
+            cwe: ['CWE-502', 'not-a-cwe', 'CWE-917'],
+            epss: [{cve: 'CVE-2021-44228', epss: 0.97, percentile: 0.999, date: '2026-05-26'}],
+            kev: {inKev: true, dateAdded: '2021-12-10', dueDate: '2021-12-24', notes: 'Apply vendor updates'},
+            fix: {state: 'fixed', versions: ['2.17.0']},
+          },
+          matchDetails: [{type: 'exact-direct-match', matcher: 'java-matcher'}],
+          artifact: {
+            name: 'log4j-core',
+            version: '2.14.1',
+            type: 'java-archive',
+            purl: 'pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1',
+            cpes: ['cpe:2.3:a:apache:log4j:2.14.1:*:*:*:*:*:*:*'],
+          },
+        }],
+      });
+
+      const output = await convertGrypeToHdf(enriched);
+      const hdf = parseJSON<HdfResults>(output);
+      const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2021-44228');
+      expect(req).toBeDefined();
+
+      // cwe[] — malformed entry dropped, valid IDs kept.
+      expect(req?.cwe).toEqual(['CWE-502', 'CWE-917']);
+      // epss
+      expect(req?.epss?.score).toBe(0.97);
+      expect(req?.epss?.percentile).toBe(0.999);
+      expect(req?.epss?.date).toBe('2026-05-26');
+      // kev
+      expect(req?.kev?.inKev).toBe(true);
+      expect(req?.kev?.dateAdded).toBe('2021-12-10');
+      expect(req?.kev?.dueDate).toBe('2021-12-24');
+      expect(req?.kev?.notes).toBe('Apply vendor updates');
+      // cvss[]
+      expect(req?.cvss?.[0].baseScore).toBe(10.0);
+      // affectedPackages[] — purl, cpe, and fixedInVersion all populated.
+      const pkg = req?.affectedPackages?.[0];
+      expect(pkg?.name).toBe('log4j-core');
+      expect(pkg?.purl).toContain('pkg:maven');
+      expect(pkg?.cpe).toContain('cpe:2.3:a:apache:log4j');
+      expect(pkg?.fixedInVersion).toBe('2.17.0');
+    });
+
+    it('should omit epss when the entry has no date', async () => {
+      // buildEpss returns undefined when the newest entry lacks a publish date.
+      const noDate = JSON.stringify({
+        descriptor: {name: 'grype', version: '0.85.0'},
+        source: {target: {userInput: 'img'}},
+        matches: [{
+          vulnerability: {
+            id: 'CVE-2024-9999',
+            severity: 'Medium',
+            epss: [{cve: 'CVE-2024-9999', epss: 0.1, percentile: 0.5}],
+          },
+          matchDetails: [{type: 'exact-direct-match', matcher: 'rpm-matcher'}],
+          artifact: {name: 'pkg', version: '1.0.0', type: 'rpm'},
+        }],
+      });
+      const output = await convertGrypeToHdf(noDate);
+      const hdf = parseJSON<HdfResults>(output);
+      const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-9999');
+      expect(req?.epss).toBeUndefined();
+    });
+
+    it('should handle sparse CVE-ecosystem fields', async () => {
+      // kev with only inKev set, all-malformed cwe[] (dropped -> undefined), and
+      // an epss entry missing score/percentile (coalesced to 0). Exercises the
+      // negative branches of buildKev/extractCwe/buildEpss.
+      const sparse = JSON.stringify({
+        descriptor: {name: 'grype', version: '0.85.0'},
+        source: {target: {userInput: 'img'}},
+        matches: [{
+          vulnerability: {
+            id: 'CVE-2024-1111',
+            severity: 'Low',
+            cwe: ['not-a-cwe', 'GHSA-xxxx'],
+            epss: [{cve: 'CVE-2024-1111', date: '2026-05-26'}],
+            kev: {inKev: false},
+          },
+          matchDetails: [{type: 'exact-direct-match', matcher: 'rpm-matcher'}],
+          artifact: {name: 'pkg', version: '1.0.0', type: 'rpm'},
+        }],
+      });
+      const output = await convertGrypeToHdf(sparse);
+      const hdf = parseJSON<HdfResults>(output);
+      const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-1111');
+      expect(req).toBeDefined();
+      // all-malformed cwe -> field omitted
+      expect(req?.cwe).toBeUndefined();
+      // epss present (has date) but score/percentile defaulted to 0
+      expect(req?.epss?.score).toBe(0);
+      expect(req?.epss?.percentile).toBe(0);
+      // kev present with only inKev
+      expect(req?.kev?.inKev).toBe(false);
+      expect(req?.kev?.dateAdded).toBeUndefined();
+    });
+
     it('should default to epoch time for start time', async () => {
       const input = loadFixture('amazon.json');
       const output = await convertGrypeToHdf(input);

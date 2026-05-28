@@ -269,6 +269,52 @@ describe('Nessus to HDF Converter', async () => {
         });
       }
     });
+
+    it('should populate epss and cwe from an EPSS-enriched ReportItem', async () => {
+      // The static sample.nessus predates Nessus' EPSS output, so buildEpss is
+      // never exercised by it. This inline NessusClientData_v2 carries the real
+      // <epss_score>/<epss_percentile>/<cwe> element shape Nessus emits.
+      const enriched = `<?xml version="1.0" ?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Enriched Scan</policyName>
+  </Policy>
+  <Report name="Enriched Scan">
+    <ReportHost name="host-epss">
+      <HostProperties>
+        <tag name="HOST_START">Tue Mar 22 14:54:47 2022</tag>
+        <tag name="host-ip">10.0.0.5</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="4" pluginID="999001" pluginName="Log4Shell" pluginFamily="Misc.">
+        <cve>CVE-2021-44228</cve>
+        <cvss_score_source>CVE-2021-44228</cvss_score_source>
+        <cvss3_base_score>10.0</cvss3_base_score>
+        <cvss3_vector>CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H</cvss3_vector>
+        <cwe>CWE-502</cwe>
+        <cwe>917</cwe>
+        <epss_score>0.97431</epss_score>
+        <epss_percentile>0.99962</epss_percentile>
+        <description>Remote code execution via JNDI lookup.</description>
+        <solution>Upgrade to a fixed release.</solution>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+
+      const result = await convertNessusToHdf(enriched);
+      const req = findReqAcrossBaselines(result, '999001');
+      expect(req).toBeDefined();
+
+      // epss — score, percentile, and date derived from HOST_START.
+      expect(req?.epss?.score).toBeCloseTo(0.97431, 5);
+      expect(req?.epss?.percentile).toBeCloseTo(0.99962, 5);
+      expect(req?.epss?.date).toBe('2022-03-22');
+      // cwe — CWE-prefixed and bare-numeric forms both normalize to CWE-N.
+      expect(req?.cwe).toContain('CWE-502');
+      expect(req?.cwe).toContain('CWE-917');
+      // cvss
+      expect(req?.cvss?.[0].baseScore).toBe(10.0);
+    });
   });
 
   describe('Compliance Scan Conversion', async () => {
