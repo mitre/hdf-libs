@@ -26,10 +26,63 @@ Examples:
 	}
 
 	cmd.AddCommand(newAmendCreateCmd())
+	cmd.AddCommand(newAmendDraftCmd())
 	cmd.AddCommand(newAmendApplyCmd())
 	cmd.AddCommand(newAmendListCmd())
 	cmd.AddCommand(newAmendVerifyCmd())
 	cmd.AddCommand(newAmendSetCmd())
+
+	return cmd
+}
+
+func newAmendDraftCmd() *cobra.Command {
+	var (
+		fromPath     string
+		amendType    string
+		statusFilter string
+		selectStr    string
+		expires      string
+		outputPath   string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "draft --from <results-file> --type <override-type> [-o output]",
+		Short: "Scaffold an incomplete amendments draft from a results file",
+		Long: `Enumerate requirements from an HDF results file and emit one override
+stub per match, so you don't hand-type requirement IDs.
+
+The output is a DRAFT: each stub is pre-filled with requirementId, type,
+appliedAt, and (if --expires is given) expiresAt, but leaves the
+type-appropriate substantive fields (reason, status/impact, appliedBy) blank
+for you — or an enrichment script — to complete. The document is marked
+"_draft": true and is REFUSED by 'hdf amend apply' until you complete the
+stubs and remove the marker. Complete drafts in bulk programmatically, or load
+one into 'hdf amend create' to finish interactively.
+
+The draft deliberately does NOT copy scan-specific data (such as a finding's
+base CVSS) into the stubs — amendments are reusable org context, merged with
+base data at apply time.
+
+--select filters findings by a case-insensitive substring of their id or title;
+--status filters by computed status (e.g. failed).
+
+Examples:
+  hdf amend draft --from results.json --type waiver --status failed -o draft.json
+  hdf amend draft --from results.json --type attestation --select "access control" --expires 1y`,
+		Args: cobra.NoArgs,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return runAmendDraft(fromPath, amendType, statusFilter, selectStr, expires, outputPath)
+		},
+	}
+
+	cmd.Flags().StringVar(&fromPath, "from", "", "HDF results file to enumerate requirements from (required)")
+	cmd.Flags().StringVar(&amendType, "type", "", "Override type for the stubs (waiver, attestation, poam, inherited, falsePositive, riskAdjustment, operationalRequirement) (required)")
+	cmd.Flags().StringVar(&statusFilter, "status", "", "Only stub requirements with this computed status (e.g. failed)")
+	cmd.Flags().StringVar(&selectStr, "select", "", "Only stub requirements whose id or title contains this substring")
+	cmd.Flags().StringVar(&expires, "expires", "", "Expiration for the stubs (30d, 6m, 1y, YYYY-MM-DD, or RFC3339)")
+	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
+	_ = cmd.MarkFlagRequired("from")
+	_ = cmd.MarkFlagRequired("type")
 
 	return cmd
 }

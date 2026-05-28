@@ -116,6 +116,25 @@ const resultsWithTwoRequirements = `{
   "statistics": {"duration": 0.1}
 }`
 
+func TestMergeAmendments_RefusesDraft(t *testing.T) {
+	draft := `{
+		"_draft": true,
+		"name": "draft",
+		"overrides": [{
+			"type": "waiver",
+			"requirementId": "AC-1",
+			"status": "passed",
+			"reason": "",
+			"appliedBy": {"type": "", "identifier": ""},
+			"appliedAt": "2026-03-01T00:00:00Z",
+			"expiresAt": "2026-12-31T00:00:00Z"
+		}]
+	}`
+	_, err := MergeAmendments([]byte(minimalResults), []byte(draft))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "draft")
+}
+
 func TestMergeAmendments(t *testing.T) {
 	t.Run("merge with matching requirement sets effectiveStatus", func(t *testing.T) {
 		merged, err := MergeAmendments([]byte(minimalResults), []byte(minimalAmendments))

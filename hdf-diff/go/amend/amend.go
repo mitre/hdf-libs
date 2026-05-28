@@ -22,6 +22,10 @@ func MergeAmendments(results, amendments []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to parse amendments JSON: %w", err)
 	}
 
+	if draft, _ := amendDoc["_draft"].(bool); draft {
+		return nil, fmt.Errorf("amendments document is an incomplete draft: complete the override stubs and remove the \"_draft\" marker before applying")
+	}
+
 	overridesRaw, ok := amendDoc["overrides"]
 	if !ok {
 		// No overrides — return results unchanged.
