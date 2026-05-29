@@ -1,6 +1,7 @@
 package hdfutil
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +26,10 @@ func TestCvssScoreToSeverity(t *testing.T) {
 		// Clamping
 		{-1.0, "none"},
 		{11.5, "critical"},
+		// Non-finite inputs match the TypeScript counterpart (-> "none").
+		{math.NaN(), "none"},
+		{math.Inf(1), "none"},
+		{math.Inf(-1), "none"},
 	}
 	for _, tt := range tests {
 		assert.Equal(t, tt.expected, CvssScoreToSeverity(tt.score), "CvssScoreToSeverity(%v)", tt.score)

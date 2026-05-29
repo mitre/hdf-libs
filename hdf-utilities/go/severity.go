@@ -1,7 +1,10 @@
 // Package hdfutil provides shared utility functions for HDF converters and tools.
 package hdfutil
 
-import "strings"
+import (
+	"math"
+	"strings"
+)
 
 // standardSeverityMap defines the canonical severity-to-impact mappings used
 // across most HDF converters, aligned with CVSS 3.x bands normalized to 0-1.
@@ -64,6 +67,11 @@ func SeverityToImpactWithAliases(severity string, aliases map[string]float64, de
 // scanner behavior and avoids throwing on malformed inputs.
 func CvssScoreToSeverity(score float64) string {
 	switch {
+	case math.IsNaN(score) || math.IsInf(score, 0):
+		// Match the TypeScript counterpart, which returns "none" for any
+		// non-finite input (NaN comparisons are false in Go and would
+		// otherwise fall through to "critical").
+		return "none"
 	case score < 0.1:
 		return "none"
 	case score < 4.0:
