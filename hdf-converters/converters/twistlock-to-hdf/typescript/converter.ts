@@ -169,23 +169,23 @@ export function cvssSeverityFromScore(score: number): CVSSSeverity | undefined {
  * so vendor-final-score data isn't dropped.
  */
 export function buildCvss(vuln: TwistlockVuln): Cvss | undefined {
-  const hasScore = typeof vuln.cvss === 'number' && vuln.cvss > 0;
+  // 0.0 is a valid CVSS score ("none"); only treat a non-numeric/non-finite
+  // value as "no score". A missing score is omitted, never coerced to 0.
+  const hasScore = typeof vuln.cvss === 'number' && Number.isFinite(vuln.cvss);
   const hasVector = !!vuln.vector;
   if (!hasScore && !hasVector) return undefined;
 
-  const cv: Cvss = {
-    version: cvssVersionFromVector(vuln.vector),
-    baseScore: hasScore ? (vuln.cvss as number) : 0,
-  };
+  const cv: Cvss = {version: cvssVersionFromVector(vuln.vector)};
+  if (hasScore) {
+    cv.baseScore = vuln.cvss as number;
+    const sev = cvssSeverityFromScore(vuln.cvss as number);
+    if (sev !== undefined) cv.baseSeverity = sev;
+  }
   if (hasVector) {
     cv.baseVector = vuln.vector as string;
   }
   const source = vuln.cve ?? vuln.id;
   if (source) cv.source = source;
-  if (hasScore) {
-    const sev = cvssSeverityFromScore(vuln.cvss as number);
-    if (sev !== undefined) cv.baseSeverity = sev;
-  }
   return cv;
 }
 

@@ -275,6 +275,36 @@ describe('Grype Converter', async () => {
       expect(req?.epss).toBeUndefined();
     });
 
+    it('should emit cvss entries with only the present base fields', async () => {
+      // First cvss entry: score but no vector -> baseVector omitted (an empty
+      // vector would fail the schema pattern). Second: vector but no score ->
+      // baseScore omitted (not coerced to 0).
+      const report = JSON.stringify({
+        descriptor: {name: 'grype', version: '0.85.0'},
+        source: {target: {userInput: 'img'}},
+        matches: [{
+          vulnerability: {
+            id: 'CVE-2024-2222',
+            severity: 'High',
+            cvss: [
+              {version: '3.1', metrics: {baseScore: 7.5}},
+              {version: '3.1', vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N'},
+            ],
+          },
+          matchDetails: [{type: 'exact-direct-match', matcher: 'rpm-matcher'}],
+          artifact: {name: 'pkg', version: '1.0.0', type: 'rpm'},
+        }],
+      });
+      const output = await convertGrypeToHdf(report);
+      const hdf = parseJSON<HdfResults>(output);
+      const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-2222');
+      expect(req?.cvss).toHaveLength(2);
+      expect(req?.cvss?.[0].baseScore).toBe(7.5);
+      expect(req?.cvss?.[0].baseVector).toBeUndefined();
+      expect(req?.cvss?.[1].baseVector).toContain('AV:N');
+      expect(req?.cvss?.[1].baseScore).toBeUndefined();
+    });
+
     it('should handle sparse CVE-ecosystem fields', async () => {
       // kev with only inKev set, all-malformed cwe[] (dropped -> undefined), and
       // an epss entry missing score/percentile (coalesced to 0). Exercises the

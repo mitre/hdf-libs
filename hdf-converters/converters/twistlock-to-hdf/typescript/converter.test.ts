@@ -350,6 +350,20 @@ describe('twistlock to HDF converter', async () => {
       expect(buildCvss({ id: 'X', severity: 'low', description: '' })).toBeUndefined();
     });
 
+    it('buildCvss treats 0.0 as a valid score, not "no score"', () => {
+      const cv = buildCvss({ id: 'CVE-0', cve: 'CVE-0', severity: 'none', description: '', cvss: 0 });
+      expect(cv).toBeDefined();
+      expect(cv?.baseScore).toBe(0);
+      expect(cv?.baseVector).toBeUndefined();
+    });
+
+    it('buildCvss omits baseScore when only a vector is present', () => {
+      const cv = buildCvss({ id: 'CVE-1', cve: 'CVE-1', severity: 'high', description: '', vector: 'AV:N/AC:L/Au:N/C:P/I:P/A:P' });
+      expect(cv).toBeDefined();
+      expect(cv?.baseScore).toBeUndefined();
+      expect(cv?.baseVector).toBe('AV:N/AC:L/Au:N/C:P/I:P/A:P');
+    });
+
     it('parseCwes normalizes mixed-case input and dedupes', () => {
       expect(parseCwes(undefined)).toEqual([]);
       expect(parseCwes('')).toEqual([]);

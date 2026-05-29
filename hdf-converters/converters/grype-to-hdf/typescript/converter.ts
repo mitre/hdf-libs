@@ -300,19 +300,29 @@ function buildCvssEntries(vuln: GrypeVulnerability): Cvss[] | undefined {
   if (!vuln.cvss || vuln.cvss.length === 0) {
     return undefined;
   }
-  return vuln.cvss.map(c => {
-    const baseScore = c.metrics?.baseScore ?? 0;
-    const entry: Cvss = {
-      version: cvssVersionToSchema(c.version),
-      baseVector: c.vector ?? '',
-      baseScore,
-      baseSeverity: cvssBandSeverity(baseScore),
-    };
+  const entries: Cvss[] = [];
+  for (const c of vuln.cvss) {
+    const entry: Cvss = {version: cvssVersionToSchema(c.version)};
+    // Only emit base fields that are present: an empty baseVector fails the
+    // schema pattern, and a missing baseScore must not be coerced to 0.
+    if (c.vector) {
+      entry.baseVector = c.vector;
+    }
+    const score = c.metrics?.baseScore;
+    if (typeof score === 'number' && Number.isFinite(score)) {
+      entry.baseScore = score;
+      entry.baseSeverity = cvssBandSeverity(score);
+    }
     if (vuln.id) {
       entry.source = vuln.id;
     }
-    return entry;
-  });
+    // An entry with neither vector nor score cannot satisfy the schema anyOf.
+    if (entry.baseVector === undefined && entry.baseScore === undefined) {
+      continue;
+    }
+    entries.push(entry);
+  }
+  return entries.length > 0 ? entries : undefined;
 }
 
 // mapGrypeTypeToEcosystem translates Grype artifact.type to schema Ecosystem.

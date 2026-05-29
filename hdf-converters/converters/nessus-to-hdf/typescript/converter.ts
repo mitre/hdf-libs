@@ -304,33 +304,34 @@ function buildCvssEntries(item: ReportItem): Cvss[] {
   if (!hasV3 && !hasV2) return [];
 
   let version: CvssVersion;
-  let baseVector: string;
-  let baseScore: number;
+  let baseVector: string | undefined;
+  let baseScore: number | undefined;
   let threatVector: string | undefined;
   let threatScore: number | undefined;
 
   if (hasV3) {
     version = detectV3Version(item.cvss3_vector ?? '');
-    baseVector = item.cvss3_vector ?? '';
-    baseScore = parseFloatSafe(item.cvss3_base_score);
+    baseVector = item.cvss3_vector || undefined;
+    baseScore = parseFloatOrUndef(item.cvss3_base_score);
     threatVector = stripVersionPrefix(item.cvss3_temporal_vector);
     threatScore = item.cvss3_temporal_score ? parseFloatSafe(item.cvss3_temporal_score) : undefined;
   } else {
     version = CvssVersion.The20;
-    baseVector = stripV2Prefix(item.cvss_vector ?? '');
-    baseScore = parseFloatSafe(item.cvss_base_score);
+    baseVector = stripV2Prefix(item.cvss_vector ?? '') || undefined;
+    baseScore = parseFloatOrUndef(item.cvss_base_score);
     threatVector = stripV2Prefix(item.cvss_temporal_vector ?? '') || undefined;
     threatScore = item.cvss_temporal_score ? parseFloatSafe(item.cvss_temporal_score) : undefined;
   }
 
-  const entry: Cvss = {
-    version,
-    baseVector,
-    baseScore,
-    source,
-  };
-  const baseSeverity = mapCvssSeverity(baseScore);
-  if (baseSeverity !== undefined) entry.baseSeverity = baseSeverity;
+  // Only emit base fields that are actually present: an empty baseVector would
+  // fail the schema pattern, and a missing baseScore must not be coerced to 0.
+  const entry: Cvss = {version, source};
+  if (baseVector) entry.baseVector = baseVector;
+  if (baseScore !== undefined) {
+    entry.baseScore = baseScore;
+    const baseSeverity = mapCvssSeverity(baseScore);
+    if (baseSeverity !== undefined) entry.baseSeverity = baseSeverity;
+  }
   if (threatVector !== undefined && threatVector !== '') entry.threatVector = threatVector;
   if (threatScore !== undefined) {
     entry.threatScore = threatScore;
@@ -369,6 +370,14 @@ function parseFloatSafe(s: string | undefined): number {
   if (!s) return 0;
   const f = Number.parseFloat(s);
   return Number.isFinite(f) ? f : 0;
+}
+
+// parseFloatOrUndef returns the parsed number, or undefined when the source
+// field is absent or unparseable (so callers can omit it rather than emit 0).
+function parseFloatOrUndef(s: string | undefined): number | undefined {
+  if (s === undefined || s === '') return undefined;
+  const f = Number.parseFloat(s);
+  return Number.isFinite(f) ? f : undefined;
 }
 
 function mapCvssSeverity(score: number): CVSSSeverity | undefined {
@@ -414,13 +423,17 @@ function buildEpss(item: ReportItem, host: ReportHost): Epss | undefined {
   const hasScore = item.epss_score !== undefined && item.epss_score !== '';
   const hasPct = item.epss_percentile !== undefined && item.epss_percentile !== '';
   if (!hasScore && !hasPct) return undefined;
+  // The schema requires a publish date on every Epss entry. If the scan has no
+  // reliable date, omit the entry entirely rather than stamping a
+  // non-deterministic "today".
+  const date = epssDate(host);
+  if (date === undefined) return undefined;
   const score = hasScore ? parseFloatSafe(item.epss_score) : 0;
   const percentile = hasPct ? parseFloatSafe(item.epss_percentile) : 0;
-  const date = epssDate(host);
   return { date: date as unknown as Date, score, percentile };
 }
 
-function epssDate(host: ReportHost): string {
+function epssDate(host: ReportHost): string | undefined {
   const hs = getHostPropertyValue(host, 'HOST_START');
   if (hs) {
     const d = new Date(hs);
@@ -428,7 +441,7 @@ function epssDate(host: ReportHost): string {
       return d.toISOString().slice(0, 10);
     }
   }
-  return new Date().toISOString().slice(0, 10);
+  return undefined;
 }
 
 function buildDescriptions(item: ReportItem, isCompliance: boolean): Description[] {
