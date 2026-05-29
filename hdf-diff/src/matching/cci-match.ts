@@ -129,12 +129,9 @@ export function createCciMatchStrategy(): MatchStrategy {
       }
 
       // Fallback signal: CWE (structured field preferred over tags.cwe).
-      // Only considers reqs not already claimed by CCI pairing.
-      const oldCweMap = indexByKey(oldReqs, (r) =>
-        // Filter to unclaimed reqs by intersecting on index outside this scope;
-        // implementation: still index everything, but pairUnambiguous skips claimed.
-        extractCwes(r),
-      );
+      // All reqs are indexed here; pairUnambiguous skips any already claimed by
+      // CCI pairing via the matchedOld/NewIndices sets passed below.
+      const oldCweMap = indexByKey(oldReqs, (r) => extractCwes(r));
       const newCweMap = indexByKey(newReqs, (r) => extractCwes(r));
       for (const { oldIdx, newIdx } of pairUnambiguous(
         oldCweMap,
