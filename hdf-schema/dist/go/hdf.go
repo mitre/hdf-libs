@@ -454,9 +454,10 @@ type AffectedPackage struct {
 	// (npm), 'org.apache.logging.log4j:log4j-core' (maven, group:artifact).                              
 	Name                                                                                        string    `json:"name"`
 	// Optional Package URL (PURL) identifying the affected package. Validated leniently: only            
-	// the 'pkg:TYPE/' scheme prefix is enforced here (where TYPE is the package type, e.g. npm,          
-	// rpm, pypi). Use `hdf-utilities.parsePurl` for full PURL grammar. Example:                          
-	// 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'.                                               
+	// the 'pkg:TYPE/' scheme prefix is enforced here, where TYPE follows the PURL grammar (a             
+	// letter followed by letters, digits, '.', '+', or '-') and is matched case-insensitively            
+	// to mirror `hdf-utilities.parsePurl`'s accept-and-warn behavior. Use `parsePurl` for full           
+	// PURL parsing. Example: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'.                        
 	Purl                                                                                        *string   `json:"purl,omitempty"`
 	// The exact version of the package that the vulnerability scanner observed. Use the                  
 	// ecosystem's native version string verbatim (e.g., '1.1.1k-7.el8_4' for rpm, '4.17.20' for          

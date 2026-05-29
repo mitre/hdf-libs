@@ -467,6 +467,20 @@ func TestCveEcosystem_AffectedPackages(t *testing.T) {
 		assert.Contains(t, result.Error(), "purl")
 	})
 
+	t.Run("accepts uppercase and complex PURL type names", func(t *testing.T) {
+		// The pattern mirrors parsePurl's accept-and-warn behavior: type may be
+		// uppercase or contain digits / '.' / '+' / '-' per the PURL grammar.
+		data := resultsWith(`"affectedPackages": [
+			{"name": "lodash", "version": "4.17.20", "ecosystem": "npm", "purl": "pkg:NPM/lodash@4.17.20"},
+			{"name": "thing", "version": "1.0", "ecosystem": "generic", "purl": "pkg:docker.io/library/nginx@1.25"}
+		]`)
+		result := ValidateResults(data)
+		if !result.Valid {
+			t.Logf("Unexpected errors: %s", result.Error())
+		}
+		assert.True(t, result.Valid)
+	})
+
 	t.Run("rejects unknown ecosystem enum value", func(t *testing.T) {
 		data := resultsWith(`"affectedPackages": [{"name": "thing", "version": "1.0", "ecosystem": "snapcraft"}]`)
 		result := ValidateResults(data)

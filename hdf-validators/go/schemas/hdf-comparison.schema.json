@@ -4661,8 +4661,8 @@
             },
             "purl": {
               "type": "string",
-              "pattern": "^pkg:[a-z]+/.*",
-              "description": "Optional Package URL (PURL) identifying the affected package. Validated leniently: only the 'pkg:TYPE/' scheme prefix is enforced here (where TYPE is the package type, e.g. npm, rpm, pypi). Use `hdf-utilities.parsePurl` for full PURL grammar. Example: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'."
+              "pattern": "^pkg:[A-Za-z0-9.+-]+/.+",
+              "description": "Optional Package URL (PURL) identifying the affected package. Validated leniently: only the 'pkg:TYPE/' scheme prefix is enforced here, where TYPE follows the PURL grammar (a letter followed by letters, digits, '.', '+', or '-') and is matched case-insensitively to mirror `hdf-utilities.parsePurl`'s accept-and-warn behavior. Use `parsePurl` for full PURL parsing. Example: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'."
             },
             "fixedInVersion": {
               "type": "string",
