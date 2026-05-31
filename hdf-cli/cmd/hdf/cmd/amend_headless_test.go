@@ -450,19 +450,20 @@ func TestParseSpecInput_Empty(t *testing.T) {
 }
 
 func TestResolveDraftExpiry(t *testing.T) {
-	got, err := resolveDraftExpiry("")
+	now := fixedNow()
+	got, err := resolveDraftExpiry("", now)
 	require.NoError(t, err)
 	assert.Equal(t, "", got)
 
-	got, err = resolveDraftExpiry("2027-04-05T06:07:08Z")
+	got, err = resolveDraftExpiry("2027-04-05T06:07:08Z", now)
 	require.NoError(t, err)
 	assert.Equal(t, "2027-04-05T06:07:08Z", got)
 
-	got, err = resolveDraftExpiry("2028-01-01")
+	got, err = resolveDraftExpiry("2028-01-01", now)
 	require.NoError(t, err)
 	assert.Equal(t, "2028-01-01T23:59:59Z", got)
 
-	_, err = resolveDraftExpiry("whenever")
+	_, err = resolveDraftExpiry("whenever", now)
 	require.Error(t, err)
 }
 

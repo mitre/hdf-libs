@@ -152,7 +152,7 @@ func fattenOverrideSpec(spec map[string]interface{}, now time.Time) (map[string]
 		return nil, err
 	}
 	normalizeAppliedAt(out, now)
-	if err := normalizeExpiresAt(out); err != nil {
+	if err := normalizeExpiresAt(out, now); err != nil {
 		return nil, err
 	}
 	normalizeImpact(out)
@@ -192,8 +192,9 @@ func normalizeAppliedAt(out map[string]interface{}, now time.Time) {
 }
 
 // normalizeExpiresAt resolves a relative duration or bare date into an absolute
-// date-time. A full RFC3339 timestamp is kept verbatim.
-func normalizeExpiresAt(out map[string]interface{}) error {
+// date-time. A full RFC3339 timestamp is kept verbatim. The now argument is the
+// anchor for relative durations (so tests can pin the resolved date).
+func normalizeExpiresAt(out map[string]interface{}, now time.Time) error {
 	raw, _ := out["expiresAt"].(string)
 	if raw == "" {
 		return fmt.Errorf("override for %v is missing required field \"expiresAt\"", out["requirementId"])
@@ -201,7 +202,7 @@ func normalizeExpiresAt(out map[string]interface{}) error {
 	if _, err := time.Parse(time.RFC3339, raw); err == nil {
 		return nil
 	}
-	date, err := parseExpiryInput(raw)
+	date, err := parseExpiryInput(raw, now)
 	if err != nil {
 		return fmt.Errorf("override for %v has an invalid \"expiresAt\": %w", out["requirementId"], err)
 	}
@@ -354,7 +355,7 @@ func buildDraftFromResults(doc map[string]interface{}, amendType, statusFilter, 
 		return nil, fmt.Errorf("invalid override type %q", amendType)
 	}
 
-	resolvedExpiry, err := resolveDraftExpiry(expires)
+	resolvedExpiry, err := resolveDraftExpiry(expires, now)
 	if err != nil {
 		return nil, err
 	}
@@ -382,14 +383,15 @@ func buildDraftFromResults(doc map[string]interface{}, amendType, statusFilter, 
 
 // resolveDraftExpiry resolves a relative/absolute expiry, or returns "" when the
 // author did not supply one (draft stubs may leave it blank for later editing).
-func resolveDraftExpiry(expires string) (string, error) {
+// The now argument anchors relative durations (so tests can pin the resolved date).
+func resolveDraftExpiry(expires string, now time.Time) (string, error) {
 	if strings.TrimSpace(expires) == "" {
 		return "", nil
 	}
 	if _, err := time.Parse(time.RFC3339, expires); err == nil {
 		return expires, nil
 	}
-	date, err := parseExpiryInput(expires)
+	date, err := parseExpiryInput(expires, now)
 	if err != nil {
 		return "", fmt.Errorf("invalid --expires value: %w", err)
 	}

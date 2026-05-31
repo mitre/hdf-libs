@@ -17,11 +17,17 @@ func ConvertPOAMToHDF(input []byte, converterVersion string) (*hdf.HDFAmendments
 		return nil, err
 	}
 
-	return poamToHDFAmendments(doc.PlanOfActionAndMilestones, input, converterVersion)
+	// Capture the clock once at the public entry point so every default date
+	// derived during this conversion is anchored to the same instant. Tests
+	// inject a fixed clock by calling poamToHDFAmendments directly.
+	return poamToHDFAmendments(doc.PlanOfActionAndMilestones, input, converterVersion, time.Now())
 }
 
 // poamToHDFAmendments converts a parsed PlanOfActionAndMilestones to HDFAmendments.
-func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, converterVersion string) (*hdf.HDFAmendments, error) {
+// The now argument anchors any default dates derived during conversion (missing
+// metadata.last-modified, missing per-item deadlines, defaulted milestones), so
+// tests can produce deterministic output.
+func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, converterVersion string, now time.Time) (*hdf.HDFAmendments, error) {
 	integrity := shared.InputIntegrity(rawInput)
 	meta := ExtractMetadata(poam.Metadata)
 
@@ -32,7 +38,7 @@ func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, conve
 	limitedPOAMItems := shared.LimitSliceWithWarning(poam.POAMItems, 0, "POA&M item")
 	overrides := make([]hdf.StandaloneOverride, 0, len(limitedPOAMItems))
 	for i := range limitedPOAMItems {
-		override := poamItemToOverride(&limitedPOAMItems[i], riskMap, poam)
+		override := poamItemToOverride(&limitedPOAMItems[i], riskMap, poam, now)
 		overrides = append(overrides, override)
 	}
 
@@ -72,7 +78,8 @@ func buildRiskMap(risks []Risk) map[string]*Risk {
 }
 
 // poamItemToOverride converts a single POAMItem to a StandaloneOverride.
-func poamItemToOverride(item *POAMItem, riskMap map[string]*Risk, poam *PlanOfActionAndMilestones) hdf.StandaloneOverride {
+// now anchors any defaulted dates (appliedAt, expiresAt, milestone ETAs).
+func poamItemToOverride(item *POAMItem, riskMap map[string]*Risk, poam *PlanOfActionAndMilestones, now time.Time) hdf.StandaloneOverride {
 	status := poamItemStatus(item, riskMap)
 	override := hdf.StandaloneOverride{
 		Type:          hdf.Poam,
@@ -80,9 +87,9 @@ func poamItemToOverride(item *POAMItem, riskMap map[string]*Risk, poam *PlanOfAc
 		Reason:        poamItemReason(item),
 		Status:        &status,
 		AppliedBy:     poamItemAppliedBy(poam),
-		AppliedAt:     poamItemAppliedAt(poam),
-		ExpiresAt:     poamItemExpiresAt(item, riskMap),
-		Milestones:    extractMilestones(item, riskMap),
+		AppliedAt:     poamItemAppliedAt(poam, now),
+		ExpiresAt:     poamItemExpiresAt(item, riskMap, now),
+		Milestones:    extractMilestones(item, riskMap, now),
 	}
 
 	return override
@@ -175,19 +182,20 @@ func poamItemAppliedBy(poam *PlanOfActionAndMilestones) hdf.Identity {
 }
 
 // poamItemAppliedAt returns the timestamp for the POA&M item, using the
-// document's last-modified date.
-func poamItemAppliedAt(poam *PlanOfActionAndMilestones) time.Time {
+// document's last-modified date. Falls back to now when the metadata is absent.
+func poamItemAppliedAt(poam *PlanOfActionAndMilestones, now time.Time) time.Time {
 	if poam.Metadata.LastModified != "" {
 		if t, err := time.Parse(time.RFC3339, poam.Metadata.LastModified); err == nil {
 			return t
 		}
 	}
-	return time.Now()
+	return now
 }
 
 // poamItemExpiresAt determines the expiration date for a POA&M override.
-// It looks at risk deadlines and remediation task timings.
-func poamItemExpiresAt(item *POAMItem, riskMap map[string]*Risk) time.Time {
+// It looks at risk deadlines and remediation task timings; falls back to
+// one year from now when none are available.
+func poamItemExpiresAt(item *POAMItem, riskMap map[string]*Risk, now time.Time) time.Time {
 	// Check related risks for deadline (stored in JSON but not in our Risk struct)
 	// Fall back to remediation task end dates
 	for _, rr := range item.RelatedRisks {
@@ -205,12 +213,12 @@ func poamItemExpiresAt(item *POAMItem, riskMap map[string]*Risk) time.Time {
 	}
 
 	// Default: 1 year from now (POA&Ms should be reviewed periodically)
-	return time.Now().AddDate(1, 0, 0)
+	return now.AddDate(1, 0, 0)
 }
 
 // extractMilestones extracts milestone information from related risks'
-// remediation tasks.
-func extractMilestones(item *POAMItem, riskMap map[string]*Risk) []hdf.Milestone {
+// remediation tasks. now anchors any defaulted milestone ETAs.
+func extractMilestones(item *POAMItem, riskMap map[string]*Risk, now time.Time) []hdf.Milestone {
 	var milestones []hdf.Milestone
 
 	for _, rr := range item.RelatedRisks {
@@ -229,7 +237,7 @@ func extractMilestones(item *POAMItem, riskMap map[string]*Risk) []hdf.Milestone
 			// so we create a milestone from the remediation itself.
 			milestone := hdf.Milestone{
 				Description:         rem.Title + ": " + rem.Description,
-				EstimatedCompletion: time.Now().AddDate(0, 3, 0), // default 3 months
+				EstimatedCompletion: now.AddDate(0, 3, 0), // default 3 months
 				Status:              hdf.Pending,
 			}
 			milestones = append(milestones, milestone)

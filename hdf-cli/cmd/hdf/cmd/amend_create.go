@@ -341,7 +341,7 @@ func collectAmendmentDetails(reqID string) (*amendOverride, error) {
 		return nil, fmt.Errorf("form cancelled: %w", err)
 	}
 
-	expiresDate, _ := parseExpiryInput(expiresInput) // already validated
+	expiresDate, _ := parseExpiryInput(expiresInput, time.Now()) // already validated
 
 	ov := &amendOverride{
 		RequirementID: reqID,
@@ -425,20 +425,22 @@ func askAddAnother() (bool, error) {
 
 // validateExpiryInput validates that the input is a valid relative duration or future date.
 func validateExpiryInput(s string) error {
-	date, err := parseExpiryInput(s)
+	now := time.Now()
+	date, err := parseExpiryInput(s, now)
 	if err != nil {
 		return err
 	}
 	parsed, _ := time.Parse("2006-01-02", date)
-	if !parsed.After(time.Now()) {
+	if !parsed.After(now) {
 		return fmt.Errorf("expiration date must be in the future")
 	}
 	return nil
 }
 
 // parseExpiryInput converts a relative duration (30d, 3m, 6m, 1y) or absolute date
-// (YYYY-MM-DD) to an absolute YYYY-MM-DD string.
-func parseExpiryInput(input string) (string, error) {
+// (YYYY-MM-DD) to an absolute YYYY-MM-DD string. The now argument is the anchor
+// for relative durations — pass time.Now() at runtime; tests pass a fixed clock.
+func parseExpiryInput(input string, now time.Time) (string, error) {
 	input = strings.TrimSpace(input)
 	if input == "" {
 		return "", fmt.Errorf("expiration is required")
@@ -461,7 +463,6 @@ func parseExpiryInput(input string) (string, error) {
 		return "", fmt.Errorf("invalid format: use 30d, 3m, 1y, or YYYY-MM-DD")
 	}
 
-	now := time.Now()
 	var target time.Time
 	switch unit {
 	case 'd':
