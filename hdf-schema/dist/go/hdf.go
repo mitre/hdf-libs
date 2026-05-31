@@ -253,7 +253,7 @@ type Input struct {
 	// The data type of this input.                                                                                
 	Type                                                                                       *InputType          `json:"type,omitempty"`
 	// The input value. Type should match the declared type field. Accepts any JSON value.                         
-	Value interface{} `json:"value,omitempty"`
+	Value                                                                                      interface{}         `json:"value,omitempty"`
 }
 
 // Validation constraints for the input value.
@@ -743,7 +743,7 @@ type VerificationMethod struct {
 //
 // A URI pointing at the reference.
 type Reference struct {
-	Ref *Ref `json:"ref,omitempty"`
+	Ref *Ref    `json:"ref,omitempty"`
 	URL *string `json:"url,omitempty"`
 	URI *string `json:"uri,omitempty"`
 }
@@ -893,7 +893,7 @@ type Component struct {
 	Owner                                                                                       *Identity         `json:"owner,omitempty"`
 	// Embedded CycloneDX or SPDX SBOM document representing this component's software                            
 	// inventory. The sbomFormat field determines which format constraints apply.                                 
-	Sbom interface{} `json:"sbom,omitempty"`
+	Sbom                                                                                        interface{}       `json:"sbom,omitempty"`
 	// Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present.                     
 	SbomFormat                                                                                  *SBOMFormat       `json:"sbomFormat,omitempty"`
 	// URI reference to an external CycloneDX or SPDX SBOM document for this component. May be a                  
@@ -947,7 +947,7 @@ type Component struct {
 	// Cloud account identifier.                                                                                  
 	AccountID                                                                                   *string           `json:"accountId,omitempty"`
 	// Cloud provider.                                                                                            
-	Provider *CloudProvider `json:"provider,omitempty"`
+	Provider                                                                                    *CloudProvider    `json:"provider,omitempty"`
 	// Cloud region, if applicable.                                                                               
 	//                                                                                                            
 	// Cloud region where the resource resides.                                                                   
@@ -999,7 +999,7 @@ type InputOverride struct {
 	// Rationale for why this override is needed.                                                          
 	Justification                                                                              *string     `json:"justification,omitempty"`
 	// The overridden value. Should match the type of the original input.                                  
-	Value interface{} `json:"value,omitempty"`
+	Value                                                                                      interface{} `json:"value"`
 }
 
 // Information about the tool that generated this file.
@@ -1297,9 +1297,9 @@ type BaselineDiff struct {
 // Comparison of a single component between two system document versions.
 type ComponentDiff struct {
 	// Component snapshot from the new system document.                                                
-	After interface{} `json:"after,omitempty"`
+	After                                                                            interface{}       `json:"after,omitempty"`
 	// Component snapshot from the old system document.                                                
-	Before interface{} `json:"before,omitempty"`
+	Before                                                                           interface{}       `json:"before,omitempty"`
 	// Detailed field-level changes between the before and after component snapshots.                  
 	FieldChanges                                                                     []FieldChange     `json:"fieldChanges,omitempty"`
 	// Component name used for matching across system versions.                                        
@@ -1311,9 +1311,9 @@ type ComponentDiff struct {
 // A single field-level change between two versions of a requirement.
 type FieldChange struct {
 	// The new value of the field (for 'add' and 'replace' operations).                    
-	NewValue interface{} `json:"newValue,omitempty"`
+	NewValue                                                                   interface{} `json:"newValue,omitempty"`
 	// The previous value of the field (for 'remove' and 'replace' operations).            
-	OldValue interface{} `json:"oldValue,omitempty"`
+	OldValue                                                                   interface{} `json:"oldValue,omitempty"`
 	// The type of change operation.                                                       
 	Op                                                                         Op          `json:"op"`
 	// JSON Pointer path to the changed field.                                             
@@ -1324,13 +1324,13 @@ type FieldChange struct {
 // before/after snapshots.
 type RequirementDiff struct {
 	// The requirement as it appeared in the new source. Null when state is 'absent'.                                   
-	After interface{} `json:"after,omitempty"`
+	After                                                                                        interface{}            `json:"after"`
 	// Sensitive data from the new source that should not be included in the main after snapshot.                       
 	AfterSensitive                                                                               map[string]interface{} `json:"afterSensitive,omitempty"`
 	// IDs of annotations attached to this requirement diff.                                                            
 	AnnotationIDS                                                                                []string               `json:"annotationIds,omitempty"`
 	// The requirement as it appeared in the old/reference source. Null when state is 'new'.                            
-	Before interface{} `json:"before,omitempty"`
+	Before                                                                                       interface{}            `json:"before"`
 	// Sensitive data from the old source that should not be included in the main before                                
 	// snapshot.                                                                                                        
 	BeforeSensitive                                                                              map[string]interface{} `json:"beforeSensitive,omitempty"`
@@ -1386,7 +1386,7 @@ type Value struct {
 	// Human-readable label for the source.                                    
 	SourceLabel                                                    string      `json:"sourceLabel"`
 	// The value reported by this source for the conflicting field.            
-	Value interface{} `json:"value,omitempty"`
+	Value                                                          interface{} `json:"value"`
 }
 
 // Configuration for how requirements were matched across sources.
@@ -1649,7 +1649,7 @@ type DataFlow struct {
 	Protocol                                                                                    *string     `json:"protocol,omitempty"`
 	// The other end of this data flow. Can be a local component (UUID), a cross-system                     
 	// component reference, or an external endpoint.                                                        
-	To interface{} `json:"to,omitempty"`
+	To                                                                                          interface{} `json:"to"`
 }
 
 // Defines an assessment plan — what baselines to run against which targets, with resolved
@@ -2555,8 +2555,3 @@ func marshalUnion(pi *int64, pf *float64, pb *bool, ps *string, haveArray bool, 
 	}
 	return nil, errors.New("Union must not be null")
 }
-
-// Backward-compatible aliases for renamed constants.
-const (
-	CopyrightApplication = Application
-)
