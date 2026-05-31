@@ -63,9 +63,9 @@ describe('generate-types', () => {
       expect(content).toContain('export interface');
     });
 
-    it('should contain HdfComparison type', () => {
+    it('should contain HDFComparison type', () => {
       const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'), 'utf-8');
-      expect(content).toMatch(/export interface.*HdfComparison/);
+      expect(content).toMatch(/export interface.*HDFComparison/);
     });
 
     it('should contain RequirementDiff type', () => {

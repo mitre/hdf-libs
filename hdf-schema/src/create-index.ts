@@ -93,7 +93,7 @@ export function createIndex(options: CreateIndexOptions = {}): void {
   }
 
   // Clean stale .d.ts and .js output so tsc doesn't refuse to overwrite its own input
-  for (const name of ['hdf-results', 'hdf-baseline', 'hdf-comparison', 'hdf-system', 'hdf-plan', 'hdf-amendments', 'hdf-evidence-package']) {
+  for (const name of ['hdf', 'hdf-results', 'hdf-baseline', 'hdf-comparison', 'hdf-system', 'hdf-plan', 'hdf-amendments', 'hdf-evidence-package']) {
     for (const ext of ['.d.ts', '.js']) {
       const file = join(tsDir, `${name}${ext}`);
       if (existsSync(file)) {
@@ -179,6 +179,11 @@ export {
 
   const schemaExports = generateSchemaExports(ROOT_DIR);
 
+  // Use combined hdf.ts (deduplicated Identity, Checksum, etc.) if available
+  const hasCombined = existsSync(join(tsDir, 'hdf.ts'));
+
+  const primarySource = hasCombined ? './ts/hdf.js' : './ts/hdf-results.js';
+
   const indexDtsContent = `/**
  * Main entry point for @mitre/hdf-schema
  * Re-exports all types from generated TypeScript definitions, plus the
@@ -189,8 +194,9 @@ export {
 // individually with their JSON Schema validator to resolve cross-refs).
 ${schemaExports.dts}
 
-// Re-export all types from hdf-results (includes most common types)
-export * from './ts/hdf-results.js';
+// Re-export all types from combined file (deduplicated shared types:
+// Identity, Checksum, Generator, etc. have ONE definition, not per-document copies).
+export * from '${primarySource}';
 
 // Re-export baseline-only types (interfaces not in hdf-results).
 // No export * from hdf-baseline — its enums (HashAlgorithm, Severity) duplicate
@@ -230,6 +236,24 @@ export {
 
 // Re-export helper functions
 export * from './helpers.js';
+
+// ── Deprecated aliases for backward compatibility ──
+// These will be removed in the next major version.
+// Consumers should migrate to HDF* naming (matching schema titles).
+/** @deprecated Use HDFResults */
+export type HdfResults = HDFResults;
+/** @deprecated Use HDFBaseline */
+export type HdfBaseline = HDFBaseline;
+/** @deprecated Use HDFComparison */
+export type HdfComparison = HDFComparison;
+/** @deprecated Use HDFSystem */
+export type HdfSystem = HDFSystem;
+/** @deprecated Use HDFPlan */
+export type HdfPlan = HDFPlan;
+/** @deprecated Use HDFAmendments */
+export type HdfAmendments = HDFAmendments;
+/** @deprecated Use HDFEvidencePackage */
+export type HdfEvidencePackage = HDFEvidencePackage;
 `;
 
   // index.js uses only export * (named exports of type-only symbols crash Node ESM).
@@ -257,8 +281,8 @@ export {
 // individually with their JSON Schema validator to resolve cross-refs).
 ${schemaExports.js}
 
-// Re-export all values from hdf-results (enums like ResultStatus, HashAlgorithm, Severity)
-export * from './ts/hdf-results.js';
+// Re-export all values from combined file (deduplicated shared types)
+export * from '${primarySource}';
 ${comparisonJsExport}
 // Re-export system enums (runtime values)
 export {

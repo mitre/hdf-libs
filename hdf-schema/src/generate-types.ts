@@ -14,15 +14,17 @@ const __dirname = dirname(__filename);
 const DIST_SCHEMAS_DIR = join(__dirname, '..', 'dist', 'schemas');
 const DIST_DIR = join(__dirname, '..', 'dist');
 
-// Schemas to generate types for
+// Schemas to generate types for.
+// Names use HDF (uppercase acronym) matching schema title fields ("HDF Results", etc.).
+// This ensures combined and per-file quicktype output produce identical root type names.
 const SCHEMAS = [
-  { file: 'hdf-results.schema.json', name: 'HdfResults' },
-  { file: 'hdf-baseline.schema.json', name: 'HdfBaseline' },
-  { file: 'hdf-comparison.schema.json', name: 'HdfComparison' },
-  { file: 'hdf-system.schema.json', name: 'HdfSystem' },
-  { file: 'hdf-plan.schema.json', name: 'HdfPlan' },
-  { file: 'hdf-amendments.schema.json', name: 'HdfAmendments' },
-  { file: 'hdf-evidence-package.schema.json', name: 'HdfEvidencePackage' },
+  { file: 'hdf-results.schema.json', name: 'HDFResults' },
+  { file: 'hdf-baseline.schema.json', name: 'HDFBaseline' },
+  { file: 'hdf-comparison.schema.json', name: 'HDFComparison' },
+  { file: 'hdf-system.schema.json', name: 'HDFSystem' },
+  { file: 'hdf-plan.schema.json', name: 'HDFPlan' },
+  { file: 'hdf-amendments.schema.json', name: 'HDFAmendments' },
+  { file: 'hdf-evidence-package.schema.json', name: 'HDFEvidencePackage' },
 ];
 
 // Language configurations
@@ -300,7 +302,58 @@ export async function generateTypes(): Promise<void> {
       continue;
     }
 
-    // For other languages, generate separate files per schema
+    // For TypeScript, generate combined (like Go) to avoid duplicate shared types.
+    // quicktype deduplicates Identity, Checksum, Generator, etc. when given all schemas at once.
+    if (lang.name === 'typescript') {
+      const schemasToGenerate: Array<{ path: string; name: string }> = [];
+
+      for (const schema of SCHEMAS) {
+        const schemaPath = join(DIST_SCHEMAS_DIR, schema.file);
+        if (!existsSync(schemaPath)) {
+          console.warn(`  Skipping ${schema.file} (not found)`);
+          continue;
+        }
+        schemasToGenerate.push({ path: schemaPath, name: schema.name });
+      }
+
+      if (schemasToGenerate.length > 0) {
+        try {
+          const code = await generateCombinedForLanguage(
+            schemasToGenerate,
+            lang.name,
+            lang.options
+          );
+
+          const outputPath = join(outputDir, 'hdf.ts');
+          writeFileSync(outputPath, code);
+          console.log(`  → ${outputPath} (combined, ${schemasToGenerate.length} schemas)`);
+        } catch (err) {
+          console.warn(`  Combined TS generation failed: ${(err as Error).message}`);
+          console.warn('  Falling back to per-file only (shared types may be duplicated)');
+        }
+
+        // Also generate per-file for backward compat (sub-path imports)
+        // These will have duplicates but the barrel uses the combined file
+        for (const schema of schemasToGenerate) {
+          const perFilePath = join(outputDir, toOutputFilename(schema.path.split('/').pop()!, lang.ext));
+          try {
+            const perFileCode = await generateForLanguage(
+              schema.path,
+              schema.name,
+              lang.name,
+              lang.options
+            );
+            writeFileSync(perFilePath, perFileCode);
+            console.log(`  → ${perFilePath} (compat)`);
+          } catch (err) {
+            console.warn(`  Skipping per-file ${schema.name} (quicktype error: ${(err as Error).message})`);
+          }
+        }
+      }
+      continue;
+    }
+
+    // For other languages (python), generate separate files per schema
     for (const schema of SCHEMAS) {
       const schemaPath = join(DIST_SCHEMAS_DIR, schema.file);
       const outputFile = toOutputFilename(schema.file, lang.ext);

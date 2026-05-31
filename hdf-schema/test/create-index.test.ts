@@ -32,9 +32,9 @@ describe('create-index', () => {
     expect(existsSync(join(DIST_DIR, 'index.d.ts'))).toBe(true);
   });
 
-  it('index.js should re-export from hdf-results', () => {
+  it('index.js should re-export from combined hdf.js (deduplicated types)', () => {
     const content = readFileSync(join(DIST_DIR, 'index.js'), 'utf-8');
-    expect(content).toContain("export * from './ts/hdf-results.js'");
+    expect(content).toContain("export * from './ts/hdf.js'");
   });
 
   it('index.js should re-export helpers', () => {
@@ -69,9 +69,7 @@ describe('create-index', () => {
     it('should resolve all named exports at runtime without throwing', async () => {
       createIndex();
       const indexPath = pathToFileURL(join(DIST_DIR, 'index.js')).href;
-      // Dynamic import validates that every re-exported symbol actually exists
-      // in the source module. A missing symbol causes SyntaxError at evaluation.
-      const mod = await import(indexPath);
+      const mod = await import(indexPath + '?t=' + Date.now());
       expect(mod).toBeDefined();
       expect(Object.keys(mod).length).toBeGreaterThan(0);
     });
@@ -229,9 +227,9 @@ describe('create-index', () => {
         expect(indexJs).not.toMatch(/from ['"]\.\/ts\/hdf-comparison\.js['"]/);
         expect(indexDts).not.toMatch(/from ['"]\.\/ts\/hdf-comparison\.js['"]/);
 
-        // Should still contain results type re-exports
-        expect(indexJs).toMatch(/from ['"]\.\/ts\/hdf-results\.js['"]/);
-        expect(indexDts).toMatch(/from ['"]\.\/ts\/hdf-results\.js['"]/);
+        // Should still contain primary type re-exports (combined hdf.js or fallback hdf-results.js)
+        expect(indexJs).toMatch(/from ['"]\.\/ts\/hdf(?:-results)?\.js['"]/);
+        expect(indexDts).toMatch(/from ['"]\.\/ts\/hdf(?:-results)?\.js['"]/);
       } finally {
         // Restore all backed up files
         for (const [file, content] of backup) {
