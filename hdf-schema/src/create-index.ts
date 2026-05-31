@@ -90,13 +90,11 @@ export function createIndex(options: CreateIndexOptions = {}): void {
     return;
   }
 
-  // Clean stale .d.ts and .js output so tsc doesn't refuse to overwrite its own input
-  for (const name of ['hdf', 'hdf-results', 'hdf-baseline', 'hdf-comparison', 'hdf-system', 'hdf-plan', 'hdf-amendments', 'hdf-evidence-package']) {
-    for (const ext of ['.d.ts', '.js']) {
-      const file = join(tsDir, `${name}${ext}`);
-      if (existsSync(file)) {
-        rmSync(file);
-      }
+  // Clean compiled output so tsc doesn't refuse to overwrite its own input
+  for (const ext of ['.d.ts', '.js']) {
+    const file = join(tsDir, `hdf${ext}`);
+    if (existsSync(file)) {
+      rmSync(file);
     }
   }
 
@@ -108,9 +106,6 @@ export function createIndex(options: CreateIndexOptions = {}): void {
     const tsFiles = readdirSync(tsDir)
       .filter(f => f.endsWith('.ts') && !f.endsWith('.d.ts'))
       .map(f => join('dist/ts', f));
-    if (tsFiles.length === 0) {
-      throw new Error('No .ts files found in dist/ts/');
-    }
     // Write a temporary tsconfig to avoid TS6's TS5112 error when passing
     // files on the command line alongside an existing tsconfig.json.
     const tmpConfig = join(cwd, 'tsconfig.dist-types.json');
@@ -143,23 +138,12 @@ export function createIndex(options: CreateIndexOptions = {}): void {
   const helpersJs = join(ROOT_DIR, 'src/helpers.js');
   const helpersDts = join(ROOT_DIR, 'src/helpers.d.ts');
 
-  if (existsSync(helpersJs)) {
-    copyFileSync(helpersJs, join(ROOT_DIR, 'dist/helpers.js'));
-  }
-  if (existsSync(helpersDts)) {
-    copyFileSync(helpersDts, join(ROOT_DIR, 'dist/helpers.d.ts'));
-  }
-
-  // Determine if comparison types are available
-  // Combined hdf.ts already includes ALL types from ALL schemas (including comparison).
-  // No per-file re-exports needed — they cause nominal type incompatibility.
+  copyFileSync(helpersJs, join(ROOT_DIR, 'dist/helpers.js'));
+  copyFileSync(helpersDts, join(ROOT_DIR, 'dist/helpers.d.ts'));
 
   const schemaExports = generateSchemaExports(ROOT_DIR);
 
-  // Use combined hdf.ts (deduplicated Identity, Checksum, etc.) if available
-  const hasCombined = existsSync(join(tsDir, 'hdf.ts'));
-
-  const primarySource = hasCombined ? './ts/hdf.js' : './ts/hdf-results.js';
+  const primarySource = './ts/hdf.js';
 
   const indexDtsContent = `/**
  * Main entry point for @mitre/hdf-schema

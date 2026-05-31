@@ -219,30 +219,20 @@ describe('generate-types', () => {
       }
     });
 
-    it('should skip individual TS schemas that cause quicktype to error', { timeout: 30_000 }, async () => {
-      // Replace one bundled schema with content that quicktype cannot process,
-      // exercising the per-file error catch at line 325.
+    it('should throw when a schema causes quicktype to error (fail fast)', { timeout: 30_000 }, async () => {
       const schemaFile = join(SCHEMAS_DIR, 'hdf-comparison.schema.json');
-      const backupFile = join(SCHEMAS_DIR, 'hdf-comparison.schema.json.bak');
       const original = readFileSync(schemaFile, 'utf-8');
 
-      writeFileSync(backupFile, original);
-
       try {
-        // Write a schema that will fail quicktype (recursive $ref with no base case)
         writeFileSync(schemaFile, JSON.stringify({
           $schema: 'https://json-schema.org/draft/2020-12/schema',
           $id: 'https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v1.0.0',
           type: 'INVALID_TYPE',
         }));
 
-        // generateTypes should not throw — it catches per-file errors
-        await expect(generateTypes()).resolves.not.toThrow();
+        await expect(generateTypes()).rejects.toThrow();
       } finally {
-        // Restore original schema
         writeFileSync(schemaFile, original);
-        if (existsSync(backupFile)) rmSync(backupFile);
-        // Regenerate to restore clean state
         await generateTypes();
       }
     });
