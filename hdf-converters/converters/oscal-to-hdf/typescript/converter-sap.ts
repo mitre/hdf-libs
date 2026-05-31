@@ -7,7 +7,7 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfPlan,
+  HDFPlan,
   Assessment,
   RunnerConfig,
 } from '@mitre/hdf-schema';
@@ -64,7 +64,7 @@ export async function convertOscalSapToHdf(input: string): Promise<string> {
   // Build description from metadata remarks and terms-and-conditions
   const description = buildPlanDescription(ap);
 
-  const plan: HdfPlan = {
+  const plan: HDFPlan = {
     name: toKebabCase(ap.metadata.title, 'oscal-assessment-plan'),
     assessments,
     integrity,

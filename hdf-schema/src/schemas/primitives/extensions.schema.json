@@ -157,6 +157,7 @@
       "properties": {
         "type": {
           "type": "string",
+          "title": "POAM Type",
           "enum": [
             "remediation",
             "mitigation",

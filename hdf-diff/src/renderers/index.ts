@@ -4,7 +4,7 @@ export { renderTerminal } from './terminal.js';
 export { renderCsv } from './csv.js';
 export type { DetailLevel, RenderOptions } from './types.js';
 
-import type { HdfComparison } from '../types.js';
+import type { HDFComparison } from '../types.js';
 import type { RenderOptions } from './types.js';
 import { renderJson } from './json.js';
 import { renderMarkdown } from './markdown.js';
@@ -14,13 +14,13 @@ import { renderCsv } from './csv.js';
 /**
  * Convenience function to render a comparison in any supported format.
  *
- * @param comparison - The HdfComparison document to render
+ * @param comparison - The HDFComparison document to render
  * @param format - Output format: 'json', 'markdown', 'terminal', or 'csv'
  * @param options - Rendering options (detail level, filters, color)
  * @returns The rendered string
  */
 export function render(
-  comparison: HdfComparison,
+  comparison: HDFComparison,
   format: 'json' | 'markdown' | 'terminal' | 'csv',
   options?: RenderOptions,
 ): string {

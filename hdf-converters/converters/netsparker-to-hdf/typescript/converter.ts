@@ -23,7 +23,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
 } from '@mitre/hdf-schema';
@@ -343,7 +343,7 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
     components: [
       {
         name: targetName,
-        type: Copyright.Application,
+        type: TargetType.Application,
       },
     ],
   });

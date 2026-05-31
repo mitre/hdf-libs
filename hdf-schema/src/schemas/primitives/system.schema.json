@@ -81,6 +81,7 @@
         },
         "designation": {
           "type": "string",
+          "title": "Designation",
           "enum": [
             "common",
             "system-specific",

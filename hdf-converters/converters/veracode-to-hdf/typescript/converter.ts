@@ -22,7 +22,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -445,7 +445,7 @@ export async function convertVeracodeToHdf(input: string): Promise<string> {
     toolName: 'Veracode',
     toolFormat: 'XML',
     baselines: [baseline],
-    components: [{ name: targetName, type: Copyright.Application }],
+    components: [{ name: targetName, type: TargetType.Application }],
     timestamp,
   });
 }

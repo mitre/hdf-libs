@@ -6,11 +6,11 @@
 
 import { parseJSON } from '@mitre/hdf-utilities';
 import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
-import type { HdfSystem } from '@mitre/hdf-schema';
+import type { HDFSystem } from '@mitre/hdf-schema';
 import {
   AuthorizationStatus,
   CategorizationLevel,
-  Copyright,
+  TargetType,
 } from '@mitre/hdf-schema';
 // Import Component from system types to avoid type incompatibility with results Component
 import type { Component as HdfComponent } from '@mitre/hdf-schema/hdf-system';
@@ -46,7 +46,7 @@ export async function convertOscalSspToHdf(input: string): Promise<string> {
   const ssp = doc['system-security-plan'];
   const integrity = await inputIntegrity(input);
 
-  const system: HdfSystem = {
+  const system: HDFSystem = {
     name: sspSystemName(ssp),
     integrity,
     components: [],
@@ -285,22 +285,22 @@ function sspComponentToHDFComponent(
   return comp;
 }
 
-function mapOSCALComponentType(oscalType: string): Copyright {
+function mapOSCALComponentType(oscalType: string): TargetType {
   switch (oscalType.toLowerCase()) {
     case 'software':
     case 'this-system':
-      return Copyright.Application;
+      return TargetType.Application;
     case 'service':
-      return Copyright.Application;
+      return TargetType.Application;
     case 'hardware':
-      return Copyright.Host;
+      return TargetType.Host;
     case 'network':
-      return Copyright.Network;
+      return TargetType.Network;
     case 'database':
-      return Copyright.Database;
+      return TargetType.Database;
     case 'storage':
-      return Copyright.Artifact;
+      return TargetType.Artifact;
     default:
-      return Copyright.Application;
+      return TargetType.Application;
   }
 }

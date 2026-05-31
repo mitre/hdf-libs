@@ -11,7 +11,7 @@ import {
   validateInputSize,
 } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
+  HDFResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
@@ -21,7 +21,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
 } from '@mitre/hdf-schema';
@@ -359,12 +359,12 @@ export async function convertFortifyToHdf(input: string): Promise<string> {
     format: 'FVDL',
   };
 
-  const hdfResult: HdfResults = {
+  const hdfResult: HDFResults = {
     baselines: [baseline],
     components: [
       {
         name: targetName,
-        type: Copyright.Repository,
+        type: TargetType.Repository,
       },
     ],
     generator: {

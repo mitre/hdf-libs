@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { diffHdf } from '../../src/diff.js';
-import type { HdfComparison, RequirementDiff } from '../../src/types.js';
+import type { HDFComparison, RequirementDiff } from '../../src/types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -12,7 +12,7 @@ function loadFixture(name: string): Record<string, unknown> {
   return JSON.parse(readFileSync(filePath, 'utf-8')) as Record<string, unknown>;
 }
 
-function findReq(diff: HdfComparison, id: string): RequirementDiff | undefined {
+function findReq(diff: HDFComparison, id: string): RequirementDiff | undefined {
   return diff.requirementDiffs.find((r) => r.id === id);
 }
 

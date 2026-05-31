@@ -1,8 +1,8 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
 import { deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
-  HdfBaseline,
+  HDFResults,
+  HDFBaseline,
   BaselineRequirement,
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -14,7 +14,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   Severity,
   createMinimalBaseline,
   createRequirement,
@@ -390,7 +390,7 @@ async function convertBenchmarkResultsToHdf(
     }
   }
 
-  const hdf: HdfResults = {
+  const hdf: HDFResults = {
     baselines: [baseline],
     generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
     tool: { name: 'XCCDF Results', format: 'XML' },
@@ -446,7 +446,7 @@ async function convertBenchmarkToBaselineJson(
 
   const baselineName = kebabCase(benchmark.id ?? 'xccdf-benchmark');
 
-  const baseline: HdfBaseline = {
+  const baseline: HDFBaseline = {
     name: baselineName,
     title: extractText(benchmark.title),
     version: extractVersion(benchmark.version),
@@ -649,7 +649,7 @@ async function convertArfCollection(
     throw new Error('ARF document contains no XCCDF TestResult reports');
   }
 
-  const hdf: HdfResults = {
+  const hdf: HDFResults = {
     baselines,
     generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
     tool: { name: 'ARF', format: 'ARF' },
@@ -831,7 +831,7 @@ function buildTargets(testResult: TestResultElement): Component[] {
   const addresses = testResult['target-address'] ?? [];
   const target: Component = {
     name: targetName,
-    type: Copyright.Host,
+    type: TargetType.Host,
         labels: {},
   };
 

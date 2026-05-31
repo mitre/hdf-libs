@@ -1,4 +1,4 @@
-import type { HdfComparison, RequirementDiff } from '../types.js';
+import type { HDFComparison, RequirementDiff } from '../types.js';
 import type { RenderOptions } from './types.js';
 import { filterRequirements } from './filter.js';
 
@@ -119,7 +119,7 @@ function renderRequirementLine(
 /**
  * Build the summary line.
  */
-function buildSummaryLine(comparison: HdfComparison, useColor: boolean): string {
+function buildSummaryLine(comparison: HDFComparison, useColor: boolean): string {
   const { summary } = comparison;
 
   const parts = [
@@ -143,7 +143,7 @@ function buildSummaryLine(comparison: HdfComparison, useColor: boolean): string 
 /**
  * Build the header line.
  */
-function buildHeaderLine(comparison: HdfComparison, useColor: boolean): string {
+function buildHeaderLine(comparison: HDFComparison, useColor: boolean): string {
   const mode = comparison.comparisonMode;
   const oldSource = comparison.sources.find((s) => s.role === 'old' || s.role === 'golden' || s.role === 'reference');
   const newSource = comparison.sources.find((s) => s.role === 'new' || s.role === 'system');
@@ -168,7 +168,7 @@ function buildHeaderLine(comparison: HdfComparison, useColor: boolean): string {
 }
 
 /**
- * Render an HdfComparison for terminal display with optional ANSI colors.
+ * Render an HDFComparison for terminal display with optional ANSI colors.
  *
  * - `detail: 'summary'` -- just the summary line
  * - `detail: 'control'` -- requirement list + summary (excludes unchanged)
@@ -178,7 +178,7 @@ function buildHeaderLine(comparison: HdfComparison, useColor: boolean): string {
  * Default detail level: `'control'`. Default color: `true`.
  */
 export function renderTerminal(
-  comparison: HdfComparison,
+  comparison: HDFComparison,
   options?: RenderOptions,
 ): string {
   const detail = options?.detail ?? 'control';

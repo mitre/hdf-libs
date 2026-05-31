@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { diffSystems, diffHdf } from '../../src/diff.js';
-import type { HdfComparison, ComponentDiff } from '../../src/types.js';
+import type { HDFComparison, ComponentDiff } from '../../src/types.js';
 import type { PackageDiff } from '../../src/sbom.js';
 
 // -- Inline fixtures ----------------------------------------------------------
@@ -55,7 +55,7 @@ const systemV2 = {
   ],
 };
 
-function findComponent(diff: HdfComparison, name: string): ComponentDiff | undefined {
+function findComponent(diff: HDFComparison, name: string): ComponentDiff | undefined {
   return diff.componentDiffs?.find((c) => c.name === name);
 }
 

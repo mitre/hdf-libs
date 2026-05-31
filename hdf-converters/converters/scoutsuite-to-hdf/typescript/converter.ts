@@ -11,7 +11,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -273,7 +273,7 @@ export async function convertScoutsuiteToHdf(input: string): Promise<string> {
     baselines: [baseline],
     components: [{
       name: targetName,
-      type: Copyright.CloudAccount,
+      type: TargetType.CloudAccount,
       labels: {
         account: report.account_id,
         provider: report.provider_code ?? report.provider_name,

@@ -1,5 +1,5 @@
 import type {
-  HdfResults,
+  HDFResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
@@ -7,7 +7,7 @@ import type {
   Description,
 } from '@mitre/hdf-schema';
 import {
-  Copyright,
+  TargetType,
   Severity,
   createMinimalBaseline,
   createRequirement,
@@ -27,10 +27,10 @@ const CONVERTER_VERSION = '1.0.0';
  * applicability are omitted (the checklist format cannot substantiate them).
  * Original-format metadata is stashed in extensions/tags for round-trip.
  */
-export function checklistToHdf(cl: Checklist, resultsChecksum: Checksum): HdfResults {
+export function checklistToHdf(cl: Checklist, resultsChecksum: Checksum): HDFResults {
   const baselines = cl.stigs.map((s) => stigToBaseline(s, resultsChecksum));
 
-  const hdf: HdfResults = {
+  const hdf: HDFResults = {
     baselines,
     generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
     tool: { name: 'DISA STIG Viewer', format: cl.format === 'cklb' ? 'CKLB' : 'CKL' },
@@ -114,7 +114,7 @@ function assetToComponent(a: Asset): Component | undefined {
   // Name falls back to FQDN then IP so the component always has a usable
   // identity (a checklist may carry only HOST_IP / HOST_FQDN).
   const name = a.hostName || a.hostFQDN || a.hostIP || '';
-  const c: Component = { name, type: Copyright.Host };
+  const c: Component = { name, type: TargetType.Host };
   if (a.hostIP) c.ipAddress = a.hostIP;
   if (a.hostFQDN) c.fqdn = a.hostFQDN;
   if (a.hostMAC) c.macAddress = a.hostMAC;

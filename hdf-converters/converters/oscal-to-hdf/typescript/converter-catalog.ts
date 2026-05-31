@@ -6,7 +6,7 @@
 
 import { parseJSON } from '@mitre/hdf-utilities';
 import { deriveControlTypeFromTags, inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
-import type { HdfBaseline, BaselineRequirement } from '@mitre/hdf-schema';
+import type { HDFBaseline, BaselineRequirement } from '@mitre/hdf-schema';
 import type { Description, RequirementGroup } from '@mitre/hdf-schema';
 import { Applicability } from '@mitre/hdf-schema';
 import type { Oscal, Catalog, Control } from './types.js';
@@ -49,7 +49,7 @@ export async function convertOscalCatalogToHdf(input: string): Promise<string> {
 export async function catalogToBaseline(
   catalog: Catalog,
   rawInput: string,
-): Promise<HdfBaseline> {
+): Promise<HDFBaseline> {
   const integrity = await inputIntegrity(rawInput);
   const meta = extractMetadata(catalog.metadata);
 
@@ -92,7 +92,7 @@ export async function catalogToBaseline(
     }
   }
 
-  const baseline: HdfBaseline = {
+  const baseline: HDFBaseline = {
     name: catalogBaselineName(catalog),
     title: meta.title,
     version: meta.version,

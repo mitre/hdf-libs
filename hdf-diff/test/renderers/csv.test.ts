@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { diffHdf } from '../../src/diff.js';
 import { renderCsv } from '../../src/renderers/csv.js';
-import type { HdfComparison } from '../../src/types.js';
+import type { HDFComparison } from '../../src/types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -14,7 +14,7 @@ function loadFixture(name: string): Record<string, unknown> {
 }
 
 describe('renderCsv', () => {
-  let comparison: HdfComparison;
+  let comparison: HDFComparison;
 
   beforeAll(() => {
     const scanBefore = loadFixture('scan-before.json');
@@ -107,7 +107,7 @@ describe('renderCsv', () => {
     });
 
     it('should format add and remove field change operations in full mode', () => {
-      const comp: HdfComparison = {
+      const comp: HDFComparison = {
         ...comparison,
         requirementDiffs: [
           {
@@ -128,7 +128,7 @@ describe('renderCsv', () => {
     });
 
     it('should handle requirements with no title', () => {
-      const comp: HdfComparison = {
+      const comp: HDFComparison = {
         ...comparison,
         requirementDiffs: [
           {

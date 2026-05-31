@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { diffHdf } from '../../src/diff.js';
-import type { HdfComparison, RequirementDiff } from '../../src/types.js';
+import type { HDFComparison, RequirementDiff } from '../../src/types.js';
 
-function findReqsBySource(diff: HdfComparison, sourceIndex: number): RequirementDiff[] {
+function findReqsBySource(diff: HDFComparison, sourceIndex: number): RequirementDiff[] {
   return diff.requirementDiffs.filter((r) => r.sourceIndex === sourceIndex);
 }
 

@@ -30,9 +30,9 @@ Requires `@mitre/hdf-schema` as a peer dependency.
 
 ```typescript
 import { buildExtensionGraph } from '@mitre/hdf-extension-graph';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
-const hdfResults: HdfResults = JSON.parse(fileContents);
+const hdfResults: HDFResults = JSON.parse(fileContents);
 const graph = buildExtensionGraph(hdfResults);
 ```
 
@@ -102,7 +102,7 @@ console.log(chain.map(b => b.data.name));
 
 ## API
 
-### `buildExtensionGraph(results: HdfResults): ExtensionGraph`
+### `buildExtensionGraph(results: HDFResults): ExtensionGraph`
 
 Builds a bidirectional extension graph from an HDF Results file. Links baselines via `parentBaseline` and requirements by matching `id` across linked baselines.
 
@@ -121,7 +121,7 @@ Builds a bidirectional extension graph from an HDF Results file. Links baselines
 | Property | Type | Description |
 |---|---|---|
 | `data` | `EvaluatedBaseline` | Original baseline data |
-| `sourcedFrom` | `HdfResults` | The results file this came from |
+| `sourcedFrom` | `HDFResults` | The results file this came from |
 | `extendsFrom` | `ContextualizedBaseline[]` | Parent baselines |
 | `extendedBy` | `ContextualizedBaseline[]` | Child baselines |
 | `requirements` | `ContextualizedRequirement[]` | Wrapped requirements |

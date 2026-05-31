@@ -11,7 +11,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -251,7 +251,7 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
     components: [
       {
         name: targetNameFromReport(scan.report),
-        type: Copyright.ContainerImage,
+        type: TargetType.ContainerImage,
         labels: {
           image: `${scan.report.registry}/${scan.report.repository}:${scan.report.tag}`,
           registry: scan.report.registry,

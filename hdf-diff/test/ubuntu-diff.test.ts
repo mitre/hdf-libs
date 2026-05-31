@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { diffHdf } from '../src/diff.js';
 import { isV1Format } from '../src/normalize.js';
-import type { HdfComparison } from '../src/types.js';
+import type { HDFComparison } from '../src/types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -16,7 +16,7 @@ function loadFixture(name: string): Record<string, unknown> {
 describe('Ubuntu 22.04 STIG diff (v1 format, real fixtures)', () => {
   let vanilla: Record<string, unknown>;
   let hardened: Record<string, unknown>;
-  let diff: HdfComparison;
+  let diff: HDFComparison;
 
   beforeAll(() => {
     vanilla = loadFixture('ubuntu-22-vanilla.json');

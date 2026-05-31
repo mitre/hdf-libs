@@ -3,7 +3,7 @@
  * Tests missing optional fields, fallback branches, and status mappings.
  */
 import { describe, it, expect } from 'vitest';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 import { convertSnykToHdf } from '../converters/snyk-to-hdf/typescript/converter.js';
 import { convertGrypeToHdf } from '../converters/grype-to-hdf/typescript/converter.js';
@@ -16,8 +16,8 @@ import { convertPrismaToHdf } from '../converters/prisma-to-hdf/typescript/conve
 import { convertCyclonedxToHdf } from '../converters/cyclonedx-to-hdf/typescript/converter.js';
 import { convertTrufflehogToHdf } from '../converters/trufflehog-to-hdf/typescript/converter.js';
 
-function parseHdf(json: string): HdfResults {
-  return JSON.parse(json) as HdfResults;
+function parseHdf(json: string): HDFResults {
+  return JSON.parse(json) as HDFResults;
 }
 
 // --- Snyk edge cases ---

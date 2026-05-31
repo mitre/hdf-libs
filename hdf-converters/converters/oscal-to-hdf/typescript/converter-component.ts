@@ -6,7 +6,7 @@
 
 import { parseJSON } from '@mitre/hdf-utilities';
 import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
-import type { HdfBaseline, BaselineRequirement } from '@mitre/hdf-schema';
+import type { HDFBaseline, BaselineRequirement } from '@mitre/hdf-schema';
 import type { Description } from '@mitre/hdf-schema';
 import type { Oscal, ImplementedRequirementElement, ComponentDefinitionComponent, ComponentDefinition } from './types.js';
 import { controlIdToNistTag, extractMetadata, toKebabCase } from './shared.js';
@@ -50,7 +50,7 @@ export async function convertOscalComponentToHdf(input: string): Promise<string>
     }
   }
 
-  const baseline: HdfBaseline = {
+  const baseline: HDFBaseline = {
     name: componentBaselineName(comp, compDef),
     title: meta.title,
     version: meta.version,

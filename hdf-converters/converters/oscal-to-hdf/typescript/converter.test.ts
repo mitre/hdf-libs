@@ -27,10 +27,10 @@ import {
   parseOscalDocument,
   toKebabCase,
 } from './shared.js';
-import type { HdfResults, HdfBaseline } from '@mitre/hdf-schema';
-import type { HdfSystem } from '@mitre/hdf-schema';
-import type { HdfPlan } from '@mitre/hdf-schema';
-import type { HdfAmendments } from '@mitre/hdf-schema';
+import type { HDFResults, HDFBaseline } from '@mitre/hdf-schema';
+import type { HDFSystem } from '@mitre/hdf-schema';
+import type { HDFPlan } from '@mitre/hdf-schema';
+import type { HDFAmendments } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -104,7 +104,7 @@ describe('convertOscalCatalogToHdf', () => {
     const output = await convertOscalCatalogToHdf(
       loadFixture('catalog-moderate-resolved.json'),
     );
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
 
     // 287 controls+enhancements in moderate resolved catalog
     expect(baseline.requirements).toHaveLength(287);
@@ -122,7 +122,7 @@ describe('convertOscalCatalogToHdf', () => {
     const output = await convertOscalCatalogToHdf(
       loadFixture('catalog-moderate-resolved.json'),
     );
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
 
     // Control families with controls in moderate resolved catalog
     expect(baseline.groups!.length).toBeGreaterThanOrEqual(18);
@@ -134,7 +134,7 @@ describe('convertOscalCatalogToHdf', () => {
     const output = await convertOscalCatalogToHdf(
       loadFixture('catalog-moderate-resolved.json'),
     );
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
 
     const ac1 = baseline.requirements.find(r => r.id === 'AC-1');
     expect(ac1).toBeDefined();
@@ -153,7 +153,7 @@ describe('convertOscalCatalogToHdf', () => {
     const output = await convertOscalCatalogToHdf(
       loadFixture('catalog-moderate-resolved.json'),
     );
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
 
     const ac21 = baseline.requirements.find(r => r.id === 'AC-2 (1)');
     expect(ac21).toBeDefined();
@@ -164,8 +164,8 @@ describe('convertOscalCatalogToHdf', () => {
     const output = await convertOscalCatalogToHdf(
       loadFixture('catalog-moderate-resolved.json'),
     );
-    const baseline = JSON.parse(output) as HdfBaseline;
-    const roundtrip = JSON.parse(JSON.stringify(baseline)) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
+    const roundtrip = JSON.parse(JSON.stringify(baseline)) as HDFBaseline;
     expect(roundtrip.name).toBe(baseline.name);
     expect(roundtrip.requirements).toHaveLength(baseline.requirements.length);
   });
@@ -174,7 +174,7 @@ describe('convertOscalCatalogToHdf', () => {
     const output = await convertOscalCatalogToHdf(
       loadFixture('catalog-moderate-resolved.json'),
     );
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
 
     const reqIDs = new Set(baseline.requirements.map(r => r.id));
     for (const g of baseline.groups ?? []) {
@@ -217,7 +217,7 @@ describe('convertOscalProfileToHdf', () => {
       loadFixture('profile-moderate.json'),
       loadFixture('catalog-800-53-rev5.json'),
     );
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
     expect(baseline.requirements).toHaveLength(287);
   });
 
@@ -230,8 +230,8 @@ describe('convertOscalProfileToHdf', () => {
       loadFixture('catalog-moderate-resolved.json'),
     );
 
-    const profileBaseline = JSON.parse(profileOutput) as HdfBaseline;
-    const catalogBaseline = JSON.parse(catalogOutput) as HdfBaseline;
+    const profileBaseline = JSON.parse(profileOutput) as HDFBaseline;
+    const catalogBaseline = JSON.parse(catalogOutput) as HDFBaseline;
 
     expect(profileBaseline.requirements).toHaveLength(
       catalogBaseline.requirements.length,
@@ -250,7 +250,7 @@ describe('convertOscalProfileToHdf', () => {
       loadFixture('profile-moderate.json'),
       loadFixture('catalog-800-53-rev5.json'),
     );
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
     expect(baseline.title).toContain('MODERATE');
   });
 
@@ -281,7 +281,7 @@ describe('convertOscalComponentToHdf', () => {
     const output = await convertOscalComponentToHdf(
       loadFixture('component-example.json'),
     );
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
 
     expect(baseline.name).toBeTruthy();
     expect(baseline.status).toBe('loaded');
@@ -312,7 +312,7 @@ describe('convertOscalSspToHdf', () => {
 
   it('should convert SSP example fixture', async () => {
     const output = await convertOscalSspToHdf(loadFixture('ssp-example.json'));
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
 
     expect(system.name).toBeTruthy();
     expect(system.integrity?.algorithm).toBe('sha256');
@@ -322,7 +322,7 @@ describe('convertOscalSspToHdf', () => {
 
   it('should convert SSP FedRAMP fixture', async () => {
     const output = await convertOscalSspToHdf(loadFixture('ssp-fedramp.json'));
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
 
     expect(system.name).toBeTruthy();
     expect(system.components).toBeDefined();
@@ -344,7 +344,7 @@ describe('convertOscalSapToHdf', () => {
 
   it('should convert SAP FedRAMP fixture', async () => {
     const output = await convertOscalSapToHdf(loadFixture('sap-fedramp.json'));
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
 
     expect(plan.name).toBeTruthy();
     expect(plan.integrity?.algorithm).toBe('sha256');
@@ -369,7 +369,7 @@ describe('convertOscalPoamToHdf', () => {
 
   it('should convert POA&M FedRAMP fixture', async () => {
     const output = await convertOscalPoamToHdf(loadFixture('poam-fedramp.json'));
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
 
     expect(amendments.name).toBeTruthy();
     expect(amendments.integrity?.algorithm).toBe('sha256');
@@ -408,7 +408,7 @@ describe('convertOscalSarToHdf', () => {
 
   it('should convert SAR FedRAMP fixture', async () => {
     const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
-    const results = JSON.parse(output) as HdfResults;
+    const results = JSON.parse(output) as HDFResults;
 
     expect(results.baselines).toBeDefined();
     expect(results.baselines.length).toBeGreaterThan(0);
@@ -420,7 +420,7 @@ describe('convertOscalSarToHdf', () => {
 
   it('should have requirements with NIST-notation IDs', async () => {
     const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
-    const results = JSON.parse(output) as HdfResults;
+    const results = JSON.parse(output) as HDFResults;
 
     const firstBaseline = results.baselines[0]!;
     expect(firstBaseline.requirements.length).toBeGreaterThan(0);
@@ -432,7 +432,7 @@ describe('convertOscalSarToHdf', () => {
 
   it('should map satisfied/not-satisfied statuses', async () => {
     const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
-    const results = JSON.parse(output) as HdfResults;
+    const results = JSON.parse(output) as HDFResults;
 
     const firstBaseline = results.baselines[0]!;
     let passedCount = 0;
@@ -451,7 +451,7 @@ describe('convertOscalSarToHdf', () => {
 
   it('should include default description on every requirement', async () => {
     const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
-    const results = JSON.parse(output) as HdfResults;
+    const results = JSON.parse(output) as HDFResults;
 
     const firstBaseline = results.baselines[0]!;
     for (const req of firstBaseline.requirements) {
@@ -462,7 +462,7 @@ describe('convertOscalSarToHdf', () => {
 
   it('should have multiple result sets (baselines)', async () => {
     const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
-    const results = JSON.parse(output) as HdfResults;
+    const results = JSON.parse(output) as HDFResults;
 
     // FedRAMP SAR fixture has 3 result sets
     expect(results.baselines).toHaveLength(3);
@@ -470,15 +470,15 @@ describe('convertOscalSarToHdf', () => {
 
   it('should produce valid round-trip JSON', async () => {
     const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
-    const results = JSON.parse(output) as HdfResults;
-    const roundtrip = JSON.parse(JSON.stringify(results)) as HdfResults;
+    const results = JSON.parse(output) as HDFResults;
+    const roundtrip = JSON.parse(JSON.stringify(results)) as HDFResults;
     expect(roundtrip.baselines).toHaveLength(results.baselines.length);
     expect(roundtrip.generator?.name).toBe(results.generator?.name);
   });
 
   it('should include integrity on baselines', async () => {
     const output = await convertOscalSarToHdf(loadFixture('sar-fedramp.json'));
-    const results = JSON.parse(output) as HdfResults;
+    const results = JSON.parse(output) as HDFResults;
 
     expect(results.baselines[0]!.integrity?.algorithm).toBe('sha256');
     expect(results.baselines[0]!.integrity?.checksum).toMatch(/^[a-f0-9]{64}$/);
@@ -904,7 +904,7 @@ describe('convertOscalProfileToHdf edge cases', () => {
       },
     });
     const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
     expect(baseline.requirements).toHaveLength(1);
     expect(baseline.requirements[0]!.id).toBe('AC-1');
   });
@@ -936,7 +936,7 @@ describe('convertOscalProfileToHdf edge cases', () => {
       },
     });
     const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
     expect(baseline.requirements.map(r => r.id)).toEqual(['AC-1', 'AC-3']);
   });
 
@@ -973,7 +973,7 @@ describe('convertOscalProfileToHdf edge cases', () => {
       },
     });
     const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
     const desc = baseline.requirements[0]!.descriptions?.find(d => d.label === 'default');
     expect(desc?.data).toContain('annually');
   });
@@ -1004,7 +1004,7 @@ describe('convertOscalProfileToHdf edge cases', () => {
       },
     });
     const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
     expect(baseline.requirements).toHaveLength(1);
     expect(baseline.requirements[0]!.id).toBe('AC-1');
   });
@@ -1027,7 +1027,7 @@ describe('convertOscalProfileToHdf edge cases', () => {
       },
     });
     const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
     expect(baseline.requirements).toHaveLength(1);
   });
 
@@ -1056,7 +1056,7 @@ describe('convertOscalProfileToHdf edge cases', () => {
       },
     });
     const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
     expect(baseline.requirements).toHaveLength(1);
   });
 
@@ -1090,7 +1090,7 @@ describe('convertOscalProfileToHdf edge cases', () => {
       },
     });
     const output = await convertOscalProfileToHdf(profileDoc, catalogDoc);
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
     const ids = baseline.requirements.map(r => r.id);
     expect(ids).toContain('AC-2');
     expect(ids).toContain('AC-2 (1)');
@@ -1117,7 +1117,7 @@ describe('convertOscalSspToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSspToHdf(doc);
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
     expect(system.name).toBe('Test SSP');
   });
 
@@ -1130,7 +1130,7 @@ describe('convertOscalSspToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSspToHdf(doc);
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
     expect(system.name).toBe('System Name');
   });
 
@@ -1142,7 +1142,7 @@ describe('convertOscalSspToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSspToHdf(doc);
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
     expect(system.name).toBe('oscal-ssp');
   });
 
@@ -1162,7 +1162,7 @@ describe('convertOscalSspToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSspToHdf(doc);
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
     expect(system.categorizationLevel).toBe('moderate');
   });
 
@@ -1182,7 +1182,7 @@ describe('convertOscalSspToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSspToHdf(doc);
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
     expect(system.categorizationLevel).toBe('high');
   });
 
@@ -1198,7 +1198,7 @@ describe('convertOscalSspToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSspToHdf(doc);
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
     expect(system.categorizationLevel).toBe('low');
   });
 
@@ -1214,7 +1214,7 @@ describe('convertOscalSspToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSspToHdf(doc);
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
     expect(system.categorizationLevel).toBe('moderate');
   });
 
@@ -1230,7 +1230,7 @@ describe('convertOscalSspToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSspToHdf(doc);
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
     expect(system.categorizationLevel).toBeUndefined();
   });
 
@@ -1253,7 +1253,7 @@ describe('convertOscalSspToHdf edge cases', () => {
         },
       });
       const output = await convertOscalSspToHdf(doc);
-      const system = JSON.parse(output) as HdfSystem;
+      const system = JSON.parse(output) as HDFSystem;
       expect(system.authorizationStatus).toBe(expected);
     }
   });
@@ -1271,7 +1271,7 @@ describe('convertOscalSspToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSspToHdf(doc);
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
     expect(system.description).toContain('System desc');
     expect(system.description).toContain('Boundary desc');
     expect(system.boundaryDescription).toBe('Boundary desc');
@@ -1289,7 +1289,7 @@ describe('convertOscalSspToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSspToHdf(doc);
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
     expect(system.identifier).toBe('SYS-001');
     expect(system.identifierScheme).toBe('https://fedramp.gov');
   });
@@ -1315,7 +1315,7 @@ describe('convertOscalSspToHdf edge cases', () => {
         },
       });
       const output = await convertOscalSspToHdf(doc);
-      const system = JSON.parse(output) as HdfSystem;
+      const system = JSON.parse(output) as HDFSystem;
       expect(system.components[0]!.type).toBe(expectedType);
     }
   });
@@ -1345,7 +1345,7 @@ describe('convertOscalSspToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSspToHdf(doc);
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
     const comp = system.components[0]!;
     expect((comp as any).baselineRefs).toContain('AC-1');
     expect((comp as any).baselineRefs).toContain('AC-2');
@@ -1367,7 +1367,7 @@ describe('convertOscalSspToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSspToHdf(doc);
-    const system = JSON.parse(output) as HdfSystem;
+    const system = JSON.parse(output) as HDFSystem;
     expect(system.categorizationLevel).toBeUndefined();
   });
 });
@@ -1392,7 +1392,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments).toHaveLength(1);
     expect(plan.assessments[0]!.baselineRef).toBe('oscal-assessment-plan');
   });
@@ -1411,7 +1411,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.baselineRef).toBe('ssp.json');
   });
 
@@ -1428,7 +1428,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.baselineRef).toBe('all-controls');
   });
 
@@ -1445,7 +1445,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.baselineRef).toBe('AC-1,AC-2');
   });
 
@@ -1463,7 +1463,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments).toHaveLength(1);
     expect(plan.assessments[0]!.description).toBe('Objective test');
   });
@@ -1482,7 +1482,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.baselineRef).toBe('ssp.json');
   });
 
@@ -1499,7 +1499,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.baselineRef).toBe('all-objectives');
   });
 
@@ -1517,7 +1517,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.runner?.name).toBe('Nessus Scanner');
   });
 
@@ -1540,7 +1540,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.runner?.name).toBe('Scanner');
     expect(plan.assessments[0]!.runner?.version).toBe('10.0');
   });
@@ -1560,7 +1560,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.targetSelector).toBeDefined();
     expect(plan.assessments[0]!.targetSelector!['subject-type']).toBe('component,inventory-item');
     expect(plan.assessments[0]!.targetSelector!['include-component']).toBe('all');
@@ -1587,7 +1587,7 @@ describe('convertOscalSapToHdf edge cases', () => {
         },
       });
       const output = await convertOscalSapToHdf(doc);
-      const plan = JSON.parse(output) as HdfPlan;
+      const plan = JSON.parse(output) as HDFPlan;
       expect(plan.type).toBe(expected);
     }
   });
@@ -1604,7 +1604,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.type).toBe('hybrid');
   });
 
@@ -1625,7 +1625,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.description).toContain('Important notes');
   });
 
@@ -1649,7 +1649,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.description).toContain('Terms and Conditions');
     expect(plan.description).toContain('Must comply with standards');
   });
@@ -1663,7 +1663,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments).toHaveLength(1);
     expect(plan.assessments[0]!.baselineRef).toBe('oscal-assessment-plan');
   });
@@ -1682,7 +1682,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.description).toBe('Selected for annual review');
   });
 
@@ -1698,7 +1698,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.baselineRef).toBe('ssp-ref.json');
   });
 
@@ -1713,7 +1713,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.baselineRef).toBe('oscal-assessment-plan');
   });
 
@@ -1729,7 +1729,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.targetSelector).toBeUndefined();
   });
 
@@ -1745,7 +1745,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     // With no type or include-all, selector is empty -> null -> undefined
     expect(plan.assessments[0]!.targetSelector).toBeUndefined();
   });
@@ -1762,7 +1762,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.runner).toBeUndefined();
   });
 
@@ -1780,7 +1780,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.runner).toBeDefined();
     expect(plan.assessments[0]!.runner?.name).toBeUndefined();
   });
@@ -1799,7 +1799,7 @@ describe('convertOscalSapToHdf edge cases', () => {
       },
     });
     const output = await convertOscalSapToHdf(doc);
-    const plan = JSON.parse(output) as HdfPlan;
+    const plan = JSON.parse(output) as HDFPlan;
     expect(plan.assessments[0]!.runner?.name).toBe('Scanner');
     expect(plan.assessments[0]!.runner?.version).toBeUndefined();
   });
@@ -1835,7 +1835,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides).toHaveLength(1);
     expect(amendments.overrides[0]!.status).toBe('failed');
   });
@@ -1859,7 +1859,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.requirementId).toBe('V-12345');
   });
 
@@ -1880,7 +1880,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.requirementId).toBe('AC-1 Finding');
   });
 
@@ -1898,7 +1898,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.requirementId).toBe('unknown');
   });
 
@@ -1926,7 +1926,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.requirementId).toBe('AC-2');
   });
 
@@ -1953,7 +1953,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.status).toBe('passed');
   });
 
@@ -1984,7 +1984,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     const milestones = amendments.overrides[0]!.milestones ?? [];
     // Only planned lifecycle should be included
     expect(milestones).toHaveLength(1);
@@ -2009,7 +2009,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.appliedBy?.identifier).toBe('user-abc');
   });
 
@@ -2030,7 +2030,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     // poamItemAppliedBy uses prepared-by first, then first party
     expect(amendments.overrides[0]!.appliedBy?.identifier).toBe('user-xyz');
   });
@@ -2049,7 +2049,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.appliedBy?.identifier).toBe('oscal-poam-converter');
   });
 
@@ -2067,7 +2067,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.reason).toBe('My Title');
   });
 
@@ -2085,7 +2085,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.overrides[0]!.reason).toBe('POA&M item');
   });
 
@@ -2103,7 +2103,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     // Should still produce output (falls back to new Date())
     expect(amendments.overrides[0]!.appliedAt).toBeTruthy();
   });
@@ -2123,7 +2123,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     expect(amendments.systemRef).toBe('ssp-ref.json');
   });
 
@@ -2150,7 +2150,7 @@ describe('convertOscalPoamToHdf edge cases', () => {
       },
     });
     const output = await convertOscalPoamToHdf(doc);
-    const amendments = JSON.parse(output) as HdfAmendments;
+    const amendments = JSON.parse(output) as HDFAmendments;
     // oscalStatusToHdf returns undefined for 'investigating', so falls through to default 'failed'
     expect(amendments.overrides[0]!.status).toBe('failed');
   });
@@ -2191,7 +2191,7 @@ describe('convertOscalComponentToHdf edge cases', () => {
       },
     });
     const output = await convertOscalComponentToHdf(doc);
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
     expect(baseline.requirements).toHaveLength(0);
     expect(baseline.name).toContain('my-component');
   });
@@ -2225,7 +2225,7 @@ describe('convertOscalComponentToHdf edge cases', () => {
       },
     });
     const output = await convertOscalComponentToHdf(doc);
-    const baseline = JSON.parse(output) as HdfBaseline;
+    const baseline = JSON.parse(output) as HDFBaseline;
     const req = baseline.requirements[0]!;
     expect(req.descriptions!.length).toBeGreaterThanOrEqual(3);
     const labels = req.descriptions!.map(d => d.label);

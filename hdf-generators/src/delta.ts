@@ -1,4 +1,4 @@
-import type { HdfBaseline, BaselineRequirement } from '@mitre/hdf-schema';
+import type { HDFBaseline, BaselineRequirement } from '@mitre/hdf-schema';
 import type { UpgradeResult, UpgradeOptions, DeltaResult, DeltaOptions, LinkRecord, DeltaStatistics } from './delta-types.js';
 import type { InSpecProfile } from './types.js';
 import { mergeRequirement } from './merge.js';
@@ -17,8 +17,8 @@ import { generateInSpecYml } from './inspec-yml.js';
  * Set opts.keepUnmatched to retain them instead.
  */
 export function generateUpgrade(
-  currentBaseline: HdfBaseline,
-  upstreamBaseline: HdfBaseline,
+  currentBaseline: HDFBaseline,
+  upstreamBaseline: HDFBaseline,
   linkRecords: LinkRecord[],
   opts?: UpgradeOptions,
 ): UpgradeResult {
@@ -76,7 +76,7 @@ export function generateUpgrade(
   }
 
   // Build upgraded baseline (use upstream metadata)
-  const upgradedBaseline: HdfBaseline = {
+  const upgradedBaseline: HDFBaseline = {
     ...upstreamBaseline,
     requirements: mergedReqs,
   };
@@ -105,7 +105,7 @@ export function generateUpgrade(
  * @deprecated Use generateUpgrade instead.
  */
 export function generateDelta(
-  newBaseline: HdfBaseline,
+  newBaseline: HDFBaseline,
   linkRecords: LinkRecord[],
   oldCodeMap: Map<string, string>,
   opts?: DeltaOptions,
@@ -113,7 +113,7 @@ export function generateDelta(
 ): DeltaResult {
   // Build synthetic current baseline from code map
   const currentReqs = buildCurrentReqsFromCodeMap(linkRecords, oldCodeMap);
-  const currentBaseline: HdfBaseline = {
+  const currentBaseline: HDFBaseline = {
     name: 'current',
     requirements: currentReqs,
     groups: [],
@@ -154,7 +154,7 @@ function buildCurrentReqsFromCodeMap(
   return reqs;
 }
 
-function generateProfileFromBaseline(baseline: HdfBaseline, opts?: UpgradeOptions): InSpecProfile {
+function generateProfileFromBaseline(baseline: HDFBaseline, opts?: UpgradeOptions): InSpecProfile {
   const controls = new Map<string, string>();
   const allStubs: string[] = [];
 

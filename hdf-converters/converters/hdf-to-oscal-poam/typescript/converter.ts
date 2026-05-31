@@ -6,7 +6,7 @@
 
 import { parseJSON } from '@mitre/hdf-utilities';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
-import type { HdfAmendments, StandaloneOverride } from '@mitre/hdf-schema';
+import type { HDFAmendments, StandaloneOverride } from '@mitre/hdf-schema';
 import type {
   Oscal,
   DocumentMetadata,
@@ -37,9 +37,9 @@ export async function convertHdfToOscalPoam(input: string): Promise<string> {
     throw new Error('hdf-to-oscal-poam: empty input');
   }
 
-  let amendments: HdfAmendments;
+  let amendments: HDFAmendments;
   try {
-    amendments = parseJSON<HdfAmendments>(input);
+    amendments = parseJSON<HDFAmendments>(input);
   } catch {
     throw new Error('hdf-to-oscal-poam: failed to parse JSON');
   }
@@ -54,9 +54,9 @@ export async function convertHdfToOscalPoam(input: string): Promise<string> {
 }
 
 /**
- * Converts parsed HdfAmendments to an OSCAL PlanOfActionAndMilestones.
+ * Converts parsed HDFAmendments to an OSCAL PlanOfActionAndMilestones.
  */
-function amendmentsToPOAM(amendments: HdfAmendments): PlanOfActionAndMilestonesPOAM {
+function amendmentsToPOAM(amendments: HDFAmendments): PlanOfActionAndMilestonesPOAM {
   const now = new Date().toISOString();
 
   const metadata = {

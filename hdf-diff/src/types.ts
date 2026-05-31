@@ -229,7 +229,7 @@ export interface Annotation {
 /**
  * The top-level comparison result comparing two or more HDF evaluations.
  */
-export interface HdfComparison {
+export interface HDFComparison {
   /** Schema version for the comparison format */
   formatVersion: '1.0.0';
   /** The mode of comparison */
@@ -279,5 +279,5 @@ export type DiffStatus = RequirementState;
 /** @deprecated Use ComparisonSummary instead */
 export type DiffSummary = ComparisonSummary;
 
-/** @deprecated Use HdfComparison instead */
-export type HdfDiff = HdfComparison;
+/** @deprecated Use HDFComparison instead */
+export type HdfDiff = HDFComparison;

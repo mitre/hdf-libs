@@ -206,7 +206,7 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
-			{Name: targetName, Type: hdf.CopyrightApplication},
+			{Name: targetName, Type: hdf.Application},
 		},
 		Timestamp: &now,
 	}), nil

@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { convertVeracodeToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = resolve(__dirname, '..', 'fixtures', 'input');
@@ -29,7 +29,7 @@ describe('Veracode to HDF converter', () => {
   it('should convert sample Veracode XML to valid HDF', async () => {
     const input = loadFixture('veracode.xml');
     const outputStr = await convert(input);
-    const output: HdfResults = JSON.parse(outputStr);
+    const output: HDFResults = JSON.parse(outputStr);
 
     expect(output.baselines).toBeDefined();
     expect(output.baselines.length).toBe(1);
@@ -40,21 +40,21 @@ describe('Veracode to HDF converter', () => {
 
   it('should set baseline name to "Veracode Scan"', async () => {
     const input = loadFixture('veracode.xml');
-    const output: HdfResults = JSON.parse(await convert(input));
+    const output: HDFResults = JSON.parse(await convert(input));
 
     expect(output.baselines[0]!.name).toBe('Veracode Scan');
   });
 
   it('should set target type to Application', async () => {
     const input = loadFixture('veracode.xml');
-    const output: HdfResults = JSON.parse(await convert(input));
+    const output: HDFResults = JSON.parse(await convert(input));
 
     expect(output.components![0]!.type).toBe('application');
   });
 
   it('should set data source name to Veracode', async () => {
     const input = loadFixture('veracode.xml');
-    const output: HdfResults = JSON.parse(await convert(input));
+    const output: HDFResults = JSON.parse(await convert(input));
 
     expect(output.tool).toBeDefined();
     expect(output.tool!.name).toBe('Veracode');
@@ -62,7 +62,7 @@ describe('Veracode to HDF converter', () => {
 
   it('should produce CWE-based controls from severity categories', async () => {
     const input = loadFixture('veracode.xml');
-    const output: HdfResults = JSON.parse(await convert(input));
+    const output: HDFResults = JSON.parse(await convert(input));
     const baseline = output.baselines[0]!;
 
     // Find CWE-based control: categoryid "18"
@@ -82,7 +82,7 @@ describe('Veracode to HDF converter', () => {
 
   it('should produce CVE-based controls from SCA vulnerabilities', async () => {
     const input = loadFixture('veracode.xml');
-    const output: HdfResults = JSON.parse(await convert(input));
+    const output: HDFResults = JSON.parse(await convert(input));
     const baseline = output.baselines[0]!;
 
     // Find CVE-based control
@@ -102,7 +102,7 @@ describe('Veracode to HDF converter', () => {
 
   it('should have correct control counts', async () => {
     const input = loadFixture('veracode.xml');
-    const output: HdfResults = JSON.parse(await convert(input));
+    const output: HDFResults = JSON.parse(await convert(input));
     const baseline = output.baselines[0]!;
 
     // Separate CWE and CVE controls
@@ -119,7 +119,7 @@ describe('Veracode to HDF converter', () => {
 
   it('should have correct flaw count in CWE controls', async () => {
     const input = loadFixture('veracode.xml');
-    const output: HdfResults = JSON.parse(await convert(input));
+    const output: HDFResults = JSON.parse(await convert(input));
     const baseline = output.baselines[0]!;
 
     // Count total results from CWE controls
@@ -132,7 +132,7 @@ describe('Veracode to HDF converter', () => {
 
   it('should map NIST tags from CWE IDs', async () => {
     const input = loadFixture('veracode.xml');
-    const output: HdfResults = JSON.parse(await convert(input));
+    const output: HDFResults = JSON.parse(await convert(input));
     const baseline = output.baselines[0]!;
 
     // CWE control 18 (Command Injection, CWE-78) should have NIST tags
@@ -145,7 +145,7 @@ describe('Veracode to HDF converter', () => {
 
   it('should have descriptions on CWE controls', async () => {
     const input = loadFixture('veracode.xml');
-    const output: HdfResults = JSON.parse(await convert(input));
+    const output: HDFResults = JSON.parse(await convert(input));
     const baseline = output.baselines[0]!;
 
     const cweControl = baseline.requirements.find(r => r.id === '18');
@@ -155,7 +155,7 @@ describe('Veracode to HDF converter', () => {
 
   it('should include results checksum', async () => {
     const input = loadFixture('veracode.xml');
-    const output: HdfResults = JSON.parse(await convert(input));
+    const output: HDFResults = JSON.parse(await convert(input));
     const baseline = output.baselines[0]!;
 
     expect(baseline.resultsChecksum).toBeDefined();
@@ -172,14 +172,14 @@ describe('Veracode to HDF converter', () => {
 
   it('should set timestamp from first_build_submitted_date', async () => {
     const input = loadFixture('veracode.xml');
-    const output: HdfResults = JSON.parse(await convert(input));
+    const output: HDFResults = JSON.parse(await convert(input));
 
     expect(output.timestamp).toBeDefined();
   });
 
   it('should map severity levels to correct impact values', async () => {
     const input = loadFixture('veracode.xml');
-    const output: HdfResults = JSON.parse(await convert(input));
+    const output: HDFResults = JSON.parse(await convert(input));
     const baseline = output.baselines[0]!;
 
     // Severity 5 -> 0.9 (categoryid 18)

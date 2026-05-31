@@ -356,7 +356,7 @@ func ConvertVeracodeToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		ToolFormat:       "XML",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
-			{Name: targetName, Type: hdf.CopyrightApplication},
+			{Name: targetName, Type: hdf.Application},
 		},
 		Timestamp: timestamp,
 	}), nil

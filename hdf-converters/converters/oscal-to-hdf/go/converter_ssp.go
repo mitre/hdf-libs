@@ -263,8 +263,8 @@ func sspComponentToHDFComponent(sc *SystemComponent, componentControls map[strin
 }
 
 // mapOSCALComponentType maps an OSCAL component type string to an HDF
-// Copyright (component type discriminator).
-func mapOSCALComponentType(oscalType string) hdf.Copyright {
+// TargetType (component type discriminator).
+func mapOSCALComponentType(oscalType string) hdf.TargetType {
 	switch strings.ToLower(oscalType) {
 	case "software", "this-system":
 		return hdf.Application

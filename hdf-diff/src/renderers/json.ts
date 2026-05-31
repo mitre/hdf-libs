@@ -1,4 +1,4 @@
-import type { HdfComparison, RequirementDiff } from '../types.js';
+import type { HDFComparison, RequirementDiff } from '../types.js';
 import type { RenderOptions } from './types.js';
 import { filterRequirements } from './filter.js';
 
@@ -15,7 +15,7 @@ function stripSnapshots(
 }
 
 /**
- * Render an HdfComparison as a JSON string.
+ * Render an HDFComparison as a JSON string.
  *
  * - `detail: 'summary'` -- only `{ formatVersion, comparisonMode, summary }`
  * - `detail: 'control'` -- full document but `before`/`after` stripped from requirementDiffs
@@ -24,7 +24,7 @@ function stripSnapshots(
  * Default detail level: `'control'`.
  */
 export function renderJson(
-  comparison: HdfComparison,
+  comparison: HDFComparison,
   options?: RenderOptions,
 ): string {
   const detail = options?.detail ?? 'control';

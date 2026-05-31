@@ -7,7 +7,7 @@
  */
 
 import { sha256 } from '@mitre/hdf-utilities';
-import type { Checksum, Component, EvaluatedBaseline, HdfResults, Integrity, Statistics } from '@mitre/hdf-schema';
+import type { Checksum, Component, EvaluatedBaseline, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { Applicability, ControlType, HashAlgorithm, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl } from '@mitre/hdf-mappings';
 
@@ -35,7 +35,7 @@ export async function inputChecksum(input: string): Promise<Checksum> {
  * Compute an Integrity object (for root-level document integrity) from raw input.
  *
  * Returns an Integrity with algorithm and checksum fields, suitable for
- * HdfBaseline.integrity, HdfSystem.integrity, HdfPlan.integrity, etc.
+ * HDFBaseline.integrity, HDFSystem.integrity, HDFPlan.integrity, etc.
  *
  * @param input - Raw input string (JSON, XML, etc.)
  * @returns Integrity object with SHA-256 algorithm and checksum
@@ -252,13 +252,13 @@ export interface HdfResultsOptions {
  * Build an HDF Results document from options.
  *
  * Eliminates the repeated boilerplate of constructing generator, tool,
- * and assembling the top-level HdfResults in every converter. Mirrors
+ * and assembling the top-level HDFResults in every converter. Mirrors
  * the Go shared.BuildHDFResults() function.
  *
  * @returns JSON string of the HDF Results document (pretty-printed)
  */
 export function buildHdfResults(opts: HdfResultsOptions): string {
-  const hdf: HdfResults = {
+  const hdf: HDFResults = {
     baselines: opts.baselines,
     generator: {
       name: opts.generatorName,

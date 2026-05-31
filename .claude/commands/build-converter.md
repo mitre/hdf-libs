@@ -234,7 +234,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convert<Name>ToHdf } from './converter.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -254,7 +254,7 @@ describe('<name> to HDF converter', () => {
 
   it('should produce valid HDF structure from minimal fixture', () => {
     const output = convert<Name>ToHdf(loadFixture('minimal.<ext>'));
-    const hdf = JSON.parse(output) as HdfResults;
+    const hdf = JSON.parse(output) as HDFResults;
 
     expect(hdf.timestamp).toBeTruthy();
     expect(hdf.generator?.name).toBe('hdf-converters');
@@ -362,7 +362,7 @@ createMinimalBaseline('Nessus Scan', requirements, {
 
 ### Components Convention
 
-Every converter that scans a specific target (host, URL, repo, cloud account) MUST populate `Components`. The `Type` field uses the `Copyright` enum (Go: `hdf.Application`, TS: `Copyright.Application`).
+Every converter that scans a specific target (host, URL, repo, cloud account) MUST populate `Components`. The `Type` field uses the `TargetType` enum (Go: `hdf.Application`, TS: `TargetType.Application`).
 
 Choose the target type based on what the tool scans:
 
@@ -384,8 +384,8 @@ targets := []hdf.Component{
 
 **TypeScript:**
 ```typescript
-import { Copyright } from '@mitre/hdf-schema';
-components: [{ name: targetName, type: Copyright.Application, url: siteURL }],
+import { TargetType } from '@mitre/hdf-schema';
+components: [{ name: targetName, type: TargetType.Application, url: siteURL }],
 ```
 
 Set `URL` for DAST targets, `FQDN`/`IPAddress` for host targets, and `Digest`/`ImageID` for container targets, when the source data provides them. If the source provides no identifiable target (e.g., empty input or missing host), omit `Components` entirely rather than creating an "Unknown" target.
@@ -567,7 +567,7 @@ File: `hdf-converters/converters/<name>/typescript/converter.ts`
 ```typescript
 import { parseJSON, sha256 } from '@mitre/hdf-utilities'; // or parseXmlWithArrays for XML formats
 import type {
-  HdfResults, EvaluatedBaseline, EvaluatedRequirement,
+  HDFResults, EvaluatedBaseline, EvaluatedRequirement,
   RequirementResult, Checksum, Description,
 } from '@mitre/hdf-schema';
 import {
@@ -594,7 +594,7 @@ export async function convert<Name>ToHdf(input: string): Promise<string> {
     { resultsChecksum }
   ) as EvaluatedBaseline;
 
-  const hdf: HdfResults = {
+  const hdf: HDFResults = {
     baselines: [baseline],
     generator: { name: 'hdf-converters', version: '1.0.0' },
     tool: { name: '<Source Tool Name>', format: '<Format>' },

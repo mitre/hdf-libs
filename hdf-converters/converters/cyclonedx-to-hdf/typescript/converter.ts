@@ -11,7 +11,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   createMinimalBaseline,
   createRequirement,
   createResult,
@@ -331,7 +331,7 @@ export async function convertCyclonedxToHdf(input: string): Promise<string> {
     toolName: 'CycloneDX',
     toolFormat: 'JSON',
     baselines: [baseline],
-    components: [{ name: targetName, type: Copyright.Application }],
+    components: [{ name: targetName, type: TargetType.Application }],
     timestamp: new Date(),
   });
 }

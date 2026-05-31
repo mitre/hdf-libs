@@ -8,7 +8,7 @@ import { renderJson } from '../../src/renderers/json.js';
 import { renderMarkdown } from '../../src/renderers/markdown.js';
 import { renderTerminal } from '../../src/renderers/terminal.js';
 import { renderCsv } from '../../src/renderers/csv.js';
-import type { HdfComparison } from '../../src/types.js';
+import type { HDFComparison } from '../../src/types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -18,7 +18,7 @@ function loadFixture(name: string): Record<string, unknown> {
 }
 
 describe('render (dispatch function)', () => {
-  let comparison: HdfComparison;
+  let comparison: HDFComparison;
 
   beforeAll(() => {
     const scanBefore = loadFixture('scan-before.json');

@@ -1,4 +1,4 @@
-import type { BaselineRequirement, HdfBaseline, Description } from '@mitre/hdf-schema';
+import type { BaselineRequirement, HDFBaseline, Description } from '@mitre/hdf-schema';
 
 /** Create a BaselineRequirement with sensible defaults. */
 export function makeRequirement(
@@ -12,10 +12,10 @@ export function makeRequirement(
   };
 }
 
-/** Create an HdfBaseline with sensible defaults. */
+/** Create an HDFBaseline with sensible defaults. */
 export function makeBaseline(
-  overrides: Partial<HdfBaseline> & { name: string; requirements: BaselineRequirement[] },
-): HdfBaseline {
+  overrides: Partial<HDFBaseline> & { name: string; requirements: BaselineRequirement[] },
+): HDFBaseline {
   return {
     groups: [],
     supports: [],

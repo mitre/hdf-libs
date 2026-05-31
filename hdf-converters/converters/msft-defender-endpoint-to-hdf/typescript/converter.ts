@@ -9,7 +9,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -172,7 +172,7 @@ function extractDeviceTarget(alert: MdeAlert): Component {
       if (odataType.includes('deviceEvidence') && ev.deviceDnsName) {
         const target: Component = {
           name: ev.deviceDnsName,
-          type: Copyright.Host,
+          type: TargetType.Host,
           labels: { provider: 'azure' },
         };
         if (ev.deviceDnsName) {
@@ -188,7 +188,7 @@ function extractDeviceTarget(alert: MdeAlert): Component {
   // No device evidence — use tenant as cloud account
   return {
     name: alert.tenantId ?? 'unknown',
-    type: Copyright.CloudAccount,
+    type: TargetType.CloudAccount,
     accountId: alert.tenantId,
     labels: { account: alert.tenantId ?? '', provider: 'azure' },
   };

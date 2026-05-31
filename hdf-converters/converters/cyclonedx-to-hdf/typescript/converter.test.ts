@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertCyclonedxToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -41,7 +41,7 @@ describe('cyclonedx to HDF converter', async () => {
       const output = await convertCyclonedxToHdf(
         loadFixture('minimal-vulns.json')
       );
-      const hdf = JSON.parse(output) as HdfResults;
+      const hdf = JSON.parse(output) as HDFResults;
 
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.baselines).toHaveLength(1);
@@ -52,14 +52,14 @@ describe('cyclonedx to HDF converter', async () => {
     it('should use "CycloneDX Scan" as the baseline name', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.baselines[0]!.name).toBe('CycloneDX Scan');
     });
 
     it('should include a sha256 checksum', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const checksum = hdf.baselines[0]!.resultsChecksum;
       expect(checksum?.algorithm).toBe('sha256');
       expect(checksum?.value).toMatch(/^[a-f0-9]{64}$/);
@@ -70,7 +70,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should set generator name and version', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.generator?.name).toBe('cyclonedx-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
     });
@@ -78,7 +78,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should set dataSource name to "CycloneDX" and format to "JSON"', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.tool?.name).toBe('CycloneDX');
       expect(hdf.tool?.format).toBe('JSON');
     });
@@ -90,7 +90,7 @@ describe('cyclonedx to HDF converter', async () => {
       // max CVSS score = 8.2, impact = 8.2 / 10 = 0.82
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('vex.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       expect(req.impact).toBeCloseTo(0.82, 2);
     });
@@ -100,7 +100,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should map low severity to 0.3', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const low = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'GHSA-5mg8-w23w-74h3'
       );
@@ -110,7 +110,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should map medium severity to 0.5', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const medium = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'GHSA-7g45-4rm6-3mm3'
       );
@@ -120,7 +120,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should map critical severity to 0.9', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const critical = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'GHSA-5p34-5m6p-p58g'
       );
@@ -133,7 +133,7 @@ describe('cyclonedx to HDF converter', async () => {
       // vex.json has cwes: [611]
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('vex.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       const nist = req.tags?.['nist'] as string[];
       expect(nist).toBeDefined();
@@ -157,7 +157,7 @@ describe('cyclonedx to HDF converter', async () => {
       });
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(input)
-      ) as HdfResults;
+      ) as HDFResults;
       const nist = hdf.baselines[0]!.requirements[0]!.tags?.['nist'] as string[];
       expect(nist).toContain('SA-11');
       expect(nist).toContain('RA-5');
@@ -168,7 +168,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should populate nist, cci, cweid, and ratings tags', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('vex.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       const tags = req.tags;
 
@@ -185,7 +185,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should format code_desc with group/name@version', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       // GHSA-5mg8-w23w-74h3 affects guava (com.google.guava/guava@24.1.1-jre)
       const req = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'GHSA-5mg8-w23w-74h3'
@@ -212,7 +212,7 @@ describe('cyclonedx to HDF converter', async () => {
       });
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(input)
-      ) as HdfResults;
+      ) as HDFResults;
       const codeDesc = hdf.baselines[0]!.requirements[0]!.results[0]?.codeDesc ?? '';
       expect(codeDesc).toBe('Component bare-lib is vulnerable');
     });
@@ -222,7 +222,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should mark all results as failed by default', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('minimal-vulns.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       for (const req of hdf.baselines[0]!.requirements) {
         for (const result of req.results) {
           expect(result.status).toBe('failed');
@@ -254,7 +254,7 @@ describe('cyclonedx to HDF converter', async () => {
       });
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(input)
-      ) as HdfResults;
+      ) as HDFResults;
       // Info/unknown severity vulns are still Failed — a vuln is a finding
       // regardless of severity confidence. Impact reflects the severity.
       for (const req of hdf.baselines[0]!.requirements) {
@@ -284,7 +284,7 @@ describe('cyclonedx to HDF converter', async () => {
       });
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(input)
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]?.status).toBe('failed');
     });
   });
@@ -301,7 +301,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should handle pure VEX input (no components)', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('vex.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(1);
       expect(hdf.baselines[0]!.requirements[0]!.id).toBe('CVE-2020-25649');
     });
@@ -309,7 +309,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should use bom-ref as component name in VEX code_desc', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('vex.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const codeDesc =
         hdf.baselines[0]!.requirements[0]!.results[0]?.codeDesc ?? '';
       // VEX has no components, so falls back to the ref string from affects
@@ -321,7 +321,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should include fix label from recommendation', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('vex.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       const fixDesc = req.descriptions?.find((d) => d.label === 'fix');
       expect(fixDesc).toBeDefined();
@@ -331,7 +331,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should include default label from description and detail', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('vex.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       const defaultDesc = req.descriptions?.find((d) => d.label === 'default');
       expect(defaultDesc).toBeDefined();
@@ -344,7 +344,7 @@ describe('cyclonedx to HDF converter', async () => {
     it('should convert dropwizard-vulns.json with 87 requirements', async () => {
       const hdf = JSON.parse(
         await convertCyclonedxToHdf(loadFixture('dropwizard-vulns.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(87);
       // Every requirement should have at least one result
       for (const req of hdf.baselines[0]!.requirements) {

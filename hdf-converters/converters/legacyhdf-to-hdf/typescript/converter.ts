@@ -10,7 +10,7 @@
  */
 
 import { flattenOverlays } from '@mitre/hdf-parsers';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 import { deriveControlTypeFromTags, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
@@ -605,7 +605,7 @@ export function convertV1ToV2(v1Data: HDFV1Results): HDFV2Results {
 
   // Flatten overlays: merge overlay/wrapper baselines so every requirement
   // has results and consumers don't see duplicated controls (741→247 fix).
-  const flat = flattenOverlays(v2 as unknown as HdfResults);
+  const flat = flattenOverlays(v2 as unknown as HDFResults);
   return flat.results as unknown as HDFV2Results;
 }
 

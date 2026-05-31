@@ -46,7 +46,7 @@ import { parseJSON, stringifyJSON, isValidJSON } from '@mitre/hdf-utilities';
 
 // Parse JSON with clear error messages
 try {
-  const data = parseJSON<HdfResults>(jsonString);
+  const data = parseJSON<HDFResults>(jsonString);
   console.log(data.baselines);
 } catch (error) {
   console.error('Invalid JSON:', error.message);

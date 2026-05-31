@@ -376,7 +376,7 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		Components: []hdf.Component{
 			{
 				Name: targetName,
-				Type: hdf.CopyrightApplication,
+				Type: hdf.Application,
 			},
 		},
 	}), nil

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertMsftSecureScoreToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -33,7 +33,7 @@ describe('msft-secure-score to HDF converter', async () => {
   describe('conversion basics', async () => {
     it('should produce valid HDF from minimal fixture', async () => {
       const output = await convertMsftSecureScoreToHdf(loadFixture('minimal.json'));
-      const hdf = JSON.parse(output) as HdfResults;
+      const hdf = JSON.parse(output) as HDFResults;
 
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('msft-secure-score-to-hdf');
@@ -44,17 +44,17 @@ describe('msft-secure-score to HDF converter', async () => {
     });
 
     it('should use "Microsoft Secure Score" as the baseline name', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.name).toBe('Microsoft Secure Score');
     });
 
     it('should include tenant ID in baseline title', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.title).toContain('12345678-1234-1234-1234-1234567890abcd');
     });
 
     it('should include a sha256 checksum', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const checksum = hdf.baselines[0]!.resultsChecksum;
       expect(checksum?.algorithm).toBe('sha256');
       expect(checksum?.value).toMatch(/^[a-f0-9]{64}$/);
@@ -63,13 +63,13 @@ describe('msft-secure-score to HDF converter', async () => {
 
   describe('generator and dataSource', async () => {
     it('should set generator name and version', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.generator?.name).toBe('msft-secure-score-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
     it('should set tool name to "Microsoft Secure Score" and format to "JSON"', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('Microsoft Secure Score');
       expect(hdf.tool?.format).toBe('JSON');
     });
@@ -77,20 +77,20 @@ describe('msft-secure-score to HDF converter', async () => {
 
   describe('target', async () => {
     it('should set target type to cloudAccount', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.components).toBeDefined();
       expect(hdf.components![0]!.type).toBe('cloudAccount');
     });
 
     it('should include tenant ID in target name', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.components![0]!.name).toContain('12345678-1234-1234-1234-1234567890abcd');
     });
   });
 
   describe('requirement IDs', async () => {
     it('should use controlCategory:controlName as ID', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const reqs = hdf.baselines[0]!.requirements;
       const req = reqs.find(r => r.id === 'Apps:McasFirewallLogUpload');
       expect(req).toBeDefined();
@@ -99,13 +99,13 @@ describe('msft-secure-score to HDF converter', async () => {
 
   describe('requirement title', async () => {
     it('should use profile title when available', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
       expect(req?.title).toContain('Deploy a log collector');
     });
 
     it('should fall back to controlCategory:controlName when no profile', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:spo_idle_session_timeout');
       expect(req?.title).toContain('spo_idle_session_timeout');
     });
@@ -113,7 +113,7 @@ describe('msft-secure-score to HDF converter', async () => {
 
   describe('impact from profile maxScore', async () => {
     it('should compute impact as maxScore/10', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       // McasFirewallLogUpload has maxScore=1 → 0.1
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
       expect(req?.impact).toBeCloseTo(0.1, 2);
@@ -124,7 +124,7 @@ describe('msft-secure-score to HDF converter', async () => {
     });
 
     it('should default to 0.5 when no profile exists', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:spo_idle_session_timeout');
       expect(req?.impact).toBeCloseTo(0.5, 2);
     });
@@ -132,13 +132,13 @@ describe('msft-secure-score to HDF converter', async () => {
 
   describe('status mapping', async () => {
     it('should map scoreInPercentage 100 to passed', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Data:dlp_datalossprevention');
       expect(req?.results[0]?.status).toBe('passed');
     });
 
     it('should map failing scores to failed', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
       expect(req?.results[0]?.status).toBe('failed');
     });
@@ -146,7 +146,7 @@ describe('msft-secure-score to HDF converter', async () => {
 
   describe('code_desc', async () => {
     it('should use implementationStatus as code_desc', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
       expect(req?.results[0]?.codeDesc).toContain('Feature in place: false');
     });
@@ -154,7 +154,7 @@ describe('msft-secure-score to HDF converter', async () => {
 
   describe('descriptions', async () => {
     it('should include default description with control description', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
       const defaultDesc = req?.descriptions?.find(d => d.label === 'default');
       expect(defaultDesc).toBeDefined();
@@ -162,7 +162,7 @@ describe('msft-secure-score to HDF converter', async () => {
     });
 
     it('should include fix description from profile remediation', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
       const fix = req?.descriptions?.find(d => d.label === 'fix');
       expect(fix).toBeDefined();
@@ -172,7 +172,7 @@ describe('msft-secure-score to HDF converter', async () => {
 
   describe('NIST tags', async () => {
     it('should include default static analysis NIST tags', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
       const nist = req?.tags?.['nist'] as string[];
       expect(nist).toBeDefined();
@@ -182,7 +182,7 @@ describe('msft-secure-score to HDF converter', async () => {
 
   describe('start_time', async () => {
     it('should set start_time from createdDateTime', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'Apps:McasFirewallLogUpload');
       expect(req?.results[0]?.startTime).toBeTruthy();
     });
@@ -190,7 +190,7 @@ describe('msft-secure-score to HDF converter', async () => {
 
   describe('full fixture smoke test', async () => {
     it('should convert full combined.json with 68 controls', async () => {
-      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('combined.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertMsftSecureScoreToHdf(loadFixture('combined.json'))) as HDFResults;
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0]!.requirements).toHaveLength(68);
 

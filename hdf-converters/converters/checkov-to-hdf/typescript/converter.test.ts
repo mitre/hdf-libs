@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertCheckovToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -29,7 +29,7 @@ describe('checkov to HDF converter', async () => {
 
     it('should produce valid HDF structure from minimal fixture', async () => {
       const output = await convertCheckovToHdf(loadFixture('minimal.json'));
-      const hdf = JSON.parse(output) as HdfResults;
+      const hdf = JSON.parse(output) as HDFResults;
 
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('checkov-to-hdf');
@@ -41,12 +41,12 @@ describe('checkov to HDF converter', async () => {
     });
 
     it('should use "Checkov Scan" as the baseline name', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.name).toBe('Checkov Scan');
     });
 
     it('should include a sha256 checksum', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const checksum = hdf.baselines[0]!.resultsChecksum;
       expect(checksum?.algorithm).toBe('sha256');
       expect(checksum?.value).toMatch(/^[a-f0-9]{64}$/);
@@ -55,7 +55,7 @@ describe('checkov to HDF converter', async () => {
     it('should group checks by check_id', async () => {
       // minimal.json has CKV_TF_2 (2 passed), CKV_TF_1 (3 failed),
       // CKV2_AWS_6 (1 skipped), CKV_AWS_18 (1 skipped) → 4 requirements
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const reqs = hdf.baselines[0]!.requirements;
 
       expect(reqs).toHaveLength(4);
@@ -64,13 +64,13 @@ describe('checkov to HDF converter', async () => {
     });
 
     it('should create multiple results for repeated check_id', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckvTF1 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_1');
       expect(ckvTF1?.results).toHaveLength(3);
     });
 
     it('should map PASSED to passed status', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckvTF2 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_2');
       for (const result of ckvTF2!.results) {
         expect(result.status).toBe('passed');
@@ -78,7 +78,7 @@ describe('checkov to HDF converter', async () => {
     });
 
     it('should map FAILED to failed status', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckvTF1 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_1');
       for (const result of ckvTF1!.results) {
         expect(result.status).toBe('failed');
@@ -86,7 +86,7 @@ describe('checkov to HDF converter', async () => {
     });
 
     it('should map SKIPPED to notReviewed status', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckv2AWS6 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV2_AWS_6');
       for (const result of ckv2AWS6!.results) {
         expect(result.status).toBe('notReviewed');
@@ -94,19 +94,19 @@ describe('checkov to HDF converter', async () => {
     });
 
     it('should include suppress_comment in skip message', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckv2AWS6 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV2_AWS_6');
       expect(ckv2AWS6?.results[0]?.message).toContain('Skipping public access block for demo');
     });
 
     it('should include resource in code_desc', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckvTF1 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_1');
       expect(ckvTF1?.results[0]?.codeDesc).toContain('vpc');
     });
 
     it('should use default 0.5 impact when severity is null', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckvTF1 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_1');
       expect(ckvTF1?.impact).toBe(0.5);
     });
@@ -144,7 +144,7 @@ describe('checkov to HDF converter', async () => {
         },
         summary: { passed: 0, failed: 2, skipped: 0, parsing_errors: 0, resource_count: 2, checkov_version: '3.2.524' },
       });
-      const hdf = JSON.parse(await convertCheckovToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(input)) as HDFResults;
       const crit = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TEST_1');
       const low = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TEST_2');
       expect(crit?.impact).toBe(0.9);
@@ -152,21 +152,21 @@ describe('checkov to HDF converter', async () => {
     });
 
     it('should include default description with check name', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckvTF1 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_1');
       const defaultDesc = ckvTF1?.descriptions?.find(d => d.label === 'default');
       expect(defaultDesc?.data).toContain('Ensure Terraform module sources use a commit hash');
     });
 
     it('should include check description with guideline URL', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckvTF1 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_1');
       const checkDesc = ckvTF1?.descriptions?.find(d => d.label === 'check');
       expect(checkDesc?.data).toContain('prismacloud.io');
     });
 
     it('should use default static analysis NIST tags', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ckvTF1 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_1');
       expect(ckvTF1?.tags?.['nist']).toEqual(['SA-11', 'RA-5']);
     });
@@ -182,20 +182,20 @@ describe('checkov to HDF converter', async () => {
         },
         summary: { passed: 0, failed: 0, skipped: 0, parsing_errors: 0, resource_count: 0, checkov_version: '3.2.524' },
       });
-      const hdf = JSON.parse(await convertCheckovToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(0);
     });
   });
 
   describe('multi-framework', async () => {
     it('should merge all frameworks into one baseline', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('multi-framework.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('multi-framework.json'))) as HDFResults;
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0]!.name).toBe('Checkov Scan');
     });
 
     it('should include checks from both terraform and dockerfile', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('multi-framework.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('multi-framework.json'))) as HDFResults;
       const ids = hdf.baselines[0]!.requirements.map(r => r.id);
       // From terraform
       expect(ids).toContain('CKV_TF_1');
@@ -204,7 +204,7 @@ describe('checkov to HDF converter', async () => {
     });
 
     it('should include all framework types in tool format', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('multi-framework.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('multi-framework.json'))) as HDFResults;
       expect(hdf.tool?.format).toContain('terraform');
       expect(hdf.tool?.format).toContain('dockerfile');
     });
@@ -217,14 +217,14 @@ describe('checkov to HDF converter', async () => {
 
     it('should detect SARIF input and delegate to SARIF converter', async () => {
       const input = loadSarifFixture('gosec.sarif');
-      const hdf = JSON.parse(await convertCheckovToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(input)) as HDFResults;
 
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0]!.requirements.length).toBeGreaterThan(0);
     });
 
     it('should not route native checkov JSON to SARIF converter', async () => {
-      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.name).toBe('Checkov Scan');
     });
   });

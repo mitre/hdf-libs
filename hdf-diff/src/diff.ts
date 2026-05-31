@@ -1,5 +1,5 @@
 import type {
-  HdfComparison,
+  HDFComparison,
   RequirementDiff,
   BaselineDiff,
   ComponentDiff,
@@ -95,7 +95,7 @@ export function diffHdf(
   oldResults: Record<string, unknown>,
   newResults: Record<string, unknown> | Record<string, unknown>[],
   options?: DiffOptions,
-): HdfComparison {
+): HDFComparison {
   const trackedFields = options?.trackedFields ?? DEFAULT_TRACKED_FIELDS;
   let comparisonMode = options?.comparisonMode ?? 'temporal';
   const matchOpts = buildMatchOptions(options);
@@ -163,7 +163,7 @@ export function diffHdf(
   // Extract drift: unchanged requirements with metadata changes
   const drift = extractDrift(requirementDiffs);
 
-  const comparison: HdfComparison = {
+  const comparison: HDFComparison = {
     formatVersion: '1.0.0',
     comparisonMode,
     timestamp: new Date().toISOString(),
@@ -236,7 +236,7 @@ function diffFleet(
   newResults: Record<string, unknown> | Record<string, unknown>[],
   trackedFields: string[],
   matchOpts: MatchOptions,
-): HdfComparison {
+): HDFComparison {
   const systems = Array.isArray(newResults) ? newResults : [newResults];
 
   const refNormalized = normalizeToV2(referenceDoc);
@@ -928,7 +928,7 @@ export function diffBaselines(
   oldBaseline: Record<string, unknown>,
   newBaseline: Record<string, unknown>,
   options?: DiffOptions,
-): HdfComparison {
+): HDFComparison {
   const trackedFields = options?.trackedFields ?? BASELINE_TRACKED_FIELDS;
   const matchOpts = buildMatchOptions(options);
 
@@ -1044,7 +1044,7 @@ export function diffBaselines(
     { role: 'new', label: newVersion ? `${baselineName} ${newVersion}` : baselineName || 'New baseline' },
   ];
 
-  const comparison: HdfComparison = {
+  const comparison: HDFComparison = {
     formatVersion: '1.0.0',
     comparisonMode: 'baselineEvolution',
     timestamp: new Date().toISOString(),
@@ -1101,7 +1101,7 @@ export function diffSystems(
   oldSystem: Record<string, unknown>,
   newSystem: Record<string, unknown>,
   options?: DiffOptions,
-): HdfComparison {
+): HDFComparison {
   const oldComponents = (oldSystem['components'] as Record<string, unknown>[] | undefined) ?? [];
   const newComponents = (newSystem['components'] as Record<string, unknown>[] | undefined) ?? [];
 
@@ -1143,7 +1143,7 @@ export function diffSystems(
     { role: 'new', label: systemName ? `${systemName} (new)` : 'New system' },
   ];
 
-  const comparison: HdfComparison = {
+  const comparison: HDFComparison = {
     formatVersion: '1.0.0',
     comparisonMode: 'systemDrift',
     timestamp: new Date().toISOString(),

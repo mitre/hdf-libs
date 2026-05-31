@@ -9,7 +9,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -225,7 +225,7 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
     if (subscriptionID) {
       components.push({
         name: `Azure Subscription ${subscriptionID}`,
-        type: Copyright.CloudAccount,
+        type: TargetType.CloudAccount,
         accountId: subscriptionID,
         provider: 'azure' as Component['provider'],
         labels: { account: subscriptionID, provider: 'azure' },

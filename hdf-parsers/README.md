@@ -18,13 +18,13 @@ Parse and load Heimdall Data Format (HDF) documents with validation. Provides a 
 |-------------|----------------|
 | Parse JSON → typed objects | Validate JSON against schema |
 | "Load and validate this HDF file" | "Is this valid HDF?" |
-| Returns typed HdfResults/HdfBaseline | Returns validation errors |
+| Returns typed HDFResults/HDFBaseline | Returns validation errors |
 | One-step parse + validate | Schema validation only |
 | Used by CLI commands and tools | Used internally by parsers |
 
 **Example:**
 - `validateResults(data)` → `{ valid: true, errors: [] }` (validators - just validates)
-- `parseResults(json)` → `{ success: true, data: HdfResults }` (parsers - validates AND parses)
+- `parseResults(json)` → `{ success: true, data: HDFResults }` (parsers - validates AND parses)
 
 ## Installation
 
@@ -137,23 +137,23 @@ if result.Success {
 
 ### TypeScript
 
-#### `parseResults(input: string | Uint8Array): ParseResult<HdfResults>`
+#### `parseResults(input: string | Uint8Array): ParseResult<HDFResults>`
 
 Parse HDF Results document from JSON string or bytes.
 
 - **Parameters:**
   - `input` - JSON string or Uint8Array to parse
-- **Returns:** `ParseResult<HdfResults>` with parsed data or error
+- **Returns:** `ParseResult<HDFResults>` with parsed data or error
 
-#### `parseBaseline(input: string | Uint8Array): ParseResult<HdfBaseline>`
+#### `parseBaseline(input: string | Uint8Array): ParseResult<HDFBaseline>`
 
 Parse HDF Baseline document from JSON string or bytes.
 
 - **Parameters:**
   - `input` - JSON string or Uint8Array to parse
-- **Returns:** `ParseResult<HdfBaseline>` with parsed data or error
+- **Returns:** `ParseResult<HDFBaseline>` with parsed data or error
 
-#### `parse(input: string | Uint8Array): ParseResult<HdfResults | HdfBaseline>`
+#### `parse(input: string | Uint8Array): ParseResult<HDFResults | HDFBaseline>`
 
 Parse HDF document with auto-detection of type (Results vs Baseline).
 
@@ -329,9 +329,9 @@ Get type-safe HDF objects:
 
 ```typescript
 import { parseResults } from '@mitre/hdf-parsers';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
-function processResults(data: HdfResults) {
+function processResults(data: HDFResults) {
   // TypeScript knows the exact structure
   for (const baseline of data.baselines ?? []) {
     console.log(`Baseline: ${baseline.name}`);

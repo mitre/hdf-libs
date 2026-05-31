@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertConveyorToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -28,20 +28,20 @@ describe('conveyor to HDF converter', async () => {
 
   describe('multi-baseline output (grouped by scanner)', async () => {
     it('should produce multiple baselines (one per scanner type)', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       // Fixture has 4 scanner types: Clamav, CodeQuality, Stigma, Moldy
       expect(hdf.baselines.length).toBeGreaterThanOrEqual(4);
     });
 
     it('should use "Conveyor Scan" as baseline name for all baselines', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       for (const baseline of hdf.baselines) {
         expect(baseline.name).toBe('Conveyor Scan');
       }
     });
 
     it('should include scanner name in baseline title', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       const titles = hdf.baselines.map(b => b.title ?? '');
       const hasClamav = titles.some(t => t.includes('Clamav'));
       const hasMoldy = titles.some(t => t.includes('Moldy'));
@@ -52,7 +52,7 @@ describe('conveyor to HDF converter', async () => {
 
   describe('checksum', async () => {
     it('should include sha256 checksum on each baseline', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       for (const baseline of hdf.baselines) {
         expect(baseline.resultsChecksum?.algorithm).toBe('sha256');
         expect(baseline.resultsChecksum?.value).toMatch(/^[a-f0-9]{64}$/);
@@ -62,13 +62,13 @@ describe('conveyor to HDF converter', async () => {
 
   describe('generator and tool', async () => {
     it('should set generator name and version', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       expect(hdf.generator?.name).toBe('conveyor-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
     it('should set tool name to "Conveyor" and format to "JSON"', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('Conveyor');
       expect(hdf.tool?.format).toBe('JSON');
     });
@@ -76,7 +76,7 @@ describe('conveyor to HDF converter', async () => {
 
   describe('target', async () => {
     it('should set target type to Application', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       expect(hdf.components).toBeDefined();
       expect(hdf.components![0]!.type).toBe('application');
     });
@@ -84,7 +84,7 @@ describe('conveyor to HDF converter', async () => {
 
   describe('score to impact mapping', async () => {
     it('should map score=1000 to impact=1.0', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       // Moldy baseline has score=1000
       const moldy = hdf.baselines.find(b => b.title?.includes('Moldy'));
       expect(moldy).toBeDefined();
@@ -93,7 +93,7 @@ describe('conveyor to HDF converter', async () => {
     });
 
     it('should map score=0 to impact=0.0', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       const moldy = hdf.baselines.find(b => b.title?.includes('Moldy'));
       expect(moldy).toBeDefined();
       const hasZero = moldy!.requirements.some(r => r.impact === 0.0);
@@ -103,7 +103,7 @@ describe('conveyor to HDF converter', async () => {
 
   describe('status mapping', async () => {
     it('should mark score=0 results as passed', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       const moldy = hdf.baselines.find(b => b.title?.includes('Moldy'));
       expect(moldy).toBeDefined();
       const hasPassed = moldy!.requirements.some(
@@ -113,7 +113,7 @@ describe('conveyor to HDF converter', async () => {
     });
 
     it('should mark score>0 results as failed', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       const moldy = hdf.baselines.find(b => b.title?.includes('Moldy'));
       expect(moldy).toBeDefined();
       const hasFailed = moldy!.requirements.some(
@@ -125,7 +125,7 @@ describe('conveyor to HDF converter', async () => {
 
   describe('requirement structure', async () => {
     it('should use sha256 hash as requirement ID', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       for (const baseline of hdf.baselines) {
         for (const req of baseline.requirements) {
           expect(req.id).toMatch(/^[a-f0-9]{64}$/);
@@ -134,7 +134,7 @@ describe('conveyor to HDF converter', async () => {
     });
 
     it('should map file tree names to requirement titles', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       const hasTitle = hdf.baselines.some(b =>
         b.requirements.some(r => r.title && r.title.length > 0)
       );
@@ -142,7 +142,7 @@ describe('conveyor to HDF converter', async () => {
     });
 
     it('should include default description on every requirement', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       for (const baseline of hdf.baselines) {
         for (const req of baseline.requirements) {
           const hasDefault = req.descriptions?.some(d => d.label === 'default');
@@ -152,7 +152,7 @@ describe('conveyor to HDF converter', async () => {
     });
 
     it('should include NIST tags on every requirement', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       for (const baseline of hdf.baselines) {
         for (const req of baseline.requirements) {
           const nist = req.tags?.['nist'] as string[];
@@ -165,7 +165,7 @@ describe('conveyor to HDF converter', async () => {
 
   describe('result structure', async () => {
     it('should include code_desc on every result', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       for (const baseline of hdf.baselines) {
         for (const req of baseline.requirements) {
           for (const res of req.results) {
@@ -176,7 +176,7 @@ describe('conveyor to HDF converter', async () => {
     });
 
     it('should include start_time on every result', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       for (const baseline of hdf.baselines) {
         for (const req of baseline.requirements) {
           for (const res of req.results) {
@@ -189,7 +189,7 @@ describe('conveyor to HDF converter', async () => {
 
   describe('timestamp', async () => {
     it('should include a timestamp', async () => {
-      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
       expect(hdf.timestamp).toBeTruthy();
     });
   });
@@ -207,7 +207,7 @@ describe('conveyor to HDF converter', async () => {
           },
         },
       });
-      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
       expect(hdf.baselines).toHaveLength(1);
       const req = hdf.baselines[0]!.requirements[0]!;
       expect(req.title).toBe('');
@@ -226,7 +226,7 @@ describe('conveyor to HDF converter', async () => {
           },
         },
       });
-      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(1.0);
     });
 
@@ -242,7 +242,7 @@ describe('conveyor to HDF converter', async () => {
           },
         },
       });
-      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       const desc = req.descriptions?.find(d => d.label === 'default');
       expect(desc!.data).toContain('abc');
@@ -260,7 +260,7 @@ describe('conveyor to HDF converter', async () => {
           },
         },
       });
-      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.codeDesc).toContain('CQ test');
     });
 
@@ -276,7 +276,7 @@ describe('conveyor to HDF converter', async () => {
           },
         },
       });
-      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.codeDesc).toContain('title_text');
     });
 
@@ -293,7 +293,7 @@ describe('conveyor to HDF converter', async () => {
           params: { description: 'Custom Target' },
         },
       });
-      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
       expect(hdf.components![0]!.name).toBe('Custom Target');
     });
 
@@ -310,7 +310,7 @@ describe('conveyor to HDF converter', async () => {
           params: {},
         },
       });
-      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
       expect(hdf.components![0]!.name).toBe('Conveyor Scan');
     });
 
@@ -326,7 +326,7 @@ describe('conveyor to HDF converter', async () => {
           },
         },
       });
-      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertConveyorToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.0);
     });
   });

@@ -1,4 +1,4 @@
-import type { HdfBaseline } from '@mitre/hdf-schema';
+import type { HDFBaseline } from '@mitre/hdf-schema';
 import type { GeneratorOptions } from './types.js';
 
 /**
@@ -8,7 +8,7 @@ import type { GeneratorOptions } from './types.js';
  * is fixed and shallow.
  */
 export function generateInSpecYml(
-  baseline: HdfBaseline,
+  baseline: HDFBaseline,
   options?: GeneratorOptions,
 ): string {
   const lines: string[] = [];

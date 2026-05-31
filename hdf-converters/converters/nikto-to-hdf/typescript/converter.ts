@@ -1,6 +1,6 @@
 import {
   type Checksum,
-  Copyright,
+  TargetType,
   createMinimalBaseline,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
@@ -154,7 +154,7 @@ export async function convertNiktoToHdf(input: string): Promise<string> {
     toolFormat: 'JSON',
     baselines: [baseline],
     components: [{
-      type: Copyright.Application,
+      type: TargetType.Application,
       name: targetName,
     }],
   });

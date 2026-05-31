@@ -1,6 +1,6 @@
 import { parseJSON, buildXml } from '@mitre/hdf-utilities';
 import type {
-  HdfResults,
+  HDFResults,
   EvaluatedRequirement,
   Description,
 } from '@mitre/hdf-schema';
@@ -28,7 +28,7 @@ const BUILD_OPTIONS = {
 export function convertHdfToXccdf(input: string): string {
   validateInputSize(input, 'hdf-to-xccdf');
 
-  const hdfData = parseJSON<HdfResults>(input);
+  const hdfData = parseJSON<HDFResults>(input);
 
   if (!hdfData || typeof hdfData !== 'object' || !('baselines' in hdfData)) {
     throw new Error('Invalid HDF structure: missing baselines field');
@@ -85,7 +85,7 @@ function sanitizeXccdfId(id: string): string {
 }
 
 /** Build the Benchmark XML object from HDF data. */
-function buildBenchmarkObj(hdfData: HdfResults): Record<string, unknown> {
+function buildBenchmarkObj(hdfData: HDFResults): Record<string, unknown> {
   const benchmark: Record<string, unknown> = {
     [`${ATTR}xmlns`]: 'http://checklists.nist.gov/xccdf/1.2',
     [`${ATTR}resolved`]: '1',
@@ -170,8 +170,8 @@ function buildRuleObj(req: EvaluatedRequirement): Record<string, unknown> {
 
 /** Build the XCCDF TestResult object. */
 function buildTestResultObj(
-  hdfData: HdfResults,
-  baseline: HdfResults['baselines'][0],
+  hdfData: HDFResults,
+  baseline: HDFResults['baselines'][0],
 ): Record<string, unknown> {
   const testResult: Record<string, unknown> = {
     [`${ATTR}id`]: 'xccdf_hdf_testresult_1',

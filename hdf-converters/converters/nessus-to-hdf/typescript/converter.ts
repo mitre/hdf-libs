@@ -2,7 +2,7 @@ import { parseXmlWithArrays, cvssScoreToSeverity } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
 import { deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
+  HDFResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
@@ -14,7 +14,7 @@ import type {
   Cvss,
   Epss,
 } from '@mitre/hdf-schema';
-import { ResultStatus, Copyright as TargetType, createMinimalBaseline, CVSSSeverity, Version as CvssVersion } from '@mitre/hdf-schema';
+import { ResultStatus, TargetType, createMinimalBaseline, CVSSSeverity, Version as CvssVersion } from '@mitre/hdf-schema';
 
 const CVE_SOURCE_RE = /^CVE-\d{4}-\d{4,}$/;
 const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
@@ -120,7 +120,7 @@ function parseHtml(html: string): string {
 /**
  * Convert Nessus XML scan results to HDF format
  */
-export async function convertNessusToHdf(nessusXml: string): Promise<HdfResults> {
+export async function convertNessusToHdf(nessusXml: string): Promise<HDFResults> {
   validateInputSize(nessusXml, 'nessus');
   // Calculate checksum of source scan data for integrity verification
   const resultsChecksum: Checksum = await inputChecksum(nessusXml);
@@ -156,7 +156,7 @@ export async function convertNessusToHdf(nessusXml: string): Promise<HdfResults>
 
   const tool: Tool = { name: 'Nessus' };
 
-  const result: HdfResults = {
+  const result: HDFResults = {
     baselines,
     components,
     statistics: {

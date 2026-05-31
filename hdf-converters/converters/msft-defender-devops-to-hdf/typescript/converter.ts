@@ -1,8 +1,8 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
-import type { HdfResults, Component } from '@mitre/hdf-schema';
-import { Copyright } from '@mitre/hdf-schema';
+import type { HDFResults, Component } from '@mitre/hdf-schema';
+import { TargetType } from '@mitre/hdf-schema';
 
 // --- MSDO-specific SARIF type definitions ---
 // These capture fields that the generic SARIF converter ignores.
@@ -67,7 +67,7 @@ export async function convertMsftDefenderDevopsToHdf(input: string): Promise<str
 
   // 2. Delegate to the generic SARIF converter for base HDF
   const hdfJson = await convertSarifToHdf(input);
-  const result = JSON.parse(hdfJson) as HdfResults;
+  const result = JSON.parse(hdfJson) as HDFResults;
 
   // 3. Apply enrichments
   applyEnrichments(result, components, runEnrichments);
@@ -98,7 +98,7 @@ function extractEnrichments(raw: MsdoSarif): {
         seenRepos.add(vcp.repositoryUri);
         const target: Component = {
           name: repoNameFromURI(vcp.repositoryUri),
-          type: Copyright.Repository,
+          type: TargetType.Repository,
           url: vcp.repositoryUri,
           labels: {},
         };
@@ -154,7 +154,7 @@ function extractEnrichments(raw: MsdoSarif): {
 }
 
 function applyEnrichments(
-  result: HdfResults,
+  result: HDFResults,
   components: Component[],
   runEnrichments: RunEnrichment[],
 ): void {

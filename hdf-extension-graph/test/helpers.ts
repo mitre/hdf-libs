@@ -1,4 +1,4 @@
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
+import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 export function makeRequirement(overrides: Partial<EvaluatedRequirement> & { id: string }): EvaluatedRequirement {
   return {
@@ -19,6 +19,6 @@ export function makeBaseline(overrides: Partial<EvaluatedBaseline> & { name: str
   };
 }
 
-export function makeResults(baselines: EvaluatedBaseline[]): HdfResults {
-  return { baselines } as HdfResults;
+export function makeResults(baselines: EvaluatedBaseline[]): HDFResults {
+  return { baselines } as HDFResults;
 }

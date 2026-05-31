@@ -1,4 +1,4 @@
-import type { HdfComparison, RequirementDiff } from '../types.js';
+import type { HDFComparison, RequirementDiff } from '../types.js';
 import type { RenderOptions } from './types.js';
 import { filterRequirements } from './filter.js';
 
@@ -31,7 +31,7 @@ function formatFieldChanges(req: RequirementDiff): string {
 }
 
 /**
- * Render an HdfComparison as a CSV string.
+ * Render an HDFComparison as a CSV string.
  *
  * One row per requirement. Columns:
  * - ID, Title, State, Old Status, New Status, Impact (Old), Impact (New), Change Reasons
@@ -42,7 +42,7 @@ function formatFieldChanges(req: RequirementDiff): string {
  * Default detail level: `'control'`.
  */
 export function renderCsv(
-  comparison: HdfComparison,
+  comparison: HDFComparison,
   options?: RenderOptions,
 ): string {
   const detail = options?.detail ?? 'control';

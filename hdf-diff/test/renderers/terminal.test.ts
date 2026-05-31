@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { diffHdf } from '../../src/diff.js';
 import { renderTerminal } from '../../src/renderers/terminal.js';
-import type { HdfComparison } from '../../src/types.js';
+import type { HDFComparison } from '../../src/types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -14,7 +14,7 @@ function loadFixture(name: string): Record<string, unknown> {
 }
 
 describe('renderTerminal', () => {
-  let comparison: HdfComparison;
+  let comparison: HDFComparison;
 
   beforeAll(() => {
     const scanBefore = loadFixture('scan-before.json');
@@ -103,7 +103,7 @@ describe('renderTerminal', () => {
     });
 
     it('should handle requirements without title or statuses', () => {
-      const comp: HdfComparison = {
+      const comp: HDFComparison = {
         ...comparison,
         requirementDiffs: [
           {
@@ -162,7 +162,7 @@ describe('renderTerminal', () => {
     });
 
     it('should omit date range when sources lack timestamps', () => {
-      const noTimestamps: HdfComparison = {
+      const noTimestamps: HDFComparison = {
         ...comparison,
         sources: [
           { role: 'old', label: 'Old evaluation' },
@@ -175,7 +175,7 @@ describe('renderTerminal', () => {
     });
 
     it('should find golden/reference roles for baseline/fleet modes', () => {
-      const baselineComp: HdfComparison = {
+      const baselineComp: HDFComparison = {
         ...comparison,
         comparisonMode: 'baseline',
         sources: [
@@ -189,7 +189,7 @@ describe('renderTerminal', () => {
     });
 
     it('should find reference/system roles for fleet mode', () => {
-      const fleetComp: HdfComparison = {
+      const fleetComp: HDFComparison = {
         ...comparison,
         comparisonMode: 'fleet',
         sources: [

@@ -161,7 +161,7 @@ func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 	target := hdf.Component{
 		Name: targetName,
-		Type: hdf.CopyrightApplication,
+		Type: hdf.Application,
 	}
 
 	hdfResult := shared.BuildHDFResults(shared.HDFResultsOptions{

@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { convertIonchannelToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { DEFAULT_MAX_INPUT_SIZE } from '../../../shared/typescript/converterutil.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -31,7 +31,7 @@ describe('ionchannel to HDF converter', async () => {
   describe('minimal fixture', async () => {
     it('should produce valid HDF from minimal fixture', async () => {
       const output = await convertIonchannelToHdf(loadFixture('minimal.json'));
-      const hdf = JSON.parse(output) as HdfResults;
+      const hdf = JSON.parse(output) as HDFResults;
 
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('ionchannel-to-hdf');
@@ -40,30 +40,30 @@ describe('ionchannel to HDF converter', async () => {
     });
 
     it('should use "Ion Channel SBOM Analysis" as the baseline name', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.name).toBe('Ion Channel SBOM Analysis');
     });
 
     it('should include baseline title with source', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.title).toBe(
         'Ion Channel Analysis of https://github.com/example-org/example-project.git',
       );
     });
 
     it('should include data source info', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('Ion Channel');
       expect(hdf.tool?.format).toBe('JSON');
     });
 
     it('should flatten 2 top-level + 1 sub-dependency into 3 requirements', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(3);
     });
 
     it('should produce correct requirement IDs', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       const ids = hdf.baselines[0]!.requirements.map((r) => r.id);
       expect(ids).toContain('dependency-expressjs/express');
       expect(ids).toContain('dependency-jshttp/accepts');
@@ -71,7 +71,7 @@ describe('ionchannel to HDF converter', async () => {
     });
 
     it('should build correct title for standard dependency', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'dependency-expressjs/express',
       );
@@ -79,14 +79,14 @@ describe('ionchannel to HDF converter', async () => {
     });
 
     it('should set impact to 0.0 for all dependencies', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       for (const req of hdf.baselines[0]!.requirements) {
         expect(req.impact).toBe(0.0);
       }
     });
 
     it('should include NIST CM-8 tags', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'dependency-expressjs/express',
       );
@@ -95,7 +95,7 @@ describe('ionchannel to HDF converter', async () => {
 
     it('should include tags with metadata', async () => {
       // CM-8 has no CCI mappings, so just verify tags exist with metadata
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'dependency-expressjs/express',
       );
@@ -104,7 +104,7 @@ describe('ionchannel to HDF converter', async () => {
     });
 
     it('should track sub-dependencies in tags', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       const express = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'dependency-expressjs/express',
       );
@@ -112,7 +112,7 @@ describe('ionchannel to HDF converter', async () => {
     });
 
     it('should track parent dependencies in tags', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       const accepts = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'dependency-jshttp/accepts',
       );
@@ -120,7 +120,7 @@ describe('ionchannel to HDF converter', async () => {
     });
 
     it('should include dependency JSON in code field', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       const lodash = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'dependency-lodash/lodash',
       );
@@ -129,7 +129,7 @@ describe('ionchannel to HDF converter', async () => {
     });
 
     it('should have notReviewed results for all dependencies', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       for (const req of hdf.baselines[0]!.requirements) {
         expect(req.results).toHaveLength(1);
         expect(req.results[0]!.status).toBe('notReviewed');
@@ -137,7 +137,7 @@ describe('ionchannel to HDF converter', async () => {
     });
 
     it('should include sha256 integrity', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.integrity?.algorithm).toBe('sha256');
       expect(hdf.baselines[0]!.integrity?.checksum).toBeTruthy();
     });
@@ -145,7 +145,7 @@ describe('ionchannel to HDF converter', async () => {
 
   describe('edge cases fixture', async () => {
     it('should handle Python editable install', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'dependency-n/a/-e',
       );
@@ -153,7 +153,7 @@ describe('ionchannel to HDF converter', async () => {
     });
 
     it('should omit n/a fields from title', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'dependency-n/a/requests',
       );
@@ -161,7 +161,7 @@ describe('ionchannel to HDF converter', async () => {
     });
 
     it('should omit n/a version from title', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         (r) => r.id === 'dependency-example-corp/internal-lib',
       );
@@ -169,7 +169,7 @@ describe('ionchannel to HDF converter', async () => {
     });
 
     it('should ignore non-dependency scan summaries', async () => {
-      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('edge-cases.json'))) as HDFResults;
       // Only 3 deps from the dependency scan, community scan is ignored
       expect(hdf.baselines[0]!.requirements).toHaveLength(3);
     });

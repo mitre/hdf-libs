@@ -7,7 +7,7 @@
 
 import { parseJSON } from '@mitre/hdf-utilities';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult } from '@mitre/hdf-schema';
+import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
   DocumentMetadata,
@@ -44,9 +44,9 @@ export async function convertHdfToOscalSar(input: string): Promise<string> {
     throw new Error('hdf-to-oscal-sar: empty input');
   }
 
-  let hdfResults: HdfResults;
+  let hdfResults: HDFResults;
   try {
-    hdfResults = parseJSON<HdfResults>(input);
+    hdfResults = parseJSON<HDFResults>(input);
   } catch {
     throw new Error('hdf-to-oscal-sar: failed to parse HDF JSON');
   }
@@ -62,7 +62,7 @@ export async function convertHdfToOscalSar(input: string): Promise<string> {
 /**
  * Constructs the full OSCAL assessment-results document from HDF results.
  */
-function buildOSCALDocument(hdfResults: HdfResults): OscalSARDocument {
+function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
   let timestamp = new Date().toISOString();
   if (hdfResults.timestamp) {
     timestamp = typeof hdfResults.timestamp === 'string'

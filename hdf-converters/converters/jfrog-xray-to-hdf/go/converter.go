@@ -235,7 +235,7 @@ func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ToolFormat:       "JSON",
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Components: []hdf.Component{
-			{Name: "JFrog Xray Scan", Type: hdf.CopyrightApplication},
+			{Name: "JFrog Xray Scan", Type: hdf.Application},
 		},
 		Timestamp: &now,
 	}), nil

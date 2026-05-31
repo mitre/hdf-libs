@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { existsSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
+import { existsSync, rmSync, writeFileSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { createIndex } from '../src/create-index';
@@ -42,20 +42,28 @@ describe('create-index', () => {
     expect(content).toContain("export * from './helpers.js'");
   });
 
-  it('index.d.ts should export HdfBaseline type', () => {
+  it('index.d.ts should contain deprecated aliases and re-export chain', () => {
     const content = readFileSync(join(DIST_DIR, 'index.d.ts'), 'utf-8');
-    expect(content).toContain('HdfBaseline');
-    expect(content).toContain('BaselineRequirement');
+    expect(content).toContain('HDFBaseline');
+    expect(content).toContain("from './ts/hdf.js'");
   });
 
-  it('should compile TypeScript files to JavaScript', () => {
-    expect(existsSync(join(TS_DIR, 'hdf-results.js'))).toBe(true);
-    expect(existsSync(join(TS_DIR, 'hdf-baseline.js'))).toBe(true);
+  it('should export BaselineRequirement at runtime via combined hdf.js', async () => {
+    const indexPath = pathToFileURL(join(DIST_DIR, 'index.js')).href;
+    const mod = await import(indexPath + '?t=baseline' + Date.now());
+    expect(mod['BaselineRequirement']).toBeUndefined();
+    // BaselineRequirement is an interface (not an enum/const), so it doesn't exist at runtime.
+    // Verify it exists in the .d.ts type declarations via hdf.d.ts
+    const dts = readFileSync(join(TS_DIR, 'hdf.d.ts'), 'utf-8');
+    expect(dts).toContain('BaselineRequirement');
   });
 
-  it('should generate declaration files', () => {
-    expect(existsSync(join(TS_DIR, 'hdf-results.d.ts'))).toBe(true);
-    expect(existsSync(join(TS_DIR, 'hdf-baseline.d.ts'))).toBe(true);
+  it('should compile combined hdf.ts to JavaScript', () => {
+    expect(existsSync(join(TS_DIR, 'hdf.js'))).toBe(true);
+  });
+
+  it('should generate combined declaration file', () => {
+    expect(existsSync(join(TS_DIR, 'hdf.d.ts'))).toBe(true);
   });
 
   it('should copy helpers to dist if they exist', () => {
@@ -95,15 +103,14 @@ describe('create-index', () => {
       expect(keys.length).toBe(unique.size);
     });
 
-    it('should export comparison-specific enums when comparison types exist', async () => {
-      if (!existsSync(join(TS_DIR, 'hdf-comparison.ts'))) return;
+    it('should export comparison-specific enums from combined output', async () => {
       createIndex();
       const indexPath = pathToFileURL(join(DIST_DIR, 'index.js')).href;
       const mod = await import(indexPath);
       for (const key of [
         'AnnotationCategory', 'BaselineDiffState', 'ChangeReason', 'ComparisonMode',
         'ConflictResolution', 'FormatVersion', 'MatchStrategy', 'Op', 'OriginalFormat',
-        'PackageDiffState', 'RequirementState', 'SourceRole', 'Type',
+        'PackageDiffState', 'RequirementState', 'SourceRole',
       ]) {
         expect(mod[key], `expected comparison enum "${key}" to be exported`).toBeDefined();
       }
@@ -113,7 +120,7 @@ describe('create-index', () => {
       const indexPath = pathToFileURL(join(DIST_DIR, 'index.js')).href;
       const mod = await import(indexPath);
       for (const key of [
-        'AuthorizationStatus', 'BoundaryDescription', 'CategorizationLevel',
+        'AuthorizationStatus', 'TargetType', 'CategorizationLevel',
         'Designation', 'Direction',
       ]) {
         expect(mod[key], `expected system enum "${key}" to be exported`).toBeDefined();
@@ -136,30 +143,22 @@ describe('create-index', () => {
   });
 
   describe('error handling', () => {
-    it('should handle missing TypeScript files gracefully', () => {
-      const tempDir = join(DIST_DIR, 'ts-backup');
-      if (existsSync(TS_DIR)) {
-        mkdirSync(tempDir, { recursive: true });
-        for (const name of ['hdf-results.ts', 'hdf-baseline.ts']) {
-          const src = join(TS_DIR, name);
-          if (existsSync(src)) {
-            writeFileSync(join(tempDir, name), readFileSync(src));
-            rmSync(src);
-          }
-        }
+    it('should handle missing combined hdf.ts gracefully', () => {
+      const hdfTs = join(TS_DIR, 'hdf.ts');
+      const backupPath = join(TS_DIR, 'hdf.ts.bak');
+
+      if (existsSync(hdfTs)) {
+        writeFileSync(backupPath, readFileSync(hdfTs));
+        rmSync(hdfTs);
       }
 
       try {
+        // createIndex returns early with a warning when hdf.ts is absent
         expect(() => createIndex()).not.toThrow();
       } finally {
-        if (existsSync(tempDir)) {
-          for (const name of ['hdf-results.ts', 'hdf-baseline.ts']) {
-            const src = join(tempDir, name);
-            if (existsSync(src)) {
-              writeFileSync(join(TS_DIR, name), readFileSync(src));
-            }
-          }
-          rmSync(tempDir, { recursive: true });
+        if (existsSync(backupPath)) {
+          writeFileSync(hdfTs, readFileSync(backupPath));
+          rmSync(backupPath);
         }
       }
     });
@@ -170,12 +169,10 @@ describe('create-index', () => {
       // compile. To avoid corrupting shared dist, we must restore files after.
       // The afterAll hook runs createIndex() to rebuild, but we also guard here.
       const backup = new Map<string, string>();
-      for (const name of ['hdf-results', 'hdf-baseline', 'hdf-comparison']) {
-        for (const ext of ['.js', '.d.ts']) {
-          const file = join(TS_DIR, `${name}${ext}`);
-          if (existsSync(file)) {
-            backup.set(file, readFileSync(file, 'utf-8'));
-          }
+      for (const ext of ['.js', '.d.ts']) {
+        const file = join(TS_DIR, `hdf${ext}`);
+        if (existsSync(file)) {
+          backup.set(file, readFileSync(file, 'utf-8'));
         }
       }
 
@@ -191,55 +188,21 @@ describe('create-index', () => {
       }
     });
 
-    it('should produce index without comparison exports when hdf-comparison.ts is absent', () => {
-      // Temporarily rename hdf-comparison.ts to simulate its absence
-      const compTs = join(TS_DIR, 'hdf-comparison.ts');
-      const compBackup = join(TS_DIR, 'hdf-comparison.ts.bak');
-      const backup = new Map<string, string>();
+    it('should not produce per-file re-exports (combined hdf.js only)', () => {
+      createIndex();
 
-      // Backup all dist/ts files that createIndex will clean
-      for (const name of ['hdf-results', 'hdf-baseline', 'hdf-comparison']) {
-        for (const ext of ['.ts', '.js', '.d.ts']) {
-          const file = join(TS_DIR, `${name}${ext}`);
-          if (existsSync(file)) {
-            backup.set(file, readFileSync(file, 'utf-8'));
-          }
-        }
-      }
+      const indexJs = readFileSync(join(DIST_DIR, 'index.js'), 'utf-8');
+      const indexDts = readFileSync(join(DIST_DIR, 'index.d.ts'), 'utf-8');
 
-      try {
-        // Hide comparison file
-        if (existsSync(compTs)) {
-          writeFileSync(compBackup, readFileSync(compTs));
-          rmSync(compTs);
-        }
+      // With combined output, no per-file re-exports should exist
+      expect(indexJs).not.toMatch(/from ['"]\.\/ts\/hdf-results\.js['"]/);
+      expect(indexJs).not.toMatch(/from ['"]\.\/ts\/hdf-baseline\.js['"]/);
+      expect(indexJs).not.toMatch(/from ['"]\.\/ts\/hdf-comparison\.js['"]/);
+      expect(indexDts).not.toMatch(/from ['"]\.\/ts\/hdf-results\.js['"]/);
 
-        createIndex();
-
-        const indexJs = readFileSync(join(DIST_DIR, 'index.js'), 'utf-8');
-        const indexDts = readFileSync(join(DIST_DIR, 'index.d.ts'), 'utf-8');
-
-        // Should NOT contain comparison TYPE re-exports (the `hasComparison`
-        // branch in create-index.ts guards these). The string 'hdf-comparison'
-        // still appears in the inlined hdfComparisonSchema's $id URL, which
-        // is orthogonal — the JSON schema exists in src/schemas/ regardless
-        // of whether quicktype emitted a matching .ts file.
-        expect(indexJs).not.toMatch(/from ['"]\.\/ts\/hdf-comparison\.js['"]/);
-        expect(indexDts).not.toMatch(/from ['"]\.\/ts\/hdf-comparison\.js['"]/);
-
-        // Should still contain primary type re-exports (combined hdf.js or fallback hdf-results.js)
-        expect(indexJs).toMatch(/from ['"]\.\/ts\/hdf(?:-results)?\.js['"]/);
-        expect(indexDts).toMatch(/from ['"]\.\/ts\/hdf(?:-results)?\.js['"]/);
-      } finally {
-        // Restore all backed up files
-        for (const [file, content] of backup) {
-          writeFileSync(file, content);
-        }
-        if (existsSync(compBackup)) {
-          writeFileSync(compTs, readFileSync(compBackup, 'utf-8'));
-          rmSync(compBackup);
-        }
-      }
+      // Should export from combined hdf.js
+      expect(indexJs).toContain("from './ts/hdf.js'");
+      expect(indexDts).toContain("from './ts/hdf.js'");
     });
   });
 });

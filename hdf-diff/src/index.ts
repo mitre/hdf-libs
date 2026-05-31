@@ -10,7 +10,7 @@ export type {
   Source,
   Annotation,
   MatchingConfig,
-  HdfComparison,
+  HDFComparison,
 } from './types.js';
 
 // Backward-compatibility aliases

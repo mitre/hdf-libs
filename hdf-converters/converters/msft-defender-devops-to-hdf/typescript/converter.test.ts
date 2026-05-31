@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertMsftDefenderDevopsToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 function loadFixture(name: string): string {
   return readFileSync(join(__dirname, '..', 'fixtures', name), 'utf-8');
@@ -29,7 +29,7 @@ describe('msft-defender-devops-to-hdf', () => {
   describe('minimal fixture', () => {
     it('should produce 2 baselines from 2 runs', async () => {
       const input = loadFixture('input/minimal.sarif');
-      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
       expect(result.baselines).toHaveLength(2);
       expect(result.baselines![0]!.requirements!.length).toBeGreaterThan(0);
@@ -42,7 +42,7 @@ describe('msft-defender-devops-to-hdf', () => {
   describe('full SDA fixture', () => {
     it('should produce 7 baselines with correct tool names', async () => {
       const input = loadFixture('input/sda.sarif');
-      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
       expect(result.baselines).toHaveLength(7);
 
@@ -61,7 +61,7 @@ describe('msft-defender-devops-to-hdf', () => {
   describe('repository target', () => {
     it('should extract target from versionControlProvenance', async () => {
       const input = loadFixture('input/minimal.sarif');
-      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
       expect(result.components).toBeDefined();
       expect(result.components!.length).toBeGreaterThan(0);
@@ -77,7 +77,7 @@ describe('msft-defender-devops-to-hdf', () => {
 
     it('should deduplicate targets across runs', async () => {
       const input = loadFixture('input/sda.sarif');
-      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
       // All 7 runs reference the same repo
       expect(result.components).toHaveLength(1);
@@ -89,7 +89,7 @@ describe('msft-defender-devops-to-hdf', () => {
   describe('tool metadata', () => {
     it('should include organization, product, fullName for credscan', async () => {
       const input = loadFixture('input/minimal.sarif');
-      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
       const req = result.baselines![0]!.requirements![0]!;
       const tags = req.tags as Record<string, unknown>;
@@ -102,7 +102,7 @@ describe('msft-defender-devops-to-hdf', () => {
 
     it('should include only RawName for checkov', async () => {
       const input = loadFixture('input/minimal.sarif');
-      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
       const req = result.baselines![1]!.requirements![0]!;
       const tags = req.tags as Record<string, unknown>;
@@ -117,7 +117,7 @@ describe('msft-defender-devops-to-hdf', () => {
   describe('policy tag', () => {
     it('should store policy in requirement tags', async () => {
       const input = loadFixture('input/minimal.sarif');
-      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
       const req = result.baselines![0]!.requirements![0]!;
       const tags = req.tags as Record<string, unknown>;
@@ -131,7 +131,7 @@ describe('msft-defender-devops-to-hdf', () => {
   describe('result properties', () => {
     it('should include CredScan result-level properties', async () => {
       const input = loadFixture('input/minimal.sarif');
-      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
       const req = result.baselines![0]!.requirements![0]!;
       const tags = req.tags as Record<string, unknown>;
@@ -150,7 +150,7 @@ describe('msft-defender-devops-to-hdf', () => {
   describe('generator', () => {
     it('should use msft-defender-devops-to-hdf generator name', async () => {
       const input = loadFixture('input/minimal.sarif');
-      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
       expect(result.generator?.name).toBe('msft-defender-devops-to-hdf');
     });
@@ -161,7 +161,7 @@ describe('msft-defender-devops-to-hdf', () => {
   describe('data source', () => {
     it('should use Microsoft Defender for DevOps as data source name', async () => {
       const input = loadFixture('input/minimal.sarif');
-      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
       expect(result.tool?.name).toBe('Microsoft Defender for DevOps');
     });
@@ -172,7 +172,7 @@ describe('msft-defender-devops-to-hdf', () => {
   describe('base SARIF delegation', () => {
     it('should preserve standard SARIF tags (nist, severity)', async () => {
       const input = loadFixture('input/minimal.sarif');
-      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HdfResults;
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
 
       const req = result.baselines![1]!.requirements![0]!;
       const tags = req.tags as Record<string, unknown>;

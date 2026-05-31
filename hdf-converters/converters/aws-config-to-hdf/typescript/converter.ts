@@ -5,7 +5,7 @@ import {
 } from '@mitre/hdf-mappings';
 import { deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import {
-  Copyright,
+  TargetType,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
@@ -209,7 +209,7 @@ export async function convertAwsConfigToHdf(input: string): Promise<string> {
     toolName: 'AWS Config',
     baselines: [baseline],
     components: [{
-      type: Copyright.CloudAccount,
+      type: TargetType.CloudAccount,
       name: `AWS Account ${accountId}`,
       labels: {
         account: accountId,

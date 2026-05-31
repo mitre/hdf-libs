@@ -133,7 +133,7 @@ func TestConvertNetsparker_Target(t *testing.T) {
 
 	require.NotEmpty(t, result.Components)
 	assert.Equal(t, "https://foo.bar/", result.Components[0].Name)
-	assert.Equal(t, hdf.CopyrightApplication, result.Components[0].Type)
+	assert.Equal(t, hdf.Application, result.Components[0].Type)
 }
 
 // ---- Requirement IDs use LookupId ----

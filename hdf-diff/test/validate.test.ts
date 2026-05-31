@@ -118,7 +118,7 @@ describe('validateComparison', () => {
       ).not.toThrow();
     });
 
-    it('should return a valid HdfComparison when validateOutput is true', () => {
+    it('should return a valid HDFComparison when validateOutput is true', () => {
       const comparison = diffHdf(scanBefore, scanAfter, { validateOutput: true });
       expect(comparison.formatVersion).toBe('1.0.0');
       expect(comparison.requirementDiffs.length).toBeGreaterThan(0);

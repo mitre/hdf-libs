@@ -14,6 +14,20 @@
       "properties": {
         "type": {
           "type": "string",
+          "title": "Target Type",
+          "enum": [
+            "host",
+            "containerImage",
+            "containerInstance",
+            "containerPlatform",
+            "cloudAccount",
+            "cloudResource",
+            "repository",
+            "application",
+            "artifact",
+            "network",
+            "database"
+          ],
           "description": "Component type discriminator. Same values as Target types."
         },
         "name": {
@@ -58,6 +72,7 @@
         },
         "sbomFormat": {
           "type": "string",
+          "title": "SBOM Format",
           "enum": [
             "cyclonedx",
             "spdx"

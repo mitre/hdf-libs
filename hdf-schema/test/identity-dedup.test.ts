@@ -61,13 +61,10 @@ describe('Identity type deduplication', () => {
     expect(code).not.toContain('export interface HdfBaseline');
   });
 
-  it('per-file outputs also use HDFResults naming (consistent with combined)', () => {
+  it('per-file outputs removed (combined only)', () => {
     const resultsPath = join(DIST_TS_DIR, 'hdf-results.ts');
-    if (!existsSync(resultsPath)) return;
-
-    const code = readFileSync(resultsPath, 'utf-8');
-    expect(code).toContain('export interface HDFResults');
-    expect(code).not.toContain('export interface HdfResults');
+    // Per-file outputs no longer exist — combined hdf.ts is the only output
+    expect(existsSync(resultsPath)).toBe(false);
   });
 
   it('per-file compat outputs document the quicktype naming divergence', () => {

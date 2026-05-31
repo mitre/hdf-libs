@@ -21,7 +21,7 @@
 - d3-dsv lacks: skipEmptyLines, transformHeader, dynamicTyping, error reporting — implement manually
 
 ## Async Converter Pattern
-- All converter entry functions are async, returning `Promise<string>` (or `Promise<HdfResults>` for nessus)
+- All converter entry functions are async, returning `Promise<string>` (or `Promise<HDFResults>` for nessus)
 - Test pattern: `it('...', async () => { ... await convertXxxToHdf(...) ... })`
 - Error test pattern: `await expect(convertXxxToHdf(...)).rejects.toThrow(...)`
 - Helper functions calling converters must also be async
@@ -111,7 +111,7 @@
 - **SARIF routing**: Use shared.DetectFormat()/detectFormat(), delegate transparently to sarif converter. Never error on SARIF input. Use static imports (not dynamic `await import()`).
 - **Shared utilities**: Never write local stripHTML(), isSarif(), or NIST/CCI tag builders. Use shared/go/ and shared/typescript/ modules.
 - **TS test __dirname**: Always use `dirname(fileURLToPath(import.meta.url))` pattern for ESM. Never use bare `__dirname`.
-- **Copyright enum**: Go `hdf.Application`, TS `Copyright.Application` (import from @mitre/hdf-schema)
+- **TargetType enum**: Go `hdf.Application`, TS `TargetType.Application` (import from @mitre/hdf-schema). Formerly named `Copyright` — renamed via schema `title` properties in v3.2.0.
 
 ## Monorepo Structure
 - hdf-mappings: data loading + lookup functions

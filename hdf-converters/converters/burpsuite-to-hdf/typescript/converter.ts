@@ -14,7 +14,7 @@ import {
   validateInputSize,
 } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
+  HDFResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
@@ -24,7 +24,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
 } from '@mitre/hdf-schema';
@@ -182,12 +182,12 @@ export async function convertBurpsuiteToHdf(input: string): Promise<string> {
     tool.version = burpVersion;
   }
 
-  const hdf: HdfResults = {
+  const hdf: HDFResults = {
     baselines: [baseline],
     components: [
       {
         name: targetName,
-        type: Copyright.Application,
+        type: TargetType.Application,
       },
     ],
     generator: {

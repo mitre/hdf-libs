@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertNeuvectorToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -23,7 +23,7 @@ describe('neuvector to HDF converter', async () => {
   describe('conversion basics', async () => {
     it('should produce valid HDF from minimal fixture', async () => {
       const output = await convertNeuvectorToHdf(loadFixture('minimal.json'));
-      const hdf = JSON.parse(output) as HdfResults;
+      const hdf = JSON.parse(output) as HDFResults;
 
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('neuvector-to-hdf');
@@ -34,18 +34,18 @@ describe('neuvector to HDF converter', async () => {
     });
 
     it('should use "NeuVector Scan" as the baseline name', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.name).toBe('NeuVector Scan');
     });
 
     it('should include baseline title with image info', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.title).toContain('mitre/heimdall');
       expect(hdf.baselines[0]!.title).toContain('latest');
     });
 
     it('should include a sha256 checksum', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       const checksum = hdf.baselines[0]!.resultsChecksum;
       expect(checksum?.algorithm).toBe('sha256');
       expect(checksum?.value).toMatch(/^[a-f0-9]{64}$/);
@@ -54,13 +54,13 @@ describe('neuvector to HDF converter', async () => {
 
   describe('generator and dataSource', async () => {
     it('should set generator name and version', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.generator?.name).toBe('neuvector-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
     it('should set tool name to "NeuVector" and format to "JSON"', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('NeuVector');
       expect(hdf.tool?.format).toBe('JSON');
     });
@@ -68,7 +68,7 @@ describe('neuvector to HDF converter', async () => {
 
   describe('impact from CVSS v3 score', async () => {
     it('should compute impact as score_v3 / 10', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       // CVE-2021-36159/apk-tools/2.10.5-r1 has score_v3=9.1 -> impact=0.91
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
@@ -77,7 +77,7 @@ describe('neuvector to HDF converter', async () => {
     });
 
     it('should handle medium-score CVSS v3', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       // CVE-2021-36217/avahi/0.8-r0 has score_v3=6.2 -> impact=0.62
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2021-36217/avahi/0.8-r0'
@@ -120,7 +120,7 @@ describe('neuvector to HDF converter', async () => {
           }],
         },
       });
-      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
       const reqs = hdf.baselines[0]!.requirements;
       expect(reqs).toHaveLength(1);
       // score=7.5 / 10 = 0.75
@@ -130,7 +130,7 @@ describe('neuvector to HDF converter', async () => {
 
   describe('CWE extraction from description', async () => {
     it('should extract CWE from description and map to NIST', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       // CVE-2020-25613/ruby:webrick/1.4.2 has CWE-444 in description
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2020-25613/ruby:webrick/1.4.2'
@@ -143,7 +143,7 @@ describe('neuvector to HDF converter', async () => {
     });
 
     it('should include CWE tags when found', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       // CVE-2018-25032/ruby:nokogiri/1.10.9 has CWE-787 in description
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2018-25032/ruby:nokogiri/1.10.9'
@@ -153,7 +153,7 @@ describe('neuvector to HDF converter', async () => {
     });
 
     it('should use default remediation NIST when no CWE found', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       // CVE-2021-36159/apk-tools/2.10.5-r1 has no CWE in description
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
@@ -169,7 +169,7 @@ describe('neuvector to HDF converter', async () => {
 
   describe('requirement structure', async () => {
     it('should use name/package_name/package_version as ID', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
       );
@@ -178,7 +178,7 @@ describe('neuvector to HDF converter', async () => {
     });
 
     it('should set title with vulnerability details', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
       );
@@ -189,7 +189,7 @@ describe('neuvector to HDF converter', async () => {
     });
 
     it('should include default description', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
       );
@@ -202,7 +202,7 @@ describe('neuvector to HDF converter', async () => {
 
   describe('status', async () => {
     it('should mark all vulnerabilities as failed', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       for (const req of hdf.baselines[0]!.requirements) {
         for (const result of req.results) {
           expect(result.status).toBe('failed');
@@ -213,7 +213,7 @@ describe('neuvector to HDF converter', async () => {
 
   describe('result message', async () => {
     it('should include upgrade info when fixed_version exists', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
       );
@@ -225,7 +225,7 @@ describe('neuvector to HDF converter', async () => {
     });
 
     it('should indicate no fixed version when unavailable', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2023-37920/ca-certificates/2023.2.60_v7.0.306-80.0.el8_8'
       );
@@ -237,7 +237,7 @@ describe('neuvector to HDF converter', async () => {
 
   describe('target', async () => {
     it('should include image reference as target', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.components).toBeDefined();
       expect(hdf.components![0]!.name).toContain('mitre/heimdall');
       expect(hdf.components![0]!.type).toBe('containerImage');
@@ -246,7 +246,7 @@ describe('neuvector to HDF converter', async () => {
 
   describe('tags', async () => {
     it('should populate nist and cci tags', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'CVE-2021-36159/apk-tools/2.10.5-r1'
       );
@@ -278,14 +278,14 @@ describe('neuvector to HDF converter', async () => {
           vulnerabilities: [],
         },
       });
-      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(0);
     });
   });
 
   describe('full fixture smoke tests', async () => {
     it('should handle neuvector-mitre-heimdall.json', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall.json'))) as HDFResults;
       const reqs = hdf.baselines[0]!.requirements;
       expect(reqs.length).toBeGreaterThan(0);
       for (const req of reqs) {
@@ -295,7 +295,7 @@ describe('neuvector to HDF converter', async () => {
     });
 
     it('should handle neuvector-mitre-heimdall2.json', async () => {
-      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall2.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall2.json'))) as HDFResults;
       const reqs = hdf.baselines[0]!.requirements;
       expect(reqs.length).toBeGreaterThan(0);
       for (const req of reqs) {

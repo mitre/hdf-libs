@@ -3,7 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertPrismaToHdf } from './converter.js';
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
+import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -34,20 +34,20 @@ describe('prisma to HDF converter', () => {
   describe('multi-host grouping', () => {
     it('should produce one baseline per hostname', async () => {
       const output = await convertPrismaToHdf(loadFixture('minimal.csv'));
-      const hdf = JSON.parse(output) as HdfResults;
+      const hdf = JSON.parse(output) as HDFResults;
       // minimal.csv has 2 hosts
       expect(hdf.baselines).toHaveLength(2);
     });
 
     it('should use "Prisma Cloud Scan" as the baseline name', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       for (const baseline of hdf.baselines) {
         expect(baseline.name).toBe('Prisma Cloud Scan');
       }
     });
 
     it('should include hostname in baseline title', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const titles = hdf.baselines.map(b => b.title).sort();
       expect(titles[0]).toBe('Prisma Cloud Scan (host-1.example.com)');
       expect(titles[1]).toBe('Prisma Cloud Scan (host-2.example.com)');
@@ -56,7 +56,7 @@ describe('prisma to HDF converter', () => {
 
   describe('checksum', () => {
     it('should include sha256 checksum on each baseline', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       for (const baseline of hdf.baselines) {
         expect(baseline.resultsChecksum?.algorithm).toBe('sha256');
         expect(baseline.resultsChecksum?.value).toMatch(/^[a-f0-9]{64}$/);
@@ -66,13 +66,13 @@ describe('prisma to HDF converter', () => {
 
   describe('generator and dataSource', () => {
     it('should set generator name and version', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       expect(hdf.generator?.name).toBe('prisma-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
     it('should set tool to Prisma Cloud / CSV', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       expect(hdf.tool?.name).toBe('Prisma Cloud');
       expect(hdf.tool?.format).toBe('CSV');
     });
@@ -80,7 +80,7 @@ describe('prisma to HDF converter', () => {
 
   describe('targets', () => {
     it('should produce one target per hostname with Host type', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       expect(hdf.components).toHaveLength(2);
       const names = hdf.components!.map(t => t.name).sort();
       expect(names[0]).toBe('host-1.example.com');
@@ -93,7 +93,7 @@ describe('prisma to HDF converter', () => {
 
   describe('requirement IDs', () => {
     it('should format CVE requirement IDs as ComplianceID-CVEID', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       expect(host1).toBeDefined();
       const req = findRequirement(host1!.requirements, '46-CVE-2021-44142');
@@ -101,7 +101,7 @@ describe('prisma to HDF converter', () => {
     });
 
     it('should format non-CVE requirement IDs as ComplianceID-Distro-Severity', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       expect(host1).toBeDefined();
       const req = findRequirement(host1!.requirements, '60522-redhat-RHEL7-high');
@@ -109,7 +109,7 @@ describe('prisma to HDF converter', () => {
     });
 
     it('should produce correct number of requirements per host', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       expect(host1).toBeDefined();
       // host-1: 3 records → 3 requirements
@@ -119,21 +119,21 @@ describe('prisma to HDF converter', () => {
 
   describe('severity to impact mapping', () => {
     it('should map critical severity to 1.0', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       const req = findRequirement(host1!.requirements, '46-CVE-2021-44142');
       expect(req?.impact).toBe(1.0);
     });
 
     it('should map low severity to 0.3', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       const req = findRequirement(host1!.requirements, '46-CVE-2016-2226');
       expect(req?.impact).toBe(0.3);
     });
 
     it('should map high severity to 0.7', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       const req = findRequirement(host1!.requirements, '60522-redhat-RHEL7-high');
       expect(req?.impact).toBe(0.7);
@@ -142,7 +142,7 @@ describe('prisma to HDF converter', () => {
 
   describe('NIST tags', () => {
     it('should assign remediation NIST tags for CVE findings', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       const req = findRequirement(host1!.requirements, '46-CVE-2021-44142');
       const nist = req?.tags?.['nist'] as string[];
@@ -152,7 +152,7 @@ describe('prisma to HDF converter', () => {
     });
 
     it('should assign static analysis NIST tags for non-CVE findings', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       const req = findRequirement(host1!.requirements, '60522-redhat-RHEL7-high');
       const nist = req?.tags?.['nist'] as string[];
@@ -164,7 +164,7 @@ describe('prisma to HDF converter', () => {
 
   describe('status', () => {
     it('should mark all findings as failed', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       for (const baseline of hdf.baselines) {
         for (const req of baseline.requirements) {
           for (const result of req.results) {
@@ -177,14 +177,14 @@ describe('prisma to HDF converter', () => {
 
   describe('code description', () => {
     it('should include package name for image type findings', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       const req = findRequirement(host1!.requirements, '46-CVE-2021-44142');
       expect(req!.results[0]?.codeDesc).toContain('samba-common');
     });
 
     it('should include configuration check info for linux type findings', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       const req = findRequirement(host1!.requirements, '60522-redhat-RHEL7-high');
       expect(req!.results[0]?.codeDesc).toContain('Configuration check');
@@ -193,7 +193,7 @@ describe('prisma to HDF converter', () => {
 
   describe('descriptions', () => {
     it('should include default description with finding details', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       const req = findRequirement(host1!.requirements, '46-CVE-2021-44142');
       const desc = req?.descriptions?.find(d => d.label === 'default');
@@ -204,7 +204,7 @@ describe('prisma to HDF converter', () => {
 
   describe('CVE tags', () => {
     it('should include CVE ID in tags for CVE findings', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       const req = findRequirement(host1!.requirements, '46-CVE-2021-44142');
       expect(req?.tags?.['cve']).toContain('CVE-2021-44142');
@@ -213,7 +213,7 @@ describe('prisma to HDF converter', () => {
 
   describe('message field', () => {
     it('should include Cause in message for compliance findings', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('minimal.csv'))) as HDFResults;
       const host1 = findBaseline(hdf.baselines, 'host-1.example.com');
       const req = findRequirement(host1!.requirements, '60522-redhat-RHEL7-high');
       expect(req!.results[0]?.message).toContain('File ownership is wrong');
@@ -222,7 +222,7 @@ describe('prisma to HDF converter', () => {
 
   describe('full fixture smoke test', () => {
     it('should handle the full prismacloud_sample.csv', async () => {
-      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('prismacloud_sample.csv'))) as HdfResults;
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('prismacloud_sample.csv'))) as HDFResults;
       // 16 unique hostnames in the full fixture
       expect(hdf.baselines).toHaveLength(16);
       for (const baseline of hdf.baselines) {

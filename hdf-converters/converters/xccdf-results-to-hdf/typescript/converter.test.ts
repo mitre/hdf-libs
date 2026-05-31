@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertXccdfResultsToHdf, convertXccdfBenchmarkToHdf, convertXccdfToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults, HdfBaseline, BaselineRequirement, EvaluatedRequirement } from '@mitre/hdf-schema';
+import type { HDFResults, HDFBaseline, BaselineRequirement, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -14,23 +14,23 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
-async function parseHdf(fixture: string): Promise<HdfResults> {
-  return JSON.parse(await convertXccdfResultsToHdf(loadFixture(fixture))) as HdfResults;
+async function parseHdf(fixture: string): Promise<HDFResults> {
+  return JSON.parse(await convertXccdfResultsToHdf(loadFixture(fixture))) as HDFResults;
 }
 
-async function parseBaseline(fixture: string): Promise<HdfBaseline> {
-  return JSON.parse(await convertXccdfBenchmarkToHdf(loadFixture(fixture))) as HdfBaseline;
+async function parseBaseline(fixture: string): Promise<HDFBaseline> {
+  return JSON.parse(await convertXccdfBenchmarkToHdf(loadFixture(fixture))) as HDFBaseline;
 }
 
 function findReq(
-  hdf: HdfResults,
+  hdf: HDFResults,
   id: string
 ): EvaluatedRequirement | undefined {
   return hdf.baselines[0]!.requirements.find((r) => r.id === id);
 }
 
 function findBaselineReq(
-  baseline: HdfBaseline,
+  baseline: HDFBaseline,
   id: string
 ): BaselineRequirement | undefined {
   return baseline.requirements.find((r) => r.id === id);
@@ -263,7 +263,7 @@ describe('xccdf-results-to-hdf converter', async () => {
             <rule-result idref="rule1"><result>error</result></rule-result>
           </TestResult>
         </Benchmark>`;
-      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe(
         ResultStatus.Error
       );
@@ -279,7 +279,7 @@ describe('xccdf-results-to-hdf converter', async () => {
             <rule-result idref="rule1"><result>unknown</result></rule-result>
           </TestResult>
         </Benchmark>`;
-      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe(
         ResultStatus.Error
       );
@@ -295,7 +295,7 @@ describe('xccdf-results-to-hdf converter', async () => {
             <rule-result idref="rule1"><result>notapplicable</result></rule-result>
           </TestResult>
         </Benchmark>`;
-      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe(
         ResultStatus.NotApplicable
       );
@@ -311,7 +311,7 @@ describe('xccdf-results-to-hdf converter', async () => {
             <rule-result idref="rule1"><result>notchecked</result></rule-result>
           </TestResult>
         </Benchmark>`;
-      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe(
         ResultStatus.NotReviewed
       );
@@ -327,7 +327,7 @@ describe('xccdf-results-to-hdf converter', async () => {
             <rule-result idref="rule1"><result>notselected</result></rule-result>
           </TestResult>
         </Benchmark>`;
-      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe(
         ResultStatus.NotReviewed
       );
@@ -343,7 +343,7 @@ describe('xccdf-results-to-hdf converter', async () => {
             <rule-result idref="rule1"><result>informational</result></rule-result>
           </TestResult>
         </Benchmark>`;
-      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe(
         ResultStatus.NotReviewed
       );
@@ -359,7 +359,7 @@ describe('xccdf-results-to-hdf converter', async () => {
             <rule-result idref="rule1"><result>fixed</result></rule-result>
           </TestResult>
         </Benchmark>`;
-      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe(
         ResultStatus.Passed
       );
@@ -482,7 +482,7 @@ describe('xccdf-results-to-hdf converter', async () => {
       const output = await convertXccdfResultsToHdf(
         loadFixture('stig-rhel7.xml')
       );
-      const hdf = JSON.parse(output) as HdfResults;
+      const hdf = JSON.parse(output) as HDFResults;
       expect(hdf.generator?.name).toBe('hdf-converters');
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0]!.requirements).toHaveLength(5);
@@ -734,7 +734,7 @@ describe('convertXccdfToHdf auto-detect', async () => {
   it('should detect benchmark and return baseline', async () => {
     const { json, outputType } = await convertXccdfToHdf(loadFixture('benchmark-minimal-1.1.xml'));
     expect(outputType).toBe('baseline');
-    const baseline = JSON.parse(json) as HdfBaseline;
+    const baseline = JSON.parse(json) as HDFBaseline;
     expect(baseline.name).toBe('ms-windows-server-2022-stig');
     expect(baseline.requirements).toHaveLength(3);
   });
@@ -742,7 +742,7 @@ describe('convertXccdfToHdf auto-detect', async () => {
   it('should detect results and return results', async () => {
     const { json, outputType } = await convertXccdfToHdf(loadFixture('stig-rhel7.xml'));
     expect(outputType).toBe('results');
-    const results = JSON.parse(json) as HdfResults;
+    const results = JSON.parse(json) as HDFResults;
     expect(results.baselines[0]!.requirements).toHaveLength(5);
   });
 
@@ -784,7 +784,7 @@ describe('convertXccdfToHdf auto-detect', async () => {
     </rule-result>
   </TestResult>
 </Benchmark>`;
-    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
     expect(hdf.baselines[0]!.requirements).toHaveLength(3);
     // Pass status
     expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
@@ -809,7 +809,7 @@ describe('convertXccdfToHdf auto-detect', async () => {
     </rule-result>
   </TestResult>
 </Benchmark>`;
-    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
     expect(hdf.components).toHaveLength(1);
     expect(hdf.components![0]!.name).toBe('myhost');
     expect(hdf.components![0]!.ipAddress).toBe('10.0.0.1');
@@ -842,7 +842,7 @@ describe('convertXccdfToHdf auto-detect', async () => {
     </rule-result>
   </TestResult>
 </Benchmark>`;
-    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
     const req = hdf.baselines[0]!.requirements[0]!;
     expect(req.id).toBe('SV-001');
     expect(req.title).toBe('Rule One');
@@ -874,7 +874,7 @@ describe('convertXccdfToHdf auto-detect', async () => {
     <title>Top Rule</title>
   </Rule>
 </Benchmark>`;
-    const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HdfBaseline;
+    const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HDFBaseline;
     expect(baseline.requirements).toHaveLength(2);
     const r1 = (baseline.requirements as BaselineRequirement[]).find(r => r.id === 'SV-001');
     expect(r1).toBeDefined();
@@ -902,7 +902,7 @@ describe('convertXccdfToHdf auto-detect', async () => {
     </Rule>
   </Group>
 </Benchmark>`;
-    const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HdfBaseline;
+    const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HDFBaseline;
     // Rule without id should be skipped
     expect(baseline.requirements).toHaveLength(1);
   });
@@ -924,7 +924,7 @@ describe('convertXccdfToHdf auto-detect', async () => {
     </Rule>
   </Group>
 </Benchmark>`;
-    const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HdfBaseline;
+    const baseline = JSON.parse(await convertXccdfBenchmarkToHdf(xml)) as HDFBaseline;
     const req = (baseline.requirements as BaselineRequirement[])[0]!;
     const def = req.descriptions!.find(d => d.label === 'default');
     expect(def!.data).toBe('');
@@ -950,7 +950,7 @@ describe('convertXccdfToHdf auto-detect', async () => {
     <rule-result idref="R4"><result>fixed</result></rule-result>
   </TestResult>
 </Benchmark>`;
-    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
     expect(hdf.baselines[0]!.requirements).toHaveLength(4);
   });
 
@@ -962,7 +962,7 @@ describe('convertXccdfToHdf auto-detect', async () => {
     <rule-result idref="R1"><result>pass</result></rule-result>
   </TestResult>
 </Benchmark>`;
-    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HdfResults;
+    const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
     expect(hdf.baselines[0]!.name).toBe('XCCDF Benchmark');
   });
 });

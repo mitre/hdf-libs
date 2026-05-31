@@ -122,6 +122,7 @@
       "properties": {
         "op": {
           "type": "string",
+          "title": "Op",
           "enum": [
             "add",
             "remove",
@@ -485,6 +486,7 @@
         },
         "state": {
           "type": "string",
+          "title": "Baseline Diff State",
           "enum": [
             "new",
             "absent",
@@ -523,6 +525,7 @@
         },
         "state": {
           "type": "string",
+          "title": "Baseline Diff State",
           "enum": [
             "new",
             "absent",
@@ -566,6 +569,7 @@
         },
         "state": {
           "type": "string",
+          "title": "Package Diff State",
           "enum": [
             "added",
             "removed",

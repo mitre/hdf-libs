@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertJunitToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 import { ResultStatus } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -14,8 +14,8 @@ function loadFixture(name: string): string {
   return readFileSync(join(FIXTURES_DIR, 'input', name), 'utf-8');
 }
 
-async function parseHdf(fixture: string): Promise<HdfResults> {
-  return JSON.parse(await convertJunitToHdf(loadFixture(fixture))) as HdfResults;
+async function parseHdf(fixture: string): Promise<HDFResults> {
+  return JSON.parse(await convertJunitToHdf(loadFixture(fixture))) as HDFResults;
 }
 
 // Fixtures sourced from apache/maven-surefire test resources:
@@ -308,7 +308,7 @@ describe('junit to HDF converter', async () => {
   describe('JSON round-trip', async () => {
     it('should produce valid JSON that re-parses', async () => {
       const output = await convertJunitToHdf(loadFixture('surefire-failing.xml'));
-      const hdf = JSON.parse(output) as HdfResults;
+      const hdf = JSON.parse(output) as HDFResults;
       expect(hdf.generator?.name).toBe('hdf-converters');
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0]!.requirements).toHaveLength(2);
@@ -323,7 +323,7 @@ describe('junit to HDF converter', async () => {
     <testcase name="mytest"/>
   </testsuite>
 </testsuites>`;
-      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       // ID should be just name when no classname
       expect(req.id).toBe('mytest');
@@ -338,7 +338,7 @@ describe('junit to HDF converter', async () => {
     <testcase name="t1" classname="c1"/>
   </testsuite>
 </testsuites>`;
-      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.name).toBe('JUnit Test Results');
     });
 
@@ -347,7 +347,7 @@ describe('junit to HDF converter', async () => {
 <testsuite>
   <testcase name="t1"/>
 </testsuite>`;
-      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.name).toBe('JUnit Test Results');
     });
 
@@ -360,7 +360,7 @@ describe('junit to HDF converter', async () => {
     </testcase>
   </testsuite>
 </testsuites>`;
-      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       expect(req.results[0]!.status).toBe('failed');
       expect(req.results[0]!.message).toContain('fail msg');
@@ -375,7 +375,7 @@ describe('junit to HDF converter', async () => {
     </testcase>
   </testsuite>
 </testsuites>`;
-      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       expect(req.results[0]!.status).toBe('error');
       expect(req.results[0]!.message).toContain('NullPointerException');
@@ -391,7 +391,7 @@ describe('junit to HDF converter', async () => {
     </testcase>
   </testsuite>
 </testsuites>`;
-      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       expect(req.results[0]!.status).toBe('notReviewed');
       expect(req.results[0]!.message).toContain('Not ready');
@@ -406,7 +406,7 @@ describe('junit to HDF converter', async () => {
     </testcase>
   </testsuite>
 </testsuites>`;
-      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.message).toBe('Skipped');
     });
@@ -418,7 +418,7 @@ describe('junit to HDF converter', async () => {
     <testcase name="t1" classname="c1" time="abc"/>
   </testsuite>
 </testsuites>`;
-      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
     });
 
@@ -427,7 +427,7 @@ describe('junit to HDF converter', async () => {
 <testsuites name="EmptySuites">
   <testsuite name="EmptySuite"/>
 </testsuites>`;
-      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(0);
     });
 
@@ -443,7 +443,7 @@ describe('junit to HDF converter', async () => {
     <testcase name="t1" classname="c1" time="0.123"/>
   </testsuite>
 </testsuites>`;
-      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HdfResults;
+      const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
     });
   });

@@ -7,7 +7,7 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { deriveControlTypeFromTags, inputChecksum, inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
+  HDFResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
@@ -77,7 +77,7 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
     }
   }
 
-  const hdf: HdfResults = {
+  const hdf: HDFResults = {
     baselines,
     generator: {
       name: 'oscal-assessment-results-to-hdf',

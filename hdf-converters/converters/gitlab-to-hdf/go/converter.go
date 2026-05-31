@@ -113,10 +113,10 @@ func severityToImpact(severity string) float64 {
 
 // --- Scan type to target type ---
 
-func scanTypeToTargetType(scanType string) hdf.Copyright {
+func scanTypeToTargetType(scanType string) hdf.TargetType {
 	switch scanType {
 	case "dast":
-		return hdf.CopyrightApplication
+		return hdf.Application
 	case "container_scanning":
 		return hdf.ContainerImage
 	default:

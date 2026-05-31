@@ -12,7 +12,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -252,7 +252,7 @@ export async function convertDbprotectToHdf(input: string): Promise<string> {
     toolName: 'DBProtect',
     toolFormat: 'XML',
     baselines: [baseline],
-    components: [{ name: targetName, type: Copyright.Host }],
+    components: [{ name: targetName, type: TargetType.Host }],
     timestamp: new Date(),
   });
 }

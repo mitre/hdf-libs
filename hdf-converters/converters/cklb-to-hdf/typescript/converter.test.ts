@@ -3,7 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertCklbToHdf } from './converter.js';
-import type { HdfResults, EvaluatedRequirement } from '@mitre/hdf-schema';
+import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -30,7 +30,7 @@ describe('cklb-to-hdf converter', () => {
   });
 
   it('produces the expected top-level HDF structure', async () => {
-    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HdfResults;
+    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HDFResults;
 
     expect(hdf.timestamp).toBeTruthy();
     expect(hdf.generator?.name).toBe('hdf-converters');
@@ -45,7 +45,7 @@ describe('cklb-to-hdf converter', () => {
   });
 
   it('maps the host target_data to a Host component', async () => {
-    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HdfResults;
+    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HDFResults;
     expect(hdf.components).toHaveLength(1);
     const c = hdf.components![0];
     expect(c.name).toBe('EXAMPLE-HOST');
@@ -56,7 +56,7 @@ describe('cklb-to-hdf converter', () => {
   });
 
   it('maps CKLB status values to HDF result statuses', async () => {
-    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HdfResults;
+    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HDFResults;
     const reqs = hdf.baselines[0].requirements;
     expect(findReq(reqs, 'V-251545').results[0].status).toBe('failed'); // open
     expect(findReq(reqs, 'V-251546').results[0].status).toBe('passed'); // not_a_finding
@@ -65,7 +65,7 @@ describe('cklb-to-hdf converter', () => {
   });
 
   it('derives controlType from CCI->NIST and omits verificationMethod/applicability', async () => {
-    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HdfResults;
+    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HDFResults;
     const r = findReq(hdf.baselines[0].requirements, 'V-251545');
 
     expect(r.title).toBe('The installed version of Firefox must be supported.');
@@ -78,14 +78,14 @@ describe('cklb-to-hdf converter', () => {
   });
 
   it('omits verificationMethod for every requirement', async () => {
-    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HdfResults;
+    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HDFResults;
     for (const r of hdf.baselines[0].requirements) {
       expect(r.verificationMethod).toBeUndefined();
     }
   });
 
   it('tracks impact from severity regardless of status', async () => {
-    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HdfResults;
+    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HDFResults;
     const reqs = hdf.baselines[0].requirements;
     // medium + not_applicable -> impact 0.5, status notApplicable
     expect(findReq(reqs, 'V-251547').impact).toBeCloseTo(0.5, 3);

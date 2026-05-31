@@ -11,7 +11,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -251,7 +251,7 @@ export async function convertDeptrackToHdf(input: string): Promise<string> {
     toolName: 'Dependency-Track',
     toolFormat: 'JSON',
     baselines: [baseline],
-    components: [{ name: targetName, type: Copyright.Application }],
+    components: [{ name: targetName, type: TargetType.Application }],
     timestamp: new Date(),
   });
 }

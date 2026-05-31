@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { diffHdf } from '../src/diff.js';
-import type { HdfComparison, RequirementDiff } from '../src/types.js';
+import type { HDFComparison, RequirementDiff } from '../src/types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -24,12 +24,12 @@ describe('diffHdf', () => {
   });
 
   // ── Helpers ──────────────────────────────────────────────────────────
-  function findReq(diff: HdfComparison, id: string): RequirementDiff | undefined {
+  function findReq(diff: HDFComparison, id: string): RequirementDiff | undefined {
     return diff.requirementDiffs.find((r) => r.id === id);
   }
 
-  // ── 0. Top-level HdfComparison structure ──────────────────────────────
-  describe('HdfComparison top-level structure', () => {
+  // ── 0. Top-level HDFComparison structure ──────────────────────────────
+  describe('HDFComparison top-level structure', () => {
     it('should have formatVersion 1.0.0', () => {
       const diff = diffHdf(scanBefore, scanAfter);
       expect(diff.formatVersion).toBe('1.0.0');
@@ -94,7 +94,7 @@ describe('diffHdf', () => {
 
   // ── 2. scan-before vs scan-after: per-requirement diffs ─────────────
   describe('when comparing scan-before to scan-after', () => {
-    let diff: HdfComparison;
+    let diff: HDFComparison;
 
     beforeAll(() => {
       diff = diffHdf(scanBefore, scanAfter);

@@ -5,7 +5,7 @@ import {describe, expect, it} from 'vitest';
 import {convertGitlabToHdf} from './converter';
 import {runConverterContractTests} from '../../../shared/typescript/converter-contract.js';
 import {parseJSON} from '@mitre/hdf-utilities';
-import type {HdfResults} from '@mitre/hdf-schema';
+import type {HDFResults} from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -25,7 +25,7 @@ describe('GitLab to HDF converter', () => {
     it('should handle missing vulnerabilities array', async () => {
       const input = JSON.stringify({version: '15.1.0', scan: {type: 'sast'}});
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0].requirements).toHaveLength(0);
     });
@@ -33,7 +33,7 @@ describe('GitLab to HDF converter', () => {
     it('should handle empty vulnerabilities array', async () => {
       const input = JSON.stringify({version: '15.1.0', scan: {type: 'sast'}, vulnerabilities: []});
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0].requirements).toHaveLength(0);
     });
@@ -43,7 +43,7 @@ describe('GitLab to HDF converter', () => {
     it('should create 1 baseline with 1 requirement', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0].requirements).toHaveLength(1);
@@ -52,7 +52,7 @@ describe('GitLab to HDF converter', () => {
     it('should set baseline name to "GitLab Security Scan"', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].name).toBe('GitLab Security Scan');
     });
@@ -60,7 +60,7 @@ describe('GitLab to HDF converter', () => {
     it('should set baseline title with scan type', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].title).toBe('GitLab SAST Security Scan');
     });
@@ -68,7 +68,7 @@ describe('GitLab to HDF converter', () => {
     it('should set baseline summary with scanner info', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].summary).toBe('Scanner: Semgrep v1.34.0');
     });
@@ -76,7 +76,7 @@ describe('GitLab to HDF converter', () => {
     it('should use vulnerability ID as requirement ID', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].requirements[0].id).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890');
     });
@@ -84,7 +84,7 @@ describe('GitLab to HDF converter', () => {
     it('should set requirement title from vulnerability name', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].requirements[0].title).toBe('SQL Injection');
     });
@@ -92,7 +92,7 @@ describe('GitLab to HDF converter', () => {
     it('should map Critical severity to impact 0.9', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].requirements[0].impact).toBe(0.9);
     });
@@ -100,7 +100,7 @@ describe('GitLab to HDF converter', () => {
     it('should set all results to failed', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].requirements[0].results[0].status).toBe('failed');
     });
@@ -108,7 +108,7 @@ describe('GitLab to HDF converter', () => {
     it('should format SAST codeDesc with file, line, class, method', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toBe(
         'File: src/db/queries.py | Line: 42 | Class: UserRepository | Method: find_by_name',
@@ -118,7 +118,7 @@ describe('GitLab to HDF converter', () => {
     it('should set description from vulnerability description', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const defaultDesc = hdf.baselines[0].requirements[0].descriptions?.find(d => d.label === 'default');
       expect(defaultDesc?.data).toContain('SQL query without sanitization');
@@ -127,7 +127,7 @@ describe('GitLab to HDF converter', () => {
     it('should set check description from solution', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const checkDesc = hdf.baselines[0].requirements[0].descriptions?.find(d => d.label === 'check');
       expect(checkDesc?.data).toContain('parameterized queries');
@@ -136,7 +136,7 @@ describe('GitLab to HDF converter', () => {
     it('should set startTime from scan.start_time', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].requirements[0].results[0].startTime).toBeDefined();
     });
@@ -146,7 +146,7 @@ describe('GitLab to HDF converter', () => {
     it('should map CWE-89 to a NIST control', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const tags = hdf.baselines[0].requirements[0].tags;
       expect(tags?.nist).toBeDefined();
@@ -157,7 +157,7 @@ describe('GitLab to HDF converter', () => {
     it('should include CWE identifier in tags', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const tags = hdf.baselines[0].requirements[0].tags;
       expect(tags?.cwe).toEqual(['89']);
@@ -166,7 +166,7 @@ describe('GitLab to HDF converter', () => {
     it('should populate CCI tags from NIST mapping', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const tags = hdf.baselines[0].requirements[0].tags;
       expect(tags?.cci).toBeDefined();
@@ -178,7 +178,7 @@ describe('GitLab to HDF converter', () => {
     it('should calculate SHA-256 checksum of input', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].resultsChecksum).toBeDefined();
       expect(hdf.baselines[0].resultsChecksum?.algorithm).toBe('sha256');
@@ -190,7 +190,7 @@ describe('GitLab to HDF converter', () => {
     it('should set generator name to "gitlab-to-hdf"', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.generator.name).toBe('gitlab-to-hdf');
     });
@@ -198,7 +198,7 @@ describe('GitLab to HDF converter', () => {
     it('should set dataSource name from scanner', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.tool?.name).toBe('Semgrep');
       expect(hdf.tool?.format).toBe('JSON');
@@ -210,7 +210,7 @@ describe('GitLab to HDF converter', () => {
     it('should set timestamp from scan.end_time', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.timestamp).toBeDefined();
     });
@@ -220,7 +220,7 @@ describe('GitLab to HDF converter', () => {
     it('should set target type to repository for SAST', async () => {
       const input = loadFixture('minimal-sast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.components).toHaveLength(1);
       expect(hdf.components![0].type).toBe('repository');
@@ -229,7 +229,7 @@ describe('GitLab to HDF converter', () => {
     it('should set target type to application for DAST', async () => {
       const input = loadFixture('minimal-dast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.components).toHaveLength(1);
       expect(hdf.components![0].type).toBe('application');
@@ -240,7 +240,7 @@ describe('GitLab to HDF converter', () => {
     it('should create 1 requirement from DAST report', async () => {
       const input = loadFixture('minimal-dast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0].requirements).toHaveLength(1);
@@ -249,7 +249,7 @@ describe('GitLab to HDF converter', () => {
     it('should set baseline title with DAST type', async () => {
       const input = loadFixture('minimal-dast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].title).toBe('GitLab DAST Security Scan');
     });
@@ -257,7 +257,7 @@ describe('GitLab to HDF converter', () => {
     it('should format DAST codeDesc with URL, method, param', async () => {
       const input = loadFixture('minimal-dast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toBe(
         'URL: https://app.example.com/search | Method: GET | Param: q',
@@ -267,7 +267,7 @@ describe('GitLab to HDF converter', () => {
     it('should map High severity to impact 0.7', async () => {
       const input = loadFixture('minimal-dast.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].requirements[0].impact).toBe(0.7);
     });
@@ -277,7 +277,7 @@ describe('GitLab to HDF converter', () => {
     it('should create 3 requirements from 3 vulnerabilities', async () => {
       const input = loadFixture('multi-vuln.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].requirements).toHaveLength(3);
     });
@@ -285,7 +285,7 @@ describe('GitLab to HDF converter', () => {
     it('should map Critical severity to 0.9', async () => {
       const input = loadFixture('multi-vuln.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '11111111-1111-1111-1111-111111111111');
       expect(req?.impact).toBe(0.9);
@@ -294,7 +294,7 @@ describe('GitLab to HDF converter', () => {
     it('should map Medium severity to 0.5', async () => {
       const input = loadFixture('multi-vuln.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '22222222-2222-2222-2222-222222222222');
       expect(req?.impact).toBe(0.5);
@@ -303,7 +303,7 @@ describe('GitLab to HDF converter', () => {
     it('should map Info severity to 0.0', async () => {
       const input = loadFixture('multi-vuln.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '33333333-3333-3333-3333-333333333333');
       expect(req?.impact).toBe(0.0);
@@ -312,7 +312,7 @@ describe('GitLab to HDF converter', () => {
     it('should collect both CWE and CVE identifiers in tags', async () => {
       const input = loadFixture('multi-vuln.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '11111111-1111-1111-1111-111111111111');
       expect(req?.tags?.cwe).toEqual(['78']);
@@ -322,7 +322,7 @@ describe('GitLab to HDF converter', () => {
     it('should use default NIST tags when no CWE identifiers present', async () => {
       const input = loadFixture('multi-vuln.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '33333333-3333-3333-3333-333333333333');
       expect(req?.tags?.nist).toEqual(['SA-11', 'RA-5']);
@@ -331,7 +331,7 @@ describe('GitLab to HDF converter', () => {
     it('should format codeDesc without class/method when absent', async () => {
       const input = loadFixture('multi-vuln.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '11111111-1111-1111-1111-111111111111');
       expect(req?.results[0].codeDesc).toBe('File: src/utils/exec.py | Line: 15-18');
@@ -340,7 +340,7 @@ describe('GitLab to HDF converter', () => {
     it('should format codeDesc with class and method when present', async () => {
       const input = loadFixture('multi-vuln.json');
       const output = await convertGitlabToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '22222222-2222-2222-2222-222222222222');
       expect(req?.results[0].codeDesc).toBe(
@@ -358,7 +358,7 @@ describe('GitLab to HDF converter', () => {
           location: { hostname: 'https://example.com', path: '/api', method: 'POST', param: 'q' },
         }],
       });
-      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
       expect(hdf.components[0].type).toBe('application');
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('URL:');
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('Param:');
@@ -372,7 +372,7 @@ describe('GitLab to HDF converter', () => {
           location: { image: 'nginx:latest', dependency: { package: { name: 'libssl' }, version: '1.0' } },
         }],
       });
-      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
       expect(hdf.components[0].type).toBe('containerImage');
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('Image: nginx');
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('libssl@1.0');
@@ -387,7 +387,7 @@ describe('GitLab to HDF converter', () => {
           location: { file: 'package.json', dependency: { package: { name: 'lodash' } } },
         }],
       });
-      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('Package: lodash');
     });
 
@@ -399,7 +399,7 @@ describe('GitLab to HDF converter', () => {
           location: { file: 'config.yaml', start_line: 10, end_line: 10 },
         }],
       });
-      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('Line: 10');
     });
 
@@ -411,7 +411,7 @@ describe('GitLab to HDF converter', () => {
           location: { file: 'test.txt' },
         }],
       });
-      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
       expect(hdf.baselines[0].title).toContain('API Fuzzing');
     });
 
@@ -422,7 +422,7 @@ describe('GitLab to HDF converter', () => {
           id: 'v1', severity: 'Medium', description: 'desc', solution: 'fix',
         }],
       });
-      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toBe('');
     });
 
@@ -431,7 +431,7 @@ describe('GitLab to HDF converter', () => {
         scan: { type: 'sast', scanner: { name: 'Scan' } },
         vulnerabilities: [{ id: 'v1', name: 'Named Vuln' }],
       });
-      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
       const req = hdf.baselines[0].requirements[0];
       expect(req.title).toBe('Named Vuln');
       expect(req.descriptions.length).toBe(0);
@@ -441,7 +441,7 @@ describe('GitLab to HDF converter', () => {
       const input = JSON.stringify({
         vulnerabilities: [{ id: 'v1' }],
       });
-      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
       expect(hdf.baselines[0].title).toContain('SAST');
     });
 
@@ -453,7 +453,7 @@ describe('GitLab to HDF converter', () => {
           location: { hostname: 'https://example.com' },
         }],
       });
-      const hdf = parseJSON<HdfResults>(await convertGitlabToHdf(input));
+      const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
       expect(hdf.baselines[0].requirements[0].results[0].codeDesc).toContain('URL: https://example.com');
     });
   });

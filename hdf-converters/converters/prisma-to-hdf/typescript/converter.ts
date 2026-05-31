@@ -13,7 +13,7 @@ import {
 } from '@mitre/hdf-mappings';
 import { deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
+  HDFResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
@@ -21,7 +21,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -257,11 +257,11 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
   const hostGroups = groupByHostname(records);
 
   const baselines: EvaluatedBaseline[] = [];
-  const components: HdfResults['components'] = [];
+  const components: HDFResults['components'] = [];
 
   for (const [hostname, hostRecords] of hostGroups) {
     baselines.push(buildBaseline(hostname, hostRecords, resultsChecksum));
-    components.push({ name: hostname, type: Copyright.Host });
+    components.push({ name: hostname, type: TargetType.Host });
   }
 
   return buildHdfResults({

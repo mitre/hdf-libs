@@ -3,18 +3,18 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { convertNetsparkerToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 function loadFixture(name: string): string {
   return readFileSync(resolve(__dirname, '..', 'fixtures', name), 'utf-8');
 }
 
-function parseResult(jsonString: string): HdfResults {
-  return JSON.parse(jsonString) as HdfResults;
+function parseResult(jsonString: string): HDFResults {
+  return JSON.parse(jsonString) as HDFResults;
 }
 
 function findRequirement(
-  result: HdfResults,
+  result: HDFResults,
   id: string,
 ) {
   for (const baseline of result.baselines) {

@@ -54,17 +54,13 @@ Output of the diff engine. Structural comparison between two or more HDF documen
 Schemas can be imported in two ways:
 
 ```typescript
-// Named exports from the barrel (all schemas available)
+// Named exports from the barrel (all schemas + types available)
 import { hdfResultsSchema, hdfBaselineSchema, hdfSystemSchema } from '@mitre/hdf-schema';
+import type { HDFResults, HDFBaseline, HDFSystem, HDFPlan, HDFAmendments, HDFEvidencePackage, HDFComparison } from '@mitre/hdf-schema';
 
-// Sub-path imports (one schema per import, tree-shakeable)
-import type { HdfResults } from '@mitre/hdf-schema/hdf-results';
-import type { HdfBaseline } from '@mitre/hdf-schema/hdf-baseline';
-import type { HdfSystem } from '@mitre/hdf-schema/hdf-system';
-import type { HdfPlan } from '@mitre/hdf-schema/hdf-plan';
-import type { HdfAmendments } from '@mitre/hdf-schema/hdf-amendments';
-import type { HdfEvidencePackage } from '@mitre/hdf-schema/hdf-evidence-package';
-import type { HdfComparison } from '@mitre/hdf-schema/hdf-comparison';
+// Sub-path imports also work (all resolve to the same combined module)
+import type { HDFResults } from '@mitre/hdf-schema/hdf-results';
+import type { HDFBaseline } from '@mitre/hdf-schema/hdf-baseline';
 ```
 
 Helper functions (severity mapping, effective status computation):
@@ -91,9 +87,9 @@ if (!isValid) {
 ### Using Generated Types (TypeScript)
 
 ```typescript
-import type { HdfResults, HdfBaseline } from '@mitre/hdf-schema';
+import type { HDFResults, HDFBaseline } from '@mitre/hdf-schema';
 
-function processResults(results: HdfResults) {
+function processResults(results: HDFResults) {
   for (const baseline of results.baselines) {
     for (const requirement of baseline.requirements) {
       console.log(`${requirement.id}: ${requirement.results[0]?.status}`);
@@ -145,8 +141,8 @@ After building, types are available in:
 
 | Language | Location |
 |----------|----------|
-| TypeScript | `dist/ts/hdf-*.ts` (7 files, one per schema) |
-| Go | `dist/go/hdf.go` (single file containing all types) |
+| TypeScript | `dist/ts/hdf.ts` (single combined file, all types deduplicated) |
+| Go | `dist/go/hdf.go` (single combined file, all types deduplicated) |
 
 ## Development
 
@@ -190,10 +186,13 @@ Interactive schema reference documentation is published at:
 
 ### What's new in v3.2.0
 
-- **`controlType`** field on `Requirement_Core` — optional enum (`policy | procedure | technical | management | operational`) aligning with NIST SP 800-53 / SP 800-53A categories. Replaces heuristic derivation from family conventions.
-- **`verificationMethod`** field on `Requirement_Core` — optional enum (`automated | manual-by-design | manual-pending-automation | hybrid`) disambiguating the two cases that null `code` overloaded: inherently manual vs. automation-could-exist-but-doesn't-yet.
+- **Combined TypeScript output** — all types are now generated into a single `dist/ts/hdf.ts` via quicktype combined mode. This eliminates the duplicate `Identity` type bug (same interface from different per-file outputs was not assignable). Sub-path exports (`@mitre/hdf-schema/hdf-results`, etc.) still work but all resolve to the same module.
+- **Canonical type naming via `title`** — all generated enum names are now controlled by explicit `title` properties in the source schemas. Key renames: `Copyright` → `TargetType`, `OwnerType` → `IdentityType`, `Status` → `MilestoneStatus`, `SbomFormat` → `SBOMFormat`, `PoamType` → `POAMType`.
+- **Deprecated aliases** — `HdfResults`, `HdfBaseline`, etc. are deprecated type aliases for `HDFResults`, `HDFBaseline`. They still compile but consumers should migrate to the `HDF*` naming.
+- **`controlType`** field on `Requirement_Core` — optional enum (`policy | procedure | technical | management | operational`) aligning with NIST SP 800-53 / SP 800-53A categories.
+- **`verificationMethod`** field on `Requirement_Core` — optional enum (`automated | manual-by-design | manual-pending-automation | hybrid`) disambiguating the two cases that null `code` overloaded.
 - **`applicability`** field on `Requirement_Core` — optional enum (`required | optional | advisory`) providing a uniform expression for what FedRAMP `CORE` props, FedRAMP 20x `Optional:` markers, CIS Implementation Groups, and CMMC sublevels each encode incompatibly today.
-- **All three fields are optional and additive.** v3.1.x documents validate cleanly under v3.2.0.
+- **All schema fields are optional and additive.** v3.1.x documents validate cleanly under v3.2.0.
 
 ### What's new in v3.1.0
 

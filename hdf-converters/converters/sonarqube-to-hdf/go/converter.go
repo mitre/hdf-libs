@@ -177,7 +177,7 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	for projectKey := range issuesByProject {
 		targets = append(targets, hdf.Component{
 			Name: projectKey,
-			Type: hdf.CopyrightApplication,
+			Type: hdf.Application,
 		})
 	}
 

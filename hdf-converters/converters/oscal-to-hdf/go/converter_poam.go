@@ -176,7 +176,7 @@ func poamItemAppliedBy(poam *PlanOfActionAndMilestones) hdf.Identity {
 	}
 
 	return hdf.Identity{
-		Type:       hdf.TypeSystem,
+		Type:       hdf.IdentityTypeSystem,
 		Identifier: "oscal-poam-converter",
 	}
 }

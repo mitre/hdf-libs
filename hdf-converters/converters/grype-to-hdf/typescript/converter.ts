@@ -1,7 +1,7 @@
 import {
   type AffectedPackage,
   type Checksum,
-  Copyright,
+  TargetType,
   createMinimalBaseline,
   type Cvss,
   CVSSSeverity,
@@ -540,7 +540,7 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
     toolVersion: grypeData.descriptor?.version,
     baselines: [baseline],
     components: [{
-      type: Copyright.Artifact,
+      type: TargetType.Artifact,
       name: targetName,
     }],
     timestamp: grypeData.descriptor?.timestamp ? new Date(grypeData.descriptor.timestamp) : new Date(),

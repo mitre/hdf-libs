@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 import { CheckStatus, Checklist } from './model.js';
 import {
   parseStatus,
@@ -189,7 +189,7 @@ describe('checklist shared model', () => {
   });
 
   it('synthesizes a valid checklist from arbitrary HDF (nist->cci, defaults)', () => {
-    const hdf: HdfResults = {
+    const hdf: HDFResults = {
       baselines: [
         {
           name: 'Some Scan',
@@ -206,7 +206,7 @@ describe('checklist shared model', () => {
           ],
         },
       ],
-    } as unknown as HdfResults;
+    } as unknown as HDFResults;
     const cl = hdfToChecklist(JSON.stringify(hdf));
     const v = cl.stigs[0].vulns[0];
     expect(v.vulnNum).toBe('GEN-001');

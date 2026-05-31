@@ -10,7 +10,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -291,7 +291,7 @@ export async function convertMsftSecureScoreToHdf(input: string): Promise<string
     baselines,
     components: [{
       name: `Azure Tenant: ${tenantId}`,
-      type: Copyright.CloudAccount,
+      type: TargetType.CloudAccount,
       labels: { account: tenantId, provider: 'azure' },
     }],
     timestamp: new Date(),

@@ -248,7 +248,7 @@ func TestNormalizeFIPSLevel(t *testing.T) {
 func TestMapOSCALComponentType(t *testing.T) {
 	tests := []struct {
 		oscalType string
-		expected  hdf.Copyright
+		expected  hdf.TargetType
 	}{
 		{"software", hdf.Application},
 		{"this-system", hdf.Application},

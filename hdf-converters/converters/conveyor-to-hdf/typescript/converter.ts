@@ -11,7 +11,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -340,7 +340,7 @@ export async function convertConveyorToHdf(input: string): Promise<string> {
     toolName: 'Conveyor',
     toolFormat: 'JSON',
     baselines,
-    components: [{ name: targetName, type: Copyright.Application }],
+    components: [{ name: targetName, type: TargetType.Application }],
     timestamp: new Date(),
   });
 }

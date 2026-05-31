@@ -2,14 +2,14 @@ import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
-import type { HdfBaseline } from '@mitre/hdf-schema';
+import type { HDFBaseline } from '@mitre/hdf-schema';
 import { generateInSpecProfile } from '../src/profile-generator.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturePath = resolve(__dirname, 'fixtures', 'win2022-stig-baseline.json');
 
-function loadFixture(): HdfBaseline {
-  return JSON.parse(readFileSync(fixturePath, 'utf-8')) as HdfBaseline;
+function loadFixture(): HDFBaseline {
+  return JSON.parse(readFileSync(fixturePath, 'utf-8')) as HDFBaseline;
 }
 
 describe('integration: Windows Server 2022 STIG baseline', () => {

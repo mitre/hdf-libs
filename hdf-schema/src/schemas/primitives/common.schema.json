@@ -267,6 +267,7 @@
         },
         "type": {
           "type": "string",
+          "title": "Identity Type",
           "enum": [
             "email",
             "username",
@@ -310,6 +311,7 @@
       "properties": {
         "type": {
           "type": "string",
+          "title": "Evidence Type",
           "enum": [
             "screenshot",
             "code",
@@ -486,6 +488,7 @@
         },
         "status": {
           "type": "string",
+          "title": "Milestone Status",
           "enum": [
             "pending",
             "inProgress",
@@ -753,6 +756,7 @@
         },
         "controlType": {
           "type": "string",
+          "title": "Control Type",
           "enum": [
             "policy",
             "procedure",
@@ -768,6 +772,7 @@
         },
         "applicability": {
           "type": "string",
+          "title": "Applicability",
           "enum": [
             "required",
             "optional",

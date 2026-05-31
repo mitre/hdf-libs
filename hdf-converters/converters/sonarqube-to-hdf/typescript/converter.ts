@@ -10,7 +10,7 @@ import type {
   Checksum,
 } from '@mitre/hdf-schema';
 import {
-  Copyright,
+  TargetType,
   ResultStatus,
   VerificationMethodEnum,
   createMinimalBaseline,
@@ -197,7 +197,7 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
 
   // Build components from project keys
   const components = Array.from(issuesByProject.keys()).map(projectKey => ({
-    type: Copyright.Application,
+    type: TargetType.Application,
     name: projectKey,
   }));
 

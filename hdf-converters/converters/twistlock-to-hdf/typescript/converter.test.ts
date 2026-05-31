@@ -13,7 +13,7 @@ import {
   buildAffectedPackage,
 } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import { CVSSSeverity, Ecosystem, Version as CvssVersion, type HdfResults } from '@mitre/hdf-schema';
+import { CVSSSeverity, Ecosystem, Version as CvssVersion, type HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -32,7 +32,7 @@ describe('twistlock to HDF converter', async () => {
   describe('container scan (results wrapper)', async () => {
     it('should produce 1 baseline from sample-1', async () => {
       const output = await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'));
-      const hdf = JSON.parse(output) as HdfResults;
+      const hdf = JSON.parse(output) as HDFResults;
 
       expect(hdf.baselines).toHaveLength(1);
     });
@@ -40,35 +40,35 @@ describe('twistlock to HDF converter', async () => {
     it('should use "Twistlock Scan" as baseline name', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.baselines[0]!.name).toBe('Twistlock Scan');
     });
 
     it('should include baseline title with project info', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.baselines[0]!.title).toContain('Twistlock Project:');
     });
 
     it('should include summary with vulnerability distribution', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.baselines[0]!.summary).toContain('Package Vulnerability Summary:');
     });
 
     it('should produce 97 requirements from sample-1 (97 unique CVEs)', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(97);
     });
 
     it('should include sha256 checksum', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const checksum = hdf.baselines[0]!.resultsChecksum;
       expect(checksum?.algorithm).toBe('sha256');
       expect(checksum?.value).toMatch(/^[a-f0-9]{64}$/);
@@ -79,21 +79,21 @@ describe('twistlock to HDF converter', async () => {
     it('should produce 1 baseline from coderepo scan', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.baselines).toHaveLength(1);
     });
 
     it('should include repository name in title', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.baselines[0]!.title).toContain('My-Repo');
     });
 
     it('should produce 4 requirements (4 unique CVEs)', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(4);
     });
   });
@@ -102,7 +102,7 @@ describe('twistlock to HDF converter', async () => {
     it('should set generator name and version', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.generator?.name).toBe('twistlock-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
     });
@@ -110,7 +110,7 @@ describe('twistlock to HDF converter', async () => {
     it('should set dataSource to Twistlock/JSON', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.tool?.name).toBe('Twistlock');
       expect(hdf.tool?.format).toBe('JSON');
     });
@@ -120,7 +120,7 @@ describe('twistlock to HDF converter', async () => {
     it('should map critical to 0.9', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228');
       expect(req?.impact).toBe(0.9);
     });
@@ -128,7 +128,7 @@ describe('twistlock to HDF converter', async () => {
     it('should map high to 0.7', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-45105');
       expect(req?.impact).toBe(0.7);
     });
@@ -136,7 +136,7 @@ describe('twistlock to HDF converter', async () => {
     it('should map medium to 0.5', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44832');
       expect(req?.impact).toBe(0.5);
     });
@@ -146,7 +146,7 @@ describe('twistlock to HDF converter', async () => {
     it('should use default remediation NIST tags (SI-2, RA-5)', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228');
       const nist = req?.tags?.['nist'] as string[];
       expect(nist).toBeDefined();
@@ -157,7 +157,7 @@ describe('twistlock to HDF converter', async () => {
     it('should include CVE ID in cveid tag', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228');
       const cveid = req?.tags?.['cveid'] as string[];
       expect(cveid).toBeDefined();
@@ -169,7 +169,7 @@ describe('twistlock to HDF converter', async () => {
     it('should mark all results as failed', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       for (const req of hdf.baselines[0]!.requirements) {
         for (const result of req.results) {
           expect(result.status).toBe('failed');
@@ -182,7 +182,7 @@ describe('twistlock to HDF converter', async () => {
     it('should include package name in code_desc', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228');
       expect(req).toBeDefined();
       expect(req!.results[0]?.codeDesc).toContain('org.apache.logging.log4j_log4j-core');
@@ -193,7 +193,7 @@ describe('twistlock to HDF converter', async () => {
     it('should include default description with vulnerability info', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228');
       const desc = req?.descriptions?.find(d => d.label === 'default');
       expect(desc).toBeDefined();
@@ -205,7 +205,7 @@ describe('twistlock to HDF converter', async () => {
     it('should use CVE ID as both title and ID', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228');
       expect(req).toBeDefined();
       expect(req!.id).toBe('CVE-2021-44228');
@@ -217,7 +217,7 @@ describe('twistlock to HDF converter', async () => {
     it('should include image name as target for container scans', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       expect(hdf.components).toBeDefined();
       expect(hdf.components![0]!.name).toContain('registry.io/test');
       expect(hdf.components![0]!.type).toBe('containerImage');
@@ -235,7 +235,7 @@ describe('twistlock to HDF converter', async () => {
           complianceDistribution: { critical: 0, high: 0, medium: 0, low: 0, total: 0 },
         }],
       });
-      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(0);
     });
   });
@@ -244,7 +244,7 @@ describe('twistlock to HDF converter', async () => {
     it('should use discoveredDate as start_time', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228');
       expect(req).toBeDefined();
       expect(req!.results[0]?.startTime).toBe('2021-12-10T10:15:00.000Z');
@@ -255,7 +255,7 @@ describe('twistlock to HDF converter', async () => {
     it('populates cvss[] for findings with a vector + score', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228')!;
       expect(req.cvss).toBeDefined();
       expect(req.cvss).toHaveLength(1);
@@ -270,7 +270,7 @@ describe('twistlock to HDF converter', async () => {
     it('populates affectedPackages[] with maven ecosystem for jar packages', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228')!;
       expect(req.affectedPackages).toBeDefined();
       expect(req.affectedPackages).toHaveLength(1);
@@ -284,7 +284,7 @@ describe('twistlock to HDF converter', async () => {
     it('populates affectedPackages[] with rpm ecosystem for RHEL os packages', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-43529')!;
       expect(req.affectedPackages).toBeDefined();
       const pkg = req.affectedPackages![0]!;
@@ -295,7 +295,7 @@ describe('twistlock to HDF converter', async () => {
     it('retains legacy cvss_base_score tag for one release', async () => {
       const hdf = JSON.parse(
         await convertTwistlockToHdf(loadFixture('twistlock-twistcli-coderepo-scan-sample.json'))
-      ) as HdfResults;
+      ) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CVE-2021-44228')!;
       expect(req.tags?.['cvss_base_score']).toBe(10);
     });
@@ -319,7 +319,7 @@ describe('twistlock to HDF converter', async () => {
           }],
         }],
       });
-      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       expect(req.cwe).toEqual(['CWE-79']);
     });
@@ -411,7 +411,7 @@ describe('twistlock to HDF converter', async () => {
           }],
         }],
       });
-      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.title).toContain('col1 / col2');
       expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.9);
     });
@@ -424,7 +424,7 @@ describe('twistlock to HDF converter', async () => {
           }],
         }],
       });
-      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.title).toContain('N/A');
       expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
     });
@@ -437,7 +437,7 @@ describe('twistlock to HDF converter', async () => {
           }],
         }],
       });
-      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.summary).toContain('N/A');
     });
 
@@ -450,7 +450,7 @@ describe('twistlock to HDF converter', async () => {
           }],
         }],
       });
-      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.3);
     });
 
@@ -463,7 +463,7 @@ describe('twistlock to HDF converter', async () => {
           }],
         }],
       });
-      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.codeDesc).toContain('N/A');
     });
 
@@ -474,7 +474,7 @@ describe('twistlock to HDF converter', async () => {
           id: 'CVE-6', severity: 'medium', description: 'desc',
         }],
       });
-      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
       expect(hdf.components![0]!.name).toBe('my-repo');
     });
   });

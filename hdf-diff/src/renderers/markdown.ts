@@ -1,11 +1,11 @@
-import type { HdfComparison, RequirementDiff } from '../types.js';
+import type { HDFComparison, RequirementDiff } from '../types.js';
 import type { RenderOptions } from './types.js';
 import { filterRequirements } from './filter.js';
 
 /**
  * Render the summary table in markdown format.
  */
-function renderSummaryTable(comparison: HdfComparison): string {
+function renderSummaryTable(comparison: HDFComparison): string {
   const { summary } = comparison;
   const lines: string[] = [
     '## HDF Comparison Summary',
@@ -116,7 +116,7 @@ function renderStateSection(
 }
 
 /**
- * Render an HdfComparison as a Markdown string.
+ * Render an HDFComparison as a Markdown string.
  *
  * - `detail: 'summary'` -- summary table only
  * - `detail: 'control'` -- summary + per-requirement tables by state
@@ -125,7 +125,7 @@ function renderStateSection(
  * Default detail level: `'control'`.
  */
 export function renderMarkdown(
-  comparison: HdfComparison,
+  comparison: HDFComparison,
   options?: RenderOptions,
 ): string {
   const detail = options?.detail ?? 'control';

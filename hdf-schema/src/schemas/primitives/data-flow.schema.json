@@ -93,6 +93,7 @@
         },
         "direction": {
           "type": "string",
+          "title": "Direction",
           "enum": [
             "unidirectional",
             "bidirectional"

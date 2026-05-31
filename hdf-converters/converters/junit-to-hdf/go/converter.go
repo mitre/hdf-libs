@@ -87,7 +87,7 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 	target := hdf.Component{
 		Name: name,
-		Type: hdf.CopyrightApplication,
+		Type: hdf.Application,
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{

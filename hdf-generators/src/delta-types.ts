@@ -1,4 +1,4 @@
-import type { HdfBaseline } from '@mitre/hdf-schema';
+import type { HDFBaseline } from '@mitre/hdf-schema';
 import type { ProfileMetadata, InSpecProfile } from './types.js';
 import type { PreferSide } from './merge.js';
 
@@ -42,7 +42,7 @@ export interface DeltaStatistics {
  * Complete result of an upgrade/delta operation.
  */
 export interface UpgradeResult {
-  baseline: HdfBaseline;
+  baseline: HDFBaseline;
   profile?: InSpecProfile;
   linkRecords: LinkRecord[];
   statistics: DeltaStatistics;

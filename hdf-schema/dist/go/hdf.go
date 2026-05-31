@@ -606,15 +606,15 @@ type Evidence struct {
 //
 // Identity of who prepared this evidence package.
 type Identity struct {
-	// Optional description of the identity or identity system, particularly useful when type is          
-	// 'other'.                                                                                           
-	Description                                                                                 *string   `json:"description,omitempty"`
-	// The identifier value. Example: 'user@example.com', 'jdoe', 'automated-scanner-01'.                 
-	Identifier                                                                                  string    `json:"identifier"`
-	// The type of identifier. Use 'email' for email addresses, 'username' for user accounts,             
-	// 'system' for automated systems, 'simple' for basic string identifiers without additional           
-	// classification, or 'other' for custom identity systems.                                            
-	Type                                                                                        OwnerType `json:"type"`
+	// Optional description of the identity or identity system, particularly useful when type is             
+	// 'other'.                                                                                              
+	Description                                                                                 *string      `json:"description,omitempty"`
+	// The identifier value. Example: 'user@example.com', 'jdoe', 'automated-scanner-01'.                    
+	Identifier                                                                                  string       `json:"identifier"`
+	// The type of identifier. Use 'email' for email addresses, 'username' for user accounts,                
+	// 'system' for automated systems, 'simple' for basic string identifiers without additional              
+	// classification, or 'other' for custom identity systems.                                               
+	Type                                                                                        IdentityType `json:"type"`
 }
 
 // CISA Known Exploited Vulnerabilities (KEV) catalog status. When inKev=true, dateAdded and
@@ -661,21 +661,21 @@ type PoamElement struct {
 	// The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via                    
 	// compensating controls. 'riskAcceptance' documents decision to accept risk.                          
 	// 'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update.               
-	Type                                                                                       PoamType    `json:"type"`
+	Type                                                                                       POAMType    `json:"type"`
 }
 
 // A milestone or task within a POA&M remediation plan.
 type Milestone struct {
-	// Actual completion timestamp. ISO 8601 format.           
-	CompletedAt                                     *time.Time `json:"completedAt,omitempty"`
-	// Identity of who completed this milestone.               
-	CompletedBy                                     *Identity  `json:"completedBy,omitempty"`
-	// Description of this milestone or task.                  
-	Description                                     string     `json:"description"`
-	// Estimated completion date. ISO 8601 format.             
-	EstimatedCompletion                             time.Time  `json:"estimatedCompletion"`
-	// Current status of this milestone.                       
-	Status                                          Status     `json:"status"`
+	// Actual completion timestamp. ISO 8601 format.                
+	CompletedAt                                     *time.Time      `json:"completedAt,omitempty"`
+	// Identity of who completed this milestone.                    
+	CompletedBy                                     *Identity       `json:"completedBy,omitempty"`
+	// Description of this milestone or task.                       
+	Description                                     string          `json:"description"`
+	// Estimated completion date. ISO 8601 format.                  
+	EstimatedCompletion                             time.Time       `json:"estimatedCompletion"`
+	// Current status of this milestone.                            
+	Status                                          MilestoneStatus `json:"status"`
 }
 
 // Optional digital signature for enhanced trust and non-repudiation.
@@ -895,7 +895,7 @@ type Component struct {
 	// inventory. The sbomFormat field determines which format constraints apply.                                 
 	Sbom interface{} `json:"sbom,omitempty"`
 	// Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present.                     
-	SbomFormat                                                                                  *SbomFormat       `json:"sbomFormat,omitempty"`
+	SbomFormat                                                                                  *SBOMFormat       `json:"sbomFormat,omitempty"`
 	// URI reference to an external CycloneDX or SPDX SBOM document for this component. May be a                  
 	// relative path, absolute URI, or fragment identifier.                                                       
 	SbomRef                                                                                     *string           `json:"sbomRef,omitempty"`
@@ -903,7 +903,7 @@ type Component struct {
 	// with matching labels are automatically included.                                                           
 	TargetSelector                                                                              map[string]string `json:"targetSelector,omitempty"`
 	// Component type discriminator. Same values as Target types.                                                 
-	Type                                                                                        Copyright         `json:"type"`
+	Type                                                                                        TargetType        `json:"type"`
 	// Fully qualified domain name.                                                                               
 	FQDN                                                                                        *string           `json:"fqdn,omitempty"`
 	// IP address of the host.                                                                                    
@@ -2076,47 +2076,47 @@ const (
 // The type of identifier. Use 'email' for email addresses, 'username' for user accounts,
 // 'system' for automated systems, 'simple' for basic string identifiers without additional
 // classification, or 'other' for custom identity systems.
-type OwnerType string
+type IdentityType string
 
 const (
-	Email       OwnerType = "email"
-	PurpleOther OwnerType = "other"
-	Simple      OwnerType = "simple"
-	TypeSystem  OwnerType = "system"
-	Username    OwnerType = "username"
+	Email              IdentityType = "email"
+	IdentityTypeOther  IdentityType = "other"
+	IdentityTypeSystem IdentityType = "system"
+	Simple             IdentityType = "simple"
+	Username           IdentityType = "username"
 )
 
 // The type of evidence being provided.
 type EvidenceType string
 
 const (
-	Code        EvidenceType = "code"
-	File        EvidenceType = "file"
-	FluffyOther EvidenceType = "other"
-	Log         EvidenceType = "log"
-	Screenshot  EvidenceType = "screenshot"
-	URL         EvidenceType = "url"
+	Code              EvidenceType = "code"
+	EvidenceTypeOther EvidenceType = "other"
+	File              EvidenceType = "file"
+	Log               EvidenceType = "log"
+	Screenshot        EvidenceType = "screenshot"
+	URL               EvidenceType = "url"
 )
 
 // Current status of this milestone.
-type Status string
+type MilestoneStatus string
 
 const (
-	Completed  Status = "completed"
-	InProgress Status = "inProgress"
-	Pending    Status = "pending"
+	Completed  MilestoneStatus = "completed"
+	InProgress MilestoneStatus = "inProgress"
+	Pending    MilestoneStatus = "pending"
 )
 
 // The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via
 // compensating controls. 'riskAcceptance' documents decision to accept risk.
 // 'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update.
-type PoamType string
+type POAMType string
 
 const (
-	Mitigation       PoamType = "mitigation"
-	RiskAcceptance   PoamType = "riskAcceptance"
-	TypeRemediation  PoamType = "remediation"
-	VendorDependency PoamType = "vendorDependency"
+	Mitigation          POAMType = "mitigation"
+	POAMTypeRemediation POAMType = "remediation"
+	RiskAcceptance      POAMType = "riskAcceptance"
+	VendorDependency    POAMType = "vendorDependency"
 )
 
 // Explicit severity rating. Typically derived from impact score but provided explicitly for
@@ -2166,30 +2166,28 @@ const (
 )
 
 // Format of the SBOM (embedded or referenced). Required when sbom or sbomRef is present.
-type SbomFormat string
+type SBOMFormat string
 
 const (
-	Cyclonedx SbomFormat = "cyclonedx"
-	Spdx      SbomFormat = "spdx"
+	Cyclonedx SBOMFormat = "cyclonedx"
+	Spdx      SBOMFormat = "spdx"
 )
 
-// A human readable/meaningful reference. Example: a book title.
-//
-// IP address of the host.
-type Copyright string
+// Component type discriminator. Same values as Target types.
+type TargetType string
 
 const (
-	Application       Copyright = "application"
-	Artifact          Copyright = "artifact"
-	CloudAccount      Copyright = "cloudAccount"
-	CloudResource     Copyright = "cloudResource"
-	ContainerImage    Copyright = "containerImage"
-	ContainerInstance Copyright = "containerInstance"
-	ContainerPlatform Copyright = "containerPlatform"
-	Database          Copyright = "database"
-	Host              Copyright = "host"
-	Network           Copyright = "network"
-	Repository        Copyright = "repository"
+	Application       TargetType = "application"
+	Artifact          TargetType = "artifact"
+	CloudAccount      TargetType = "cloudAccount"
+	CloudResource     TargetType = "cloudResource"
+	ContainerImage    TargetType = "containerImage"
+	ContainerInstance TargetType = "containerInstance"
+	ContainerPlatform TargetType = "containerPlatform"
+	Database          TargetType = "database"
+	Host              TargetType = "host"
+	Network           TargetType = "network"
+	Repository        TargetType = "repository"
 )
 
 // The category of this annotation.
@@ -2211,10 +2209,10 @@ const (
 type BaselineDiffState string
 
 const (
-	PurpleUnchanged BaselineDiffState = "unchanged"
-	PurpleUpdated   BaselineDiffState = "updated"
-	StateAbsent     BaselineDiffState = "absent"
-	StateNew        BaselineDiffState = "new"
+	BaselineDiffStateAbsent    BaselineDiffState = "absent"
+	BaselineDiffStateNew       BaselineDiffState = "new"
+	BaselineDiffStateUnchanged BaselineDiffState = "unchanged"
+	BaselineDiffStateUpdated   BaselineDiffState = "updated"
 )
 
 // The mode of comparison being performed.
@@ -2323,10 +2321,10 @@ const (
 type PackageDiffState string
 
 const (
-	Added           PackageDiffState = "added"
-	FluffyUnchanged PackageDiffState = "unchanged"
-	FluffyUpdated   PackageDiffState = "updated"
-	Removed         PackageDiffState = "removed"
+	Added                     PackageDiffState = "added"
+	PackageDiffStateUnchanged PackageDiffState = "unchanged"
+	PackageDiffStateUpdated   PackageDiffState = "updated"
+	Removed                   PackageDiffState = "removed"
 )
 
 // The original format of the source document before conversion to HDF.

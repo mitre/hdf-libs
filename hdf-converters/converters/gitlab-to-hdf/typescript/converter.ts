@@ -1,12 +1,12 @@
 import {
   type Checksum,
   createMinimalBaseline,
-  Copyright,
+  TargetType,
   type Tool,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
-  type HdfResults,
+  type HDFResults,
   type Component,
   ResultStatus,
   VerificationMethodEnum,
@@ -93,14 +93,14 @@ function gitlabSeverityToImpact(severity: string): number {
 
 // --- Scan type to target type ---
 
-function scanTypeToTargetType(scanType: string): Copyright {
+function scanTypeToTargetType(scanType: string): TargetType {
   switch (scanType) {
     case 'dast':
-      return Copyright.Application;
+      return TargetType.Application;
     case 'container_scanning':
-      return Copyright.ContainerImage;
+      return TargetType.ContainerImage;
     default:
-      return Copyright.Repository;
+      return TargetType.Repository;
   }
 }
 
@@ -324,7 +324,7 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
   const targetType = scanTypeToTargetType(scanType);
   components.push({name: scannerName, type: targetType});
 
-  const hdf: HdfResults = {
+  const hdf: HDFResults = {
     baselines: [baseline],
     components,
     generator: {

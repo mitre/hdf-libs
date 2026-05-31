@@ -4,7 +4,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { convertSplunkToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -25,7 +25,7 @@ describe('Splunk to HDF Converter', () => {
       const result = await convertSplunkToHdf(input);
       expect(result).toBeTruthy();
 
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
       expect(hdf.baselines).toBeInstanceOf(Array);
       expect(hdf.baselines.length).toBe(1);
       expect(hdf.generator?.name).toBe('splunk-to-hdf');
@@ -33,19 +33,19 @@ describe('Splunk to HDF Converter', () => {
 
     it('should produce the correct baseline name', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
       expect(hdf.baselines[0]!.name).toBe('disa_stig-el7');
     });
 
     it('should produce 6 requirements from 6 control events', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
       expect(hdf.baselines[0]!.requirements.length).toBe(6);
     });
 
     it('should preserve control IDs', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
       const ids = hdf.baselines[0]!.requirements.map(r => r.id).sort();
       expect(ids).toContain('V-78997');
       expect(ids).toContain('V-77825');
@@ -56,7 +56,7 @@ describe('Splunk to HDF Converter', () => {
   describe('convertSplunkToHdf - minimal fixture', () => {
     it('should convert minimal Splunk input', async () => {
       const input = loadFixture('splunk-minimal.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       expect(hdf.baselines.length).toBe(1);
       expect(hdf.baselines[0]!.requirements.length).toBe(1);
@@ -65,7 +65,7 @@ describe('Splunk to HDF Converter', () => {
 
     it('should produce a passed result from minimal fixture', async () => {
       const input = loadFixture('splunk-minimal.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
     });
   });
@@ -73,7 +73,7 @@ describe('Splunk to HDF Converter', () => {
   describe('convertSplunkToHdf - descriptions', () => {
     it('should convert description objects to arrays', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       for (const req of hdf.baselines[0]!.requirements) {
         expect(req.descriptions).toBeInstanceOf(Array);
@@ -86,7 +86,7 @@ describe('Splunk to HDF Converter', () => {
 
     it('should have default, check, and fix labels', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       const firstReq = hdf.baselines[0]!.requirements[0]!;
       const labels = firstReq.descriptions.map((d: { label: string }) => d.label);
@@ -99,7 +99,7 @@ describe('Splunk to HDF Converter', () => {
   describe('convertSplunkToHdf - tags', () => {
     it('should preserve NIST tags from controls', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       const firstReq = hdf.baselines[0]!.requirements[0]!;
       expect(firstReq.tags).toBeDefined();
@@ -109,7 +109,7 @@ describe('Splunk to HDF Converter', () => {
 
     it('should preserve CCI tags from controls', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       const firstReq = hdf.baselines[0]!.requirements[0]!;
       expect(firstReq.tags.cci).toBeDefined();
@@ -119,7 +119,7 @@ describe('Splunk to HDF Converter', () => {
   describe('convertSplunkToHdf - result status mapping', () => {
     it('should have both passed and failed results', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       const statuses = new Set<string>();
       for (const req of hdf.baselines[0]!.requirements) {
@@ -135,7 +135,7 @@ describe('Splunk to HDF Converter', () => {
   describe('convertSplunkToHdf - target', () => {
     it('should set target from header platform', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       expect(hdf.components.length).toBeGreaterThan(0);
       expect(hdf.components[0]!.name).toBe('centos');
@@ -145,7 +145,7 @@ describe('Splunk to HDF Converter', () => {
   describe('convertSplunkToHdf - impact', () => {
     it('should preserve impact from control', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       for (const req of hdf.baselines[0]!.requirements) {
         expect(req.impact).toBe(0.5);
@@ -156,7 +156,7 @@ describe('Splunk to HDF Converter', () => {
   describe('convertSplunkToHdf - source location', () => {
     it('should preserve source location from controls', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       const withSrcLoc = hdf.baselines[0]!.requirements.filter(
         (r: { sourceLocation?: unknown }) => r.sourceLocation,
@@ -168,7 +168,7 @@ describe('Splunk to HDF Converter', () => {
   describe('convertSplunkToHdf - generator', () => {
     it('should set generator name', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
       expect(hdf.generator?.name).toBe('splunk-to-hdf');
     });
   });
@@ -176,7 +176,7 @@ describe('Splunk to HDF Converter', () => {
   describe('convertSplunkToHdf - checksum', () => {
     it('should set resultsChecksum on baseline', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       const baseline = hdf.baselines[0]!;
       expect(baseline.resultsChecksum).toBeDefined();
@@ -188,7 +188,7 @@ describe('Splunk to HDF Converter', () => {
   describe('convertSplunkToHdf - profile fields', () => {
     it('should set profile title and version', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       const baseline = hdf.baselines[0]!;
       expect(baseline.title).toBe('DISA RedHat Enterprise Linux 7 STIG - v1r4');
@@ -197,7 +197,7 @@ describe('Splunk to HDF Converter', () => {
 
     it('should include groups', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       const baseline = hdf.baselines[0]!;
       expect(baseline.groups).toBeDefined();
@@ -226,7 +226,7 @@ describe('Splunk to HDF Converter', () => {
   describe('convertSplunkToHdf - multiple results per control', () => {
     it('should handle controls with multiple results', async () => {
       const input = loadFixture('splunk-events.json');
-      const hdf: HdfResults = JSON.parse(await convertSplunkToHdf(input));
+      const hdf: HDFResults = JSON.parse(await convertSplunkToHdf(input));
 
       const multiResult = hdf.baselines[0]!.requirements.find(
         r => r.results.length > 1,
@@ -275,44 +275,44 @@ describe('Splunk to HDF Converter', () => {
     }
 
     it('should map skipped status to notReviewed', async () => {
-      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ status: 'skipped' }))) as HdfResults;
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ status: 'skipped' }))) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
     });
 
     it('should map error status to error', async () => {
-      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ status: 'error' }))) as HdfResults;
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ status: 'error' }))) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('error');
     });
 
     it('should map unknown status to notReviewed', async () => {
-      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ status: 'unknown' }))) as HdfResults;
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ status: 'unknown' }))) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
     });
 
     it('should handle control with no results', async () => {
-      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noResults: true }))) as HdfResults;
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noResults: true }))) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(0);
     });
 
     it('should handle control with no descriptions', async () => {
-      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noDescs: true }))) as HdfResults;
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noDescs: true }))) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.descriptions).toHaveLength(0);
     });
 
     it('should handle profile with no groups/title/version/summary', async () => {
-      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noGroups: true, noProfile: true }))) as HdfResults;
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noGroups: true, noProfile: true }))) as HDFResults;
       expect(hdf.baselines).toHaveLength(1);
     });
 
     it('should handle empty release', async () => {
-      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noRelease: true }))) as HdfResults;
+      const hdf = JSON.parse(await convertSplunkToHdf(makeEvents({ noRelease: true }))) as HDFResults;
       expect(hdf.components![0]!.osName).toBeUndefined();
     });
 
     it('should handle control with no source_location', async () => {
       const events = JSON.parse(makeEvents({}));
       delete events[2].source_location;
-      const hdf = JSON.parse(await convertSplunkToHdf(JSON.stringify(events))) as HdfResults;
+      const hdf = JSON.parse(await convertSplunkToHdf(JSON.stringify(events))) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.sourceLocation).toBeUndefined();
     });
   });

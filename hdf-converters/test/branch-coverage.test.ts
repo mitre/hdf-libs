@@ -7,7 +7,7 @@
  * defaults, truncation warnings, and null-check paths.
  */
 import { describe, it, expect, vi } from 'vitest';
-import type { HdfResults, HdfBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
+import type { HDFResults, HDFBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 import { convertDbprotectToHdf } from '../converters/dbprotect-to-hdf/typescript/converter.js';
 import { convertZapToHdf } from '../converters/zap-to-hdf/typescript/converter.js';
@@ -35,12 +35,12 @@ import { convertFortifyToHdf } from '../converters/fortify-to-hdf/typescript/con
 import { convertNessusToHdf } from '../converters/nessus-to-hdf/typescript/converter.js';
 import { convertVeracodeToHdf } from '../converters/veracode-to-hdf/typescript/converter.js';
 
-function parseHdf(json: string): HdfResults {
-  return JSON.parse(json) as HdfResults;
+function parseHdf(json: string): HDFResults {
+  return JSON.parse(json) as HDFResults;
 }
 
-function parseBaseline(json: string): HdfBaseline {
-  return JSON.parse(json) as HdfBaseline;
+function parseBaseline(json: string): HDFBaseline {
+  return JSON.parse(json) as HDFBaseline;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { flattenOverlays } from './flatten.js';
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
+import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,7 +29,7 @@ function makeBaseline(
   return { name, requirements, ...overrides };
 }
 
-function makeResults(baselines: EvaluatedBaseline[]): HdfResults {
+function makeResults(baselines: EvaluatedBaseline[]): HDFResults {
   return { baselines };
 }
 
@@ -441,7 +441,7 @@ describe('flattenOverlays', () => {
       expect(flat.baselines[0].requirements).toHaveLength(1);
     });
 
-    it('preserves non-baseline fields on HdfResults', () => {
+    it('preserves non-baseline fields on HDFResults', () => {
       const results = makeResults([makeBaseline('single', [makeReq('V-1')])]);
       results.statistics = { duration: 42 } as any;
       results.generator = { name: 'InSpec', version: '5.0' } as any;
@@ -457,7 +457,7 @@ describe('flattenOverlays', () => {
    * Load an InSpec v1 exec-json fixture and convert to HDF v2 baselines
    * for testing flattenOverlays with real data.
    */
-  function loadV1FixtureAsHdfResults(fixturePath: string): HdfResults {
+  function loadV1FixtureAsHdfResults(fixturePath: string): HDFResults {
 
     const raw = JSON.parse(readFileSync(fixturePath, 'utf-8')) as any;
 

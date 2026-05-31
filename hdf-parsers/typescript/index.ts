@@ -1,4 +1,4 @@
-import type { HdfResults, HdfBaseline } from '@mitre/hdf-schema';
+import type { HDFResults, HDFBaseline } from '@mitre/hdf-schema';
 export { flattenOverlays } from './flatten.js';
 export type { FlattenResult, FlattenMetadata, BaselineMerge } from './flatten.js';
 import { validateResults, validateBaseline, validate as autoValidate } from '@mitre/hdf-validators';
@@ -18,7 +18,7 @@ export interface ParseResult<T> {
  * @param input - JSON string or Uint8Array to parse
  * @returns ParseResult with parsed data or error
  */
-export function parseResults(input: string | Uint8Array): ParseResult<HdfResults> {
+export function parseResults(input: string | Uint8Array): ParseResult<HDFResults> {
   // Convert Uint8Array to string if needed
   const jsonStr = typeof input === 'string' ? input : new TextDecoder().decode(input);
 
@@ -63,7 +63,7 @@ export function parseResults(input: string | Uint8Array): ParseResult<HdfResults
 
   return {
     success: true,
-    data: data as HdfResults
+    data: data as HDFResults
   };
 }
 
@@ -72,7 +72,7 @@ export function parseResults(input: string | Uint8Array): ParseResult<HdfResults
  * @param input - JSON string or Uint8Array to parse
  * @returns ParseResult with parsed data or error
  */
-export function parseBaseline(input: string | Uint8Array): ParseResult<HdfBaseline> {
+export function parseBaseline(input: string | Uint8Array): ParseResult<HDFBaseline> {
   // Convert Uint8Array to string if needed
   const jsonStr = typeof input === 'string' ? input : new TextDecoder().decode(input);
 
@@ -116,7 +116,7 @@ export function parseBaseline(input: string | Uint8Array): ParseResult<HdfBaseli
 
   return {
     success: true,
-    data: data as HdfBaseline
+    data: data as HDFBaseline
   };
 }
 
@@ -125,7 +125,7 @@ export function parseBaseline(input: string | Uint8Array): ParseResult<HdfBaseli
  * @param input - JSON string or Uint8Array to parse
  * @returns ParseResult with parsed data, type indicator, or error
  */
-export function parse(input: string | Uint8Array): ParseResult<HdfResults | HdfBaseline> {
+export function parse(input: string | Uint8Array): ParseResult<HDFResults | HDFBaseline> {
   // Convert Uint8Array to string if needed
   const jsonStr = typeof input === 'string' ? input : new TextDecoder().decode(input);
 
@@ -175,7 +175,7 @@ export function parse(input: string | Uint8Array): ParseResult<HdfResults | HdfB
     if ('baselines' in obj) {
       return {
         success: true,
-        data: data as HdfResults,
+        data: data as HDFResults,
         type: 'results'
       };
     }
@@ -184,7 +184,7 @@ export function parse(input: string | Uint8Array): ParseResult<HdfResults | HdfB
     if ('name' in obj && 'requirements' in obj) {
       return {
         success: true,
-        data: data as HdfBaseline,
+        data: data as HDFBaseline,
         type: 'baseline'
       };
     }

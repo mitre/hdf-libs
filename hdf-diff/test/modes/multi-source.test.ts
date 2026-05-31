@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { diffHdf } from '../../src/diff.js';
-import type { HdfComparison, RequirementDiff } from '../../src/types.js';
+import type { HDFComparison, RequirementDiff } from '../../src/types.js';
 
-function findReq(diff: HdfComparison, id: string): RequirementDiff | undefined {
+function findReq(diff: HDFComparison, id: string): RequirementDiff | undefined {
   return diff.requirementDiffs.find((r) => r.id === id);
 }
 

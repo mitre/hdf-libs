@@ -332,7 +332,7 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	now := time.Now().UTC()
 
 	comp := hdf.Component{
-		Type: hdf.CopyrightApplication,
+		Type: hdf.Application,
 	}
 	if bom.Metadata != nil && bom.Metadata.Component != nil {
 		comp.Name = bom.Metadata.Component.Name

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 import { buildExtensionGraph } from '../src/index.js';
 import { makeRequirement, makeBaseline } from './helpers.js';
 
 describe('integration: single baseline (no extensions)', () => {
-  const results: HdfResults = {
+  const results: HDFResults = {
     baselines: [
       makeBaseline({
         name: 'rhel9-stig-baseline',
@@ -15,7 +15,7 @@ describe('integration: single baseline (no extensions)', () => {
         ],
       }),
     ],
-  } as HdfResults;
+  } as HDFResults;
 
   it('builds graph with one baseline and all requirements', () => {
     const graph = buildExtensionGraph(results);
@@ -51,7 +51,7 @@ describe('integration: single baseline (no extensions)', () => {
 });
 
 describe('integration: two-layer overlay', () => {
-  const results: HdfResults = {
+  const results: HDFResults = {
     baselines: [
       makeBaseline({
         name: 'rhel9-stig-baseline',
@@ -71,7 +71,7 @@ describe('integration: two-layer overlay', () => {
         ],
       }),
     ],
-  } as HdfResults;
+  } as HDFResults;
 
   it('links baselines correctly', () => {
     const graph = buildExtensionGraph(results);
@@ -127,7 +127,7 @@ describe('integration: two-layer overlay', () => {
 });
 
 describe('integration: three-layer extension chain', () => {
-  const results: HdfResults = {
+  const results: HDFResults = {
     baselines: [
       makeBaseline({
         name: 'disa-rhel7-stig',
@@ -153,7 +153,7 @@ describe('integration: three-layer extension chain', () => {
         ],
       }),
     ],
-  } as HdfResults;
+  } as HDFResults;
 
   it('builds a three-node baseline chain', () => {
     const graph = buildExtensionGraph(results);
@@ -229,7 +229,7 @@ describe('integration: three-layer extension chain', () => {
 });
 
 describe('integration: wrapper pattern (multiple independents)', () => {
-  const results: HdfResults = {
+  const results: HDFResults = {
     baselines: [
       makeBaseline({
         name: 'k8s-stig-baseline',
@@ -249,7 +249,7 @@ describe('integration: wrapper pattern (multiple independents)', () => {
         depends: [{ name: 'k8s-stig-baseline' }, { name: 'rhel9-stig-baseline' }],
       }),
     ],
-  } as HdfResults;
+  } as HDFResults;
 
   it('wrapper has no parent and no requirements', () => {
     const graph = buildExtensionGraph(results);
@@ -279,7 +279,7 @@ describe('integration: wrapper pattern (multiple independents)', () => {
 
 describe('integration: edge cases', () => {
   it('handles dangling parentBaseline gracefully', () => {
-    const results: HdfResults = {
+    const results: HDFResults = {
       baselines: [
         makeBaseline({
           name: 'orphan-overlay',
@@ -287,7 +287,7 @@ describe('integration: edge cases', () => {
           requirements: [makeRequirement({ id: 'R1', code: 'some code' })],
         }),
       ],
-    } as HdfResults;
+    } as HDFResults;
 
     const graph = buildExtensionGraph(results);
     const orphan = graph.findBaseline('orphan-overlay')!;
@@ -299,7 +299,7 @@ describe('integration: edge cases', () => {
   });
 
   it('handles duplicate requirement ids within same baseline', () => {
-    const results: HdfResults = {
+    const results: HDFResults = {
       baselines: [
         makeBaseline({
           name: 'base',
@@ -309,16 +309,16 @@ describe('integration: edge cases', () => {
           ],
         }),
       ],
-    } as HdfResults;
+    } as HDFResults;
 
     const graph = buildExtensionGraph(results);
     expect(graph.findRequirements('R1')).toHaveLength(2);
   });
 
   it('handles baseline with empty requirements array', () => {
-    const results: HdfResults = {
+    const results: HDFResults = {
       baselines: [makeBaseline({ name: 'empty', requirements: [] })],
-    } as HdfResults;
+    } as HDFResults;
 
     const graph = buildExtensionGraph(results);
     expect(graph.baselines).toHaveLength(1);
@@ -336,7 +336,7 @@ describe('integration: real multi-layered InSpec profile', () => {
   //   └── dep (parent=metawrapper)
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const fixture = require('./fixtures/multilayered-inspec.json') as HdfResults;
+  const fixture = require('./fixtures/multilayered-inspec.json') as HDFResults;
   const graph = buildExtensionGraph(fixture);
 
   it('detects all 5 baselines', () => {

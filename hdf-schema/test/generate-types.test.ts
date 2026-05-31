@@ -24,62 +24,48 @@ describe('generate-types', () => {
     createIndex();
   });
 
-  describe('TypeScript output', () => {
+  describe('TypeScript output (combined hdf.ts)', () => {
     it('should create dist/ts directory', () => {
       expect(existsSync(join(DIST_DIR, 'ts'))).toBe(true);
     });
 
-    it('should create hdf-results.ts', () => {
-      expect(existsSync(join(DIST_DIR, 'ts', 'hdf-results.ts'))).toBe(true);
+    it('should create combined hdf.ts', () => {
+      expect(existsSync(join(DIST_DIR, 'ts', 'hdf.ts'))).toBe(true);
     });
 
-    it('should create hdf-baseline.ts', () => {
-      expect(existsSync(join(DIST_DIR, 'ts', 'hdf-baseline.ts'))).toBe(true);
+    it('should NOT create per-file outputs (eliminated to prevent nominal type conflicts)', () => {
+      expect(existsSync(join(DIST_DIR, 'ts', 'hdf-results.ts'))).toBe(false);
+      expect(existsSync(join(DIST_DIR, 'ts', 'hdf-baseline.ts'))).toBe(false);
+      expect(existsSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'))).toBe(false);
     });
 
-    it('should export interfaces in hdf-results.ts', () => {
-      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-results.ts'), 'utf-8');
+    it('should export interfaces in combined hdf.ts', () => {
+      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf.ts'), 'utf-8');
       expect(content).toContain('export interface');
     });
 
-    it('should contain HdfResults type', () => {
-      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-results.ts'), 'utf-8');
-      expect(content).toMatch(/export interface.*HdfResults|HDF.*Results/i);
+    it('should contain HDFResults type in combined output', () => {
+      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf.ts'), 'utf-8');
+      expect(content).toContain('export interface HDFResults');
     });
 
-    it('should create hdf-comparison.ts', () => {
-      expect(existsSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'))).toBe(true);
-    });
-
-    it('should create hdf-comparison.d.ts after index creation', () => {
-      // The .d.ts is created by createIndex() in afterAll, so we verify
-      // the .ts source exists here (the .d.ts test is in the index tests)
-      const tsFile = join(DIST_DIR, 'ts', 'hdf-comparison.ts');
-      expect(existsSync(tsFile)).toBe(true);
-    });
-
-    it('should export interfaces in hdf-comparison.ts', () => {
-      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'), 'utf-8');
-      expect(content).toContain('export interface');
-    });
-
-    it('should contain HDFComparison type', () => {
-      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'), 'utf-8');
-      expect(content).toMatch(/export interface.*HDFComparison/);
+    it('should contain HDFComparison type in combined output', () => {
+      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf.ts'), 'utf-8');
+      expect(content).toContain('export interface HDFComparison');
     });
 
     it('should contain RequirementDiff type', () => {
-      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'), 'utf-8');
+      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf.ts'), 'utf-8');
       expect(content).toMatch(/RequirementDiff|Requirement_Diff/);
     });
 
     it('should contain ComparisonSummary type', () => {
-      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'), 'utf-8');
+      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf.ts'), 'utf-8');
       expect(content).toMatch(/ComparisonSummary|Comparison_Summary|Summary/);
     });
 
     it('should contain Source type', () => {
-      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf-comparison.ts'), 'utf-8');
+      const content = readFileSync(join(DIST_DIR, 'ts', 'hdf.ts'), 'utf-8');
       expect(content).toMatch(/Source/);
     });
   });
@@ -108,9 +94,9 @@ describe('generate-types', () => {
       expect(content).toContain('type');
       expect(content).toContain('struct');
       // Should contain types from all three schemas
-      expect(content).toMatch(/HDFResults|HdfResults/);
-      expect(content).toMatch(/HDFBaseline|HdfBaseline/);
-      expect(content).toMatch(/HDFComparison|HdfComparison/);
+      expect(content).toMatch(/HDFResults|HDFResults/);
+      expect(content).toMatch(/HDFBaseline|HDFBaseline/);
+      expect(content).toMatch(/HDFComparison|HDFComparison/);
     });
 
     it('should add omitempty tags to optional pointer fields', () => {
@@ -186,7 +172,7 @@ describe('generate-types', () => {
       // Dirs should now exist with generated content
       expect(existsSync(tsDir)).toBe(true);
       expect(existsSync(goDir)).toBe(true);
-      expect(existsSync(join(tsDir, 'hdf-results.ts'))).toBe(true);
+      expect(existsSync(join(tsDir, 'hdf.ts'))).toBe(true);
       expect(existsSync(join(goDir, 'hdf.go'))).toBe(true);
     });
   });

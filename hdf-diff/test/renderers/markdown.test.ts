@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { diffHdf } from '../../src/diff.js';
 import { renderMarkdown } from '../../src/renderers/markdown.js';
-import type { HdfComparison } from '../../src/types.js';
+import type { HDFComparison } from '../../src/types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -14,7 +14,7 @@ function loadFixture(name: string): Record<string, unknown> {
 }
 
 describe('renderMarkdown', () => {
-  let comparison: HdfComparison;
+  let comparison: HDFComparison;
 
   beforeAll(() => {
     const scanBefore = loadFixture('scan-before.json');
@@ -73,7 +73,7 @@ describe('renderMarkdown', () => {
     it('should show (none) for empty state sections', () => {
       // Create a comparison where some states have zero requirements
       // by stripping all but the fixed requirements
-      const sparse: HdfComparison = {
+      const sparse: HDFComparison = {
         ...comparison,
         requirementDiffs: comparison.requirementDiffs.filter(
           (r) => r.state === 'fixed',
@@ -93,7 +93,7 @@ describe('renderMarkdown', () => {
     });
 
     it('should format add and remove field change operations', () => {
-      const comp: HdfComparison = {
+      const comp: HDFComparison = {
         ...comparison,
         requirementDiffs: [
           {
@@ -114,7 +114,7 @@ describe('renderMarkdown', () => {
     });
 
     it('should handle requirements with undefined title in full detail', () => {
-      const comp: HdfComparison = {
+      const comp: HDFComparison = {
         ...comparison,
         requirementDiffs: [
           {
@@ -133,7 +133,7 @@ describe('renderMarkdown', () => {
 
   describe('detail: control with edge cases', () => {
     it('should handle requirements with undefined title in control detail', () => {
-      const comp: HdfComparison = {
+      const comp: HDFComparison = {
         ...comparison,
         requirementDiffs: [
           {
@@ -180,7 +180,7 @@ describe('renderMarkdown', () => {
 
   describe('grouping', () => {
     it('should group multiple requirements of the same state together', () => {
-      const comp: HdfComparison = {
+      const comp: HDFComparison = {
         ...comparison,
         requirementDiffs: [
           { ...comparison.requirementDiffs[0]!, id: 'SV-010', state: 'fixed' },
@@ -207,7 +207,7 @@ describe('renderMarkdown', () => {
     });
 
     it('should escape pipe characters in table cells', () => {
-      const withPipe: HdfComparison = {
+      const withPipe: HDFComparison = {
         ...comparison,
         requirementDiffs: [
           {

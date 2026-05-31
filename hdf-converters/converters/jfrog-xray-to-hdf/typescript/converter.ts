@@ -11,7 +11,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -242,7 +242,7 @@ export async function convertJfrogXrayToHdf(input: string): Promise<string> {
     toolName: 'JFrog Xray',
     toolFormat: 'JSON',
     baselines: [baseline],
-    components: [{ name: 'JFrog Xray Scan', type: Copyright.Application }],
+    components: [{ name: 'JFrog Xray Scan', type: TargetType.Application }],
     timestamp: new Date(),
   });
 }

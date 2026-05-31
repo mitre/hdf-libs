@@ -1,12 +1,12 @@
 import {
   type Checksum,
   createMinimalBaseline,
-  Copyright,
+  TargetType,
   type Tool,
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type RequirementResult,
-  type HdfResults,
+  type HDFResults,
   ResultStatus,
   VerificationMethodEnum,
 } from '@mitre/hdf-schema';
@@ -170,7 +170,7 @@ export async function convertZapToHdf(input: string): Promise<string> {
       summary: '',
     }) as EvaluatedBaseline;
 
-    const hdf: HdfResults = {
+    const hdf: HDFResults = {
       baselines: [baseline],
       generator: {name: 'zap-to-hdf', version: 'unknown'},
       tool: {name: 'OWASP ZAP', format: 'JSON'},
@@ -188,7 +188,7 @@ export async function convertZapToHdf(input: string): Promise<string> {
       summary: `ZAP Version ${zapData['@version'] ?? 'unknown'}`,
     }) as EvaluatedBaseline;
 
-    const hdf: HdfResults = {
+    const hdf: HDFResults = {
       baselines: [baseline],
       generator: {name: 'zap-to-hdf', version: 'unknown'},
       tool: {name: 'OWASP ZAP', format: 'JSON'},
@@ -308,14 +308,14 @@ export async function convertZapToHdf(input: string): Promise<string> {
   }
 
   // Build components — ZAP is a DAST tool scanning web applications
-  const components: Array<{name: string; type: Copyright; url?: string; labels?: Record<string, string>}> = [];
+  const components: Array<{name: string; type: TargetType; url?: string; labels?: Record<string, string>}> = [];
   if (site['@name']) {
-    components.push({name: targetName, type: Copyright.Application, url: site['@name']});
+    components.push({name: targetName, type: TargetType.Application, url: site['@name']});
   } else if (targetName !== 'Unknown Host') {
-    components.push({name: targetName, type: Copyright.Application});
+    components.push({name: targetName, type: TargetType.Application});
   }
 
-  const hdf: HdfResults = {
+  const hdf: HDFResults = {
     baselines: [baseline],
     components,
     generator: {

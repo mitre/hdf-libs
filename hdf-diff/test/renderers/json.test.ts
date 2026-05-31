@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { diffHdf } from '../../src/diff.js';
 import { renderJson } from '../../src/renderers/json.js';
-import type { HdfComparison } from '../../src/types.js';
+import type { HDFComparison } from '../../src/types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -14,7 +14,7 @@ function loadFixture(name: string): Record<string, unknown> {
 }
 
 describe('renderJson', () => {
-  let comparison: HdfComparison;
+  let comparison: HDFComparison;
 
   beforeAll(() => {
     const scanBefore = loadFixture('scan-before.json');
@@ -30,13 +30,13 @@ describe('renderJson', () => {
   describe('detail: full', () => {
     it('should produce JSON that parses back to the original comparison', () => {
       const output = renderJson(comparison, { detail: 'full' });
-      const parsed = JSON.parse(output) as HdfComparison;
+      const parsed = JSON.parse(output) as HDFComparison;
       expect(parsed).toEqual(comparison);
     });
 
     it('should include before/after fields on requirement diffs', () => {
       const output = renderJson(comparison, { detail: 'full' });
-      const parsed = JSON.parse(output) as HdfComparison;
+      const parsed = JSON.parse(output) as HDFComparison;
       // At least one matched requirement should have before and after
       const matched = parsed.requirementDiffs.filter(
         (r) => r.state !== 'new' && r.state !== 'absent',
@@ -74,7 +74,7 @@ describe('renderJson', () => {
 
     it('should have requirementDiffs without before/after fields', () => {
       const output = renderJson(comparison);
-      const parsed = JSON.parse(output) as HdfComparison;
+      const parsed = JSON.parse(output) as HDFComparison;
       expect(parsed.requirementDiffs.length).toBeGreaterThan(0);
       for (const req of parsed.requirementDiffs) {
         expect(req).not.toHaveProperty('before');
@@ -84,7 +84,7 @@ describe('renderJson', () => {
 
     it('should retain id, state, title, and status fields on requirement diffs', () => {
       const output = renderJson(comparison);
-      const parsed = JSON.parse(output) as HdfComparison;
+      const parsed = JSON.parse(output) as HDFComparison;
       for (const req of parsed.requirementDiffs) {
         expect(req.id).toBeDefined();
         expect(req.state).toBeDefined();
@@ -98,7 +98,7 @@ describe('renderJson', () => {
         detail: 'control',
         filterStates: ['fixed'],
       });
-      const parsed = JSON.parse(output) as HdfComparison;
+      const parsed = JSON.parse(output) as HDFComparison;
       for (const req of parsed.requirementDiffs) {
         expect(req.state).toBe('fixed');
       }
@@ -111,7 +111,7 @@ describe('renderJson', () => {
         detail: 'full',
         filterSeverity: 'high',
       });
-      const parsed = JSON.parse(output) as HdfComparison;
+      const parsed = JSON.parse(output) as HDFComparison;
       // Our fixture has SV-001, SV-003, SV-004, SV-006 as high severity
       expect(parsed.requirementDiffs.length).toBeGreaterThan(0);
       for (const req of parsed.requirementDiffs) {
@@ -129,7 +129,7 @@ describe('renderJson', () => {
         detail: 'control',
         filterSeverity: 'critical',
       });
-      const parsed = JSON.parse(output) as HdfComparison;
+      const parsed = JSON.parse(output) as HDFComparison;
       expect(parsed.requirementDiffs.length).toBe(0);
     });
 
@@ -138,7 +138,7 @@ describe('renderJson', () => {
         detail: 'full',
         filterStates: ['regressed'],
       });
-      const parsed = JSON.parse(output) as HdfComparison;
+      const parsed = JSON.parse(output) as HDFComparison;
       expect(parsed.requirementDiffs.length).toBeGreaterThan(0);
       for (const req of parsed.requirementDiffs) {
         expect(req.state).toBe('regressed');

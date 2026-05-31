@@ -8,7 +8,7 @@ import type {
   Description,
 } from '@mitre/hdf-schema';
 import {
-  Copyright,
+  TargetType,
   ResultStatus,
   VerificationMethodEnum,
   createMinimalBaseline,
@@ -94,7 +94,7 @@ export async function convertJunitToHdf(input: string): Promise<string> {
     toolFormat: 'XML',
     baselines: [baseline],
     components: [{
-      type: Copyright.Application,
+      type: TargetType.Application,
       name,
     }],
     timestamp: new Date(),

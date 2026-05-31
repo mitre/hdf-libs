@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertDeptrackToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -23,7 +23,7 @@ describe('Dependency-Track to HDF converter', async () => {
   describe('conversion basics', async () => {
     it('should produce valid HDF from default fixture', async () => {
       const output = await convertDeptrackToHdf(loadFixture('fpf-default.json'));
-      const hdf = JSON.parse(output) as HdfResults;
+      const hdf = JSON.parse(output) as HDFResults;
 
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('deptrack-to-hdf');
@@ -34,17 +34,17 @@ describe('Dependency-Track to HDF converter', async () => {
     });
 
     it('should use "Dependency-Track Scan" as the baseline name', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       expect(hdf.baselines[0]!.name).toBe('Dependency-Track Scan');
     });
 
     it('should include baseline title with project name', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       expect(hdf.baselines[0]!.title).toContain('Acme Example');
     });
 
     it('should include a sha256 checksum', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       const checksum = hdf.baselines[0]!.resultsChecksum;
       expect(checksum?.algorithm).toBe('sha256');
       expect(checksum?.value).toMatch(/^[a-f0-9]{64}$/);
@@ -53,13 +53,13 @@ describe('Dependency-Track to HDF converter', async () => {
 
   describe('generator and dataSource', async () => {
     it('should set generator name and version', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       expect(hdf.generator?.name).toBe('deptrack-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
     it('should set tool name to "Dependency-Track" and format to "JSON"', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       expect(hdf.tool?.name).toBe('Dependency-Track');
       expect(hdf.tool?.format).toBe('JSON');
     });
@@ -67,7 +67,7 @@ describe('Dependency-Track to HDF converter', async () => {
 
   describe('target', async () => {
     it('should include project name as target', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       expect(hdf.components).toBeDefined();
       expect(hdf.components![0]!.name).toBe('Acme Example');
       expect(hdf.components![0]!.type).toBe('application');
@@ -76,7 +76,7 @@ describe('Dependency-Track to HDF converter', async () => {
 
   describe('severity to impact mapping', async () => {
     it('should map LOW severity to 0.3', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       // Both findings in fpf-default.json are LOW severity
       for (const req of hdf.baselines[0]!.requirements) {
         expect(req.impact).toBe(0.3);
@@ -84,7 +84,7 @@ describe('Dependency-Track to HDF converter', async () => {
     });
 
     it('should map INFO severity to 0.0', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-info-vulnerability.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-info-vulnerability.json'))) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(1);
       expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.0);
     });
@@ -92,7 +92,7 @@ describe('Dependency-Track to HDF converter', async () => {
 
   describe('CWE to NIST mapping', async () => {
     it('should map CWE to NIST controls', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       // CWE-400 should have a NIST mapping
       const nist = req.tags?.['nist'] as string[];
@@ -103,7 +103,7 @@ describe('Dependency-Track to HDF converter', async () => {
 
   describe('requirement ID', async () => {
     it('should use the matrix field as requirement ID', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46'
       );
@@ -113,7 +113,7 @@ describe('Dependency-Track to HDF converter', async () => {
 
   describe('requirement title', async () => {
     it('should include purl and vulnerability title', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46'
       );
@@ -125,7 +125,7 @@ describe('Dependency-Track to HDF converter', async () => {
 
   describe('descriptions', async () => {
     it('should include check and fix descriptions', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'ca4f2da9-0fad-4a13-92d7-f627f3168a56:b815b581-fec1-4374-a871-68862a8f8d52:115b80bb-46c4-41d1-9f10-8a175d4abb46'
       );
@@ -146,7 +146,7 @@ describe('Dependency-Track to HDF converter', async () => {
 
   describe('status', async () => {
     it('should mark all findings as failed', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       for (const req of hdf.baselines[0]!.requirements) {
         for (const result of req.results) {
           expect(result.status).toBe('failed');
@@ -157,7 +157,7 @@ describe('Dependency-Track to HDF converter', async () => {
 
   describe('tags', async () => {
     it('should populate tags (cweIds, nist, cci)', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
 
       expect(req.tags?.['nist']).toBeDefined();
@@ -170,7 +170,7 @@ describe('Dependency-Track to HDF converter', async () => {
 
   describe('no vulnerabilities', async () => {
     it('should handle empty findings array', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-no-vulnerabilities.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-no-vulnerabilities.json'))) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(0);
       expect(hdf.components![0]!.name).toBe('laravel');
     });
@@ -178,7 +178,7 @@ describe('Dependency-Track to HDF converter', async () => {
 
   describe('result codeDesc', async () => {
     it('should include recommendation in codeDesc', async () => {
-      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-default.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements.find(
         r => r.id === 'ca4f2da9-0fad-4a13-92d7-f627f3168a56:979f87f5-eaf5-4095-9d38-cde17bf9228e:701a3953-666b-4b7a-96ca-e1e6a3e1def3'
       );
@@ -199,7 +199,7 @@ describe('Dependency-Track to HDF converter', async () => {
             matrix: `m-${sev}`,
           }],
         });
-        const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+        const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
         expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(expected);
       }
     });
@@ -214,7 +214,7 @@ describe('Dependency-Track to HDF converter', async () => {
           matrix: 'm1',
         }],
       });
-      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
       // No title → just purl
       expect(hdf.baselines[0]!.requirements[0]!.title).toBe('pkg:npm/test@1.0');
     });
@@ -229,7 +229,7 @@ describe('Dependency-Track to HDF converter', async () => {
           matrix: 'm1',
         }],
       });
-      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.title).toContain('my-component');
     });
 
@@ -243,7 +243,7 @@ describe('Dependency-Track to HDF converter', async () => {
           matrix: 'm1',
         }],
       });
-      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       // No CWE IDs → no cweIds tag
       expect(req.tags?.['cweIds']).toBeUndefined();
@@ -259,7 +259,7 @@ describe('Dependency-Track to HDF converter', async () => {
           matrix: 'm1',
         }],
       });
-      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       // Default description with empty data
       const defaultDesc = req.descriptions?.find(d => d.label === 'default');
@@ -280,7 +280,7 @@ describe('Dependency-Track to HDF converter', async () => {
         project: { uuid: 'u1', name: '' },
         findings: [],
       });
-      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(0);
     });
 
@@ -290,7 +290,7 @@ describe('Dependency-Track to HDF converter', async () => {
         project: { uuid: 'uuid-123' },
         findings: [],
       });
-      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
       expect(hdf.components![0]!.name).toBe('uuid-123');
     });
 
@@ -311,7 +311,7 @@ describe('Dependency-Track to HDF converter', async () => {
           matrix: 'm1',
         }],
       });
-      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
       // startTime should be undefined when no timestamp
       expect(hdf.baselines[0]!.requirements[0]!.results[0]).toBeDefined();
     });

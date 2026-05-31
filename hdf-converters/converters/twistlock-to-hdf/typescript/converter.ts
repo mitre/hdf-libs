@@ -13,7 +13,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   CVSSSeverity,
   Ecosystem,
@@ -453,7 +453,7 @@ export async function convertTwistlockToHdf(input: string): Promise<string> {
     baselines,
     components: [{
       name: targetName,
-      type: Copyright.ContainerImage,
+      type: TargetType.ContainerImage,
       labels: { image: results[0]?.id ?? targetName },
     }],
     timestamp: new Date(),

@@ -1,4 +1,4 @@
-import type { BaselineRequirement, HdfBaseline } from '@mitre/hdf-schema';
+import type { BaselineRequirement, HDFBaseline } from '@mitre/hdf-schema';
 import type { GeneratorOptions, InSpecProfile } from './types.js';
 import { generateControlStub } from './control-stub.js';
 import { generateInSpecYml } from './inspec-yml.js';
@@ -11,7 +11,7 @@ import { generateInSpecYml } from './inspec-yml.js';
  * is responsible for writing files to disk.
  */
 export function generateInSpecProfile(
-  baseline: HdfBaseline,
+  baseline: HDFBaseline,
   options?: GeneratorOptions,
 ): InSpecProfile {
   const inspecYml = generateInSpecYml(baseline, options);

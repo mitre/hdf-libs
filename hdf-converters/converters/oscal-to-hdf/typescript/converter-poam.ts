@@ -7,7 +7,7 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfAmendments,
+  HDFAmendments,
   StandaloneOverride,
   Milestone as HdfMilestone,
 } from '@mitre/hdf-schema';
@@ -74,7 +74,7 @@ export async function convertOscalPoamToHdf(input: string): Promise<string> {
   // Build appliedBy from metadata responsible-parties
   const appliedBy = extractAppliedBy(poam.metadata);
 
-  const amendments: HdfAmendments = {
+  const amendments: HDFAmendments = {
     name: toKebabCase(poam.metadata.title, 'oscal-poam'),
     overrides,
     integrity,
@@ -247,7 +247,7 @@ function extractMilestones(
 
 function extractAppliedBy(
   meta: DocumentMetadata,
-): HdfAmendments['appliedBy'] {
+): HDFAmendments['appliedBy'] {
   const rps = meta['responsible-parties'];
   if (rps) {
     for (const rp of rps) {

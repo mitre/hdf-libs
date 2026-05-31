@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { diffHdf } from '../src/diff.js';
-import type { HdfComparison, RequirementDiff } from '../src/types.js';
+import type { HDFComparison, RequirementDiff } from '../src/types.js';
 
 /**
  * Drift vs Changes separation tests.
@@ -17,11 +17,11 @@ import type { HdfComparison, RequirementDiff } from '../src/types.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-function findReq(diff: HdfComparison, id: string): RequirementDiff | undefined {
+function findReq(diff: HDFComparison, id: string): RequirementDiff | undefined {
   return diff.requirementDiffs.find((r) => r.id === id);
 }
 
-function findDrift(diff: HdfComparison, id: string): RequirementDiff | undefined {
+function findDrift(diff: HDFComparison, id: string): RequirementDiff | undefined {
   return diff.drift?.find((r) => r.id === id);
 }
 

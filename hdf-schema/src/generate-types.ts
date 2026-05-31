@@ -157,7 +157,7 @@ function addGoEnumAliases(code: string): string {
 
   // Check which constants exist and add aliases for the old names
   const aliasMap: Record<string, { old: string; type: string }> = {
-    'Application': { old: 'CopyrightApplication', type: 'Copyright' },
+    'Application': { old: 'CopyrightApplication', type: 'TargetType' },
   };
 
   for (const [newName, { old, type }] of Object.entries(aliasMap)) {

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertAwsConfigToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -29,7 +29,7 @@ describe('AWS Config to HDF converter', async () => {
 
     it('should produce valid HDF structure from minimal fixture', async () => {
       const output = await convertAwsConfigToHdf(loadFixture('minimal.json'));
-      const hdf = JSON.parse(output) as HdfResults;
+      const hdf = JSON.parse(output) as HDFResults;
 
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('aws-config-to-hdf');
@@ -41,55 +41,55 @@ describe('AWS Config to HDF converter', async () => {
     });
 
     it('should use "AWS Config" as the baseline name', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.name).toBe('AWS Config');
     });
 
     it('should set baseline title and maintainer', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const baseline = hdf.baselines[0]!;
       expect(baseline.title).toBe('AWS Config Compliance Results');
       expect(baseline.maintainer).toBe('Amazon Web Services');
     });
 
     it('should include a sha256 checksum', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const checksum = hdf.baselines[0]!.resultsChecksum;
       expect(checksum?.algorithm).toBe('sha256');
       expect(checksum?.value).toMatch(/^[a-f0-9]{64}$/);
     });
 
     it('should create one requirement per config rule', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(1);
     });
 
     it('should use ConfigRuleId as the requirement ID', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.id).toBe('config-rule-7hytm9');
     });
 
     it('should set impact to 0.5 for all rules', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
     });
 
     it('should include title with account ID and rule name', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const title = hdf.baselines[0]!.requirements[0]!.title as string;
       expect(title).toContain('123456789012');
       expect(title).toContain('access-keys-rotated');
     });
 
     it('should include default description from rule Description field', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       const defaultDesc = req.descriptions?.find(d => d.label === 'default');
       expect(defaultDesc?.data).toContain('active access keys are rotated');
     });
 
     it('should include check description with ARN and source identifier', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       const checkDesc = req.descriptions?.find(d => d.label === 'check');
       expect(checkDesc?.data).toContain('arn:aws:config:');
@@ -97,14 +97,14 @@ describe('AWS Config to HDF converter', async () => {
     });
 
     it('should include check description with input parameters', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       const checkDesc = req.descriptions?.find(d => d.label === 'check');
       expect(checkDesc?.data).toContain('maxAccessKeyAge');
     });
 
     it('should include source location with ARN', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       expect(req.sourceLocation?.ref).toContain('arn:aws:config:');
       expect(req.sourceLocation?.line).toBe(1);
@@ -112,28 +112,28 @@ describe('AWS Config to HDF converter', async () => {
 
     it('should look up NIST tags via source identifier', async () => {
       // ACCESS_KEYS_ROTATED should have a NIST mapping
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       expect(req.tags?.['nist']).toBeDefined();
       expect((req.tags?.['nist'] as string[]).length).toBeGreaterThan(0);
     });
 
     it('should map COMPLIANT to passed', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const results = hdf.baselines[0]!.requirements[0]!.results;
       const compliant = results.find(r => r.status === 'passed');
       expect(compliant).toBeDefined();
     });
 
     it('should map NON_COMPLIANT to failed', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const results = hdf.baselines[0]!.requirements[0]!.results;
       const failed = results.find(r => r.status === 'failed');
       expect(failed).toBeDefined();
     });
 
     it('should include code_desc with rule name, resource type, resource id', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const result = hdf.baselines[0]!.requirements[0]!.results[0]!;
       expect(result.codeDesc).toContain('config_rule_name:');
       expect(result.codeDesc).toContain('resource_type:');
@@ -141,7 +141,7 @@ describe('AWS Config to HDF converter', async () => {
     });
 
     it('should include failure message only for failed results', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const results = hdf.baselines[0]!.requirements[0]!.results;
 
       const failedResult = results.find(r => r.status === 'failed');
@@ -153,7 +153,7 @@ describe('AWS Config to HDF converter', async () => {
     });
 
     it('should handle multiple rules from multi-rule fixture', async () => {
-      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('multi-rule.json'))) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('multi-rule.json'))) as HDFResults;
       expect(hdf.baselines[0]!.requirements).toHaveLength(4);
     });
 
@@ -180,7 +180,7 @@ describe('AWS Config to HDF converter', async () => {
           }],
         }],
       });
-      const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notApplicable');
     });
 
@@ -207,7 +207,7 @@ describe('AWS Config to HDF converter', async () => {
           }],
         }],
       });
-      const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('notReviewed');
     });
 
@@ -223,7 +223,7 @@ describe('AWS Config to HDF converter', async () => {
           EvaluationResults: [],
         }],
       });
-      const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       // Should not throw; nist may be empty or absent
       expect(req.id).toBe('config-rule-xyz');
@@ -241,7 +241,7 @@ describe('AWS Config to HDF converter', async () => {
           EvaluationResults: [],
         }],
       });
-      const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(0);
     });
   });

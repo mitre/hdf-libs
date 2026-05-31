@@ -5,7 +5,7 @@ import {describe, expect, it} from 'vitest';
 import {convertZapToHdf} from './converter';
 import {runConverterContractTests} from '../../../shared/typescript/converter-contract.js';
 import {parseJSON} from '@mitre/hdf-utilities';
-import type {HdfResults} from '@mitre/hdf-schema';
+import type {HDFResults} from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -25,7 +25,7 @@ describe('ZAP Converter', () => {
     it('should handle missing site array', async () => {
       const input = JSON.stringify({'@version': '2.7.0'});
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0].requirements).toHaveLength(0);
     });
@@ -33,7 +33,7 @@ describe('ZAP Converter', () => {
     it('should handle empty site array', async () => {
       const input = JSON.stringify({'@version': '2.7.0', site: []});
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0].requirements).toHaveLength(0);
     });
@@ -43,7 +43,7 @@ describe('ZAP Converter', () => {
     it('should create 1 baseline with 2 requirements', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0].requirements).toHaveLength(2);
@@ -52,7 +52,7 @@ describe('ZAP Converter', () => {
     it('should set baseline name to scan label', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].name).toBe('OWASP ZAP Scan');
     });
@@ -60,7 +60,7 @@ describe('ZAP Converter', () => {
     it('should set baseline title with site name', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].title).toBe('OWASP ZAP Scan of https://example.com');
     });
@@ -68,7 +68,7 @@ describe('ZAP Converter', () => {
     it('should set baseline summary with ZAP version', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].summary).toBe('ZAP Version 2.7.0');
     });
@@ -78,7 +78,7 @@ describe('ZAP Converter', () => {
     it('should populate target with host name and application type', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.components).toHaveLength(1);
       expect(hdf.components![0].name).toBe('example.com');
@@ -89,7 +89,7 @@ describe('ZAP Converter', () => {
     it('should omit targets when host is unknown', async () => {
       const input = JSON.stringify({'@version': '2.7.0', site: [{alerts: []}]});
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.components).toHaveLength(0);
     });
@@ -99,7 +99,7 @@ describe('ZAP Converter', () => {
     it('should set generator name to "zap-to-hdf"', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.generator.name).toBe('zap-to-hdf');
     });
@@ -107,7 +107,7 @@ describe('ZAP Converter', () => {
     it('should set dataSource name to "OWASP ZAP" and format to "JSON"', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.tool?.name).toBe('OWASP ZAP');
       expect(hdf.tool?.format).toBe('JSON');
@@ -116,7 +116,7 @@ describe('ZAP Converter', () => {
     it('should set tool version from @version', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.tool?.version).toBe('2.7.0');
     });
@@ -126,7 +126,7 @@ describe('ZAP Converter', () => {
     it('should set timestamp from @generated', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.timestamp).toBeDefined();
     });
@@ -136,7 +136,7 @@ describe('ZAP Converter', () => {
     it('should calculate SHA-256 checksum of input', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines[0].resultsChecksum).toBeDefined();
       expect(hdf.baselines[0].resultsChecksum?.algorithm).toBe('sha256');
@@ -148,7 +148,7 @@ describe('ZAP Converter', () => {
     it('should map riskcode "1" to impact 0.3', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       expect(req?.impact).toBe(0.3);
@@ -157,7 +157,7 @@ describe('ZAP Converter', () => {
     it('should map riskcode "2" to impact 0.5', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '90022');
       expect(req?.impact).toBe(0.5);
@@ -168,7 +168,7 @@ describe('ZAP Converter', () => {
     it('should use pluginid as requirement ID', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const ids = hdf.baselines[0].requirements.map(r => r.id);
       expect(ids).toContain('10021');
@@ -180,7 +180,7 @@ describe('ZAP Converter', () => {
     it('should set title from alert name', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       expect(req?.title).toBe('X-Content-Type-Options Header Missing');
@@ -191,7 +191,7 @@ describe('ZAP Converter', () => {
     it('should include default description with HTML stripped', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       const defaultDesc = req?.descriptions?.find(d => d.label === 'default');
@@ -203,7 +203,7 @@ describe('ZAP Converter', () => {
     it('should include check description from solution and otherinfo', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       const checkDesc = req?.descriptions?.find(d => d.label === 'check');
@@ -217,7 +217,7 @@ describe('ZAP Converter', () => {
     it('should map known CWE 16 to NIST control', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       expect(req?.tags?.nist).toBeDefined();
@@ -228,7 +228,7 @@ describe('ZAP Converter', () => {
     it('should use DEFAULT_STATIC_ANALYSIS_NIST_TAGS for empty cweid', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '90022');
       expect(req?.tags?.nist).toEqual(['SA-11', 'RA-5']);
@@ -239,7 +239,7 @@ describe('ZAP Converter', () => {
     it('should populate CCI tags from NIST mapping', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       expect(req?.tags?.cci).toBeDefined();
@@ -251,7 +251,7 @@ describe('ZAP Converter', () => {
     it('should include cweid tag', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       expect(req?.tags?.cweid).toBe('16');
@@ -260,7 +260,7 @@ describe('ZAP Converter', () => {
     it('should include wascid tag', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       expect(req?.tags?.wascid).toBe('15');
@@ -269,7 +269,7 @@ describe('ZAP Converter', () => {
     it('should include riskdesc tag', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       expect(req?.tags?.riskdesc).toBe('Low (Medium)');
@@ -278,7 +278,7 @@ describe('ZAP Converter', () => {
     it('should include confidence tag', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       expect(req?.tags?.confidence).toBe('2');
@@ -289,7 +289,7 @@ describe('ZAP Converter', () => {
     it('should create one result per instance', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req1 = hdf.baselines[0].requirements.find(r => r.id === '10021');
       expect(req1?.results).toHaveLength(1);
@@ -301,7 +301,7 @@ describe('ZAP Converter', () => {
     it('should set all results to failed', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       for (const req of hdf.baselines[0].requirements) {
         for (const result of req.results) {
@@ -313,7 +313,7 @@ describe('ZAP Converter', () => {
     it('should format codeDesc with URI, method, param, and evidence', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '10021');
       expect(req?.results[0].codeDesc).toBe('URI: https://example.com/login | Method: GET | Param: X-Content-Type-Options');
@@ -322,7 +322,7 @@ describe('ZAP Converter', () => {
     it('should include attack as result message', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === '90022');
       // Second instance has an attack field
@@ -341,7 +341,7 @@ describe('ZAP Converter', () => {
         }],
       });
       const output = await convertZapToHdf(sarifInput);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       // SARIF converter produces output with its own generator
       expect(hdf.generator.name).toBe('sarif-to-hdf');
     });
@@ -351,7 +351,7 @@ describe('ZAP Converter', () => {
     it('should select site with most alerts (mymac.com, 25 alerts)', async () => {
       const input = loadFixture('webgoat.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       // Baseline.Name is the fixed scan label; the host goes into targets
       expect(hdf.baselines[0].name).toBe('OWASP ZAP Scan');
@@ -362,7 +362,7 @@ describe('ZAP Converter', () => {
     it('should produce 15 unique requirements from 25 alerts with deduplication', async () => {
       const input = loadFixture('webgoat.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       // 25 alerts, 15 unique pluginids, but duplicates get .1, .2, etc.
       expect(hdf.baselines[0].requirements).toHaveLength(25);
@@ -371,7 +371,7 @@ describe('ZAP Converter', () => {
     it('should deduplicate pluginids with .1, .2 suffixes', async () => {
       const input = loadFixture('webgoat.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const ids = hdf.baselines[0].requirements.map(r => r.id);
       expect(ids).toContain('90028');
@@ -382,7 +382,7 @@ describe('ZAP Converter', () => {
     it('should set timestamp from @generated', async () => {
       const input = loadFixture('webgoat.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.timestamp).toBeDefined();
     });
@@ -390,7 +390,7 @@ describe('ZAP Converter', () => {
     it('should map riskcode 0 to impact 0.3', async () => {
       const input = loadFixture('webgoat.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       // First requirement (90028) has riskcode 0
       const req = hdf.baselines[0].requirements.find(r => r.id === '90028');
@@ -400,7 +400,7 @@ describe('ZAP Converter', () => {
     it('should map riskcode 3 to impact 0.7', async () => {
       const input = loadFixture('webgoat.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       // Find a requirement with riskcode 3 (e.g. pluginid 42 or 20012)
       const req = hdf.baselines[0].requirements.find(r => r.id === '42');
@@ -410,7 +410,7 @@ describe('ZAP Converter', () => {
     it('should include dataSource version', async () => {
       const input = loadFixture('webgoat.json');
       const output = await convertZapToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.tool?.version).toBe('2.7.0');
     });

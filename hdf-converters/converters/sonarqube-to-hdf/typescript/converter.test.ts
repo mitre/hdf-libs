@@ -4,7 +4,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { convertSonarqubeToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import type { HdfResults } from '@mitre/hdf-schema';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -23,7 +23,7 @@ describe('SonarQube to HDF Converter', async () => {
       const result = await convertSonarqubeToHdf(input);
       expect(result).toBeTruthy();
 
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       // Verify HDF structure
       expect(hdf.timestamp).toBeTruthy();
@@ -42,7 +42,7 @@ describe('SonarQube to HDF Converter', async () => {
       const input = readFileSync(inputPath, 'utf-8');
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       // Minimal fixture has 1 project
       expect(hdf.baselines.length).toBe(1);
@@ -57,7 +57,7 @@ describe('SonarQube to HDF Converter', async () => {
       const input = readFileSync(inputPath, 'utf-8');
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
 
@@ -74,7 +74,7 @@ describe('SonarQube to HDF Converter', async () => {
       const input = readFileSync(inputPath, 'utf-8');
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
 
@@ -94,7 +94,7 @@ describe('SonarQube to HDF Converter', async () => {
       const input = readFileSync(inputPath, 'utf-8');
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
 
@@ -109,7 +109,7 @@ describe('SonarQube to HDF Converter', async () => {
       const input = readFileSync(inputPath, 'utf-8');
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
 
@@ -130,7 +130,7 @@ describe('SonarQube to HDF Converter', async () => {
       const input = readFileSync(inputPath, 'utf-8');
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
 
@@ -152,7 +152,7 @@ describe('SonarQube to HDF Converter', async () => {
       const input = readFileSync(inputPath, 'utf-8');
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
       const requirement = baseline.requirements[0]!;
@@ -169,7 +169,7 @@ describe('SonarQube to HDF Converter', async () => {
       const input = readFileSync(inputPath, 'utf-8');
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
 
@@ -196,7 +196,7 @@ describe('SonarQube to HDF Converter', async () => {
       });
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       expect(hdf.baselines).toEqual([]);
     });
@@ -226,7 +226,7 @@ describe('SonarQube to HDF Converter', async () => {
       });
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
       const requirement = baseline.requirements[0]!;
@@ -242,7 +242,7 @@ describe('SonarQube to HDF Converter', async () => {
       const input = readFileSync(inputPath, 'utf-8');
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
 
@@ -268,7 +268,7 @@ describe('SonarQube to HDF Converter', async () => {
       const input = readFileSync(inputPath, 'utf-8');
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
 
@@ -289,7 +289,7 @@ describe('SonarQube to HDF Converter', async () => {
       const input = readFileSync(inputPath, 'utf-8');
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
 
@@ -326,7 +326,7 @@ describe('SonarQube to HDF Converter', async () => {
       });
 
       const result = await convertSonarqubeToHdf(input);
-      const hdf: HdfResults = JSON.parse(result);
+      const hdf: HDFResults = JSON.parse(result);
 
       const baseline = hdf.baselines[0]!;
       const requirement = baseline.requirements[0]!;
@@ -349,7 +349,7 @@ describe('SonarQube to HDF Converter', async () => {
         }],
         rules: [],
       });
-      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       expect(req.title).toBe('unknown:rule');
     });
@@ -367,7 +367,7 @@ describe('SonarQube to HDF Converter', async () => {
         }],
         rules: [{ key: 'r1', name: 'Rule 1', mdDesc: 'markdown description', tags: ['security'], sysTags: ['owasp-a1'] }],
       });
-      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
     });
 
@@ -391,7 +391,7 @@ describe('SonarQube to HDF Converter', async () => {
         }],
         components: [{ key: 'src/file.ts', path: 'src/file.ts', longName: 'src/file.ts' }],
       });
-      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
       expect(req.sourceLocation).toBeDefined();
       expect(req.sourceLocation!.line).toBe(10);
@@ -409,7 +409,7 @@ describe('SonarQube to HDF Converter', async () => {
         }],
         rules: [{ key: 'r1', name: 'Rule 1', htmlDesc: '<p>HTML description CWE-79</p>' }],
       });
-      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
       // INFO maps to 0.0 in SEVERITY_IMPACT_MAPPING, but `0.0 || 0.5` = 0.5 (JS falsy)
       expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
     });
@@ -426,7 +426,7 @@ describe('SonarQube to HDF Converter', async () => {
         }],
         rules: [{ key: 'r1', name: 'Rule Name Only' }],
       });
-      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.7);
     });
 
@@ -442,7 +442,7 @@ describe('SonarQube to HDF Converter', async () => {
         }],
         rules: [{ key: 'r1', name: 'Rule' }],
       });
-      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.sourceLocation).toBeUndefined();
     });
 
@@ -458,7 +458,7 @@ describe('SonarQube to HDF Converter', async () => {
         }],
         rules: [{ key: 'r1', name: 'Rule' }],
       });
-      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.codeDesc).toContain('src/file.ts');
     });
 
@@ -477,7 +477,7 @@ describe('SonarQube to HDF Converter', async () => {
           descriptionSections: [{ key: 'how_to_fix', content: '<p>Fix</p>' }],
         }],
       });
-      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HdfResults;
+      const hdf = JSON.parse(await convertSonarqubeToHdf(input)) as HDFResults;
       expect(hdf.baselines).toHaveLength(1);
     });
   });

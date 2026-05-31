@@ -1,7 +1,7 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { deriveControlTypeFromTags, inputChecksum, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
+  HDFResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
@@ -11,7 +11,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -297,12 +297,12 @@ export async function convertSplunkToHdf(input: string): Promise<string> {
     }
   }
 
-  const hdf: HdfResults = {
+  const hdf: HDFResults = {
     baselines: allBaselines,
     components: [
       {
         name: targetName,
-        type: Copyright.Host,
+        type: TargetType.Host,
         osName: targetRelease || undefined,
         labels: {},
       },

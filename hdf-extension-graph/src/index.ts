@@ -1,4 +1,4 @@
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
+import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 /** Fields compared for modification detection between overlay and parent. */
 const TRACKED_FIELDS: readonly (string & keyof EvaluatedRequirement)[] = ['impact', 'title', 'severity', 'effectiveImpact', 'disposition'];
@@ -113,8 +113,8 @@ export class ContextualizedBaseline {
   /** The original baseline data. */
   readonly data: EvaluatedBaseline;
 
-  /** The HdfResults this baseline was sourced from. */
-  readonly sourcedFrom: HdfResults;
+  /** The HDFResults this baseline was sourced from. */
+  readonly sourcedFrom: HDFResults;
 
   /** Parent baselines that this baseline extends. */
   readonly extendsFrom: ContextualizedBaseline[] = [];
@@ -125,7 +125,7 @@ export class ContextualizedBaseline {
   /** Contextualized wrappers for each requirement in this baseline. */
   readonly requirements: ContextualizedRequirement[];
 
-  constructor(data: EvaluatedBaseline, sourcedFrom: HdfResults) {
+  constructor(data: EvaluatedBaseline, sourcedFrom: HDFResults) {
     this.data = data;
     this.sourcedFrom = sourcedFrom;
     this.requirements = data.requirements.map(
@@ -178,7 +178,7 @@ export class ExtensionGraph {
  * 3. Collect all requirements into a flat array
  * 4. Link requirements by id matching across linked baselines
  */
-export function buildExtensionGraph(results: HdfResults): ExtensionGraph {
+export function buildExtensionGraph(results: HDFResults): ExtensionGraph {
   // Phase 1: Wrap baselines
   const baselineMap = new Map<string, ContextualizedBaseline>();
   const baselines: ContextualizedBaseline[] = [];

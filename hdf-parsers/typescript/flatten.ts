@@ -1,9 +1,9 @@
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
+import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 // ── Public Types ────────────────────────────────────────────
 
 export interface FlattenResult {
-  results: HdfResults;
+  results: HDFResults;
   metadata: FlattenMetadata;
 }
 
@@ -142,7 +142,7 @@ function resolveParentBaseline(
  * @param results - Parsed HDF Results (from parseResults() or equivalent)
  * @returns FlattenResult with flattened data and merge metadata
  */
-export function flattenOverlays(results: HdfResults): FlattenResult {
+export function flattenOverlays(results: HDFResults): FlattenResult {
   const { baselines } = results;
   const warnings: string[] = [];
   const merges: BaselineMerge[] = [];

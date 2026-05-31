@@ -1,7 +1,7 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
-  HdfResults,
+  HDFResults,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Tool,
@@ -9,7 +9,7 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
-  Copyright,
+  TargetType,
   VerificationMethodEnum,
   createMinimalBaseline,
   createRequirement,
@@ -279,7 +279,7 @@ export async function convertTrufflehogToHdf(input: string): Promise<string> {
 
   const tool: Tool = { name: 'TruffleHog', format: 'JSON' };
 
-  const hdf: HdfResults = {
+  const hdf: HDFResults = {
     baselines: [baseline],
     generator: {
       name: 'hdf-converters',
@@ -292,7 +292,7 @@ export async function convertTrufflehogToHdf(input: string): Promise<string> {
   // Add target only if a Git repository URL is available
   const repoURL = findGitRepoURL(limitedFindings);
   if (repoURL) {
-    hdf.components = [{ name: repoURL, type: Copyright.Repository }];
+    hdf.components = [{ name: repoURL, type: TargetType.Repository }];
   }
 
   return JSON.stringify(hdf, null, 2);
