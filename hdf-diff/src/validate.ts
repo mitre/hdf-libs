@@ -1,3 +1,4 @@
+import type { ValidationError } from '@mitre/hdf-validators';
 import { validateComparison as validatorsValidateComparison } from '@mitre/hdf-validators';
 
 /**
@@ -26,7 +27,7 @@ export function validateComparison(doc: unknown): ValidationResult {
     return { valid: true };
   }
 
-  const errors = result.errors.map(e =>
+  const errors = result.errors.map((e: ValidationError) =>
     e.field === '(root)' ? e.message : `${e.field}: ${e.message}`
   );
   return { valid: false, errors };

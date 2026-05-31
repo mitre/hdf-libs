@@ -115,7 +115,7 @@ function buildBenchmarkObj(hdfData: HdfResults): Record<string, unknown> {
 
   // Rules
   if (baseline.requirements && baseline.requirements.length > 0) {
-    benchmark.Rule = baseline.requirements.map((req) => buildRuleObj(req));
+    benchmark.Rule = baseline.requirements.map((req: EvaluatedRequirement) => buildRuleObj(req));
   }
 
   // TestResult

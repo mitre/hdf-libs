@@ -10,7 +10,7 @@ import type { HdfSystem } from '@mitre/hdf-schema';
 import {
   AuthorizationStatus,
   CategorizationLevel,
-  BoundaryDescription,
+  Copyright,
 } from '@mitre/hdf-schema';
 // Import Component from system types to avoid type incompatibility with results Component
 import type { Component as HdfComponent } from '@mitre/hdf-schema/hdf-system';
@@ -285,22 +285,22 @@ function sspComponentToHDFComponent(
   return comp;
 }
 
-function mapOSCALComponentType(oscalType: string): BoundaryDescription {
+function mapOSCALComponentType(oscalType: string): Copyright {
   switch (oscalType.toLowerCase()) {
     case 'software':
     case 'this-system':
-      return BoundaryDescription.Application;
+      return Copyright.Application;
     case 'service':
-      return BoundaryDescription.Application;
+      return Copyright.Application;
     case 'hardware':
-      return BoundaryDescription.Host;
+      return Copyright.Host;
     case 'network':
-      return BoundaryDescription.Network;
+      return Copyright.Network;
     case 'database':
-      return BoundaryDescription.Database;
+      return Copyright.Database;
     case 'storage':
-      return BoundaryDescription.Artifact;
+      return Copyright.Artifact;
     default:
-      return BoundaryDescription.Application;
+      return Copyright.Application;
   }
 }

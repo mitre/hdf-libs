@@ -82,13 +82,11 @@ export interface CreateIndexOptions {
 export function createIndex(options: CreateIndexOptions = {}): void {
   // Check if TypeScript files exist before compiling
   const tsDir = join(ROOT_DIR, 'dist/ts');
-  const resultsTs = join(tsDir, 'hdf-results.ts');
-  const baselineTs = join(tsDir, 'hdf-baseline.ts');
-  const comparisonTs = join(tsDir, 'hdf-comparison.ts');
+  const combinedTs = join(tsDir, 'hdf.ts');
 
-  if (!existsSync(resultsTs) || !existsSync(baselineTs)) {
+  if (!existsSync(combinedTs)) {
     // eslint-disable-next-line no-console
-    console.warn('Skipping index creation: TypeScript files not found');
+    console.warn('Skipping index creation: dist/ts/hdf.ts not found');
     return;
   }
 
@@ -153,29 +151,8 @@ export function createIndex(options: CreateIndexOptions = {}): void {
   }
 
   // Determine if comparison types are available
-  const hasComparison = existsSync(comparisonTs);
-
-  // index.d.ts uses named type exports (valid in declaration files)
-  // No export * from hdf-comparison — its shared types (Checksum, Target, Severity, etc.)
-  // duplicate hdf-results and cause ambiguous-export collisions.
-  // Only export comparison-unique types.
-  const comparisonDtsExport = hasComparison
-    ? `
-// Re-export comparison-specific types (interfaces and enums not in hdf-results).
-// No export * from hdf-comparison — shared types duplicate hdf-results.
-export type {
-  HdfComparison, RequirementDiff, ComparisonSummary, Source,
-  Annotation, BaselineDiff, BaselineRef, ComponentDiff, FieldChange, MatchingConfig,
-  PackageDiff, ScannerConflict, SeverityBreakdown, StateCounts, PerSourceSummary,
-  Value,
-} from './ts/hdf-comparison.js';
-export {
-  AnnotationCategory, BaselineDiffState, ChangeReason, ComparisonMode,
-  ConflictResolution, FormatVersion, MatchStrategy, Op, OriginalFormat,
-  PackageDiffState, RequirementState, SourceRole, Type,
-} from './ts/hdf-comparison.js';
-`
-    : '';
+  // Combined hdf.ts already includes ALL types from ALL schemas (including comparison).
+  // No per-file re-exports needed — they cause nominal type incompatibility.
 
   const schemaExports = generateSchemaExports(ROOT_DIR);
 
@@ -194,45 +171,11 @@ export {
 // individually with their JSON Schema validator to resolve cross-refs).
 ${schemaExports.dts}
 
-// Re-export all types from combined file (deduplicated shared types:
-// Identity, Checksum, Generator, etc. have ONE definition, not per-document copies).
+// When combined hdf.ts is available, ALL types from all 7 schemas are in
+// that single file. No per-file re-exports — mixing module paths causes
+// TypeScript nominal type incompatibility (same interface from different
+// .d.ts files are not assignable to each other).
 export * from '${primarySource}';
-
-// Re-export baseline-only types (interfaces not in hdf-results).
-// No export * from hdf-baseline — its enums (HashAlgorithm, Severity) duplicate
-// hdf-results and cause ambiguous-export collisions.
-export type { HdfBaseline, BaselineRequirement } from './ts/hdf-baseline.js';
-${comparisonDtsExport}
-// Re-export system types
-// No Component re-export — it's already exported by hdf-results.js via export *
-export type {
-  HdfSystem, InputOverride, ControlDesignation, DataFlow,
-} from './ts/hdf-system.js';
-export {
-  AuthorizationStatus, BoundaryDescription, CategorizationLevel, Designation, Direction,
-} from './ts/hdf-system.js';
-
-// Re-export plan types
-export type {
-  HdfPlan, Assessment, Schedule, RunnerConfig,
-} from './ts/hdf-plan.js';
-export {
-  PlanType,
-} from './ts/hdf-plan.js';
-
-// Re-export amendments types
-// No OverrideType enum — already exported by hdf-results via export *.
-export type {
-  HdfAmendments, StandaloneOverride,
-} from './ts/hdf-amendments.js';
-
-// Re-export evidence-package types
-export type {
-  HdfEvidencePackage, ContentReference, CompletenessCheck, SBOMCoverage,
-} from './ts/hdf-evidence-package.js';
-export {
-  ContentType,
-} from './ts/hdf-evidence-package.js';
 
 // Re-export helper functions
 export * from './helpers.js';
@@ -256,20 +199,7 @@ export type HdfAmendments = HDFAmendments;
 export type HdfEvidencePackage = HDFEvidencePackage;
 `;
 
-  // index.js uses only export * (named exports of type-only symbols crash Node ESM).
-  // hdf-baseline.js only contains enums (HashAlgorithm, Severity) that are already
-  // exported by hdf-results.js, so we skip it to avoid ESM ambiguous-export collisions.
-  // hdf-comparison.js has overlapping enums too, so we use named exports for unique enums only.
-  const comparisonJsExport = hasComparison
-    ? `
-// Re-export comparison-specific enums (runtime values not in hdf-results)
-export {
-  AnnotationCategory, BaselineDiffState, ChangeReason, ComparisonMode,
-  ConflictResolution, FormatVersion, MatchStrategy, Op, OriginalFormat,
-  PackageDiffState, RequirementState, SourceRole, Type,
-} from './ts/hdf-comparison.js';
-`
-    : '';
+
 
   const indexJsContent = `/**
  * Main entry point for @mitre/hdf-schema
@@ -281,25 +211,10 @@ export {
 // individually with their JSON Schema validator to resolve cross-refs).
 ${schemaExports.js}
 
-// Re-export all values from combined file (deduplicated shared types)
+// Combined file has ALL enums and types from all 7 schemas — no per-file
+// re-exports needed. Mixing module paths causes TypeScript nominal type
+// incompatibility (structurally identical types from different .d.ts are not assignable).
 export * from '${primarySource}';
-${comparisonJsExport}
-// Re-export system enums (runtime values)
-export {
-  AuthorizationStatus, BoundaryDescription, CategorizationLevel, Designation, Direction,
-} from './ts/hdf-system.js';
-
-// Re-export plan enums (runtime values)
-export {
-  PlanType,
-} from './ts/hdf-plan.js';
-
-// No amendments enum re-export — OverrideType already from hdf-results via export *.
-
-// Re-export evidence-package enums (runtime values)
-export {
-  ContentType,
-} from './ts/hdf-evidence-package.js';
 
 // Re-export helper functions
 export * from './helpers.js';

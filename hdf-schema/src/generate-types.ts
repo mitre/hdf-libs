@@ -332,23 +332,9 @@ export async function generateTypes(): Promise<void> {
           console.warn('  Falling back to per-file only (shared types may be duplicated)');
         }
 
-        // Also generate per-file for backward compat (sub-path imports)
-        // These will have duplicates but the barrel uses the combined file
-        for (const schema of schemasToGenerate) {
-          const perFilePath = join(outputDir, toOutputFilename(schema.path.split('/').pop()!, lang.ext));
-          try {
-            const perFileCode = await generateForLanguage(
-              schema.path,
-              schema.name,
-              lang.name,
-              lang.options
-            );
-            writeFileSync(perFilePath, perFileCode);
-            console.log(`  → ${perFilePath} (compat)`);
-          } catch (err) {
-            console.warn(`  Skipping per-file ${schema.name} (quicktype error: ${(err as Error).message})`);
-          }
-        }
+        // Per-file outputs removed: sub-path exports in package.json point to
+        // hdf.js (combined). Per-file .d.ts on disk would cause TypeScript to
+        // resolve duplicate nominal types → assignability failures.
       }
       continue;
     }

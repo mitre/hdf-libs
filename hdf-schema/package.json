@@ -18,32 +18,32 @@
       "import": "./dist/helpers.js"
     },
     "./hdf-results": {
-      "types": "./dist/ts/hdf-results.d.ts",
-      "import": "./dist/ts/hdf-results.js"
+      "types": "./dist/ts/hdf.d.ts",
+      "import": "./dist/ts/hdf.js"
     },
     "./hdf-baseline": {
-      "types": "./dist/ts/hdf-baseline.d.ts",
-      "import": "./dist/ts/hdf-baseline.js"
+      "types": "./dist/ts/hdf.d.ts",
+      "import": "./dist/ts/hdf.js"
     },
     "./hdf-comparison": {
-      "types": "./dist/ts/hdf-comparison.d.ts",
-      "import": "./dist/ts/hdf-comparison.js"
+      "types": "./dist/ts/hdf.d.ts",
+      "import": "./dist/ts/hdf.js"
     },
     "./hdf-system": {
-      "types": "./dist/ts/hdf-system.d.ts",
-      "import": "./dist/ts/hdf-system.js"
+      "types": "./dist/ts/hdf.d.ts",
+      "import": "./dist/ts/hdf.js"
     },
     "./hdf-plan": {
-      "types": "./dist/ts/hdf-plan.d.ts",
-      "import": "./dist/ts/hdf-plan.js"
+      "types": "./dist/ts/hdf.d.ts",
+      "import": "./dist/ts/hdf.js"
     },
     "./hdf-amendments": {
-      "types": "./dist/ts/hdf-amendments.d.ts",
-      "import": "./dist/ts/hdf-amendments.js"
+      "types": "./dist/ts/hdf.d.ts",
+      "import": "./dist/ts/hdf.js"
     },
     "./hdf-evidence-package": {
-      "types": "./dist/ts/hdf-evidence-package.d.ts",
-      "import": "./dist/ts/hdf-evidence-package.js"
+      "types": "./dist/ts/hdf.d.ts",
+      "import": "./dist/ts/hdf.js"
     }
   },
   "files": [
