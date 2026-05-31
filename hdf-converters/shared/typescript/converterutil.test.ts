@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ControlType, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { inputChecksum, buildNistCciTags, DEFAULT_STATIC_ANALYSIS_NIST_TAGS, limitArray, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlType, deriveControlTypeFromTags, deriveVerificationMethod } from './converterutil.js';
+import { inputChecksum, buildNistCciTags, limitArray, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -195,15 +195,7 @@ describe('ensureArray', () => {
   });
 });
 
-describe('re-exports', () => {
-  it('should re-export DEFAULT_STATIC_ANALYSIS_NIST_TAGS', () => {
-    expect(DEFAULT_STATIC_ANALYSIS_NIST_TAGS).toBeDefined();
-    expect(Array.isArray(DEFAULT_STATIC_ANALYSIS_NIST_TAGS)).toBe(true);
-    expect(DEFAULT_STATIC_ANALYSIS_NIST_TAGS).toContain('SA-11');
-  });
-});
-
-describe('deriveControlType', () => {
+describe('deriveControlTypeFromTags (single tag — exercises internal classification)', () => {
   it.each<[string, ControlType]>([
     ['AC-3', ControlType.Technical],
     ['SC-7', ControlType.Technical],
@@ -223,7 +215,7 @@ describe('deriveControlType', () => {
     ['SC-1', ControlType.Policy],
     ['AC-1(1)', ControlType.Policy],
   ])('should classify %s as %s', (tag, expected) => {
-    expect(deriveControlType(tag)).toBe(expected);
+    expect(deriveControlTypeFromTags([tag])).toBe(expected);
   });
 
   it.each<[string]>([
@@ -234,15 +226,15 @@ describe('deriveControlType', () => {
     ['AC'],
     ['AC-'],
   ])('should return undefined for non-NIST tag %s', (tag) => {
-    expect(deriveControlType(tag)).toBeUndefined();
+    expect(deriveControlTypeFromTags([tag])).toBeUndefined();
   });
 
   it('should normalize case', () => {
-    expect(deriveControlType('ac-3')).toBe(ControlType.Technical);
+    expect(deriveControlTypeFromTags(['ac-3'])).toBe(ControlType.Technical);
   });
 
   it('should trim whitespace', () => {
-    expect(deriveControlType('  AC-3  ')).toBe(ControlType.Technical);
+    expect(deriveControlTypeFromTags(['  AC-3  '])).toBe(ControlType.Technical);
   });
 });
 
