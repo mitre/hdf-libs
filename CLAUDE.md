@@ -49,10 +49,11 @@ cd hdf-cli && golangci-lint run --fix       # Auto-fix
 
 ### Schema workflow
 ```bash
-cd hdf-schema && pnpm build:schemas         # Bundle source → dist schemas
-cd hdf-schema && pnpm build                 # Bundle + generate TS/Go/Python types
-cp hdf-schema/dist/schemas/*.schema.json hdf-validators/go/schemas/  # Sync validators
+cd hdf-schema && pnpm build:schemas         # Bundle source → dist schemas (auto-syncs hdf-validators/go/schemas/)
+cd hdf-schema && pnpm build                 # Bundle + generate TS/Go types
 ```
+
+`build:schemas` copies the bundled `dist/schemas/*.schema.json` into `hdf-validators/go/schemas/` as its last step — the validator embed must always reflect the latest bundled output. Don't hand-edit `hdf-validators/go/schemas/`; rerun `build:schemas`.
 
 ### VitePress schema site
 ```bash

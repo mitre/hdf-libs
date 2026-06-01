@@ -229,6 +229,7 @@
           "properties": {
             "op": {
               "type": "string",
+              "title": "Op",
               "enum": [
                 "add",
                 "remove",
@@ -592,6 +593,7 @@
             },
             "state": {
               "type": "string",
+              "title": "Baseline Diff State",
               "enum": [
                 "new",
                 "absent",
@@ -630,6 +632,7 @@
             },
             "state": {
               "type": "string",
+              "title": "Baseline Diff State",
               "enum": [
                 "new",
                 "absent",
@@ -673,6 +676,7 @@
             },
             "state": {
               "type": "string",
+              "title": "Package Diff State",
               "enum": [
                 "added",
                 "removed",
@@ -1185,6 +1189,7 @@
             },
             "type": {
               "type": "string",
+              "title": "Identity Type",
               "enum": [
                 "email",
                 "username",
@@ -1228,6 +1233,7 @@
           "properties": {
             "type": {
               "type": "string",
+              "title": "Evidence Type",
               "enum": [
                 "screenshot",
                 "code",
@@ -1404,6 +1410,7 @@
             },
             "status": {
               "type": "string",
+              "title": "Milestone Status",
               "enum": [
                 "pending",
                 "inProgress",
@@ -1671,6 +1678,7 @@
             },
             "controlType": {
               "type": "string",
+              "title": "Control Type",
               "enum": [
                 "policy",
                 "procedure",
@@ -1686,6 +1694,7 @@
             },
             "applicability": {
               "type": "string",
+              "title": "Applicability",
               "enum": [
                 "required",
                 "optional",
@@ -2002,6 +2011,7 @@
           "properties": {
             "type": {
               "type": "string",
+              "title": "POAM Type",
               "enum": [
                 "remediation",
                 "mitigation",
@@ -2270,6 +2280,7 @@
         },
         "Standalone_Override": {
           "type": "object",
+          "description": "A standalone amendment that modifies a requirement's compliance status and/or impact score. At least one of status or impact must be set. Extends the inline Override concept with requirementId and baselineRef for use outside of results documents.",
           "unevaluatedProperties": false,
           "required": [
             "type",
@@ -2279,18 +2290,33 @@
             "appliedAt",
             "expiresAt"
           ],
-          "anyOf": [
-            {
-              "required": [
-                "status"
-              ]
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "operationalRequirement"
+                ]
+              }
             },
-            {
-              "required": [
-                "impact"
-              ]
-            }
-          ],
+            "required": [
+              "type"
+            ]
+          },
+          "then": true,
+          "else": {
+            "anyOf": [
+              {
+                "required": [
+                  "status"
+                ]
+              },
+              {
+                "required": [
+                  "impact"
+                ]
+              }
+            ]
+          },
           "properties": {
             "type": {
               "$ref": "#/$defs/Override_Type",
@@ -2469,7 +2495,6 @@
               "expiresAt": "2026-09-26T00:00:00Z"
             }
           ],
-          "description": "A standalone amendment that modifies a requirement's compliance status and/or impact score. At least one of status or impact must be set. Extends the inline Override concept with requirementId and baselineRef for use outside of results documents.",
           "title": "Standalone Override"
         }
       }
@@ -2827,6 +2852,20 @@
           "properties": {
             "type": {
               "type": "string",
+              "title": "Target Type",
+              "enum": [
+                "host",
+                "containerImage",
+                "containerInstance",
+                "containerPlatform",
+                "cloudAccount",
+                "cloudResource",
+                "repository",
+                "application",
+                "artifact",
+                "network",
+                "database"
+              ],
               "description": "Component type discriminator. Same values as Target types."
             },
             "name": {
@@ -2871,6 +2910,7 @@
             },
             "sbomFormat": {
               "type": "string",
+              "title": "SBOM Format",
               "enum": [
                 "cyclonedx",
                 "spdx"
@@ -3514,6 +3554,7 @@
             },
             "designation": {
               "type": "string",
+              "title": "Designation",
               "enum": [
                 "common",
                 "system-specific",

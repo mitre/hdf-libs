@@ -51,7 +51,7 @@
   ],
   "scripts": {
     "build": "pnpm run clean && pnpm run build:schemas && pnpm run build:types && pnpm run build:index",
-    "build:schemas": "node --import tsx src/bundle-schemas.ts",
+    "build:schemas": "node --import tsx src/bundle-schemas.ts && cpy 'dist/schemas/*.schema.json' '../hdf-validators/go/schemas/' --flat",
     "build:types": "node --import tsx src/generate-types.ts",
     "build:index": "node --import tsx src/create-index.ts",
     "watch:schemas": "nodemon --watch src/schemas --ext json --exec 'tsx src/bundle-schemas.ts'",
@@ -82,6 +82,7 @@
   "devDependencies": {
     "@hyperjump/json-schema": "^1.17.2",
     "concurrently": "^9.2.1",
+    "cpy-cli": "^7.0.0",
     "http-server": "^14.1.1",
     "nodemon": "^3.1.11",
     "quicktype-core": "^23.0.0",
