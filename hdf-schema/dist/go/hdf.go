@@ -1296,9 +1296,9 @@ type BaselineDiff struct {
 
 // Comparison of a single component between two system document versions.
 type ComponentDiff struct {
-	// Component snapshot from the new system document.                                                
+	// Component snapshot from the new system document. Null when state is 'absent'.                   
 	After                                                                            interface{}       `json:"after,omitempty"`
-	// Component snapshot from the old system document.                                                
+	// Component snapshot from the old system document. Null when state is 'new'.                      
 	Before                                                                           interface{}       `json:"before,omitempty"`
 	// Detailed field-level changes between the before and after component snapshots.                  
 	FieldChanges                                                                     []FieldChange     `json:"fieldChanges,omitempty"`
