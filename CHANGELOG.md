@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Validation Changes (stricter — may reject previously-accepted documents)
+
+- **`Component.type` is now a closed 11-value enum** (`host`, `containerImage`, `containerInstance`, `containerPlatform`, `cloudAccount`, `cloudResource`, `repository`, `application`, `artifact`, `network`, `database`). Previously declared as `"type": "string"` with the comment "Same values as Target types," but the enum was not enforced, so documents emitting out-of-list values (e.g. `lambda`, `iam-role`, `function`) validated cleanly. They will now fail validation. The closed set matches `Target.type` and the long-standing design intent — this brings validation in line with the documented contract. If you produce HDF documents with custom component types, either map them to one of the 11 canonical values or pick the closest match.
+
 ## [3.2.0] - 2026-05-11
 
 ### New Features
