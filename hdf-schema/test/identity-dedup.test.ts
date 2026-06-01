@@ -67,28 +67,6 @@ describe('Identity type deduplication', () => {
     expect(existsSync(resultsPath)).toBe(false);
   });
 
-  it('per-file compat outputs document the quicktype naming divergence', () => {
-    // Per-file outputs are generated independently by quicktype and WILL have
-    // different enum names. This is expected — the COMBINED file is the fix.
-    // This test documents the known divergence rather than asserting it's fixed
-    // in per-file mode (which would require abandoning quicktype).
-    const resultsPath = join(DIST_TS_DIR, 'hdf-results.ts');
-    const evidencePath = join(DIST_TS_DIR, 'hdf-evidence-package.ts');
-
-    if (!existsSync(resultsPath) || !existsSync(evidencePath)) return;
-
-    const resultsCode = readFileSync(resultsPath, 'utf-8');
-    const evidenceCode = readFileSync(evidencePath, 'utf-8');
-
-    // Both files should still HAVE Identity (quicktype generates them)
-    expect(resultsCode).toContain('export interface Identity');
-    expect(evidenceCode).toContain('export interface Identity');
-
-    // The COMBINED hdf.ts is the authoritative source — barrel exports from it
-    const combinedPath = join(DIST_TS_DIR, 'hdf.ts');
-    expect(existsSync(combinedPath)).toBe(true);
-  });
-
   it('barrel index.d.ts exports Identity with a single type enum', () => {
     const indexPath = join(__dirname, '..', 'dist', 'index.d.ts');
     if (!existsSync(indexPath)) return;

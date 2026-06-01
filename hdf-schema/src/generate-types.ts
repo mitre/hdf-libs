@@ -33,17 +33,6 @@ const LANGUAGES = [
 ];
 
 /**
- * Convert a schema filename to output filename for a given language.
- */
-export function toOutputFilename(schemaFile: string, ext: string): string {
-  const base = schemaFile.replace('.schema.json', '');
-  if (ext === 'go') {
-    return base.replace(/-/g, '_') + '.' + ext;
-  }
-  return base + '.' + ext;
-}
-
-/**
  * Preprocess a JSON Schema to work around quicktype-core 23.x bugs:
  * 1. Replace bare primitive types in oneOf with a wrapper object so quicktype
  *    can generate a name for the variant (avoids codePointAt crash).
@@ -124,14 +113,15 @@ export async function generateTypes(): Promise<void> {
     throw new Error('No schemas found in dist/schemas/');
   }
 
-  // Load and preprocess schemas once
-  const schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
-  for (const schema of schemasToGenerate) {
-    const content = preprocessSchemaForQuicktype(readFileSync(schema.path, 'utf-8'));
-    await schemaInput.addSource({ name: schema.name, schema: content });
-  }
+  // Preprocess each schema once (output is deterministic), then build a fresh
+  // JSONSchemaInput per language inside Promise.all — quicktype mutates its
+  // input's internal state, so the two languages cannot share one input.
+  const preprocessed = schemasToGenerate.map((schema) => ({
+    name: schema.name,
+    schema: preprocessSchemaForQuicktype(readFileSync(schema.path, 'utf-8')),
+  }));
 
-  for (const lang of LANGUAGES) {
+  await Promise.all(LANGUAGES.map(async (lang) => {
     const outputDir = join(DIST_DIR, lang.dir);
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir, { recursive: true });
@@ -139,11 +129,9 @@ export async function generateTypes(): Promise<void> {
 
     console.log(`Generating ${lang.name} types...`);
 
-    // Fresh input per language (quicktype mutates internal state)
     const langSchemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
-    for (const schema of schemasToGenerate) {
-      const content = preprocessSchemaForQuicktype(readFileSync(schema.path, 'utf-8'));
-      await langSchemaInput.addSource({ name: schema.name, schema: content });
+    for (const entry of preprocessed) {
+      await langSchemaInput.addSource(entry);
     }
 
     const inputData = new InputData();
@@ -163,7 +151,7 @@ export async function generateTypes(): Promise<void> {
     if (lang.name === 'go') {
       generateGoMod(outputDir);
     }
-  }
+  }));
 
   console.log('Done.');
 }

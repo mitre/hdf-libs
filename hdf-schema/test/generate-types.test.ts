@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { bundleSchemas } from '../src/bundle-schemas';
-import { generateTypes, toOutputFilename } from '../src/generate-types';
+import { generateTypes } from '../src/generate-types';
 import { createIndex } from '../src/create-index';
 
 const DIST_DIR = join(__dirname, '..', 'dist');
@@ -138,19 +138,6 @@ describe('generate-types', () => {
 
       const versionMatch = content.match(/Version.*\*string\s+`json:"version,omitempty"`/);
       expect(versionMatch).toBeTruthy();
-    });
-  });
-
-  describe('toOutputFilename', () => {
-    it('should convert hyphens to underscores for Go output', () => {
-      // Exercises the ext === 'go' branch (line 41)
-      expect(toOutputFilename('hdf-results.schema.json', 'go')).toBe('hdf_results.go');
-      expect(toOutputFilename('hdf-evidence-package.schema.json', 'go')).toBe('hdf_evidence_package.go');
-    });
-
-    it('should preserve hyphens for TypeScript output', () => {
-      expect(toOutputFilename('hdf-results.schema.json', 'ts')).toBe('hdf-results.ts');
-      expect(toOutputFilename('hdf-baseline.schema.json', 'ts')).toBe('hdf-baseline.ts');
     });
   });
 
