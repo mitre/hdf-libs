@@ -35,6 +35,7 @@
     },
     "Standalone_Override": {
       "type": "object",
+      "description": "A standalone override to a requirement's compliance status or risk impact. At least one of 'status' or 'impact' must be set, EXCEPT for 'operationalRequirement' which is documentation-only (records accepted risk without changing status or impact). This three-branch anyOf aligns with: (1) OSCAL Assessment Results — finding.target.status and finding.associated-risk[].facet[] are separate axes (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/); (2) FedRAMP deviation request types — Risk Adjustment changes impact only, Operational Requirement documents acceptance only, False Positive changes status (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/); (3) NIST SP 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from control assessment status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).",
       "unevaluatedProperties": false,
       "required": [
         "type",
@@ -44,10 +45,9 @@
         "appliedAt",
         "expiresAt"
       ],
-      "anyOf": [
-        { "required": ["status"] },
-        { "required": ["impact"] }
-      ],
+      "if": { "properties": { "type": { "enum": ["operationalRequirement"] } }, "required": ["type"] },
+      "then": true,
+      "else": { "anyOf": [{ "required": ["status"] }, { "required": ["impact"] }] },
       "properties": {
         "type": {
           "$ref": "#/$defs/Override_Type",
