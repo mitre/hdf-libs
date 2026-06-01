@@ -159,9 +159,14 @@ describe('amendments.schema.json — Standalone_Override', () => {
   // -- All override types --
 
   it('should accept all override types', () => {
-    for (const type of ['waiver', 'attestation', 'poam', 'inherited', 'falsePositive', 'riskAdjustment', 'operationalRequirement']) {
+    // Types that may carry status/impact (else branch of the type-conditional rule)
+    for (const type of ['waiver', 'attestation', 'poam', 'inherited', 'falsePositive', 'riskAdjustment']) {
       expect(validate({ ...valid, type })).toBe(true);
     }
+    // operationalRequirement is documentation-only — must NOT carry status/impact
+    const docOnly = { ...valid } as Record<string, unknown>;
+    delete docOnly.status;
+    expect(validate({ ...docOnly, type: 'operationalRequirement' })).toBe(true);
   });
 
   it('should reject invalid override type', () => {
@@ -348,8 +353,20 @@ describe('amendments.schema.json — Standalone_Override', () => {
     expect(validate({ ...override, type: 'riskAdjustment', impact: { value: 0.3 } })).toBe(true);
   });
 
-  it('should accept operationalRequirement override type', () => {
-    expect(validate({ ...valid, type: 'operationalRequirement' })).toBe(true);
+  it('should accept operationalRequirement override type (documentation-only, no status/impact)', () => {
+    const override = { ...valid } as Record<string, unknown>;
+    delete override.status;
+    expect(validate({ ...override, type: 'operationalRequirement' })).toBe(true);
+  });
+
+  it('should reject operationalRequirement carrying status', () => {
+    expect(validate({ ...valid, type: 'operationalRequirement' })).toBe(false);
+  });
+
+  it('should reject operationalRequirement carrying impact', () => {
+    const override = { ...valid } as Record<string, unknown>;
+    delete override.status;
+    expect(validate({ ...override, type: 'operationalRequirement', impact: { value: 0.3 } })).toBe(false);
   });
 
   // -- Impact override --

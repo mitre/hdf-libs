@@ -619,19 +619,21 @@ func identityType(s string) string {
 	return identitySimple
 }
 
-// amendTypeToStatus returns the default status for an amendment type.
-// Returns empty string only for riskAdjustment (impact-only, satisfies anyOf via impact field).
-// poam and operationalRequirement emit the current status (failed) to satisfy the schema anyOf.
+// amendTypeToStatus returns the default status for an amendment type, or "" if
+// no status should be emitted. The schema rule on Standalone_Override is
+// type-conditional: when type is "operationalRequirement", neither status nor
+// impact may be set (documentation-only); for all other types, at least one of
+// status or impact must be set.
 func amendTypeToStatus(amendType string) string {
 	switch amendType {
 	case "waiver", "attestation":
 		return "passed"
 	case "falsePositive", "inherited":
 		return statusNotApplicable
-	case "poam", "operationalRequirement":
-		return "failed" // Acknowledges current state; finding remains open
-	case "riskAdjustment":
-		return "" // Impact-only; anyOf satisfied via impact field
+	case "poam":
+		return "failed" // Remediation tracked; finding remains open
+	case "riskAdjustment", "operationalRequirement":
+		return "" // riskAdjustment: impact-only. operationalRequirement: documentation-only.
 	default:
 		return ""
 	}

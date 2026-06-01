@@ -1763,9 +1763,18 @@ type HDFAmendments struct {
 	Version                                                                                   *string              `json:"version,omitempty"`
 }
 
-// A standalone amendment that modifies a requirement's compliance status and/or impact
-// score. At least one of status or impact must be set. Extends the inline Override concept
-// with requirementId and baselineRef for use outside of results documents.
+// A standalone override to a requirement's compliance status or risk impact. Validation has
+// two branches gated on 'type': when type is 'operationalRequirement', neither 'status' nor
+// 'impact' may be set — the override records accepted risk without changing the finding
+// (documentation-only). For all other types, at least one of 'status' or 'impact' must be
+// set. This rule aligns with: (1) OSCAL Assessment Results — finding.target.status and
+// finding.associated-risk[].facet[] are separate axes
+// (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/); (2)
+// FedRAMP deviation request types — Risk Adjustment changes impact only, Operational
+// Requirement documents acceptance only, False Positive changes status
+// (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/); (3)
+// NIST SP 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from
+// control assessment status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).
 type StandaloneOverride struct {
 	// When this amendment was applied. ISO 8601 format.                                                        
 	AppliedAt                                                                                   time.Time       `json:"appliedAt"`

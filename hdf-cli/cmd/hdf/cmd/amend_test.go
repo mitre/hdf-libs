@@ -381,7 +381,7 @@ func TestAmendTypeToStatus(t *testing.T) {
 		{"falsePositive", "notApplicable"},
 		{"inherited", "notApplicable"},
 		{"riskAdjustment", ""},
-		{"operationalRequirement", "failed"},
+		{"operationalRequirement", ""},
 		{"poam", "failed"},
 		{"unknown", ""},
 	}
