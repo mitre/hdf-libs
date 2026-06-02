@@ -280,4 +280,7 @@ export type DiffStatus = RequirementState;
 export type DiffSummary = ComparisonSummary;
 
 /** @deprecated Use HDFComparison instead */
+export type HdfComparison = HDFComparison;
+
+/** @deprecated Use HDFComparison instead */
 export type HdfDiff = HDFComparison;

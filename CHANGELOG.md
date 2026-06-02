@@ -4,9 +4,54 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Breaking Changes — TypeScript
+
+- **Generated enum type renames** (no deprecation aliases provided). External code that imports any of the following from `@mitre/hdf-schema` must update the identifier:
+  - `Copyright` → `TargetType` (component/target type discriminator)
+  - `OwnerType` → `IdentityType` (identity kind: email/username/system/simple/other)
+  - `Status` → `MilestoneStatus` (POA&M milestone status)
+  - `SbomFormat` → `SBOMFormat`
+  - `PoamType` → `POAMType`
+- **Document root type renames** with deprecation aliases. Code importing the old names from `@mitre/hdf-schema` keeps compiling for now via `@deprecated` aliases; expect those aliases removed in a future bump. Migrate to the canonical names:
+  - `HdfResults` → `HDFResults`
+  - `HdfBaseline` → `HDFBaseline`
+  - `HdfComparison` → `HDFComparison`
+  - `HdfSystem` → `HDFSystem`
+  - `HdfPlan` → `HDFPlan`
+  - `HdfAmendments` → `HDFAmendments`
+  - `HdfEvidencePackage` → `HDFEvidencePackage`
+- **Subpath import compatibility narrowed.** The subpath exports (`@mitre/hdf-schema/hdf-results`, `/hdf-baseline`, etc.) now resolve to the combined `dist/ts/hdf.d.ts`, which carries only the canonical `HDF*` names. Subpath imports of the old `Hdf*` names will fail to resolve. Either move to the bare `@mitre/hdf-schema` import (where the deprecated aliases live) or switch to the canonical names at the subpath site.
+- **`@mitre/hdf-diff`**: `HdfComparison` interface renamed to `HDFComparison`. A `@deprecated` alias `HdfComparison = HDFComparison` is re-exported from the barrel; existing `HdfDiff` alias is unchanged.
+
+### Breaking Changes — Go
+
+- **Generated enum type renames** (no Go aliases provided). Go consumers that reference `hdf.Copyright`, `hdf.OwnerType`, `hdf.Status` (as a *type*), `hdf.SbomFormat`, or `hdf.PoamType` no longer compile. Replace with `hdf.TargetType`, `hdf.IdentityType`, `hdf.MilestoneStatus`, `hdf.SBOMFormat`, `hdf.POAMType` respectively. All in-repo Go converters have been updated; out-of-tree Go consumers must mirror the rename.
+- **`hdf.CopyrightApplication` constant removed.** It was a backward-compat alias for `hdf.Application`. Use the canonical name.
+
 ### Validation Changes (stricter — may reject previously-accepted documents)
 
 - **`Component.type` is now a closed 11-value enum** (`host`, `containerImage`, `containerInstance`, `containerPlatform`, `cloudAccount`, `cloudResource`, `repository`, `application`, `artifact`, `network`, `database`). Previously declared as `"type": "string"` with the comment "Same values as Target types," but the enum was not enforced, so documents emitting out-of-list values (e.g. `lambda`, `iam-role`, `function`) validated cleanly. They will now fail validation. The closed set matches `Target.type` and the long-standing design intent — this brings validation in line with the documented contract. If you produce HDF documents with custom component types, either map them to one of the 11 canonical values or pick the closest match.
+- **`Standalone_Override` with `type: "operationalRequirement"` may no longer carry `status` or `impact`.** The override is documentation-only — it records accepted risk without changing the finding. Documents that previously paired `operationalRequirement` with a status/impact value will now fail schema validation. The CLI (`hdf amend create --type operationalRequirement`) no longer emits a default `status: "failed"` on this type.
+
+### Schema Output Format (Go marshaling)
+
+- **`omitempty` removed from required `interface{}` fields** on `DataFlow.To`, `Impact_Override.Value`, and `Requirement_Diff.before`/`after`. The native quicktype option that replaces the previous regex post-processor correctly recognizes these fields as schema-required and does not emit `omitempty`. JSON output now serializes `null` for the rare case of a Go-nil interface on these fields, rather than omitting them. Required-field semantics were always documented this way; previously the regex post-processor silently violated them. `ComponentDiff.before`/`after` (which ARE optional) retain `omitempty` after a separate fix.
+
+### Removals
+
+- **`@mitre/hdf-converters`**: `hdf-version.ts` and its test removed. Use the `legacyhdf-to-hdf` converter for v1→current overlay flattening.
+- **`@mitre/hdf-converters` `shared/typescript/converterutil.ts`**: re-exports of `Applicability`, `ControlType`, `VerificationMethodEnum`, `DEFAULT_MAX_ITEMS`, and `deriveControlType` removed. Import these directly from `@mitre/hdf-schema` (the first three) or use `deriveControlTypeFromTags` (the public API).
+
+### Build Pipeline
+
+- **`hdf-schema/package.json`'s `build:schemas` now auto-syncs** `dist/schemas/*.schema.json` to `hdf-validators/go/schemas/` so the embedded validator schemas never drift from the bundled output. The previous manual `cp` step is no longer required (and the manual rule has been removed from CLAUDE.md).
+- **Type generation parallelized.** TS and Go quicktype runs in `generate-types.ts` now execute concurrently via `Promise.all`. Halves the type-generation wall-clock on every build.
+
+### Internal
+
+- Identity type deduplication achieved via combined TypeScript output (`dist/ts/hdf.ts`) — same approach as the existing Go output. Fixes the long-standing bug where `Identity` in a per-file output was nominally incompatible with `Identity` in another. (Fixes #76.)
+- Schema source-of-truth for inline enum naming is now the `title` property on each enum. Quicktype derives stable, predictable names from titles instead of inventing them from context.
+- `generate-types.ts` simplified: 287 → 153 lines (47% reduction). Dead `toOutputFilename`, dead outer `schemaInput` builder, error-recovery fallback paths, and the "other languages" loop all removed.
 
 ## [3.2.0] - 2026-05-11
 

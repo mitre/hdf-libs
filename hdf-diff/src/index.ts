@@ -17,6 +17,7 @@ export type {
 export type {
   DiffStatus,
   DiffSummary,
+  HdfComparison,
   HdfDiff,
 } from './types.js';
 
