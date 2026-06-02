@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ControlType, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { inputChecksum, buildNistCciTags, limitArray, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod } from './converterutil.js';
+import { inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -85,6 +85,25 @@ describe('limitArray', () => {
     const result = limitArray(['a', 'b', 'c'], 3);
     expect(result.items).toEqual(['a', 'b', 'c']);
     expect(result.truncated).toBe(false);
+  });
+});
+
+describe('limitArrayWithWarning', () => {
+  it('warns and truncates when items exceed limit', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const result = limitArrayWithWarning([1, 2, 3, 4, 5], 'item', 2);
+    expect(result).toEqual([1, 2]);
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn.mock.calls[0]![0]).toContain('truncated at 2 item items (original: 5)');
+    warn.mockRestore();
+  });
+
+  it('passes through without warning when within limit', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const result = limitArrayWithWarning(['a', 'b'], 'item', 10);
+    expect(result).toEqual(['a', 'b']);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
 

@@ -101,6 +101,11 @@ describe('checklist shared model', () => {
     expect(parseStatus(undefined)).toBe(CheckStatus.NotReviewed);
   });
 
+  it('statusToCkl falls back to Not_Reviewed for falsy input', () => {
+    expect(statusToCkl('' as CheckStatus)).toBe(CheckStatus.NotReviewed);
+    expect(statusToCkl(undefined as unknown as CheckStatus)).toBe(CheckStatus.NotReviewed);
+  });
+
   it('parses CKL and CKLB to equivalent models', () => {
     const ckl = parseCkl(SAMPLE_CKL);
     const cklb = parseCklb(SAMPLE_CKLB);

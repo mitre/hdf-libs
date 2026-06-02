@@ -87,6 +87,29 @@ describe('detectConverter', () => {
     expect(detectConverter(SARIF_INPUT)).toBeUndefined();
   });
 
+  it('returns undefined when best confidence is below MIN_CONFIDENCE', () => {
+    const lowConfidenceFP: ConverterFingerprint = {
+      id: 'low-conf', label: 'Low', direction: 'ingest', inputFamily: 'json',
+      outputType: 'results', fingerprint: () => 0.5,
+    };
+    registerFingerprint(lowConfidenceFP);
+    expect(detectConverter(SARIF_INPUT)).toBeUndefined();
+  });
+
+  it('returns undefined on an ambiguous tie at the top confidence', () => {
+    const tieA: ConverterFingerprint = {
+      id: 'tie-a', label: 'A', direction: 'ingest', inputFamily: 'json',
+      outputType: 'results', fingerprint: () => 0.9,
+    };
+    const tieB: ConverterFingerprint = {
+      id: 'tie-b', label: 'B', direction: 'ingest', inputFamily: 'json',
+      outputType: 'results', fingerprint: () => 0.9,
+    };
+    registerFingerprint(tieA);
+    registerFingerprint(tieB);
+    expect(detectConverter(SARIF_INPUT)).toBeUndefined();
+  });
+
   it('detects SARIF input', () => {
     registerFingerprint(sarifFP);
     registerFingerprint(gosecFP);
