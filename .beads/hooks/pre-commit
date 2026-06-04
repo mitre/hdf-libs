@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 export PATH="$PATH:$HOME/go/bin:/opt/homebrew/bin"
-pnpm check
+pnpm check || exit $?
 
 # --- BEGIN BEADS INTEGRATION v1.0.4 ---
 # This section is managed by beads. Do not remove these markers.

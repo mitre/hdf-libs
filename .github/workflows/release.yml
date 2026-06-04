@@ -16,7 +16,7 @@ concurrency:
 # package's `engines.node: ">=22.0.0"`.
 env:
   NODE_VERSION: '22'
-  GO_VERSION: '1.26.3'
+  GO_VERSION: '1.26.4'
 
 jobs:
   publish-npm:
