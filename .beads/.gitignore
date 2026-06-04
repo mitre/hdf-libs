@@ -53,6 +53,9 @@ dolt-server.activity
 # Backup data (auto-exported JSONL, local-only)
 backup/
 
+# Interactions log (runtime telemetry, local-only)
+interactions.jsonl
+
 # Per-project environment file (Dolt connection config, GH#2520)
 .env
 
