@@ -144,6 +144,15 @@ func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 	for _, r := range rule.EvaluationResults {
 		reqResults = append(reqResults, buildResult(r))
 	}
+	if len(reqResults) == 0 {
+		// Issue #80 bug 2: a Config rule that was deployed and active but
+		// evaluated zero in-scope resources (e.g. rds-cluster-multi-az-enabled
+		// in an account with no RDS clusters) returns an empty
+		// EvaluationResults from GetComplianceDetailsByConfigRule. The HDF
+		// schema requires Results.minItems >= 1, so synthesize one
+		// notApplicable result honestly signaling that the rule had no scope.
+		reqResults = append(reqResults, buildNotApplicableResult(rule))
+	}
 
 	line := float64(1)
 	arnRef := rule.ConfigRuleArn
@@ -166,6 +175,19 @@ func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 		},
 		Results:            reqResults,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
+	}
+}
+
+// buildNotApplicableResult synthesizes a single HDF result for a Config rule
+// whose live evaluation returned zero in-scope resources. The HDF schema
+// requires Results.minItems >= 1; emitting this synthesized result honestly
+// signals to auditors that the rule's check ran but had no scope in this
+// account/region rather than vacuously claiming "passed". See issue #80 bug 2.
+func buildNotApplicableResult(rule ConfigRule) hdf.RequirementResult {
+	return hdf.RequirementResult{
+		Status:    hdf.NotApplicable,
+		CodeDesc:  fmt.Sprintf("AWS Config rule %s evaluated zero in-scope resources in this account/region.", rule.ConfigRuleName),
+		StartTime: time.Now().UTC(),
 	}
 }
 
