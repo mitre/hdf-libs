@@ -1,7 +1,30 @@
 {
   "baselines": [
     {
-      "requirements": [],
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Microsoft Defender for DevOps scanner \"antimalware\" ran and reported zero findings.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Microsoft Defender for DevOps scanner \"antimalware\" ran and reported zero findings.",
+              "startTime": "2026-05-15T03:15:06.607270174Z",
+              "status": "passed"
+            }
+          ],
+          "id": "antimalware-no-findings",
+          "impact": 0,
+          "tags": {
+            "msdo_policy": "Microsoft 2.0.3",
+            "msdo_rawName": "antimalware"
+          },
+          "title": "No findings reported"
+        }
+      ],
       "resultsChecksum": {
         "algorithm": "sha256",
         "value": "dfed1977694904318039b12bf4309a133a1178bcfe3cc8646d3dd528cd43d0b2"
@@ -11,7 +34,30 @@
       "version": "2.1.0"
     },
     {
-      "requirements": [],
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Microsoft Defender for DevOps scanner \"bandit\" ran and reported zero findings.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Microsoft Defender for DevOps scanner \"bandit\" ran and reported zero findings.",
+              "startTime": "2026-05-15T03:15:06.607270174Z",
+              "status": "passed"
+            }
+          ],
+          "id": "bandit-no-findings",
+          "impact": 0,
+          "tags": {
+            "msdo_policy": "Microsoft 2.0.3",
+            "msdo_rawName": "bandit"
+          },
+          "title": "No findings reported"
+        }
+      ],
       "resultsChecksum": {
         "algorithm": "sha256",
         "value": "dfed1977694904318039b12bf4309a133a1178bcfe3cc8646d3dd528cd43d0b2"
@@ -147,7 +193,30 @@
       "version": "2.1.0"
     },
     {
-      "requirements": [],
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Microsoft Defender for DevOps scanner \"eslint\" ran and reported zero findings.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Microsoft Defender for DevOps scanner \"eslint\" ran and reported zero findings.",
+              "startTime": "2026-05-15T03:15:06.607270174Z",
+              "status": "passed"
+            }
+          ],
+          "id": "eslint-no-findings",
+          "impact": 0,
+          "tags": {
+            "msdo_policy": "Microsoft 2.0.3",
+            "msdo_rawName": "eslint"
+          },
+          "title": "No findings reported"
+        }
+      ],
       "resultsChecksum": {
         "algorithm": "sha256",
         "value": "dfed1977694904318039b12bf4309a133a1178bcfe3cc8646d3dd528cd43d0b2"

@@ -2,7 +2,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, Component } from '@mitre/hdf-schema';
-import { TargetType } from '@mitre/hdf-schema';
+import { ResultStatus, TargetType } from '@mitre/hdf-schema';
 
 // --- MSDO-specific SARIF type definitions ---
 // These capture fields that the generic SARIF converter ignores.
@@ -69,7 +69,8 @@ export async function convertMsftDefenderDevopsToHdf(input: string): Promise<str
   const hdfJson = await convertSarifToHdf(input);
   const result = JSON.parse(hdfJson) as HDFResults;
 
-  // 3. Apply enrichments
+  // Run before applyEnrichments so synthesized reqs get the same run-level tags.
+  synthesizeNoFindingsPlaceholders(result);
   applyEnrichments(result, components, runEnrichments);
 
   // 4. Override generator name and data source
@@ -190,6 +191,33 @@ function applyEnrichments(
 
       req.tags = tags;
     }
+  }
+}
+
+// HDF requires requirements.minItems=1; SARIF's empty results[] means the
+// scan ran clean (§3.7.2), so synthesize one passed placeholder per baseline.
+function synthesizeNoFindingsPlaceholders(result: HDFResults): void {
+  const startTime = result.timestamp ?? new Date();
+  for (const baseline of result.baselines ?? []) {
+    if (baseline.requirements && baseline.requirements.length > 0) continue;
+    const tool = baseline.name;
+    const codeDesc = `Microsoft Defender for DevOps scanner "${tool}" ran and reported zero findings.`;
+    baseline.requirements = [
+      {
+        id: `${tool}-no-findings`,
+        title: 'No findings reported',
+        impact: 0,
+        descriptions: [{ label: 'default', data: codeDesc }],
+        results: [
+          {
+            status: ResultStatus.Passed,
+            codeDesc,
+            startTime,
+          },
+        ],
+        tags: {},
+      },
+    ];
   }
 }
 

@@ -68,6 +68,57 @@ func TestConvert_FullSDA(t *testing.T) {
 	}
 }
 
+// ---- Empty-baseline placeholder synthesis (issue #80 bug 3) ----
+
+func TestConvert_SynthesizesPlaceholderForEmptyBaselines(t *testing.T) {
+	input := loadFixture(t, "input/sda.sarif")
+	result, err := ConvertMsftDefenderDevopsToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	// Baselines 0/1/3 (antimalware/bandit/eslint) are runs whose SARIF
+	// results array is empty — per SARIF v2.1.0 §3.7.2 that signals
+	// "analysis completed, no findings." The converter must emit a single
+	// `passed` placeholder requirement so the baseline satisfies the HDF
+	// schema's requirements.minItems=1 invariant.
+	emptyBaselineIdxs := []int{0, 1, 3}
+	emptyBaselineNames := []string{"antimalware", "bandit", "eslint"}
+
+	for k, idx := range emptyBaselineIdxs {
+		baseline := result.Baselines[idx]
+		tool := emptyBaselineNames[k]
+		require.Equal(t, tool, baseline.Name)
+		require.Len(t, baseline.Requirements, 1,
+			"empty baseline %q should have one synthesized placeholder", tool)
+
+		req := baseline.Requirements[0]
+		assert.Equal(t, tool+"-no-findings", req.ID)
+		require.Len(t, req.Descriptions, 1)
+		assert.Equal(t, "default", req.Descriptions[0].Label)
+		assert.Contains(t, req.Descriptions[0].Data, tool)
+
+		require.Len(t, req.Results, 1)
+		assert.Equal(t, hdf.Passed, req.Results[0].Status,
+			"per SARIF/XCCDF/NIST 800-53A semantics, 'tool ran clean' is passed, not notApplicable")
+		assert.Contains(t, req.Results[0].CodeDesc, tool)
+		assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
+		require.NotNil(t, result.Timestamp)
+		assert.Equal(t, *result.Timestamp, req.Results[0].StartTime,
+			"synthesized startTime should equal the doc-level Timestamp")
+
+		// applyEnrichments runs after synthesis, so per-run MSDO tags
+		// (organization/product/etc.) should also land on the synthesized
+		// requirement when the SARIF run carries them.
+		assert.NotNil(t, req.Tags, "synthesized requirement should still be enriched with run tags")
+	}
+
+	// Non-empty baselines should be untouched (no synthesized placeholder injected).
+	credscan := result.Baselines[2]
+	assert.Equal(t, "credscan", credscan.Name)
+	require.NotEmpty(t, credscan.Requirements)
+	assert.NotEqual(t, "credscan-no-findings", credscan.Requirements[0].ID,
+		"credscan has real findings; the synthesis pass must not inject a placeholder")
+}
+
 // ---- Repository target from versionControlProvenance ----
 
 func TestConvert_RepositoryTarget(t *testing.T) {

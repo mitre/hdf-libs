@@ -56,6 +56,52 @@ describe('msft-defender-devops-to-hdf', () => {
     });
   });
 
+  // ---- Empty-baseline placeholder synthesis (issue #80 bug 3) ----
+
+  describe('empty-baseline placeholder synthesis', () => {
+    it('should synthesize one passed requirement for each baseline whose SARIF run has no results', async () => {
+      const input = loadFixture('input/sda.sarif');
+      const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
+
+      // Baselines 0/1/3 (antimalware/bandit/eslint) had results: [] in SARIF.
+      // SARIF v2.1.0 §3.7.2 defines empty results as "analysis completed,
+      // no findings" — emit a passed placeholder so HDF's requirements.minItems=1
+      // is satisfied.
+      const cases = [
+        { idx: 0, tool: 'antimalware' },
+        { idx: 1, tool: 'bandit' },
+        { idx: 3, tool: 'eslint' },
+      ];
+
+      for (const { idx, tool } of cases) {
+        const baseline = result.baselines![idx]!;
+        expect(baseline.name).toBe(tool);
+        expect(baseline.requirements).toHaveLength(1);
+
+        const req = baseline.requirements[0]!;
+        expect(req.id).toBe(`${tool}-no-findings`);
+        expect(req.descriptions).toHaveLength(1);
+        expect(req.descriptions![0]!.label).toBe('default');
+        expect(req.descriptions![0]!.data).toContain(tool);
+
+        expect(req.results).toHaveLength(1);
+        expect(req.results[0]!.status).toBe('passed');
+        expect(req.results[0]!.codeDesc).toContain(tool);
+        expect(req.results[0]!.codeDesc).toContain('zero findings');
+        expect(req.results[0]!.startTime).toBe(result.timestamp);
+
+        // Run-level enrichment tags should still land on synthesized reqs.
+        expect(req.tags).toBeDefined();
+      }
+
+      // Non-empty baselines unaffected (no synthesized placeholder injected).
+      const credscan = result.baselines![2]!;
+      expect(credscan.name).toBe('credscan');
+      expect(credscan.requirements.length).toBeGreaterThan(0);
+      expect(credscan.requirements[0]!.id).not.toBe('credscan-no-findings');
+    });
+  });
+
   // ---- Repository target ----
 
   describe('repository target', () => {

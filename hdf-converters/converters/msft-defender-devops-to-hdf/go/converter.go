@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"time"
 
 	sarif "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sarif-to-hdf/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -89,7 +90,8 @@ func ConvertMsftDefenderDevopsToHDF(input []byte, converterVersion string) (*hdf
 		return nil, fmt.Errorf("msft-defender-devops: %w", err)
 	}
 
-	// 3. Apply enrichments
+	// Run before applyEnrichments so synthesized reqs get the same run-level tags.
+	synthesizeNoFindingsPlaceholders(result)
 	applyEnrichments(result, targets, runEnrichments)
 
 	// 4. Override generator name and tool
@@ -212,6 +214,40 @@ func applyEnrichments(result *hdf.HDFResults, targets []hdf.Component, runEnrich
 				// Store the first result's properties as representative
 				req.Tags["msdo_properties"] = props[0]
 			}
+		}
+	}
+}
+
+// HDF requires requirements.minItems=1; SARIF's empty results[] means the
+// scan ran clean (§3.7.2), so synthesize one passed placeholder per baseline.
+func synthesizeNoFindingsPlaceholders(result *hdf.HDFResults) {
+	startTime := time.Now()
+	if result.Timestamp != nil {
+		startTime = *result.Timestamp
+	}
+	for i := range result.Baselines {
+		if len(result.Baselines[i].Requirements) > 0 {
+			continue
+		}
+		tool := result.Baselines[i].Name
+		codeDesc := fmt.Sprintf("Microsoft Defender for DevOps scanner %q ran and reported zero findings.", tool)
+		title := "No findings reported"
+		result.Baselines[i].Requirements = []hdf.EvaluatedRequirement{
+			{
+				ID:    tool + "-no-findings",
+				Title: &title,
+				Descriptions: []hdf.Description{
+					{Label: "default", Data: codeDesc},
+				},
+				Results: []hdf.RequirementResult{
+					{
+						Status:    hdf.Passed,
+						CodeDesc:  codeDesc,
+						StartTime: startTime,
+					},
+				},
+				Tags: map[string]interface{}{},
+			},
 		}
 	}
 }
