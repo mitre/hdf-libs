@@ -1574,7 +1574,9 @@ describe('GoSec branch coverage', () => {
       Stats: { files: 5, lines: 200, nosec: 0, found: 0 },
     });
     const hdf = parseHdf(await convertGosecToHdf(input));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('gosec-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 });
 
@@ -2214,7 +2216,9 @@ describe('Additional BurpSuite branch coverage', () => {
       <issues burpVersion="2023.1" exportTime="2025-01-01">
       </issues>`;
     const hdf = parseHdf(await convertBurpsuiteToHdf(xml));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('burpsuite-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 });
 
