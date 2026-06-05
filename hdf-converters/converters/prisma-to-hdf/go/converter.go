@@ -267,24 +267,40 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		return nil, err
 	}
 
-	if len(records) == 0 {
-		return nil, fmt.Errorf("prisma: no data rows in CSV")
-	}
-
 	checksum := shared.InputChecksum(input)
-	hostOrder, hostGroups := groupByHostname(records)
+	now := time.Now().UTC()
 
-	baselines := make([]hdf.EvaluatedBaseline, len(hostOrder))
-	targets := make([]hdf.Component, len(hostOrder))
-	for i, hostname := range hostOrder {
-		baselines[i] = buildBaseline(hostname, hostGroups[hostname], checksum)
-		targets[i] = hdf.Component{
-			Name: hostname,
-			Type: hdf.Host,
+	var baselines []hdf.EvaluatedBaseline
+	var targets []hdf.Component
+
+	if len(records) == 0 {
+		title := "Prisma Cloud Scan"
+		baselines = []hdf.EvaluatedBaseline{
+			{
+				Name:  "Prisma Cloud Scan",
+				Title: &title,
+				Requirements: []hdf.EvaluatedRequirement{
+					shared.BuildNoFindingsRequirement(
+						"prisma-no-findings",
+						"Prisma Cloud scanned the workload and reported zero vulnerable components.",
+						now,
+					),
+				},
+				ResultsChecksum: checksum,
+			},
+		}
+	} else {
+		hostOrder, hostGroups := groupByHostname(records)
+		baselines = make([]hdf.EvaluatedBaseline, len(hostOrder))
+		targets = make([]hdf.Component, len(hostOrder))
+		for i, hostname := range hostOrder {
+			baselines[i] = buildBaseline(hostname, hostGroups[hostname], checksum)
+			targets[i] = hdf.Component{
+				Name: hostname,
+				Type: hdf.Host,
+			}
 		}
 	}
-
-	now := time.Now().UTC()
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "prisma-to-hdf",

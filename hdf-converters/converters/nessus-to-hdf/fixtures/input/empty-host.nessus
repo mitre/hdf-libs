@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Basic Network Scan</policyName>
+    <Preferences>
+      <ServerPreferences>
+        <preference>
+          <name>sc_version</name>
+          <value>10.6.0</value>
+        </preference>
+      </ServerPreferences>
+    </Preferences>
+  </Policy>
+  <Report name="Empty Host Scan" xmlns:cm="http://www.nessus.org/cm">
+    <ReportHost name="cleanhost.example.com">
+      <HostProperties>
+        <tag name="HOST_START_TIMESTAMP">1647975287</tag>
+        <tag name="HOST_START">Tue Mar 22 14:54:47 2022</tag>
+        <tag name="HOST_END_TIMESTAMP">1647975707</tag>
+        <tag name="HOST_END">Tue Mar 22 15:01:47 2022</tag>
+        <tag name="host-ip">10.0.0.99</tag>
+        <tag name="host-fqdn">cleanhost.example.com</tag>
+        <tag name="operating-system">Linux Kernel 5.13.0-37-generic on Ubuntu 20.04</tag>
+        <tag name="os">linux</tag>
+      </HostProperties>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>

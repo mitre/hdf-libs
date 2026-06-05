@@ -272,6 +272,27 @@ describe('Nessus to HDF Converter', async () => {
       }
     });
 
+    it('should synthesize a passed placeholder for a host with zero ReportItems', async () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'empty-host.nessus'),
+        'utf-8'
+      );
+
+      const result = await convertNessusToHdf(nessusXml);
+
+      expect(result.baselines).toHaveLength(1);
+      const baseline = result.baselines[0];
+      expect(baseline.requirements).toHaveLength(1);
+
+      const req = baseline.requirements[0];
+      expect(req.id).toBe('nessus-no-findings');
+      expect(req.results[0].status).toBe('passed');
+      expect(req.results[0].codeDesc).toContain('Nessus');
+      expect(req.results[0].codeDesc).toContain('scanned');
+      expect(req.results[0].codeDesc).toContain('cleanhost.example.com');
+      expect(req.results[0].codeDesc).toContain('findings');
+    });
+
     it('should populate epss and cwe from an EPSS-enriched ReportItem', async () => {
       // The static sample.nessus predates Nessus' EPSS output, so buildEpss is
       // never exercised by it. This inline NessusClientData_v2 carries the real
@@ -567,7 +588,9 @@ describe('Nessus to HDF Converter', async () => {
 </NessusClientData_v2>`;
 
       const result = await convertNessusToHdf(xml);
-      expect(result.baselines[0].requirements).toHaveLength(0);
+      expect(result.baselines[0].requirements).toHaveLength(1);
+      expect(result.baselines[0].requirements[0].id).toBe('nessus-no-findings');
+      expect(result.baselines[0].requirements[0].results[0].status).toBe('passed');
     });
 
     it('should handle ReportItem without see_also', async () => {

@@ -151,6 +151,26 @@ func convertReportHostToBaseline(host *ReportHost, policyName, version string, r
 		requirements = append(requirements, req)
 	}
 
+	if len(requirements) == 0 {
+		target := host.Name
+		if target == "" {
+			if hostIP := getHostPropertyValue(host, "host-ip"); hostIP != "" {
+				target = hostIP
+			} else {
+				target = "host"
+			}
+		}
+		startTimeStr := getHostPropertyValue(host, "HOST_START")
+		startTime := parseHostTime(startTimeStr)
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"nessus-no-findings",
+				fmt.Sprintf("Nessus scanned %s and reported zero findings.", target),
+				startTime,
+			),
+		}
+	}
+
 	name := fmt.Sprintf("Nessus %s", policyName)
 	title := fmt.Sprintf("Nessus %s", policyName)
 	status := "loaded"

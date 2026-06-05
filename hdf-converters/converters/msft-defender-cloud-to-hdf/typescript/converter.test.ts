@@ -199,9 +199,26 @@ describe('Microsoft Defender for Cloud to HDF converter', async () => {
   });
 
   describe('empty value array', async () => {
-    it('should handle empty value array', async () => {
+    it('should synthesize a no-findings passed placeholder when value array is empty', async () => {
       const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(JSON.stringify({ value: [] }))) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('msft-defender-cloud-no-findings');
+      expect(req.results).toHaveLength(1);
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('Microsoft Defender for Cloud');
+      expect(req.results[0]!.codeDesc).toContain('Unknown');
+    });
+
+    it('should synthesize a no-findings passed placeholder for the empty fixture', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(loadFixture('empty.json'))) as HDFResults;
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('msft-defender-cloud-no-findings');
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('Microsoft Defender for Cloud');
     });
   });
 });

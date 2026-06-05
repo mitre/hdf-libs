@@ -169,6 +169,28 @@ func TestConvertNessusToHDF_EmptyHosts(t *testing.T) {
 	assert.Equal(t, 0.0, *result.Statistics.Duration, "Duration should be 0")
 }
 
+func TestConvertNessusToHDF_EmptyHostSynthesizesPlaceholder(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "empty-host.nessus")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err, "Failed to read empty-host.nessus fixture")
+
+	result, err := ConvertNessusToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	require.Len(t, result.Baselines, 1, "one ReportHost should produce one baseline")
+	baseline := result.Baselines[0]
+	require.Len(t, baseline.Requirements, 1, "empty host must synthesize one placeholder requirement")
+
+	req := baseline.Requirements[0]
+	assert.Equal(t, "nessus-no-findings", req.ID)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "Nessus")
+	assert.Contains(t, req.Results[0].CodeDesc, "scanned")
+	assert.Contains(t, req.Results[0].CodeDesc, "cleanhost.example.com")
+	assert.Contains(t, req.Results[0].CodeDesc, "findings")
+}
+
 func TestParseComplianceRef(t *testing.T) {
 	ref := "CCI|CCI-000366,STIG-ID|RHEL-07-010010,Rule-ID|SV-86473r2_rule,Vuln-ID|V-71849,CAT|II"
 

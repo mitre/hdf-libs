@@ -13,6 +13,7 @@ import {
   stripHTML,
   validateInputSize,
   buildHdfResults,
+  buildNoFindingsRequirement,
 } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
@@ -316,10 +317,22 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
     console.warn(`WARNING: Input truncated at ${limitedVulns.length} vulnerability items (original: ${vulns.length})`);
   }
 
+  const targetName = target.url ?? 'Unknown';
+
   // Build one requirement per vulnerability
   const requirements: EvaluatedRequirement[] = limitedVulns.map(
     vuln => buildRequirement(vuln, initiated),
   );
+
+  if (requirements.length === 0) {
+    const initiatedDate = initiated ? new Date(initiated) : new Date();
+    const startTime = isNaN(initiatedDate.getTime()) ? new Date() : initiatedDate;
+    requirements.push(buildNoFindingsRequirement(
+      'netsparker-no-findings',
+      `${toolName} scanned ${targetName} and reported zero findings.`,
+      startTime,
+    ));
+  }
 
   const title = `${toolName} Enterprise Scan ID: ${target['scan-id'] ?? ''} URL: ${target.url ?? ''}`;
 
@@ -331,8 +344,6 @@ export async function convertNetsparkerToHdf(input: string): Promise<string> {
       title,
     },
   ) as EvaluatedBaseline;
-
-  const targetName = target.url ?? 'Unknown';
 
   return buildHdfResults({
     generatorName: 'netsparker-to-hdf',

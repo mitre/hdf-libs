@@ -304,12 +304,18 @@ func TestConvert_AlertIDAsRequirementID(t *testing.T) {
 // ---- Empty value array ----
 
 func TestConvert_EmptyValueArray(t *testing.T) {
-	input := []byte(`{"value": []}`)
+	input := loadFixture(t, "input/empty.json")
 	result, err := ConvertMsftDefenderEndpointToHDF(input, testVersion)
 	require.NoError(t, err)
 	require.NotNil(t, result)
-
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "msft-defender-endpoint-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "Microsoft Defender for Endpoint")
+	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
 }
 
 // ---- Helper: severityToImpact ----

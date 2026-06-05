@@ -462,6 +462,20 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
+func TestConvertJUnitToHDF_EmptyFindings(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "empty.xml"), converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "junit-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "JUnit")
+	assert.Contains(t, req.Results[0].CodeDesc, "EmptySuite")
+	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
+}
+
 func TestConvertJUnitToHDF_ControlType(t *testing.T) {
 	result, err := ConvertJUnitToHDF(loadFixture(t, "surefire-failing.xml"), converterVersion)
 	require.NoError(t, err)

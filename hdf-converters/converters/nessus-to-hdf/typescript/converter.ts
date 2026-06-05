@@ -1,6 +1,6 @@
 import { parseXmlWithArrays, cvssScoreToSeverity } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -230,6 +230,19 @@ function convertReportHostToBaseline(
     requirements = limitedItems.map(item => convertReportItemToRequirement(item, host));
   } else {
     requirements = [];
+  }
+
+  if (requirements.length === 0) {
+    const target = host.name || getHostPropertyValue(host, 'host-ip') || 'host';
+    const startTimeStr = getHostPropertyValue(host, 'HOST_START');
+    const startTime = startTimeStr ? new Date(startTimeStr) : new Date();
+    requirements = [
+      buildNoFindingsRequirement(
+        'nessus-no-findings',
+        `Nessus scanned ${target} and reported zero findings.`,
+        startTime,
+      ),
+    ];
   }
 
   return createMinimalBaseline(`Nessus ${policyName}`, requirements, {

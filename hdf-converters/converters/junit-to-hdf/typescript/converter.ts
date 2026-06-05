@@ -1,5 +1,5 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
-import { inputChecksum, limitArray, validateInputSize, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize, buildHdfResults, buildNoFindingsRequirement, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -80,6 +80,14 @@ export async function convertJunitToHdf(input: string): Promise<string> {
 
   const { suites, name } = parseJUnitXML(input);
   const requirements = buildRequirements(suites);
+
+  if (requirements.length === 0) {
+    requirements.push(buildNoFindingsRequirement(
+      'junit-no-findings',
+      `JUnit scanned ${noFindingsTarget(name, suites)} and reported zero findings.`,
+      new Date(),
+    ));
+  }
 
   const resultsChecksum: Checksum = await inputChecksum(input);
 
@@ -239,4 +247,14 @@ function buildCodeDesc(tc: JUnitTestCase): string {
     return `${tc.classname} :: ${tc.name}`;
   }
   return tc.name;
+}
+
+function noFindingsTarget(baselineName: string, suites: JUnitTestSuite[]): string {
+  if (baselineName && baselineName !== 'JUnit Test Results') {
+    return baselineName;
+  }
+  for (const s of suites) {
+    if (s.name) return s.name;
+  }
+  return 'JUnit test suite';
 }

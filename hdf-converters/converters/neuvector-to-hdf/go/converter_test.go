@@ -3,6 +3,7 @@ package neuvector
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -392,7 +393,32 @@ func TestConvertNeuVector_EmptyVulnerabilities(t *testing.T) {
 	}`)
 	result, err := ConvertNeuVectorToHDF(input, testVersion)
 	require.NoError(t, err)
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+	require.Len(t, result.Baselines, 1)
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 1)
+	assert.Equal(t, "neuvector-no-findings", reqs[0].ID)
+	require.Len(t, reqs[0].Results, 1)
+	assert.Equal(t, hdf.Passed, reqs[0].Results[0].Status)
+	assert.Contains(t, reqs[0].Results[0].CodeDesc, "NeuVector")
+	assert.Contains(t, reqs[0].Results[0].CodeDesc, "test/image")
+}
+
+func TestConvertNeuVector_EmptyFixtureSynthesizesPlaceholder(t *testing.T) {
+	input := loadFixture(t, "input/empty.json")
+	result, err := ConvertNeuVectorToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 1)
+	assert.Equal(t, "neuvector-no-findings", reqs[0].ID)
+	require.Len(t, reqs[0].Results, 1)
+	assert.Equal(t, hdf.Passed, reqs[0].Results[0].Status)
+	if !strings.Contains(reqs[0].Results[0].CodeDesc, "NeuVector") {
+		t.Errorf("Expected codeDesc to contain 'NeuVector', got %q", reqs[0].Results[0].CodeDesc)
+	}
+	if !strings.Contains(reqs[0].Results[0].CodeDesc, "mitre/heimdall") {
+		t.Errorf("Expected codeDesc to contain target 'mitre/heimdall', got %q", reqs[0].Results[0].CodeDesc)
+	}
 }
 
 // ---- Full fixture smoke tests ----

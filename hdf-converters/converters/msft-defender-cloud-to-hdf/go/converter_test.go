@@ -263,14 +263,37 @@ func TestConvert_Checksum(t *testing.T) {
 	assert.NotEmpty(t, result.Baselines[0].ResultsChecksum.Value)
 }
 
-// ---- Empty value array ----
+// ---- Empty value array — synthesizes a passed placeholder ----
 
 func TestConvert_EmptyValueArray(t *testing.T) {
 	input := []byte(`{"value":[]}`)
 	result, err := ConvertMsftDefenderCloudToHDF(input, testVersion)
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	assert.Empty(t, result.Baselines[0].Requirements)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "msft-defender-cloud-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "Microsoft Defender for Cloud")
+	assert.Contains(t, req.Results[0].CodeDesc, "Unknown")
+}
+
+func TestConvert_EmptyFixture(t *testing.T) {
+	input := loadFixture(t, "input/empty.json")
+	result, err := ConvertMsftDefenderCloudToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "msft-defender-cloud-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "Microsoft Defender for Cloud")
 }
 
 // ---- Title from displayName ----

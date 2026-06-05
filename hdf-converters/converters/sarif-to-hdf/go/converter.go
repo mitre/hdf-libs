@@ -391,6 +391,12 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 		}
 	}
 
+	if len(requirements) == 0 {
+		requirements = []hdf.EvaluatedRequirement{
+			synthesizeNoFindingsRequirement(run, timestamp),
+		}
+	}
+
 	return hdf.EvaluatedBaseline{
 		Name:            baselineName,
 		Version:         &version,
@@ -399,6 +405,25 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 		Requirements:    requirements,
 		ResultsChecksum: resultsChecksum,
 	}
+}
+
+// HDF requires requirements.minItems=1; per SARIF v2.1.0 §3.7.2 an empty
+// results array means the analyzer ran clean, so emit one passed placeholder
+// per run-baseline. ID/target derive from run.tool.driver.name so downstream
+// converters that delegate to SARIF (msft-defender-devops, etc.) can identify
+// and override the placeholder when needed.
+func synthesizeNoFindingsRequirement(run SarifRun, timestamp time.Time) hdf.EvaluatedRequirement {
+	target := "SARIF analyzer"
+	idPrefix := "sarif"
+	if run.Tool != nil && run.Tool.Driver != nil && run.Tool.Driver.Name != "" {
+		target = run.Tool.Driver.Name
+		idPrefix = run.Tool.Driver.Name
+	}
+	return shared.BuildNoFindingsRequirement(
+		idPrefix+"-no-findings",
+		fmt.Sprintf("%s ran and reported zero findings.", target),
+		timestamp,
+	)
 }
 
 func buildRuleMap(run SarifRun) map[string]ReportingDescriptor {

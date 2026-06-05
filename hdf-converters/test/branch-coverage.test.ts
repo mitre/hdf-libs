@@ -2711,12 +2711,15 @@ describe('Twistlock additional branch coverage', () => {
 });
 
 describe('NeuVector additional branch coverage', () => {
-  it('should handle report with empty vulnerabilities', async () => {
+  it('should synthesize a passed placeholder for empty vulnerabilities', async () => {
     const input = JSON.stringify({
       report: { vulnerabilities: [] },
     });
     const hdf = parseHdf(await convertNeuvectorToHdf(input));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0]!.id).toBe('neuvector-no-findings');
+    expect(reqs[0]!.results[0]!.status).toBe('passed');
   });
 });
 
@@ -3187,7 +3190,9 @@ describe('Nessus additional branch coverage', () => {
         </ReportHost></Report>
       </NessusClientData_v2>`;
     const hdf = await convertNessusToHdf(xml);
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('nessus-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 
   it('should handle no Preferences — L157', async () => {

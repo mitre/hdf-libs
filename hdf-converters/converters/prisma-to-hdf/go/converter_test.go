@@ -362,6 +362,24 @@ func TestConvertPrisma_MessageField(t *testing.T) {
 	assert.Contains(t, *msg, "File ownership is wrong")
 }
 
+// ---- Empty findings fixture (headers-only CSV) ----
+
+func TestConvertPrisma_NoFindings(t *testing.T) {
+	input := loadFixture(t, "input/empty.csv")
+	result, err := ConvertPrismaToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "prisma-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "Prisma")
+	assert.Contains(t, req.Results[0].CodeDesc, "scanned")
+	assert.Contains(t, req.Results[0].CodeDesc, "vulnerable components")
+}
+
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "prisma-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertPrismaToHDF(input, "0.1.0")
