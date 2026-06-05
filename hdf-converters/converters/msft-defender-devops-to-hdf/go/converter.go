@@ -230,24 +230,12 @@ func synthesizeNoFindingsPlaceholders(result *hdf.HDFResults) {
 			continue
 		}
 		tool := result.Baselines[i].Name
-		codeDesc := fmt.Sprintf("Microsoft Defender for DevOps scanner %q ran and reported zero findings.", tool)
-		title := "No findings reported"
 		result.Baselines[i].Requirements = []hdf.EvaluatedRequirement{
-			{
-				ID:    tool + "-no-findings",
-				Title: &title,
-				Descriptions: []hdf.Description{
-					{Label: "default", Data: codeDesc},
-				},
-				Results: []hdf.RequirementResult{
-					{
-						Status:    hdf.Passed,
-						CodeDesc:  codeDesc,
-						StartTime: startTime,
-					},
-				},
-				Tags: map[string]interface{}{},
-			},
+			shared.BuildNoFindingsRequirement(
+				tool+"-no-findings",
+				fmt.Sprintf("Microsoft Defender for DevOps scanner %q ran and reported zero findings.", tool),
+				startTime,
+			),
 		}
 	}
 }

@@ -1,8 +1,8 @@
 import { parseJSON } from '@mitre/hdf-utilities';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, Component } from '@mitre/hdf-schema';
-import { ResultStatus, TargetType } from '@mitre/hdf-schema';
+import { TargetType } from '@mitre/hdf-schema';
 
 // --- MSDO-specific SARIF type definitions ---
 // These capture fields that the generic SARIF converter ignores.
@@ -201,22 +201,12 @@ function synthesizeNoFindingsPlaceholders(result: HDFResults): void {
   for (const baseline of result.baselines ?? []) {
     if (baseline.requirements && baseline.requirements.length > 0) continue;
     const tool = baseline.name;
-    const codeDesc = `Microsoft Defender for DevOps scanner "${tool}" ran and reported zero findings.`;
     baseline.requirements = [
-      {
-        id: `${tool}-no-findings`,
-        title: 'No findings reported',
-        impact: 0,
-        descriptions: [{ label: 'default', data: codeDesc }],
-        results: [
-          {
-            status: ResultStatus.Passed,
-            codeDesc,
-            startTime,
-          },
-        ],
-        tags: {},
-      },
+      buildNoFindingsRequirement(
+        `${tool}-no-findings`,
+        `Microsoft Defender for DevOps scanner "${tool}" ran and reported zero findings.`,
+        startTime,
+      ),
     ];
   }
 }

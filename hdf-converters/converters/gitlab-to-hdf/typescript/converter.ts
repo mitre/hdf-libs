@@ -18,7 +18,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArray, validateInputSize} from '../../../shared/typescript/converterutil.js';
+import {buildNoFindingsRequirement, inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArray, validateInputSize} from '../../../shared/typescript/converterutil.js';
 
 // --- GitLab Security Report input types ---
 
@@ -303,6 +303,16 @@ export async function convertGitlabToHdf(input: string): Promise<string> {
   }
 
   const label = scanTypeLabel(scanType);
+
+  if (requirements.length === 0) {
+    const ts = startTime ? new Date(startTime) : new Date();
+    requirements.push(buildNoFindingsRequirement(
+      'gitlab-no-findings',
+      `GitLab ${label} scan via ${scannerName} reported zero findings.`,
+      ts,
+    ));
+  }
+
   const baselineTitle = `GitLab ${label} Security Scan`;
 
   const baseline: EvaluatedBaseline = createMinimalBaseline('GitLab Security Scan', requirements, {
