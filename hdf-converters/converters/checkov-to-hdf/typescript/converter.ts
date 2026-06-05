@@ -3,7 +3,7 @@ import { DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -209,13 +209,22 @@ export async function convertCheckovToHdf(input: string): Promise<string> {
     requirements.push(buildRequirement(checkId, checks));
   }
 
+  const format = checkTypes.join(', ');
+
+  if (requirements.length === 0) {
+    const target = format || 'input';
+    requirements.push(buildNoFindingsRequirement(
+      'checkov-no-findings',
+      `Checkov scanned ${target} and reported zero findings.`,
+      new Date(),
+    ));
+  }
+
   const baseline: EvaluatedBaseline = createMinimalBaseline(
     'Checkov Scan',
     requirements,
     { resultsChecksum }
   ) as EvaluatedBaseline;
-
-  const format = checkTypes.join(', ');
 
   return buildHdfResults({
     generatorName: 'checkov-to-hdf',

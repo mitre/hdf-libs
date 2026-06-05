@@ -188,7 +188,26 @@ describe('Grype Converter', async () => {
       const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines).toHaveLength(1);
-      expect(hdf.baselines[0].requirements).toHaveLength(0);
+      const reqs = hdf.baselines[0].requirements;
+      expect(reqs).toHaveLength(1);
+      expect(reqs[0].id).toBe('grype-no-findings');
+      expect(reqs[0].results[0].status).toBe('passed');
+      expect(reqs[0].results[0].codeDesc).toContain('Grype');
+      expect(reqs[0].results[0].codeDesc).toContain('test-image');
+    });
+
+    it('synthesizes a passed placeholder for empty fixture', async () => {
+      const input = loadFixture('empty.json');
+      const output = await convertGrypeToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+
+      expect(hdf.baselines).toHaveLength(1);
+      const reqs = hdf.baselines[0].requirements;
+      expect(reqs).toHaveLength(1);
+      expect(reqs[0].id).toBe('grype-no-findings');
+      expect(reqs[0].results[0].status).toBe('passed');
+      expect(reqs[0].results[0].codeDesc).toContain('Grype');
+      expect(reqs[0].results[0].codeDesc).toContain('alpine:3.20');
     });
 
     it('should populate CVE-ecosystem fields from enriched Grype output', async () => {

@@ -1,0 +1,18 @@
+{
+  "api_error_message": "",
+  "api_response": {
+    "classification": "TLP:C",
+    "file_count": 0,
+    "file_tree": {},
+    "params": {
+      "description": "Inspection of file: submissions/empty.zip",
+      "submitter": "admin",
+      "services": {
+        "selected": ["Antivirus", "Static Analysis"]
+      }
+    },
+    "results": {},
+    "max_score": 0
+  },
+  "api_server_version": "4.4.0"
+}

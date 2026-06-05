@@ -286,14 +286,23 @@ func TestConvertJfrogXray_Title(t *testing.T) {
 
 // ---- Empty data array ----
 
-func TestConvertJfrogXray_EmptyData(t *testing.T) {
-	input := []byte(`{
-		"total_count": 0,
-		"data": []
-	}`)
+func TestConvertJfrogXray_EmptyDataSynthesizesPlaceholder(t *testing.T) {
+	input := loadFixture(t, "input/empty.json")
 	result, err := ConvertJfrogXrayToHDF(input, testVersion)
 	require.NoError(t, err)
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+	require.Len(t, result.Baselines, 1)
+
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 1, "empty-findings input must synthesize a single placeholder requirement")
+
+	req := reqs[0]
+	assert.Equal(t, "jfrog-xray-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+
+	codeDesc := req.Results[0].CodeDesc
+	assert.Contains(t, codeDesc, "JFrog Xray")
+	assert.Contains(t, codeDesc, "zero vulnerable components")
 }
 
 // ---- Severity helper ----

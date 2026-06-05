@@ -34,14 +34,20 @@ runConverterContractTests({
 describe('BurpSuite to HDF Converter', () => {
   // --- Validation tests ---
 
-  it('should handle empty issues element', async () => {
-    const xml = '<?xml version="1.0"?><issues burpVersion="2020.1" exportTime="Thu Feb 27 09:28:17 EST 2020"></issues>';
+  it('should synthesize a passed placeholder for empty issues element', async () => {
+    const xml = loadFixture('input/empty.xml');
     const output = await convertBurpsuiteToHdf(xml);
     const parsed = parseOutput(output);
     const baselines = parsed.baselines as Array<Record<string, unknown>>;
     expect(baselines).toHaveLength(1);
-    const reqs = baselines[0]!.requirements as unknown[];
-    expect(reqs).toHaveLength(0);
+    const reqs = baselines[0]!.requirements as Array<Record<string, unknown>>;
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0]!.id).toBe('burpsuite-no-findings');
+    const results = reqs[0]!.results as Array<Record<string, unknown>>;
+    expect(results[0]!.status).toBe('passed');
+    expect(results[0]!.codeDesc).toContain('Burp Suite');
+    expect(results[0]!.codeDesc).toContain('Unknown');
+    expect(results[0]!.codeDesc).toContain('zero findings');
   });
 
   // --- Real fixture tests ---
@@ -343,13 +349,14 @@ describe('BurpSuite to HDF Converter', () => {
       expect(results[0]!.codeDesc).toContain('issueDetail');
     });
 
-    it('should handle empty issues list', async () => {
+    it('should handle empty issues list with synthesized placeholder', async () => {
       const xml = `<?xml version="1.0"?><issues burpVersion="2020.1" exportTime="Thu Feb 27 09:28:17 EST 2020">
 </issues>`;
       const out = parseOutput(await convertBurpsuiteToHdf(xml));
       const bl = out.baselines as Array<Record<string, unknown>>;
-      const reqs = bl[0]!.requirements as unknown[];
-      expect(reqs).toHaveLength(0);
+      const reqs = bl[0]!.requirements as Array<Record<string, unknown>>;
+      expect(reqs).toHaveLength(1);
+      expect(reqs[0]!.id).toBe('burpsuite-no-findings');
       // Target should be 'Unknown' with no issues
       const targets = out.components as Array<Record<string, unknown>>;
       expect(targets[0]!.name).toBe('Unknown');

@@ -22,20 +22,32 @@ runConverterContractTests({
 
 describe('GitLab to HDF converter', () => {
   describe('validation', () => {
-    it('should handle missing vulnerabilities array', async () => {
-      const input = JSON.stringify({version: '15.1.0', scan: {type: 'sast'}});
+    it('should synthesize a passed placeholder when vulnerabilities array is missing', async () => {
+      const input = JSON.stringify({version: '15.1.0', scan: {type: 'sast', scanner: {name: 'Semgrep'}}});
       const output = await convertGitlabToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
       expect(hdf.baselines).toHaveLength(1);
-      expect(hdf.baselines[0].requirements).toHaveLength(0);
+      expect(hdf.baselines[0].requirements).toHaveLength(1);
+      const req = hdf.baselines[0].requirements[0];
+      expect(req.id).toBe('gitlab-no-findings');
+      expect(req.results[0].status).toBe('passed');
+      expect(req.results[0].codeDesc).toContain('GitLab');
+      expect(req.results[0].codeDesc).toContain('Semgrep');
+      expect(req.results[0].codeDesc).toContain('zero findings');
     });
 
-    it('should handle empty vulnerabilities array', async () => {
-      const input = JSON.stringify({version: '15.1.0', scan: {type: 'sast'}, vulnerabilities: []});
+    it('should synthesize a passed placeholder when vulnerabilities array is empty', async () => {
+      const input = loadFixture('empty.json');
       const output = await convertGitlabToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
       expect(hdf.baselines).toHaveLength(1);
-      expect(hdf.baselines[0].requirements).toHaveLength(0);
+      expect(hdf.baselines[0].requirements).toHaveLength(1);
+      const req = hdf.baselines[0].requirements[0];
+      expect(req.id).toBe('gitlab-no-findings');
+      expect(req.results[0].status).toBe('passed');
+      expect(req.results[0].codeDesc).toContain('GitLab');
+      expect(req.results[0].codeDesc).toContain('Semgrep');
+      expect(req.results[0].codeDesc).toContain('zero findings');
     });
   });
 

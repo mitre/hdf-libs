@@ -1,6 +1,7 @@
 import { parseXml } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
 import {
+  buildNoFindingsRequirement,
   deriveControlTypeFromTags,
   inputChecksum,
   buildNistCciTags,
@@ -334,6 +335,16 @@ export async function convertFortifyToHdf(input: string): Promise<string> {
     return buildRequirement(desc, classVulns, snippetMap, startTimeStr);
   });
 
+  const targetName = fvdl.Build?.SourceBasePath ?? fvdl.Build?.BuildID ?? 'Unknown';
+
+  if (requirements.length === 0) {
+    requirements.push(buildNoFindingsRequirement(
+      'fortify-no-findings',
+      `Fortify scanned ${targetName} and reported zero findings.`,
+      new Date(),
+    ));
+  }
+
   // Build baseline
   const title = 'Fortify Static Analyzer Scan';
   const summary = `Fortify Static Analyzer Scan of UUID: ${fvdl.UUID ?? ''}`;
@@ -350,9 +361,6 @@ export async function convertFortifyToHdf(input: string): Promise<string> {
       status: 'loaded',
     },
   ) as EvaluatedBaseline;
-
-  // Component name from SourceBasePath
-  const targetName = fvdl.Build?.SourceBasePath ?? fvdl.Build?.BuildID ?? 'Unknown';
 
   const tool: Tool = {
     name: 'Fortify',

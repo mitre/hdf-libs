@@ -57,6 +57,21 @@ func ConvertFortifyToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		requirements[i] = buildRequirement(&desc, vulns, snippetMap, &fvdl)
 	}
 
+	targetName := fvdl.Build.SourceBasePath
+	if targetName == "" {
+		targetName = fvdl.Build.BuildID
+	}
+
+	if len(requirements) == 0 {
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"fortify-no-findings",
+				fmt.Sprintf("Fortify scanned %s and reported zero findings.", targetName),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	// Build baseline
 	title := "Fortify Static Analyzer Scan"
 	summary := fmt.Sprintf("Fortify Static Analyzer Scan of UUID: %s", fvdl.UUID)
@@ -75,11 +90,6 @@ func ConvertFortifyToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 
 	// Parse timestamp from CreatedTS
 	timestamp := parseCreatedTS(fvdl.CreatedTS)
-
-	targetName := fvdl.Build.SourceBasePath
-	if targetName == "" {
-		targetName = fvdl.Build.BuildID
-	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "fortify-to-hdf",

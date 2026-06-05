@@ -153,6 +153,16 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		targetName = strings.TrimSpace(limitedIssues[0].Host.Text)
 	}
 
+	if len(requirements) == 0 {
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"burpsuite-no-findings",
+				fmt.Sprintf("Burp Suite scanned %s and reported zero findings.", targetName),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	// Build baseline
 	title := fmt.Sprintf("BurpSuite Scan: %s", targetName)
 	baseline := hdf.EvaluatedBaseline{

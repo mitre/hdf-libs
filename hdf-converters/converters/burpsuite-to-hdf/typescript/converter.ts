@@ -4,6 +4,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {
+  buildNoFindingsRequirement,
   deriveControlTypeFromTags,
   inputChecksum,
   buildNistCciTags,
@@ -162,6 +163,14 @@ export async function convertBurpsuiteToHdf(input: string): Promise<string> {
   const targetName = limitedIssues.length > 0
     ? (limitedIssues[0]!.host?.['#text'] ?? 'Unknown').trim()
     : 'Unknown';
+
+  if (requirements.length === 0) {
+    requirements.push(buildNoFindingsRequirement(
+      'burpsuite-no-findings',
+      `Burp Suite scanned ${targetName} and reported zero findings.`,
+      new Date(),
+    ));
+  }
 
   const title = `BurpSuite Scan: ${targetName}`;
 
