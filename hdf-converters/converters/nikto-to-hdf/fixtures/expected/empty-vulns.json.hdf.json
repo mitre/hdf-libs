@@ -1,7 +1,27 @@
 {
   "baselines": [
     {
-      "requirements": [],
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Nikto scanned Host: clean.example.com Port: 443 and reported zero findings.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Nikto scanned Host: clean.example.com Port: 443 and reported zero findings.",
+              "startTime": "0001-01-01T00:00:00Z",
+              "status": "passed"
+            }
+          ],
+          "id": "nikto-no-findings",
+          "impact": 0,
+          "tags": {},
+          "title": "No findings reported"
+        }
+      ],
       "resultsChecksum": {
         "algorithm": "sha256",
         "value": "e973f3417ef29ade67621491f76eb4ba18c470f42836b73d1bab8632bbb15827"

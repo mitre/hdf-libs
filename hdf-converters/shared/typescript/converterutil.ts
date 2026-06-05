@@ -7,8 +7,8 @@
  */
 
 import { sha256 } from '@mitre/hdf-utilities';
-import type { Checksum, Component, EvaluatedBaseline, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
-import { ControlType, HashAlgorithm, VerificationMethodEnum } from '@mitre/hdf-schema';
+import type { Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
+import { ControlType, HashAlgorithm, ResultStatus, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
 
 export { DEFAULT_STATIC_ANALYSIS_NIST_TAGS };
@@ -418,4 +418,27 @@ export function deriveControlTypeFromTags(tags: string[]): ControlType | undefin
 export function deriveVerificationMethod(code: string | undefined | null): VerificationMethodEnum | undefined {
   if (code === undefined || code === null || code === '') return undefined;
   return VerificationMethodEnum.Automated;
+}
+
+// Synthesized passed placeholder for tools that ran clean. Required because
+// the HDF schema enforces requirements.minItems=1.
+export function buildNoFindingsRequirement(
+  id: string,
+  codeDesc: string,
+  startTime: Date,
+): EvaluatedRequirement {
+  return {
+    id,
+    title: 'No findings reported',
+    impact: 0,
+    descriptions: [{ label: 'default', data: codeDesc }],
+    results: [
+      {
+        status: ResultStatus.Passed,
+        codeDesc,
+        startTime,
+      },
+    ],
+    tags: {},
+  };
 }

@@ -14,7 +14,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
+import {buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
 
 // Nikto JSON input types
 
@@ -140,6 +140,14 @@ export async function convertNiktoToHdf(input: string): Promise<string> {
     targetParts.push(`Port: ${niktoData.port}`);
   }
   const targetName = targetParts.length > 0 ? targetParts.join(' ') : 'Nikto Scan';
+
+  if (requirements.length === 0) {
+    requirements.push(buildNoFindingsRequirement(
+      'nikto-no-findings',
+      `Nikto scanned ${targetName} and reported zero findings.`,
+      new Date(),
+    ));
+  }
 
   const baseline: EvaluatedBaseline = createMinimalBaseline(targetName, requirements, {
     resultsChecksum,

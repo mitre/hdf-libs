@@ -20,11 +20,13 @@ runConverterContractTests({
 
 describe('Nikto Converter', async () => {
   describe('validation', () => {
-    it('should handle missing vulnerabilities array', async () => {
+    it('should synthesize a passed placeholder when vulnerabilities array is missing', async () => {
       const input = JSON.stringify({host: 'example.com', port: '80'});
       const output = await convertNiktoToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
-      expect(hdf.baselines[0].requirements).toHaveLength(0);
+      expect(hdf.baselines[0].requirements).toHaveLength(1);
+      expect(hdf.baselines[0].requirements[0]!.id).toBe('nikto-no-findings');
+      expect(hdf.baselines[0].requirements[0]!.results[0]!.status).toBe('passed');
     });
   });
 
@@ -218,7 +220,12 @@ describe('Nikto Converter', async () => {
       const hdf = parseJSON<HDFResults>(output);
 
       expect(hdf.baselines).toHaveLength(1);
-      expect(hdf.baselines[0].requirements).toHaveLength(0);
+      expect(hdf.baselines[0].requirements).toHaveLength(1);
+      const req = hdf.baselines[0].requirements[0]!;
+      expect(req.id).toBe('nikto-no-findings');
+      expect(req.results).toHaveLength(1);
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('zero findings');
     });
   });
 
