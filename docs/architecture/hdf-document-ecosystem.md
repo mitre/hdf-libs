@@ -1,11 +1,13 @@
 # HDF Document Type Ecosystem
 
-> **Status:** This is the HDF **design specification**. Implementation is tracked
-> in beads epic `hdf-libs-15kg`. As of 2026-04-02, all 7 schemas exist (hdf-baseline,
-> hdf-results, hdf-comparison, hdf-system, hdf-plan, hdf-amendments, hdf-evidence-package)
-> and all Phase 0–4 work is complete (typed inputs, labels, rename, cross-references,
-> all document type schemas with full type generation for TS/Go). Phase 5
-> (ecosystem integration) is in progress.
+> **Status:** Design vision + ecosystem overview. The authoritative field-level
+> contract is `docs/specification/hdf-specification.md`. As of 2026-06-05, all 7
+> schemas are in place, all 7 document types have CLI surfaces (`hdf system` /
+> `plan` / `amend` / `evidence` etc.), v3.2 classification fields and v3.3
+> CVE-ecosystem primitives are live, and the 30+ scanner converters are
+> standardized on the v3 clean-scan synthesis convention. Forward-looking
+> sections below ("AI Agent Integration", "Multi-Language Support") remain
+> aspirational and have no committed timeline.
 
 ## Overview
 
@@ -640,46 +642,56 @@ hdf
 ├── validate <file>               # Validate any HDF document against its schema
 ├── info <file>                   # Display summary of any HDF document
 ├── stats <results-file>          # Assessment statistics
-├── list <type> <file>            # List requirements, baselines, components
-├── query <results-file>          # Search/filter controls
-├── convert <from> to <to>        # Convert between formats (30+ converters)
+├── list <file>                   # List requirements, baselines, components, etc.
+├── query <results-file>          # Search / filter controls
+├── convert <file>                # Convert between formats (30+ converters; auto-validates output)
+├── fetch <source>                # Pull from live APIs (aws-config, splunk, sonarqube, gitlab)
+├── version                       # Print version info
 │
-├── diff <old> <new>              # Compare any two HDF docs of same type (EXISTS)
-│   ├── --system <file>           # System-aware comparison
+├── diff <old> <new>              # Compare any two HDF docs of same type
 │   ├── --group-by <label>        # Group by any label
 │   ├── --detailed-exitcode       # Nuanced exit codes (10-14)
-│   ├── --format json|md|table    # Output format
-│   │   # Examples:
-│   │   # hdf diff old-results.json new-results.json       (assessment diff)
-│   │   # hdf diff old-system.json new-system.json         (system drift)
-│   │   # hdf diff stig-v1r1.json stig-v1r2.json           (baseline evolution)
-│   │   # hdf diff dev-results.json prod-results.json      (cross-environment)
+│   └── --format json|md|table    # Output format
+│   # Examples:
+│   #   hdf diff old-results.json new-results.json   (temporal)
+│   #   hdf diff old-system.json new-system.json     (system drift)
+│   #   hdf diff stig-v1r1.json stig-v1r2.json       (baseline evolution)
+│   #   hdf diff dev-results.json prod-results.json  (cross-environment)
 │
-├── system                        # System operations
+├── system                        # System architecture
+│   ├── create                    # Scaffold a new hdf-system document
 │   ├── info <file>               # Show system architecture
-│   ├── validate <file>           # Validate system document
-│   ├── discover --aws|--k8s      # Auto-discover from cloud/k8s
-│   └── export --format oscal     # Export to OSCAL SSP
+│   ├── set <file>                # Mutate fields on an hdf-system document
+│   ├── add-component             # Add a component
+│   └── update-component          # Modify an existing component
 │
 ├── plan                          # Assessment planning
-│   ├── create --system <file>    # Generate plan from system definition
-│   ├── validate <file>           # Validate plan against system
-│   └── run <file>                # Execute the plan (run scans)
+│   ├── create [system-file]      # Scaffold an hdf-plan from a system definition
+│   ├── info <file>               # Show plan summary
+│   └── set <file>                # Mutate fields on an hdf-plan document
 │
 ├── amend                         # Amendment management
-│   ├── create <results-file>     # Create waiver/attestation/override
-│   ├── apply <results> <amend>   # Merge amendments into results
-│   ├── verify <file>             # Verify signatures and amendment chain
-│   └── list <file>               # List active/expired overrides
+│   ├── create [results-file]     # Scaffold a new hdf-amendments document
+│   ├── draft                     # Headless: build an amendment from CLI flags
+│   ├── set <file>                # Mutate fields on an hdf-amendments document
+│   ├── apply                     # Merge amendments into results
+│   ├── list <file>               # List active/expired overrides
+│   └── verify <file> [results]   # Verify signatures + amendment chain
 │
 ├── evidence                      # Evidence packaging
-│   ├── build --system --results  # Package everything for audit
-│   ├── validate <file>           # Check completeness
-│   ├── verify <file>             # Verify integrity chain
-│   └── export --format oscal     # Export to OSCAL format
+│   ├── build                     # Package everything for audit
+│   ├── info <file>               # Show evidence-package summary
+│   ├── set <file>                # Mutate fields on an hdf-evidence-package document
+│   ├── verify <file>             # Verify integrity chain + signatures
+│   └── export <file>             # Export evidence-package to OSCAL
 │
-└── version                       # Print version info
+└── generate                      # Generate downstream artifacts
+    ├── inspec-profile <in> <out> # Render an InSpec profile stub from a baseline
+    ├── threshold <results>       # Render a SAF CLI threshold from results
+    └── upgrade <current> <up>    # Apply upstream-baseline updates to an existing baseline
 ```
+
+> **Planned but not yet implemented:** `hdf system discover --aws|--k8s` (cloud / k8s auto-discovery), `hdf plan run` (in-CLI plan execution), `hdf system export` / `hdf amend export` to OSCAL.
 
 ---
 
@@ -826,25 +838,32 @@ New primitives:
 
 ---
 
-## Changes to Existing Schemas
+## Changes to Existing Schemas (historical, v2 → v3 migration)
+
+The items in this section described the v2 → v3 migration plan when the ecosystem
+was being designed. All listed changes have shipped; the section is preserved as
+a record of the intent behind v3's shape.
 
 ### hdf-results.schema.json
-- Rename `attributes` to `inputs` on Evaluated_Baseline (normalize legacy InSpec naming)
-- Add optional `labels: Record<string, string>` to Component via component.schema.json
-- Add optional `labels: Record<string, string>` to Evaluated_Baseline
-- Add optional `systemRef: string` (URI to hdf-system document)
-- Add optional `planRef: string` (URI to hdf-plan document)
-- Use typed Input primitive for `inputs[]` (was unstructured `object`)
+- Rename `attributes` to `inputs` on Evaluated_Baseline (normalize legacy InSpec naming) — **shipped**
+- Add optional `labels: Record<string, string>` to Component via component.schema.json — **shipped**
+- Add optional `labels: Record<string, string>` to Evaluated_Baseline — **shipped**
+- Add optional `systemRef: string` (URI to hdf-system document) — **shipped**
+- Add optional `planRef: string` (URI to hdf-plan document) — **shipped**
+- Use typed Input primitive for `inputs[]` (was unstructured `object`) — **shipped**
 
 ### hdf-baseline.schema.json
-- Add optional `labels: Record<string, string>`
-- Use typed Input primitive for `inputs[]` (was unstructured `object`)
+- Add optional `labels: Record<string, string>` — **shipped**
+- Use typed Input primitive for `inputs[]` (was unstructured `object`) — **shipped**
 
 ### primitives/component.schema.json
-- Add optional `labels` to Base_Component
+- Add optional `labels` to Base_Component — **shipped**
 
 ### primitives/common.schema.json
-- Add Input type definition (or new parameter.schema.json)
+- Add Input type definition (or new parameter.schema.json) — **shipped** (lives in `parameter.schema.json`)
+
+### v3 cardinality tightening (not in the original v2→v3 plan)
+- `requirements`, `results`, and `descriptions` arrays now declare `minItems: 1`. Legacy InSpec-ExecJSON tolerated empty arrays; v3 requires producers to commit to a non-empty record. Converters synthesize a `passed` placeholder for clean scans. See `docs/specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale and shape.
 
 ---
 
