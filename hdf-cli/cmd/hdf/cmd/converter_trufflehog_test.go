@@ -51,7 +51,8 @@ func TestTrufflehogConverter_Convert_EmptyArray(t *testing.T) {
 	require.NoError(t, err)
 
 	output, err := converter.Convert([]byte("[]"))
-	assert.Error(t, err)
-	assert.Nil(t, output)
-	assert.Contains(t, err.Error(), "no findings")
+	require.NoError(t, err, "empty trufflehog input should produce a valid clean-scan HDF document, not an error")
+	require.NotEmpty(t, output)
+	assertHDFOutput(t, output)
+	assert.Contains(t, string(output), "trufflehog-no-findings")
 }
