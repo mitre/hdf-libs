@@ -536,7 +536,12 @@ function buildRefs(item: ReportItem): Reference[] | undefined {
   const refs: Reference[] = [];
 
   if (item.see_also) {
-    refs.push({ url: item.see_also });
+    // Nessus see_also is a whitespace-separated list of URLs (typically
+    // newline-delimited). Emit one Reference per URL so each .url is a
+    // standalone URI (schema requires format: uri).
+    for (const url of item.see_also.split(/\s+/).filter(Boolean)) {
+      refs.push({ url });
+    }
   }
 
   return refs.length > 0 ? refs : undefined;

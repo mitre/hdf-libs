@@ -342,8 +342,11 @@ func buildTags(item *ReportItem, isCompliance bool) map[string]interface{} {
 func buildRefs(item *ReportItem) []hdf.Reference {
 	var refs []hdf.Reference
 
-	if item.SeeAlso != "" {
-		url := item.SeeAlso
+	// Nessus see_also is a whitespace-separated list of URLs (typically
+	// newline-delimited). Emit one Reference per URL so each .url is a
+	// standalone URI (schema requires format: uri).
+	for _, u := range strings.Fields(item.SeeAlso) {
+		url := u
 		refs = append(refs, hdf.Reference{
 			URL: &url,
 		})

@@ -342,6 +342,38 @@ func findRequirementByID(requirements []hdf.EvaluatedRequirement, id string) *hd
 	return nil
 }
 
+func TestConvertNessusToHDF_SeeAlsoMultiURLSplit(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	// Plugin 51192's see_also is:
+	//   "https://www.itu.int/rec/T-REC-X.509/en\nhttps://en.wikipedia.org/wiki/X.509"
+	// Each URL must become its own Reference entry with no embedded whitespace.
+	var req *hdf.EvaluatedRequirement
+	for i := range result.Baselines {
+		if r := findRequirementByID(result.Baselines[i].Requirements, "51192"); r != nil {
+			req = r
+			break
+		}
+	}
+	require.NotNil(t, req, "plugin 51192 not found")
+	require.Len(t, req.Refs, 2, "see_also with two URLs should produce two refs")
+
+	urls := map[string]bool{}
+	for _, ref := range req.Refs {
+		require.NotNil(t, ref.URL)
+		assert.NotContains(t, *ref.URL, "\n", "ref.url must not contain newlines")
+		assert.NotContains(t, *ref.URL, " ", "ref.url must not contain spaces")
+		urls[*ref.URL] = true
+	}
+	assert.True(t, urls["https://www.itu.int/rec/T-REC-X.509/en"], "expected ITU X.509 url")
+	assert.True(t, urls["https://en.wikipedia.org/wiki/X.509"], "expected Wikipedia X.509 url")
+}
+
 func TestConvertNessusToHDF_EntityExpansion(t *testing.T) {
 	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
 	_, err := ConvertNessusToHDF(input, converterVersion)
