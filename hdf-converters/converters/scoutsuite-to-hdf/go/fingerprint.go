@@ -1,6 +1,12 @@
 package scoutsuite
 
-import "github.com/mitre/hdf-libs/hdf-converters/v3/registry"
+import (
+	"regexp"
+
+	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
+)
+
+var scoutsuiteJSPrefixSniff = regexp.MustCompile(`(?i)^\s*scoutsuite_results\s*=\s*\{`)
 
 func init() {
 	registry.Register(registry.ConverterFingerprint{
@@ -18,7 +24,6 @@ func init() {
 			if !hasSvc {
 				return 0
 			}
-			// services must be an object (map), not an array
 			if _, isMap := services.(map[string]any); !isMap {
 				return 0
 			}
@@ -30,6 +35,24 @@ func init() {
 				return 0
 			}
 			return 1.0
+		},
+	})
+
+	registry.Register(registry.ConverterFingerprint{
+		ID:          "scoutsuite-to-hdf-js",
+		Label:       "ScoutSuite",
+		Direction:   registry.DirectionIngest,
+		InputFamily: registry.FamilyText,
+		OutputType:  registry.OutputResults,
+		Fingerprint: func(input any) float64 {
+			s, ok := input.(string)
+			if !ok {
+				return 0
+			}
+			if scoutsuiteJSPrefixSniff.MatchString(s) {
+				return 1.0
+			}
+			return 0
 		},
 	})
 }

@@ -1,5 +1,24 @@
 import { runFingerprintTests } from '../../../shared/typescript/fptest.js';
-import { register, scoutsuiteFingerprint } from './fingerprint.js';
+import { register, scoutsuiteFingerprint, scoutsuiteJsFingerprint } from './fingerprint.js';
+
+runFingerprintTests({
+  id: 'scoutsuite-to-hdf-js',
+  label: 'ScoutSuite',
+  direction: 'ingest',
+  inputFamily: 'text',
+  outputType: 'results',
+  fingerprint: scoutsuiteJsFingerprint,
+  register,
+  positive: [
+    { name: 'detects scoutsuite_results = { prefix', input: 'scoutsuite_results = {"services":{}}', confidence: 1.0 },
+    { name: 'tolerates leading whitespace', input: '  scoutsuite_results = {"services":{}}', confidence: 1.0 },
+    { name: 'case-insensitive', input: 'SCOUTSUITE_RESULTS = {"services":{}}', confidence: 1.0 },
+  ],
+  negative: [
+    { name: 'does not match arbitrary text', input: 'some other content', confidence: 0 },
+    { name: 'does not match scoutsuite_results mid-document', input: '// comment about scoutsuite_results\n{}', confidence: 0 },
+  ],
+});
 
 runFingerprintTests({
   id: 'scoutsuite-to-hdf',
