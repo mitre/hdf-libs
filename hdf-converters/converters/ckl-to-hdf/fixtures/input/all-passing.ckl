@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--DISA STIG Viewer :: 3.6.0 -->
+<CHECKLIST>
+	<ASSET>
+		<ROLE>None</ROLE>
+		<ASSET_TYPE>Computing</ASSET_TYPE>
+		<HOST_NAME>EXAMPLE-CLEAN</HOST_NAME>
+		<HOST_IP>192.0.2.20</HOST_IP>
+		<HOST_MAC>00:00:00:00:00:01</HOST_MAC>
+		<HOST_FQDN>clean.example.com</HOST_FQDN>
+		<TARGET_COMMENT></TARGET_COMMENT>
+		<TECH_AREA></TECH_AREA>
+		<TARGET_KEY></TARGET_KEY>
+		<WEB_OR_DATABASE>false</WEB_OR_DATABASE>
+		<WEB_DB_SITE></WEB_DB_SITE>
+		<WEB_DB_INSTANCE></WEB_DB_INSTANCE>
+	</ASSET>
+	<STIGS>
+		<iSTIG>
+			<STIG_INFO>
+				<SI_DATA>
+					<SID_NAME>version</SID_NAME>
+					<SID_DATA>1</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>classification</SID_NAME>
+					<SID_DATA>UNCLASSIFIED</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>stigid</SID_NAME>
+					<SID_DATA>MOZ_Firefox_STIG</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>releaseinfo</SID_NAME>
+					<SID_DATA>Release: 7 Benchmark Date: 05 Jan 2026</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>title</SID_NAME>
+					<SID_DATA>Mozilla Firefox Security Technical Implementation Guide</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>uuid</SID_NAME>
+					<SID_DATA>add7e8af-33db-420d-aeb6-923f648b0698</SID_DATA>
+				</SI_DATA>
+				<SI_DATA>
+					<SID_NAME>source</SID_NAME>
+					<SID_DATA>Unknown</SID_DATA>
+				</SI_DATA>
+			</STIG_INFO>
+			<VULN>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Num</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>V-251545</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Severity</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>high</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Group_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SRG-APP-000456</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_ID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SV-251545r1117151_rule</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Ver</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>FFOX-00-000001</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>The installed version of Firefox must be supported.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Discuss</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Using versions of an application that are not supported by the vendor is not permitted.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Run Firefox. Click the ellipsis button &gt;&gt; Help &gt;&gt; About Firefox, and view the version number.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Fix_Text</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Upgrade the version of the browser to an approved version.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Weight</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>10.0</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Class</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Unclassified</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>STIG_UUID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>77f30218-d027-4389-b505-e006a80bd35f</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>CCI_REF</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>CCI-002605</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STATUS>NotAFinding</STATUS>
+				<FINDING_DETAILS>Installed Firefox version is current and supported.</FINDING_DETAILS>
+				<COMMENTS>Synthetic all-passing checklist fixture - not a real assessment.</COMMENTS>
+				<SEVERITY_OVERRIDE></SEVERITY_OVERRIDE>
+				<SEVERITY_JUSTIFICATION></SEVERITY_JUSTIFICATION>
+			</VULN>
+			<VULN>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Num</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>V-251546</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Severity</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>high</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Group_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SRG-APP-000560</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_ID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SV-251546r961869_rule</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Ver</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>FFOX-00-000002</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Firefox must be configured to allow only TLS 1.2 or above.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Discuss</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Use of versions prior to TLS 1.2 are not permitted.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Type "about:policies" in the browser window.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Fix_Text</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Configure SSLVersionMin policy to tls1.2.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Weight</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>10.0</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Class</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Unclassified</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>STIG_UUID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>36db5946-11ce-4072-baf0-6f8798ca925d</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>CCI_REF</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>CCI-001453</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STATUS>NotAFinding</STATUS>
+				<FINDING_DETAILS>SSLVersionMin is locked to tls1.2.</FINDING_DETAILS>
+				<COMMENTS></COMMENTS>
+				<SEVERITY_OVERRIDE></SEVERITY_OVERRIDE>
+				<SEVERITY_JUSTIFICATION></SEVERITY_JUSTIFICATION>
+			</VULN>
+			<VULN>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Num</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>V-251547</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Severity</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>medium</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Group_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SRG-APP-000177</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_ID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>SV-251547r1067550_rule</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Ver</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>FFOX-00-000003</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Rule_Title</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Firefox must be configured to ask which certificate to present to a website when a certificate is required.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Vuln_Discuss</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>When a website asks for a certificate for user authentication, Firefox must be configured to have the user choose which certificate to present.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Check_Content</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Type "about:policies" in the browser address bar.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Fix_Text</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Configure security.default_personal_cert to Ask Every Time.</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Weight</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>10.0</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>Class</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>Unclassified</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>STIG_UUID</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>b8bc13e1-b5a6-43f3-b321-310594a6e47b</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STIG_DATA>
+					<VULN_ATTRIBUTE>CCI_REF</VULN_ATTRIBUTE>
+					<ATTRIBUTE_DATA>CCI-000187</ATTRIBUTE_DATA>
+				</STIG_DATA>
+				<STATUS>NotAFinding</STATUS>
+				<FINDING_DETAILS>Preferences policy locks security.default_personal_cert correctly.</FINDING_DETAILS>
+				<COMMENTS></COMMENTS>
+				<SEVERITY_OVERRIDE></SEVERITY_OVERRIDE>
+				<SEVERITY_JUSTIFICATION></SEVERITY_JUSTIFICATION>
+			</VULN>
+		</iSTIG>
+	</STIGS>
+</CHECKLIST>

@@ -155,6 +155,22 @@ func TestConvertCKLBToHDF_OversizedInput(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// Pins safe behavior: an all-passing CKLB must emit one requirement per rule, never requirements:[].
+func TestConvertCKLBToHDF_AllPassingNotEmpty(t *testing.T) {
+	result, err := ConvertCKLBToHDF(loadFixture(t, "all-passing.cklb"), converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	reqs := result.Baselines[0].Requirements
+	assert.Len(t, reqs, 6)
+	assert.Greater(t, len(reqs), 0)
+
+	for _, r := range reqs {
+		require.Len(t, r.Results, 1)
+		assert.Equal(t, hdf.Passed, r.Results[0].Status)
+	}
+}
+
 // Status, parsing, and field-mapping helpers are unit-tested in the shared
 // checklist package (shared/go/checklist); these converter tests exercise the
 // public ConvertCKLBToHDF entry point against the committed fixture.

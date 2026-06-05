@@ -128,4 +128,18 @@ describe('ckl-to-hdf converter', () => {
     expect(r.controlType).toBeUndefined();
     expect(r.verificationMethod).toBeUndefined();
   });
+
+  // Pins safe behavior: an all-passing CKL must produce one requirement per
+  // VULN (never an empty requirements slice) so a future refactor cannot
+  // silently introduce the "emit empty requirements" anti-pattern.
+  it('emits one requirement per VULN for an all-passing CKL', async () => {
+    const hdf = JSON.parse(await convertCklToHdf(loadFixture('all-passing.ckl'))) as HDFResults;
+    expect(hdf.baselines).toHaveLength(1);
+    const reqs = hdf.baselines[0].requirements;
+    expect(reqs).toHaveLength(3);
+    for (const r of reqs) {
+      expect(r.results.length).toBeGreaterThan(0);
+      expect(r.results[0].status).toBe('passed');
+    }
+  });
 });
