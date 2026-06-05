@@ -177,6 +177,7 @@ The sections below apply to Claude (and other AI coding agents) working in this 
 - **>90% code coverage required.** Code is not considered working without unit tests meeting this threshold.
 - Tests define the spec; implementation fulfills the spec.
 - **Zero lint warnings.** Fix all warnings in `pnpm lint` output, even pre-existing ones, unless explicitly told to ignore them.
+- **Comments only when the WHY is non-obvious.** A clear function name beats a multi-line preamble. No issue numbers, no "addresses bug X", no "see PR #Y" — that belongs in commit messages and PR descriptions, where it doesn't rot as the codebase evolves.
 
 ## Converter Requirements
 
