@@ -282,15 +282,21 @@ func TestConvertSonarqubeToHDF_MissingIssuesField(t *testing.T) {
 }
 
 func TestConvertSonarqubeToHDF_EmptyIssues(t *testing.T) {
-	input := []byte(`{
-		"total": 0, "p": 1, "ps": 100,
-		"paging": {"pageIndex": 1, "pageSize": 100, "total": 0},
-		"issues": [], "components": [], "rules": []
-	}`)
+	fixturePath := filepath.Join(shared.GetConvertersDir(), "sonarqube-to-hdf", "fixtures", "input", "empty.json")
+	input, err := os.ReadFile(fixturePath)
+	require.NoError(t, err)
 
 	result, err := ConvertSonarqubeToHDF(input, testConverterVersion)
 	require.NoError(t, err)
-	assert.Empty(t, result.Baselines, "Expected 0 baselines for empty issues")
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "sonarqube-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "SonarQube")
+	assert.Contains(t, req.Results[0].CodeDesc, "com.example:myproject")
+	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
 }
 
 func TestConvertSonarqubeToHDF_SeverityMapImpact(t *testing.T) {

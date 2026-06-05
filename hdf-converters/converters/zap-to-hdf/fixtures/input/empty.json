@@ -1,0 +1,13 @@
+{
+    "@generated": "Thu, 6 Dec 2018 10:53:11",
+    "@version": "2.7.0",
+    "site": [
+        {
+            "@host": "example.com",
+            "@name": "https://example.com",
+            "@port": "443",
+            "@ssl": "true",
+            "alerts": []
+        }
+    ]
+}

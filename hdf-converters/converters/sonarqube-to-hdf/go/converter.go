@@ -181,6 +181,27 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		})
 	}
 
+	if len(baselines) == 0 {
+		targetName := deriveEmptyScanTarget(sonarData.Components)
+		title := fmt.Sprintf("SonarQube Analysis for %s", targetName)
+		baselines = []hdf.EvaluatedBaseline{{
+			Name:  targetName,
+			Title: &title,
+			Requirements: []hdf.EvaluatedRequirement{
+				shared.BuildNoFindingsRequirement(
+					"sonarqube-no-findings",
+					fmt.Sprintf("SonarQube scanned %s and reported zero findings.", targetName),
+					time.Now().UTC(),
+				),
+			},
+			ResultsChecksum: resultsChecksum,
+		}}
+		targets = []hdf.Component{{
+			Name: targetName,
+			Type: hdf.Application,
+		}}
+	}
+
 	// Build HDF
 	timestamp := time.Now()
 
@@ -193,6 +214,18 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		Components:       targets,
 		Timestamp:        &timestamp,
 	}), nil
+}
+
+func deriveEmptyScanTarget(components []Component) string {
+	for _, c := range components {
+		if c.Qualifier == "TRK" {
+			return c.Key
+		}
+	}
+	for _, c := range components {
+		return c.Key
+	}
+	return "the SonarQube project"
 }
 
 func convertProjectToBaseline(

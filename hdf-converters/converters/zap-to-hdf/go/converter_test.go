@@ -48,16 +48,40 @@ func TestConvertZapToHDF_MissingSiteArray(t *testing.T) {
 	input := []byte(`{"@version": "2.7.0"}`)
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
-	assert.Len(t, result.Baselines, 1)
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "zap-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "OWASP ZAP")
 }
 
 func TestConvertZapToHDF_EmptySiteArray(t *testing.T) {
 	input := []byte(`{"@version": "2.7.0", "site": []}`)
 	result, err := ConvertZapToHDF(input, testConverterVersion)
 	require.NoError(t, err)
-	assert.Len(t, result.Baselines, 1)
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "zap-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "OWASP ZAP")
+}
+
+func TestConvertZapToHDF_EmptyFindings(t *testing.T) {
+	input := loadFixture(t, "input/empty.json")
+	result, err := ConvertZapToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "zap-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "OWASP ZAP")
+	assert.Contains(t, req.Results[0].CodeDesc, "https://example.com")
 }
 
 // --- Minimal fixture tests ---

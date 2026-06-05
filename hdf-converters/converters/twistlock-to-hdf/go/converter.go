@@ -408,6 +408,21 @@ func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro
 	return req
 }
 
+// resultTarget returns a human-readable identifier for a result, used in
+// the synthesized no-findings codeDesc and (indirectly) elsewhere.
+func resultTarget(result TwistlockResult) string {
+	switch {
+	case result.Name != "":
+		return result.Name
+	case result.Repository != "":
+		return result.Repository
+	case result.ID != "":
+		return result.ID
+	default:
+		return "scan target"
+	}
+}
+
 // convertSingleResult converts one TwistlockResult to an EvaluatedBaseline.
 func convertSingleResult(result TwistlockResult, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
 	vulns := result.Vulnerabilities
@@ -422,6 +437,16 @@ func convertSingleResult(result TwistlockResult, checksum *hdf.Checksum) hdf.Eva
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedVulns))
 	for i, vuln := range limitedVulns {
 		requirements[i] = buildRequirement(vuln, packageTypes, result.Distro)
+	}
+
+	if len(requirements) == 0 {
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"twistlock-no-findings",
+				fmt.Sprintf("Twistlock scanned %s and reported zero vulnerable components.", resultTarget(result)),
+				time.Now().UTC(),
+			),
+		}
 	}
 
 	baseline := hdf.EvaluatedBaseline{

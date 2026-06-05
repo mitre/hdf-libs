@@ -132,6 +132,23 @@ func convertSingleProject(report SnykReport, checksum *hdf.Checksum) hdf.Evaluat
 		requirements[i] = buildRequirement(vulnID, groups[vulnID])
 	}
 
+	if len(requirements) == 0 {
+		target := report.ProjectName
+		if target == "" {
+			target = report.Path
+		}
+		if target == "" {
+			target = "project"
+		}
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"snyk-no-findings",
+				fmt.Sprintf("Snyk scanned %s and reported zero vulnerable components.", target),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	baseline := hdf.EvaluatedBaseline{
 		Name:            "Snyk Scan",
 		Requirements:    requirements,

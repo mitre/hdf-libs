@@ -6,7 +6,7 @@ import {
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -151,6 +151,17 @@ function convertSingleProject(
   const requirements: EvaluatedRequirement[] = [];
   for (const [vulnID, vulns] of groups) {
     requirements.push(buildRequirement(vulnID, vulns));
+  }
+
+  if (requirements.length === 0) {
+    const target = report.projectName ?? report.path ?? 'project';
+    requirements.push(
+      buildNoFindingsRequirement(
+        'snyk-no-findings',
+        `Snyk scanned ${target} and reported zero vulnerable components.`,
+        new Date(),
+      ),
+    );
   }
 
   const title = `Snyk Project: ${report.projectName ?? ''} Snyk Path: ${report.path ?? ''}`;

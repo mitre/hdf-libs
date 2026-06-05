@@ -1,5 +1,5 @@
 import { parseXmlWithArrays } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, inputIntegrity, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   HDFBaseline,
@@ -365,6 +365,17 @@ async function convertBenchmarkResultsToHdf(
     ruleResultToRequirement(rr, ruleIndex)
   );
 
+  if (requirements.length === 0) {
+    const target = xccdfTargetName(testResult, benchmark);
+    requirements.push(
+      buildNoFindingsRequirement(
+        'xccdf-results-no-findings',
+        `XCCDF scanned ${target} and reported zero findings.`,
+        new Date(),
+      ),
+    );
+  }
+
   const resultsChecksum: Checksum = await inputChecksum(rawInput);
 
   const baselineName = extractText(benchmark.title) || 'XCCDF Benchmark';
@@ -614,6 +625,17 @@ async function convertArfCollection(
       ruleResultToRequirement(rr, ruleIndex)
     );
 
+    if (requirements.length === 0) {
+      const target = xccdfTargetName(testResult, benchmark);
+      requirements.push(
+        buildNoFindingsRequirement(
+          'xccdf-results-no-findings',
+          `XCCDF scanned ${target} and reported zero findings.`,
+          new Date(),
+        ),
+      );
+    }
+
     // Baseline name from Benchmark title
     let baselineName = '';
     if (benchmark) {
@@ -817,6 +839,34 @@ function ruleResultToRequirement(
   }
 
   return req;
+}
+
+/**
+ * Pick the most specific identifier available for a no-findings codeDesc.
+ * Falls back through TestResult target/title, benchmark title/id, then a generic phrase.
+ */
+function xccdfTargetName(
+  testResult: TestResultElement | undefined,
+  benchmark: BenchmarkElement | undefined,
+): string {
+  const tr = testResult ?? {};
+  const target = (tr.target ?? '').trim();
+  if (target) {
+    return target;
+  }
+  const trTitle = extractText(tr.title).trim();
+  if (trTitle) {
+    return trTitle;
+  }
+  const benchTitle = extractText(benchmark?.title).trim();
+  if (benchTitle) {
+    return benchTitle;
+  }
+  const benchId = (benchmark?.id ?? '').trim();
+  if (benchId) {
+    return benchId;
+  }
+  return 'the target';
 }
 
 /**

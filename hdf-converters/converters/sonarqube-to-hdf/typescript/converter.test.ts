@@ -184,21 +184,21 @@ describe('SonarQube to HDF Converter', async () => {
       await expect(convertSonarqubeToHdf('{"total": 0}')).rejects.toThrow('Invalid SonarQube structure: missing or invalid issues field');
     });
 
-    it('should handle empty issues array', async () => {
-      const input = JSON.stringify({
-        total: 0,
-        p: 1,
-        ps: 100,
-        paging: { pageIndex: 1, pageSize: 100, total: 0 },
-        issues: [],
-        components: [],
-        rules: [],
-      });
+    it('should synthesize a passed placeholder for empty issues array', async () => {
+      const inputPath = join(__dirname, '../fixtures/input/empty.json');
+      const input = readFileSync(inputPath, 'utf-8');
 
       const result = await convertSonarqubeToHdf(input);
       const hdf: HDFResults = JSON.parse(result);
 
-      expect(hdf.baselines).toEqual([]);
+      expect(hdf.baselines).toHaveLength(1);
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs).toHaveLength(1);
+      expect(reqs[0]!.id).toBe('sonarqube-no-findings');
+      expect(reqs[0]!.results[0]!.status).toBe('passed');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('SonarQube');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('com.example:myproject');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('zero findings');
     });
 
     it('should set default NIST tags for non-security issues', async () => {

@@ -225,7 +225,7 @@ describe('twistlock to HDF converter', async () => {
   });
 
   describe('empty vulnerabilities', async () => {
-    it('should handle null vulnerabilities', async () => {
+    it('should synthesize a passed placeholder when vulnerabilities is null', async () => {
       const input = JSON.stringify({
         results: [{
           name: 'clean-image',
@@ -236,7 +236,42 @@ describe('twistlock to HDF converter', async () => {
         }],
       });
       const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('twistlock-no-findings');
+      expect(req.results).toHaveLength(1);
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('Twistlock');
+      expect(req.results[0]!.codeDesc).toContain('vulnerable components');
+      expect(req.results[0]!.codeDesc).toContain('clean-image');
+    });
+
+    it('should synthesize a passed placeholder from the empty.json fixture', async () => {
+      const hdf = JSON.parse(await convertTwistlockToHdf(loadFixture('empty.json'))) as HDFResults;
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('twistlock-no-findings');
+      expect(req.impact).toBe(0);
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('registry.io/clean:latest');
+    });
+
+    it('should synthesize one placeholder per clean result baseline', async () => {
+      const input = JSON.stringify({
+        results: [
+          { name: 'image-a', vulnerabilities: [] },
+          { name: 'image-b', vulnerabilities: [] },
+        ],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+      expect(hdf.baselines).toHaveLength(2);
+      for (const baseline of hdf.baselines) {
+        expect(baseline.requirements).toHaveLength(1);
+        expect(baseline.requirements[0]!.id).toBe('twistlock-no-findings');
+      }
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.codeDesc).toContain('image-a');
+      expect(hdf.baselines[1]!.requirements[0]!.results[0]!.codeDesc).toContain('image-b');
     });
   });
 

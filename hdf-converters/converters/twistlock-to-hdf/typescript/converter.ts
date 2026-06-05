@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -386,6 +386,15 @@ function convertSingleResult(
   const requirements: EvaluatedRequirement[] = limitedVulns.map(vuln =>
     buildRequirement(vuln, packageTypes, result.distro)
   );
+
+  if (requirements.length === 0) {
+    const target = result.name ?? result.repository ?? result.id ?? 'scan target';
+    requirements.push(buildNoFindingsRequirement(
+      'twistlock-no-findings',
+      `Twistlock scanned ${target} and reported zero vulnerable components.`,
+      new Date(),
+    ));
+  }
 
   const title = buildTitle(result);
   const summary = buildSummary(result);

@@ -836,11 +836,12 @@ if (requirements.length === 0) {
 
 ### Conventions
 
-- **ID:** `<source>-no-findings` (kebab-case source name, matches the converter directory). For multi-baseline converters where each baseline represents a sub-tool, use `<sub-tool>-no-findings` (e.g. MSDO produces `bandit-no-findings`, `eslint-no-findings`, etc.).
+- **ID:** `<source>-no-findings` (kebab-case source name, matches the converter directory). For multi-baseline converters where each baseline represents a sub-tool or per-run identity, use `<sub-tool>-no-findings` derived from the baseline's natural name — e.g. MSDO produces `bandit-no-findings`/`eslint-no-findings` per scanner; `sarif-to-hdf` produces `<run.tool.driver.name>-no-findings` per SARIF run.
 - **codeDesc:** `<Tool> <verb> <target> and reported zero <noun>.`
-  - **verb:** `scanned` (most tools), `analyzed` (SCA tools), `ran` (multi-tool wrappers like SARIF aggregators).
-  - **noun:** `findings` (most tools), `vulnerable components` (SCA / dependency scanners — deptrack, grype, jfrog-xray).
-  - **target:** the most specific identifier the report provides — host, project name, repo, image, URL, etc. Fall back to a hardcoded generic phrase only when the report has no identifying field at all (e.g. gosec uses `"Go codebase"`, jfrog-xray uses `"the target artifact"`).
+  - **verb:** `scanned` (default — Nessus, Burp Suite, Checkov, Snyk, Grype, ZAP, etc.); `analyzed` (Dependency-Track); `ran` (multi-tool wrappers — MSDO, generic SARIF).
+  - **noun:** `findings` (default, including DAST/SAST/cloud-config/secrets scanners); `vulnerable components` (SCA / dependency / container-vuln scanners — Dependency-Track, Grype, JFrog Xray, NeuVector, Prisma Cloud, Snyk, Twistlock).
+  - **target:** the most specific identifier the report provides — host, project name, repo, image, URL, scanner name. Fall back to a hardcoded generic phrase only when the report has no identifying field at all (examples in tree: gosec → `"Go codebase"`, JFrog Xray → `"the target artifact"`, MS Defender for Endpoint → `"the tenant"`, Prisma Cloud → `"the workload"`, TruffleHog → `"the target source"`, XCCDF results → `"the target"`, Veracode → `"Veracode Application"`).
+  - **Pattern flexibility:** when the source's natural identifier doesn't fit the strict `<verb> <target>` template, prefer readability over template adherence. Example: GitLab security reports lack a project field; their codeDesc reads `GitLab <SAST|DAST|...> scan via <scanner> reported zero findings.` This still satisfies the convention (tool name, verb, scanner-as-target, "reported zero findings") but bends the literal word order. Do this sparingly and only when the natural target is genuinely awkward in the default template.
 - **title, status, impact, tags, descriptions:** set by the shared helper — do not pass them. The helper produces `title="No findings reported"`, `status=passed`, `impact=0`, `tags={}`, one description with `label="default"` and `data=codeDesc`. All synthesized placeholders share this shape — do not inline a custom struct, refactor to the helper.
 
 ### `passed` vs. `notApplicable` — the distinction matters
