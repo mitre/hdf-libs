@@ -105,7 +105,9 @@ jobs:
         run: pnpm build:ts
       - name: Verify TS artifacts
         run: |
-          for pkg in hdf-schema hdf-utilities hdf-mappings hdf-validators hdf-parsers hdf-converters hdf-diff; do
+          for pkg in hdf-schema hdf-utilities hdf-mappings hdf-validators \
+                     hdf-parsers hdf-converters hdf-generators hdf-diff \
+                     hdf-extension-graph; do
             [ -d "$pkg/dist" ] && echo "✓ $pkg/dist" || { echo "✗ $pkg/dist missing"; exit 1; }
           done
       - name: Build Go CLI
@@ -121,7 +123,9 @@ jobs:
             hdf-validators/dist/
             hdf-parsers/dist/
             hdf-converters/dist/
+            hdf-generators/dist/
             hdf-diff/dist/
+            hdf-extension-graph/dist/
           retention-days: 1
 
   # ── Test TypeScript ──────────────────────────────────────────────────────
