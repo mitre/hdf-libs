@@ -9,10 +9,11 @@
 // Skipped when `go` is unavailable on PATH so dev-environments without a Go
 // toolchain don't fail. CI must have Go (the Go test suite requires it).
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { dump, loadFixture } from './equivalence-dump.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -28,9 +29,13 @@ function hasGo(): boolean {
   }
 }
 
+// Built once in beforeAll and reused across fixtures. Using `go run` per
+// invocation re-links every time and blew past the default 5s vitest timeout
+// on cold CI runners.
+let goBinary = '';
+
 function runGoDumper(fixturePath: string): unknown {
-  const out = execFileSync('go', ['run', '.', fixturePath], {
-    cwd: goCmdDir,
+  const out = execFileSync(goBinary, [fixturePath], {
     encoding: 'utf-8',
     maxBuffer: 64 * 1024 * 1024,
   });
@@ -43,6 +48,15 @@ const FIXTURES = [
 ];
 
 describe.skipIf(!hasGo())('cross-language equivalence (Go ↔ TS)', () => {
+  beforeAll(() => {
+    const tmp = mkdtempSync(path.join(tmpdir(), 'equivalence-dump-'));
+    goBinary = path.join(
+      tmp,
+      process.platform === 'win32' ? 'equivalence-dump.exe' : 'equivalence-dump',
+    );
+    execFileSync('go', ['build', '-o', goBinary, '.'], { cwd: goCmdDir });
+  }, 120_000);
+
   for (const name of FIXTURES) {
     const fixturePath = path.join(repoRoot, 'test', 'fixtures', name);
 

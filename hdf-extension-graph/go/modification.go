@@ -6,10 +6,13 @@
 // extension chain, modification detection).
 package hdfextension
 
-// TrackedFields are the EvaluatedRequirement field names compared by
-// ContextualizedRequirement.Modifications. The names match the JSON field
-// names from the HDF schema (and the TypeScript package's TRACKED_FIELDS) so
-// Modification.Field is stable across the two implementations.
+// TrackedFields is the canonical list of EvaluatedRequirement field names
+// whose changes Modifications detects, in the order Modifications emits them.
+// Each field is a different type, so Modifications hardcodes one comparison
+// per field rather than iterating this slice — TestTrackedFields pins the two
+// lists to the same set and order so they cannot drift. The names match the
+// JSON field names from the HDF schema (and the TypeScript package's
+// TRACKED_FIELDS) so Modification.Field is stable across both implementations.
 var TrackedFields = []string{
 	"impact",
 	"title",

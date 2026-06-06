@@ -422,12 +422,14 @@ func TestModifications(t *testing.T) {
 		child.Data.Disposition = ptr(hdf.RiskAdjustment)
 		linkReqs(child, base)
 
+		// Pin the emitted field order to the TrackedFields slice directly so
+		// a drift between the two lists fails this test.
 		mods := child.Modifications()
-		assert.Len(t, mods, 5)
-		assert.Equal(t, "impact", mods[0].Field)
-		assert.Equal(t, "title", mods[1].Field)
-		assert.Equal(t, "severity", mods[2].Field)
-		assert.Equal(t, "effectiveImpact", mods[3].Field)
-		assert.Equal(t, "disposition", mods[4].Field)
+		assert.Len(t, mods, len(TrackedFields))
+		emitted := make([]string, len(mods))
+		for i, m := range mods {
+			emitted[i] = m.Field
+		}
+		assert.Equal(t, TrackedFields, emitted)
 	})
 }

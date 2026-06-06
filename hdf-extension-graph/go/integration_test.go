@@ -135,10 +135,11 @@ func TestIntegration_TwoLayerOverlay(t *testing.T) {
 
 		assert.True(t, overlaySV003.IsRedundant(), "empty code → redundant")
 
+		mods := overlaySV003.Modifications()
 		var impactMod *Modification
-		for i, m := range overlaySV003.Modifications() {
-			if m.Field == "impact" {
-				impactMod = &overlaySV003.Modifications()[i]
+		for i := range mods {
+			if mods[i].Field == "impact" {
+				impactMod = &mods[i]
 				break
 			}
 		}

@@ -9,9 +9,9 @@ import (
 
 func TestTrackedFields(t *testing.T) {
 	t.Run("should list the five fields the TypeScript package tracks, in order", func(t *testing.T) {
-		// Field order is part of the spec — Modifications() walks TrackedFields
-		// in order and appends in that order. Tests assert that ordering, so
-		// it cannot change silently here.
+		// Field order is part of the spec — Modifications appends in this
+		// order and the cross-language equivalence dump sorts by Field, so
+		// downstream tests assert ordering. It cannot change silently here.
 		assert.Equal(t, []string{"impact", "title", "severity", "effectiveImpact", "disposition"}, TrackedFields)
 	})
 }
