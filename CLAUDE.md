@@ -178,6 +178,7 @@ The sections below apply to Claude (and other AI coding agents) working in this 
 - Tests define the spec; implementation fulfills the spec.
 - **Zero lint warnings.** Fix all warnings in `pnpm lint` output, even pre-existing ones, unless explicitly told to ignore them.
 - **Comments only when the WHY is non-obvious.** A clear function name beats a multi-line preamble. No issue numbers, no "addresses bug X", no "see PR #Y" — that belongs in commit messages and PR descriptions, where it doesn't rot as the codebase evolves.
+- **Multi-line comment blocks are almost never justified.** Default to a single line. Only spend more space when a non-obvious invariant, hidden constraint, or subtle cross-file interaction genuinely needs it. If the WHY fits in one line, write one line. Resist the urge to narrate design decisions — that's what the commit message is for.
 
 ## Converter Requirements
 
