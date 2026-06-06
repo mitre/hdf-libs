@@ -335,3 +335,89 @@ func TestErrorMessages(t *testing.T) {
 		assert.Regexp(t, "(?i)(JSON|parse|syntax|invalid|character)", result.Error)
 	})
 }
+
+// --- normalizeTimestamps ---
+
+func TestNormalizeTimestamps(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			"InSpec-style no-tz timestamp gets Z appended",
+			`{"startTime":"2026-03-25T22:56:27.736808"}`,
+			`{"startTime":"2026-03-25T22:56:27.736808Z"}`,
+		},
+		{
+			"already-RFC3339 with Z is unchanged",
+			`{"startTime":"2026-03-25T22:56:27Z"}`,
+			`{"startTime":"2026-03-25T22:56:27Z"}`,
+		},
+		{
+			"already-RFC3339 with +HH:MM offset is unchanged",
+			`{"startTime":"2026-03-25T22:56:27+05:30"}`,
+			`{"startTime":"2026-03-25T22:56:27+05:30"}`,
+		},
+		{
+			"already-RFC3339 with -HH:MM offset is unchanged",
+			`{"startTime":"2026-03-25T22:56:27-05:00"}`,
+			`{"startTime":"2026-03-25T22:56:27-05:00"}`,
+		},
+		{
+			"no fractional seconds also gets Z",
+			`{"startTime":"2026-03-25T22:56:27"}`,
+			`{"startTime":"2026-03-25T22:56:27Z"}`,
+		},
+		{
+			"multiple timestamps in one doc all get normalized",
+			`{"timestamp":"2026-03-25T22:56:27","baselines":[{"requirements":[{"results":[{"startTime":"2026-03-25T22:56:28.5"}]}]}]}`,
+			`{"timestamp":"2026-03-25T22:56:27Z","baselines":[{"requirements":[{"results":[{"startTime":"2026-03-25T22:56:28.5Z"}]}]}]}`,
+		},
+		{
+			"timestamp-shaped substring inside prose is not touched",
+			`{"codeDesc":"job started at 2026-03-25T22:56:27 and finished"}`,
+			`{"codeDesc":"job started at 2026-03-25T22:56:27 and finished"}`,
+		},
+		{
+			"empty input is unchanged",
+			``,
+			``,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := normalizeTimestamps([]byte(tc.in))
+			assert.Equal(t, tc.want, string(got))
+		})
+	}
+}
+
+func TestParseResults_AcceptsInSpecNoTzTimestamps(t *testing.T) {
+	input := []byte(`{
+		"timestamp": "2026-03-25T22:56:27.736808",
+		"generator": {"name": "inspec", "version": "5.0.0"},
+		"baselines": [{
+			"name": "test",
+			"resultsChecksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"},
+			"requirements": [{
+				"id": "x",
+				"impact": 0.5,
+				"tags": {},
+				"descriptions": [{"label": "default", "data": "x"}],
+				"results": [{"status": "passed", "codeDesc": "x", "startTime": "2026-03-25T22:56:27.736808"}]
+			}]
+		}]
+	}`)
+	result := ParseResults(input)
+	assert.True(t, result.Success, "should accept no-tz timestamps; got error: %s", result.Error)
+	assert.NotNil(t, result.Data)
+	require := func(b bool, msg string) {
+		if !b {
+			t.Fatalf("%s", msg)
+		}
+	}
+	require(result.Data != nil, "result.Data is nil")
+	require(result.Data.Timestamp != nil, "Timestamp pointer is nil after parse")
+	assert.Equal(t, "2026-03-25T22:56:27.736808Z", result.Data.Timestamp.Format("2006-01-02T15:04:05.999999Z07:00"))
+}
