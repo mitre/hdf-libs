@@ -1,0 +1,63 @@
+{
+  "baselines": [
+    {
+      "name": "parent",
+      "groups": [],
+      "supports": [],
+      "sha256": "parent-sha",
+      "requirements": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "title": "Original title",
+          "severity": "medium",
+          "tags": {},
+          "descriptions": [{ "label": "default", "data": "Parent requirement V-1" }],
+          "results": [{ "codeDesc": "ok", "startTime": "2026-01-01T00:00:00.000Z", "status": "passed" }],
+          "code": "describe 'parent V-1' do; it { should be_truthy }; end"
+        },
+        {
+          "id": "V-2",
+          "impact": 0.7,
+          "title": "Parent V-2",
+          "severity": "high",
+          "tags": {},
+          "descriptions": [{ "label": "default", "data": "Parent requirement V-2" }],
+          "results": [{ "codeDesc": "ok", "startTime": "2026-01-01T00:00:00.000Z", "status": "passed" }],
+          "code": "describe 'parent V-2' do; it { should be_truthy }; end"
+        }
+      ]
+    },
+    {
+      "name": "overlay",
+      "parentBaseline": "parent",
+      "groups": [],
+      "supports": [],
+      "sha256": "overlay-sha",
+      "requirements": [
+        {
+          "id": "V-1",
+          "impact": 0.9,
+          "title": "Overlay raises severity",
+          "severity": "critical",
+          "effectiveImpact": 0.95,
+          "disposition": "riskAdjustment",
+          "tags": {},
+          "descriptions": [{ "label": "default", "data": "Overlay V-1" }],
+          "results": [{ "codeDesc": "ok", "startTime": "2026-01-01T00:00:00.000Z", "status": "passed" }],
+          "code": "describe 'overlay V-1' do; it { should be_truthy }; end"
+        },
+        {
+          "id": "V-2",
+          "impact": 0.7,
+          "title": "Parent V-2",
+          "severity": "high",
+          "tags": {},
+          "descriptions": [{ "label": "default", "data": "Overlay V-2 unchanged" }],
+          "results": [{ "codeDesc": "ok", "startTime": "2026-01-01T00:00:00.000Z", "status": "passed" }],
+          "code": "describe 'parent V-2' do; it { should be_truthy }; end"
+        }
+      ]
+    }
+  ]
+}

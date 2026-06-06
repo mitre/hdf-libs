@@ -27,7 +27,7 @@ pnpm workspace with 10 packages + a VitePress schema documentation site:
 | `hdf-converters` | 33 security tool converters (dual TS + Go) | TS + Go |
 | `hdf-generators` | Generate InSpec profiles from baselines | TS + Go |
 | `hdf-diff` | Structural diff engine for assessments | TS |
-| `hdf-extension-graph` | InSpec overlay/extension chain resolution | TS |
+| `hdf-extension-graph` | InSpec overlay/extension chain resolution | TS + Go |
 | `hdf-cli` | Go CLI wrapping all of the above | Go |
 | `site/` | VitePress schema reference site for GitHub Pages | TS |
 
