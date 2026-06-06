@@ -1,10 +1,13 @@
 name: Pre-release checks
 
 # Runs after merge to main (and on manual dispatch) to verify that the
-# next tag-triggered release will produce installable packages. These
-# checks are too expensive to run on every PR, but they catch the class
-# of bug — broken publish pipeline — that only surfaces at consume time
-# and is otherwise silent until a release is already cut.
+# next tag-triggered release will produce installable packages.
+#
+# Lighter package-metadata checks (publint + attw against packed
+# tarballs) run on every PR in ci.yml's verify-packages job. This
+# workflow holds the heavier smoke test that does an end-to-end npm
+# install of every package, which is too slow for the per-PR loop but
+# is the last line of defense before a release tag.
 #
 # If any job here fails on main, do NOT cut a tag — fix the underlying
 # packaging problem first.
@@ -105,64 +108,6 @@ jobs:
           done
           exit $FAIL
 
-  # Packs every package and runs publint + @arethetypeswrong/cli against
-  # each tarball. Catches package-metadata and types-export defects that
-  # npm install alone doesn't: missing `exports.types`, ESM-declared
-  # packages with broken dual-types, dead `main`/`module` paths,
-  # unreachable sub-path exports, etc. Uses tarballs (not source dirs)
-  # so we're validating exactly what `pnpm publish` would upload.
-  verify-packages:
-    name: Lint packed tarballs (publint + attw)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: ./.github/actions/setup
-      - name: Build TypeScript (pack reads dist/)
-        run: pnpm build:ts
-
-      - name: Pack all publishable packages
-        run: |
-          mkdir -p /tmp/tarballs
-          PACKAGES=(
-            hdf-schema hdf-utilities hdf-mappings hdf-validators
-            hdf-parsers hdf-converters hdf-generators hdf-diff
-            hdf-extension-graph
-          )
-          for pkg in "${PACKAGES[@]}"; do
-            (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)
-          done
-
-      - name: publint each tarball
-        run: |
-          FAIL=0
-          for tb in /tmp/tarballs/*.tgz; do
-            echo "::group::publint $(basename "$tb")"
-            pnpm dlx publint "$tb" || FAIL=1
-            echo "::endgroup::"
-          done
-          exit $FAIL
-
-      - name: "@arethetypeswrong/cli each tarball"
-        # --ignore-rules:
-        #   cjs-resolves-to-esm: we publish ESM-only intentionally
-        #     (see package.json `"type": "module"`).
-        #   no-resolution: sub-path exports (./helpers, ./hdf-results)
-        #     require the "exports" map, which node10 does not support.
-        #     We target Node 22+ (see engines field in package.json).
-        #
-        # `pnpm exec` (not dlx): attw is a root devDependency so we get
-        # the lockfile-pinned version. dlx pulls each transitive dep
-        # fresh and bypasses the fflate@0.8.3 → 0.8.2 override below
-        # that works around upstream attw bug:
-        # arethetypeswrong/arethetypeswrong.github.io#258, #262, PR #261
-        # (open). When that PR ships in a new attw release, drop both
-        # the fflate override and this comment.
-        run: |
-          FAIL=0
-          for tb in /tmp/tarballs/*.tgz; do
-            echo "::group::attw $(basename "$tb")"
-            pnpm exec attw --ignore-rules cjs-resolves-to-esm no-resolution -- "$tb" || FAIL=1
-            echo "::endgroup::"
-          done
-          exit $FAIL
+  # NOTE: publint + @arethetypeswrong/cli moved to ci.yml's
+  # `verify-packages` job so packaging defects surface on the PR that
+  # introduces them, not after merge to main.

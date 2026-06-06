@@ -14,7 +14,7 @@ import type {
   ResultStatus,
   SupportedPlatform,
   RequirementGroup,
-} from '../dist/ts/hdf-results.js';
+} from '../dist/ts/hdf.js';
 
 export function createMinimalBaseline(
   name: string,
