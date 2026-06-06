@@ -585,6 +585,16 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		targetName = "Grype Scan"
 	}
 
+	if len(requirements) == 0 {
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"grype-no-findings",
+				fmt.Sprintf("Grype scanned %s and reported zero vulnerable components.", targetName),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	// Create baseline
 	baseline := hdf.EvaluatedBaseline{
 		Name:            targetName,

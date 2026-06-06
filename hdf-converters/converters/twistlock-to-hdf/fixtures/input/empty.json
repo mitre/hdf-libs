@@ -1,0 +1,30 @@
+{
+	"results": [
+		{
+			"id": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+			"name": "registry.io/clean:latest",
+			"distro": "Red Hat Enterprise Linux release 8.6 (Ootpa)",
+			"distroRelease": "RHEL8",
+			"collections": [
+				"All"
+			],
+			"packages": [],
+			"vulnerabilities": [],
+			"vulnerabilityDistribution": {
+				"critical": 0,
+				"high": 0,
+				"medium": 0,
+				"low": 0,
+				"total": 0
+			},
+			"complianceDistribution": {
+				"critical": 0,
+				"high": 0,
+				"medium": 0,
+				"low": 0,
+				"total": 0
+			}
+		}
+	],
+	"consoleURL": "https://twistlock.test.net/#!/monitor/vulnerabilities/images/ci?search=sha256%3A0000000000000000000000000000000000000000000000000000000000000000"
+}

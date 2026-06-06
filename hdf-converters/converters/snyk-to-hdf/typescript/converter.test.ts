@@ -223,15 +223,22 @@ describe('snyk to HDF converter', async () => {
   });
 
   describe('empty vulnerabilities', async () => {
-    it('should handle empty vulnerabilities array', async () => {
-      const input = JSON.stringify({
-        ok: true,
-        vulnerabilities: [],
-        projectName: 'clean-project',
-        summary: 'No known vulnerabilities',
-      });
-      const hdf = JSON.parse(await convertSnykToHdf(input)) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    it('should synthesize a passed placeholder requirement from empty.json fixture', async () => {
+      const hdf = JSON.parse(await convertSnykToHdf(loadFixture('empty.json'))) as HDFResults;
+
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('snyk-no-findings');
+      expect(req.results).toHaveLength(1);
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('Snyk');
+      expect(req.results[0]!.codeDesc).toContain('scanned');
+      expect(req.results[0]!.codeDesc).toContain('vulnerable components');
+      expect(req.results[0]!.codeDesc).toContain('clean-project');
+
+      expect(hdf.components?.[0]?.name).toBe('clean-project');
     });
   });
 });

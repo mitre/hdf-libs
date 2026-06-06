@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "vulnerabilities": [],
+  "dependencyCount": 12,
+  "org": "demo-org",
+  "policy": "# Snyk (https://snyk.io) policy file\nversion: v1.25.0\nignore: {}\npatch: {}\n",
+  "isPrivate": true,
+  "licensesPolicy": null,
+  "packageManager": "npm",
+  "ignoreSettings": null,
+  "summary": "No vulnerable paths found.",
+  "filesystemPolicy": false,
+  "filtered": {
+    "ignore": [],
+    "patch": []
+  },
+  "uniqueCount": 0,
+  "projectName": "clean-project",
+  "displayTargetFile": "package-lock.json",
+  "path": "./clean-project/"
+}

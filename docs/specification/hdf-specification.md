@@ -29,6 +29,46 @@ Documents reference each other via URI strings: `systemRef`, `planRef`.
 - `generator` (optional on all documents): `{name, version}` of the producing tool.
 - `labels` (optional on most documents): `{key: value}` string map for flexible grouping. Well-known keys: `system`, `component`, `environment`, `region`, `team`.
 
+### Cardinality invariants
+
+Several arrays in the schema declare `minItems: 1`:
+
+| Path | Constraint |
+|------|------------|
+| `Evaluated_Baseline.requirements` | minItems: 1 |
+| `Evaluated_Requirement.results` | minItems: 1 |
+| `Evaluated_Requirement.descriptions` | minItems: 1 (must include label `default`) |
+| `Baseline.requirements` | minItems: 1 |
+| `Baseline_Requirement.descriptions` | minItems: 1 (must include label `default`) |
+| `Components` (system) | minItems: 1 |
+
+**Rationale.** An HDF Results document records the outcome of an assessment. A baseline with zero requirements (or a requirement with zero results) is structurally meaningless — it implies the producer claims an assessment happened but recorded no work. The cardinality invariants force producers to commit to a non-empty record, and let consumers (Heimdall app, `hdf query`, dashboards, downstream OSCAL exporters) safely access `baselines[0]`, `requirements[0].results[0]`, and `requirements[0].descriptions[0]` without defensive null-checking. Empty arrays would also be semantically ambiguous: clean scan? filter excluded everything? truncated input? converter bug? An explicit record disambiguates. The constraint matches peer formats — OSCAL `AssessmentResult` and InSpec profiles have equivalent non-empty-collection guarantees.
+
+**Migration note.** Legacy HDF (the InSpec-ExecJSON-shaped output that the original Heimdall2 mappers produced) did **not** enforce these cardinality invariants. A clean Heimdall2 scan emitted `profiles[0].controls: []` and the consumer was expected to tolerate empty arrays. The v3 schema deliberately tightened the contract: producers MUST emit non-empty arrays, and clean scans MUST synthesize a `passed` placeholder per the convention below. Consumers reading v3 HDF can rely on first-element access being safe; producers translating from legacy InSpec-shaped data MUST add synthesis at the converter boundary.
+
+### Clean-scan convention: synthesize a `passed` placeholder
+
+A direct consequence of the cardinality invariants: a scanner that runs cleanly (zero findings) still must produce at least one requirement and one result. Converters MUST synthesize a placeholder rather than emitting an empty array.
+
+**Shape:**
+
+| Field | Value |
+|-------|-------|
+| `id` | `<source>-no-findings` (kebab-case converter source name) — or `<sub-tool>-no-findings` for multi-baseline converters where each baseline represents a distinct sub-tool (e.g. SARIF per-run, MSDO per-scanner) |
+| `title` | `"No findings reported"` |
+| `impact` | `0` |
+| `tags` | `{}` |
+| `descriptions[0]` | `{label: "default", data: <codeDesc>}` |
+| `results[0].status` | `passed` |
+| `results[0].codeDesc` | `<Tool> <verb> <target> and reported zero <noun>.` (verb: `scanned` default, `analyzed` for SCA tools, `ran` for multi-tool wrappers; noun: `findings` default, `vulnerable components` for SCA/dependency/container-vuln tools) |
+| `results[0].startTime` | scan timestamp from source, or current time if unavailable |
+
+**Spec-backed semantics for `passed`.** This is not a "no information" placeholder — it is a positive assertion that the scan ran against in-scope inputs and detected nothing wrong. The framing aligns with: NIST SP 800-53A *Satisfied*, OSCAL `satisfied`, XCCDF `pass`, STIG *Not_a_Finding*, and SARIF v2.1.0 §3.7.2 ("an empty results array shall be interpreted to mean that the analysis tool did not detect any results").
+
+**Distinguish from `notApplicable`.** Synthesize `notApplicable` (not `passed`) when the rule's applicability check itself didn't fire — e.g. a cloud-config rule with zero in-scope resources, where the rule never evaluated against anything. The two convey materially different audit positions: `passed` says "we checked and you're compliant"; `notApplicable` says "we didn't check this one." Producers SHOULD use whichever the source format's semantics support; consumers SHOULD treat them as distinct.
+
+Reference helper implementations: `shared.BuildNoFindingsRequirement` (Go) and `buildNoFindingsRequirement` (TypeScript) in `hdf-converters/shared/`. Every in-tree converter that emits a `passed` placeholder for clean scans calls one of these.
+
 ---
 
 ## 1. Results

@@ -1,0 +1,4 @@
+{
+  "_provenance": "Constructed from Microsoft Azure REST API documentation (Microsoft.Security/assessments, api-version 2021-06-01). Models a subscription with zero assessment findings — i.e. a clean-scan response where the value array is empty.",
+  "value": []
+}

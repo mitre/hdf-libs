@@ -80,7 +80,7 @@ Output defaults to stdout when no output path is given.`,
 				return fmt.Errorf("failed to serialize HDF output: %w", err)
 			}
 
-			return writeConvertOutput(output, outputPath)
+			return writeValidatedHDFOutput(cmd, output, outputPath)
 		},
 	}
 
@@ -88,6 +88,7 @@ Output defaults to stdout when no output path is given.`,
 	cmd.Flags().StringVarP(&profile, "profile", "p", "", "AWS CLI named profile (from ~/.aws/credentials or ~/.aws/config)")
 	cmd.Flags().StringVar(&format, "format", "hdf", "Output format: hdf (convert to HDF) or raw (native tool output)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file path (default: stdout)")
+	addNoValidateFlag(cmd)
 
 	_ = cmd.MarkFlagRequired("region")
 

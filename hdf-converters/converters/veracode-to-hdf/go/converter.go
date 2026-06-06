@@ -318,6 +318,21 @@ func ConvertVeracodeToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	allRequirements = append(allRequirements, cweRequirements...)
 	allRequirements = append(allRequirements, cveRequirements...)
 
+	targetName := report.AppName
+	if targetName == "" {
+		targetName = "Veracode Application"
+	}
+
+	if len(allRequirements) == 0 {
+		allRequirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"veracode-no-findings",
+				fmt.Sprintf("Veracode scanned %s and reported zero findings.", targetName),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	baseline := hdf.EvaluatedBaseline{
 		Name:            "Veracode Scan",
 		Requirements:    allRequirements,
@@ -342,11 +357,6 @@ func ConvertVeracodeToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		if t := parseVeracodeTimestamp(report.FirstBuildSubmitted); !t.IsZero() {
 			timestamp = &t
 		}
-	}
-
-	targetName := report.AppName
-	if targetName == "" {
-		targetName = "Veracode Application"
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{

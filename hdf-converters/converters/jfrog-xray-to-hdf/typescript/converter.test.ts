@@ -181,13 +181,19 @@ describe('jfrog-xray to HDF converter', async () => {
   });
 
   describe('empty data', async () => {
-    it('should handle empty data array', async () => {
-      const input = JSON.stringify({
-        total_count: 0,
-        data: [],
-      });
-      const hdf = JSON.parse(await convertJfrogXrayToHdf(input)) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    it('should synthesize a passed placeholder when no findings are reported', async () => {
+      const hdf = JSON.parse(await convertJfrogXrayToHdf(loadFixture('empty.json'))) as HDFResults;
+      expect(hdf.baselines).toHaveLength(1);
+
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs).toHaveLength(1);
+
+      const req = reqs[0]!;
+      expect(req.id).toBe('jfrog-xray-no-findings');
+      expect(req.results).toHaveLength(1);
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('JFrog Xray');
+      expect(req.results[0]!.codeDesc).toContain('zero vulnerable components');
     });
   });
 });

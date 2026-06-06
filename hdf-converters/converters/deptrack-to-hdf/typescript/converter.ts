@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -230,6 +230,15 @@ export async function convertDeptrackToHdf(input: string): Promise<string> {
   const requirements: EvaluatedRequirement[] = findings.map(
     finding => buildRequirement(finding, parsed.meta?.timestamp),
   );
+
+  if (requirements.length === 0) {
+    const projectName = parsed.project?.name ?? parsed.project?.uuid ?? '';
+    requirements.push(buildNoFindingsRequirement(
+      'deptrack-no-findings',
+      `Dependency-Track analyzed ${projectName} and reported zero vulnerable components.`,
+      new Date(),
+    ));
+  }
 
   const title = `Dependency-Track: ${parsed.project?.name ?? ''} ${parsed.project?.version ?? ''}`;
 

@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -231,6 +231,16 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
     requirements.push(buildRequirement(vuln));
   }
 
+  const now = new Date();
+  const target = targetNameFromReport(scan.report);
+  if (requirements.length === 0) {
+    requirements.push(buildNoFindingsRequirement(
+      'neuvector-no-findings',
+      `NeuVector scanned ${target} and reported zero vulnerable components.`,
+      now,
+    ));
+  }
+
   const title = imageTitle(scan.report);
 
   const baseline = createMinimalBaseline(
@@ -258,6 +268,6 @@ export async function convertNeuvectorToHdf(input: string): Promise<string> {
         },
       },
     ],
-    timestamp: new Date(),
+    timestamp: now,
   });
 }

@@ -2,7 +2,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import {
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -196,10 +196,25 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
   }
 
   // Build components from project keys
-  const components = Array.from(issuesByProject.keys()).map(projectKey => ({
+  let components = Array.from(issuesByProject.keys()).map(projectKey => ({
     type: TargetType.Application,
     name: projectKey,
   }));
+
+  if (baselines.length === 0) {
+    const targetName = deriveEmptyScanTarget(sonarData.components);
+    baselines.push({
+      name: targetName,
+      title: `SonarQube Analysis for ${targetName}`,
+      requirements: [buildNoFindingsRequirement(
+        'sonarqube-no-findings',
+        `SonarQube scanned ${targetName} and reported zero findings.`,
+        new Date(),
+      )],
+      resultsChecksum,
+    });
+    components = [{ type: TargetType.Application, name: targetName }];
+  }
 
   // Build HDF
   return buildHdfResults({
@@ -210,6 +225,15 @@ export async function convertSonarqubeToHdf(input: string): Promise<string> {
     components,
     timestamp: new Date(),
   });
+}
+
+function deriveEmptyScanTarget(components: SonarQubeComponent[] | undefined): string {
+  if (components) {
+    const project = components.find(c => c.qualifier === 'TRK');
+    if (project) return project.key;
+    if (components.length > 0) return components[0]!.key;
+  }
+  return 'the SonarQube project';
 }
 
 function convertProjectToBaseline(

@@ -84,7 +84,7 @@ Output defaults to stdout when no output path is given.`,
 				return fmt.Errorf("failed to serialize HDF output: %w", err)
 			}
 
-			return writeConvertOutput(output, outputPath)
+			return writeValidatedHDFOutput(cmd, output, outputPath)
 		},
 	}
 
@@ -92,6 +92,7 @@ Output defaults to stdout when no output path is given.`,
 	cmd.Flags().StringVarP(&index, "index", "i", "", "Splunk index name (required)")
 	cmd.Flags().StringVarP(&guid, "guid", "g", "", "Evaluation GUID to fetch (required)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file path (default: stdout)")
+	addNoValidateFlag(cmd)
 
 	_ = cmd.MarkFlagRequired("url")
 	_ = cmd.MarkFlagRequired("index")

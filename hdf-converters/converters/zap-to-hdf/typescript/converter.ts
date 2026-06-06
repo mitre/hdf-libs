@@ -19,7 +19,7 @@ import {parseJSON} from '@mitre/hdf-utilities';
 import {detectConverter} from '../../../shared/typescript/fingerprint.js';
 import {registerAllFingerprints} from '../../../shared/typescript/register-all.js';
 import {convertSarifToHdf} from '../../sarif-to-hdf/typescript/converter.js';
-import {deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, stripHTML, validateInputSize} from '../../../shared/typescript/converterutil.js';
+import {buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArray, stripHTML, validateInputSize} from '../../../shared/typescript/converterutil.js';
 
 // --- ZAP JSON input types ---
 
@@ -161,45 +161,9 @@ export async function convertZapToHdf(input: string): Promise<string> {
 
   const zapData = parseJSON<ZapReport>(input);
 
-  // Validate basic structure
-  if (!zapData.site || !Array.isArray(zapData.site)) {
-    // Empty report — produce empty HDF
-    const baseline: EvaluatedBaseline = createMinimalBaseline('OWASP ZAP Scan', [], {
-      resultsChecksum,
-      title: 'OWASP ZAP Scan',
-      summary: '',
-    }) as EvaluatedBaseline;
-
-    const hdf: HDFResults = {
-      baselines: [baseline],
-      generator: {name: 'zap-to-hdf', version: 'unknown'},
-      tool: {name: 'OWASP ZAP', format: 'JSON'},
-    };
-    return JSON.stringify(hdf, null, 2);
-  }
-
-  // Select site with most alerts
-  const site = selectSite(zapData.site);
-  if (!site) {
-    // Empty site array — produce empty HDF
-    const baseline: EvaluatedBaseline = createMinimalBaseline('OWASP ZAP Scan', [], {
-      resultsChecksum,
-      title: 'OWASP ZAP Scan',
-      summary: `ZAP Version ${zapData['@version'] ?? 'unknown'}`,
-    }) as EvaluatedBaseline;
-
-    const hdf: HDFResults = {
-      baselines: [baseline],
-      generator: {name: 'zap-to-hdf', version: 'unknown'},
-      tool: {name: 'OWASP ZAP', format: 'JSON'},
-    };
-    if (zapData['@generated']) {
-      hdf.timestamp = new Date(zapData['@generated']);
-    }
-    return JSON.stringify(hdf, null, 2);
-  }
-
-  const alerts = site.alerts ?? [];
+  const sites = Array.isArray(zapData.site) ? zapData.site : [];
+  const site = selectSite(sites);
+  const alerts = site?.alerts ?? [];
 
   // Deduplicate by pluginid — append .1, .2 for duplicates
   const pluginIdCount = new Map<string, number>();
@@ -289,9 +253,23 @@ export async function convertZapToHdf(input: string): Promise<string> {
     requirements.push(req);
   }
 
-  const targetName = site['@host'] ?? 'Unknown Host';
-  const siteName = site['@name'] ?? targetName;
-  const baselineName = `OWASP ZAP Scan of ${siteName}`;
+  const targetName = site?.['@host'] ?? 'Unknown Host';
+  const siteName = site?.['@name'] ?? '';
+  const baselineName = site && (site['@name'] || site['@host'])
+    ? `OWASP ZAP Scan of ${site['@name'] ?? targetName}`
+    : 'OWASP ZAP Scan';
+
+  if (requirements.length === 0) {
+    let target = siteName || targetName;
+    if (!target || target === 'Unknown Host') {
+      target = 'the target site';
+    }
+    requirements.push(buildNoFindingsRequirement(
+      'zap-no-findings',
+      `OWASP ZAP scanned ${target} and reported zero findings.`,
+      new Date(),
+    ));
+  }
 
   const baseline: EvaluatedBaseline = createMinimalBaseline('OWASP ZAP Scan', requirements, {
     resultsChecksum,
@@ -309,7 +287,7 @@ export async function convertZapToHdf(input: string): Promise<string> {
 
   // Build components — ZAP is a DAST tool scanning web applications
   const components: Array<{name: string; type: TargetType; url?: string; labels?: Record<string, string>}> = [];
-  if (site['@name']) {
+  if (site?.['@name']) {
     components.push({name: targetName, type: TargetType.Application, url: site['@name']});
   } else if (targetName !== 'Unknown Host') {
     components.push({name: targetName, type: TargetType.Application});

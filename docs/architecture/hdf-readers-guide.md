@@ -580,6 +580,8 @@ A converter producing bare results with no labels works fine. A system doc with
 no SBOMs works fine. An evidence package with partial coverage is informational,
 not invalid. The schema never rejects a document for missing enrichment.
 
+**Cardinality is the one non-optional contract.** `requirements`, `results`, and `descriptions` arrays declare `minItems: 1` — clean scans synthesize a `passed` placeholder rather than emitting empty arrays. See `docs/specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale, shape, and the `passed` vs. `notApplicable` distinction. This is a deliberate v3 tightening over legacy InSpec-ExecJSON, which tolerated empty arrays.
+
 ---
 
 ## Data Volume at Enterprise Scale
@@ -606,34 +608,52 @@ at comparable storage costs, with 92% gzip compressibility.
 hdf
 ├── validate <file>                  # Validate any HDF document
 ├── info <file>                      # Display summary
-├── convert <from> to <to>           # Convert between formats (30+ converters)
+├── stats <file>                     # Assessment statistics
+├── list <file>                      # List requirements / baselines / components
+├── query <file>                     # Search / filter controls
+├── convert <file>                   # Convert between formats (30+ converters)
+├── fetch <source>                   # Pull from live APIs (aws-config, splunk, sonarqube, gitlab)
+├── version                          # Print version info
 │
 ├── diff <old> <new>                 # Compare any two HDF docs of same type
-│   ├── --system <file>              # System-aware comparison
 │   ├── --group-by <label>           # Group by any label
 │   ├── --detailed-exitcode          # 0/1/2 basic, 10-14 detailed
 │   └── --format json|md|table       # Output format
-│   # Works on: results, systems, baselines, plans
 │
 ├── system                           # System architecture
-│   ├── info / validate              # Inspect or validate
-│   └── discover --aws|--k8s         # Auto-discover from cloud
+│   ├── create                       # Scaffold a new hdf-system document
+│   ├── info <file>                  # Show system architecture
+│   ├── set <file>                   # Mutate fields on an hdf-system document
+│   ├── add-component                # Add a component to an hdf-system document
+│   └── update-component             # Modify an existing component
 │
 ├── plan                             # Assessment planning
-│   ├── create --system <file>       # Generate from system definition
-│   └── run <file>                   # Execute the plan (run scans)
+│   ├── create [system-file]         # Scaffold an hdf-plan from a system definition
+│   ├── info <file>                  # Show plan summary
+│   └── set <file>                   # Mutate fields on an hdf-plan document
 │
 ├── amend                            # Governance decisions
-│   ├── create <results>             # Create waiver/attestation/override
-│   ├── apply <results> <amendments> # Merge into results
-│   ├── verify <file>                # Verify signatures + chain
-│   └── list <file>                  # List active/expired
+│   ├── create [results-file]        # Scaffold a new hdf-amendments document
+│   ├── draft                        # Headless: build an amendment from CLI flags
+│   ├── set <file>                   # Mutate fields on an hdf-amendments document
+│   ├── apply                        # Merge amendments into results
+│   ├── list <file>                  # List active/expired overrides
+│   └── verify <file> [results]      # Verify signatures + amendment chain
 │
-└── evidence                         # Audit evidence
-    ├── build --system --results     # Package everything
-    ├── validate / verify            # Check completeness + integrity
-    └── export --format oscal        # Export to OSCAL
+├── evidence                         # Audit evidence
+│   ├── build                        # Package everything for audit
+│   ├── info <file>                  # Show evidence-package summary
+│   ├── set <file>                   # Mutate fields on an hdf-evidence-package document
+│   ├── verify <file>                # Verify integrity chain + signatures
+│   └── export <file>                # Export evidence-package to OSCAL
+│
+└── generate                         # Generate downstream artifacts
+    ├── inspec-profile <input> <out> # Render an InSpec profile stub from a baseline
+    ├── threshold <results>          # Render a SAF CLI threshold from results
+    └── upgrade <current> <upstream> # Apply upstream-baseline updates to an existing baseline
 ```
+
+> **Planned but not yet implemented:** `hdf system discover --aws|--k8s` (cloud/k8s auto-discovery), `hdf plan run` (in-CLI plan execution), `hdf system export` / `hdf amend export` to OSCAL.
 
 ---
 
@@ -674,30 +694,21 @@ not competing schemas:
 
 ## Implementation Status
 
-> As of 2026-04-02.
+> As of 2026-06-05. Run `hdf --help` for the current command surface and consult the bd issue tracker for in-flight work; this table is a high-level snapshot, not a per-commit ledger.
 
 | What | Status |
 |------|--------|
-| hdf-baseline schema | Complete |
-| hdf-results schema | Complete |
-| hdf-comparison schema | Complete |
-| hdf-system schema | Complete |
-| hdf-plan schema | Complete |
-| hdf-amendments schema | Complete |
-| hdf-evidence-package schema | Complete |
-| Phase 0: typed inputs, labels, rename, refs | Complete |
-| Phase 1: hdf-system | Complete |
-| Phase 2: hdf-plan | Complete |
-| Phase 3: hdf-amendments | Complete |
-| Phase 4: hdf-evidence-package | Complete |
-| hdf-diff TS library | Complete (380 tests, 100% coverage) |
-| hdf-diff Go library | Complete (500+ tests, 98.4% coverage) |
-| `hdf diff` CLI command | Complete (exit codes 0/1/2 + 10-14) |
-| Validators + CLI for all 7 types | Complete |
-| Phase 5: ecosystem integration | In progress |
-| System-level comparison | Ready (unblocked) |
-| Baseline comparison | Ready (unblocked) |
-| SBOM comparison | Ready (unblocked) |
+| All 7 schemas (baseline, results, comparison, system, plan, amendments, evidence-package) | Complete |
+| v3.2 classification fields (`controlType`, `verificationMethod`, `applicability`) | Complete |
+| v3.3 CVE-ecosystem primitives (`cvss[]`, `epss`, `kev`, `cwe[]`, `affectedPackages[]`) | Complete |
+| Typed inputs, labels, cross-references, integrity chain | Complete |
+| `hdf-diff` TS + Go libraries | Complete |
+| `hdf diff` CLI (exit codes 0/1/2 + 10-14) | Complete |
+| `hdf system` / `hdf plan` / `hdf amend` / `hdf evidence` / `hdf generate` | Complete |
+| 30+ scanner converters (TS + Go) | Complete; clean-scan synth standardized |
+| Schema validators + auto-validate on `hdf convert` / `hdf fetch` output | Complete |
+| `hdf system discover --aws\|--k8s`, `hdf plan run`, OSCAL export from `system`/`amend` | Planned |
+| MCP server wrapping hdf-diff for AI agent integration | Planned |
 
 ---
 

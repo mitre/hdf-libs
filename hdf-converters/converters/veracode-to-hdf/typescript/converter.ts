@@ -13,7 +13,7 @@
 
 import { parseXml } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, buildNistCciTags, ensureArray, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -416,6 +416,16 @@ export async function convertVeracodeToHdf(input: string): Promise<string> {
   // Merge
   const allRequirements = [...cweRequirements, ...cveRequirements];
 
+  const targetName = attr(report, 'app_name') || 'Veracode Application';
+
+  if (allRequirements.length === 0) {
+    allRequirements.push(buildNoFindingsRequirement(
+      'veracode-no-findings',
+      `Veracode scanned ${targetName} and reported zero findings.`,
+      new Date(),
+    ));
+  }
+
   // Get module name for title
   let title: string | undefined;
   const staticAnalysis = report['static-analysis'] as Record<string, unknown> | undefined;
@@ -436,7 +446,6 @@ export async function convertVeracodeToHdf(input: string): Promise<string> {
     summary: attr(report, 'policy_name'),
   }) as EvaluatedBaseline;
 
-  const targetName = attr(report, 'app_name') || 'Veracode Application';
   const timestamp = parseVeracodeTimestamp(firstBuildDate);
 
   return buildHdfResults({

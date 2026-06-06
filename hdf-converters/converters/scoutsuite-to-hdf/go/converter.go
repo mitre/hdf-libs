@@ -254,6 +254,19 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		requirements[i] = buildRequirement(ruleID, findings[ruleID], report.LastRun.Time)
 	}
 
+	targetName := fmt.Sprintf("%s ruleset:%s:%s",
+		report.LastRun.RulesetName, report.ProviderName, report.AccountID)
+
+	if len(requirements) == 0 {
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"scoutsuite-no-findings",
+				fmt.Sprintf("ScoutSuite scanned %s and reported zero findings.", targetName),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	title := fmt.Sprintf("Scout Suite Report using %s ruleset on %s with account %s",
 		report.LastRun.RulesetName, report.ProviderName, report.AccountID)
 
@@ -267,10 +280,6 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	if report.LastRun.RulesetAbout != "" {
 		baseline.Summary = &report.LastRun.RulesetAbout
 	}
-
-	// Target name: "{ruleset_name} ruleset:{provider_name}:{account_id}"
-	targetName := fmt.Sprintf("%s ruleset:%s:%s",
-		report.LastRun.RulesetName, report.ProviderName, report.AccountID)
 
 	// Parse timestamp
 	var timestamp *time.Time

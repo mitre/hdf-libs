@@ -130,6 +130,21 @@ function buildResult(r: EvaluationResult): RequirementResult {
   });
 }
 
+/**
+ * Synthesizes a single HDF result for a Config rule whose live evaluation
+ * returned zero in-scope resources. The HDF schema requires `results` to have
+ * minItems >= 1; this honestly signals to auditors that the rule's check ran
+ * but had no scope in this account/region rather than vacuously claiming
+ * "passed". See issue #80 bug 2.
+ */
+function buildNotApplicableResult(rule: ConfigRule): RequirementResult {
+  const codeDesc = `AWS Config rule ${rule.ConfigRuleName} evaluated zero in-scope resources in this account/region.`;
+  return createResult(ResultStatus.NotApplicable, codeDesc, {
+    codeDesc,
+    startTime: new Date(),
+  });
+}
+
 function buildRequirement(rule: ConfigRule): EvaluatedRequirement {
   const nist = buildNistTags(rule.Source.SourceIdentifier, rule.ConfigRuleName);
   const tags: Record<string, unknown> = nist.length > 0 ? { nist } : {};
@@ -140,7 +155,15 @@ function buildRequirement(rule: ConfigRule): EvaluatedRequirement {
   ];
 
   const title = `${getAccountId(rule.ConfigRuleArn)} - ${rule.ConfigRuleName}`;
-  const results = rule.EvaluationResults.map(buildResult);
+  // Issue #80 bug 2: a Config rule that was deployed and active but evaluated
+  // zero in-scope resources (e.g. rds-cluster-multi-az-enabled in an account
+  // with no RDS clusters) returns an empty EvaluationResults from
+  // GetComplianceDetailsByConfigRule. The HDF schema requires `results` to
+  // have minItems >= 1, so synthesize one notApplicable result honestly
+  // signaling that the rule had no scope rather than emitting `results: []`.
+  const results = rule.EvaluationResults.length > 0
+    ? rule.EvaluationResults.map(buildResult)
+    : [buildNotApplicableResult(rule)];
 
   const req = createRequirement(
     rule.ConfigRuleId,

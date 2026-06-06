@@ -1,0 +1,5 @@
+{
+  "_provenance": "Constructed from Microsoft Graph Security API v2 documentation (security/alerts_v2). Represents a clean tenant with zero alerts in the queried window — the value array is the canonical empty result per the API spec.",
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#security/alerts_v2",
+  "value": []
+}

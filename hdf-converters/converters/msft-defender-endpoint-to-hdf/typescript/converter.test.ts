@@ -196,9 +196,15 @@ describe('msft-defender-endpoint to HDF converter', async () => {
   });
 
   describe('empty value array', async () => {
-    it('should handle empty value array', async () => {
-      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(JSON.stringify({ value: [] }))) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    it('should synthesize a passed placeholder for empty value array', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderEndpointToHdf(loadFixture('empty.json'))) as HDFResults;
+      expect(hdf.baselines).toHaveLength(1);
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs).toHaveLength(1);
+      expect(reqs[0]!.id).toBe('msft-defender-endpoint-no-findings');
+      expect(reqs[0]!.results[0]!.status).toBe('passed');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('Microsoft Defender for Endpoint');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('zero findings');
     });
   });
 

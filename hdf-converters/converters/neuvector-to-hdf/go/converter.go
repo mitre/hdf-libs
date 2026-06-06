@@ -203,6 +203,18 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		requirements = append(requirements, buildRequirement(vuln))
 	}
 
+	now := time.Now().UTC()
+	target := targetName(scan.Report)
+	if len(requirements) == 0 {
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"neuvector-no-findings",
+				fmt.Sprintf("NeuVector scanned %s and reported zero vulnerable components.", target),
+				now,
+			),
+		}
+	}
+
 	title := imageTitle(scan.Report)
 	baseline := hdf.EvaluatedBaseline{
 		Name:            "NeuVector Scan",
@@ -210,8 +222,6 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ResultsChecksum: checksum,
 		Title:           &title,
 	}
-
-	now := time.Now().UTC()
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "neuvector-to-hdf",

@@ -581,6 +581,42 @@ describe('xccdf-results-to-hdf converter', async () => {
       ).rejects.toThrow(/no TestResult/);
     });
   });
+
+  describe('empty rule-results', () => {
+    it('should synthesize a passed placeholder for XCCDF TestResult with no rule-results', async () => {
+      const result = await parseHdf('empty.xml');
+      expect(result.baselines).toHaveLength(1);
+      const reqs = result.baselines[0]!.requirements;
+      expect(reqs).toHaveLength(1);
+      expect(reqs[0]!.id).toBe('xccdf-results-no-findings');
+      expect(reqs[0]!.results[0]!.status).toBe('passed');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('XCCDF');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('empty-host.example.com');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('zero findings');
+    });
+
+    it('should synthesize a passed placeholder for ARF report with no rule-results', async () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+        <asset-report-collection>
+          <reports>
+            <report id="r1">
+              <content>
+                <TestResult id="TR-1"><target>arf-empty-host</target></TestResult>
+              </content>
+            </report>
+          </reports>
+        </asset-report-collection>`;
+      const hdf = JSON.parse(await convertXccdfResultsToHdf(xml)) as HDFResults;
+      expect(hdf.baselines).toHaveLength(1);
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs).toHaveLength(1);
+      expect(reqs[0]!.id).toBe('xccdf-results-no-findings');
+      expect(reqs[0]!.results[0]!.status).toBe('passed');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('XCCDF');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('arf-empty-host');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('zero findings');
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

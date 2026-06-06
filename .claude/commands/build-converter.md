@@ -507,6 +507,7 @@ Also available from `shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/
 | `shared.StripHTML(html)` | Strip HTML tags from a string, collapsing whitespace |
 | `shared.BuildNISTCCITags(nist, cci)` | Build tags `map[string]interface{}` with NIST + CCI arrays |
 | `shared.BuildNISTCCITagsWithExtras(nist, cci, extras)` | Same as above, plus extra key-value pairs merged in |
+| `shared.BuildNoFindingsRequirement(id, codeDesc, startTime)` | Synthesize a passed placeholder when the scanner ran clean — see Step 4e |
 | `shared.LimitSlice(items, max)` | Truncate large input arrays; returns `(limited, truncated bool)` |
 | `shared.DetectFormat(input)` | Detect input format (SARIF, JUnit, XCCDF, etc.) — see Step 4c |
 | `shared.FormatSARIF` / `shared.FormatUnknown` | Format detection result constants |
@@ -519,6 +520,7 @@ Also available from `hdf-converters/shared/typescript/converterutil.ts`:
 |----------|---------|
 | `inputChecksum(input)` | Async SHA-256 checksum → `Promise<Checksum>` |
 | `buildNistCciTags(nist, cci, extras?)` | Build tags object with NIST + CCI arrays + optional extras |
+| `buildNoFindingsRequirement(id, codeDesc, startTime)` | Synthesize a passed placeholder when the scanner ran clean — see Step 4e |
 | `limitArray(items, maxItems?)` | Truncate large arrays; returns `{ items, truncated }` |
 | `stripHTML(html)` | Strip HTML tags, collapse whitespace (mirrors Go `shared.StripHTML`) |
 | `DEFAULT_MAX_ITEMS` | Maximum items constant (100,000) |
@@ -796,6 +798,82 @@ designation. They are different axes; do not map one to the other.
 
 ---
 
+## Step 4e — Synthesize a passed placeholder for empty findings
+
+The HDF schema enforces `requirements.minItems=1` on every baseline. A scanner that runs cleanly (no findings reported) still must emit one synthesized passed requirement so the document validates. A converter that emits `requirements: []` is broken.
+
+### Pattern
+
+When your converter's findings loop would otherwise produce zero requirements, synthesize one with the shared helper.
+
+**Go:**
+```go
+if len(requirements) == 0 {
+    target := /* host, project, repo, scanner, etc. — see "target derivation" below */
+    requirements = []hdf.EvaluatedRequirement{
+        shared.BuildNoFindingsRequirement(
+            "<source>-no-findings",
+            fmt.Sprintf("<Tool> scanned %s and reported zero findings.", target),
+            time.Now().UTC(),
+        ),
+    }
+}
+```
+
+**TypeScript:**
+```typescript
+if (requirements.length === 0) {
+    const target = /* same derivation */;
+    requirements.push(buildNoFindingsRequirement(
+        '<source>-no-findings',
+        `<Tool> scanned ${target} and reported zero findings.`,
+        new Date(),
+    ));
+}
+```
+
+**Multi-baseline converters** (per-tool, per-host, per-scanner): apply the synthesizer **per empty baseline**, not just when the whole result has zero requirements. Iterate `baselines[]`, skip those with `requirements.length > 0`, synthesize for the rest. See `msft-defender-devops-to-hdf` for the model.
+
+### Conventions
+
+- **ID:** `<source>-no-findings` (kebab-case source name, matches the converter directory). For multi-baseline converters where each baseline represents a sub-tool or per-run identity, use `<sub-tool>-no-findings` derived from the baseline's natural name — e.g. MSDO produces `bandit-no-findings`/`eslint-no-findings` per scanner; `sarif-to-hdf` produces `<run.tool.driver.name>-no-findings` per SARIF run.
+- **codeDesc:** `<Tool> <verb> <target> and reported zero <noun>.`
+  - **verb:** `scanned` (default — Nessus, Burp Suite, Checkov, Snyk, Grype, ZAP, etc.); `analyzed` (Dependency-Track); `ran` (multi-tool wrappers — MSDO, generic SARIF).
+  - **noun:** `findings` (default, including DAST/SAST/cloud-config/secrets scanners); `vulnerable components` (SCA / dependency / container-vuln scanners — Dependency-Track, Grype, JFrog Xray, NeuVector, Prisma Cloud, Snyk, Twistlock).
+  - **target:** the most specific identifier the report provides — host, project name, repo, image, URL, scanner name. Fall back to a hardcoded generic phrase only when the report has no identifying field at all (examples in tree: gosec → `"Go codebase"`, JFrog Xray → `"the target artifact"`, MS Defender for Endpoint → `"the tenant"`, Prisma Cloud → `"the workload"`, TruffleHog → `"the target source"`, XCCDF results → `"the target"`, Veracode → `"Veracode Application"`).
+  - **Pattern flexibility:** when the source's natural identifier doesn't fit the strict `<verb> <target>` template, prefer readability over template adherence. Example: GitLab security reports lack a project field; their codeDesc reads `GitLab <SAST|DAST|...> scan via <scanner> reported zero findings.` This still satisfies the convention (tool name, verb, scanner-as-target, "reported zero findings") but bends the literal word order. Do this sparingly and only when the natural target is genuinely awkward in the default template.
+- **title, status, impact, tags, descriptions:** set by the shared helper — do not pass them. The helper produces `title="No findings reported"`, `status=passed`, `impact=0`, `tags={}`, one description with `label="default"` and `data=codeDesc`. All synthesized placeholders share this shape — do not inline a custom struct, refactor to the helper.
+
+### `passed` vs. `notApplicable` — the distinction matters
+
+Synthesize **`passed`** when the scanner *ran* against in-scope inputs and found nothing wrong. This is the default. Spec-backed: NIST 800-53A *Satisfied*, OSCAL `satisfied`, XCCDF `pass`, STIG *Not_a_Finding*, SARIF v2.1.0 §3.7.2 (empty `results[]` array means the scan ran clean). The shared `BuildNoFindingsRequirement` helper produces `passed` for this case.
+
+Synthesize **`notApplicable`** when the rule's applicability check itself didn't run — e.g. an AWS Config rule with zero in-scope resources, where the rule never evaluated against anything. The codeDesc should explain *why* it didn't apply, and `tags` should preserve the scan metadata. Do NOT use `BuildNoFindingsRequirement` for this case; construct the requirement explicitly with `Status: hdf.NotApplicable`. See `aws-config-to-hdf` for the model.
+
+The wrong choice silently misleads consumers: `passed` says "we checked and you're compliant"; `notApplicable` says "we didn't check this one."
+
+### Test the empty case
+
+Every converter MUST have an `empty.<ext>` fixture in `fixtures/input/` and a test asserting the synthesized placeholder shape. TDD-first: write the test before the synthesizer.
+
+```go
+func TestConvert_EmptyFindings(t *testing.T) {
+    result, err := ConvertFoo(loadFixture(t, "empty.<ext>"), converterVersion)
+    require.NoError(t, err)
+    require.Len(t, result.Baselines, 1)
+    require.Len(t, result.Baselines[0].Requirements, 1)
+    req := result.Baselines[0].Requirements[0]
+    assert.Equal(t, "foo-no-findings", req.ID)
+    require.Len(t, req.Results, 1)
+    assert.Equal(t, hdf.Passed, req.Results[0].Status)
+    assert.Contains(t, req.Results[0].CodeDesc, "Foo")
+}
+```
+
+Mirror the same assertions on the TypeScript side. The empty fixture should be a **valid input that the converter would accept** but with the findings array(s) empty — same outer structure as a real report, zero findings inside.
+
+---
+
 ## Step 5 — CLI Integration
 
 File: `hdf-cli/cmd/hdf/cmd/converter_<snake>.go`
@@ -1041,6 +1119,13 @@ cat output.json | head -40
 - [ ] SARIF routing test: tool's SARIF output produces valid HDF via shared converter
 - [ ] Native format test: native input is NOT routed to shared converter
 - [ ] SARIF fixture exists in `sarif-to-hdf/fixtures/input/` for the tool (or reuses existing one)
+
+**All converters — Empty findings (review Step 4e):**
+- [ ] `empty.<ext>` fixture exists in `fixtures/input/` — valid input shape with zero findings
+- [ ] Empty-findings test in Go and TypeScript asserts the synthesized placeholder: id `<source>-no-findings`, status `passed`, codeDesc names the tool and target
+- [ ] Synthesizer uses `shared.BuildNoFindingsRequirement` (Go) / `buildNoFindingsRequirement` (TS) — never an inlined struct
+- [ ] Multi-baseline converters apply the synthesizer per empty baseline, not once at the end
+- [ ] Decision logged: this converter emits `passed` (scanner ran clean) vs. `notApplicable` (rule didn't apply at all). Default is `passed`; `notApplicable` requires source-format justification.
 
 **All converters — Baseline.Name and Components (review HDF Type Reference):**
 - [ ] `Baseline.Name` is a fixed scan label (e.g., `"Nessus Scan"`), NOT dynamic data like a hostname or project name

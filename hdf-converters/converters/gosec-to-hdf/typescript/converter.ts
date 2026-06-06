@@ -2,7 +2,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { inputChecksum, limitArray, validateInputSize, mapCWEToNIST, DEFAULT_REMEDIATION_NIST_TAGS, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, inputChecksum, limitArray, validateInputSize, mapCWEToNIST, DEFAULT_REMEDIATION_NIST_TAGS, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -191,6 +191,14 @@ export async function convertGosecToHdf(input: string): Promise<string> {
   const requirements: EvaluatedRequirement[] = [];
   for (const [ruleId, issues] of groups) {
     requirements.push(buildRequirement(ruleId, issues));
+  }
+
+  if (requirements.length === 0) {
+    requirements.push(buildNoFindingsRequirement(
+      'gosec-no-findings',
+      'gosec scanned Go codebase and reported zero findings.',
+      new Date(),
+    ));
   }
 
   const baseline: EvaluatedBaseline = createMinimalBaseline(

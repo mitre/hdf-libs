@@ -42,8 +42,10 @@ When a control has multiple test results with different statuses, the overall st
 | `[notReviewed]` | 0.5 | `notReviewed` |
 | `[notReviewed]` | 0.0 | `notApplicable` |
 | `[passed, error]` | 0.5 | `error` |
-| `[]` (empty) | 0.0 | `notApplicable` |
-| `[]` (empty) | 0.5 | `notReviewed` |
+| `[]` (empty)*  | 0.0 | `notApplicable` |
+| `[]` (empty)*  | 0.5 | `notReviewed` |
+
+\* The v3 HDF schema enforces `results.minItems=1`, so empty results arrays should not appear in schema-valid HDF documents — converters synthesize a `passed` placeholder for clean scans (see `docs/specification/hdf-specification.md` § "Clean-scan convention"). The empty-results rows above remain a safety net for legacy InSpec-ExecJSON-shaped input that did not enforce the invariant.
 
 ## Where Status Is Computed
 

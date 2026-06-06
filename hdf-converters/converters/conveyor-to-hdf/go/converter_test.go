@@ -357,6 +357,25 @@ func TestSnapshots(t *testing.T) {
 	})
 }
 
+func TestConvertConveyor_EmptyResultsSynthesizesPlaceholder(t *testing.T) {
+	input := loadFixture(t, "input/empty.json")
+	result, err := ConvertConveyorToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Baselines, 1, "empty results should yield exactly one placeholder baseline")
+	baseline := result.Baselines[0]
+	require.Len(t, baseline.Requirements, 1, "placeholder baseline should have exactly one requirement")
+
+	req := baseline.Requirements[0]
+	assert.Equal(t, "conveyor-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+
+	codeDesc := req.Results[0].CodeDesc
+	assert.Contains(t, codeDesc, "Conveyor")
+	assert.Contains(t, codeDesc, "Inspection of file: submissions/empty.zip")
+}
+
 func TestConvertConveyor_VerificationMethod(t *testing.T) {
 	input := loadFixture(t, "input/sample-results.json")
 	result, err := ConvertConveyorToHDF(input, testVersion)

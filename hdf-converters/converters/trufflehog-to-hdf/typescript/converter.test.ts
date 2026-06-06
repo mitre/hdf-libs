@@ -20,9 +20,20 @@ runConverterContractTests({
 });
 
 describe('trufflehog to HDF converter', async () => {
-  describe('input validation', async () => {
-    it('should throw on empty array', async () => {
-      await expect(convertTrufflehogToHdf('[]')).rejects.toThrow(/no findings/);
+  describe('empty findings', async () => {
+    it('should synthesize a passed placeholder requirement when input has no findings', async () => {
+      const output = await convertTrufflehogToHdf(loadFixture('empty.json'));
+      const hdf = JSON.parse(output) as HDFResults;
+
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('trufflehog-no-findings');
+      expect(req.results).toHaveLength(1);
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('TruffleHog');
+      expect(req.results[0]!.codeDesc).toContain('scanned');
     });
   });
 

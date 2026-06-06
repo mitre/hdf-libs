@@ -1029,6 +1029,48 @@ func TestExtractRuleID(t *testing.T) {
 	}
 }
 
+func TestConvertXccdfResultsToHDF_EmptyRuleResults(t *testing.T) {
+	input := loadFixture(t, "empty.xml")
+	result, err := ConvertXccdfResultsToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "xccdf-results-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "XCCDF")
+	assert.Contains(t, req.Results[0].CodeDesc, "empty-host.example.com")
+	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
+}
+
+func TestConvertXccdfResultsToHDF_EmptyArfReport(t *testing.T) {
+	arfXML := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<arf:asset-report-collection xmlns:arf="http://scap.nist.gov/schema/asset-reporting-format/1.1" xmlns:core="http://scap.nist.gov/schema/reporting-core/1.1">
+  <arf:reports>
+    <arf:report id="xccdf1">
+      <arf:content>
+        <TestResult xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_org.open-scap_testresult_default-profile" start-time="2021-11-30T13:51:50+01:00" end-time="2021-11-30T13:51:50+01:00">
+          <title>OSCAP Scan Result</title>
+          <target>arf-empty-host</target>
+        </TestResult>
+      </arf:content>
+    </arf:report>
+  </arf:reports>
+</arf:asset-report-collection>`)
+	result, err := ConvertXccdfResultsToHDF(arfXML, converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "xccdf-results-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "XCCDF")
+	assert.Contains(t, req.Results[0].CodeDesc, "arf-empty-host")
+	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
+}
+
 func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTestsRaw(t, "xccdf-results-to-hdf", func(input []byte) ([]byte, error) {
 		output, _, err := ConvertXccdfToHDF(input, "0.1.0")

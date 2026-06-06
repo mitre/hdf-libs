@@ -261,6 +261,18 @@ func findGitRepoURL(findings []TrufflehogFinding) string {
 	return ""
 }
 
+// trufflehogTarget returns the most specific target identifier available
+// (repo URL > source name), or a generic fallback when nothing is available.
+func trufflehogTarget(findings []TrufflehogFinding) string {
+	if repo := findGitRepoURL(findings); repo != "" {
+		return repo
+	}
+	if len(findings) > 0 && findings[0].SourceName != "" {
+		return findings[0].SourceName
+	}
+	return "the target source"
+}
+
 // firstSourceName returns the SourceName from the first finding, or a default.
 func firstSourceName(findings []TrufflehogFinding) string {
 	if len(findings) > 0 && findings[0].SourceName != "" {
@@ -284,10 +296,6 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		return nil, err
 	}
 
-	if len(findings) == 0 {
-		return nil, fmt.Errorf("trufflehog: no findings in input")
-	}
-
 	checksum := shared.InputChecksum(input)
 
 	limitedFindings := shared.LimitSliceWithWarning(findings, 0, "finding")
@@ -299,6 +307,18 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	}
 
 	sourceName := firstSourceName(limitedFindings)
+
+	if len(requirements) == 0 {
+		target := trufflehogTarget(limitedFindings)
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"trufflehog-no-findings",
+				fmt.Sprintf("TruffleHog scanned %s and reported zero findings.", target),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	baselineTitle := fmt.Sprintf("TruffleHog Scan (%s)", sourceName)
 
 	baseline := hdf.EvaluatedBaseline{

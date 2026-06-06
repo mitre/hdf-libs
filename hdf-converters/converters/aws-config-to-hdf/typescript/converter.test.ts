@@ -229,20 +229,30 @@ describe('AWS Config to HDF converter', async () => {
       expect(req.id).toBe('config-rule-xyz');
     });
 
-    it('should handle empty EvaluationResults', async () => {
+    // Issue #80 bug 2: a Config rule that was deployed and active but
+    // evaluated zero in-scope resources (e.g. rds-cluster-multi-az-enabled in
+    // an account with no RDS clusters) must still produce a schema-valid
+    // requirement. The schema requires `results` to have minItems >= 1;
+    // emitting an empty array fails `hdf validate`. The converter
+    // synthesizes one notApplicable result with a clear codeDesc.
+    it('should synthesize a notApplicable result for a rule with empty EvaluationResults', async () => {
       const input = JSON.stringify({
         ConfigRules: [{
           ConfigRuleId: 'config-rule-empty',
-          ConfigRuleName: 'empty-rule',
+          ConfigRuleName: 'rds-cluster-multi-az-enabled-zerorsrc',
           ConfigRuleArn: 'arn:aws:config:us-east-1:123456789012:config-rule/config-rule-empty',
-          Description: 'A rule with no evaluation results',
-          Source: { Owner: 'AWS', SourceIdentifier: 'ACCESS_KEYS_ROTATED' },
+          Description: 'Checks if RDS clusters are configured for Multi-AZ.',
+          Source: { Owner: 'AWS', SourceIdentifier: 'RDS_CLUSTER_MULTI_AZ_ENABLED' },
           InputParameters: '{}',
           EvaluationResults: [],
         }],
       });
       const hdf = JSON.parse(await convertAwsConfigToHdf(input)) as HDFResults;
-      expect(hdf.baselines[0]!.requirements[0]!.results).toHaveLength(0);
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.results).toHaveLength(1);
+      expect(req.results![0]!.status).toBe('notApplicable');
+      expect(req.results![0]!.codeDesc).toMatch(/zero/i);
+      expect(req.results![0]!.startTime).toBeTruthy();
     });
   });
 });

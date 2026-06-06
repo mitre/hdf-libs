@@ -334,7 +334,51 @@ func TestConvertTwistlock_EmptyVulnerabilities(t *testing.T) {
 	}`)
 	result, err := ConvertTwistlockToHDF(input, testVersion)
 	require.NoError(t, err)
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "twistlock-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "Twistlock")
+	assert.Contains(t, req.Results[0].CodeDesc, "vulnerable components")
+	assert.Contains(t, req.Results[0].CodeDesc, "clean-image")
+}
+
+func TestConvertTwistlock_NoFindingsFixture(t *testing.T) {
+	input := loadFixture(t, "input/empty.json")
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "twistlock-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "Twistlock")
+	assert.Contains(t, req.Results[0].CodeDesc, "vulnerable components")
+	assert.Contains(t, req.Results[0].CodeDesc, "registry.io/clean:latest")
+	assert.InDelta(t, 0.0, req.Impact, 0.001)
+}
+
+func TestConvertTwistlock_NoFindingsMultiResult(t *testing.T) {
+	// Each result becomes its own baseline; clean baselines must still
+	// satisfy requirements.minItems=1 individually.
+	input := []byte(`{
+		"results": [
+			{"name": "image-a", "vulnerabilities": []},
+			{"name": "image-b", "vulnerabilities": []}
+		]
+	}`)
+	result, err := ConvertTwistlockToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 2)
+	for i, b := range result.Baselines {
+		require.Lenf(t, b.Requirements, 1, "baseline %d should have synthesized requirement", i)
+		assert.Equal(t, "twistlock-no-findings", b.Requirements[0].ID)
+	}
+	assert.Contains(t, result.Baselines[0].Requirements[0].Results[0].CodeDesc, "image-a")
+	assert.Contains(t, result.Baselines[1].Requirements[0].Results[0].CodeDesc, "image-b")
 }
 
 // ---- Start time from discoveredDate ----

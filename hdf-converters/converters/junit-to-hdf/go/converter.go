@@ -77,13 +77,23 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 	requirements := buildRequirements(suites)
 
+	now := time.Now().UTC()
+
+	if len(requirements) == 0 {
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"junit-no-findings",
+				fmt.Sprintf("JUnit scanned %s and reported zero findings.", noFindingsTarget(name, suites)),
+				now,
+			),
+		}
+	}
+
 	baseline := hdf.EvaluatedBaseline{
 		Name:            name,
 		Requirements:    requirements,
 		ResultsChecksum: shared.InputChecksum(input),
 	}
-
-	now := time.Now().UTC()
 
 	target := hdf.Component{
 		Name: name,
@@ -103,9 +113,8 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 
 // parseJUnitXML parses JUnit XML that may have <testsuites> or <testsuite> as root.
 func parseJUnitXML(input []byte) ([]junitTestSuite, string, error) {
-	// Try <testsuites> root first
 	var suites junitTestSuites
-	if err := xml.Unmarshal(input, &suites); err == nil && len(suites.TestSuites) > 0 {
+	if err := xml.Unmarshal(input, &suites); err == nil && suites.XMLName.Local == "testsuites" {
 		name := suites.Name
 		if name == "" {
 			name = "JUnit Test Results"
@@ -113,7 +122,6 @@ func parseJUnitXML(input []byte) ([]junitTestSuite, string, error) {
 		return suites.TestSuites, name, nil
 	}
 
-	// Try <testsuite> root
 	var suite junitTestSuite
 	if err := xml.Unmarshal(input, &suite); err == nil && suite.XMLName.Local == "testsuite" {
 		name := suite.Name
@@ -124,6 +132,18 @@ func parseJUnitXML(input []byte) ([]junitTestSuite, string, error) {
 	}
 
 	return nil, "", fmt.Errorf("not a JUnit XML document: expected <testsuites> or <testsuite> root element")
+}
+
+func noFindingsTarget(baselineName string, suites []junitTestSuite) string {
+	if baselineName != "" && baselineName != "JUnit Test Results" {
+		return baselineName
+	}
+	for _, s := range suites {
+		if s.Name != "" {
+			return s.Name
+		}
+	}
+	return "JUnit test suite"
 }
 
 // buildRequirements creates HDF requirements from all test cases across all suites.

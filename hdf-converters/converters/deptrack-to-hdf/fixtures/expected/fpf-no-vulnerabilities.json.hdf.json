@@ -1,7 +1,27 @@
 {
   "baselines": [
     {
-      "requirements": [],
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Dependency-Track analyzed laravel and reported zero vulnerable components.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Dependency-Track analyzed laravel and reported zero vulnerable components.",
+              "startTime": "2026-05-15T03:16:29.937973769Z",
+              "status": "passed"
+            }
+          ],
+          "id": "deptrack-no-findings",
+          "impact": 0,
+          "tags": {},
+          "title": "No findings reported"
+        }
+      ],
       "resultsChecksum": {
         "algorithm": "sha256",
         "value": "671f7a19a5e44f865c126fb32190c18f75ab2f5bcac083d3c8184bcc25dae27e"

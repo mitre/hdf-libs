@@ -343,10 +343,29 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	vulns := netsparkerData.Vulnerabilities.Vulnerability
 	limitedVulns := shared.LimitSliceWithWarning(vulns, 0, "vulnerability")
 
+	targetName := netsparkerData.Target.URL
+	if targetName == "" {
+		targetName = "Unknown"
+	}
+
 	// Build one requirement per vulnerability
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedVulns))
 	for i := range limitedVulns {
 		requirements[i] = buildRequirement(&limitedVulns[i], netsparkerData.Target.Initiated)
+	}
+
+	if len(requirements) == 0 {
+		startTime := parseNetsparkerTimestamp(netsparkerData.Target.Initiated)
+		if startTime.IsZero() {
+			startTime = time.Now().UTC()
+		}
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"netsparker-no-findings",
+				fmt.Sprintf("%s scanned %s and reported zero findings.", toolName, targetName),
+				startTime,
+			),
+		}
 	}
 
 	// Build baseline
@@ -359,12 +378,6 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		Title:           &title,
 		Requirements:    requirements,
 		ResultsChecksum: resultsChecksum,
-	}
-
-	// Target
-	targetName := netsparkerData.Target.URL
-	if targetName == "" {
-		targetName = "Unknown"
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{

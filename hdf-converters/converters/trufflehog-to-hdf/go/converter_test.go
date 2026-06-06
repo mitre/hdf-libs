@@ -41,10 +41,20 @@ func TestConverterContract(t *testing.T) {
 	})
 }
 
-func TestConvertTrufflehogToHDF_EmptyArray(t *testing.T) {
-	_, err := ConvertTrufflehogToHDF([]byte("[]"), testVersion)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no findings")
+func TestConvertTrufflehogToHDF_EmptyFindings(t *testing.T) {
+	input := loadFixture(t, "input/empty.json")
+	result, err := ConvertTrufflehogToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "trufflehog-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "TruffleHog")
+	assert.Contains(t, req.Results[0].CodeDesc, "scanned")
 }
 
 // ---- Minimal fixture: single object ----

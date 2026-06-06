@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description } from '@mitre/hdf-schema';
 import { ResultStatus, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
@@ -173,21 +173,23 @@ export async function convertSarifToHdf(input: string): Promise<string> {
     console.warn(`WARNING: Input truncated at ${limitedRuns.length} run items (original: ${sarif.runs.length})`);
   }
 
+  const timestamp = new Date();
+
   return buildHdfResults({
     generatorName: 'sarif-to-hdf',
     converterVersion: '1.0.0',
     toolName: firstDriver?.name,
     toolVersion: firstDriver?.version,
     toolFormat: 'SARIF',
-    baselines: limitedRuns.map(run => convertRun(run, sarif.version, resultsChecksum)),
+    baselines: limitedRuns.map(run => convertRun(run, sarif.version, resultsChecksum, timestamp)),
     components: [],
-    timestamp: new Date(),
+    timestamp,
   });
 }
 
 // --- Run-level conversion ---
 
-function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum): EvaluatedBaseline {
+function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum, timestamp: Date): EvaluatedBaseline {
   const ruleMap = buildRuleMap(run);
 
   // Group SARIF results by ruleId — each group becomes one EvaluatedRequirement.
@@ -219,6 +221,17 @@ function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum): 
 
   // Use tool name for baseline name if available
   const baselineName = run.tool?.driver?.name || 'SARIF';
+
+  if (requirements.length === 0) {
+    const driverName = run.tool?.driver?.name?.trim() || '';
+    const target = driverName || 'SARIF analyzer';
+    const idPrefix = driverName || 'sarif';
+    requirements.push(buildNoFindingsRequirement(
+      `${idPrefix}-no-findings`,
+      `${target} ran and reported zero findings.`,
+      timestamp,
+    ));
+  }
 
   return createMinimalBaseline(baselineName, requirements, {
     version,

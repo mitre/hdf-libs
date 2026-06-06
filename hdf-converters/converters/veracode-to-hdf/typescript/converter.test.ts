@@ -177,6 +177,20 @@ describe('Veracode to HDF converter', () => {
     expect(output.timestamp).toBeDefined();
   });
 
+  it('should synthesize a passed placeholder when input has zero findings', async () => {
+    const input = loadFixture('empty.xml');
+    const output: HDFResults = JSON.parse(await convert(input));
+
+    expect(output.baselines).toHaveLength(1);
+    expect(output.baselines[0]!.requirements).toHaveLength(1);
+    const req = output.baselines[0]!.requirements[0]!;
+    expect(req.id).toBe('veracode-no-findings');
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0]!.status).toBe('passed');
+    expect(req.results[0]!.codeDesc).toContain('Veracode');
+    expect(req.results[0]!.codeDesc).toContain('CleanApp');
+  });
+
   it('should map severity levels to correct impact values', async () => {
     const input = loadFixture('veracode.xml');
     const output: HDFResults = JSON.parse(await convert(input));

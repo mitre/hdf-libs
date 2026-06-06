@@ -294,6 +294,23 @@ func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 		}
 	}
 
+	if len(requirements) == 0 {
+		target := siteName
+		if target == "" {
+			target = targetName
+		}
+		if target == "" || target == "Unknown Host" {
+			target = "the target site"
+		}
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"zap-no-findings",
+				fmt.Sprintf("OWASP ZAP scanned %s and reported zero findings.", target),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	baselineName := "OWASP ZAP Scan"
 	if siteName != "" {
 		baselineName = fmt.Sprintf("OWASP ZAP Scan of %s", siteName)

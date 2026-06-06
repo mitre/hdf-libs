@@ -30,11 +30,19 @@ func TestConverterContract(t *testing.T) {
 }
 
 func TestConvertGitlabToHDF_EmptyVulnerabilities(t *testing.T) {
-	input := []byte(`{"version":"15.1.0","scan":{"type":"sast"},"vulnerabilities":[]}`)
+	input := loadFixture(t, "input/empty.json")
 	result, err := ConvertGitlabToHDF(input, testVersion)
 	require.NoError(t, err)
 	require.Len(t, result.Baselines, 1)
-	assert.Empty(t, result.Baselines[0].Requirements)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "gitlab-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "GitLab")
+	assert.Contains(t, req.Results[0].CodeDesc, "Semgrep")
+	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
 }
 
 func TestConvertGitlabToHDF_MinimalSAST_Generator(t *testing.T) {

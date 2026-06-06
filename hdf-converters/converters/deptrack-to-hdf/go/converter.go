@@ -223,6 +223,20 @@ func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		requirements[i] = buildRequirement(finding, report.Meta.Timestamp)
 	}
 
+	if len(requirements) == 0 {
+		projectName := report.Project.Name
+		if projectName == "" {
+			projectName = report.Project.UUID
+		}
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"deptrack-no-findings",
+				fmt.Sprintf("Dependency-Track analyzed %s and reported zero vulnerable components.", projectName),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	baseline := hdf.EvaluatedBaseline{
 		Name:            "Dependency-Track Scan",
 		Requirements:    requirements,

@@ -199,9 +199,121 @@ describe('Microsoft Defender for Cloud to HDF converter', async () => {
   });
 
   describe('empty value array', async () => {
-    it('should handle empty value array', async () => {
+    it('should synthesize a no-findings passed placeholder when value array is empty', async () => {
       const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(JSON.stringify({ value: [] }))) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('msft-defender-cloud-no-findings');
+      expect(req.results).toHaveLength(1);
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('Microsoft Defender for Cloud');
+      expect(req.results[0]!.codeDesc).toContain('Unknown');
+    });
+
+    it('should synthesize a no-findings passed placeholder for the empty fixture', async () => {
+      const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(loadFixture('empty.json'))) as HDFResults;
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('msft-defender-cloud-no-findings');
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('Microsoft Defender for Cloud');
+    });
+  });
+
+  describe('branch coverage — optional metadata fields', () => {
+    // Exercises the optional-field push branches in buildRequirement (lines ~118-149)
+    // and the four mapStatus cases (line 82): healthy / unhealthy / notapplicable / unknown.
+    it('populates tags and descriptions when all optional metadata is present', async () => {
+      const input = JSON.stringify({
+        value: [
+          {
+            id: '/subscriptions/aaa-bbb/providers/Microsoft.Security/assessments/a1',
+            name: 'a1',
+            properties: {
+              displayName: 'Rich assessment',
+              status: { code: 'Healthy' },
+              metadata: {
+                description: 'desc',
+                remediationDescription: 'fix this',
+                severity: 'High',
+                categories: ['Compute'],
+                tactics: ['Defense Evasion'],
+                techniques: ['T1548'],
+                threats: ['accountBreach'],
+                userImpact: 'High',
+                implementationEffort: 'Low',
+                assessmentType: 'BuiltIn',
+              },
+              resourceDetails: { id: '/subscriptions/aaa-bbb/resourceGroups/rg/providers/foo' },
+            },
+          },
+          {
+            id: '/subscriptions/aaa-bbb/providers/Microsoft.Security/assessments/a2',
+            name: 'a2',
+            properties: {
+              displayName: 'Unhealthy + NA + Unknown',
+              status: { code: 'Unhealthy' },
+              metadata: {
+                description: 'desc-2',
+                severity: 'Medium',
+                categories: [], tactics: [], techniques: [], threats: [],
+              },
+              resourceDetails: { id: 'no-subscription-prefix' },
+            },
+          },
+          {
+            id: 'no-slash-after-subscription/subscriptions/ccc-ddd',
+            name: 'a3',
+            properties: {
+              displayName: 'NA',
+              status: { code: 'NotApplicable' },
+              metadata: {
+                description: 'desc-3',
+                severity: 'Unknown',
+                categories: [], tactics: [], techniques: [], threats: [],
+              },
+              resourceDetails: { id: '/subscriptions/eee-fff' },
+            },
+          },
+          {
+            id: '/subscriptions/aaa-bbb/providers/Microsoft.Security/assessments/a4',
+            name: 'a4',
+            properties: {
+              displayName: 'Unknown status',
+              status: { code: 'Stale' },
+              metadata: {
+                description: 'desc-4',
+                severity: 'Low',
+                categories: [], tactics: [], techniques: [], threats: [],
+              },
+              resourceDetails: { id: '/subscriptions/aaa-bbb' },
+            },
+          },
+        ],
+      });
+      const hdf = JSON.parse(await convertMsftDefenderCloudToHdf(input)) as HDFResults;
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs.length).toBeGreaterThanOrEqual(4);
+
+      const rich = reqs.find((r) => r.id === 'a1')!;
+      expect(rich.tags).toMatchObject({
+        categories: ['Compute'],
+        tactics: ['Defense Evasion'],
+        techniques: ['T1548'],
+        threats: ['accountBreach'],
+        severity: 'High',
+        userImpact: 'High',
+        implementationEffort: 'Low',
+        assessmentType: 'BuiltIn',
+      });
+      expect(rich.descriptions.map((d) => d.label)).toContain('fix');
+      expect(rich.results[0]!.status).toBe('passed');
+
+      expect(reqs.find((r) => r.id === 'a2')!.results[0]!.status).toBe('failed');
+      expect(reqs.find((r) => r.id === 'a3')!.results[0]!.status).toBe('notApplicable');
+      expect(reqs.find((r) => r.id === 'a4')!.results[0]!.status).toBe('notReviewed');
     });
   });
 });

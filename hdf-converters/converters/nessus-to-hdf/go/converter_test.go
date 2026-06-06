@@ -169,6 +169,28 @@ func TestConvertNessusToHDF_EmptyHosts(t *testing.T) {
 	assert.Equal(t, 0.0, *result.Statistics.Duration, "Duration should be 0")
 }
 
+func TestConvertNessusToHDF_EmptyHostSynthesizesPlaceholder(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "empty-host.nessus")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err, "Failed to read empty-host.nessus fixture")
+
+	result, err := ConvertNessusToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	require.Len(t, result.Baselines, 1, "one ReportHost should produce one baseline")
+	baseline := result.Baselines[0]
+	require.Len(t, baseline.Requirements, 1, "empty host must synthesize one placeholder requirement")
+
+	req := baseline.Requirements[0]
+	assert.Equal(t, "nessus-no-findings", req.ID)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "Nessus")
+	assert.Contains(t, req.Results[0].CodeDesc, "scanned")
+	assert.Contains(t, req.Results[0].CodeDesc, "cleanhost.example.com")
+	assert.Contains(t, req.Results[0].CodeDesc, "findings")
+}
+
 func TestParseComplianceRef(t *testing.T) {
 	ref := "CCI|CCI-000366,STIG-ID|RHEL-07-010010,Rule-ID|SV-86473r2_rule,Vuln-ID|V-71849,CAT|II"
 
@@ -340,6 +362,38 @@ func findRequirementByID(requirements []hdf.EvaluatedRequirement, id string) *hd
 		}
 	}
 	return nil
+}
+
+func TestConvertNessusToHDF_SeeAlsoMultiURLSplit(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertNessusToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	// Plugin 51192's see_also is:
+	//   "https://www.itu.int/rec/T-REC-X.509/en\nhttps://en.wikipedia.org/wiki/X.509"
+	// Each URL must become its own Reference entry with no embedded whitespace.
+	var req *hdf.EvaluatedRequirement
+	for i := range result.Baselines {
+		if r := findRequirementByID(result.Baselines[i].Requirements, "51192"); r != nil {
+			req = r
+			break
+		}
+	}
+	require.NotNil(t, req, "plugin 51192 not found")
+	require.Len(t, req.Refs, 2, "see_also with two URLs should produce two refs")
+
+	urls := map[string]bool{}
+	for _, ref := range req.Refs {
+		require.NotNil(t, ref.URL)
+		assert.NotContains(t, *ref.URL, "\n", "ref.url must not contain newlines")
+		assert.NotContains(t, *ref.URL, " ", "ref.url must not contain spaces")
+		urls[*ref.URL] = true
+	}
+	assert.True(t, urls["https://www.itu.int/rec/T-REC-X.509/en"], "expected ITU X.509 url")
+	assert.True(t, urls["https://en.wikipedia.org/wiki/X.509"], "expected Wikipedia X.509 url")
 }
 
 func TestConvertNessusToHDF_EntityExpansion(t *testing.T) {

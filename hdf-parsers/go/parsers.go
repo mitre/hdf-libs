@@ -4,11 +4,20 @@ package hdfparsers
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
+
+// JSON-quoted ISO 8601 timestamp with no trailing timezone — InSpec emits these.
+var noTzTimestamp = regexp.MustCompile(`"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)"`)
+
+// normalizeTimestamps appends Z to bare ISO timestamps (treated as UTC).
+func normalizeTimestamps(input []byte) []byte {
+	return noTzTimestamp.ReplaceAll(input, []byte(`"${1}Z"`))
+}
 
 // ParseResult represents the result of a parse operation
 type ParseResult struct {
@@ -35,13 +44,15 @@ type BaselineParseResult struct {
 // ParseResults parses HDF Results document from JSON bytes
 func ParseResults(input []byte) ResultsParseResult {
 	// Check for empty input
-	trimmed := strings.TrimSpace(string(input))
-	if len(trimmed) == 0 {
+	if len(strings.TrimSpace(string(input))) == 0 {
 		return ResultsParseResult{
 			Success: false,
 			Error:   "Input is empty",
 		}
 	}
+
+	input = normalizeTimestamps(input)
+	trimmed := strings.TrimSpace(string(input))
 
 	// Validate against schema first
 	validationResult := validators.ValidateResults(input)
@@ -79,13 +90,15 @@ func ParseResults(input []byte) ResultsParseResult {
 // ParseBaseline parses HDF Baseline document from JSON bytes
 func ParseBaseline(input []byte) BaselineParseResult {
 	// Check for empty input
-	trimmed := strings.TrimSpace(string(input))
-	if len(trimmed) == 0 {
+	if len(strings.TrimSpace(string(input))) == 0 {
 		return BaselineParseResult{
 			Success: false,
 			Error:   "Input is empty",
 		}
 	}
+
+	input = normalizeTimestamps(input)
+	trimmed := strings.TrimSpace(string(input))
 
 	// Validate against schema first
 	validationResult := validators.ValidateBaseline(input)

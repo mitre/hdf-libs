@@ -288,7 +288,12 @@ func TestConvertDeptrack_NoVulnerabilities(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, result.Baselines, 1)
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "deptrack-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "zero vulnerable components")
 	assert.Equal(t, "laravel", result.Components[0].Name)
 }
 

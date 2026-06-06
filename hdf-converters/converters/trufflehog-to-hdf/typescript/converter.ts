@@ -1,5 +1,5 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -252,9 +252,6 @@ export async function convertTrufflehogToHdf(input: string): Promise<string> {
   validateInputSize(input, 'trufflehog');
 
   const findings = parseFindings(input);
-  if (findings.length === 0) {
-    throw new Error('trufflehog: no findings in input');
-  }
 
   const resultsChecksum = await inputChecksum(input);
   const limitedFindings = limitArrayWithWarning(findings, 'finding');
@@ -263,6 +260,17 @@ export async function convertTrufflehogToHdf(input: string): Promise<string> {
   const requirements: EvaluatedRequirement[] = [];
   for (const [reqID, group] of groups) {
     requirements.push(buildRequirement(reqID, group));
+  }
+
+  if (requirements.length === 0) {
+    const target = findGitRepoURL(limitedFindings)
+      ?? limitedFindings[0]?.SourceName
+      ?? 'the target source';
+    requirements.push(buildNoFindingsRequirement(
+      'trufflehog-no-findings',
+      `TruffleHog scanned ${target} and reported zero findings.`,
+      new Date(),
+    ));
   }
 
   const sourceName = limitedFindings[0]?.SourceName ?? 'trufflehog';

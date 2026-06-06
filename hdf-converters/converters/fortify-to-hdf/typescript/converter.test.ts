@@ -249,6 +249,21 @@ describe('Fortify to HDF Converter', () => {
     expect(reqs).toHaveLength(1);
   });
 
+  it('should synthesize a passed placeholder when input has zero findings', async () => {
+    const fvdl = loadFixture('input/empty.fvdl');
+    const out = parseOutput(await convertFortifyToHdf(fvdl));
+    const baselines = out.baselines as Array<Record<string, unknown>>;
+    expect(baselines).toHaveLength(1);
+    const reqs = baselines[0]!.requirements as Array<Record<string, unknown>>;
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0]!.id).toBe('fortify-no-findings');
+    const results = reqs[0]!.results as Array<Record<string, unknown>>;
+    expect(results).toHaveLength(1);
+    expect(results[0]!.status).toBe('passed');
+    expect(results[0]!.codeDesc as string).toContain('Fortify');
+    expect(results[0]!.codeDesc as string).toContain('/src/cleanproject');
+  });
+
   // --- Edge cases: missing optional fields ---
 
   it('should handle FVDL with no CreatedTS', async () => {

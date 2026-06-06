@@ -259,7 +259,7 @@ describe('neuvector to HDF converter', async () => {
   });
 
   describe('empty vulnerabilities', async () => {
-    it('should handle empty vulnerabilities array', async () => {
+    it('synthesizes a passed placeholder for empty vulnerabilities array', async () => {
       const input = JSON.stringify({
         error_message: '',
         report: {
@@ -279,7 +279,24 @@ describe('neuvector to HDF converter', async () => {
         },
       });
       const hdf = JSON.parse(await convertNeuvectorToHdf(input)) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+      expect(hdf.baselines).toHaveLength(1);
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs).toHaveLength(1);
+      expect(reqs[0]!.id).toBe('neuvector-no-findings');
+      expect(reqs[0]!.results[0]!.status).toBe('passed');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('NeuVector');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('test/image');
+    });
+
+    it('synthesizes a passed placeholder for empty fixture', async () => {
+      const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('empty.json'))) as HDFResults;
+      expect(hdf.baselines).toHaveLength(1);
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs).toHaveLength(1);
+      expect(reqs[0]!.id).toBe('neuvector-no-findings');
+      expect(reqs[0]!.results[0]!.status).toBe('passed');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('NeuVector');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('mitre/heimdall');
     });
   });
 

@@ -142,21 +142,23 @@ describe('Nessus to HDF Converter', async () => {
       expect(req?.tags.cvss_base_score).toBe('6.4');
     });
 
-    it('should map see_also to refs array', async () => {
+    it('should split whitespace-separated see_also URLs into one ref per URL', async () => {
       const nessusXml = readFileSync(
         join(FIXTURES_DIR, 'input', 'sample.nessus'),
         'utf-8'
       );
 
       const result = await convertNessusToHdf(nessusXml);
-      // Use plugin 51192 which has see_also URLs
+      // Plugin 51192's see_also is "https://www.itu.int/rec/T-REC-X.509/en\nhttps://en.wikipedia.org/wiki/X.509"
       const req = findReqAcrossBaselines(result, '51192');
 
       expect(req?.refs).toBeDefined();
-      expect(req?.refs?.length).toBeGreaterThan(0);
-      // The see_also field contains URLs — verify at least one is present
-      const refUrls = req?.refs?.map(r => r.url).join(' ') ?? '';
-      expect(refUrls).toContain('X.509');
+      expect(req?.refs?.length).toBe(2);
+      const urls = req?.refs?.map(r => r.url) ?? [];
+      expect(urls).toContain('https://www.itu.int/rec/T-REC-X.509/en');
+      expect(urls).toContain('https://en.wikipedia.org/wiki/X.509');
+      // Every emitted URL must be a single standalone URI (no embedded whitespace).
+      urls.forEach(u => expect(u).toMatch(/^\S+$/));
     });
 
     it('should create requirement results with proper status mapping', async () => {
@@ -268,6 +270,27 @@ describe('Nessus to HDF Converter', async () => {
           });
         });
       }
+    });
+
+    it('should synthesize a passed placeholder for a host with zero ReportItems', async () => {
+      const nessusXml = readFileSync(
+        join(FIXTURES_DIR, 'input', 'empty-host.nessus'),
+        'utf-8'
+      );
+
+      const result = await convertNessusToHdf(nessusXml);
+
+      expect(result.baselines).toHaveLength(1);
+      const baseline = result.baselines[0];
+      expect(baseline.requirements).toHaveLength(1);
+
+      const req = baseline.requirements[0];
+      expect(req.id).toBe('nessus-no-findings');
+      expect(req.results[0].status).toBe('passed');
+      expect(req.results[0].codeDesc).toContain('Nessus');
+      expect(req.results[0].codeDesc).toContain('scanned');
+      expect(req.results[0].codeDesc).toContain('cleanhost.example.com');
+      expect(req.results[0].codeDesc).toContain('findings');
     });
 
     it('should populate epss and cwe from an EPSS-enriched ReportItem', async () => {
@@ -565,7 +588,9 @@ describe('Nessus to HDF Converter', async () => {
 </NessusClientData_v2>`;
 
       const result = await convertNessusToHdf(xml);
-      expect(result.baselines[0].requirements).toHaveLength(0);
+      expect(result.baselines[0].requirements).toHaveLength(1);
+      expect(result.baselines[0].requirements[0].id).toBe('nessus-no-findings');
+      expect(result.baselines[0].requirements[0].results[0].status).toBe('passed');
     });
 
     it('should handle ReportItem without see_also', async () => {

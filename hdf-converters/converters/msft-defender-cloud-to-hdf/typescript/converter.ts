@@ -1,5 +1,5 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize, buildHdfResults, buildNoFindingsRequirement } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -212,25 +212,34 @@ export async function convertMsftDefenderCloudToHdf(input: string): Promise<stri
     requirements.push(buildRequirement(assessmentID, assessments));
   }
 
+  const subscriptionID = limitedAssessments.length > 0
+    ? extractSubscriptionID(limitedAssessments[0]!.id)
+    : '';
+
+  if (requirements.length === 0) {
+    const targetName = subscriptionID || 'Unknown';
+    requirements.push(buildNoFindingsRequirement(
+      'msft-defender-cloud-no-findings',
+      `Microsoft Defender for Cloud scanned ${targetName} and reported zero findings.`,
+      new Date(),
+    ));
+  }
+
   const baseline: EvaluatedBaseline = createMinimalBaseline(
     'Microsoft Defender for Cloud Assessments',
     requirements,
     { resultsChecksum },
   ) as EvaluatedBaseline;
 
-  // Build target from subscription ID
   const components: Component[] = [];
-  if (limitedAssessments.length > 0) {
-    const subscriptionID = extractSubscriptionID(limitedAssessments[0]!.id);
-    if (subscriptionID) {
-      components.push({
-        name: `Azure Subscription ${subscriptionID}`,
-        type: TargetType.CloudAccount,
-        accountId: subscriptionID,
-        provider: 'azure' as Component['provider'],
-        labels: { account: subscriptionID, provider: 'azure' },
-      });
-    }
+  if (subscriptionID) {
+    components.push({
+      name: `Azure Subscription ${subscriptionID}`,
+      type: TargetType.CloudAccount,
+      accountId: subscriptionID,
+      provider: 'azure' as Component['provider'],
+      labels: { account: subscriptionID, provider: 'azure' },
+    });
   }
 
   return buildHdfResults({

@@ -235,13 +235,11 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 
 	limitedAlerts := shared.LimitSliceWithWarning(response.Value, 0, "alert")
 
-	// Build requirements preserving insertion order
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedAlerts))
 	for i, alert := range limitedAlerts {
 		requirements[i] = alertToRequirement(alert)
 	}
 
-	// Build targets — deduplicate by device name
 	seenTargets := make(map[string]bool)
 	var targets []hdf.Component
 	for _, alert := range limitedAlerts {
@@ -249,6 +247,16 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 		if !seenTargets[target.Name] {
 			seenTargets[target.Name] = true
 			targets = append(targets, target)
+		}
+	}
+
+	if len(requirements) == 0 {
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"msft-defender-endpoint-no-findings",
+				"Microsoft Defender for Endpoint scanned the tenant and reported zero findings.",
+				time.Now().UTC(),
+			),
 		}
 	}
 

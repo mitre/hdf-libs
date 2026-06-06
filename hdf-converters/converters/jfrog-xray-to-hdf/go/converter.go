@@ -220,6 +220,16 @@ func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		requirements[i] = buildRequirement(entryID, groups[entryID])
 	}
 
+	if len(requirements) == 0 {
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"jfrog-xray-no-findings",
+				"JFrog Xray scanned the target artifact and reported zero vulnerable components.",
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	baseline := hdf.EvaluatedBaseline{
 		Name:            "JFrog Xray Scan",
 		Requirements:    requirements,

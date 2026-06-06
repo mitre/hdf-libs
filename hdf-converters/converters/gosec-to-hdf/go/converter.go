@@ -226,6 +226,16 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		requirements[i] = buildRequirement(ruleID, groups[ruleID])
 	}
 
+	if len(requirements) == 0 {
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"gosec-no-findings",
+				"gosec scanned Go codebase and reported zero findings.",
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	baseline := hdf.EvaluatedBaseline{
 		Name:            "gosec Scan",
 		Requirements:    requirements,

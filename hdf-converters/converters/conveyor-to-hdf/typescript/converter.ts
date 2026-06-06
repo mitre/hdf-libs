@@ -3,7 +3,7 @@ import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, buildNistCciTags, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -332,6 +332,23 @@ export async function convertConveyorToHdf(input: string): Promise<string> {
     if (typeof desc === 'string' && desc.length > 0) {
       targetName = desc;
     }
+  }
+
+  if (baselines.length === 0) {
+    baselines.push(createMinimalBaseline(
+      'Conveyor Scan',
+      [
+        buildNoFindingsRequirement(
+          'conveyor-no-findings',
+          `Conveyor scanned ${targetName} and reported zero findings.`,
+          new Date(),
+        ),
+      ],
+      {
+        resultsChecksum,
+        title: 'Conveyor Scan (no findings)',
+      },
+    ) as EvaluatedBaseline);
   }
 
   return buildHdfResults({

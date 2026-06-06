@@ -477,8 +477,46 @@ func TestMinimalReport(t *testing.T) {
 		t.Errorf("Expected 1 baseline, got %d", len(hdfResults.Baselines))
 	}
 
-	if len(hdfResults.Baselines[0].Requirements) != 0 {
-		t.Errorf("Expected 0 requirements, got %d", len(hdfResults.Baselines[0].Requirements))
+	reqs := hdfResults.Baselines[0].Requirements
+	if len(reqs) != 1 {
+		t.Fatalf("Expected 1 synthesized placeholder requirement, got %d", len(reqs))
+	}
+	if reqs[0].ID != "grype-no-findings" {
+		t.Errorf("Expected placeholder id 'grype-no-findings', got %q", reqs[0].ID)
+	}
+	if reqs[0].Results[0].Status != hdf.Passed {
+		t.Errorf("Expected placeholder status 'passed', got %q", reqs[0].Results[0].Status)
+	}
+	if !strings.Contains(reqs[0].Results[0].CodeDesc, "Grype") || !strings.Contains(reqs[0].Results[0].CodeDesc, "test-image") {
+		t.Errorf("Expected codeDesc to mention Grype and the target, got %q", reqs[0].Results[0].CodeDesc)
+	}
+}
+
+func TestEmptyFixtureSynthesizesPlaceholder(t *testing.T) {
+	input := loadFixture(t, "input/empty.json")
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+
+	if len(hdfResults.Baselines) != 1 {
+		t.Fatalf("Expected 1 baseline, got %d", len(hdfResults.Baselines))
+	}
+	reqs := hdfResults.Baselines[0].Requirements
+	if len(reqs) != 1 {
+		t.Fatalf("Expected exactly 1 synthesized placeholder, got %d", len(reqs))
+	}
+	if reqs[0].ID != "grype-no-findings" {
+		t.Errorf("Expected id 'grype-no-findings', got %q", reqs[0].ID)
+	}
+	if reqs[0].Results[0].Status != hdf.Passed {
+		t.Errorf("Expected status 'passed', got %q", reqs[0].Results[0].Status)
+	}
+	if !strings.Contains(reqs[0].Results[0].CodeDesc, "Grype") {
+		t.Errorf("Expected codeDesc to contain 'Grype', got %q", reqs[0].Results[0].CodeDesc)
+	}
+	if !strings.Contains(reqs[0].Results[0].CodeDesc, "alpine:3.20") {
+		t.Errorf("Expected codeDesc to contain target 'alpine:3.20', got %q", reqs[0].Results[0].CodeDesc)
 	}
 }
 

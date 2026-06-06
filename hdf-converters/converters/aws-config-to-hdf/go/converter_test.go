@@ -127,6 +127,43 @@ func TestConvertAWSConfigToHDF_EmptyRules(t *testing.T) {
 	assert.Empty(t, result.Baselines[0].Requirements)
 }
 
+// TestConvertAWSConfigToHDF_RuleWithEmptyEvaluationResults exercises the
+// live-AWS bug surfaced in issue #80 (bug 2): a Config rule that was deployed
+// and active but evaluated zero in-scope resources (e.g.
+// rds-cluster-multi-az-enabled in an account with no RDS clusters) must still
+// produce a schema-valid requirement. The schema requires Results to have
+// minItems >= 1; emitting an empty slice fails hdf validate.
+//
+// Semantics chosen: the rule's check ran but had no scope to evaluate, so
+// the requirement is not applicable to this system. The converter
+// synthesizes one NotApplicable result with a clear codeDesc.
+func TestConvertAWSConfigToHDF_RuleWithEmptyEvaluationResults(t *testing.T) {
+	input := []byte(`{
+		"ConfigRules": [{
+			"ConfigRuleId": "config-rule-zerorsrc",
+			"ConfigRuleName": "rds-cluster-multi-az-enabled-zerorsrc",
+			"ConfigRuleArn": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-zerorsrc",
+			"Description": "Checks if RDS clusters are configured for Multi-AZ.",
+			"Source": {"Owner": "AWS", "SourceIdentifier": "RDS_CLUSTER_MULTI_AZ_ENABLED"},
+			"InputParameters": "{}",
+			"EvaluationResults": []
+		}]
+	}`)
+
+	result, err := ConvertAWSConfigToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1, "empty EvaluationResults must produce exactly one synthesized result (schema minItems=1)")
+
+	res := req.Results[0]
+	assert.Equal(t, hdf.NotApplicable, res.Status, "synthesized result must be notApplicable")
+	assert.Contains(t, res.CodeDesc, "zero", "codeDesc should explain that the rule found no in-scope resources")
+	assert.False(t, res.StartTime.IsZero(), "StartTime must be set (schema requires the field)")
+}
+
 func TestConvertAWSConfigToHDF_MissingConfigRules(t *testing.T) {
 	_, err := ConvertAWSConfigToHDF([]byte(`{}`), converterVersion)
 	assert.Error(t, err)

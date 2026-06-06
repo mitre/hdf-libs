@@ -220,6 +220,20 @@ describe('prisma to HDF converter', () => {
     });
   });
 
+  describe('no findings', () => {
+    it('should synthesize a passed placeholder for headers-only CSV', async () => {
+      const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('empty.csv'))) as HDFResults;
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('prisma-no-findings');
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('Prisma');
+      expect(req.results[0]!.codeDesc).toContain('scanned');
+      expect(req.results[0]!.codeDesc).toContain('vulnerable components');
+    });
+  });
+
   describe('full fixture smoke test', () => {
     it('should handle the full prismacloud_sample.csv', async () => {
       const hdf = JSON.parse(await convertPrismaToHdf(loadFixture('prismacloud_sample.csv'))) as HDFResults;

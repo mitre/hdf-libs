@@ -422,13 +422,15 @@ describe('junit to HDF converter', async () => {
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
     });
 
-    it('should handle testsuite with no testcases', async () => {
+    it('should synthesize a passed placeholder when testsuite has no testcases', async () => {
       const xml = `<?xml version="1.0"?>
 <testsuites name="EmptySuites">
   <testsuite name="EmptySuite"/>
 </testsuites>`;
       const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements[0]!.id).toBe('junit-no-findings');
+      expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe(ResultStatus.Passed);
     });
 
     it('should reject non-JUnit XML', async () => {
@@ -445,6 +447,22 @@ describe('junit to HDF converter', async () => {
 </testsuites>`;
       const hdf = JSON.parse(await convertJunitToHdf(xml)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
+    });
+  });
+
+  // --- Empty findings ---
+
+  describe('empty findings', async () => {
+    it('should synthesize a passed placeholder when no test cases exist', async () => {
+      const hdf = await parseHdf('empty.xml');
+      expect(hdf.baselines).toHaveLength(1);
+      const reqs = hdf.baselines[0]!.requirements;
+      expect(reqs).toHaveLength(1);
+      expect(reqs[0]!.id).toBe('junit-no-findings');
+      expect(reqs[0]!.results[0]!.status).toBe(ResultStatus.Passed);
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('JUnit');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('EmptySuite');
+      expect(reqs[0]!.results[0]!.codeDesc).toContain('zero findings');
     });
   });
 });
