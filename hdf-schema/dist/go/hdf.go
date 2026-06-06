@@ -803,6 +803,12 @@ type StatusOverride struct {
 	ExpiresAt                                                                                   time.Time       `json:"expiresAt"`
 	// Override to the requirement's impact score. At least one of status or impact must be set.                
 	Impact                                                                                      *ImpactOverride `json:"impact,omitempty"`
+	// Structured controlled-vocabulary classification for why this override applies.                           
+	// Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive                
+	// and attestation overrides where the structured category enables filtering and lossless                   
+	// round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the                        
+	// precedent vocabulary and rationale.                                                                      
+	Justification                                                                               *Justification  `json:"justification,omitempty"`
 	// SHA-256 checksum of the previous amendment in chronological order. Creates a                             
 	// tamper-evident chain of amendments (similar to blockchain). Null for the first amendment                 
 	// on a requirement.                                                                                        
@@ -1801,6 +1807,12 @@ type StandaloneOverride struct {
 	// in the same system. Omit for external or cross-system providers; the reason field                        
 	// explains the source. Primarily used with type 'inherited'.                                               
 	InheritedFrom                                                                               *string         `json:"inheritedFrom,omitempty"`
+	// Structured controlled-vocabulary classification for why this override applies.                           
+	// Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive                
+	// and attestation overrides where the structured category enables filtering and lossless                   
+	// round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the                        
+	// precedent vocabulary and rationale.                                                                      
+	Justification                                                                               *Justification  `json:"justification,omitempty"`
 	// Remediation milestones (primarily for POA&M type amendments).                                            
 	Milestones                                                                                  []Milestone     `json:"milestones,omitempty"`
 	// Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null                 
@@ -2140,6 +2152,34 @@ const (
 	SeverityHigh     Severity = "high"
 	SeverityLow      Severity = "low"
 	SeverityMedium   Severity = "medium"
+)
+
+// Structured controlled-vocabulary classification for why this override applies.
+// Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive
+// and attestation overrides where the structured category enables filtering and lossless
+// round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the
+// precedent vocabulary and rationale.
+//
+// Structured controlled-vocabulary reason for an override, complementing the free-text
+// 'reason' field. 'reason' carries the human-readable rationale an auditor reads;
+// 'justification' carries the machine-readable category enabling filtering, aggregation,
+// and lossless round-trip with structured ecosystems (VEX, OSCAL, FedRAMP DR). Both fields
+// may be present simultaneously and are NOT redundant: 'reason' explains the specific
+// circumstance; 'justification' classifies it. Authors SHOULD populate both when a
+// controlled-vocabulary value applies — the enum value alone is not self-explanatory to an
+// auditor. Initial vocabulary (5 values) is from the VEX ecosystem (OpenVEX / CSAF VEX /
+// CycloneDX VEX) where it describes WHY a vulnerability is not_affected on a specific
+// system. The enum is open for additive extension as other ecosystems' controlled
+// vocabularies are integrated. Older readers SHOULD treat unknown values as 'unknown
+// justification' (passthrough) rather than rejecting the document.
+type Justification string
+
+const (
+	ComponentNotPresent                         Justification = "component_not_present"
+	InlineMitigationsAlreadyExist               Justification = "inline_mitigations_already_exist"
+	VulnerableCodeCannotBeControlledByAdversary Justification = "vulnerable_code_cannot_be_controlled_by_adversary"
+	VulnerableCodeNotInExecutePath              Justification = "vulnerable_code_not_in_execute_path"
+	VulnerableCodeNotPresent                    Justification = "vulnerable_code_not_present"
 )
 
 // How this requirement is intended to be verified. Disambiguates the two cases that null

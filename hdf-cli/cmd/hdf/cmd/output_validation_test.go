@@ -169,3 +169,38 @@ func TestWriteValidatedHDFOutput_NoValidateFlagSkipsCheck(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, strings.Contains(string(written), `"baselines"`))
 }
+
+func TestDetectHDFDocType_DetectsAmendments(t *testing.T) {
+	t.Parallel()
+	docType, ok := detectHDFDocType([]byte(`{"overrides":[{"type":"waiver","requirementId":"AC-1"}]}`))
+	assert.True(t, ok)
+	assert.Equal(t, "amendments", docType)
+}
+
+func TestValidateHDFOutput_RejectsInvalidAmendments(t *testing.T) {
+	t.Parallel()
+	invalid := []byte(`{"overrides":[{"type":"waiver","requirementId":"AC-1"}]}`)
+	err := validateHDFOutput(invalid)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Amendments")
+}
+
+func TestValidateHDFOutput_AcceptsValidAmendments(t *testing.T) {
+	t.Parallel()
+	valid := []byte(`{
+		"name": "Test Waivers",
+		"overrides": [
+			{
+				"type": "waiver",
+				"requirementId": "AC-1",
+				"status": "passed",
+				"reason": "Compensating control documented",
+				"appliedBy": {"type": "email", "identifier": "ao@agency.gov"},
+				"appliedAt": "2026-01-01T00:00:00Z",
+				"expiresAt": "2027-01-01T00:00:00Z"
+			}
+		]
+	}`)
+	err := validateHDFOutput(valid)
+	assert.NoError(t, err)
+}

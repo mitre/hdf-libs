@@ -49,15 +49,17 @@ func validateHDFOutput(data []byte) error {
 		if !result.Valid {
 			return fmt.Errorf("output failed HDF Baseline schema validation: %s", result.Error())
 		}
+	case "amendments":
+		result := validators.ValidateAmendments(data)
+		if !result.Valid {
+			return fmt.Errorf("output failed HDF Amendments schema validation: %s", result.Error())
+		}
 	}
 	return nil
 }
 
-// detectHDFDocType inspects the top-level JSON shape and returns
-// "results" if the doc has a `baselines` array (Evaluated_Baseline list)
-// or "baseline" if it has a top-level `requirements` array
-// (Baseline_Requirement list). Returns ok=false when the input isn't JSON
-// or doesn't match either shape, signalling "skip validation".
+// detectHDFDocType inspects the top-level JSON shape: `baselines[]` -> results;
+// `overrides[]` -> amendments; `requirements[]` -> baseline. ok=false otherwise.
 func detectHDFDocType(data []byte) (string, bool) {
 	var probe map[string]json.RawMessage
 	if err := json.Unmarshal(data, &probe); err != nil {
@@ -65,6 +67,9 @@ func detectHDFDocType(data []byte) (string, bool) {
 	}
 	if _, hasBaselines := probe["baselines"]; hasBaselines {
 		return "results", true
+	}
+	if _, hasOverrides := probe["overrides"]; hasOverrides {
+		return "amendments", true
 	}
 	if _, hasRequirements := probe["requirements"]; hasRequirements {
 		return "baseline", true
