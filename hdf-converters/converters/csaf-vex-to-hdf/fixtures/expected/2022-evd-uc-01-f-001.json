@@ -1,0 +1,47 @@
+{
+  "appliedBy": {
+    "description": "vendor",
+    "identifier": "Example Company ProductCERT",
+    "type": "simple"
+  },
+  "description": "Imported VEX advisory 2022-EVD-UC-01-F-001",
+  "generator": {
+    "name": "csaf-vex-to-hdf",
+    "version": "dev"
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "d35d200c33c8bcf7426965d752b774df3b2446343518cccd538d0d22e01c9a27"
+  },
+  "name": "CSAF VEX statements from Example Company ProductCERT",
+  "overrides": [
+    {
+      "appliedAt": "2022-03-03T11:00:00Z",
+      "appliedBy": {
+        "description": "vendor",
+        "identifier": "Example Company ProductCERT",
+        "type": "simple"
+      },
+      "evidence": [
+        {
+          "data": "https://psirt.example.com/2022-EVD-UC-01-F-001",
+          "description": "CSAF VEX advisory",
+          "type": "url"
+        }
+      ],
+      "expiresAt": "2023-03-03T11:00:00Z",
+      "milestones": [
+        {
+          "description": "vendor reports fix; apply and re-scan to verify",
+          "estimatedCompletion": "2023-03-03T11:00:00Z",
+          "status": "pending"
+        }
+      ],
+      "reason": "Apache Log4j2 2.0-beta9 through 2.15.0 (excluding security releases 2.12.2, 2.12.3, and 2.3.1) JNDI features used in configuration, log messages, and parameters do not protect against attacker controlled LDAP and other JNDI related endpoints. An attacker who can control log messages or log message parameters can execute arbitrary code loaded from LDAP servers when message lookup substitution is enabled. From log4j 2.15.0, this behavior has been disabled by default. From version 2.16.0 (along with 2.12.2, 2.12.3, and 2.3.1), this functionality has been completely removed. Note that this vulnerability is specific to log4j-core and does not affect log4net, log4cxx, or other Apache Logging Services projects.\nProducts: CSAFPID-0001",
+      "requirementId": "CVE-2021-44228",
+      "status": "failed",
+      "type": "poam"
+    }
+  ],
+  "version": "1"
+}

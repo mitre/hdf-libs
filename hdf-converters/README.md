@@ -17,6 +17,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | CKL (DISA STIG Viewer checklist) | `convertCklToHdf` | XML |
 | CKLB (DISA STIG Viewer 3.x checklist) | `convertCklbToHdf` | JSON |
 | Conveyor | `convertConveyorToHdf` | JSON |
+| CSAF VEX (→ HDF Amendments) | `convertCsafVexToHdf` | JSON |
 | CycloneDX (SBOM/VEX) | `convertCyclonedxToHdf` | JSON |
 | DBProtect | `convertDbprotectToHdf` | XML |
 | Dependency-Track | `convertDeptrackToHdf` | JSON |

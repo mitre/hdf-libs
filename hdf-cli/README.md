@@ -384,6 +384,7 @@ These flags apply to all commands.
 | `ckl` | | DISA STIG Viewer checklist (`.ckl` XML) |
 | `cklb` | | DISA STIG Viewer 3.x checklist (`.cklb` JSON) |
 | `conveyor` | | Conveyor container security (JSON) |
+| `csaf-vex` | | CSAF VEX advisory (csaf_vex profile) → HDF Amendments (JSON) |
 | `cyclonedx` | | CycloneDX SBOM/VEX (JSON) |
 | `dbprotect` | | DbProtect database scanner (XML) |
 | `deptrack` | `dependency-track` | Dependency-Track vulnerability audit (JSON) |
