@@ -1,0 +1,67 @@
+{
+  "appliedBy": {
+    "description": "Security Engineer",
+    "identifier": "Acme Security Team \u003csecurity@acme.example\u003e",
+    "type": "email"
+  },
+  "description": "Imported VEX statements from https://example.com/vex/multi-status-fixture",
+  "generator": {
+    "name": "openvex-to-hdf",
+    "version": "dev"
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "d4533fdac7c1e406dc4abea69307745694fd8ea978ceda8e7f488c2bc964be13"
+  },
+  "name": "OpenVEX statements from Acme Security Team \u003csecurity@acme.example\u003e",
+  "overrides": [
+    {
+      "appliedAt": "2026-03-01T12:00:00Z",
+      "appliedBy": {
+        "description": "Security Engineer",
+        "identifier": "Acme Security Team \u003csecurity@acme.example\u003e",
+        "type": "email"
+      },
+      "evidence": [
+        {
+          "data": "https://example.com/vex/multi-status-fixture",
+          "description": "OpenVEX document",
+          "type": "url"
+        }
+      ],
+      "expiresAt": "2027-03-01T12:00:00Z",
+      "justification": "component_not_present",
+      "reason": "Internal audit confirmed the vulnerable module is not bundled.\nVEX justification: component_not_present\nProducts: pkg:npm/example-pkg@1.2.3",
+      "requirementId": "CVE-2024-1000",
+      "status": "passed",
+      "type": "falsePositive"
+    },
+    {
+      "appliedAt": "2026-03-01T12:00:00Z",
+      "appliedBy": {
+        "description": "Security Engineer",
+        "identifier": "Acme Security Team \u003csecurity@acme.example\u003e",
+        "type": "email"
+      },
+      "evidence": [
+        {
+          "data": "https://example.com/vex/multi-status-fixture",
+          "description": "OpenVEX document",
+          "type": "url"
+        }
+      ],
+      "expiresAt": "2027-03-01T12:00:00Z",
+      "milestones": [
+        {
+          "description": "vendor reports fix; apply and re-scan to verify",
+          "estimatedCompletion": "2027-03-01T12:00:00Z",
+          "status": "pending"
+        }
+      ],
+      "reason": "Upgrade to 1.2.4 or later\nProducts: pkg:npm/example-pkg@1.2.3",
+      "requirementId": "CVE-2024-2000",
+      "status": "failed",
+      "type": "poam"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://openvex.dev/docs/public/vex-5c114ad5b125505d9b174030d248ee7e634e9c90b770ef447a65e7575f64ea6b",
+  "author": "Acme Security Team \u003csecurity@acme.example\u003e",
+  "role": "Security Engineer",
+  "timestamp": "2026-03-01T12:00:00Z",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2024-1000",
+        "name": "CVE-2024-1000"
+      },
+      "products": [
+        {
+          "@id": "pkg:npm/example-pkg@1.2.3"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "Internal audit confirmed the vulnerable module is not bundled.\nVEX justification: component_not_present",
+      "timestamp": "2026-03-01T12:00:00Z"
+    },
+    {
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2024-2000",
+        "name": "CVE-2024-2000"
+      },
+      "products": [
+        {
+          "@id": "pkg:npm/example-pkg@1.2.3"
+        }
+      ],
+      "status": "affected",
+      "action_statement": "vendor reports fix; apply and re-scan to verify",
+      "timestamp": "2026-03-01T12:00:00Z"
+    }
+  ]
+}

@@ -68,6 +68,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | OSCAL SAR | `convertHdfToOscalSar` |
 | OSCAL POA&M | `convertHdfToOscalPoam` |
 | CSAF VEX (HDF Amendments → advisory, partial-fidelity) | `convertHdfToCsafVex` |
+| OpenVEX (HDF Amendments → statements, partial-fidelity) | `convertHdfToOpenVex` |
 
 ### Format Migration
 

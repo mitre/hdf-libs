@@ -1,0 +1,40 @@
+{
+  "appliedBy": {
+    "description": "Project Release Bot",
+    "identifier": "Spring Builds \u003cspring-builds@users.noreply.github.com\u003e",
+    "type": "email"
+  },
+  "description": "Imported VEX statements from https://openvex.dev/docs/public/vex-2e67563e128250cbcb3e98930df948dd053e43271d70...",
+  "generator": {
+    "name": "openvex-to-hdf",
+    "version": "dev"
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "3ae204b3e10f1d44ba661c8211adbb5b1c1fe64d9d5a979fff23d7d9395ee17f"
+  },
+  "name": "OpenVEX statements from Spring Builds \u003cspring-builds@users.noreply.github.com\u003e",
+  "overrides": [
+    {
+      "appliedAt": "2023-01-16T19:07:16.853479631-06:00",
+      "appliedBy": {
+        "description": "Project Release Bot",
+        "identifier": "Spring Builds \u003cspring-builds@users.noreply.github.com\u003e",
+        "type": "email"
+      },
+      "evidence": [
+        {
+          "data": "https://openvex.dev/docs/public/vex-2e67563e128250cbcb3e98930df948dd053e43271d70dc50cfa22d57e03fe96f",
+          "description": "OpenVEX document",
+          "type": "url"
+        }
+      ],
+      "expiresAt": "2024-01-16T19:07:16.853479631-06:00",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "reason": "Spring Boot users are only affected by this vulnerability if they have switched the default logging system to Log4J2.\nVEX justification: vulnerable_code_not_in_execute_path\nProducts: pkg:maven/org.springframework.boot/spring-boot@2.6.0-M3",
+      "requirementId": "CVE-2021-44228",
+      "status": "passed",
+      "type": "falsePositive"
+    }
+  ]
+}

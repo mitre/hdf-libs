@@ -1,0 +1,25 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://openvex.dev/docs/public/vex-0f90b97a77cfdb5bef7a5425d6027b550fab0fad3ee10915cf746f2cbd49eb0d",
+  "author": "Spring Builds \u003cspring-builds@users.noreply.github.com\u003e",
+  "role": "Project Release Bot",
+  "timestamp": "2023-01-16T19:07:16-06:00",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+        "name": "CVE-2021-44228"
+      },
+      "products": [
+        {
+          "@id": "pkg:maven/org.springframework.boot/spring-boot@2.6.0-M3"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Spring Boot users are only affected by this vulnerability if they have switched the default logging system to Log4J2.\nVEX justification: vulnerable_code_not_in_execute_path",
+      "timestamp": "2023-01-17T01:07:16Z"
+    }
+  ]
+}

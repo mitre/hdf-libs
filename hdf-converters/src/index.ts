@@ -145,6 +145,9 @@ export { convertCsafVexToHdf } from '../converters/csaf-vex-to-hdf/typescript/in
 // HDF Amendments to CSAF VEX converter (export side; partial-fidelity by design)
 export { convertHdfToCsafVex } from '../converters/hdf-to-csaf-vex/typescript/index.js';
 
+// HDF Amendments to OpenVEX converter (export side; partial-fidelity by design)
+export { convertHdfToOpenVex } from '../converters/hdf-to-openvex/typescript/index.js';
+
 // OSCAL to HDF converters
 export { convertOscalCatalogToHdf } from '../converters/oscal-to-hdf/typescript/index.js';
 export { convertOscalProfileToHdf } from '../converters/oscal-to-hdf/typescript/index.js';

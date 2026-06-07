@@ -101,6 +101,21 @@ describe('convertOpenVexToHdf — edge cases', () => {
     expect(result.overrides[0].requirementId).toBe('CVE-2024-9999');
   });
 
+  it('falls back to system identity when no author and emits status-derived reason for sparse statements', async () => {
+    const input = JSON.stringify({
+      '@context': 'https://openvex.dev/ns/v0.2.0',
+      '@id': '',
+      timestamp: '2026-01-01T00:00:00Z',
+      // not_affected with no justification / impact / action / products —
+      // buildReason has nothing to assemble and falls back.
+      statements: [{ vulnerability: { name: 'CVE-2026-1234' }, status: 'not_affected' }],
+    });
+    const result = await convertOpenVexToHdf(input, TEST_VERSION);
+    expect(result.appliedBy?.type).toBe(IdentityType.System);
+    expect(result.appliedBy?.identifier).toBe('openvex-import');
+    expect(result.overrides[0].reason).toMatch(/Imported from OpenVEX status/);
+  });
+
   it('classifies email-bearing author as email identity', async () => {
     const input = loadInput('spring-boot-log4j.openvex.json');
     const result = await convertOpenVexToHdf(input, TEST_VERSION);
