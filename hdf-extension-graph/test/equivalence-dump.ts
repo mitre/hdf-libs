@@ -6,6 +6,7 @@
 // extensionChainNames preserved in chain order).
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { normalizeTimestamps } from '@mitre/hdf-parsers';
 import type { HDFResults } from '@mitre/hdf-schema';
 import { buildExtensionGraph } from '../src/index.js';
 
@@ -102,15 +103,11 @@ export function dump(results: HDFResults): EquivalenceDump {
   };
 }
 
-// The hdf-extension-graph fixtures emit timezone-less timestamps that Go's
-// time.Time JSON unmarshal rejects. Strip-and-re-add 'Z' to keep both sides
-// reading the same string. Tracked as hdf-libs-2nm0 for a proper fix in
-// hdf-parsers; until that lands the normalizer is intentionally duplicated
-// between this file and ../go/cmd/equivalence-dump/main.go.
-const TZLESS_TS = /("\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)"/g;
-
+// Fixtures emit timezone-less timestamps (real InSpec output shape) that
+// Go's time.Time JSON unmarshal rejects. Both sides apply hdf-parsers'
+// normalizeTimestamps so they read the same canonical string.
 export function loadFixture(path: string): HDFResults {
-  const raw = readFileSync(path, 'utf-8').replace(TZLESS_TS, '$1Z"');
+  const raw = normalizeTimestamps(readFileSync(path, 'utf-8'));
   return JSON.parse(raw) as HDFResults;
 }
 

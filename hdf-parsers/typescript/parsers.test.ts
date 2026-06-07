@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   parseResults,
   parseBaseline,
-  parse
+  parse,
+  normalizeTimestamps
 } from './index.js';
 
 describe('HDF Results Parsing', () => {
@@ -488,5 +489,94 @@ describe('Error Messages', () => {
     expect(result.success).toBe(false);
     expect(result.error).toBeDefined();
     expect(result.error).toMatch(/JSON|parse|syntax/i);
+  });
+});
+
+describe('normalizeTimestamps', () => {
+  const cases: Array<{ name: string; input: string; want: string }> = [
+    {
+      name: 'InSpec-style no-tz timestamp gets Z appended',
+      input: '{"startTime":"2026-03-25T22:56:27.736808"}',
+      want: '{"startTime":"2026-03-25T22:56:27.736808Z"}',
+    },
+    {
+      name: 'already-RFC3339 with Z is unchanged',
+      input: '{"startTime":"2026-03-25T22:56:27Z"}',
+      want: '{"startTime":"2026-03-25T22:56:27Z"}',
+    },
+    {
+      name: 'already-RFC3339 with +HH:MM offset is unchanged',
+      input: '{"startTime":"2026-03-25T22:56:27+05:30"}',
+      want: '{"startTime":"2026-03-25T22:56:27+05:30"}',
+    },
+    {
+      name: 'already-RFC3339 with -HH:MM offset is unchanged',
+      input: '{"startTime":"2026-03-25T22:56:27-05:00"}',
+      want: '{"startTime":"2026-03-25T22:56:27-05:00"}',
+    },
+    {
+      name: 'no fractional seconds also gets Z',
+      input: '{"startTime":"2026-03-25T22:56:27"}',
+      want: '{"startTime":"2026-03-25T22:56:27Z"}',
+    },
+    {
+      name: 'multiple timestamps in one doc all get normalized',
+      input:
+        '{"timestamp":"2026-03-25T22:56:27","baselines":[{"requirements":[{"results":[{"startTime":"2026-03-25T22:56:28.5"}]}]}]}',
+      want: '{"timestamp":"2026-03-25T22:56:27Z","baselines":[{"requirements":[{"results":[{"startTime":"2026-03-25T22:56:28.5Z"}]}]}]}',
+    },
+    {
+      name: 'timestamp-shaped substring inside prose is not touched',
+      input: '{"codeDesc":"job started at 2026-03-25T22:56:27 and finished"}',
+      want: '{"codeDesc":"job started at 2026-03-25T22:56:27 and finished"}',
+    },
+    {
+      name: 'empty input is unchanged',
+      input: '',
+      want: '',
+    },
+  ];
+
+  for (const tc of cases) {
+    it(tc.name, () => {
+      expect(normalizeTimestamps(tc.input)).toBe(tc.want);
+    });
+  }
+});
+
+describe('parseResults accepts InSpec no-tz timestamps', () => {
+  it('parses end-to-end without schema-validation error', () => {
+    const input = JSON.stringify({
+      timestamp: '2026-03-25T22:56:27.736808',
+      generator: { name: 'inspec', version: '5.0.0' },
+      baselines: [
+        {
+          name: 'test',
+          resultsChecksum: {
+            algorithm: 'sha256',
+            value: '0000000000000000000000000000000000000000000000000000000000000000',
+          },
+          requirements: [
+            {
+              id: 'x',
+              impact: 0.5,
+              tags: {},
+              descriptions: [{ label: 'default', data: 'x' }],
+              results: [
+                {
+                  status: 'passed',
+                  codeDesc: 'x',
+                  startTime: '2026-03-25T22:56:27.736808',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = parseResults(input);
+    expect(result.success, `expected success, got error: ${result.error}`).toBe(true);
+    expect(result.data).toBeDefined();
   });
 });

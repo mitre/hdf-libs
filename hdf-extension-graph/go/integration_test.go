@@ -3,25 +3,13 @@ package hdfextension
 import (
 	"encoding/json"
 	"os"
-	"regexp"
 	"strings"
 	"testing"
 
+	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 )
-
-// normalizeTimestamps appends "Z" to ISO-8601-shaped timestamps that lack a
-// timezone designator. Real InSpec runner output sometimes emits values like
-// "2026-03-25T22:56:27.736808" (no trailing Z or ±HH:MM) — JS Date.parse is
-// permissive, but Go's time.Time JSON unmarshal requires RFC3339 with a
-// timezone. We normalize in-memory so the same on-disk fixture can drive
-// both implementations. Tracked by bead hdf-libs-2nm0; remove this helper
-// once hdf-parsers (or upstream InSpec) normalizes timestamps itself.
-func normalizeTimestamps(data []byte) []byte {
-	re := regexp.MustCompile(`("\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)"`)
-	return re.ReplaceAll(data, []byte(`${1}Z"`))
-}
 
 // reqWith builds an EvaluatedRequirement with the fields integration tests
 // commonly need to set. Empty string for code/title means "leave nil".
@@ -352,7 +340,7 @@ func TestIntegration_RealMultilayeredFixture(t *testing.T) {
 	if err != nil {
 		t.Skipf("fixture not available: %v", err)
 	}
-	data = normalizeTimestamps(data)
+	data = hdfparsers.NormalizeTimestamps(data)
 
 	var results hdf.HDFResults
 	err = json.Unmarshal(data, &results)

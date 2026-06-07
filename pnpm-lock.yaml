@@ -105,6 +105,10 @@ importers:
       '@mitre/hdf-schema':
         specifier: workspace:^
         version: link:../hdf-schema
+    devDependencies:
+      '@mitre/hdf-parsers':
+        specifier: workspace:^
+        version: link:../hdf-parsers
 
   hdf-generators:
     dependencies:

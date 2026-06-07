@@ -6,10 +6,9 @@
 //
 // Usage: equivalence-dump <hdf-results.json>
 //
-// The dumper normalizes timezone-less timestamps so it can read the
-// hdf-extension-graph test fixtures (tracked separately as
-// hdf-libs-2nm0; the normalizer is intentionally duplicated from
-// integration_test.go to keep the cmd self-contained).
+// Normalizes timezone-less timestamps via hdfparsers.NormalizeTimestamps
+// so it can read the hdf-extension-graph test fixtures (real-world InSpec
+// output shape).
 package main
 
 import (
@@ -18,10 +17,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
 	"sort"
 
 	hdfextension "github.com/mitre/hdf-libs/hdf-extension-graph/go/v3"
+	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
@@ -59,12 +58,6 @@ type output struct {
 	Requirements     []reqDump      `json:"requirements"`
 }
 
-var tzlessTimestamp = regexp.MustCompile(`("\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)"`)
-
-func normalizeTimestamps(data []byte) []byte {
-	return tzlessTimestamp.ReplaceAll(data, []byte(`${1}Z"`))
-}
-
 func sha256Hex(s string) string {
 	if s == "" {
 		return ""
@@ -83,7 +76,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "read:", err)
 		os.Exit(1)
 	}
-	raw = normalizeTimestamps(raw)
+	raw = hdfparsers.NormalizeTimestamps(raw)
 
 	var results hdf.HDFResults
 	if err := json.Unmarshal(raw, &results); err != nil {

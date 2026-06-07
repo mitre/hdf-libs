@@ -336,7 +336,7 @@ func TestErrorMessages(t *testing.T) {
 	})
 }
 
-// --- normalizeTimestamps ---
+// --- NormalizeTimestamps ---
 
 func TestNormalizeTimestamps(t *testing.T) {
 	cases := []struct {
@@ -387,7 +387,7 @@ func TestNormalizeTimestamps(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := normalizeTimestamps([]byte(tc.in))
+			got := NormalizeTimestamps([]byte(tc.in))
 			assert.Equal(t, tc.want, string(got))
 		})
 	}

@@ -3,6 +3,21 @@ export { flattenOverlays } from './flatten.js';
 export type { FlattenResult, FlattenMetadata, BaselineMerge } from './flatten.js';
 import { validateResults, validateBaseline, validate as autoValidate } from '@mitre/hdf-validators';
 
+// JSON-quoted ISO 8601 timestamp with no trailing timezone — InSpec emits
+// these (e.g. "2026-03-25T22:56:27.736808"). ajv-formats requires RFC 3339
+// for `date-time` and rejects them.
+const NO_TZ_TIMESTAMP_REGEX = /"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)"/g;
+
+/**
+ * Append Z (treat as UTC) to bare ISO timestamps in a JSON string so they
+ * pass schema validation. Exported so other workspace packages can use the
+ * same regex instead of re-implementing it. Matches the Go side at
+ * hdf-parsers/go/parsers.go.
+ */
+export function normalizeTimestamps(input: string): string {
+  return input.replace(NO_TZ_TIMESTAMP_REGEX, '"$1Z"');
+}
+
 /**
  * Result of parsing operation
  */
@@ -20,7 +35,8 @@ export interface ParseResult<T> {
  */
 export function parseResults(input: string | Uint8Array): ParseResult<HDFResults> {
   // Convert Uint8Array to string if needed
-  const jsonStr = typeof input === 'string' ? input : new TextDecoder().decode(input);
+  const decoded = typeof input === 'string' ? input : new TextDecoder().decode(input);
+  const jsonStr = normalizeTimestamps(decoded);
 
   // Check for empty input
   if (jsonStr.trim().length === 0) {
@@ -74,7 +90,8 @@ export function parseResults(input: string | Uint8Array): ParseResult<HDFResults
  */
 export function parseBaseline(input: string | Uint8Array): ParseResult<HDFBaseline> {
   // Convert Uint8Array to string if needed
-  const jsonStr = typeof input === 'string' ? input : new TextDecoder().decode(input);
+  const decoded = typeof input === 'string' ? input : new TextDecoder().decode(input);
+  const jsonStr = normalizeTimestamps(decoded);
 
   // Check for empty input
   if (jsonStr.trim().length === 0) {
@@ -127,7 +144,8 @@ export function parseBaseline(input: string | Uint8Array): ParseResult<HDFBaseli
  */
 export function parse(input: string | Uint8Array): ParseResult<HDFResults | HDFBaseline> {
   // Convert Uint8Array to string if needed
-  const jsonStr = typeof input === 'string' ? input : new TextDecoder().decode(input);
+  const decoded = typeof input === 'string' ? input : new TextDecoder().decode(input);
+  const jsonStr = normalizeTimestamps(decoded);
 
   // Check for empty input
   if (jsonStr.trim().length === 0) {

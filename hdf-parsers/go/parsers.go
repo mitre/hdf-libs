@@ -14,8 +14,11 @@ import (
 // JSON-quoted ISO 8601 timestamp with no trailing timezone — InSpec emits these.
 var noTzTimestamp = regexp.MustCompile(`"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)"`)
 
-// normalizeTimestamps appends Z to bare ISO timestamps (treated as UTC).
-func normalizeTimestamps(input []byte) []byte {
+// NormalizeTimestamps appends Z (treats as UTC) to bare ISO timestamps in a
+// JSON byte slice so they pass schema validation. Exported so other workspace
+// packages can use the same regex instead of re-implementing it. Mirrors
+// hdf-parsers/typescript/index.ts normalizeTimestamps.
+func NormalizeTimestamps(input []byte) []byte {
 	return noTzTimestamp.ReplaceAll(input, []byte(`"${1}Z"`))
 }
 
@@ -51,7 +54,7 @@ func ParseResults(input []byte) ResultsParseResult {
 		}
 	}
 
-	input = normalizeTimestamps(input)
+	input = NormalizeTimestamps(input)
 	trimmed := strings.TrimSpace(string(input))
 
 	// Validate against schema first
@@ -97,7 +100,7 @@ func ParseBaseline(input []byte) BaselineParseResult {
 		}
 	}
 
-	input = normalizeTimestamps(input)
+	input = NormalizeTimestamps(input)
 	trimmed := strings.TrimSpace(string(input))
 
 	// Validate against schema first
