@@ -103,8 +103,14 @@ func ImportTargetFor(status Status) (ImportTarget, bool) {
 			SetJustification: true,
 		}, true
 	case StatusFixed:
+		failed := hdf.Failed
 		return ImportTarget{
-			OverrideType:       hdf.Poam,
+			OverrideType: hdf.Poam,
+			// Status stays 'failed' on the open POA&M: VEX 'fixed' is an
+			// abstract supplier claim about a product version, not evidence
+			// the assessed system has the patch. Re-scan is required to
+			// change the effective status.
+			Status:             &failed,
 			POAMActionTemplate: "vendor reports fix; apply and re-scan to verify",
 		}, true
 	case StatusAffected, StatusUnderInvestigation:

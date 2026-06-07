@@ -136,6 +136,9 @@ export { convertHdfToOscalPoam } from '../converters/hdf-to-oscal-poam/typescrip
 // Ion Channel to HDF converter
 export { convertIonchannelToHdf } from '../converters/ionchannel-to-hdf/typescript/index.js';
 
+// OpenVEX to HDF Amendments converter
+export { convertOpenVexToHdf } from '../converters/openvex-to-hdf/typescript/index.js';
+
 // OSCAL to HDF converters
 export { convertOscalCatalogToHdf } from '../converters/oscal-to-hdf/typescript/index.js';
 export { convertOscalProfileToHdf } from '../converters/oscal-to-hdf/typescript/index.js';

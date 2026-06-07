@@ -5,6 +5,7 @@ import (
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNormalizeStatus(t *testing.T) {
@@ -73,7 +74,8 @@ func TestImportTargetFor(t *testing.T) {
 	target, ok = ImportTargetFor(StatusFixed)
 	assert.True(t, ok)
 	assert.Equal(t, hdf.Poam, target.OverrideType)
-	assert.Nil(t, target.Status, "fixed maps to a POA&M, not a status change — real system has not been re-scanned")
+	require.NotNil(t, target.Status, "POA&M schema branch requires status; fixed pins it to failed pending re-scan")
+	assert.Equal(t, hdf.Failed, *target.Status)
 	assert.NotEmpty(t, target.POAMActionTemplate)
 
 	_, ok = ImportTargetFor(StatusAffected)

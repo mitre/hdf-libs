@@ -1,0 +1,34 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://openvex.dev/docs/public/vex-2e67563e128250cbcb3e98930df948dd053e43271d70dc50cfa22d57e03fe96f",
+  "author": "Spring Builds <spring-builds@users.noreply.github.com>",
+  "role": "Project Release Bot",
+  "timestamp": "2023-01-16T19:07:16.853479631-06:00",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+        "name": "CVE-2021-44228",
+        "description": "Remote code injection in Log4j",
+        "aliases": [
+          "GHSA-jfh8-c2jp-5v3q"
+        ]
+      },
+      "products": [
+        {
+          "@id": "pkg:maven/org.springframework.boot/spring-boot@2.6.0-M3",
+          "identifiers": {
+            "purl": "pkg:maven/org.springframework.boot/spring-boot@2.6.0-M3"
+          },
+          "hashes": {
+            "sha-256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "Spring Boot users are only affected by this vulnerability if they have switched the default logging system to Log4J2."
+    }
+  ]
+}

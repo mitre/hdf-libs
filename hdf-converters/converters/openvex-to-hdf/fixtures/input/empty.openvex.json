@@ -1,0 +1,26 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://example.com/vex/empty-fixture",
+  "author": "Acme Security Team <security@acme.example>",
+  "timestamp": "2026-03-01T12:00:00Z",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2024-9000",
+        "description": "Affected statement — no consumer override action implied"
+      },
+      "products": [{"@id": "pkg:npm/example-pkg@1.2.3"}],
+      "status": "affected",
+      "action_statement": "Mitigations under evaluation."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-9001",
+        "description": "Under-investigation statement — consumer has not decided yet"
+      },
+      "products": [{"@id": "pkg:npm/example-pkg@1.2.3"}],
+      "status": "under_investigation"
+    }
+  ]
+}

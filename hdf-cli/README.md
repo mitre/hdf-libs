@@ -403,6 +403,7 @@ These flags apply to all commands.
 | `netsparker` | `invicti` | Netsparker/Invicti web scanner (XML) |
 | `neuvector` | | NeuVector container security (JSON) |
 | `nikto` | | Nikto web server scanner (JSON) |
+| `openvex` | | OpenVEX statements → HDF Amendments (JSON) |
 | `oscal` | | OSCAL document (auto-detect type) |
 | `oscal-sar` | `oscal-assessment-results` | OSCAL Assessment Results → HDF Results |
 | `oscal-catalog` | | OSCAL Catalog → HDF Baseline |

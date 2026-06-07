@@ -113,6 +113,11 @@ export function importTargetFor(status: VexStatus): ImportTarget | undefined {
     case VexStatus.Fixed:
       return {
         overrideType: OverrideType.Poam,
+        // Status stays 'failed' on the open POA&M: VEX 'fixed' is an
+        // abstract supplier claim about a product version, not evidence
+        // the assessed system has the patch. Re-scan is required to change
+        // the effective status.
+        status: ResultStatus.Failed,
         setJustification: false,
         poamActionTemplate:
           'vendor reports fix; apply and re-scan to verify',

@@ -85,11 +85,11 @@ describe('importTargetFor', () => {
     expect(target!.setJustification).toBe(true);
   });
 
-  it('fixed → POAM (no status change — real system has not been re-scanned)', () => {
+  it('fixed → POAM pinned to failed pending re-scan (real system has not been verified)', () => {
     const target = importTargetFor(VexStatus.Fixed);
     expect(target).toBeDefined();
     expect(target!.overrideType).toBe(OverrideType.Poam);
-    expect(target!.status).toBeUndefined();
+    expect(target!.status).toBe(ResultStatus.Failed);
     expect(target!.poamActionTemplate).not.toBe('');
   });
 

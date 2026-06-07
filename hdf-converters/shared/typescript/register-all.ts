@@ -22,6 +22,7 @@ import { msftDefenderDevopsFingerprint } from '../../converters/msft-defender-de
 import { msftDefenderEndpointFingerprint } from '../../converters/msft-defender-endpoint-to-hdf/typescript/fingerprint.js';
 import { msftSecureScoreFingerprint } from '../../converters/msft-secure-score-to-hdf/typescript/fingerprint.js';
 import { neuvectorFingerprint } from '../../converters/neuvector-to-hdf/typescript/fingerprint.js';
+import { openvexFingerprint } from '../../converters/openvex-to-hdf/typescript/fingerprint.js';
 import { sarifFingerprint } from '../../converters/sarif-to-hdf/typescript/fingerprint.js';
 import { scoutsuiteFingerprint } from '../../converters/scoutsuite-to-hdf/typescript/fingerprint.js';
 import { snykFingerprint } from '../../converters/snyk-to-hdf/typescript/fingerprint.js';
@@ -79,6 +80,7 @@ const allFingerprints: ConverterFingerprint[] = [
   msftDefenderEndpointFingerprint,
   msftSecureScoreFingerprint,
   neuvectorFingerprint,
+  openvexFingerprint,
   sarifFingerprint,
   scoutsuiteFingerprint,
   snykFingerprint,

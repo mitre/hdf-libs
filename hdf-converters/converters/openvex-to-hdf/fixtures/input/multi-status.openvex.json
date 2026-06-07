@@ -1,0 +1,54 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://example.com/vex/multi-status-fixture",
+  "author": "Acme Security Team <security@acme.example>",
+  "role": "Security Engineer",
+  "timestamp": "2026-03-01T12:00:00Z",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2024-1000",
+        "description": "Sample vulnerability used for the not_affected import path"
+      },
+      "products": [
+        {"@id": "pkg:npm/example-pkg@1.2.3"}
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "Internal audit confirmed the vulnerable module is not bundled."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-2000",
+        "description": "Sample vulnerability used for the fixed import path"
+      },
+      "products": [
+        {"@id": "pkg:npm/example-pkg@1.2.3"}
+      ],
+      "status": "fixed",
+      "action_statement": "Upgrade to 1.2.4 or later"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-3000",
+        "description": "Sample vulnerability used to verify affected statements produce no amendment"
+      },
+      "products": [
+        {"@id": "pkg:npm/example-pkg@1.2.3"}
+      ],
+      "status": "affected",
+      "action_statement": "Mitigations under evaluation."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-4000",
+        "description": "Sample vulnerability used to verify under_investigation produces no amendment"
+      },
+      "products": [
+        {"@id": "pkg:npm/example-pkg@1.2.3"}
+      ],
+      "status": "under_investigation"
+    }
+  ]
+}

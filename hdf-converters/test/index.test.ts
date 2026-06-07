@@ -29,6 +29,7 @@ import {
   convertDeptrackToHdf,
   convertJfrogXrayToHdf,
   convertNeuvectorToHdf,
+  convertOpenVexToHdf,
   convertFortifyToHdf,
   convertPrismaToHdf,
   convertNetsparkerToHdf,
@@ -255,6 +256,11 @@ describe('Main exports', () => {
   it('should export convertFortifyToHdf from main index', () => {
     expect(convertFortifyToHdf).toBeDefined();
     expect(typeof convertFortifyToHdf).toBe('function');
+  });
+
+  it('should export convertOpenVexToHdf from main index', () => {
+    expect(convertOpenVexToHdf).toBeDefined();
+    expect(typeof convertOpenVexToHdf).toBe('function');
   });
 
   it('should export convertNeuvectorToHdf from main index', () => {

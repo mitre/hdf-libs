@@ -25,6 +25,7 @@ import (
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/msft-defender-endpoint-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/msft-secure-score-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/neuvector-to-hdf/go"
+	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/openvex-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sarif-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/scoutsuite-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/snyk-to-hdf/go"

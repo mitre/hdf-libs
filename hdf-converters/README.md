@@ -35,6 +35,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Netsparker / Invicti | `convertNetsparkerToHdf` | XML |
 | NeuVector | `convertNeuvectorToHdf` | JSON |
 | Nikto | `convertNiktoToHdf` | JSON |
+| OpenVEX (→ HDF Amendments) | `convertOpenVexToHdf` | JSON |
 | OSCAL Catalog | `convertOscalCatalogToHdf` | JSON |
 | OSCAL Component Definition | `convertOscalComponentToHdf` | JSON |
 | OSCAL POA&M | `convertOscalPoamToHdf` | JSON |
