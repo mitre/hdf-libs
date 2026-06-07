@@ -12,12 +12,16 @@ Converters are multi-file, multi-language projects that span fixtures, tests, im
 1. **Enter plan mode** immediately. Use `EnterPlanMode` before writing any code.
 2. In plan mode, research the source format:
    - Read sample input files if provided; otherwise ask the user.
+   - **Decide the output document type up front**: HDF Results (most converters), HDF Baseline (benchmarks / catalogs), or HDF Amendments (waivers, attestations, POA&Ms, VEX-style consumer-attached context). See Step 4f when the answer is Amendments — the schema invariants and pattern differ substantially.
    - Identify what maps to HDF fields (Requirement.ID, Impact, Status, NIST tags).
    - Check whether the tool supports common output formats (SARIF, JUnit, CycloneDX, XCCDF) — if so, plan format detection and routing.
    - Check heimdall2 and SAF CLI repos for existing fixtures and converter logic.
-   - Read the exports of `hdf-schema`, `hdf-utilities`, `hdf-mappings`, and `hdf-validators` to know what's available — converters that reinvent library functionality will be rejected.
+   - Read the exports of `hdf-schema`, `hdf-utilities`, `hdf-mappings`, and `hdf-validators` to know what's available — converters that reinvent library functionality will be rejected. **This audit is mandatory and happens BEFORE implementation**, not reactively after review feedback.
+   - **Audit source-format fields against the HDF schema** (Step 1b). If you find a field with no HDF home, STOP and surface to the user — never silently add schema fields.
 3. Write a detailed plan covering:
    - Source format structure and field mappings to HDF
+   - Output document type and rationale
+   - Field-gap audit results (categories a/b/c per Step 1b)
    - Fixture sourcing strategy (where real data comes from)
    - Test scenarios for both Go and TypeScript
    - Implementation approach (parsing, mapping, edge cases)
@@ -97,6 +101,35 @@ Before writing any code:
 2. Identify: What maps to `Requirement.ID`? What maps to `Impact`? What maps to `Status`? What maps to NIST tags?
 3. Sketch the struct types needed to parse the source format.
 4. **Check whether the tool supports common output formats** (SARIF, JUnit XML, CycloneDX, XCCDF). If it does, the converter must detect and delegate to the shared format converter — see "Step 4c — Format Detection and Routing" below.
+
+---
+
+## Step 1b — Audit Field Gaps Before Extending the Schema
+
+The HDF schema is stable enough that **additions are commitments** consumers will start depending on. Default posture when a converter author finds a source-format concept HDF can't express: **FLAG to the user**, never silently add schema fields.
+
+For each source field that doesn't have an obvious HDF home, categorize:
+
+(a) **Maps to an existing HDF field via mapping logic** — write the mapping in the converter. Done.
+(b) **Format artifact safely synthesized on export** (export converters only) — generate from existing HDF state at write time. Done.
+(c) **Genuinely represents a concept HDF cannot express** — STOP. Surface to the user with:
+   - what the source concept is
+   - why no existing HDF field works (audit, don't assume)
+   - whether the concept generalizes beyond this one format
+   - what the conversion behavior would be (lossy? refuse to emit?) without a schema change
+
+Schema additions that DO go forward must be:
+- **Generalized beyond the prompting format** — no `vexJustification`; use `justification` so OSCAL / FedRAMP DR can extend the same enum
+- **Optional** — additive, doesn't break old documents
+- **Approved by the user** with explicit awareness that schema additions are commitments
+
+**Worked example from `openvex-to-hdf`**: the initial design proposed `vexJustification` and a `resolution` sub-object. Field audit produced:
+- `justification` survived as ONE field, generalized from the VEX-specific name so OSCAL / FedRAMP DR can extend the same vocabulary later
+- `resolution` was dropped entirely — amendment chain (`previousChecksum`) + `milestones[].status` already express POA&M closure losslessly
+
+Net delta: two proposed fields → one shipped field after rigorous audit and pushback.
+
+The bar is high. Three-line schema additions accumulate; every one is a schema-version bump and a forever maintenance commitment.
 
 ---
 
@@ -887,6 +920,134 @@ Mirror the same assertions on the TypeScript side. The empty fixture should be a
 
 ---
 
+## Step 4f — Amendment-Output Converters
+
+Some converters target HDF Amendments instead of HDF Results / Baseline. Use this pattern when the source format describes CONSUMER DECISIONS about findings — or third-party context the consumer is attaching to findings — not raw scanner findings themselves.
+
+### When to use the amendment-output pattern
+
+Use amendment-output when the source format:
+- Records waivers, attestations, or POA&M items (OSCAL POA&M, eMASS waivers, FedRAMP deviation requests)
+- Carries vulnerability-context statements meant to be attached to existing findings (VEX flavors: OpenVEX, CSAF VEX, CycloneDX VEX)
+- Captures consumer risk-acceptance decisions (GRC system exports — Archer, ServiceNow GRC)
+
+The act of attaching the source data to an HDF document IS the amendment act — even when the underlying claim originates upstream (vendor, distributor, governing body). The consumer's ingestion of that claim is the override.
+
+### Real-system vs abstract-vuln distinction
+
+Critical for any converter pulling supplier-statement data (VEX, CTI feeds, advisory streams):
+
+- The source format describes an ABSTRACT VULNERABILITY OR PRODUCT VERSION in general (e.g. "log4j 2.x is vulnerable to CVE-2021-44228")
+- HDF describes a SPECIFIC ASSESSED SYSTEM (e.g. "this Nessus scan ran on host A.B.C.D and reported CVE-2021-44228")
+
+VEX `fixed` = "the vendor has released a fix in product version X." It is NOT evidence that the assessed system has that fix installed. A converter that maps `fixed` to `status='passed'` lies to the consumer about their real system state.
+
+**Pattern:** Synthesize a POA&M with an `action_statement` reminding the consumer to apply and re-scan. Pin status to the pre-amendment effective value (typically `failed`) on the open POA&M. Status flips to `passed` only when the consumer re-scans and the new scan reflects the fix.
+
+### Infrastructure
+
+- **Go registry type**: `hdfAmendmentsConverter` in `hdf-cli/cmd/hdf/cmd/converter_registry.go` (parallel to `hdfResultsConverter` / `hdfBaselineConverter`).
+- **One-liner CLI registration**: `registerHDFAmendmentsConverter(source, displayName, errPrefix, fn)` where `fn` is `func([]byte, string) (*hdf.HDFAmendments, error)`.
+- **Auto-detect**: `detectHDFDocType` in `output_validation.go` recognizes top-level `overrides[]` → "amendments" and routes auto-validation through `validators.ValidateAmendments`.
+
+### Shared ecosystem helper pattern
+
+When the source format is one of a family (VEX has three flavors; OSCAL has 7 document types; etc.), factor the mapping logic into a shared helper at `hdf-converters/shared/{go,typescript}/<family>/`:
+
+- Canonical status enum + normalization function (each ecosystem dialect → canonical)
+- Justification / vocabulary mapping with unknown-value passthrough (don't drop values; warn or preserve raw in `reason`)
+- Import-direction target selector (canonical status → HDF override type + status + flags)
+- Export-direction status selector (HDF override state → canonical status)
+- Supplier-identity-to-evidence builder (preserve provenance via `evidence[type=url]`)
+
+The shared helper is the natural enforcement point for the real-system distinction — import targets that would otherwise flip status to `passed` on a supplier claim should be coded explicitly to NOT do so.
+
+Reference: `hdf-converters/shared/{go,typescript}/vex/` (worked example from openvex-to-hdf).
+
+### Schema invariants on `StandaloneOverride`
+
+HDF Amendments has stricter shape requirements than HDF Results. Memorize these before writing the converter — schema validation will surface them late if you don't:
+
+1. **`overrides.minItems = 1`** — a document with zero overrides fails schema validation. A converter that filters out every source statement (e.g. all VEX statements are `affected` or `under_investigation`) MUST NOT emit an empty document. Error out with a clear message ("no actionable statements") so the user knows the source produced no consumer-action payload.
+2. **status / impact required on all non-`operationalRequirement` overrides** — schema enforces this via an `if`/`else` branch on `type`. POA&M, waiver, attestation, riskAdjustment, falsePositive, inherited all require at least one of `status` or `impact`. POA&M from supplier `fixed` should pin status to the pre-amendment value (typically `failed`) — the act of filing the POA&M doesn't itself change the system's state.
+3. **`operationalRequirement` is the inverse** — neither `status` nor `impact` may be set. Documentation-only override.
+4. **`expiresAt` is required and time-bounded** — no permanent amendments. Default to a reasonable horizon (one year is the common choice for VEX-style imports) and let re-imports refresh it.
+5. **`appliedAt` and `appliedBy` are required** — derive from the source document's author + timestamp fields. Statement-level overrides supersede document-level when both present.
+
+### Empty-input handling — error, do not synthesize
+
+Step 4e's `passed`-placeholder pattern does NOT apply. The `requirements.minItems=1` invariant on Results / Baselines is what motivates the synthesizer — the scanner ran and found nothing, but the document still must validate. Amendment-output is different:
+
+- An amendments document represents CONSUMER ACTION. "No actionable statements" means the consumer is not amending anything.
+- The right response is to **error out and not write a document**, NOT to synthesize a placeholder attestation. A placeholder attestation that says "no amendment to apply" is itself a misleading amendment.
+
+```go
+if len(overrides) == 0 {
+    return nil, fmt.Errorf("<source>-to-hdf: source document contains no actionable statements; no amendment to write")
+}
+```
+
+### Sections that are N/A for amendment-output
+
+When building an amendment-output converter, the following standard sections do NOT apply (the HDF Amendments shape has no equivalent):
+
+- **Step 4c — Format Detection and Routing**: VEX / OSCAL POA&M / GRC exports don't share a wire format with SARIF / JUnit / CycloneDX results. (If your specific format DOES share a wire shape with one of those, route to the canonical converter as Step 4c describes.)
+- **Step 4d — controlType / verificationMethod / applicability**: those fields are on `Requirement_Core`. Amendments target requirements but don't define them, so the classification axes don't appear on `StandaloneOverride`.
+- **Step 4e — passed placeholder synthesizer**: replaced by the error-on-empty rule above.
+- **Baseline.Name / Components conventions**: Amendments have no embedded baselines or components — they reference a baseline via `baselineRef` and a component via `componentRef`, both URI / id fields.
+- **Tool driver name / NIST mapping**: amendments don't restate the underlying scanner. The original tool + NIST mapping live on the HDF Results document this amendments document is amending.
+
+### CLI integration shape
+
+```go
+// hdf-cli/cmd/hdf/cmd/converter_<snake>.go
+package cmd
+
+import <pkg> "github.com/mitre/hdf-libs/hdf-converters/v3/converters/<name>/go"
+
+func init() {
+    registerHDFAmendmentsConverter("<source>", "<Source> to HDF Amendments", "<source>", <pkg>.Convert<Name>)
+}
+```
+
+### CLI test shape
+
+Standard `runStandardConverterTests` does NOT work — it asserts `validators.ValidateResults`. Write a focused test:
+
+```go
+func Test<Name>Converter_RegisteredAndProducesValidAmendments(t *testing.T) {
+    converter, err := GetConverter("<source>", "hdf")
+    require.NoError(t, err)
+    assert.Equal(t, "<Source> to HDF Amendments", converter.Name())
+
+    input, _ := os.ReadFile(converterFixturePath(t, "<name>-to-hdf", "input/minimal.<ext>"))
+    output, err := converter.Convert(input)
+    require.NoError(t, err)
+
+    docType, ok := detectHDFDocType(output)
+    require.True(t, ok)
+    assert.Equal(t, "amendments", docType)
+
+    result := validators.ValidateAmendments(output)
+    assert.True(t, result.Valid, "amendments output must pass schema validation: %s", result.Error())
+}
+```
+
+Also test the empty-input error path: a fixture with no actionable source statements must return an error containing your "no actionable" message, NOT silently produce an empty document.
+
+### Done-checklist additions (amendment-output)
+
+- [ ] Output validated against `validators.ValidateAmendments` in Go tests AND in CLI tests (auto-detect routes correctly)
+- [ ] CLI test asserts `detectHDFDocType` returns `"amendments"`
+- [ ] `overrides.minItems=1` invariant: a fixture with no actionable source statements produces an error, not an empty document
+- [ ] Each emitted override sets one of `status` / `impact` (unless type is `operationalRequirement`)
+- [ ] Supplier-claim sources (VEX, advisories) do NOT flip status to `passed` on `fixed` / `resolved` — they synthesize a POA&M and pin status to the pre-amendment value
+- [ ] `expiresAt` set to a finite horizon; choice documented in code
+- [ ] Shared ecosystem mapping helper lives in `hdf-converters/shared/{go,typescript}/<family>/`, not inlined in the converter
+- [ ] Unknown justification / status values from the source are preserved (passed through into `reason` or evidence), not silently dropped
+
+---
+
 ## Step 5 — CLI Integration
 
 File: `hdf-cli/cmd/hdf/cmd/converter_<snake>.go`
@@ -1146,6 +1307,17 @@ cat output.json | head -40
 - [ ] `Components` populated when the source tool scans an identifiable target (URL, host, repo, cloud account)
 - [ ] Component `Type` matches tool category (`Application` for DAST, `Repository` for SAST, `Host` for host scanners, etc.)
 - [ ] Component omitted (not set to "Unknown") when no identifiable target exists
+
+**Amendment-output converters (review Step 4f):**
+- [ ] Output type decision logged in plan: HDF Amendments vs Results/Baseline, with rationale
+- [ ] Step 4f done-checklist completed (see Step 4f for the full list)
+- [ ] Empty-input error path tested (fixture + Go test + TS test)
+- [ ] Sections N/A for amendment-output explicitly skipped (4c routing if not applicable, 4d classification fields, 4e passed-placeholder, Baseline.Name/Components)
+
+**Schema-extension converters (review Step 1b):**
+- [ ] Field-gap audit performed BEFORE implementation; categories (a)/(b)/(c) logged in plan
+- [ ] No silent schema additions — any new field surfaced to the user with rationale
+- [ ] Any schema addition is generalized (not tied to one source format) and optional
 
 **All converters — library usage check (review Step 4b):**
 - [ ] NIST/CCI lookups delegate to `hdf-mappings` — no hardcoded lookup tables in converter code
