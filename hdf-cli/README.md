@@ -436,6 +436,7 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | `hdf` | `cklb` | Export to DISA STIG Viewer 3.x checklist (`.cklb` JSON) |
 | `hdf` | `oscal-sar` | Export to OSCAL Assessment Results |
 | `hdf` | `oscal-poam` | Export to OSCAL Plan of Action and Milestones |
+| `hdf-amendments` | `csaf-vex` | Export HDF Amendments as CSAF VEX advisory (partial-fidelity round-trip) |
 
 ## Credential Handling
 

@@ -31,6 +31,7 @@ import {
   convertNeuvectorToHdf,
   convertOpenVexToHdf,
   convertCsafVexToHdf,
+  convertHdfToCsafVex,
   convertFortifyToHdf,
   convertPrismaToHdf,
   convertNetsparkerToHdf,
@@ -267,6 +268,11 @@ describe('Main exports', () => {
   it('should export convertCsafVexToHdf from main index', () => {
     expect(convertCsafVexToHdf).toBeDefined();
     expect(typeof convertCsafVexToHdf).toBe('function');
+  });
+
+  it('should export convertHdfToCsafVex from main index', () => {
+    expect(convertHdfToCsafVex).toBeDefined();
+    expect(typeof convertHdfToCsafVex).toBe('function');
   });
 
   it('should export convertNeuvectorToHdf from main index', () => {
