@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 )
@@ -107,7 +108,10 @@ func runValidate(_ *cobra.Command, args []string) error {
 		return &exitCodeError{code: 1, message: fmt.Sprintf("unknown schema type: %s", schemaType)}
 	}
 
-	result := validators.Validate(data, validType)
+	// Normalize bare InSpec timestamps before validation, matching what
+	// hdfparsers.ParseResults does. Without this, real InSpec output trips
+	// the schema's `date-time` format check.
+	result := validators.Validate(hdfparsers.NormalizeTimestamps(data), validType)
 	var validationResult *validators.ValidationResult
 	if !result.Valid {
 		validationResult = &result
