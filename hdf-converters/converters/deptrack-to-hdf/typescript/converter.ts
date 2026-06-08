@@ -1,9 +1,9 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, parsePurl } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, inputChecksum, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -198,7 +198,39 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
     req.controlType = controlType;
   }
 
+  const pkg = buildAffectedPackageFromComponent(finding.component);
+  if (pkg) {
+    req.affectedPackages = [pkg];
+  }
+
   return req;
+}
+
+/**
+ * Builds an Affected_Package from a Dependency-Track component. Prefers
+ * the rich identifiers Dependency-Track already exposes (purl, cpe) and
+ * augments with name/version/ecosystem when available. Returns undefined
+ * when the component carries no schema-acceptable identifier.
+ */
+function buildAffectedPackageFromComponent(c: DeptrackComponent) {
+  // Derive ecosystem from the purl scheme when possible; falls back to
+  // generic so the name+version+ecosystem branch stays valid for
+  // components Dependency-Track left without a purl.
+  let ecosystem;
+  if (c.purl) {
+    const parsed = parsePurl(c.purl);
+    ecosystem = ecosystemFromPurlType(parsed?.type);
+  } else if (c.name && c.version) {
+    ecosystem = ecosystemFromPurlType(undefined);
+  }
+  return buildAffectedPackage({
+    name: c.name,
+    version: c.version,
+    ecosystem,
+    purl: c.purl,
+    cpe: c.cpe,
+    fixedInVersion: c.latestVersion,
+  });
 }
 
 /**

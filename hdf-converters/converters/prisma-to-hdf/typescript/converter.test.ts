@@ -244,4 +244,66 @@ describe('prisma to HDF converter', () => {
       }
     });
   });
+
+  describe('affectedPackages from CSV columns', () => {
+    function fixtureCsv(rows: Record<string, string>[]): string {
+      const header = [
+        'Hostname', 'Distro', 'CVE ID', 'Compliance ID', 'Type', 'Severity',
+        'Packages', 'Source Package', 'Package Version', 'Package License',
+        'CVSS', 'Fix Status', 'Vulnerability Tags', 'Description', 'Cause',
+        'Published', 'Services', 'Cluster', 'Vulnerability Link',
+      ];
+      const lines = [header.join(',')];
+      for (const r of rows) {
+        lines.push(header.map((h) => r[h] ?? '').join(','));
+      }
+      return lines.join('\n');
+    }
+
+    it.each([
+      ['redhat-RHEL7', 'rpm'],
+      ['centos-7', 'rpm'],
+      ['rocky-9', 'rpm'],
+      ['alma-9', 'rpm'],
+      ['amazon-2', 'rpm'],
+      ['suse-15', 'rpm'],
+      ['debian-buster', 'deb'],
+      ['ubuntu-20.04', 'deb'],
+      ['alpine-3.14', 'generic'],
+      ['', 'generic'],
+    ])('Distro %s → ecosystem %s', async (distro, ecosystem) => {
+      const csv = fixtureCsv([{
+        Hostname: 'h', Distro: distro, 'CVE ID': 'CVE-2026-1',
+        'Compliance ID': '1', Type: 'image', Severity: 'high',
+        'Source Package': 'foo', 'Package Version': '1.0',
+        'Fix Status': 'fixed in 1.0.1',
+        Description: 'd',
+      }]);
+      const hdf = JSON.parse(await convertPrismaToHdf(csv)) as HDFResults;
+      const pkg = hdf.baselines[0]!.requirements[0]!.affectedPackages?.[0];
+      expect(pkg).toMatchObject({ name: 'foo', version: '1.0', ecosystem, fixedInVersion: '1.0.1' });
+    });
+
+    it('parses fixedInVersion only when "fixed in <version>" pattern matches', async () => {
+      const csv = fixtureCsv([{
+        Hostname: 'h', Distro: 'debian-buster', 'CVE ID': 'CVE-2026-2',
+        'Compliance ID': '2', Type: 'image', Severity: 'medium',
+        'Source Package': 'bar', 'Package Version': '2.0',
+        'Fix Status': 'not yet available',
+        Description: 'd',
+      }]);
+      const hdf = JSON.parse(await convertPrismaToHdf(csv)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.affectedPackages?.[0]?.fixedInVersion).toBeUndefined();
+    });
+
+    it('skips affectedPackages for non-CVE compliance findings', async () => {
+      const csv = fixtureCsv([{
+        Hostname: 'h', Distro: 'redhat-RHEL7',
+        'Compliance ID': '60522', Type: 'linux', Severity: 'high',
+        Description: 'CIS check',
+      }]);
+      const hdf = JSON.parse(await convertPrismaToHdf(csv)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.affectedPackages).toBeUndefined();
+    });
+  });
 });

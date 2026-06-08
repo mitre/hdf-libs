@@ -107,6 +107,10 @@ type SarifResult struct {
 	CodeFlows           []CodeFlow        `json:"codeFlows,omitempty"`
 	Fingerprints        map[string]string `json:"fingerprints,omitempty"`
 	PartialFingerprints map[string]string `json:"partialFingerprints,omitempty"`
+	// Properties is the SCA-SARIF property bag that carries package
+	// identity for SCA-class results (Grype, Trivy, Dependency-Check).
+	// SAST results leave this empty.
+	Properties map[string]interface{} `json:"properties,omitempty"`
 }
 
 // SarifMessage carries the human-readable message.
@@ -489,7 +493,7 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 	// Build tags — use rule-level severity and the aggregated suppression/fingerprint data from first result
 	tags := buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls)
 
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 ruleID,
 		Title:              &title,
 		Descriptions:       descriptions,
@@ -500,6 +504,90 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 		ControlType:        shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags)),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+	// SCA-shaped SARIF carries package identity in result.properties.
+	// Pure SAST results leave properties empty → no affectedPackage.
+	seen := map[string]bool{}
+	var packages []hdf.AffectedPackage
+	for _, sr := range sarifResults {
+		pkg := packageFromSarifProperties(sr.Properties)
+		if pkg == nil {
+			continue
+		}
+		var key string
+		switch {
+		case pkg.Purl != nil:
+			key = "purl:" + *pkg.Purl
+		case pkg.Cpe != nil:
+			key = "cpe:" + *pkg.Cpe
+		default:
+			n, v := "", ""
+			if pkg.Name != nil {
+				n = *pkg.Name
+			}
+			if pkg.Version != nil {
+				v = *pkg.Version
+			}
+			key = "nv:" + n + "@" + v
+		}
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		packages = append(packages, *pkg)
+	}
+	if len(packages) > 0 {
+		req.AffectedPackages = packages
+	}
+	return req
+}
+
+// packageFromSarifProperties extracts an Affected_Package from a SARIF
+// result.properties bag. Returns nil for SAST results that lack any
+// package identity.
+func packageFromSarifProperties(props map[string]interface{}) *hdf.AffectedPackage {
+	if props == nil {
+		return nil
+	}
+	str := func(k string) string {
+		if v, ok := props[k].(string); ok {
+			return v
+		}
+		return ""
+	}
+	name := str("packageName")
+	if name == "" {
+		name = str("name")
+	}
+	version := str("packageVersion")
+	if version == "" {
+		version = str("version")
+	}
+	purl := str("purl")
+	cpe := str("cpe")
+	fixed := str("fixedInVersion")
+	ecoStr := str("ecosystem")
+
+	var ecosystem hdf.Ecosystem
+	switch {
+	case purl != "":
+		if parsed := hdfutil.ParsePurl(purl); parsed != nil {
+			ecosystem = shared.EcosystemFromPurlType(parsed.Type)
+		} else {
+			ecosystem = hdf.Generic
+		}
+	case ecoStr != "":
+		ecosystem = shared.EcosystemFromPurlType(ecoStr)
+	case name != "" && version != "":
+		ecosystem = hdf.Generic
+	}
+	return shared.BuildAffectedPackage(shared.AffectedPackageOptions{
+		Name:           name,
+		Version:        version,
+		Ecosystem:      ecosystem,
+		Purl:           purl,
+		CPE:            cpe,
+		FixedInVersion: fixed,
+	})
 }
 
 // resolveRuleLevel determines the inherent severity level for a rule, independent of

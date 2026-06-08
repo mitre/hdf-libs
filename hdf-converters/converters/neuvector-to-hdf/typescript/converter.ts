@@ -3,7 +3,8 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { Ecosystem } from '@mitre/hdf-schema';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -163,6 +164,23 @@ function buildRequirement(vuln: NeuVectorVuln): EvaluatedRequirement {
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  // NeuVector scans container images; the package ecosystem isn't
+  // disambiguated by the source format (could be rpm/deb/python/etc.
+  // depending on the base image), so we record `generic`. NeuVector
+  // emits CPE 2.2 URIs (`cpe:/...`); the schema requires CPE 2.3, so
+  // only the first 2.3-shaped entry is carried through.
+  const cpe23 = (vuln.cpes ?? []).find((c) => /^cpe:2\.3:[aho]:/.test(c));
+  const pkg = buildAffectedPackage({
+    name: vuln.package_name,
+    version: vuln.package_version,
+    ecosystem: vuln.package_name && vuln.package_version ? Ecosystem.Generic : undefined,
+    cpe: cpe23,
+    fixedInVersion: vuln.fixed_version,
+  });
+  if (pkg) {
+    req.affectedPackages = [pkg];
+  }
   return req;
 }
 

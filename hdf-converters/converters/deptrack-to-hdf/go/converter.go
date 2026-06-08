@@ -184,7 +184,7 @@ func buildRequirement(finding DeptrackFinding, timestamp string) hdf.EvaluatedRe
 	}
 
 	title := getTitle(finding)
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 finding.Matrix,
 		Title:              &title,
 		Impact:             getImpact(finding.Vulnerability.Severity),
@@ -194,6 +194,35 @@ func buildRequirement(finding DeptrackFinding, timestamp string) hdf.EvaluatedRe
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+	if pkg := buildAffectedPackageFromComponent(finding.Component); pkg != nil {
+		req.AffectedPackages = []hdf.AffectedPackage{*pkg}
+	}
+	return req
+}
+
+// buildAffectedPackageFromComponent builds an Affected_Package from a
+// Dependency-Track component. Prefers the rich identifiers
+// Dependency-Track already exposes (purl, cpe) and augments with
+// name/version/ecosystem when available.
+func buildAffectedPackageFromComponent(c DeptrackComponent) *hdf.AffectedPackage {
+	var ecosystem hdf.Ecosystem
+	if c.Purl != "" {
+		if parsed := hdfutil.ParsePurl(c.Purl); parsed != nil {
+			ecosystem = shared.EcosystemFromPurlType(parsed.Type)
+		} else {
+			ecosystem = hdf.Generic
+		}
+	} else if c.Name != "" && c.Version != "" {
+		ecosystem = hdf.Generic
+	}
+	return shared.BuildAffectedPackage(shared.AffectedPackageOptions{
+		Name:           c.Name,
+		Version:        c.Version,
+		Ecosystem:      ecosystem,
+		Purl:           c.Purl,
+		CPE:            c.Cpe,
+		FixedInVersion: c.LatestVersion,
+	})
 }
 
 // ConvertDeptrackToHDF converts a Dependency-Track FPF JSON report to HDF format.

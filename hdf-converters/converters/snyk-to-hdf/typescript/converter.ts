@@ -6,13 +6,14 @@ import {
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
 } from '@mitre/hdf-schema';
 import {
+  Ecosystem,
   ResultStatus,
   TargetType,
   VerificationMethodEnum,
@@ -75,7 +76,30 @@ function formatDependencyPath(from: string[]): string {
 /**
  * Builds a single EvaluatedRequirement from a group of vulnerabilities sharing an ID.
  */
-function buildRequirement(vulnID: string, vulns: SnykVuln[]): EvaluatedRequirement {
+/**
+ * Map Snyk's `packageManager` value to an Affected_Package ecosystem.
+ * Snyk reports values that don't always match PURL types one-to-one
+ * (pip → pypi, rubygems → gem, yarn → npm). Unknown managers fall back
+ * to `generic`.
+ */
+function ecosystemFromSnykPackageManager(pm: string | undefined): Ecosystem {
+  if (!pm) return Ecosystem.Generic;
+  const lower = pm.toLowerCase();
+  if (lower === 'pip' || lower === 'pip3') return Ecosystem.Pypi;
+  if (lower === 'rubygems' || lower === 'bundler') return Ecosystem.Gem;
+  if (lower === 'yarn' || lower === 'npm') return Ecosystem.Npm;
+  return ecosystemFromPurlType(lower);
+}
+
+/** Synthesize a `pkg:<type>/<name>@<version>` PURL when the ecosystem
+ *  maps cleanly. Returns undefined for `generic` so we don't emit a
+ *  fake `pkg:generic/...` PURL that downstream tools can't dereference. */
+function synthesizePurl(ecosystem: Ecosystem, name: string, version: string): string | undefined {
+  if (ecosystem === Ecosystem.Generic) return undefined;
+  return `pkg:${ecosystem}/${name}@${version}`;
+}
+
+function buildRequirement(vulnID: string, vulns: SnykVuln[], packageManager?: string): EvaluatedRequirement {
   const rep = vulns[0]!;
   const cweIDs = rep.identifiers.CWE ?? [];
   const nist = mapCWEToNIST(cweIDs, DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
@@ -121,6 +145,22 @@ function buildRequirement(vulnID: string, vulns: SnykVuln[]): EvaluatedRequireme
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
 
+  const name = rep.packageName ?? rep.moduleName;
+  const version = rep.version;
+  if (name && version) {
+    const ecosystem = ecosystemFromSnykPackageManager(packageManager);
+    const pkg = buildAffectedPackage({
+      name,
+      version,
+      ecosystem,
+      purl: synthesizePurl(ecosystem, name, version),
+      fixedInVersion: rep.fixedIn?.[0],
+    });
+    if (pkg) {
+      req.affectedPackages = [pkg];
+    }
+  }
+
   return req;
 }
 
@@ -150,7 +190,7 @@ function convertSingleProject(
 
   const requirements: EvaluatedRequirement[] = [];
   for (const [vulnID, vulns] of groups) {
-    requirements.push(buildRequirement(vulnID, vulns));
+    requirements.push(buildRequirement(vulnID, vulns, report.packageManager));
   }
 
   if (requirements.length === 0) {

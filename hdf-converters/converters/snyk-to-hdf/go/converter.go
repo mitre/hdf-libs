@@ -78,9 +78,37 @@ func groupByID(vulns []SnykVuln) ([]string, map[string][]SnykVuln) {
 	return order, groups
 }
 
+// ecosystemFromSnykPackageManager maps Snyk's `packageManager` field to an
+// Affected_Package ecosystem. Snyk values don't always match PURL types
+// one-to-one (pip → pypi, rubygems → gem, yarn → npm).
+func ecosystemFromSnykPackageManager(pm string) hdf.Ecosystem {
+	switch strings.ToLower(pm) {
+	case "":
+		return hdf.Generic
+	case "pip", "pip3":
+		return hdf.Pypi
+	case "rubygems", "bundler":
+		return hdf.Gem
+	case "yarn", "npm":
+		return hdf.Npm
+	default:
+		return shared.EcosystemFromPurlType(pm)
+	}
+}
+
+// synthesizeSnykPurl builds a `pkg:<type>/<name>@<version>` PURL when the
+// ecosystem maps cleanly. Returns "" for `generic` so we don't emit a fake
+// `pkg:generic/...` purl that downstream tools can't dereference.
+func synthesizeSnykPurl(ecosystem hdf.Ecosystem, name, version string) string {
+	if ecosystem == hdf.Generic {
+		return ""
+	}
+	return fmt.Sprintf("pkg:%s/%s@%s", ecosystem, name, version)
+}
+
 // buildRequirement converts a group of vulnerabilities sharing an ID into one
 // EvaluatedRequirement with multiple results.
-func buildRequirement(vulnID string, vulns []SnykVuln) hdf.EvaluatedRequirement {
+func buildRequirement(vulnID string, vulns []SnykVuln, packageManager string) hdf.EvaluatedRequirement {
 	rep := vulns[0]
 
 	nist := shared.MapCWEToNIST(rep.Identifiers.CWE, shared.DefaultStaticAnalysisNIST)
@@ -111,7 +139,7 @@ func buildRequirement(vulnID string, vulns []SnykVuln) hdf.EvaluatedRequirement 
 	}
 
 	title := rep.Title
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 vulnID,
 		Title:              &title,
 		Impact:             getImpact(rep.Severity),
@@ -121,6 +149,28 @@ func buildRequirement(vulnID string, vulns []SnykVuln) hdf.EvaluatedRequirement 
 		Results:            results,
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+
+	name := rep.PackageName
+	if name == "" {
+		name = rep.ModuleName
+	}
+	if name != "" && rep.Version != "" {
+		ecosystem := ecosystemFromSnykPackageManager(packageManager)
+		var fixed string
+		if len(rep.FixedIn) > 0 {
+			fixed = rep.FixedIn[0]
+		}
+		if pkg := shared.BuildAffectedPackage(shared.AffectedPackageOptions{
+			Name:           name,
+			Version:        rep.Version,
+			Ecosystem:      ecosystem,
+			Purl:           synthesizeSnykPurl(ecosystem, name, rep.Version),
+			FixedInVersion: fixed,
+		}); pkg != nil {
+			req.AffectedPackages = []hdf.AffectedPackage{*pkg}
+		}
+	}
+	return req
 }
 
 // convertSingleProject converts a single Snyk project report to an HDF baseline.
@@ -129,7 +179,7 @@ func convertSingleProject(report SnykReport, checksum *hdf.Checksum) hdf.Evaluat
 	order, groups := groupByID(limitedVulns)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, vulnID := range order {
-		requirements[i] = buildRequirement(vulnID, groups[vulnID])
+		requirements[i] = buildRequirement(vulnID, groups[vulnID], report.PackageManager)
 	}
 
 	if len(requirements) == 0 {

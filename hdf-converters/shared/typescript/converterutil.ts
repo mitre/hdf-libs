@@ -7,8 +7,8 @@
  */
 
 import { sha256 } from '@mitre/hdf-utilities';
-import type { Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
-import { ControlType, HashAlgorithm, ResultStatus, VerificationMethodEnum } from '@mitre/hdf-schema';
+import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
+import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
 
 export { DEFAULT_STATIC_ANALYSIS_NIST_TAGS };
@@ -218,6 +218,67 @@ export function ensureArray<T>(value: T | T[] | undefined | null): T[] {
  * Mirrors Go shared.DefaultRemediationNIST.
  */
 export const DEFAULT_REMEDIATION_NIST_TAGS = ['SI-2', 'RA-5'];
+
+/**
+ * Map a PURL `type` segment to the AffectedPackage `ecosystem` enum.
+ * Unknown types fall back to `generic`, which the schema enum permits
+ * as a catch-all.
+ */
+const PURL_TYPE_TO_ECOSYSTEM: Record<string, Ecosystem> = {
+  npm: Ecosystem.Npm,
+  pypi: Ecosystem.Pypi,
+  rpm: Ecosystem.RPM,
+  deb: Ecosystem.Deb,
+  maven: Ecosystem.Maven,
+  gem: Ecosystem.Gem,
+  nuget: Ecosystem.Nuget,
+  golang: Ecosystem.Go,
+  go: Ecosystem.Go,
+  cargo: Ecosystem.Cargo,
+};
+
+/**
+ * Resolve an Ecosystem from a PURL type string. Returns `generic` for
+ * unknown types so callers can keep the schema's name+version+ecosystem
+ * triple valid without inventing a synthetic ecosystem.
+ */
+export function ecosystemFromPurlType(type: string | undefined): Ecosystem {
+  if (!type) return Ecosystem.Generic;
+  return PURL_TYPE_TO_ECOSYSTEM[type.toLowerCase()] ?? Ecosystem.Generic;
+}
+
+/**
+ * Build an Affected_Package primitive from any combination of the
+ * vocabulary the schema accepts (purl / cpe / name+version+ecosystem).
+ * Returns undefined when no identifier or full triple is present —
+ * callers should skip the entry rather than emit a schema-invalid
+ * AffectedPackage. Empty strings are treated as missing.
+ *
+ * The schema's anyOf requires at least one of:
+ *   - name + version + ecosystem
+ *   - purl alone
+ *   - cpe alone
+ */
+export function buildAffectedPackage(opts: {
+  name?: string;
+  version?: string;
+  ecosystem?: Ecosystem;
+  purl?: string;
+  cpe?: string;
+  fixedInVersion?: string;
+}): AffectedPackage | undefined {
+  const pkg: AffectedPackage = {};
+  if (opts.purl) pkg.purl = opts.purl;
+  if (opts.cpe) pkg.cpe = opts.cpe;
+  if (opts.name) pkg.name = opts.name;
+  if (opts.version) pkg.version = opts.version;
+  if (opts.ecosystem) pkg.ecosystem = opts.ecosystem;
+  if (opts.fixedInVersion) pkg.fixedInVersion = opts.fixedInVersion;
+
+  const hasTriple = Boolean(pkg.name && pkg.version && pkg.ecosystem);
+  if (!hasTriple && !pkg.purl && !pkg.cpe) return undefined;
+  return pkg;
+}
 
 /**
  * Options for building an HDF Results document.

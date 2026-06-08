@@ -3,6 +3,15 @@
     {
       "requirements": [
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "3.2.0",
+              "name": "timespan",
+              "purl": "pkg:npm/timespan@2.3.0",
+              "version": "2.3.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "Affected versions of `timespan`...",
@@ -42,6 +51,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "name": "uglify-js",
+              "purl": "pkg:npm/uglify-js@2.4.24",
+              "version": "2.4.24"
+            }
+          ],
           "descriptions": [
             {
               "data": "Versions of `uglify-js` prior to...",
@@ -100,7 +117,7 @@
     "name": "deptrack-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-05-15T03:16:29.93670671Z",
+  "timestamp": "2026-06-08T17:38:34.740546Z",
   "tool": {
     "format": "JSON",
     "name": "Dependency-Track"

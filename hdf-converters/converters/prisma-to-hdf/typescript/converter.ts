@@ -11,7 +11,8 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { Ecosystem } from '@mitre/hdf-schema';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -43,6 +44,11 @@ interface PrismaRecord {
   Type: string;
   Severity: string;
   Packages: string;
+  /** Some Prisma exports include a separate Source Package column;
+   *  optional because older exports collapse it into `Packages`. */
+  'Source Package'?: string;
+  /** Concrete vulnerable version of the affected package. */
+  'Package Version'?: string;
   Description: string;
   Cause: string;
   'Fix Status': string;
@@ -183,7 +189,58 @@ function buildRequirement(rec: PrismaRecord): EvaluatedRequirement {
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
-  return req;
+
+  if (rec['CVE ID']) {
+    const pkg = buildAffectedPackageFromRecord(rec);
+    if (pkg) {
+      (req as EvaluatedRequirement).affectedPackages = [pkg];
+    }
+  }
+  return req as EvaluatedRequirement;
+}
+
+/**
+ * Distro slugs in Prisma look like `redhat-RHEL7`, `debian-buster`,
+ * `alpine-3.14`, `ubuntu-20.04`. Only the leading vendor segment is
+ * mapped — unknown vendors fall back to `generic` rather than guessing.
+ */
+function ecosystemFromDistro(distro: string | undefined): Ecosystem {
+  if (!distro) return Ecosystem.Generic;
+  const head = distro.split('-')[0]?.toLowerCase();
+  switch (head) {
+    case 'redhat':
+    case 'rhel':
+    case 'centos':
+    case 'rocky':
+    case 'alma':
+    case 'fedora':
+    case 'amazon':
+    case 'amazonlinux':
+    case 'suse':
+    case 'sles':
+    case 'opensuse':
+      return Ecosystem.RPM;
+    case 'debian':
+    case 'ubuntu':
+      return Ecosystem.Deb;
+    default:
+      return Ecosystem.Generic;
+  }
+}
+
+const FIX_VERSION_PATTERN = /fixed in\s+([^\s,;]+)/i;
+
+function buildAffectedPackageFromRecord(rec: PrismaRecord) {
+  const name = rec['Source Package'] || rec.Packages;
+  const version = rec['Package Version'];
+  if (!name || !version) return undefined;
+  const fixMatch = rec['Fix Status'] ? FIX_VERSION_PATTERN.exec(rec['Fix Status']) : null;
+  return buildAffectedPackage({
+    name,
+    version,
+    ecosystem: ecosystemFromDistro(rec.Distro),
+    fixedInVersion: fixMatch ? fixMatch[1] : undefined,
+  });
 }
 
 /**

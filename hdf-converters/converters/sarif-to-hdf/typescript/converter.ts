@@ -1,9 +1,10 @@
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, parsePurl } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { Ecosystem } from '@mitre/hdf-schema';
 import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description } from '@mitre/hdf-schema';
 import { ResultStatus, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
@@ -92,6 +93,18 @@ interface SarifResult {
   codeFlows?: CodeFlow[];
   fingerprints?: Record<string, string>;
   partialFingerprints?: Record<string, string>;
+  /** SCA-SARIF property-bag carrying package identity. Populated by
+   *  SCA tools (Grype, Trivy, Dependency-Check); empty for SAST. */
+  properties?: {
+    purl?: string;
+    cpe?: string;
+    packageName?: string;
+    packageVersion?: string;
+    name?: string;
+    version?: string;
+    ecosystem?: string;
+    fixedInVersion?: string;
+  } & Record<string, unknown>;
 }
 
 interface Suppression {
@@ -303,7 +316,55 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  // SCA-shaped SARIF (Grype, Trivy, Dependency-Check) carries package
+  // identity in result.properties. Pure SAST results have empty
+  // properties → no affectedPackage. We dedupe by purl/cpe/name@version
+  // across the grouped results since SCA tools sometimes emit one
+  // SARIF result per occurrence.
+  const seenKeys = new Set<string>();
+  const packages = [];
+  for (const sr of sarifResults) {
+    const pkg = packageFromSarifProperties(sr.properties);
+    if (!pkg) continue;
+    const key = pkg.purl ?? pkg.cpe ?? `${pkg.name ?? ''}@${pkg.version ?? ''}`;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    packages.push(pkg);
+  }
+  if (packages.length > 0) {
+    (req as EvaluatedRequirement).affectedPackages = packages;
+  }
   return req;
+}
+
+/**
+ * Extract an Affected_Package from a SARIF result.properties bag.
+ * Recognizes the SCA-tool convention of carrying purl / cpe /
+ * packageName+packageVersion / name+version. Returns undefined for
+ * SAST results that lack any package identity.
+ */
+function packageFromSarifProperties(props: SarifResult['properties']) {
+  if (!props) return undefined;
+  const name = props.packageName ?? props.name;
+  const version = props.packageVersion ?? props.version;
+  let ecosystem: Ecosystem | undefined;
+  if (props.purl) {
+    const parsed = parsePurl(props.purl);
+    ecosystem = ecosystemFromPurlType(parsed?.type);
+  } else if (props.ecosystem) {
+    ecosystem = ecosystemFromPurlType(props.ecosystem);
+  } else if (name && version) {
+    ecosystem = Ecosystem.Generic;
+  }
+  return buildAffectedPackage({
+    name,
+    version,
+    ecosystem,
+    purl: props.purl,
+    cpe: props.cpe,
+    fixedInVersion: props.fixedInVersion,
+  });
 }
 
 // Determines the inherent severity level for a rule, independent of per-result kind overrides.

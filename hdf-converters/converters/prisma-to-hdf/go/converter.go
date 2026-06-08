@@ -9,6 +9,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"time"
 
@@ -20,13 +21,19 @@ import (
 
 // prismaRecord represents a single row from the Prisma Cloud CSV export.
 type prismaRecord struct {
-	Hostname          string
-	Distro            string
-	CVEID             string
-	ComplianceID      string
-	Type              string
-	Severity          string
-	Packages          string
+	Hostname     string
+	Distro       string
+	CVEID        string
+	ComplianceID string
+	Type         string
+	Severity     string
+	Packages     string
+	// SourcePackage and PackageVersion are populated when the Prisma
+	// export includes the Source Package + Package Version columns
+	// (newer exports). Older exports collapse the package name into
+	// the Packages column without a version.
+	SourcePackage     string
+	PackageVersion    string
 	Description       string
 	Cause             string
 	FixStatus         string
@@ -154,6 +161,8 @@ func parseCSV(input []byte) ([]prismaRecord, error) {
 			Type:              safeCol(row, colIdx, "Type"),
 			Severity:          safeCol(row, colIdx, "Severity"),
 			Packages:          safeCol(row, colIdx, "Packages"),
+			SourcePackage:     safeCol(row, colIdx, "Source Package"),
+			PackageVersion:    safeCol(row, colIdx, "Package Version"),
 			Description:       safeCol(row, colIdx, "Description"),
 			Cause:             safeCol(row, colIdx, "Cause"),
 			FixStatus:         safeCol(row, colIdx, "Fix Status"),
@@ -221,7 +230,7 @@ func buildRequirement(rec prismaRecord) hdf.EvaluatedRequirement {
 		Message:  &message,
 	}
 
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 id,
 		Title:              &title,
 		Impact:             getImpact(rec.Severity),
@@ -231,6 +240,55 @@ func buildRequirement(rec prismaRecord) hdf.EvaluatedRequirement {
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+	if rec.CVEID != "" {
+		if pkg := buildAffectedPackageFromRecord(rec); pkg != nil {
+			req.AffectedPackages = []hdf.AffectedPackage{*pkg}
+		}
+	}
+	return req
+}
+
+// Distro slugs in Prisma look like `redhat-RHEL7`, `debian-buster`,
+// `alpine-3.14`, `ubuntu-20.04`. Only the leading vendor segment is
+// mapped — unknown vendors fall back to Generic rather than guessing.
+func ecosystemFromDistro(distro string) hdf.Ecosystem {
+	if distro == "" {
+		return hdf.Generic
+	}
+	head := strings.ToLower(strings.SplitN(distro, "-", 2)[0])
+	switch head {
+	case "redhat", "rhel", "centos", "rocky", "alma", "fedora",
+		"amazon", "amazonlinux", "suse", "sles", "opensuse":
+		return hdf.RPM
+	case "debian", "ubuntu":
+		return hdf.Deb
+	default:
+		return hdf.Generic
+	}
+}
+
+var fixVersionPattern = regexp.MustCompile(`(?i)fixed in\s+([^\s,;]+)`)
+
+func buildAffectedPackageFromRecord(rec prismaRecord) *hdf.AffectedPackage {
+	name := rec.SourcePackage
+	if name == "" {
+		name = rec.Packages
+	}
+	if name == "" || rec.PackageVersion == "" {
+		return nil
+	}
+	var fixed string
+	if rec.FixStatus != "" {
+		if m := fixVersionPattern.FindStringSubmatch(rec.FixStatus); len(m) > 1 {
+			fixed = m[1]
+		}
+	}
+	return shared.BuildAffectedPackage(shared.AffectedPackageOptions{
+		Name:           name,
+		Version:        rec.PackageVersion,
+		Ecosystem:      ecosystemFromDistro(rec.Distro),
+		FixedInVersion: fixed,
+	})
 }
 
 // buildBaseline converts all records for a single host into an HDF baseline.

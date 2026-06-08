@@ -3,6 +3,14 @@
     {
       "requirements": [
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "5.7.4",
+              "name": "acorn",
+              "version": "5.7.3"
+            }
+          ],
           "descriptions": [
             {
               "data": "Acorn contains an infinite loop condition in regexp.js that is triggered when handling UTF_16 surrogates while validating regular expressions. This may allow a context-dependent attacker to hang a process using the library.\ncves: [{\"cve\"=\u003e\"\", \"cwe\"=\u003enull, \"cvss_v2\"=\u003e\"7.1/AV:N/AC:M/Au:N/C:N/I:N/A:C\", \"cvss_v3\"=\u003e\"7.5/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\"}]",
@@ -37,6 +45,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "name": "lodash",
+              "version": "4.17.5"
+            }
+          ],
           "descriptions": [
             {
               "data": "Lodash Package for Node.js .internal/baseZipObject.js baseZipObject() Function Property Manipulation Resource Exhaustion DoS",
@@ -71,6 +86,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "4.0.14",
+              "name": "handlebars",
+              "version": "4.0.11"
+            }
+          ],
           "descriptions": [
             {
               "data": "node-handlebars contains a flaw that is triggered during the handling of a specially crafted template. This may allow a remote attacker to make changes to an object's prototype and execute arbitrary code.\ncves: [{\"cve\"=\u003e\"\", \"cwe\"=\u003enull, \"cvss_v2\"=\u003e\"10.0/CVSS:2.0/AV:N/AC:L/Au:N/C:C/I:C/A:C\", \"cvss_v3\"=\u003e\"\"}]",
@@ -105,6 +128,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "name": "handlebars",
+              "version": "4.0.11"
+            }
+          ],
           "descriptions": [
             {
               "data": "Handlebars.js lib/handlebars/helpers/lookup.js Template Handling Prototype Manipulation Arbitrary Code Execution",
@@ -139,6 +169,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "3.0.8 ≤ Version \u003c 4.0.0",
+              "name": "handlebars",
+              "version": "4.0.11"
+            }
+          ],
           "descriptions": [
             {
               "data": "Versions of `handlebars` prior to 3.0.8 or 4.5.3 are vulnerable to Arbitrary Code Execution. The package's lookup helper fails to properly validate templates, allowing attackers to submit templates that execute arbitrary JavaScript in the system. It is due to an incomplete fix for a [previous issue](https://www.npmjs.com/advisories/1316). This vulnerability can be used to run arbitrary code in a server processing Handlebars templates or on a victim's browser (effectively serving as Cross-Site Scripting).",
@@ -173,6 +211,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "4.3.0",
+              "name": "handlebars",
+              "version": "4.0.11"
+            }
+          ],
           "descriptions": [
             {
               "data": "Versions of handlebars prior to 4.3.0 are vulnerable to Prototype Pollution leading to Remote Code Execution. Templates may alter an Object's __proto__ and __defineGetter__ properties, which may allow an attacker to execute arbitrary code through crafted payloads.\ncves: [{\"cve\"=\u003e\"CVE-2019-19919\", \"cwe\"=\u003e[\"CWE-74\"], \"cvss_v2\"=\u003e\"7.5/CVSS:2.0/AV:N/AC:L/Au:N/C:P/I:P/A:P\", \"cvss_v3\"=\u003e\"9.8/CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\"}]",
@@ -210,6 +256,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "4.17.16",
+              "name": "lodash",
+              "version": "4.17.15"
+            }
+          ],
           "descriptions": [
             {
               "data": "Lodash Package for Node.js contains a prototype pollution flaw in the baseSet() function in lodash.js that is triggered as access to object prototypes is not properly handled. This may allow a context-dependent attacker to manipulate object properties and crash a Node process using the library.\ncves: [{\"cve\"=\u003e\"\", \"cwe\"=\u003enull, \"cvss_v2\"=\u003e\"7.1/AV:N/AC:M/Au:N/C:N/I:N/A:C\", \"cvss_v3\"=\u003e\"7.5/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\"}]",
@@ -244,6 +298,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "4.4.5",
+              "name": "handlebars",
+              "version": "4.0.11"
+            }
+          ],
           "descriptions": [
             {
               "data": "Handlebars before 4.4.5 allows Regular Expression Denial of Service (ReDoS) because of eager matching. The parser may be forced into an endless loop while processing crafted templates. This may allow attackers to exhaust system resources.\ncves: [{\"cve\"=\u003e\"CVE-2019-20922\", \"cwe\"=\u003e[\"CWE-835\"], \"cvss_v2\"=\u003e\"7.8/CVSS:2.0/AV:N/AC:L/Au:N/C:N/I:N/A:C\", \"cvss_v3\"=\u003e\"7.5/CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H\"}]",
@@ -281,6 +343,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "4.17.12",
+              "name": "lodash",
+              "version": "4.17.5"
+            }
+          ],
           "descriptions": [
             {
               "data": "Lodash Package for Node.js contains a flaw in the safeGet() function in lodash.js that is triggered as access to object prototypes is not properly handled. This may allow a context-dependent attacker to add attributes to arbitrary objects, resulting in a denial of service.\ncves: [{\"cve\"=\u003e\"\", \"cwe\"=\u003enull, \"cvss_v2\"=\u003e\"9.3/AV:N/AC:M/Au:N/C:C/I:C/A:C\", \"cvss_v3\"=\u003e\"9.8/CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\"}]",
@@ -310,6 +380,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "6.0.3",
+              "name": "kind-of",
+              "version": "6.0.2"
+            }
+          ],
           "descriptions": [
             {
               "data": "ctorName in index.js in kind-of v6.0.2 allows external user input to overwrite certain internal attributes via a conflicting name, as demonstrated by 'constructor': {'name':'Symbol'}. Hence, a crafted payload can overwrite this builtin attribute to manipulate the type detection result.\ncves: [{\"cve\"=\u003e\"CVE-2019-20149\", \"cwe\"=\u003e[\"CWE-668\"], \"cvss_v2\"=\u003e\"5.0/CVSS:2.0/AV:N/AC:L/Au:N/C:N/I:P/A:N\", \"cvss_v3\"=\u003e\"7.5/CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N\"}]",
@@ -342,6 +420,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "6.12.3",
+              "name": "ajv",
+              "version": "5.5.2"
+            }
+          ],
           "descriptions": [
             {
               "data": "An issue was discovered in ajv.validate() in Ajv (aka Another JSON Schema Validator) 6.12.2. A carefully crafted JSON schema could be provided that allows execution of other code by prototype pollution. (While untrusted schemas are recommended against, the worst case of an untrusted schema should be a denial of service, not execution of code.)\ncves: [{\"cve\"=\u003e\"CVE-2020-15366\", \"cwe\"=\u003e[\"CWE-20\"], \"cvss_v2\"=\u003e\"6.8/CVSS:2.0/AV:N/AC:M/Au:N/C:P/I:P/A:P\", \"cvss_v3\"=\u003e\"5.6/CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L\"}]",
@@ -373,6 +459,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "0.2.1",
+              "name": "minimist",
+              "version": "0.0.8"
+            }
+          ],
           "descriptions": [
             {
               "data": "minimist before 1.2.2 could be tricked into adding or modifying properties of Object.prototype using a \"constructor\" or \"__proto__\" payload.\ncves: [{\"cve\"=\u003e\"CVE-2020-7598\", \"cwe\"=\u003e[\"CWE-20\"], \"cvss_v2\"=\u003e\"6.8/CVSS:2.0/AV:N/AC:M/Au:N/C:P/I:P/A:P\", \"cvss_v3\"=\u003e\"5.6/CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L\"}]",
@@ -404,6 +498,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "2.3.1",
+              "name": "braces",
+              "version": "1.8.5"
+            }
+          ],
           "descriptions": [
             {
               "data": "braces Package for Node.js contains a flaw in lib/parsers.js that is triggered during the handling of regular expressions. This may allow a context-dependent attacker to slow down a node process using the library.\ncves: [{\"cve\"=\u003e\"\", \"cwe\"=\u003enull, \"cvss_v2\"=\u003e\"4.3/CVSS:2.0/AV:N/AC:M/Au:N/C:N/I:N/A:P\", \"cvss_v3\"=\u003e\"\"}]",
@@ -433,6 +535,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "13.1.2",
+              "name": "yargs-parser",
+              "version": "8.1.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "yargs-parser could be tricked into adding or modifying properties of Object.prototype using a \"__proto__\" payload.\ncves: [{\"cve\"=\u003e\"CVE-2020-7608\", \"cwe\"=\u003e[\"CWE-20\"], \"cvss_v2\"=\u003e\"4.6/CVSS:2.0/AV:L/AC:L/Au:N/C:P/I:P/A:P\", \"cvss_v3\"=\u003e\"5.3/CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:L\"}]",
@@ -474,6 +584,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "4.0.0",
+              "name": "mem",
+              "version": "1.1.0"
+            }
+          ],
           "descriptions": [
             {
               "data": "mem Package for Node.js contains a flaw in index.js that is triggered as old results are not properly handled in the cache. This may allow a remote attacker to exhaust available memory and potentially cause a denial of service.\ncves: [{\"cve\"=\u003e\"\", \"cwe\"=\u003enull, \"cvss_v2\"=\u003e\"5.0/CVSS:2.0/AV:N/AC:L/Au:N/C:N/I:N/A:P\", \"cvss_v3\"=\u003e\"\"}]",
@@ -503,6 +621,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "3.0.8",
+              "name": "handlebars",
+              "version": "4.0.11"
+            }
+          ],
           "descriptions": [
             {
               "data": "Handlebars before 3.0.8 and 4.x before 4.5.3 is vulnerable to Arbitrary Code Execution. The lookup helper fails to properly validate templates, allowing attackers to submit templates that execute arbitrary JavaScript. This can be used to run arbitrary code on a server processing Handlebars templates or in a victim's browser (effectively serving as XSS).\ncves: [{\"cve\"=\u003e\"CVE-2019-20920\", \"cwe\"=\u003e[\"CWE-94\"], \"cvss_v2\"=\u003e\"6.8/CVSS:2.0/AV:N/AC:M/Au:N/C:P/I:P/A:P\", \"cvss_v3\"=\u003e\"8.1/CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:L/A:L\"}]",
@@ -534,6 +660,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "npm",
+              "fixedInVersion": "13.1.2 ≤ Version \u003c 14.0.0",
+              "name": "yargs-parser",
+              "version": "9.0.2"
+            }
+          ],
           "descriptions": [
             {
               "data": "Affected versions of `yargs-parser` are vulnerable to prototype pollution. Arguments are not properly sanitized, allowing an attacker to modify the prototype of `Object`, causing the addition or modification of an existing property that will exist on all objects.  \nParsing the argument `--foo.__proto__.bar baz'` adds a `bar` property with value `baz` to all objects. This is only exploitable if attackers have control over the arguments being passed to `yargs-parser`.\n",
@@ -580,7 +714,7 @@
     "name": "jfrog-xray-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-05-15T03:15:04.314337225Z",
+  "timestamp": "2026-06-08T17:42:05.381235Z",
   "tool": {
     "format": "JSON",
     "name": "JFrog Xray"

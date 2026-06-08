@@ -403,6 +403,89 @@ func BuildHDFResults(opts HDFResultsOptions) *hdf.HDFResults {
 	return result
 }
 
+// purlTypeToEcosystem maps a PURL `type` segment to the AffectedPackage
+// ecosystem enum. Unknown types fall back to Generic.
+var purlTypeToEcosystem = map[string]hdf.Ecosystem{
+	"npm":    hdf.Npm,
+	"pypi":   hdf.Pypi,
+	"rpm":    hdf.RPM,
+	"deb":    hdf.Deb,
+	"maven":  hdf.Maven,
+	"gem":    hdf.Gem,
+	"nuget":  hdf.Nuget,
+	"golang": hdf.Go,
+	"go":     hdf.Go,
+	"cargo":  hdf.Cargo,
+}
+
+// EcosystemFromPurlType resolves an Ecosystem from a PURL type string.
+// Returns Generic for unknown types so callers can keep the schema's
+// name+version+ecosystem triple valid without inventing a synthetic
+// ecosystem.
+func EcosystemFromPurlType(typeStr string) hdf.Ecosystem {
+	if typeStr == "" {
+		return hdf.Generic
+	}
+	if eco, ok := purlTypeToEcosystem[strings.ToLower(typeStr)]; ok {
+		return eco
+	}
+	return hdf.Generic
+}
+
+// AffectedPackageOptions carries the fields a converter might know about
+// a package. BuildAffectedPackage uses non-empty fields to assemble an
+// Affected_Package primitive.
+type AffectedPackageOptions struct {
+	Name           string
+	Version        string
+	Ecosystem      hdf.Ecosystem // empty string means "unset"
+	Purl           string
+	CPE            string
+	FixedInVersion string
+}
+
+// BuildAffectedPackage assembles an Affected_Package primitive from the
+// available identifiers. Returns nil when no identifier or full triple
+// is present — callers should skip the entry rather than emit a
+// schema-invalid AffectedPackage. Empty strings are treated as missing.
+//
+// The schema's anyOf requires at least one of:
+//   - name + version + ecosystem
+//   - purl alone
+//   - cpe alone
+func BuildAffectedPackage(opts AffectedPackageOptions) *hdf.AffectedPackage {
+	pkg := &hdf.AffectedPackage{}
+	if opts.Purl != "" {
+		p := opts.Purl
+		pkg.Purl = &p
+	}
+	if opts.CPE != "" {
+		c := opts.CPE
+		pkg.Cpe = &c
+	}
+	if opts.Name != "" {
+		n := opts.Name
+		pkg.Name = &n
+	}
+	if opts.Version != "" {
+		v := opts.Version
+		pkg.Version = &v
+	}
+	if opts.Ecosystem != "" {
+		e := opts.Ecosystem
+		pkg.Ecosystem = &e
+	}
+	if opts.FixedInVersion != "" {
+		f := opts.FixedInVersion
+		pkg.FixedInVersion = &f
+	}
+	hasTriple := pkg.Name != nil && pkg.Version != nil && pkg.Ecosystem != nil
+	if !hasTriple && pkg.Purl == nil && pkg.Cpe == nil {
+		return nil
+	}
+	return pkg
+}
+
 // DefaultMaxJSONSize is the maximum allowed JSON input size (50 MB).
 // This provides defense against memory exhaustion when converters are used
 // as libraries outside the CLI (which has its own 50 MB input limit).

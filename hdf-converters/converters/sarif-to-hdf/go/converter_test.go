@@ -1560,6 +1560,81 @@ func TestIsSarif20(t *testing.T) {
 	}
 }
 
+// SCA-shaped SARIF carries package identity in result.properties; SAST results
+// leave properties empty. These tests synthesize minimal SARIF documents to
+// exercise the new affectedPackages path independent of any specific tool fixture.
+func TestSCASarif_AffectedPackagesFromProperties(t *testing.T) {
+	t.Parallel()
+	convertWith := func(props map[string]any) hdf.EvaluatedRequirement {
+		doc := map[string]any{
+			"version": "2.1.0",
+			"runs": []map[string]any{{
+				"tool": map[string]any{"driver": map[string]any{"name": "TestSCA", "version": "1.0"}},
+				"results": []map[string]any{{
+					"ruleId":     "CVE-2026-1234",
+					"level":      "error",
+					"message":    map[string]any{"text": "vulnerable package"},
+					"locations":  []any{},
+					"properties": props,
+				}},
+			}},
+		}
+		b, err := json.Marshal(doc)
+		require.NoError(t, err)
+		result, err := ConvertSarifToHDF(b, testConverterVersion)
+		require.NoError(t, err)
+		require.NotEmpty(t, result.Baselines)
+		require.NotEmpty(t, result.Baselines[0].Requirements)
+		return result.Baselines[0].Requirements[0]
+	}
+
+	t.Run("purl decomposes to ecosystem", func(t *testing.T) {
+		req := convertWith(map[string]any{"purl": "pkg:npm/lodash@4.17.20"})
+		require.Len(t, req.AffectedPackages, 1)
+		require.NotNil(t, req.AffectedPackages[0].Purl)
+		assert.Equal(t, "pkg:npm/lodash@4.17.20", *req.AffectedPackages[0].Purl)
+		require.NotNil(t, req.AffectedPackages[0].Ecosystem)
+		assert.Equal(t, hdf.Npm, *req.AffectedPackages[0].Ecosystem)
+	})
+
+	t.Run("packageName + packageVersion → generic ecosystem", func(t *testing.T) {
+		req := convertWith(map[string]any{"packageName": "openssl", "packageVersion": "1.1.1k"})
+		require.Len(t, req.AffectedPackages, 1)
+		pkg := req.AffectedPackages[0]
+		require.NotNil(t, pkg.Name)
+		require.NotNil(t, pkg.Version)
+		require.NotNil(t, pkg.Ecosystem)
+		assert.Equal(t, "openssl", *pkg.Name)
+		assert.Equal(t, "1.1.1k", *pkg.Version)
+		assert.Equal(t, hdf.Generic, *pkg.Ecosystem)
+	})
+
+	t.Run("cpe-only is preserved as cpe-only", func(t *testing.T) {
+		req := convertWith(map[string]any{"cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*"})
+		require.Len(t, req.AffectedPackages, 1)
+		pkg := req.AffectedPackages[0]
+		assert.Nil(t, pkg.Name)
+		assert.Nil(t, pkg.Purl)
+		require.NotNil(t, pkg.Cpe)
+		assert.Equal(t, "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*", *pkg.Cpe)
+	})
+
+	t.Run("fixedInVersion lands in the structured field", func(t *testing.T) {
+		req := convertWith(map[string]any{
+			"purl":           "pkg:npm/lodash@4.17.20",
+			"fixedInVersion": "4.17.21",
+		})
+		require.Len(t, req.AffectedPackages, 1)
+		require.NotNil(t, req.AffectedPackages[0].FixedInVersion)
+		assert.Equal(t, "4.17.21", *req.AffectedPackages[0].FixedInVersion)
+	})
+
+	t.Run("empty properties → no affectedPackages (SAST result)", func(t *testing.T) {
+		req := convertWith(map[string]any{})
+		assert.Empty(t, req.AffectedPackages)
+	})
+}
+
 func TestConvertSarifToHDF_VerificationMethod(t *testing.T) {
 	inputData, err := os.ReadFile(fixturePath("sarif_input.sarif"))
 	require.NoError(t, err)

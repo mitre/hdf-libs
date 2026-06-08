@@ -3,7 +3,8 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildNoFindingsRequirement, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
+import { Ecosystem } from '@mitre/hdf-schema';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -174,7 +175,63 @@ function buildRequirement(entryID: string, entries: XrayEntry[]): EvaluatedRequi
     req.controlType = controlType;
   }
   req.verificationMethod = VerificationMethodEnum.Automated;
+
+  const pkg = buildAffectedPackageFromEntry(rep);
+  if (pkg) {
+    req.affectedPackages = [pkg];
+  }
   return req;
+}
+
+// Xray source-id scheme to AffectedPackage ecosystem.
+// `gav://` is Maven (group:artifact); other schemes match purl types
+// directly (npm, pypi, etc.).
+function ecosystemFromXraySource(scheme: string): Ecosystem {
+  if (scheme === 'gav') return Ecosystem.Maven;
+  return ecosystemFromPurlType(scheme);
+}
+
+// Parse `<scheme>://<name>:<version>` (source_comp_id) or
+// `<scheme>://<name>` (source_id). Returns undefined when no scheme is
+// present.
+function parseSourceCompID(s: string | undefined):
+  | { scheme: string; name: string; version?: string }
+  | undefined {
+  if (!s) return undefined;
+  const m = /^([a-zA-Z0-9]+):\/\/(.+)$/.exec(s);
+  if (!m) return undefined;
+  const scheme = m[1]!.toLowerCase();
+  const rest = m[2]!;
+  const colonIdx = rest.lastIndexOf(':');
+  if (colonIdx > 0) {
+    return { scheme, name: rest.slice(0, colonIdx), version: rest.slice(colonIdx + 1) };
+  }
+  return { scheme, name: rest };
+}
+
+function buildAffectedPackageFromEntry(entry: XrayEntry) {
+  const parsed = parseSourceCompID(entry.source_comp_id ?? entry.source_id);
+  let name = entry.component ?? '';
+  let version: string | undefined;
+  let ecosystem: Ecosystem | undefined;
+  if (parsed) {
+    if (parsed.name) name = parsed.name;
+    version = parsed.version;
+    ecosystem = ecosystemFromXraySource(parsed.scheme);
+  }
+  // Fall back to component_versions.fixed_versions[0] for the fixed-in
+  // marker; vulnerable_versions are range expressions and don't fit
+  // AffectedPackage.fixedInVersion (which mirrors `version` syntax).
+  const fixed = entry.component_versions?.fixed_versions?.[0];
+  // Without a concrete version we still emit the package — the schema
+  // accepts name+version+ecosystem OR purl-only; here we ensure at
+  // least name+ecosystem are populated, version optional.
+  return buildAffectedPackage({
+    name,
+    version,
+    ecosystem: ecosystem ?? (name ? Ecosystem.Generic : undefined),
+    fixedInVersion: fixed,
+  });
 }
 
 /**

@@ -63,6 +63,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "kernel",
+              "version": "3.10.0-1160.45.1.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2019-19927.",
@@ -96,6 +103,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "gcc",
+              "version": "4.8.5-44.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "Integer overflow in the string_appends function in cplus-dem.c in libiberty allows remote attackers to execute arbitrary code via a crafted executable, which triggers a buffer overflow.",
@@ -129,6 +143,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "gcc",
+              "version": "4.8.5-44.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: An input validation vulnerability was found in Go. If cgo is specified in a Go file, it is possible to bypass the validation of arguments to the gcc compiler. This flaw allows an attacker to create a malicious repository that can execute arbitrary code when downloaded and run via `go get` or `go build` while building a Go project. The highest threat from this vulnerability is to confidentiality and integrity as well as system availability.             STATEMENT: While the OpenShift Container Platform (OCP), Red Hat OpenShift Jaeger (RHOSJ),  OpenShift Service Mesh (OSSM), and OpenShift Virtualization all contain RPMs and containers that are compiled with a vulnerable version of Go, the vulnerability is specific to the building of the Go code itself. Using `go get` or `go build` and as such, the relevant components have been marked as not affected.  Additionally, only the main RPMs and containers for OCP, RHOSJ, OSSM, and OpenShift Virtualization are represented due to the large volume of not affected components.  Red Hat Ceph Storage 3 ships the vulnerable version of go, and an attacker building go code on RHCS 3 could potentially exploit this vulnerability.             MITIGATION: If it\\'s possible to confirm that the go project being built does not rely on any cgo code in the included dependencies, the env variable CGO_ENABLED=0 can be specified when using eithe",
@@ -162,6 +183,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "nss-softokn-freebl",
+              "version": "3.67.0-3.el7_9"
+            }
+          ],
           "descriptions": [
             {
               "data": "The s_mp_div function in lib/freebl/mpi/mpi.c in Mozilla Network Security Services (NSS) before 3.21, as used in Mozilla Firefox before 44.0, improperly divides numbers, which might make it easier for remote attackers to defeat cryptographic protection mechanisms by leveraging use of the (1) mp_div or (2) mp_exptmod function.",
@@ -195,6 +223,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "kernel",
+              "version": "3.10.0-1160.49.1.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "The ecryptfs_privileged_open function in fs/ecryptfs/kthread.c in the Linux kernel before 4.6.3 allows local users to gain privileges or cause a denial of service (stack memory consumption) via vectors involving crafted mmap calls for /proc pathnames, leading to recursive pagefault handling.",
@@ -268,6 +303,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python-perf",
+              "version": "3.10.0-1160.45.1.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2021-28964.",
@@ -301,6 +343,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python-perf",
+              "version": "3.10.0-1160.45.1.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "The ip6gre_err function in net/ipv6/ip6_gre.c in the Linux kernel allows remote attackers to have unspecified impact via vectors involving GRE flags in an IPv6 packet, which trigger an out-of-bounds access.",
@@ -334,6 +383,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "python-perf",
+              "version": "3.10.0-1160.45.1.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "The ecryptfs_privileged_open function in fs/ecryptfs/kthread.c in the Linux kernel before 4.6.3 allows local users to gain privileges or cause a denial of service (stack memory consumption) via vectors involving crafted mmap calls for /proc pathnames, leading to recursive pagefault handling.",
@@ -407,6 +463,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "samba-common",
+              "version": "4.10.16-15.el7_9"
+            }
+          ],
           "descriptions": [
             {
               "data": "STATEMENT: As per upstream \\\"Prior to Samba 4.15.0 patches for this are not possible, due to the prior design of the Samba VFS layer which used pathname-based calls for most meta-data operations. A two and a half year effort was undertaken to completely re-write the Samba VFS layer to stop use of pathname-based calls in all cases involving reading and writing of metadata returned to the client. This work has finally been completed in Samba 4.15.0.\\\"             MITIGATION: Do not enable SMB1 (please note SMB1 is disabled by default in Samba from version 4.11.0 and onwards). This prevents the creation of symbolic links via SMB1. If SMB1 must be enabled for backwards compatibility then add the parameter:  unix extensions = no  to the [global] section of your smb.conf and restart smbd. This prevents SMB1 clients from creating symlinks on the exported file system.  However, if the same region of the file system is also exported using NFS, NFS clients can create symlinks that potentially can also hit the race condition. For non-patched versions of Samba we recommend only exporting areas of the file system by either SMB2 or NFS, not both.",
@@ -440,6 +503,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "samba-common",
+              "version": "4.10.16-15.el7_9"
+            }
+          ],
           "descriptions": [
             {
               "data": "All versions of Samba prior to 4.13.16 are vulnerable to a malicious client using an SMB1 or NFS race to allow a directory to be created in an area of the server file system not exported under the share definition. Note that SMB1 has to be enabled, or the share also available via NFS in order for this attack to succeed.",
@@ -473,6 +543,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "4.10.16-18.el7_9",
+              "name": "samba-common",
+              "version": "4.10.16-15.el7_9"
+            }
+          ],
           "descriptions": [
             {
               "data": "Samba is an open-source implementation of the Server Message Block (SMB) protocol and the related Common Internet File System (CIFS) protocol, which allow PC-compatible machines to share files, printers, and various information.  Security Fix(es):  * samba: Out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution (CVE-2021-44142)  For more details about the security issue(s), including the impact, a CVSS score, acknowledgments, and other related information, refer to the CVE page(s) listed in the References section.",
@@ -506,6 +584,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17",
+              "name": "go",
+              "version": "1.16.6"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A flaw was found in golang. Extraneous zero characters at the beginning of an IP address octet are not properly considered which could allow an attacker to bypass IP-based access controls. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.             STATEMENT: This vulnerability potentially affects any component written in Go that uses the net standard library and ParseIP / ParseCIDR functions. There are components which might not use these functions or might use them to parse IP addresses and not manage them in any way (only store information about the ip address) . This reducing the severity of this vulnerability to Low for the following components: * OpenShift distributed tracing (formerly OpenShift Jaeger) * OpenShift Migration Toolkit for Containers * OpenShift Container Platform             MITIGATION: Mitigation for this issue is either not available or the currently available options do not meet the Red Hat Product Security criteria comprising ease of use and deployment, applicability to widespread installation base or stability.",
@@ -609,6 +695,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libwbclient",
+              "version": "4.10.16-17.el7_9"
+            }
+          ],
           "descriptions": [
             {
               "data": "All versions of Samba prior to 4.13.16 are vulnerable to a malicious client using an SMB1 or NFS race to allow a directory to be created in an area of the server file system not exported under the share definition. Note that SMB1 has to be enabled, or the share also available via NFS in order for this attack to succeed.",
@@ -642,6 +735,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libwbclient",
+              "version": "4.10.16-17.el7_9"
+            }
+          ],
           "descriptions": [
             {
               "data": "STATEMENT: As per upstream \\\"Prior to Samba 4.15.0 patches for this are not possible, due to the prior design of the Samba VFS layer which used pathname-based calls for most meta-data operations. A two and a half year effort was undertaken to completely re-write the Samba VFS layer to stop use of pathname-based calls in all cases involving reading and writing of metadata returned to the client. This work has finally been completed in Samba 4.15.0.\\\"             MITIGATION: Do not enable SMB1 (please note SMB1 is disabled by default in Samba from version 4.11.0 and onwards). This prevents the creation of symbolic links via SMB1. If SMB1 must be enabled for backwards compatibility then add the parameter:  unix extensions = no  to the [global] section of your smb.conf and restart smbd. This prevents SMB1 clients from creating symlinks on the exported file system.  However, if the same region of the file system is also exported using NFS, NFS clients can create symlinks that potentially can also hit the race condition. For non-patched versions of Samba we recommend only exporting areas of the file system by either SMB2 or NFS, not both.",
@@ -675,6 +775,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "4.10.16-18.el7_9",
+              "name": "libwbclient",
+              "version": "4.10.16-17.el7_9"
+            }
+          ],
           "descriptions": [
             {
               "data": "Samba is an open-source implementation of the Server Message Block (SMB) protocol and the related Common Internet File System (CIFS) protocol, which allow PC-compatible machines to share files, printers, and various information.  Security Fix(es):  * samba: Out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution (CVE-2021-44142)  For more details about the security issue(s), including the impact, a CVSS score, acknowledgments, and other related information, refer to the CVE page(s) listed in the References section.  Bug Fix(es):  * Fix username map script regression introduced with CVE-2020-25717 (BZ#2046173)",
@@ -748,6 +856,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.3",
+              "name": "go",
+              "version": "1.17.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A vulnerability was found in archive/zip of the Go standard library. Applications written in Go where Reader.Open (the API implementing io/fs.FS introduced in Go 1.16) can panic when parsing a crafted ZIP archive containing completely invalid names or an empty filename argument.             STATEMENT: * In OpenShift Container Platform multiple components are written in Go and use archive/zip from the standard library. However, all such components are short lived client side tools, not long lived server side executables. As the maximum impact of this vulnerability is a denial of service in client utilities, this vulnerability is rated Low for OpenShift Container Plaform.  * Because Service Telemetry Framework1.2 will be retiring soon and the flaw\\'s impact is lower, no update will be provided at this time for STF1.2\\'s sg-core-container.  * Because Red Hat Ceph Storage only uses Go\\'s archive/zip for the Grafana CLI and thus is not directly exploitable, the vulnerability has been rated low for Red Hat Ceph Storage.",
@@ -781,6 +897,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.2",
+              "name": "go",
+              "version": "1.17.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2021-38297.",
@@ -884,6 +1008,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libvpx",
+              "version": "1.3.0-8.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "Google Chrome before 43.0.2357.65 relies on libvpx code that was not built with an appropriate --size-limit value, which allows remote attackers to trigger a negative value for a size field, and consequently cause a denial of service or possibly have unspecified other impact, via a crafted frame size in VP9 video data.",
@@ -917,6 +1048,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libvpx",
+              "version": "1.3.0-8.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "A vulnerability in the Android media framework (libvpx) related to odd frame width. Product: Android. Versions: 7.0, 7.1.1, 7.1.2, 8.0, 8.1. Android ID: A-64710201.",
@@ -950,6 +1088,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.5",
+              "name": "go",
+              "version": "1.16.6"
+            }
+          ],
           "descriptions": [
             {
               "data": "net/http in Go before 1.16.12 and 1.17.x before 1.17.5 allows uncontrolled memory consumption in the header canonicalization cache via HTTP/2 requests.",
@@ -1023,6 +1169,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.16.5",
+              "name": "go",
+              "version": "1.14.4"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat OpenShift Container Platform is Red Hat\\'s cloud computing Kubernetes application platform solution designed for on-premise or private cloud deployments.  This advisory contains the RPM packages for Red Hat OpenShift Container Platform 4.8.9. See the following advisory for the container images for this release:  http://somewhere.cloud/errata/RHBA-2021:3247  Security Fix(es):  * golang: net/http: panic in ReadRequest and ReadResponse when reading a very large header (CVE-2021-31525)  * golang: net: lookup functions may return invalid host names (CVE-2021-33195)  * golang: net/http/httputil: ReverseProxy forwards connection headers if first one is empty (CVE-2021-33197)  * golang: math/big.Rat: may cause a panic or an unrecoverable fatal error if passed inputs with very large exponents (CVE-2021-33198)  * golang: crypto/tls: certificate of wrong type is causing TLS client to panic (CVE-2021-34558)  For more details about the security issue(s), including the impact, a CVSS score, acknowledgments, and other related information, refer to the CVE page(s) listed in the References section.  All OpenShift Container Platform 4.8 users are advised to upgrade to these updated packages and images when they are available in the appropriate release channel. To check for available updates, use the OpenShift Console or the CLI oc command. Instructions for upgrading a cluster are avail",
@@ -1056,6 +1210,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.2",
+              "name": "go",
+              "version": "1.17.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2021-38297.",
@@ -1089,6 +1251,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.5",
+              "name": "go",
+              "version": "1.17.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "net/http in Go before 1.16.12 and 1.17.x before 1.17.5 allows uncontrolled memory consumption in the header canonicalization cache via HTTP/2 requests.",
@@ -1122,6 +1292,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "kernel",
+              "version": "3.10.0-1160.49.1.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "The ecryptfs_privileged_open function in fs/ecryptfs/kthread.c in the Linux kernel before 4.6.3 allows local users to gain privileges or cause a denial of service (stack memory consumption) via vectors involving crafted mmap calls for /proc pathnames, leading to recursive pagefault handling.",
@@ -1225,6 +1402,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.14.5",
+              "name": "go",
+              "version": "1.14.4"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A flaw was found Go\\'s net/http package. Servers using ReverseProxy from net/http in the Go standard library are vulnerable to a data race that results in a denial of service. The highest threat from this vulnerability is to system availability.             STATEMENT: OpenShift Container Platform (OCP) components are primarily written in Go, meaning that any component using the net/http package includes the vulnerable code. OCP server endpoints using ReverseProxy are protected by authentication, reducing the severity of this vulnerability to Low for OCP.  Similar to OCP, OpenShift ServiceMesh (OSSM), RedHat OpenShift Jaeger (RHOSJ) and OpenShift Virtualization are also primarily written in Go and are protected via authentication, reducing the severity of this vulnerability to Low.  Red Hat Gluster Storage 3 and Red Hat Openshift Container Storage 4 components are built with the affected version of Go, however the vulnerable functionality is currently not used by these products and hence this issue has been rated as having a security impact of Low.  Red Hat Ceph Storage 3 and 4 components are built with the affected version of Go, however the vulnerable functionality is currently not used by these products and hence this issue has been rated as having a security impact of Low.",
@@ -1258,6 +1443,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.1",
+              "name": "go",
+              "version": "1.14.4"
+            }
+          ],
           "descriptions": [
             {
               "data": "In archive/zip in Go before 1.16.8 and 1.17.x before 1.17.1, a crafted archive header (falsely designating that many files are present) can cause a NewReader or OpenReader panic. NOTE: this issue exists because of an incomplete fix for CVE-2021-33196.",
@@ -1291,6 +1484,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.2",
+              "name": "go",
+              "version": "1.14.4"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2021-38297.",
@@ -1394,6 +1595,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "binutils",
+              "version": "2.27-44.base.el7_9.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "An issue was discovered in the merge_strings function in merge.c in the Binary File Descriptor (BFD) library (aka libbfd), as distributed in GNU Binutils 2.31. There is a NULL pointer dereference in _bfd_add_merge_section when attempting to merge sections with large alignments. A specially crafted ELF allows remote attackers to cause a denial of service, as demonstrated by ld.",
@@ -1427,6 +1635,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "binutils",
+              "version": "2.27-44.base.el7_9.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "The demangle_template function in cplus-dem.c in GNU libiberty, as distributed in GNU Binutils 2.31.1, contains an integer overflow vulnerability (for \\\"Create an array for saving the template argument values\\\") that can trigger a heap-based buffer overflow, as demonstrated by nm.",
@@ -1460,6 +1675,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "4.10.16-18.el7_9",
+              "name": "samba-common",
+              "version": "4.10.16-17.el7_9"
+            }
+          ],
           "descriptions": [
             {
               "data": "Samba is an open-source implementation of the Server Message Block (SMB) protocol and the related Common Internet File System (CIFS) protocol, which allow PC-compatible machines to share files, printers, and various information.  Security Fix(es):  * samba: Out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution (CVE-2021-44142)  For more details about the security issue(s), including the impact, a CVSS score, acknowledgments, and other related information, refer to the CVE page(s) listed in the References section.  Bug Fix(es):  * Fix username map script regression introduced with CVE-2020-25717 (BZ#2046173)",
@@ -1653,6 +1876,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "cronie",
+              "version": "1.4.11-23.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "Vixie Cron before the 3.0pl1-133 Debian package allows local users to cause a denial of service (daemon crash) via a large crontab file because the calloc return value is not checked.",
@@ -1686,6 +1916,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "cronie",
+              "version": "1.4.11-23.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "Vixie Cron before the 3.0pl1-133 Debian package allows local users to cause a denial of service (memory consumption) via a large crontab file because an unlimited number of lines is accepted.",
@@ -1719,6 +1956,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "4.10.16-18.el7_9",
+              "name": "samba-libs",
+              "version": "4.10.16-17.el7_9"
+            }
+          ],
           "descriptions": [
             {
               "data": "Samba is an open-source implementation of the Server Message Block (SMB) protocol and the related Common Internet File System (CIFS) protocol, which allow PC-compatible machines to share files, printers, and various information.  Security Fix(es):  * samba: Out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution (CVE-2021-44142)  For more details about the security issue(s), including the impact, a CVSS score, acknowledgments, and other related information, refer to the CVE page(s) listed in the References section.  Bug Fix(es):  * Fix username map script regression introduced with CVE-2020-25717 (BZ#2046173)",
@@ -1752,6 +1997,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.3",
+              "name": "go",
+              "version": "1.17.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A vulnerability was found in archive/zip of the Go standard library. Applications written in Go where Reader.Open (the API implementing io/fs.FS introduced in Go 1.16) can panic when parsing a crafted ZIP archive containing completely invalid names or an empty filename argument.             STATEMENT: * In OpenShift Container Platform multiple components are written in Go and use archive/zip from the standard library. However, all such components are short lived client side tools, not long lived server side executables. As the maximum impact of this vulnerability is a denial of service in client utilities, this vulnerability is rated Low for OpenShift Container Plaform.  * Because Service Telemetry Framework1.2 will be retiring soon and the flaw\\'s impact is lower, no update will be provided at this time for STF1.2\\'s sg-core-container.  * Because Red Hat Ceph Storage only uses Go\\'s archive/zip for the Grafana CLI and thus is not directly exploitable, the vulnerability has been rated low for Red Hat Ceph Storage.",
@@ -1785,6 +2038,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.2",
+              "name": "go",
+              "version": "1.17.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2021-38297.",
@@ -1818,6 +2079,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.15.1",
+              "name": "go",
+              "version": "1.14.4"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2020-24553.",
@@ -1921,6 +2190,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "jasper-libs",
+              "version": "1.900.1-33.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "JasPer 2.0.14 has a memory leak in base/jas_malloc.c in libjasper.a when \\\"--output-format jp2\\\" is used.",
@@ -1954,6 +2230,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "jasper-libs",
+              "version": "1.900.1-33.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A NULL pointer dereference flaw was found in Jasper in the way it handled component references in the CDEF box in the JP2 image format decoder. This flaw allows a specially crafted JP2 image file to cause an application using the Jasper library to crash when opened. The highest threat from this vulnerability is system availability.",
@@ -1987,6 +2270,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "qemu-guest-agent",
+              "version": "2.12.0-3.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "A stack-based buffer overflow vulnerability was found in NBD server implementation in qemu before 2.11 allowing a client to request an export name of size up to 4096 bytes, which in fact should be limited to 256 bytes, causing an out-of-bounds stack write in the qemu process. If NBD server requires TLS, the attacker cannot trigger the buffer overflow without first successfully negotiating TLS.",
@@ -2020,6 +2310,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "4.10.16-18.el7_9",
+              "name": "samba-common-libs",
+              "version": "4.10.16-17.el7_9"
+            }
+          ],
           "descriptions": [
             {
               "data": "Samba is an open-source implementation of the Server Message Block (SMB) protocol and the related Common Internet File System (CIFS) protocol, which allow PC-compatible machines to share files, printers, and various information.  Security Fix(es):  * samba: Out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution (CVE-2021-44142)  For more details about the security issue(s), including the impact, a CVSS score, acknowledgments, and other related information, refer to the CVE page(s) listed in the References section.  Bug Fix(es):  * Fix username map script regression introduced with CVE-2020-25717 (BZ#2046173)",
@@ -2063,6 +2361,13 @@
     {
       "requirements": [
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libtiff",
+              "version": "4.0.3-35.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "In LibTIFF 4.0.8, there is a memory leak in tif_jbig.c. A crafted TIFF document can lead to a memory leak resulting in a remote denial of service attack.",
@@ -2096,6 +2401,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libtiff",
+              "version": "4.0.3-35.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "In LibTIFF 4.0.8, there is a heap-based buffer overflow in the t2p_write_pdf function in tools/tiff2pdf.c. This heap overflow could lead to different damages. For example, a crafted TIFF document can lead to an out-of-bounds read in TIFFCleanup, an invalid free in TIFFClose or t2p_free, memory corruption in t2p_readwrite_pdf_image, or a double free in t2p_free. Given these possibilities, it probably could cause arbitrary code execution.",
@@ -2129,6 +2441,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "libtiff",
+              "version": "4.0.3-35.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "In LibTIFF 4.0.7, the TIFFReadDirEntryLong8Array function in libtiff/tif_dirread.c mishandles a malloc operation, which allows attackers to cause a denial of service (memory leak within the function _TIFFmalloc in tif_unix.c) via a crafted file.",
@@ -2162,6 +2481,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.14.7",
+              "name": "go",
+              "version": "1.14.4"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A flaw was found in the Go encoding/binary package. Certain invalid inputs to the ReadUvarint or the ReadVarint causes those functions to read an unlimited number of bytes from the ByteReader argument before returning an error. This flaw possibly leads to processing more input than expected. The highest threat from this vulnerability is to system availability.             STATEMENT: OpenShift Container Platform (OCP), OpenShift ServiceMesh (OSSM), RedHat OpenShift Jaeger (RHOSJ) and OpenShift Virtualization components are primarily written in Go, meaning that any component using the encoding/binary package includes the vulnerable code. The affected components are behind OpenShift OAuth authentication, therefore the impact is low.  Red Hat Gluster Storage 3, Red Hat OpenShift Container Storage 4 and Red Hat Ceph Storage (3 and 4)  components are built with the affected version of Go, however the vulnerable functionality is currently not used by these products and hence this issue has been rated as having a security impact of Low.",
@@ -2195,6 +2522,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "kernel",
+              "version": "3.10.0-1160.49.1.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "The ecryptfs_privileged_open function in fs/ecryptfs/kthread.c in the Linux kernel before 4.6.3 allows local users to gain privileges or cause a denial of service (stack memory consumption) via vectors involving crafted mmap calls for /proc pathnames, leading to recursive pagefault handling.",
@@ -2228,6 +2562,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "4.10.16-18.el7_9",
+              "name": "samba-common",
+              "version": "4.10.16-17.el7_9"
+            }
+          ],
           "descriptions": [
             {
               "data": "Samba is an open-source implementation of the Server Message Block (SMB) protocol and the related Common Internet File System (CIFS) protocol, which allow PC-compatible machines to share files, printers, and various information.  Security Fix(es):  * samba: Out-of-bounds heap read/write vulnerability in VFS module vfs_fruit allows code execution (CVE-2021-44142)  For more details about the security issue(s), including the impact, a CVSS score, acknowledgments, and other related information, refer to the CVE page(s) listed in the References section.  Bug Fix(es):  * Fix username map script regression introduced with CVE-2020-25717 (BZ#2046173)",
@@ -2331,6 +2673,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "grub2-tools-extra",
+              "version": "2.02-0.87.el7_9.7"
+            }
+          ],
           "descriptions": [
             {
               "data": "grub2: Incorrect permission in grub.cfg allow unprivileged user to read the file content",
@@ -2364,6 +2713,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "grub2-tools-extra",
+              "version": "2.02-0.87.el7_9.7"
+            }
+          ],
           "descriptions": [
             {
               "data": "no description is available for this cve.",
@@ -2397,6 +2753,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "kernel",
+              "version": "3.10.0-1160.49.1.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "This is a kernel live patch module which is automatically loaded by the RPM post-install script to modify the code of a running kernel.  Security Fix(es):  * kernel: xfs: raw block device data leak in XFS_IOC_ALLOCSP IOCTL (CVE-2021-4155)  For more details about the security issue(s), including the impact, a CVSS score, acknowledgments, and other related information, refer to the CVE page(s) listed in the References section.",
@@ -2430,6 +2793,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.15.4",
+              "name": "go",
+              "version": "1.14.4"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2020-28362.",
@@ -2533,6 +2904,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "sqlite",
+              "version": "3.7.17-8.el7_7.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "In SQLite through 3.22.0, databases whose schema is corrupted using a CREATE TABLE AS statement could cause a NULL pointer dereference, related to build.c and prepare.c.",
@@ -2566,6 +2944,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "sqlite",
+              "version": "3.7.17-8.el7_7.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "An issue was discovered in certain Apple products. iOS before 10.3.2 is affected. macOS before 10.12.5 is affected. The issue involves the \\\"SQLite\\\" component. It allows remote attackers to execute arbitrary code or cause a denial of service (memory corruption and application crash) via a crafted web site.",
@@ -2599,6 +2984,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "kernel",
+              "version": "3.10.0-1160.45.1.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "The ecryptfs_privileged_open function in fs/ecryptfs/kthread.c in the Linux kernel before 4.6.3 allows local users to gain privileges or cause a denial of service (stack memory consumption) via vectors involving crafted mmap calls for /proc pathnames, leading to recursive pagefault handling.",
@@ -2632,6 +3024,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "v0.0.0-20201216223049-8b5274cf687f",
+              "name": "golang.org/x/crypto",
+              "version": "v0.0.0-20200510223506-06a226fb4e37"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A null pointer dereference vulnerability was found in golang. When using the library\\'s ssh server without specifying an option for GSSAPIWithMICConfig, it is possible for an attacker to craft an ssh client connection using the `gssapi-with-mic` authentication method and cause the server to panic resulting in a denial of service. The highest threat from this vulnerability is to system availability.             STATEMENT: A large number of products include the affected package, but do not make use of the vulnerable SSH server code.  Accordingly, the flaw itself is rated as \\\"Important\\\", but these products themselves all have a \\\"Low\\\" severity rating.  Additionally, a number of products include golang.org/x/crypto (or even golang.org/x/crypto/ssh/terminal) but not specifically golang.org/x/crypto/ssh/server.go in the final build. As this would result in a very large number of entries of not affected products, only products which include the ssh server code (golang.org/x/crypto/ssh/server.go) have been represented here.    Red Hat Enterprise Linux 8 container-tools:rhel8/containernetworking-plugins is not affected because although it uses some functionality from golang.org/x/crypto, it does not use or import anything from golang.org/x/crypto/ssh/*.",
@@ -2665,6 +3065,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.2",
+              "name": "go",
+              "version": "1.17.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2021-38297.",
@@ -2768,6 +3176,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "polkit",
+              "version": "0.112-26.el7_9.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "The authentication_agent_new function in polkitbackend/polkitbackendinteractiveauthority.c in PolicyKit (aka polkit) before 0.113 allows local users to cause a denial of service (NULL pointer dereference and polkitd daemon crash) by calling RegisterAuthenticationAgent with an invalid object path.",
@@ -2801,6 +3216,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "polkit",
+              "version": "0.112-26.el7_9.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "The polkit_backend_action_pool_init function in polkitbackend/polkitbackendactionpool.c in PolicyKit (aka polkit) before 0.113 might allow local users to gain privileges via duplicate action IDs in action descriptions.",
@@ -2834,6 +3256,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.2",
+              "name": "go",
+              "version": "1.17.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2021-38297.",
@@ -2867,6 +3297,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "go",
+              "version": "1.14.4"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A flaw was found in golang. An attacker can craft an input to ParseFragment within parse.go that would cause it to enter an infinite loop and never return. The greatest threat to the system is of availability.             STATEMENT: Red Hat Developer Tools go-toolset-1.14-golang not affected because the vulnerable code is not shipped.  This vulnerability within golang and buildah shipped with RHEL-7 are out of support scope. For more information on Red Hat\\'s support scope, visit: http://somewhere.cloud/support/policy/updates/errata  For RHEL-8\\'s go-toolset:rhel8/golang, container-tools:1.0/buildah, container-tools:2.0/buildah, and container-tools:rhel8/buildah, the affected function is only used in e2e tests.  For RHEL-9\\'s golang and buildah, the affected function is only used in e2e tests.  Red Hat Openshift Container Storage has dependencies with the affected code, however, low priority trackers were filed as the vulnerable code is not shipped or used.",
@@ -2900,6 +3337,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "qemu-guest-agent",
+              "version": "2.12.0-3.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "Use-after-free vulnerability in hw/ide/ahci.c in QEMU, when built with IDE AHCI Emulation support, allows guest OS users to cause a denial of service (instance crash) or possibly execute arbitrary code via an invalid AHCI Native Command Queuing (NCQ) AIO command.",
@@ -3003,6 +3447,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "wpa_supplicant",
+              "version": "2.6-12.el7_9.2"
+            }
+          ],
           "descriptions": [
             {
               "data": "hostapd 0.6.7 through 2.5 and wpa_supplicant 0.6.7 through 2.5 do not reject \\n and \\r characters in passphrase parameters, which allows remote attackers to cause a denial of service (daemon outage) via a crafted WPS operation.",
@@ -3036,6 +3487,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "wpa_supplicant",
+              "version": "2.6-12.el7_9.2"
+            }
+          ],
           "descriptions": [
             {
               "data": "The implementations of EAP-pwd in hostapd before 2.10 and wpa_supplicant before 2.10 are vulnerable to side-channel attacks as a result of cache access patterns. NOTE: this issue exists because of an incomplete fix for CVE-2019-9495.",
@@ -3069,6 +3527,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.3",
+              "name": "go",
+              "version": "1.17.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "DOCUMENTATION: A vulnerability was found in archive/zip of the Go standard library. Applications written in Go where Reader.Open (the API implementing io/fs.FS introduced in Go 1.16) can panic when parsing a crafted ZIP archive containing completely invalid names or an empty filename argument.             STATEMENT: * In OpenShift Container Platform multiple components are written in Go and use archive/zip from the standard library. However, all such components are short lived client side tools, not long lived server side executables. As the maximum impact of this vulnerability is a denial of service in client utilities, this vulnerability is rated Low for OpenShift Container Plaform.  * Because Service Telemetry Framework1.2 will be retiring soon and the flaw\\'s impact is lower, no update will be provided at this time for STF1.2\\'s sg-core-container.  * Because Red Hat Ceph Storage only uses Go\\'s archive/zip for the Grafana CLI and thus is not directly exploitable, the vulnerability has been rated low for Red Hat Ceph Storage.",
@@ -3102,6 +3568,14 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "fixedInVersion": "1.17.2",
+              "name": "go",
+              "version": "1.17.1"
+            }
+          ],
           "descriptions": [
             {
               "data": "Red Hat\\'s versions of the associated software have been determined to NOT be affected by CVE-2021-38297.",
@@ -3135,6 +3609,13 @@
           "verificationMethod": "automated"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "kernel",
+              "version": "3.10.0-1160.45.1.el7"
+            }
+          ],
           "descriptions": [
             {
               "data": "A flaw was found in the crypto subsystem of the Linux kernel before version kernel-4.15-rc4. The \\\"null skcipher\\\" was being dropped when each af_alg_ctx was freed instead of when the aead_tfm was freed. This can cause the null skcipher to be freed while it is still in use leading to a local user being able to crash the system or possibly escalate privileges.",
@@ -3246,7 +3727,7 @@
     "name": "prisma-to-hdf",
     "version": "0.1.0"
   },
-  "timestamp": "2026-05-15T03:07:30.951156221Z",
+  "timestamp": "2026-06-08T17:46:47.456252Z",
   "tool": {
     "format": "CSV",
     "name": "Prisma Cloud"

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -11,6 +12,8 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
+
+var cpe23Pattern = regexp.MustCompile(`^cpe:2\.3:[aho]:`)
 
 // NeuVectorScan is the top-level NeuVector scan JSON output structure.
 type NeuVectorScan struct {
@@ -142,7 +145,7 @@ func buildRequirement(vuln NeuVectorVuln) hdf.EvaluatedRequirement {
 	}
 
 	title := vulnTitle(vuln)
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 vulnID(vuln),
 		Title:              &title,
 		Impact:             getImpact(vuln),
@@ -152,6 +155,32 @@ func buildRequirement(vuln NeuVectorVuln) hdf.EvaluatedRequirement {
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+
+	// NeuVector scans container images; the package ecosystem isn't
+	// disambiguated by the source format, so record `generic`.
+	// NeuVector emits CPE 2.2 URIs (`cpe:/...`); the schema requires
+	// CPE 2.3, so only the first 2.3-shaped entry is carried through.
+	var firstCPE string
+	for _, c := range vuln.Cpes {
+		if cpe23Pattern.MatchString(c) {
+			firstCPE = c
+			break
+		}
+	}
+	var ecosystem hdf.Ecosystem
+	if vuln.PackageName != "" && vuln.PackageVersion != "" {
+		ecosystem = hdf.Generic
+	}
+	if pkg := shared.BuildAffectedPackage(shared.AffectedPackageOptions{
+		Name:           vuln.PackageName,
+		Version:        vuln.PackageVersion,
+		Ecosystem:      ecosystem,
+		CPE:            firstCPE,
+		FixedInVersion: vuln.FixedVersion,
+	}); pkg != nil {
+		req.AffectedPackages = []hdf.AffectedPackage{*pkg}
+	}
+	return req
 }
 
 // imageTitle constructs the baseline title from the image metadata.

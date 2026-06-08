@@ -1134,6 +1134,71 @@ describe('SARIF Converter', async () => {
       expect(r3.tags.cwe).toContain('CWE-798');
     });
   });
+
+  describe('SCA-shaped SARIF (result.properties package identity)', () => {
+    async function convertWithProps(props: Record<string, unknown>) {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: { driver: { name: 'TestSCA', version: '1.0' } },
+          results: [{
+            ruleId: 'CVE-2026-1234',
+            level: 'error',
+            message: { text: 'vulnerable package detected' },
+            locations: [],
+            properties: props,
+          }],
+        }],
+      });
+      return JSON.parse(await convertSarifToHdf(input));
+    }
+
+    it('extracts purl into affectedPackages and decomposes ecosystem', async () => {
+      const result = await convertWithProps({ purl: 'pkg:npm/lodash@4.17.20' });
+      const req = result.baselines[0].requirements[0];
+      expect(req.affectedPackages).toHaveLength(1);
+      expect(req.affectedPackages[0].purl).toBe('pkg:npm/lodash@4.17.20');
+      expect(req.affectedPackages[0].ecosystem).toBe('npm');
+    });
+
+    it('extracts packageName + packageVersion into name+version+generic', async () => {
+      const result = await convertWithProps({
+        packageName: 'openssl',
+        packageVersion: '1.1.1k',
+      });
+      const req = result.baselines[0].requirements[0];
+      expect(req.affectedPackages[0]).toMatchObject({
+        name: 'openssl',
+        version: '1.1.1k',
+        ecosystem: 'generic',
+      });
+    });
+
+    it('emits cpe-only when only cpe is present', async () => {
+      const result = await convertWithProps({
+        cpe: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*',
+      });
+      const req = result.baselines[0].requirements[0];
+      expect(req.affectedPackages[0]).toEqual({
+        cpe: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*',
+      });
+    });
+
+    it('honors fixedInVersion from properties', async () => {
+      const result = await convertWithProps({
+        purl: 'pkg:npm/lodash@4.17.20',
+        fixedInVersion: '4.17.21',
+      });
+      const req = result.baselines[0].requirements[0];
+      expect(req.affectedPackages[0].fixedInVersion).toBe('4.17.21');
+    });
+
+    it('omits affectedPackages on pure SAST results (empty properties)', async () => {
+      const result = await convertWithProps({});
+      const req = result.baselines[0].requirements[0];
+      expect(req.affectedPackages).toBeUndefined();
+    });
+  });
 });
 
 // --- Helpers ---

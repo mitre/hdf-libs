@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { ControlType, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod } from './converterutil.js';
+import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
+import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -327,5 +327,71 @@ describe('deriveVerificationMethod', () => {
 
   it('empty string returns undefined', () => {
     expect(deriveVerificationMethod('')).toBeUndefined();
+  });
+});
+
+describe('ecosystemFromPurlType', () => {
+  it.each([
+    ['npm', Ecosystem.Npm],
+    ['pypi', Ecosystem.Pypi],
+    ['rpm', Ecosystem.RPM],
+    ['deb', Ecosystem.Deb],
+    ['maven', Ecosystem.Maven],
+    ['gem', Ecosystem.Gem],
+    ['nuget', Ecosystem.Nuget],
+    ['golang', Ecosystem.Go],
+    ['go', Ecosystem.Go],
+    ['cargo', Ecosystem.Cargo],
+  ])('maps %s to its Ecosystem enum value', (type, expected) => {
+    expect(ecosystemFromPurlType(type)).toBe(expected);
+  });
+
+  it('lowercases input before lookup', () => {
+    expect(ecosystemFromPurlType('NPM')).toBe(Ecosystem.Npm);
+  });
+
+  it.each([undefined, '', 'apk', 'unknown-type'])(
+    'returns generic for unrecognised input %s',
+    (input) => {
+      expect(ecosystemFromPurlType(input)).toBe(Ecosystem.Generic);
+    },
+  );
+});
+
+describe('buildAffectedPackage', () => {
+  it('builds an entry from a purl alone', () => {
+    expect(buildAffectedPackage({ purl: 'pkg:npm/lodash@4.17.20' })).toEqual({
+      purl: 'pkg:npm/lodash@4.17.20',
+    });
+  });
+
+  it('builds an entry from a cpe alone', () => {
+    expect(buildAffectedPackage({ cpe: 'cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*' }))
+      .toEqual({ cpe: 'cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*' });
+  });
+
+  it('builds an entry from the full name+version+ecosystem triple', () => {
+    expect(
+      buildAffectedPackage({ name: 'openssl', version: '1.1.1k', ecosystem: Ecosystem.RPM }),
+    ).toEqual({ name: 'openssl', version: '1.1.1k', ecosystem: 'rpm' });
+  });
+
+  it('includes fixedInVersion when provided', () => {
+    expect(
+      buildAffectedPackage({ purl: 'pkg:npm/x@1.0', fixedInVersion: '2.0' }),
+    ).toEqual({ purl: 'pkg:npm/x@1.0', fixedInVersion: '2.0' });
+  });
+
+  it('returns undefined when only a partial triple and no identifier is provided', () => {
+    expect(buildAffectedPackage({ name: 'openssl' })).toBeUndefined();
+    expect(buildAffectedPackage({ name: 'openssl', version: '1.0' })).toBeUndefined();
+    expect(buildAffectedPackage({ name: 'openssl', ecosystem: Ecosystem.Generic })).toBeUndefined();
+    expect(buildAffectedPackage({})).toBeUndefined();
+  });
+
+  it('treats empty strings as missing', () => {
+    expect(
+      buildAffectedPackage({ name: '', version: '', ecosystem: Ecosystem.Generic, purl: '' }),
+    ).toBeUndefined();
   });
 });

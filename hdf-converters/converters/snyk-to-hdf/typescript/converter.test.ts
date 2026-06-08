@@ -241,4 +241,80 @@ describe('snyk to HDF converter', async () => {
       expect(hdf.components?.[0]?.name).toBe('clean-project');
     });
   });
+
+  describe('affectedPackages ecosystem mapping', () => {
+    async function convertWithPm(packageManager: string | undefined) {
+      const input = JSON.stringify({
+        ok: false,
+        packageManager,
+        projectName: 'test',
+        vulnerabilities: [
+          {
+            id: 'SNYK-1',
+            title: 'test',
+            description: 'd',
+            severity: 'high',
+            identifiers: { CVE: ['CVE-2026-1'] },
+            packageName: 'foo',
+            version: '1.0.0',
+            from: ['root', 'foo@1.0.0'],
+            fixedIn: ['1.0.1'],
+          },
+        ],
+      });
+      const out = JSON.parse(await convertSnykToHdf(input)) as HDFResults;
+      return out.baselines[0]!.requirements[0]!;
+    }
+
+    it.each([
+      ['npm', 'npm', 'pkg:npm/foo@1.0.0'],
+      ['yarn', 'npm', 'pkg:npm/foo@1.0.0'],
+      ['pip', 'pypi', 'pkg:pypi/foo@1.0.0'],
+      ['pip3', 'pypi', 'pkg:pypi/foo@1.0.0'],
+      ['rubygems', 'gem', 'pkg:gem/foo@1.0.0'],
+      ['bundler', 'gem', 'pkg:gem/foo@1.0.0'],
+      ['maven', 'maven', 'pkg:maven/foo@1.0.0'],
+    ])('packageManager %s → ecosystem %s + synthesized purl', async (pm, ecosystem, purl) => {
+      const req = await convertWithPm(pm);
+      expect(req.affectedPackages?.[0]).toMatchObject({
+        name: 'foo',
+        version: '1.0.0',
+        ecosystem,
+        purl,
+        fixedInVersion: '1.0.1',
+      });
+    });
+
+    it('omits synthesized purl when ecosystem falls back to generic', async () => {
+      const req = await convertWithPm('unrecognized-mgr');
+      expect(req.affectedPackages?.[0]).toMatchObject({
+        name: 'foo',
+        version: '1.0.0',
+        ecosystem: 'generic',
+      });
+      expect(req.affectedPackages?.[0]?.purl).toBeUndefined();
+    });
+
+    it('skips affectedPackages when name or version is missing', async () => {
+      const input = JSON.stringify({
+        ok: false,
+        packageManager: 'npm',
+        projectName: 'test',
+        vulnerabilities: [
+          {
+            id: 'SNYK-2',
+            title: 't',
+            description: 'd',
+            severity: 'low',
+            identifiers: {},
+            // packageName missing
+            version: '1.0.0',
+            from: [],
+          },
+        ],
+      });
+      const out = JSON.parse(await convertSnykToHdf(input)) as HDFResults;
+      expect(out.baselines[0]!.requirements[0]!.affectedPackages).toBeUndefined();
+    });
+  });
 });

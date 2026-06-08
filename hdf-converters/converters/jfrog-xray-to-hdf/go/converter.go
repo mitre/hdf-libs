@@ -184,7 +184,7 @@ func buildRequirement(entryID string, entries []XrayEntry) hdf.EvaluatedRequirem
 	}
 
 	title := rep.Summary
-	return hdf.EvaluatedRequirement{
+	req := hdf.EvaluatedRequirement{
 		ID:                 entryID,
 		Title:              &title,
 		Impact:             getImpact(rep.Severity),
@@ -194,6 +194,67 @@ func buildRequirement(entryID string, entries []XrayEntry) hdf.EvaluatedRequirem
 		ControlType:        shared.DeriveControlTypeFromTags(nist),
 		VerificationMethod: hdfutil.Ptr(hdf.VerificationMethodEnumAutomated),
 	}
+	if pkg := buildAffectedPackageFromEntry(rep); pkg != nil {
+		req.AffectedPackages = []hdf.AffectedPackage{*pkg}
+	}
+	return req
+}
+
+// xraySourceComp parses an Xray source_comp_id (`<scheme>://<name>:<version>`)
+// or source_id (`<scheme>://<name>`).
+func xraySourceComp(s string) (scheme, name, version string, ok bool) {
+	if s == "" {
+		return "", "", "", false
+	}
+	idx := strings.Index(s, "://")
+	if idx <= 0 {
+		return "", "", "", false
+	}
+	scheme = strings.ToLower(s[:idx])
+	rest := s[idx+3:]
+	if colon := strings.LastIndex(rest, ":"); colon > 0 {
+		return scheme, rest[:colon], rest[colon+1:], true
+	}
+	return scheme, rest, "", true
+}
+
+// ecosystemFromXraySource maps Xray's scheme prefix to AffectedPackage.ecosystem.
+// `gav://` is Maven (group:artifact); other schemes match PURL types directly.
+func ecosystemFromXraySource(scheme string) hdf.Ecosystem {
+	if scheme == "gav" {
+		return hdf.Maven
+	}
+	return shared.EcosystemFromPurlType(scheme)
+}
+
+func buildAffectedPackageFromEntry(entry XrayEntry) *hdf.AffectedPackage {
+	src := entry.SourceCompID
+	if src == "" {
+		src = entry.SourceID
+	}
+	name := entry.Component
+	var version string
+	var ecosystem hdf.Ecosystem
+	if scheme, parsedName, parsedVersion, ok := xraySourceComp(src); ok {
+		if parsedName != "" {
+			name = parsedName
+		}
+		version = parsedVersion
+		ecosystem = ecosystemFromXraySource(scheme)
+	}
+	var fixed string
+	if len(entry.ComponentVersions.FixedVersions) > 0 {
+		fixed = entry.ComponentVersions.FixedVersions[0]
+	}
+	if ecosystem == "" && name != "" {
+		ecosystem = hdf.Generic
+	}
+	return shared.BuildAffectedPackage(shared.AffectedPackageOptions{
+		Name:           name,
+		Version:        version,
+		Ecosystem:      ecosystem,
+		FixedInVersion: fixed,
+	})
 }
 
 // ConvertJfrogXrayToHDF converts JFrog Xray JSON output to HDF format.
