@@ -439,6 +439,7 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | `hdf` | `oscal-poam` | Export to OSCAL Plan of Action and Milestones |
 | `hdf-amendments` | `csaf-vex` | Export HDF Amendments as CSAF VEX advisory (partial-fidelity round-trip) |
 | `hdf-amendments` | `openvex` | Export HDF Amendments as OpenVEX statements (partial-fidelity round-trip) |
+| `hdf-amendments` | `cyclonedx-vex` | Export HDF Amendments as CycloneDX BOM with VEX analysis (partial-fidelity round-trip) |
 
 ## Credential Handling
 

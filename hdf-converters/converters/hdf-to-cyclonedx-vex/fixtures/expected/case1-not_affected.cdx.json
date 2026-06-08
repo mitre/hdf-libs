@@ -1,0 +1,51 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:02f4fae5a13da0d3da8a01cbbfe86db4",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2022-03-03T00:00:00Z",
+    "tools": [
+      {
+        "vendor": "mitre",
+        "name": "hdf-to-cyclonedx-vex",
+        "version": "dev"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "application",
+      "name": "ABC@4.2",
+      "bom-ref": "ABC@4.2"
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "id": "CVE-2021-44228",
+      "source": {
+        "name": "NVD",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+      },
+      "references": [
+        {
+          "id": "CVE-2021-44228",
+          "source": {
+            "name": "NVD",
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+          }
+        }
+      ],
+      "analysis": {
+        "state": "not_affected",
+        "justification": "code_not_present",
+        "detail": "This version of Product ABC is not affected by the vulnerability. Class with vulnerable code was removed before shipping."
+      },
+      "affects": [
+        {
+          "ref": "ABC@4.2"
+        }
+      ]
+    }
+  ]
+}

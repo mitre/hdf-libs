@@ -33,6 +33,7 @@ import {
   convertCsafVexToHdf,
   convertCyclonedxVexToHdf,
   convertHdfToCsafVex,
+  convertHdfToCyclonedxVex,
   convertHdfToOpenVex,
   convertFortifyToHdf,
   convertPrismaToHdf,
@@ -285,6 +286,11 @@ describe('Main exports', () => {
   it('should export convertHdfToOpenVex from main index', () => {
     expect(convertHdfToOpenVex).toBeDefined();
     expect(typeof convertHdfToOpenVex).toBe('function');
+  });
+
+  it('should export convertHdfToCyclonedxVex from main index', () => {
+    expect(convertHdfToCyclonedxVex).toBeDefined();
+    expect(typeof convertHdfToCyclonedxVex).toBe('function');
   });
 
   it('should export convertNeuvectorToHdf from main index', () => {

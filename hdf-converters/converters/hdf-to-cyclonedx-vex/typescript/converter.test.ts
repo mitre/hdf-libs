@@ -1,0 +1,288 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import {
+  IdentityType,
+  Justification,
+  MilestoneStatus,
+  OverrideType,
+  ResultStatus,
+  type HDFAmendments,
+} from '@mitre/hdf-schema';
+import { convertCyclonedxVexToHdf } from '../../cyclonedx-vex-to-hdf/typescript/converter.js';
+import {
+  allMilestonesCompleted,
+  convertHdfToCyclonedxVex,
+  extractRawJustification,
+  productIDsFor,
+  stripReasonAnnotations,
+} from './converter.js';
+
+const TEST_VERSION = 'test';
+
+function loadInput(name: string): string {
+  return readFileSync(join(__dirname, '..', 'fixtures', 'input', name), 'utf-8');
+}
+
+describe('convertHdfToCyclonedxVex — not_affected export', () => {
+  it('produces a CycloneDX VEX envelope with one vulnerability', () => {
+    const out = convertHdfToCyclonedxVex(
+      loadInput('case1-not_affected-amendments.json'),
+      TEST_VERSION,
+    );
+    const bom = JSON.parse(out);
+    expect(bom.bomFormat).toBe('CycloneDX');
+    expect(bom.specVersion).toBe('1.4');
+    expect(bom.vulnerabilities).toHaveLength(1);
+    const v = bom.vulnerabilities[0];
+    expect(v.id).toBe('CVE-2021-44228');
+    expect(v.analysis.state).toBe('not_affected');
+    expect(v.analysis.justification).toBe('code_not_present');
+    expect(v.affects).toHaveLength(1);
+    expect(v.affects[0].ref).not.toBe('');
+  });
+});
+
+describe('convertHdfToCyclonedxVex — open POA&M', () => {
+  it('emits exploitable (NOT resolved) and workaround_available response', () => {
+    const out = convertHdfToCyclonedxVex(
+      loadInput('case1-fixed-amendments.json'),
+      TEST_VERSION,
+    );
+    const bom = JSON.parse(out);
+    expect(bom.vulnerabilities).toHaveLength(1);
+    const v = bom.vulnerabilities[0];
+    expect(v.analysis.state).toBe('exploitable');
+    expect(v.analysis.response).toContain('workaround_available');
+  });
+});
+
+describe('convertHdfToCyclonedxVex — closed POA&M', () => {
+  it('all-milestones-completed promotes to resolved + update response', () => {
+    const closed: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.Poam,
+          requirementId: 'CVE-2025-1000',
+          status: ResultStatus.Failed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'ops' },
+          reason: 'Vendor patch verified',
+          milestones: [
+            {
+              description: 'Apply 1.2.4',
+              status: MilestoneStatus.Completed,
+              estimatedCompletion: new Date('2026-02-01T00:00:00Z'),
+            },
+          ],
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCyclonedxVex(JSON.stringify(closed), TEST_VERSION);
+    const bom = JSON.parse(out);
+    expect(bom.vulnerabilities[0].analysis.state).toBe('resolved');
+    expect(bom.vulnerabilities[0].analysis.response).toContain('update');
+  });
+});
+
+describe('convertHdfToCyclonedxVex — round trip', () => {
+  it('preserves CVE, status, justification, and product ref through CycloneDX -> HDF -> CycloneDX', async () => {
+    const orig = readFileSync(
+      join(
+        __dirname,
+        '..',
+        '..',
+        'cyclonedx-vex-to-hdf',
+        'fixtures',
+        'input',
+        'case1-vex-not_affected.json',
+      ),
+      'utf-8',
+    );
+    const amendments = await convertCyclonedxVexToHdf(orig, TEST_VERSION);
+    const hdfBytes = JSON.stringify(amendments);
+    const out = convertHdfToCyclonedxVex(hdfBytes, TEST_VERSION);
+    const round = JSON.parse(out);
+
+    expect(round.vulnerabilities).toHaveLength(1);
+    const v = round.vulnerabilities[0];
+    expect(v.id).toBe('CVE-2021-44228');
+    expect(v.analysis.state).toBe('not_affected');
+    expect(v.analysis.justification).toBe('code_not_present');
+    expect(v.affects[0].ref).not.toBe('');
+  });
+});
+
+describe('convertHdfToCyclonedxVex — CycloneDX-specific justification passthrough', () => {
+  it('recovers requires_configuration from the reason annotation', () => {
+    const amendments: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-1234',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          reason:
+            'Configuration prevents the issue.\nVEX justification: requires_configuration\nProducts: pkg:npm/x@1.0',
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const bom = JSON.parse(out);
+    expect(bom.vulnerabilities[0].analysis.justification).toBe('requires_configuration');
+  });
+});
+
+describe('convertHdfToCyclonedxVex — non-CVE overrides skipped', () => {
+  it('drops non-CVE requirementIds', () => {
+    const mix: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'AC-2',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'a' },
+          reason: 'policy',
+        } as never,
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2024-99999',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'a' },
+          reason: 'not affected',
+          justification: Justification.ComponentNotPresent,
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCyclonedxVex(JSON.stringify(mix), TEST_VERSION);
+    const bom = JSON.parse(out);
+    expect(bom.vulnerabilities).toHaveLength(1);
+    expect(bom.vulnerabilities[0].id).toBe('CVE-2024-99999');
+  });
+
+  it('errors when no CVE-shaped overrides remain', () => {
+    const noCVE: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.Attestation,
+          requirementId: 'NIST-AC-1',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'a' },
+          reason: 'manual',
+        } as never,
+      ],
+    } as never;
+    expect(() => convertHdfToCyclonedxVex(JSON.stringify(noCVE), TEST_VERSION)).toThrow(
+      /no overrides with CVE-shaped requirementIds/,
+    );
+  });
+});
+
+describe('convertHdfToCyclonedxVex — multi-product + email identity', () => {
+  it('sorts components by bom-ref and emits author email when identity type is Email', () => {
+    const a: HDFAmendments = {
+      appliedBy: { type: IdentityType.Email, identifier: 'ops@example.com' },
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-5000',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Email, identifier: 'ops@example.com' },
+          reason: 'multi-product\nProducts: zeta, alpha',
+          justification: Justification.ComponentNotPresent,
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCyclonedxVex(JSON.stringify(a), TEST_VERSION);
+    const bom = JSON.parse(out);
+    expect(bom.components.map((c: { 'bom-ref': string }) => c['bom-ref'])).toEqual(['alpha', 'zeta']);
+    expect(bom.metadata.authors[0].email).toBe('ops@example.com');
+    expect(bom.metadata.authors[0].name).toBeUndefined();
+  });
+});
+
+describe('convertHdfToCyclonedxVex — amendmentId and sparse reason', () => {
+  it('uses amendmentId in serialNumber when present and tolerates undefined reason', () => {
+    const a: HDFAmendments = {
+      amendmentId: 'AMD-42',
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-6000',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'a' },
+          // reason intentionally undefined to exercise the ?? '' defensive arm
+          justification: Justification.ComponentNotPresent,
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCyclonedxVex(JSON.stringify(a), TEST_VERSION);
+    const bom = JSON.parse(out);
+    expect(bom.serialNumber).toBe('urn:uuid:AMD-42');
+    expect(bom.vulnerabilities[0].affects[0].ref).toBe('HDFPID-0001');
+  });
+});
+
+describe('convertHdfToCyclonedxVex — edge cases', () => {
+  it('rejects invalid JSON', () => {
+    expect(() => convertHdfToCyclonedxVex('not json', TEST_VERSION)).toThrow();
+  });
+  it('rejects oversized input', () => {
+    expect(() => convertHdfToCyclonedxVex('x'.repeat(51 * 1024 * 1024), TEST_VERSION)).toThrow();
+  });
+});
+
+describe('helpers', () => {
+  it('productIDsFor prefers componentRef', () => {
+    expect(productIDsFor({ componentRef: 'pkg:npm/x@1.0', reason: 'Products: IGNORED' } as never)).toEqual([
+      'pkg:npm/x@1.0',
+    ]);
+  });
+  it('productIDsFor parses the Products line', () => {
+    expect(productIDsFor({ reason: 'prose\nProducts: A, B' } as never)).toEqual(['A', 'B']);
+  });
+  it('productIDsFor falls back to default', () => {
+    expect(productIDsFor({ reason: 'no products' } as never)).toEqual(['HDFPID-0001']);
+  });
+  it('stripReasonAnnotations removes Products/VEX justification/Response lines', () => {
+    expect(
+      stripReasonAnnotations(
+        'prose\nProducts: A\nVEX justification: code_not_present\nResponse: update',
+      ),
+    ).toBe('prose');
+    expect(stripReasonAnnotations('only prose')).toBe('only prose');
+  });
+  it('extractRawJustification pulls out the label', () => {
+    expect(extractRawJustification('prose\nVEX justification: requires_configuration\nProducts: X')).toBe(
+      'requires_configuration',
+    );
+    expect(extractRawJustification('no annotation')).toBe('');
+  });
+  it('allMilestonesCompleted handles empty / mixed / all-complete', () => {
+    expect(allMilestonesCompleted({} as never)).toBe(false);
+    expect(allMilestonesCompleted({ milestones: [{ status: MilestoneStatus.Pending }] } as never)).toBe(false);
+    expect(
+      allMilestonesCompleted({
+        milestones: [{ status: MilestoneStatus.Completed }, { status: MilestoneStatus.Completed }],
+      } as never),
+    ).toBe(true);
+    expect(
+      allMilestonesCompleted({
+        milestones: [{ status: MilestoneStatus.Completed }, { status: MilestoneStatus.Pending }],
+      } as never),
+    ).toBe(false);
+  });
+});

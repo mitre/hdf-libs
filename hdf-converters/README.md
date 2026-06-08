@@ -70,6 +70,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | OSCAL POA&M | `convertHdfToOscalPoam` |
 | CSAF VEX (HDF Amendments → advisory, partial-fidelity) | `convertHdfToCsafVex` |
 | OpenVEX (HDF Amendments → statements, partial-fidelity) | `convertHdfToOpenVex` |
+| CycloneDX VEX (HDF Amendments → BOM, partial-fidelity) | `convertHdfToCyclonedxVex` |
 
 ### Format Migration
 

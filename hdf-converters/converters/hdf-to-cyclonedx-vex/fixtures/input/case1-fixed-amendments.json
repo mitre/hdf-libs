@@ -1,0 +1,40 @@
+{
+  "description": "Imported CycloneDX VEX",
+  "generator": {
+    "name": "cyclonedx-vex-to-hdf",
+    "version": "dev"
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "9e59f6a2eba1196b1bb8a13a05e013833fc76690ebacc0e167a6e0a85fec7d94"
+  },
+  "name": "CycloneDX VEX statements",
+  "overrides": [
+    {
+      "appliedAt": "2022-03-03T00:00:00Z",
+      "appliedBy": {
+        "identifier": "cyclonedx-vex-import",
+        "type": "system"
+      },
+      "evidence": [
+        {
+          "data": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+          "description": "NVD",
+          "type": "url"
+        }
+      ],
+      "expiresAt": "2023-03-03T00:00:00Z",
+      "milestones": [
+        {
+          "description": "vendor reports fix; apply and re-scan to verify",
+          "estimatedCompletion": "2023-03-03T00:00:00Z",
+          "status": "pending"
+        }
+      ],
+      "reason": "This version of Product DEF has been fixed.\nProducts: DEF@1.1",
+      "requirementId": "CVE-2021-44228",
+      "status": "failed",
+      "type": "poam"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:e5214c7f6b6c5e5414b06d487002477e",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2022-03-03T00:00:00Z",
+    "tools": [
+      {
+        "vendor": "mitre",
+        "name": "hdf-to-cyclonedx-vex",
+        "version": "dev"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "application",
+      "name": "DEF@1.1",
+      "bom-ref": "DEF@1.1"
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "id": "CVE-2021-44228",
+      "source": {
+        "name": "NVD",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+      },
+      "references": [
+        {
+          "id": "CVE-2021-44228",
+          "source": {
+            "name": "NVD",
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+          }
+        }
+      ],
+      "analysis": {
+        "state": "exploitable",
+        "response": [
+          "workaround_available"
+        ],
+        "detail": "This version of Product DEF has been fixed."
+      },
+      "affects": [
+        {
+          "ref": "DEF@1.1"
+        }
+      ]
+    }
+  ]
+}
