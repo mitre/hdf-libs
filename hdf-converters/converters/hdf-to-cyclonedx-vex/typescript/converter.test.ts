@@ -135,6 +135,86 @@ describe('convertHdfToCyclonedxVex — HDF-only justification omitted', () => {
   });
 });
 
+describe('convertHdfToCyclonedxVex — affectedPackages preserve name/version in components', () => {
+  it('emits component name+version+purl+cpe when affectedPackages carries them', () => {
+    const amendments: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-5555',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          reason: 'structured',
+          affectedPackages: [
+            {
+              name: 'ABC',
+              version: '4.2',
+              ecosystem: 'generic',
+              purl: 'pkg:npm/abc@4.2',
+              cpe: 'cpe:2.3:a:acme:abc:4.2:*:*:*:*:*:*:*',
+            },
+          ],
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const bom = JSON.parse(out);
+    expect(bom.components).toHaveLength(1);
+    expect(bom.components[0]).toEqual({
+      type: 'application',
+      name: 'ABC',
+      'bom-ref': 'pkg:npm/abc@4.2',
+      version: '4.2',
+      purl: 'pkg:npm/abc@4.2',
+      cpe: 'cpe:2.3:a:acme:abc:4.2:*:*:*:*:*:*:*',
+    });
+  });
+
+  it('falls back to pid-only component when affectedPackages is absent (legacy path)', () => {
+    const amendments: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-6666',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          reason: 'legacy\nProducts: pkg:npm/legacy@1.0',
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const bom = JSON.parse(out);
+    expect(bom.components).toHaveLength(1);
+    expect(bom.components[0].name).toBe('pkg:npm/legacy@1.0');
+    expect(bom.components[0].purl).toBe('pkg:npm/legacy@1.0');
+    expect(bom.components[0].version).toBeUndefined();
+  });
+
+  it('promotes cpe-only legacy product id to component.cpe', () => {
+    const amendments: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-7777',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          reason: 'cpe-only',
+          componentRef: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*',
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const bom = JSON.parse(out);
+    expect(bom.components[0].cpe).toBe('cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*');
+  });
+});
+
 describe('convertHdfToCyclonedxVex — CycloneDX-specific justification', () => {
   it('emits requires_configuration from the structured justification field', () => {
     const amendments: HDFAmendments = {

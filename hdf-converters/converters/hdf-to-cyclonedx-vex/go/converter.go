@@ -62,10 +62,12 @@ type Author struct {
 }
 
 type Component struct {
-	Type   string `json:"type"`
-	Name   string `json:"name"`
-	BOMRef string `json:"bom-ref"`
-	Purl   string `json:"purl,omitempty"`
+	Type    string `json:"type"`
+	Name    string `json:"name"`
+	BOMRef  string `json:"bom-ref"`
+	Version string `json:"version,omitempty"`
+	Purl    string `json:"purl,omitempty"`
+	Cpe     string `json:"cpe,omitempty"`
 }
 
 type Vulnerability struct {
@@ -158,8 +160,23 @@ func overrideToVulnerability(o *hdf.StandaloneOverride, componentRegistry map[st
 
 	state := canonicalToCycloneDXState(canonical)
 	pids := productIDsFor(o)
+	// Pair each emitted product id back to the AffectedPackage it came
+	// from so the CycloneDX component preserves name/version/purl/cpe.
+	// Falls back to a pid-only component for legacy paths (componentRef
+	// or 'Products:' reason annotation).
+	pkgByID := make(map[string]hdf.AffectedPackage, len(o.AffectedPackages))
+	for _, p := range o.AffectedPackages {
+		if id, ok := vex.AffectedPackageToIdentifier(p); ok {
+			pkgByID[id] = p
+		}
+	}
 	for _, pid := range pids {
-		componentRegistry[pid] = componentFor(pid)
+		pkg, ok := pkgByID[pid]
+		if ok {
+			componentRegistry[pid] = componentFromAffectedPackage(pid, pkg)
+		} else {
+			componentRegistry[pid] = componentFor(pid)
+		}
 	}
 
 	analysis := Analysis{State: state}
@@ -227,6 +244,31 @@ func componentFor(pid string) Component {
 	c := Component{Type: "application", Name: pid, BOMRef: pid}
 	if strings.HasPrefix(pid, "pkg:") {
 		c.Purl = pid
+	} else if strings.HasPrefix(pid, "cpe:2.3:") {
+		c.Cpe = pid
+	}
+	return c
+}
+
+func componentFromAffectedPackage(pid string, pkg hdf.AffectedPackage) Component {
+	c := Component{Type: "application", BOMRef: pid}
+	if pkg.Name != nil && *pkg.Name != "" {
+		c.Name = *pkg.Name
+	} else {
+		c.Name = pid
+	}
+	if pkg.Version != nil && *pkg.Version != "" {
+		c.Version = *pkg.Version
+	}
+	if pkg.Purl != nil && *pkg.Purl != "" {
+		c.Purl = *pkg.Purl
+	} else if strings.HasPrefix(pid, "pkg:") {
+		c.Purl = pid
+	}
+	if pkg.Cpe != nil && *pkg.Cpe != "" {
+		c.Cpe = *pkg.Cpe
+	} else if strings.HasPrefix(pid, "cpe:2.3:") {
+		c.Cpe = pid
 	}
 	return c
 }

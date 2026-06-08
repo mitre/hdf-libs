@@ -11,6 +11,7 @@ import {
   IdentityType,
   MilestoneStatus,
   OverrideType,
+  type AffectedPackage,
   type HDFAmendments,
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
@@ -29,6 +30,15 @@ const RAW_JUST_LINE = /^VEX justification:\s*(.+)$/m;
 const RESPONSE_LINE = /^Response:.*$/gm;
 const DEFAULT_PRODUCT_ID = 'HDFPID-0001';
 
+interface Component {
+  type: string;
+  name: string;
+  'bom-ref': string;
+  version?: string;
+  purl?: string;
+  cpe?: string;
+}
+
 interface BOM {
   bomFormat: 'CycloneDX';
   specVersion: '1.4';
@@ -39,7 +49,7 @@ interface BOM {
     tools?: { vendor?: string; name?: string; version?: string }[];
     authors?: { name?: string; email?: string }[];
   };
-  components?: { type: string; name: string; 'bom-ref': string; purl?: string }[];
+  components?: Component[];
   vulnerabilities: Vulnerability[];
 }
 
@@ -60,7 +70,7 @@ export function convertHdfToCyclonedxVex(input: string, converterVersion: string
   validateInputSize(input, 'hdf-to-cyclonedx-vex');
   const amendments = parseJSON<HDFAmendments>(input);
 
-  const componentRegistry = new Map<string, { type: string; name: string; 'bom-ref': string; purl?: string }>();
+  const componentRegistry = new Map<string, Component>();
   const vulnerabilities: Vulnerability[] = [];
   let earliest: Date | undefined;
 
@@ -99,7 +109,7 @@ export function convertHdfToCyclonedxVex(input: string, converterVersion: string
 
 function overrideToVulnerability(
   o: StandaloneOverride,
-  componentRegistry: Map<string, { type: string; name: string; 'bom-ref': string; purl?: string }>,
+  componentRegistry: Map<string, Component>,
 ): Vulnerability | undefined {
   let canonical = exportStatusFor(o, allMilestonesCompleted(o), false);
   if (!canonical) return undefined;
@@ -111,9 +121,18 @@ function overrideToVulnerability(
     canonical = VexStatus.Fixed;
   }
 
+  // Pair each emitted product id back to the AffectedPackage it came from
+  // so we can preserve name/version/purl/cpe in the CycloneDX component.
+  // Falls back to a pid-only component for legacy paths (componentRef or
+  // 'Products:' reason annotation) where no structured entry exists.
   const pids = productIDsFor(o);
+  const pkgById = new Map<string, AffectedPackage>();
+  for (const p of o.affectedPackages ?? []) {
+    const id = affectedPackageToIdentifier(p);
+    if (id) pkgById.set(id, p);
+  }
   for (const pid of pids) {
-    componentRegistry.set(pid, componentFor(pid));
+    componentRegistry.set(pid, componentFor(pid, pkgById.get(pid)));
   }
 
   const analysis: Vulnerability['analysis'] = { state: canonicalToCycloneDXState(canonical) };
@@ -165,13 +184,19 @@ function canonicalToCycloneDXState(canonical: VexStatus): string {
   }
 }
 
-function componentFor(pid: string): { type: string; name: string; 'bom-ref': string; purl?: string } {
-  const c: { type: string; name: string; 'bom-ref': string; purl?: string } = {
+function componentFor(pid: string, pkg?: AffectedPackage): Component {
+  const c: Component = {
     type: 'application',
-    name: pid,
+    name: pkg?.name ?? pid,
     'bom-ref': pid,
   };
-  if (pid.startsWith('pkg:')) c.purl = pid;
+  if (pkg?.version) c.version = pkg.version;
+  if (pkg?.purl ?? (pid.startsWith('pkg:') ? pid : undefined)) {
+    c.purl = pkg?.purl ?? pid;
+  }
+  if (pkg?.cpe ?? (pid.startsWith('cpe:2.3:') ? pid : undefined)) {
+    c.cpe = pkg?.cpe ?? pid;
+  }
   return c;
 }
 

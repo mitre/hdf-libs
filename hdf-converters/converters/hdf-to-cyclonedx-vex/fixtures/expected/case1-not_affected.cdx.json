@@ -16,8 +16,9 @@
   "components": [
     {
       "type": "application",
-      "name": "ABC@4.2",
-      "bom-ref": "ABC@4.2"
+      "name": "ABC",
+      "bom-ref": "ABC@4.2",
+      "version": "4.2"
     }
   ],
   "vulnerabilities": [

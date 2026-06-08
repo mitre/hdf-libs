@@ -16,8 +16,9 @@
   "components": [
     {
       "type": "application",
-      "name": "DEF@1.1",
-      "bom-ref": "DEF@1.1"
+      "name": "DEF",
+      "bom-ref": "DEF@1.1",
+      "version": "1.1"
     }
   ],
   "vulnerabilities": [
