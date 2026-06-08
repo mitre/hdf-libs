@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<detailedreport xmlns="https://www.veracode.com/schema/reports/export/1.0"
+  app_name="CleanApp"
+  policy_name="Veracode Recommended Medium"
+  policy_version="1"
+  first_build_submitted_date="2024-05-01 12:00:00 UTC"
+  total_flaws="0"
+  flaws_not_mitigated="0">
+  <static-analysis>
+    <modules>
+      <module name="cleanapp.war"/>
+    </modules>
+  </static-analysis>
+  <software_composition_analysis>
+    <vulnerable_components/>
+  </software_composition_analysis>
+</detailedreport>

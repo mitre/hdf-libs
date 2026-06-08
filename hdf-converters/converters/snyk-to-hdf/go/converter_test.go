@@ -368,7 +368,9 @@ func TestConvertSnyk_EmptyVulnerabilities(t *testing.T) {
 	}`)
 	result, err := ConvertSnykToHDF(input, testVersion)
 	require.NoError(t, err)
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	assert.Equal(t, "snyk-no-findings", result.Baselines[0].Requirements[0].ID)
+	assert.Equal(t, hdf.Passed, result.Baselines[0].Requirements[0].Results[0].Status)
 }
 
 // ---- Helper: severityToImpact ----
@@ -438,4 +440,25 @@ func TestConvertSnyk_VerificationMethod(t *testing.T) {
 		assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod,
 			"requirement %q expected verificationMethod=automated", req.ID)
 	}
+}
+
+func TestConvertSnyk_NoVulnerabilities(t *testing.T) {
+	input := loadFixture(t, "input/empty.json")
+	result, err := ConvertSnykToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "snyk-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "Snyk")
+	assert.Contains(t, req.Results[0].CodeDesc, "scanned")
+	assert.Contains(t, req.Results[0].CodeDesc, "vulnerable components")
+	assert.Contains(t, req.Results[0].CodeDesc, "clean-project")
+
+	require.NotEmpty(t, result.Components)
+	assert.Equal(t, "clean-project", result.Components[0].Name)
 }

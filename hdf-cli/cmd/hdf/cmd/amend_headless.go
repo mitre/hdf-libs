@@ -7,13 +7,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"sort"
 	"strings"
 	"time"
 
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
+
+// cvssImpactWarnTolerance — 0.05 on the impact scale ≈ 0.5 on CVSS 0-10.
+const cvssImpactWarnTolerance = 0.05
 
 // validOverrideTypes is the set of Override_Type enum values from the
 // hdf-amendments schema. Headless authoring is type-agnostic across all of them.
@@ -57,6 +62,8 @@ func runAmendCreateHeadless(specPath, outputPath string) error {
 	if res := validators.ValidateAmendments(output); !res.Valid {
 		return fmt.Errorf("generated amendments failed schema validation: %s", res.Error())
 	}
+
+	warnRiskAdjustmentInconsistencies(doc, os.Stderr)
 
 	if outputPath == "" {
 		fmt.Println(string(output))
@@ -157,8 +164,69 @@ func fattenOverrideSpec(spec map[string]interface{}, now time.Time) (map[string]
 	}
 	normalizeImpact(out)
 	applyDefaultStatus(out, amendType)
+	if err := validateCvssBlock(out); err != nil {
+		return nil, fmt.Errorf("override for %v: %w", out["requirementId"], err)
+	}
 
 	return out, nil
+}
+
+// validateCvssBlock syntactically validates any CVSS vector strings on an
+// override's optional cvss block. The Cvss primitive is schema-validated at
+// the document level; this check supplies an earlier, more actionable error
+// for malformed vectors (e.g. a typo in an Environmental metric).
+//
+// The check is permissive — it skips when cvss is absent, when the version
+// is unset (schema catches that), or when a given vector field is empty.
+func validateCvssBlock(out map[string]interface{}) error {
+	cvssRaw, ok := out["cvss"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	version, _ := cvssRaw["version"].(string)
+	if version == "" {
+		return nil
+	}
+	for _, key := range []string{"baseVector", "threatVector", "environmentalVector", "supplementalVector"} {
+		v, _ := cvssRaw[key].(string)
+		if v == "" {
+			continue
+		}
+		valid, errs := hdfutil.ValidateCvssVector(v, version)
+		if !valid {
+			return fmt.Errorf("invalid %s: %s", key, strings.Join(errs, "; "))
+		}
+	}
+	return nil
+}
+
+// warnRiskAdjustmentInconsistencies — soft warning, never blocks. Both fields
+// are author-owned so the schema allows divergence; usually it's an oversight.
+func warnRiskAdjustmentInconsistencies(doc map[string]interface{}, w io.Writer) {
+	ovs, ok := doc["overrides"].([]map[string]interface{})
+	if !ok {
+		return
+	}
+	for i, ov := range ovs {
+		if t, _ := ov["type"].(string); t != "riskAdjustment" {
+			continue
+		}
+		impact, _ := ov["impact"].(map[string]interface{})
+		impactVal, hasImpact := impact["value"].(float64)
+		cvssBlock, _ := ov["cvss"].(map[string]interface{})
+		computed, hasComputed := cvssBlock["computedScore"].(float64)
+		if !hasImpact || !hasComputed {
+			continue
+		}
+		if math.Abs(impactVal-computed/10) > cvssImpactWarnTolerance {
+			reqID, _ := ov["requirementId"].(string)
+			fmt.Fprintf(w,
+				"warning: override %d (%s): impact.value (%.2f) and cvss.computedScore/10 (%.2f) "+
+					"differ by more than %.2f — consumers may interpret these inconsistently\n",
+				i, reqID, impactVal, computed/10, cvssImpactWarnTolerance,
+			)
+		}
+	}
 }
 
 // normalizeAppliedBy expands a string appliedBy into an Identity object.
@@ -421,6 +489,19 @@ func draftStub(r requirementInfo, amendType, expiry string, now time.Time) map[s
 	switch amendType {
 	case "riskAdjustment":
 		stub["impact"] = map[string]interface{}{"value": 0.0}
+		if r.HasCvss {
+			stub["cvss"] = map[string]interface{}{
+				"version":             r.CvssVersion,
+				"source":              r.CvssSource,
+				"threatVector":        "",
+				"threatScore":         0.0,
+				"environmentalVector": "",
+				"environmentalScore":  0.0,
+				"supplementalVector":  "",
+				"computedScore":       0.0,
+				"computedSeverity":    "",
+			}
+		}
 	case "poam":
 		stub["status"] = ""
 		stub["milestones"] = []interface{}{}

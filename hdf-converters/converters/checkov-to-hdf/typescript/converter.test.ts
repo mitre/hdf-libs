@@ -171,19 +171,18 @@ describe('checkov to HDF converter', async () => {
       expect(ckvTF1?.tags?.['nist']).toEqual(['SA-11', 'RA-5']);
     });
 
-    it('should handle empty checks', async () => {
-      const input = JSON.stringify({
-        check_type: 'terraform',
-        results: {
-          passed_checks: [],
-          failed_checks: [],
-          skipped_checks: [],
-          parsing_errors: [],
-        },
-        summary: { passed: 0, failed: 0, skipped: 0, parsing_errors: 0, resource_count: 0, checkov_version: '3.2.524' },
-      });
-      const hdf = JSON.parse(await convertCheckovToHdf(input)) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    it('should synthesize a passed placeholder for empty checks', async () => {
+      const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('empty.json'))) as HDFResults;
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('checkov-no-findings');
+      expect(req.results).toHaveLength(1);
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('Checkov');
+      expect(req.results[0]!.codeDesc).toContain('terraform');
+      expect(req.results[0]!.codeDesc).toContain('zero findings');
     });
   });
 

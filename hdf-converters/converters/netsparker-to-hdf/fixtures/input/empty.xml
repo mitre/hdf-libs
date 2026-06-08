@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<invicti-enterprise generated="03/07/2023 03:15 PM">
+	<target>
+		<scan-id>00000000000000000000000000000000</scan-id>
+		<url>https://clean.example.com/</url>
+		<initiated>05/05/2023 04:57 PM</initiated>
+		<duration>00:00:10.0000000</duration>
+	</target>
+	<vulnerabilities>
+	</vulnerabilities>
+</invicti-enterprise>

@@ -151,7 +151,9 @@ describe('ZAP branch coverage', () => {
       '@generated': '2025-01-01T00:00:00.000+0000',
     });
     const hdf = parseHdf(await convertZapToHdf(input));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('zap-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 
   it('should handle alert with missing optional instance fields', async () => {
@@ -1574,7 +1576,9 @@ describe('GoSec branch coverage', () => {
       Stats: { files: 5, lines: 200, nosec: 0, found: 0 },
     });
     const hdf = parseHdf(await convertGosecToHdf(input));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('gosec-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 });
 
@@ -2214,7 +2218,9 @@ describe('Additional BurpSuite branch coverage', () => {
       <issues burpVersion="2023.1" exportTime="2025-01-01">
       </issues>`;
     const hdf = parseHdf(await convertBurpsuiteToHdf(xml));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('burpsuite-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 });
 
@@ -2473,7 +2479,9 @@ describe('Veracode branch coverage', () => {
   it('should handle no severity categories', async () => {
     const xml = `<?xml version="1.0"?><detailedreport first_build_submitted_date="2021-12-29 22:16:36 UTC" app_name="App"></detailedreport>`;
     const hdf = parseHdf(await (await import('../converters/veracode-to-hdf/typescript/converter.js')).convertVeracodeToHdf(xml));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('veracode-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 });
 
@@ -2707,12 +2715,15 @@ describe('Twistlock additional branch coverage', () => {
 });
 
 describe('NeuVector additional branch coverage', () => {
-  it('should handle report with empty vulnerabilities', async () => {
+  it('should synthesize a passed placeholder for empty vulnerabilities', async () => {
     const input = JSON.stringify({
       report: { vulnerabilities: [] },
     });
     const hdf = parseHdf(await convertNeuvectorToHdf(input));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0]!.id).toBe('neuvector-no-findings');
+    expect(reqs[0]!.results[0]!.status).toBe('passed');
   });
 });
 
@@ -2725,7 +2736,9 @@ describe('ScoutSuite additional branch coverage', () => {
     };
     const input = `scoutsuite_results = ${JSON.stringify(data)}`;
     const hdf = parseHdf(await convertScoutsuiteToHdf(input));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('scoutsuite-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 });
 
@@ -3183,7 +3196,9 @@ describe('Nessus additional branch coverage', () => {
         </ReportHost></Report>
       </NessusClientData_v2>`;
     const hdf = await convertNessusToHdf(xml);
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('nessus-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 
   it('should handle no Preferences — L157', async () => {
@@ -3459,8 +3474,10 @@ describe('Veracode additional branch coverage', () => {
         </vulnerable_components>
       </software_composition_analysis></detailedreport>`;
     const hdf = parseHdf(await convertVeracodeToHdf(xml));
-    // Component with vulnerabilities=0 should be skipped
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    // Component with vulnerabilities=0 should be skipped; synthesizer kicks in for empty set
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('veracode-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 
   it('should handle SCA vulnerability with no vulnerability element — L288', async () => {
@@ -3473,7 +3490,9 @@ describe('Veracode additional branch coverage', () => {
         </vulnerable_components>
       </software_composition_analysis></detailedreport>`;
     const hdf = parseHdf(await convertVeracodeToHdf(xml));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('veracode-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 
   it('should handle SCA vulnerability with no cve_id — L293', async () => {
@@ -3488,8 +3507,10 @@ describe('Veracode additional branch coverage', () => {
         </vulnerable_components>
       </software_composition_analysis></detailedreport>`;
     const hdf = parseHdf(await convertVeracodeToHdf(xml));
-    // Vuln with no cve_id should be skipped
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    // Vuln with no cve_id should be skipped; synthesizer kicks in for empty set
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('veracode-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 
   it('should handle SCA with multiple components sharing same CVE — L296', async () => {
@@ -3524,7 +3545,9 @@ describe('Veracode additional branch coverage', () => {
       <software_composition_analysis/>
     </detailedreport>`;
     const hdf = parseHdf(await convertVeracodeToHdf(xml));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('veracode-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 
   it('should handle timestamp with XML entities (&#x3a;) — L69', async () => {
@@ -4005,7 +4028,9 @@ describe('XCCDF second-pass branch coverage', () => {
         </reports>
       </asset-report-collection>`;
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('xccdf-results-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 
   it('should handle ARF with no benchmark and no TestResult title — L619', async () => {
@@ -4151,7 +4176,9 @@ describe('XCCDF second-pass branch coverage', () => {
         </TestResult>
       </Benchmark>`;
     const hdf = parseHdf(await convertXccdfResultsToHdf(xml));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('xccdf-results-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 });
 

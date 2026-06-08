@@ -143,7 +143,9 @@ describe('Nikto edge cases', () => {
       vulnerabilities: [],
     });
     const hdf = parseHdf(await convertNiktoToHdf(input));
-    expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements[0]!.id).toBe('nikto-no-findings');
+    expect(hdf.baselines[0]!.requirements[0]!.results[0]!.status).toBe('passed');
   });
 });
 

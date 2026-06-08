@@ -15,7 +15,7 @@
     "build:go": "pnpm --filter hdf-cli run build",
     "pretest": "pnpm run build:ts",
     "test": "pnpm run test:ts && pnpm run test:go",
-    "check": "pnpm run build:ts && pnpm run lint && pnpm run lint:go && pnpm run typecheck && pnpm run test && pnpm run security",
+    "check": "pnpm run build:ts && pnpm run lint && pnpm run lint:go && pnpm run typecheck && pnpm run test:coverage && pnpm run security",
     "test:ts": "pnpm -r run test:ts",
     "test:go": "pnpm -r run test:go",
     "test:coverage": "pnpm -r run test:coverage",

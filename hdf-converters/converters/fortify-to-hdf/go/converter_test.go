@@ -270,6 +270,26 @@ func TestConvertFortifyToHDF_MinimalFVDL(t *testing.T) {
 	assert.Len(t, baseline.Requirements, 1)
 }
 
+func TestConvertFortifyToHDF_EmptyFindings(t *testing.T) {
+	inputData := loadFixture(t, "empty.fvdl")
+
+	result, err := ConvertFortifyToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	require.Len(t, result.Baselines, 1)
+	baseline := result.Baselines[0]
+
+	require.Len(t, baseline.Requirements, 1, "empty input must synthesize one placeholder requirement")
+	req := baseline.Requirements[0]
+	assert.Equal(t, "fortify-no-findings", req.ID)
+
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "Fortify")
+	assert.Contains(t, req.Results[0].CodeDesc, "/src/cleanproject")
+}
+
 func TestConvertFortifyToHDF_EntityExpansion(t *testing.T) {
 	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
 	_, err := ConvertFortifyToHDF(input, converterVersion)

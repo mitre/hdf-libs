@@ -78,7 +78,7 @@ func TestConvertSarifToHDF_Tool(t *testing.T) {
 	assert.Equal(t, "2.0.15", *result.Tool.Version)
 }
 
-func TestConvertSarifToHDF_EmptyResults(t *testing.T) {
+func TestConvertSarifToHDF_EmptyResultsSynthesizesPlaceholder(t *testing.T) {
 	input := `{
 		"version": "2.1.0",
 		"runs": [{
@@ -91,8 +91,84 @@ func TestConvertSarifToHDF_EmptyResults(t *testing.T) {
 	require.NoError(t, err, "Should succeed with empty results")
 	require.NotNil(t, result)
 
-	assert.Len(t, result.Baselines, 1)
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1,
+		"empty SARIF run must synthesize one placeholder requirement (HDF requires requirements.minItems=1)")
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "TestTool-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "TestTool")
+	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
+	require.NotNil(t, result.Timestamp)
+	assert.Equal(t, *result.Timestamp, req.Results[0].StartTime,
+		"synthesized startTime should equal the doc-level Timestamp so downstream tools can reuse it")
+}
+
+func TestConvertSarifToHDF_EmptyResultsFixture(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("empty-results.sarif"))
+	require.NoError(t, err, "Failed to read empty-results.sarif fixture")
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "ExampleAnalyzer-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "ExampleAnalyzer")
+	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
+}
+
+func TestConvertSarifToHDF_EmptyResultsFallbackTarget(t *testing.T) {
+	input := `{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": { "driver": { "name": "", "version": "1.0" } },
+			"results": []
+		}]
+	}`
+
+	result, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "sarif-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "SARIF analyzer")
+	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
+}
+
+func TestConvertSarifToHDF_EmptyResultsPerRunBaseline(t *testing.T) {
+	input := `{
+		"version": "2.1.0",
+		"runs": [
+			{
+				"tool": { "driver": { "name": "ToolA", "version": "1.0" } },
+				"results": []
+			},
+			{
+				"tool": { "driver": { "name": "ToolB", "version": "2.0" } },
+				"results": []
+			}
+		]
+	}`
+
+	result, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 2)
+
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	assert.Equal(t, "ToolA-no-findings", result.Baselines[0].Requirements[0].ID)
+
+	require.Len(t, result.Baselines[1].Requirements, 1)
+	assert.Equal(t, "ToolB-no-findings", result.Baselines[1].Requirements[0].ID)
 }
 
 func TestConvertSarifToHDF_MissingLocations(t *testing.T) {

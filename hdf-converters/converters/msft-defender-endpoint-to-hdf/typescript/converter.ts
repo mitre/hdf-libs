@@ -1,5 +1,5 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -284,7 +284,6 @@ export async function convertMsftDefenderEndpointToHdf(input: string): Promise<s
 
   const requirements: EvaluatedRequirement[] = limitedAlerts.map(alertToRequirement);
 
-  // Build components — deduplicate by device name
   const seenTargets = new Set<string>();
   const components: Component[] = [];
   for (const alert of limitedAlerts) {
@@ -293,6 +292,14 @@ export async function convertMsftDefenderEndpointToHdf(input: string): Promise<s
       seenTargets.add(target.name);
       components.push(target);
     }
+  }
+
+  if (requirements.length === 0) {
+    requirements.push(buildNoFindingsRequirement(
+      'msft-defender-endpoint-no-findings',
+      'Microsoft Defender for Endpoint scanned the tenant and reported zero findings.',
+      new Date(),
+    ));
   }
 
   const baseline: EvaluatedBaseline = createMinimalBaseline(

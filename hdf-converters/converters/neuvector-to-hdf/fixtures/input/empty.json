@@ -1,0 +1,18 @@
+{
+    "error_message": "",
+    "report": {
+        "image_id": "65785cbf46647c77caf8d7c40485900b013fca1290d1a7ab06c9039c3b29761c",
+        "registry": "https://registry.hub.docker.com",
+        "repository": "mitre/heimdall",
+        "tag": "latest",
+        "digest": "sha256:54cbfb34a9a8fe00c9a60d722aa1c12f25bec825c505139cfffaeabc91fb10e6",
+        "size": 684174500,
+        "author": "",
+        "base_os": "alpine:3.12.1",
+        "created_at": "2020-11-02T20:55:31Z",
+        "cvedb_version": "3.546",
+        "cvedb_create_time": "2024-09-05T00:38:58Z",
+        "layers": [],
+        "vulnerabilities": []
+    }
+}

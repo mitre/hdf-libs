@@ -1,0 +1,57 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Nessus scanned cleanhost.example.com and reported zero findings.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Nessus scanned cleanhost.example.com and reported zero findings.",
+              "startTime": "2022-03-22T14:54:47Z",
+              "status": "passed"
+            }
+          ],
+          "id": "nessus-no-findings",
+          "impact": 0,
+          "tags": {},
+          "title": "No findings reported"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "8c71cb2205e03b5220c83a8640bd34d81136f96d4771ea6a5645f459087f481d"
+      },
+      "name": "Nessus Basic Network Scan",
+      "status": "loaded",
+      "summary": "Nessus Basic Network Scan",
+      "title": "Nessus Basic Network Scan",
+      "version": "10.6.0"
+    }
+  ],
+  "components": [
+    {
+      "name": "cleanhost.example.com",
+      "type": "host",
+      "fqdn": "cleanhost.example.com",
+      "ipAddress": "10.0.0.99",
+      "osName": "Linux Kernel 5.13.0-37-generic on Ubuntu 20.04",
+      "osVersion": "linux"
+    }
+  ],
+  "generator": {
+    "name": "nessus-to-hdf",
+    "version": "0.1.0"
+  },
+  "statistics": {
+    "duration": 420
+  },
+  "timestamp": "2022-03-22T14:54:47Z",
+  "tool": {
+    "name": "Nessus"
+  }
+}

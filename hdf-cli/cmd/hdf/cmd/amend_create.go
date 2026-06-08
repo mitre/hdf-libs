@@ -85,6 +85,12 @@ type requirementInfo struct {
 	Status   string
 	Impact   float64
 	Baseline string
+	// HasCvss + Cvss* are prefilled from the source requirement's cvss[][0]
+	// and consumed by draftStub to scaffold a cvss block on CVE-ecosystem
+	// riskAdjustments only.
+	HasCvss     bool
+	CvssVersion string
+	CvssSource  string
 }
 
 func (r requirementInfo) String() string {
@@ -511,13 +517,21 @@ func extractAllRequirements(doc map[string]interface{}) []requirementInfo {
 
 			status := determineRequirementStatus(r)
 
-			results = append(results, requirementInfo{
+			info := requirementInfo{
 				ID:       id,
 				Title:    title,
 				Status:   status,
 				Impact:   impact,
 				Baseline: baselineName,
-			})
+			}
+			if cvssArr, ok := r["cvss"].([]interface{}); ok && len(cvssArr) > 0 {
+				info.HasCvss = true
+				if first, ok := cvssArr[0].(map[string]interface{}); ok {
+					info.CvssVersion, _ = first["version"].(string)
+					info.CvssSource, _ = first["source"].(string)
+				}
+			}
+			results = append(results, info)
 		}
 	}
 	return results

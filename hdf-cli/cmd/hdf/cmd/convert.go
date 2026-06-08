@@ -44,6 +44,7 @@ func NewConvertCmd() *cobra.Command {
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
 	cmd.Flags().StringSlice("labels", nil, "Labels to apply to all targets (key=value pairs, e.g., --labels system=Portal,environment=production)")
 	cmd.Flags().String("component-id", "", "Set componentId on all components in the output")
+	addNoValidateFlag(cmd)
 
 	// Converter-specific flags
 	AddOSCALFlags(cmd)
@@ -189,7 +190,10 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		printDebug("Applied componentId %s to output", componentID)
 	}
 
-	// Write output
+	// Write output (with schema validation if target is HDF and --no-validate not set)
+	if strings.EqualFold(toFormat, "hdf") {
+		return writeValidatedHDFOutput(cmd, output, outputPath)
+	}
 	return writeConvertOutput(output, outputPath)
 }
 

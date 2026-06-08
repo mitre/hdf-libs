@@ -314,6 +314,22 @@ describe('conveyor to HDF converter', async () => {
       expect(hdf.components![0]!.name).toBe('Conveyor Scan');
     });
 
+    it('should synthesize a passed placeholder when results is empty', async () => {
+      const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('empty.json'))) as HDFResults;
+      expect(hdf.baselines).toHaveLength(1);
+      const baseline = hdf.baselines[0]!;
+      expect(baseline.requirements).toHaveLength(1);
+
+      const req = baseline.requirements[0]!;
+      expect(req.id).toBe('conveyor-no-findings');
+      expect(req.results).toHaveLength(1);
+      expect(req.results[0]!.status).toBe('passed');
+
+      const codeDesc = req.results[0]!.codeDesc;
+      expect(codeDesc).toContain('Conveyor');
+      expect(codeDesc).toContain('Inspection of file: submissions/empty.zip');
+    });
+
     it('should handle negative score → impact 0.0', async () => {
       const input = JSON.stringify({
         api_response: {

@@ -38,8 +38,25 @@ describe('ScoutSuite to HDF Converter', () => {
     const parsed = parseOutput(output);
     const baselines = parsed.baselines as Array<Record<string, unknown>>;
     expect(baselines).toHaveLength(1);
-    const reqs = baselines[0]!.requirements as unknown[];
-    expect(reqs).toHaveLength(0);
+    const reqs = baselines[0]!.requirements as Array<Record<string, unknown>>;
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0]!.id).toBe('scoutsuite-no-findings');
+  });
+
+  it('should synthesize a passed placeholder for empty findings', async () => {
+    const input = loadFixture('input/empty.js');
+    const output = await convertScoutsuiteToHdf(input);
+    const parsed = parseOutput(output);
+    const baselines = parsed.baselines as Array<Record<string, unknown>>;
+    expect(baselines).toHaveLength(1);
+    const reqs = baselines[0]!.requirements as Array<Record<string, unknown>>;
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0]!.id).toBe('scoutsuite-no-findings');
+    const results = reqs[0]!.results as Array<Record<string, unknown>>;
+    expect(results[0]!.status).toBe('passed');
+    expect(results[0]!.codeDesc).toContain('ScoutSuite');
+    expect(results[0]!.codeDesc).toContain('000000000000');
+    expect(results[0]!.codeDesc).toContain('zero findings');
   });
 
   // --- Real fixture tests ---

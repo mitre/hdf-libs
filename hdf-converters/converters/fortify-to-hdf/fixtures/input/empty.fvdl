@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FVDL xmlns="xmlns://www.fortifysoftware.com/schema/fvdl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.12" xsi:type="FVDL">
+<CreatedTS date="2026-01-15" time="12:00:00"/>
+<UUID>00000000-0000-0000-0000-000000000000</UUID>
+<Build>
+  <BuildID>cleanbuild</BuildID>
+  <NumberFiles>0</NumberFiles>
+  <SourceBasePath>/src/cleanproject</SourceBasePath>
+  <SourceFiles/>
+</Build>
+<Vulnerabilities/>
+<Snippets/>
+<EngineData>
+  <EngineVersion>20.0.0</EngineVersion>
+  <RulePacks/>
+  <Properties type="System"/>
+  <CommandLine/>
+  <Errors/>
+  <MachineInfo/>
+</EngineData>
+</FVDL>

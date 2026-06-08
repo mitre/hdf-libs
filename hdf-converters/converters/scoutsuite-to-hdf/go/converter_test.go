@@ -58,7 +58,23 @@ func TestConvertScoutsuiteToHDF_PureJSON(t *testing.T) {
 	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
 	require.NoError(t, err)
 	assert.Len(t, result.Baselines, 1)
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	assert.Equal(t, "scoutsuite-no-findings", result.Baselines[0].Requirements[0].ID)
+}
+
+func TestConvertScoutsuiteToHDF_EmptyFindings(t *testing.T) {
+	input := loadFixture(t, "input/empty.js")
+	result, err := ConvertScoutsuiteToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "scoutsuite-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "ScoutSuite")
+	assert.Contains(t, req.Results[0].CodeDesc, "000000000000")
+	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
 }
 
 // --- Real fixture tests ---

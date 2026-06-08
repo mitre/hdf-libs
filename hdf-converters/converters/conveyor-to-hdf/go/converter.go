@@ -327,6 +327,24 @@ func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 
 	now := time.Now().UTC()
 
+	if len(baselines) == 0 {
+		title := "Conveyor Scan (no findings)"
+		baselines = []hdf.EvaluatedBaseline{
+			{
+				Name:            "Conveyor Scan",
+				Title:           &title,
+				ResultsChecksum: checksum,
+				Requirements: []hdf.EvaluatedRequirement{
+					shared.BuildNoFindingsRequirement(
+						"conveyor-no-findings",
+						fmt.Sprintf("Conveyor scanned %s and reported zero findings.", targetName),
+						now,
+					),
+				},
+			},
+		}
+	}
+
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
 		GeneratorName:    "conveyor-to-hdf",
 		ConverterVersion: converterVersion,

@@ -165,7 +165,7 @@ describe('gosec to HDF converter', async () => {
       expect(cweTag?.url).toContain('cwe.mitre.org');
     });
 
-    it('should handle empty Issues array', async () => {
+    it('should synthesize a passed placeholder for empty Issues array', async () => {
       const input = JSON.stringify({
         'Golang errors': {},
         Issues: [],
@@ -173,7 +173,23 @@ describe('gosec to HDF converter', async () => {
         GosecVersion: '2.18.0',
       });
       const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('gosec-no-findings');
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('gosec');
+      expect(req.results[0]!.codeDesc).toContain('Go codebase');
+    });
+
+    it('should synthesize a passed placeholder for the empty fixture', async () => {
+      const hdf = JSON.parse(await convertGosecToHdf(loadFixture('empty.json'))) as HDFResults;
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('gosec-no-findings');
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('gosec');
+      expect(req.results[0]!.codeDesc).toContain('Go codebase');
     });
 
     it('should handle real fixture without errors', async () => {

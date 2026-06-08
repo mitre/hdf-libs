@@ -27,7 +27,11 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
       expect(hdf.baselines).toHaveLength(1);
-      expect(hdf.baselines[0].requirements).toHaveLength(0);
+      expect(hdf.baselines[0].requirements).toHaveLength(1);
+      const req = hdf.baselines[0].requirements[0];
+      expect(req.id).toBe('zap-no-findings');
+      expect(req.results[0].status).toBe('passed');
+      expect(req.results[0].codeDesc).toContain('OWASP ZAP');
     });
 
     it('should handle empty site array', async () => {
@@ -35,7 +39,24 @@ describe('ZAP Converter', () => {
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
       expect(hdf.baselines).toHaveLength(1);
-      expect(hdf.baselines[0].requirements).toHaveLength(0);
+      expect(hdf.baselines[0].requirements).toHaveLength(1);
+      const req = hdf.baselines[0].requirements[0];
+      expect(req.id).toBe('zap-no-findings');
+      expect(req.results[0].status).toBe('passed');
+      expect(req.results[0].codeDesc).toContain('OWASP ZAP');
+    });
+
+    it('should synthesize no-findings placeholder for empty.json fixture', async () => {
+      const input = loadFixture('empty.json');
+      const output = await convertZapToHdf(input);
+      const hdf = parseJSON<HDFResults>(output);
+      expect(hdf.baselines).toHaveLength(1);
+      expect(hdf.baselines[0].requirements).toHaveLength(1);
+      const req = hdf.baselines[0].requirements[0];
+      expect(req.id).toBe('zap-no-findings');
+      expect(req.results[0].status).toBe('passed');
+      expect(req.results[0].codeDesc).toContain('OWASP ZAP');
+      expect(req.results[0].codeDesc).toContain('https://example.com');
     });
   });
 

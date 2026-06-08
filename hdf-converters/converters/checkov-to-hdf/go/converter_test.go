@@ -394,19 +394,20 @@ func TestConvertCheckovToHDF_MultiFrameworkToolFormat(t *testing.T) {
 // ---- Empty checks ----
 
 func TestConvertCheckovToHDF_EmptyChecks(t *testing.T) {
-	input := []byte(`{
-		"check_type": "terraform",
-		"results": {
-			"passed_checks": [],
-			"failed_checks": [],
-			"skipped_checks": [],
-			"parsing_errors": []
-		},
-		"summary": {"passed": 0, "failed": 0, "skipped": 0, "parsing_errors": 0, "resource_count": 0, "checkov_version": "3.2.524"}
-	}`)
+	input := loadFixture(t, "input/empty.json")
 	result, err := ConvertCheckovToHDF(input, testVersion)
 	require.NoError(t, err)
-	assert.Len(t, result.Baselines[0].Requirements, 0)
+
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "checkov-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "Checkov")
+	assert.Contains(t, req.Results[0].CodeDesc, "terraform")
+	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
 }
 
 // ---- SARIF routing ----

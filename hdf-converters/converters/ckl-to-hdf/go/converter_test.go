@@ -205,6 +205,21 @@ func TestConvertCKLToHDF_OversizedInput(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// Pins safe behavior: an all-passing CKL must produce one requirement per VULN
+// (never an empty requirements slice) so a future refactor cannot silently
+// introduce the "emit empty requirements" anti-pattern.
+func TestConvertCKLToHDF_AllPassingProducesRequirements(t *testing.T) {
+	result, err := ConvertCKLToHDF(loadFixture(t, "all-passing.ckl"), converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 3, "all-passing.ckl has 3 VULN entries; converter must emit 3 requirements")
+	for _, r := range reqs {
+		require.NotEmpty(t, r.Results, "requirement %s must have at least one result", r.ID)
+		assert.Equal(t, hdf.Passed, r.Results[0].Status, "requirement %s status should be passed (NotAFinding)", r.ID)
+	}
+}
+
 // Status, parsing, and field-mapping helpers are unit-tested in the shared
 // checklist package (shared/go/checklist); these converter tests exercise the
 // public ConvertCKLToHDF entry point against the committed fixture.

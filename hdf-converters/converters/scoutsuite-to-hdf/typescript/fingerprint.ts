@@ -24,7 +24,21 @@ export const scoutsuiteFingerprint: ConverterFingerprint = {
   },
 };
 
+const SCOUTSUITE_JS_PREFIX_SNIFF = /^\s*scoutsuite_results\s*=\s*\{/i;
+
+export const scoutsuiteJsFingerprint: ConverterFingerprint = {
+  id: 'scoutsuite-to-hdf-js',
+  label: 'ScoutSuite',
+  direction: 'ingest',
+  inputFamily: 'text',
+  outputType: 'results',
+  fingerprint: (input: unknown): number => {
+    if (typeof input !== 'string') return 0;
+    return SCOUTSUITE_JS_PREFIX_SNIFF.test(input) ? 1.0 : 0;
+  },
+};
+
 export function register(): void {
-  if (getFingerprint('scoutsuite-to-hdf')) return;
-  registerFingerprint(scoutsuiteFingerprint);
+  if (!getFingerprint('scoutsuite-to-hdf')) registerFingerprint(scoutsuiteFingerprint);
+  if (!getFingerprint('scoutsuite-to-hdf-js')) registerFingerprint(scoutsuiteJsFingerprint);
 }

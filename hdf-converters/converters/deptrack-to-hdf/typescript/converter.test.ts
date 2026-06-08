@@ -169,9 +169,13 @@ describe('Dependency-Track to HDF converter', async () => {
   });
 
   describe('no vulnerabilities', async () => {
-    it('should handle empty findings array', async () => {
+    it('should synthesize a passed placeholder for empty findings array', async () => {
       const hdf = JSON.parse(await convertDeptrackToHdf(loadFixture('fpf-no-vulnerabilities.json'))) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      const req = hdf.baselines[0]!.requirements[0]!;
+      expect(req.id).toBe('deptrack-no-findings');
+      expect(req.results[0]!.status).toBe('passed');
+      expect(req.results[0]!.codeDesc).toContain('zero vulnerable components');
       expect(hdf.components![0]!.name).toBe('laravel');
     });
   });
@@ -281,7 +285,8 @@ describe('Dependency-Track to HDF converter', async () => {
         findings: [],
       });
       const hdf = JSON.parse(await convertDeptrackToHdf(input)) as HDFResults;
-      expect(hdf.baselines[0]!.requirements).toHaveLength(0);
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+      expect(hdf.baselines[0]!.requirements[0]!.id).toBe('deptrack-no-findings');
     });
 
     it('should use project uuid as target when name is missing', async () => {

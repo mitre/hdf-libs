@@ -38,6 +38,9 @@
   "dependencies": {
     "@mitre/hdf-schema": "workspace:^"
   },
+  "devDependencies": {
+    "@mitre/hdf-parsers": "workspace:^"
+  },
   "engines": {
     "node": ">=22.0.0"
   },

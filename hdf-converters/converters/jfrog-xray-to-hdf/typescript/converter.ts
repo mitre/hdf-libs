@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -228,6 +228,14 @@ export async function convertJfrogXrayToHdf(input: string): Promise<string> {
   const requirements: EvaluatedRequirement[] = [];
   for (const [entryID, entries] of groups) {
     requirements.push(buildRequirement(entryID, entries));
+  }
+
+  if (requirements.length === 0) {
+    requirements.push(buildNoFindingsRequirement(
+      'jfrog-xray-no-findings',
+      'JFrog Xray scanned the target artifact and reported zero vulnerable components.',
+      new Date(),
+    ));
   }
 
   const baseline = createMinimalBaseline(

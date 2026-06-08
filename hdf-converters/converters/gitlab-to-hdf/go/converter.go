@@ -373,6 +373,23 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	}
 
 	label := scanTypeLabel(scanType)
+
+	if len(requirements) == 0 {
+		ts := time.Now().UTC()
+		if startTime != "" {
+			if parsed := hdfutil.ParseTimestamp(startTime); !parsed.IsZero() {
+				ts = parsed
+			}
+		}
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"gitlab-no-findings",
+				fmt.Sprintf("GitLab %s scan via %s reported zero findings.", label, scannerName),
+				ts,
+			),
+		}
+	}
+
 	baselineTitle := fmt.Sprintf("GitLab %s Security Scan", label)
 	summary := fmt.Sprintf("Scanner: %s", scannerName)
 	if scannerVersion != "" {

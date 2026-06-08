@@ -151,6 +151,16 @@ func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	baselineTitle := fmt.Sprintf("Nikto Target: %s", targetName)
 	banner := niktoData.Banner
 
+	if len(requirements) == 0 {
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"nikto-no-findings",
+				fmt.Sprintf("Nikto scanned %s and reported zero findings.", targetName),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	baseline := hdf.EvaluatedBaseline{
 		Name:            targetName,
 		Title:           &baselineTitle,

@@ -92,4 +92,19 @@ describe('cklb-to-hdf converter', () => {
     expect(findReq(reqs, 'V-251547').results[0].status).toBe('notApplicable');
     expect(findReq(reqs, 'V-251559').impact).toBeCloseTo(0.3, 3); // low
   });
+
+  // Pins safe behavior: an all-passing CKLB must emit one requirement per rule, never requirements:[].
+  it('emits one passed requirement per rule for an all-passing CKLB', async () => {
+    const hdf = JSON.parse(await convertCklbToHdf(loadFixture('all-passing.cklb'))) as HDFResults;
+    expect(hdf.baselines).toHaveLength(1);
+
+    const reqs = hdf.baselines[0].requirements;
+    expect(reqs).toHaveLength(6);
+    expect(reqs.length).toBeGreaterThan(0);
+
+    for (const r of reqs) {
+      expect(r.results).toHaveLength(1);
+      expect(r.results[0].status).toBe('passed');
+    }
+  });
 });

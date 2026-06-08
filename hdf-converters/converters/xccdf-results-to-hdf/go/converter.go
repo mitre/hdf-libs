@@ -429,6 +429,17 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 		requirements = append(requirements, req)
 	}
 
+	if len(requirements) == 0 {
+		target := xccdfTargetName(&benchmark.TestResult, benchmark.Title, benchmark.ID)
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"xccdf-results-no-findings",
+				fmt.Sprintf("XCCDF scanned %s and reported zero findings.", target),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	baselineName := benchmark.Title
 	if baselineName == "" {
 		baselineName = benchmark.ID
@@ -731,6 +742,22 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 			baselineName = tr.Title
 			if baselineName == "" {
 				baselineName = tr.ID
+			}
+		}
+
+		if len(requirements) == 0 {
+			var benchmarkTitle, benchmarkID string
+			if benchmark != nil {
+				benchmarkTitle = benchmark.Title
+				benchmarkID = benchmark.ID
+			}
+			target := xccdfTargetName(tr, benchmarkTitle, benchmarkID)
+			requirements = []hdf.EvaluatedRequirement{
+				shared.BuildNoFindingsRequirement(
+					"xccdf-results-no-findings",
+					fmt.Sprintf("XCCDF scanned %s and reported zero findings.", target),
+					time.Now().UTC(),
+				),
 			}
 		}
 
@@ -1065,6 +1092,27 @@ func mapResultStatus(result string) hdf.ResultStatus {
 		return status
 	}
 	return hdf.Error
+}
+
+// xccdfTargetName picks the most specific identifier available for a
+// no-findings codeDesc: TestResult target, then benchmark title, then
+// benchmark ID, then a generic fallback.
+func xccdfTargetName(tr *TestResult, benchmarkTitle, benchmarkID string) string {
+	if tr != nil {
+		if t := strings.TrimSpace(tr.Target); t != "" {
+			return t
+		}
+		if t := strings.TrimSpace(tr.Title); t != "" {
+			return t
+		}
+	}
+	if t := strings.TrimSpace(benchmarkTitle); t != "" {
+		return t
+	}
+	if t := strings.TrimSpace(benchmarkID); t != "" {
+		return t
+	}
+	return "the target"
 }
 
 // buildTarget constructs an HDF Target from the TestResult metadata.

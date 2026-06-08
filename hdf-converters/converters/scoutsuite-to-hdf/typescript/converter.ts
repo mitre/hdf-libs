@@ -3,7 +3,7 @@ import {
   getScoutsuiteNistControl,
   nistToCci,
 } from '@mitre/hdf-mappings';
-import { inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArrayWithWarning, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArrayWithWarning, validateInputSize, buildHdfResults, buildNoFindingsRequirement } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -250,6 +250,16 @@ export async function convertScoutsuiteToHdf(input: string): Promise<string> {
     ([ruleID, finding]) => buildRequirement(ruleID, finding, report.last_run.time),
   );
 
+  const targetName = `${report.last_run.ruleset_name} ruleset:${report.provider_name}:${report.account_id}`;
+
+  if (requirements.length === 0) {
+    requirements.push(buildNoFindingsRequirement(
+      'scoutsuite-no-findings',
+      `ScoutSuite scanned ${targetName} and reported zero findings.`,
+      new Date(),
+    ));
+  }
+
   const title = `Scout Suite Report using ${report.last_run.ruleset_name} ruleset on ${report.provider_name} with account ${report.account_id}`;
 
   const baseline = createMinimalBaseline(
@@ -261,8 +271,6 @@ export async function convertScoutsuiteToHdf(input: string): Promise<string> {
       summary: report.last_run.ruleset_about,
     },
   ) as EvaluatedBaseline;
-
-  const targetName = `${report.last_run.ruleset_name} ruleset:${report.provider_name}:${report.account_id}`;
 
   return buildHdfResults({
     generatorName: 'scoutsuite-to-hdf',

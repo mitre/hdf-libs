@@ -399,6 +399,21 @@ func TestConvertNetsparker_NetsparkerRootElement(t *testing.T) {
 	assert.Equal(t, "Netsparker", *result.Tool.Name)
 }
 
+func TestConvertNetsparkerToHDF_EmptyVulnerabilities(t *testing.T) {
+	input := loadFixture(t, "input/empty.xml")
+	result, err := ConvertNetsparkerToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "netsparker-no-findings", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Passed, req.Results[0].Status)
+	assert.Contains(t, req.Results[0].CodeDesc, "Invicti")
+	assert.Contains(t, req.Results[0].CodeDesc, "https://clean.example.com/")
+	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
+}
+
 func TestConvertNetsparkerToHDF_EntityExpansion(t *testing.T) {
 	input := []byte(`<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe "test">]><foo/>`)
 	_, err := ConvertNetsparkerToHDF(input, testVersion)

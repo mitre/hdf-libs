@@ -4,6 +4,7 @@ use (
 	./hdf-cli
 	./hdf-converters
 	./hdf-diff/go
+	./hdf-extension-graph/go
 	./hdf-generators/go
 	./hdf-mappings/go
 	./hdf-parsers/go

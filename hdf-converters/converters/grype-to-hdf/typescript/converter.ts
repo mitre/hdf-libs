@@ -17,7 +17,7 @@ import {
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {cvssScoreToSeverity, parseJSON} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, deriveControlTypeFromTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, limitArray, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
 
 // Input types for Grype JSON
 
@@ -526,6 +526,14 @@ export async function convertGrypeToHdf(input: string): Promise<string> {
 
   // Build baseline name from source
   const targetName = grypeData.source?.target?.userInput || 'Grype Scan';
+
+  if (requirements.length === 0) {
+    requirements.push(buildNoFindingsRequirement(
+      'grype-no-findings',
+      `Grype scanned ${targetName} and reported zero vulnerable components.`,
+      new Date(),
+    ));
+  }
 
   // Create baseline
   const baseline: EvaluatedBaseline = createMinimalBaseline(targetName, requirements, {

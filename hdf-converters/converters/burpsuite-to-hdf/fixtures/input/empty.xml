@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!DOCTYPE issues [
+<!ELEMENT issues (issue*)>
+<!ATTLIST issues burpVersion CDATA "">
+<!ATTLIST issues exportTime CDATA "">
+]>
+<issues burpVersion="2020.1" exportTime="Thu Feb 27 09:28:17 EST 2020">
+</issues>

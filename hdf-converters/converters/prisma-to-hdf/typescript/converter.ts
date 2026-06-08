@@ -11,7 +11,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, buildNistCciTags, limitArrayWithWarning, DEFAULT_REMEDIATION_NIST_TAGS, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -239,29 +239,40 @@ export async function convertPrismaToHdf(input: string): Promise<string> {
   }
   validateInputSize(input, 'prisma');
 
-  // Parse CSV
-  const records = parseCsv<PrismaRecord>(input);
-
-  // Validate required columns exist by checking the first record
-  if (records.length === 0) {
-    throw new Error('prisma: no data rows in CSV');
-  }
-  const firstRecord = records[0]!;
+  // Validate required columns are present in the CSV header before any
+  // data-row parsing so a headers-only Prisma export is still accepted.
+  const headerLine = input.split(/\r?\n/, 1)[0] ?? '';
+  const headers = headerLine.split(',').map(h => h.trim());
   for (const col of REQUIRED_COLUMNS) {
-    if (!(col in firstRecord)) {
+    if (!headers.includes(col)) {
       throw new Error(`prisma: missing required CSV column "${col}"`);
     }
   }
 
+  const records = parseCsv<PrismaRecord>(input);
   const resultsChecksum = await inputChecksum(input);
-  const hostGroups = groupByHostname(records);
-
   const baselines: EvaluatedBaseline[] = [];
   const components: HDFResults['components'] = [];
 
-  for (const [hostname, hostRecords] of hostGroups) {
-    baselines.push(buildBaseline(hostname, hostRecords, resultsChecksum));
-    components.push({ name: hostname, type: TargetType.Host });
+  if (records.length === 0) {
+    baselines.push(createMinimalBaseline(
+      'Prisma Cloud Scan',
+      [buildNoFindingsRequirement(
+        'prisma-no-findings',
+        'Prisma Cloud scanned the workload and reported zero vulnerable components.',
+        new Date(),
+      )],
+      {
+        resultsChecksum,
+        title: 'Prisma Cloud Scan',
+      },
+    ) as EvaluatedBaseline);
+  } else {
+    const hostGroups = groupByHostname(records);
+    for (const [hostname, hostRecords] of hostGroups) {
+      baselines.push(buildBaseline(hostname, hostRecords, resultsChecksum));
+      components.push({ name: hostname, type: TargetType.Host });
+    }
   }
 
   return buildHdfResults({

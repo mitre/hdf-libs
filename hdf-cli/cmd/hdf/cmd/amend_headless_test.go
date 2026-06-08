@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -404,7 +405,48 @@ func TestBuildDraftFromResults_RiskAdjustmentStub(t *testing.T) {
 	imp, ok := stub["impact"].(map[string]interface{})
 	require.True(t, ok, "riskAdjustment stub gets an impact placeholder")
 	assert.Contains(t, imp, "value")
-	assert.NotContains(t, stub, "cvss", "foundation draft must not bake in a cvss block (child bead)")
+	assert.NotContains(t, stub, "cvss", "non-CVE riskAdjustment must not scaffold cvss")
+}
+
+func TestBuildDraftFromResults_RiskAdjustmentStub_CveEcosystem(t *testing.T) {
+	doc := map[string]interface{}{
+		"baselines": []interface{}{
+			map[string]interface{}{
+				"name": "container-vuln-scan",
+				"requirements": []interface{}{
+					map[string]interface{}{
+						"id":           "CVE-2021-44228",
+						"title":        "Log4Shell",
+						"impact":       0.98,
+						"descriptions": []interface{}{map[string]interface{}{"label": "default", "data": "Log4j2 JNDI RCE"}},
+						"results":      []interface{}{map[string]interface{}{"status": "failed", "codeDesc": "log4j-core 2.14.1"}},
+						"cvss": []interface{}{
+							map[string]interface{}{
+								"version":      "3.1",
+								"source":       "CVE-2021-44228",
+								"baseVector":   "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+								"baseScore":    10.0,
+								"baseSeverity": "critical",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	draft, err := buildDraftFromResults(doc, "riskAdjustment", "", "", "", fixedNow())
+	require.NoError(t, err)
+	stub := draft["overrides"].([]map[string]interface{})[0]
+	cvss, ok := stub["cvss"].(map[string]interface{})
+	require.True(t, ok, "CVE-ecosystem riskAdjustment must scaffold a cvss block")
+	assert.Equal(t, "3.1", cvss["version"], "version is prefilled from the source finding")
+	assert.Equal(t, "CVE-2021-44228", cvss["source"], "source is prefilled from the source finding")
+	for _, k := range []string{"threatVector", "environmentalVector", "supplementalVector", "computedScore", "computedSeverity"} {
+		_, present := cvss[k]
+		assert.True(t, present, "cvss scaffold should include %s", k)
+	}
+	_, hasBase := cvss["baseVector"]
+	assert.False(t, hasBase, "draft must not pre-fill baseVector — base belongs to the finding")
 }
 
 func TestBuildDraftFromResults_StatusFilter(t *testing.T) {
@@ -645,4 +687,150 @@ func TestAmendDraft_E2E_RejectedByApplyUntilCompleted(t *testing.T) {
 	require.NoError(t, os.WriteFile(completedPath, completed, 0o600))
 
 	require.NoError(t, runAmendApply(nil, resultsPath, completedPath, filepath.Join(tmp, "merged.json")))
+}
+
+// --- CVSS enrichment on riskAdjustment ---
+
+func TestFattenOverrideSpec_CvssBlockPassesThrough(t *testing.T) {
+	spec := map[string]interface{}{
+		"type":          "riskAdjustment",
+		"requirementId": "CVE-2024-1234",
+		"reason":        "compensating controls reduce environmental impact",
+		"appliedBy":     "ao@agency.gov",
+		"expiresAt":     "2027-01-01",
+		"impact":        0.3,
+		"cvss": map[string]interface{}{
+			"version":             "3.1",
+			"source":              "CVE-2024-1234",
+			"environmentalVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/MAV:L/MAC:H",
+			"environmentalScore":  3.7,
+			"computedScore":       3.7,
+			"computedSeverity":    "low",
+		},
+	}
+	out, err := fattenOverrideSpec(spec, fixedNow())
+	require.NoError(t, err)
+	cvss, ok := out["cvss"].(map[string]interface{})
+	require.True(t, ok, "cvss block should survive fattening")
+	assert.Equal(t, "3.1", cvss["version"])
+	assert.Equal(t, "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/MAV:L/MAC:H", cvss["environmentalVector"])
+	assert.InDelta(t, 3.7, cvss["computedScore"], 0.0001)
+}
+
+func TestFattenOverrideSpec_CvssInvalidVectorRejected(t *testing.T) {
+	spec := map[string]interface{}{
+		"type":          "riskAdjustment",
+		"requirementId": "CVE-2024-1234",
+		"reason":        "reason",
+		"appliedBy":     "ao@agency.gov",
+		"expiresAt":     "2027-01-01",
+		"impact":        0.3,
+		"cvss": map[string]interface{}{
+			"version":             "3.1",
+			"environmentalVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/MAV:GARBAGE",
+		},
+	}
+	_, err := fattenOverrideSpec(spec, fixedNow())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "environmentalVector")
+}
+
+func TestFattenOverrideSpec_CvssVersionEmptySkipsVectorValidation(t *testing.T) {
+	spec := map[string]interface{}{
+		"type":          "riskAdjustment",
+		"requirementId": "CVE-2024-1234",
+		"reason":        "reason",
+		"appliedBy":     "ao@agency.gov",
+		"expiresAt":     "2027-01-01",
+		"impact":        0.3,
+		"cvss": map[string]interface{}{
+			"environmentalVector": "literally anything",
+		},
+	}
+	_, err := fattenOverrideSpec(spec, fixedNow())
+	assert.NoError(t, err)
+}
+
+func TestFattenOverrideSpec_NoCvssBlockIsFine(t *testing.T) {
+	spec := map[string]interface{}{
+		"type":          "riskAdjustment",
+		"requirementId": "AC-1",
+		"reason":        "reason",
+		"appliedBy":     "ao@agency.gov",
+		"expiresAt":     "2027-01-01",
+		"impact":        0.3,
+	}
+	out, err := fattenOverrideSpec(spec, fixedNow())
+	require.NoError(t, err)
+	_, hasCvss := out["cvss"]
+	assert.False(t, hasCvss, "no cvss block should be added when the author omits it")
+}
+
+func TestWarnRiskAdjustmentInconsistencies_FiresOnMaterialMismatch(t *testing.T) {
+	doc := map[string]interface{}{
+		"overrides": []map[string]interface{}{
+			{
+				"type":          "riskAdjustment",
+				"requirementId": "CVE-2024-1234",
+				"impact":        map[string]interface{}{"value": 0.3},
+				"cvss":          map[string]interface{}{"computedScore": 9.8},
+			},
+		},
+	}
+	var buf bytes.Buffer
+	warnRiskAdjustmentInconsistencies(doc, &buf)
+	out := buf.String()
+	assert.Contains(t, out, "warning")
+	assert.Contains(t, out, "CVE-2024-1234")
+	assert.Contains(t, out, "impact.value")
+	assert.Contains(t, out, "computedScore")
+}
+
+func TestWarnRiskAdjustmentInconsistencies_SilentWhenAligned(t *testing.T) {
+	doc := map[string]interface{}{
+		"overrides": []map[string]interface{}{
+			{
+				"type":          "riskAdjustment",
+				"requirementId": "CVE-2024-1234",
+				"impact":        map[string]interface{}{"value": 0.5},
+				"cvss":          map[string]interface{}{"computedScore": 5.0},
+			},
+		},
+	}
+	var buf bytes.Buffer
+	warnRiskAdjustmentInconsistencies(doc, &buf)
+	assert.Empty(t, buf.String())
+}
+
+func TestWarnRiskAdjustmentInconsistencies_SilentForOtherTypes(t *testing.T) {
+	doc := map[string]interface{}{
+		"overrides": []map[string]interface{}{
+			{
+				"type":          "waiver",
+				"requirementId": "AC-1",
+				"impact":        map[string]interface{}{"value": 0.0},
+				"cvss":          map[string]interface{}{"computedScore": 9.8},
+			},
+		},
+	}
+	var buf bytes.Buffer
+	warnRiskAdjustmentInconsistencies(doc, &buf)
+	assert.Empty(t, buf.String(), "warning is riskAdjustment-only")
+}
+
+func TestWarnRiskAdjustmentInconsistencies_SilentWhenEitherSideMissing(t *testing.T) {
+	cases := []map[string]interface{}{
+		// impact present, cvss absent
+		{"type": "riskAdjustment", "requirementId": "X", "impact": map[string]interface{}{"value": 0.3}},
+		// cvss present, impact absent
+		{"type": "riskAdjustment", "requirementId": "X", "cvss": map[string]interface{}{"computedScore": 9.8}},
+		// both present but computedScore unset
+		{"type": "riskAdjustment", "requirementId": "X", "impact": map[string]interface{}{"value": 0.3}, "cvss": map[string]interface{}{"version": "3.1"}},
+	}
+	for i, ov := range cases {
+		doc := map[string]interface{}{"overrides": []map[string]interface{}{ov}}
+		var buf bytes.Buffer
+		warnRiskAdjustmentInconsistencies(doc, &buf)
+		assert.Empty(t, buf.String(), "case %d should not warn", i)
+	}
 }

@@ -308,6 +308,28 @@ func NISTTagsFromMap(tags map[string]interface{}) []string {
 	}
 }
 
+// BuildNoFindingsRequirement synthesizes a passed placeholder for tools that
+// ran clean. Required because the HDF schema enforces requirements.minItems=1.
+func BuildNoFindingsRequirement(id, codeDesc string, startTime time.Time) hdf.EvaluatedRequirement {
+	title := "No findings reported"
+	return hdf.EvaluatedRequirement{
+		ID:    id,
+		Title: &title,
+		Descriptions: []hdf.Description{
+			{Label: "default", Data: codeDesc},
+		},
+		Results: []hdf.RequirementResult{
+			{
+				Status:    hdf.Passed,
+				CodeDesc:  codeDesc,
+				StartTime: startTime,
+			},
+		},
+		Tags:   map[string]interface{}{},
+		Impact: 0,
+	}
+}
+
 // DeriveVerificationMethod returns the HDF verificationMethod for a
 // requirement based on whether check code is present. Returns &Automated
 // when code is non-nil and non-empty (a check exists and runs without

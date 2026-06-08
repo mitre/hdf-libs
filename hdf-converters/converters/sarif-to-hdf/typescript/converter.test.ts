@@ -42,7 +42,7 @@ describe('SARIF Converter', async () => {
       expect(ff1014.results[0].codeDesc).toContain('test/test-patched.c');
     });
 
-    it('should handle empty results array', async () => {
+    it('should synthesize a passed placeholder for empty results array', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
         runs: [{
@@ -53,7 +53,57 @@ describe('SARIF Converter', async () => {
 
       const result = JSON.parse(await convertSarifToHdf(input));
       expect(result.baselines).toHaveLength(1);
-      expect(result.baselines[0].requirements).toHaveLength(0);
+      expect(result.baselines[0].requirements).toHaveLength(1);
+      const req = result.baselines[0].requirements[0];
+      expect(req.id).toBe('TestTool-no-findings');
+      expect(req.results).toHaveLength(1);
+      expect(req.results[0].status).toBe('passed');
+      expect(req.results[0].codeDesc).toContain('TestTool');
+      expect(req.results[0].codeDesc).toContain('zero findings');
+      expect(req.results[0].startTime).toBe(result.timestamp);
+    });
+
+    it('should synthesize a placeholder from the empty-results fixture', async () => {
+      const input = loadFixture('input', 'empty-results.sarif');
+      const result = JSON.parse(await convertSarifToHdf(input));
+      expect(result.baselines).toHaveLength(1);
+      expect(result.baselines[0].requirements).toHaveLength(1);
+      const req = result.baselines[0].requirements[0];
+      expect(req.id).toBe('ExampleAnalyzer-no-findings');
+      expect(req.results[0].status).toBe('passed');
+      expect(req.results[0].codeDesc).toContain('ExampleAnalyzer');
+      expect(req.results[0].codeDesc).toContain('zero findings');
+    });
+
+    it('should synthesize a per-run placeholder for each empty baseline', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [
+          { tool: { driver: { name: 'ToolA', version: '1.0' } }, results: [] },
+          { tool: { driver: { name: 'ToolB', version: '2.0' } }, results: [] },
+        ],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      expect(result.baselines).toHaveLength(2);
+      expect(result.baselines[0].requirements).toHaveLength(1);
+      expect(result.baselines[0].requirements[0].id).toBe('ToolA-no-findings');
+      expect(result.baselines[1].requirements).toHaveLength(1);
+      expect(result.baselines[1].requirements[0].id).toBe('ToolB-no-findings');
+    });
+
+    it('should fall back to SARIF analyzer target when driver name is empty', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: { driver: { name: '', version: '1.0' } },
+          results: [],
+        }],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+      expect(req.id).toBe('sarif-no-findings');
+      expect(req.results[0].codeDesc).toContain('SARIF analyzer');
+      expect(req.results[0].codeDesc).toContain('zero findings');
     });
 
     it('should handle missing locations', async () => {

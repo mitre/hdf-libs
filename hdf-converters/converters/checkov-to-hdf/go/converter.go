@@ -224,14 +224,28 @@ func ConvertCheckovToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		requirements[i] = buildRequirement(checkID, groups[checkID])
 	}
 
+	// Build tool format from check_types
+	format := strings.Join(checkTypes, ", ")
+
+	if len(requirements) == 0 {
+		target := format
+		if target == "" {
+			target = "input"
+		}
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"checkov-no-findings",
+				fmt.Sprintf("Checkov scanned %s and reported zero findings.", target),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	baseline := hdf.EvaluatedBaseline{
 		Name:            "Checkov Scan",
 		Requirements:    requirements,
 		ResultsChecksum: checksum,
 	}
-
-	// Build tool format from check_types
-	format := strings.Join(checkTypes, ", ")
 
 	now := time.Now().UTC()
 	return shared.BuildHDFResults(shared.HDFResultsOptions{

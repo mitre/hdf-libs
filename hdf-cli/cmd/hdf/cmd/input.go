@@ -2,16 +2,15 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
+	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
-	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
 const (
@@ -137,54 +136,47 @@ func safePath(baseDir, relPath string) (string, error) {
 	return resolved, nil
 }
 
-// parseHDFResults validates and parses JSON data into HdfResults.
-// This acts as a gatekeeper - invalid data never reaches processing logic.
+// parseHDFResults validates and parses JSON data into HdfResults via
+// hdf-parsers (the canonical HDF parse path). Schema validation runs first
+// as a gatekeeper, then JSON decode, then trailing-garbage check — all
+// inside hdfparsers.ParseResults. hdf-parsers also normalizes bare InSpec
+// timestamps before schema validation, so the CLI accepts real-world InSpec
+// output that previously failed.
 func parseHDFResults(data []byte) (hdf.HDFResults, error) {
-	var results hdf.HDFResults
-
-	// Step 1: Validate against JSON Schema (gatekeeper)
-	validationResult := validators.ValidateResults(data)
-	if !validationResult.Valid {
-		return results, fmt.Errorf("schema validation failed: %s", validationResult.Error())
+	r := hdfparsers.ParseResults(data)
+	if !r.Success {
+		return hdf.HDFResults{}, errors.New(translateParserError(r.Error))
 	}
-
-	// Step 2: Parse into typed struct (only reached if schema valid)
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	if err := decoder.Decode(&results); err != nil {
-		return results, fmt.Errorf("failed to parse JSON: %w", err)
-	}
-
-	// Step 3: Check for trailing garbage
-	if decoder.More() {
-		return results, fmt.Errorf("invalid JSON: unexpected data after end of object")
-	}
-
-	return results, nil
+	return *r.Data, nil
 }
 
-// parseHDFBaseline validates and parses JSON data into HdfBaseline.
-// This acts as a gatekeeper - invalid data never reaches processing logic.
+// parseHDFBaseline is the baseline counterpart to parseHDFResults.
 //
 //nolint:unparam // result is used in validate.go, linter can't see across files
 func parseHDFBaseline(data []byte) (hdf.HDFBaseline, error) {
-	var baseline hdf.HDFBaseline
-
-	// Step 1: Validate against JSON Schema (gatekeeper)
-	validationResult := validators.ValidateBaseline(data)
-	if !validationResult.Valid {
-		return baseline, fmt.Errorf("schema validation failed: %s", validationResult.Error())
+	r := hdfparsers.ParseBaseline(data)
+	if !r.Success {
+		return hdf.HDFBaseline{}, errors.New(translateParserError(r.Error))
 	}
+	return *r.Data, nil
+}
 
-	// Step 2: Parse into typed struct (only reached if schema valid)
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	if err := decoder.Decode(&baseline); err != nil {
-		return baseline, fmt.Errorf("failed to parse JSON: %w", err)
+// translateParserError rewrites hdf-parsers' error strings into the CLI's
+// existing lowercase phrasing so user-facing messages stay consistent
+// across every CLI command and existing test assertions keep working.
+func translateParserError(parserErr string) string {
+	if rest, ok := strings.CutPrefix(parserErr, "Schema validation failed: "); ok {
+		return "schema validation failed: " + rest
 	}
-
-	// Step 3: Check for trailing garbage
-	if decoder.More() {
-		return baseline, fmt.Errorf("invalid JSON: unexpected data after end of object")
+	if rest, ok := strings.CutPrefix(parserErr, "Invalid JSON: "); ok {
+		// hdf-parsers' "unexpected trailing data after end of object" still
+		// contains the CLI's historical "data after end of object" substring,
+		// so existing trailing-garbage assertions pass. Other JSON errors
+		// fall through here as "failed to parse JSON: <go-json-error>".
+		if strings.Contains(rest, "unexpected trailing data after end of object") {
+			return "invalid JSON: unexpected data after end of object"
+		}
+		return fmt.Sprintf("failed to parse JSON: %s", rest)
 	}
-
-	return baseline, nil
+	return parserErr
 }

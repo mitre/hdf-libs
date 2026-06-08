@@ -129,18 +129,32 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 		requirements[i] = buildRequirement(assessmentID, groups[assessmentID])
 	}
 
+	subscriptionID := ""
+	if len(limitedAssessments) > 0 {
+		subscriptionID = extractSubscriptionID(limitedAssessments[0].ID)
+	}
+
+	if len(requirements) == 0 {
+		targetName := subscriptionID
+		if targetName == "" {
+			targetName = "Unknown"
+		}
+		requirements = []hdf.EvaluatedRequirement{
+			shared.BuildNoFindingsRequirement(
+				"msft-defender-cloud-no-findings",
+				fmt.Sprintf("Microsoft Defender for Cloud scanned %s and reported zero findings.", targetName),
+				time.Now().UTC(),
+			),
+		}
+	}
+
 	baseline := hdf.EvaluatedBaseline{
 		Name:            "Microsoft Defender for Cloud Assessments",
 		Requirements:    requirements,
 		ResultsChecksum: checksum,
 	}
 
-	// Build target from subscription ID
 	var targets []hdf.Component
-	subscriptionID := ""
-	if len(limitedAssessments) > 0 {
-		subscriptionID = extractSubscriptionID(limitedAssessments[0].ID)
-	}
 	if subscriptionID != "" {
 		azureProvider := hdf.Azure
 		targets = []hdf.Component{

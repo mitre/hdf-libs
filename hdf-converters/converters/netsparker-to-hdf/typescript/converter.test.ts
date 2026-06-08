@@ -409,6 +409,20 @@ describe('Netsparker to HDF converter', () => {
     await expect(convertNetsparkerToHdf(xml)).rejects.toThrow('invalid XML');
   });
 
+  it('should synthesize a passed placeholder for empty vulnerabilities element', async () => {
+    const input = loadFixture('input/empty.xml');
+    const hdf = parseResult(await convertNetsparkerToHdf(input));
+    expect(hdf.baselines).toHaveLength(1);
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0]!.id).toBe('netsparker-no-findings');
+    expect(reqs[0]!.results).toHaveLength(1);
+    expect(reqs[0]!.results[0]!.status).toBe('passed');
+    expect(reqs[0]!.results[0]!.codeDesc).toContain('Invicti');
+    expect(reqs[0]!.results[0]!.codeDesc).toContain('https://clean.example.com/');
+    expect(reqs[0]!.results[0]!.codeDesc).toContain('zero findings');
+  });
+
   it('should fall back to name for default desc when no description/classification/impact fields', async () => {
     const xml = `<?xml version="1.0" encoding="utf-8" ?>
 <netsparker-enterprise>
