@@ -36,6 +36,7 @@ All libraries are available for both TypeScript (npm) and Go. See [Installation]
 | [`hdf-diff`](./hdf-diff/README.md) | Structural diff engine for HDF results, baselines, and systems |
 | [`hdf-extension-graph`](./hdf-extension-graph/README.md) | InSpec overlay/extension chain resolution (TypeScript only) |
 | [`hdf-cli`](./hdf-cli/README.md) | Command-line tool wrapping all of the above — convert, validate, query, diff, amend |
+| [`hdf-fixtures`](./hdf-fixtures/README.md) | Shared real-world HDF test data (internal; not published — used by cross-package tests in this monorepo) |
 
 ## Schema Types
 

@@ -94,6 +94,26 @@ Generate expected HDF output in `fixtures/expected/`:
 pnpm run convert:fixtures
 ```
 
+**Fixture location: local vs shared.** Converter fixtures stay in
+`converters/{tool-name}/fixtures/` as the converter's *tested contract* —
+that's the default. The repo also has a shared workspace package,
+`@mitre/hdf-fixtures` (`../hdf-fixtures/`), for fixtures actively consumed
+by **two or more workspace packages** (parsers, validators, hdf-extension-
+graph, hdf-diff, etc.). The boundary rule:
+
+- **Single-consumer → stays here.** Only your converter loads the file →
+  it stays in `converters/{tool-name}/fixtures/`.
+- **Multi-consumer → moves to `hdf-fixtures`.** Another workspace package
+  starts loading the file → move it to `../hdf-fixtures/`, update your
+  converter test to import via `@mitre/hdf-fixtures`, delete the original.
+  **No duplicates.**
+- **Inclusion bar is strict.** "Might be useful someday" or "good for test
+  breadth" doesn't qualify. Promote only when a second active consumer
+  materializes.
+
+See `../hdf-fixtures/README.md` for the boundary rule with examples and
+the rationale (bead `hdf-libs-e95o`).
+
 ### 4. Write Tests
 
 ```typescript

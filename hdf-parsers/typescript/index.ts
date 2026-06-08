@@ -57,16 +57,12 @@ export function parseResults(input: string | Uint8Array): ParseResult<HDFResults
     };
   }
 
-  // Check for trailing garbage by re-serializing and comparing length
-  // This catches cases like: {"valid":"json"}garbage
-  const serialized = JSON.stringify(data);
-  const trimmedInput = jsonStr.trim();
-  if (serialized.length !== trimmedInput.length && !isWhitespaceEquivalent(serialized, trimmedInput)) {
-    return {
-      success: false,
-      error: 'Invalid JSON: unexpected trailing data after end of object'
-    };
-  }
+  // JSON.parse already rejects trailing garbage (it throws on the first
+  // non-whitespace byte after the root value), so the catch above covers
+  // that case. A prior length-compare heuristic here false-positived on
+  // complex real-world inputs (e.g. `0.70` parsed as `0.7` would re-
+  // serialize to a different length) — caught by the cross-language
+  // parser parity test in typescript/parse-equivalence.test.ts.
 
   // Validate against schema
   const validationResult = validateResults(data);
@@ -112,15 +108,8 @@ export function parseBaseline(input: string | Uint8Array): ParseResult<HDFBaseli
     };
   }
 
-  // Check for trailing garbage
-  const serialized = JSON.stringify(data);
-  const trimmedInput = jsonStr.trim();
-  if (serialized.length !== trimmedInput.length && !isWhitespaceEquivalent(serialized, trimmedInput)) {
-    return {
-      success: false,
-      error: 'Invalid JSON: unexpected trailing data after end of object'
-    };
-  }
+  // Trailing garbage already caught by the JSON.parse catch above; see
+  // parseResults for the full rationale.
 
   // Validate against schema
   const validationResult = validateBaseline(data);
@@ -166,15 +155,8 @@ export function parse(input: string | Uint8Array): ParseResult<HDFResults | HDFB
     };
   }
 
-  // Check for trailing garbage
-  const serialized = JSON.stringify(data);
-  const trimmedInput = jsonStr.trim();
-  if (serialized.length !== trimmedInput.length && !isWhitespaceEquivalent(serialized, trimmedInput)) {
-    return {
-      success: false,
-      error: 'Invalid JSON: unexpected trailing data after end of object'
-    };
-  }
+  // Trailing garbage already caught by the JSON.parse catch above; see
+  // parseResults for the full rationale.
 
   // Auto-validate and detect type
   const validationResult = autoValidate(data);
@@ -214,12 +196,3 @@ export function parse(input: string | Uint8Array): ParseResult<HDFResults | HDFB
   };
 }
 
-/**
- * Check if two JSON strings are equivalent modulo whitespace
- * This is a simple heuristic - we check if one is just whitespace-padded version of other
- */
-function isWhitespaceEquivalent(a: string, b: string): boolean {
-  // Remove all whitespace and compare
-  const normalizeWhitespace = (s: string): string => s.replace(/\s+/g, '');
-  return normalizeWhitespace(a) === normalizeWhitespace(b);
-}

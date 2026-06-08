@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { results } from '@mitre/hdf-fixtures';
 import type { HDFResults } from '@mitre/hdf-schema';
 import { buildExtensionGraph } from '../src/index.js';
 import { makeRequirement, makeBaseline } from './helpers.js';
@@ -335,8 +336,7 @@ describe('integration: real multi-layered InSpec profile', () => {
   //   │   └── rhel9-stig-baseline (parent=wrapper)
   //   └── dep (parent=metawrapper)
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const fixture = require('./fixtures/multilayered-inspec.json') as HDFResults;
+  const fixture = JSON.parse(results.inspecMultilayered.read()) as HDFResults;
   const graph = buildExtensionGraph(fixture);
 
   it('detects all 5 baselines', () => {

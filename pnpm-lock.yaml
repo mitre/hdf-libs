@@ -90,6 +90,10 @@ importers:
       '@mitre/hdf-utilities':
         specifier: workspace:^
         version: link:../hdf-utilities
+    devDependencies:
+      '@mitre/hdf-fixtures':
+        specifier: workspace:^
+        version: link:../hdf-fixtures
 
   hdf-diff:
     dependencies:
@@ -106,15 +110,24 @@ importers:
         specifier: workspace:^
         version: link:../hdf-schema
     devDependencies:
+      '@mitre/hdf-fixtures':
+        specifier: workspace:^
+        version: link:../hdf-fixtures
       '@mitre/hdf-parsers':
         specifier: workspace:^
         version: link:../hdf-parsers
+
+  hdf-fixtures: {}
 
   hdf-generators:
     dependencies:
       '@mitre/hdf-schema':
         specifier: workspace:^
         version: link:../hdf-schema
+    devDependencies:
+      '@mitre/hdf-fixtures':
+        specifier: workspace:^
+        version: link:../hdf-fixtures
 
   hdf-mappings:
     devDependencies:
@@ -134,6 +147,9 @@ importers:
         specifier: workspace:^
         version: link:../hdf-validators
     devDependencies:
+      '@mitre/hdf-fixtures':
+        specifier: workspace:^
+        version: link:../hdf-fixtures
       '@stryker-mutator/core':
         specifier: ^9.5.1
         version: 9.5.1(@types/node@25.9.1)

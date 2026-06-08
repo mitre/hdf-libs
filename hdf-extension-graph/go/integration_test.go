@@ -2,10 +2,10 @@ package hdfextension
 
 import (
 	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -332,19 +332,14 @@ func TestIntegration_EdgeCases(t *testing.T) {
 //	│   └── redhat-enterprise-linux-9-stig-baseline (parent=wrapper)
 //	└── dep (parent=metawrapper)
 //
-// The fixture is the TypeScript package's test/fixtures/multilayered-inspec.json
-// — same data exercises both implementations so behavior stays aligned.
+// The fixture is the shared real-world InSpec sample at
+// @mitre/hdf-fixtures/inspec/multilayered.json — same data exercises both
+// implementations so behavior stays aligned.
 func TestIntegration_RealMultilayeredFixture(t *testing.T) {
-	// #nosec G304 -- fixture path is repo-relative and not user-controlled.
-	data, err := os.ReadFile("../test/fixtures/multilayered-inspec.json")
-	if err != nil {
-		t.Skipf("fixture not available: %v", err)
-	}
-	data = hdfparsers.NormalizeTimestamps(data)
+	data := hdfparsers.NormalizeTimestamps(fixtures.Results.InspecMultilayered)
 
 	var results hdf.HDFResults
-	err = json.Unmarshal(data, &results)
-	if err != nil {
+	if err := json.Unmarshal(data, &results); err != nil {
 		t.Fatalf("fixture must unmarshal as HDFResults: %v", err)
 	}
 

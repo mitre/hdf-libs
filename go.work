@@ -5,6 +5,7 @@ use (
 	./hdf-converters
 	./hdf-diff/go
 	./hdf-extension-graph/go
+	./hdf-fixtures
 	./hdf-generators/go
 	./hdf-mappings/go
 	./hdf-parsers/go

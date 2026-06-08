@@ -20,7 +20,12 @@ Schema validation is provided by `hdf-validators/go` via `//go:embed` — no sch
 
 ## Testing
 
-Test fixtures are loaded from `../hdf-schema/test/fixtures/` (sibling monorepo package). Tests skip gracefully if fixtures are missing.
+Test fixtures come from several locations depending on scope:
+- `../hdf-fixtures/` (`@mitre/hdf-fixtures` / `github.com/mitre/hdf-libs/hdf-fixtures`) — shared real-world corpus consumed by more than one workspace package. Use `fixtures.Inspec.X` (Go) or `inspec.x.read()` (TS) to read embedded bytes / file paths. See `../hdf-fixtures/README.md` for the boundary rule.
+- `cmd/hdf/cmd/testdata/` — CLI-local test fixtures used only by the CLI tests themselves (e.g. evidence-verify sample documents).
+- `../hdf-converters/converters/<name>/fixtures/` — converter inputs/expected outputs, accessed through the converter's own helpers when the CLI test exercises a specific converter end-to-end.
+
+Tests skip gracefully if fixtures are missing.
 
 ```bash
 pnpm test                  # go test ./...

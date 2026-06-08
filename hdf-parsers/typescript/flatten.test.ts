@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { flattenOverlays } from './flatten.js';
+import { inspec } from '@mitre/hdf-fixtures';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { readFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -491,14 +490,11 @@ describe('flattenOverlays', () => {
   }
 
   describe('integration — real fixtures', () => {
-    const fixturesDir = resolve(
-      dirname(fileURLToPath(import.meta.url)),
-      '../../hdf-schema/test/fixtures'
-    );
-
+    // Migrated from hdf-schema/test/fixtures to @mitre/hdf-fixtures/inspec/
+    // (see bead hdf-libs-e95o).
     it('Three_Layer_RHEL7: 3 profiles → 1 baseline, 247 controls', () => {
       const { results: flat, metadata } = flattenOverlays(
-        loadV1FixtureAsHdfResults(resolve(fixturesDir, 'Three_Layer_RHEL7_Overlay_Example.json'))
+        loadV1FixtureAsHdfResults(inspec.threeLayerRhel7.path)
       );
 
       expect(flat.baselines).toHaveLength(1);
@@ -512,7 +508,7 @@ describe('flattenOverlays', () => {
 
     it('wrapper.json: 4 profiles → 1 baseline, 534 controls', () => {
       const { results: flat, metadata } = flattenOverlays(
-        loadV1FixtureAsHdfResults(resolve(fixturesDir, 'wrapper.json'))
+        loadV1FixtureAsHdfResults(inspec.wrapper.path)
       );
 
       expect(flat.baselines).toHaveLength(1);

@@ -13,6 +13,7 @@ import { existsSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { results } from '@mitre/hdf-fixtures';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { dump, loadFixture } from './equivalence-dump.js';
 
@@ -42,9 +43,15 @@ function runGoDumper(fixturePath: string): unknown {
   return JSON.parse(out);
 }
 
-const FIXTURES = [
-  'multilayered-inspec.json',
-  'equivalence-modifications.json',
+// multilayered.json comes from @mitre/hdf-fixtures (cross-package real-world
+// reference data); equivalence-modifications.json stays local because it's
+// synthetic data engineered to exercise this test's specific code paths.
+const FIXTURES: Array<{ name: string; path: string }> = [
+  { name: 'multilayered (shared results corpus)', path: results.inspecMultilayered.path },
+  {
+    name: 'equivalence-modifications (local synthetic)',
+    path: path.join(repoRoot, 'test', 'fixtures', 'equivalence-modifications.json'),
+  },
 ];
 
 describe.skipIf(!hasGo())('cross-language equivalence (Go ↔ TS)', () => {
@@ -57,9 +64,7 @@ describe.skipIf(!hasGo())('cross-language equivalence (Go ↔ TS)', () => {
     execFileSync('go', ['build', '-o', goBinary, '.'], { cwd: goCmdDir });
   }, 120_000);
 
-  for (const name of FIXTURES) {
-    const fixturePath = path.join(repoRoot, 'test', 'fixtures', name);
-
+  for (const { name, path: fixturePath } of FIXTURES) {
     it(`produces identical canonical dumps on ${name}`, () => {
       expect(existsSync(fixturePath), `fixture missing: ${fixturePath}`).toBe(true);
       const tsOutput = dump(loadFixture(fixturePath));

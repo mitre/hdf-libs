@@ -39,6 +39,7 @@
     "@mitre/hdf-schema": "workspace:^"
   },
   "devDependencies": {
+    "@mitre/hdf-fixtures": "workspace:^",
     "@mitre/hdf-parsers": "workspace:^"
   },
   "engines": {

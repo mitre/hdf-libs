@@ -2,10 +2,25 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
+import { inspec } from '@mitre/hdf-fixtures';
 import { convertV1ToV2, isHDFV1, HDFV1Results } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
+
+// Migrated to @mitre/hdf-fixtures/inspec/ — see bead hdf-libs-e95o. Other
+// input fixtures (e.g. minimal.json) remain local to this converter as its
+// single-package tested contract.
+const SHARED_INPUTS: Record<string, string> = {
+  'ubi9-scan.json': inspec.ubi9Scan.path,
+  'container-scan.json': inspec.containerScan.path,
+  'three-layer-overlay.json': inspec.threeLayerOverlay.path,
+  'wrapper.json': inspec.wrapper.path,
+};
+
+function inputFixturePath(name: string): string {
+  return SHARED_INPUTS[name] ?? join(FIXTURES_DIR, 'input', name);
+}
 
 describe('HDF v1.0 to v2.0 Converter', () => {
   describe('convertV1ToV2', () => {
@@ -572,7 +587,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
   describe('ubi9-scan fixture (real InSpec exec-json)', () => {
     const raw = readFileSync(
-      join(FIXTURES_DIR, 'input', 'ubi9-scan.json'),
+      inputFixturePath('ubi9-scan.json'),
       'utf-8'
     );
     const v1 = JSON.parse(raw) as HDFV1Results;
@@ -645,7 +660,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
   describe('overlay flattening — deep nesting (3-layer overlay)', () => {
     const raw = readFileSync(
-      join(FIXTURES_DIR, 'input', 'three-layer-overlay.json'),
+      inputFixturePath('three-layer-overlay.json'),
       'utf-8'
     );
     const v1 = JSON.parse(raw) as HDFV1Results;
@@ -681,7 +696,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
   describe('overlay flattening — wide nesting (wrapper)', () => {
     const raw = readFileSync(
-      join(FIXTURES_DIR, 'input', 'wrapper.json'),
+      inputFixturePath('wrapper.json'),
       'utf-8'
     );
     const v1 = JSON.parse(raw) as HDFV1Results;
@@ -760,7 +775,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
     it('should classify 27 impact=0 controls as notApplicable in Three_Layer fixture', () => {
       const raw = readFileSync(
-        join(FIXTURES_DIR, 'input', 'three-layer-overlay.json'),
+        inputFixturePath('three-layer-overlay.json'),
         'utf-8'
       );
       const v1 = JSON.parse(raw) as HDFV1Results;
@@ -875,7 +890,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
     it('Three_Layer fixture: every control has effectiveStatus set', () => {
       const raw = readFileSync(
-        join(FIXTURES_DIR, 'input', 'three-layer-overlay.json'),
+        inputFixturePath('three-layer-overlay.json'),
         'utf-8'
       );
       const v1 = JSON.parse(raw) as HDFV1Results;
@@ -887,7 +902,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
     it('Three_Layer fixture: counts match expected (73 passed, 138 failed, 27 NA, 9 NR)', () => {
       const raw = readFileSync(
-        join(FIXTURES_DIR, 'input', 'three-layer-overlay.json'),
+        inputFixturePath('three-layer-overlay.json'),
         'utf-8'
       );
       const v1 = JSON.parse(raw) as HDFV1Results;
@@ -1008,7 +1023,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
     });
 
     it('ubi9 fixture: NA controls should have severity from tags, not "none"', () => {
-      const raw = readFileSync(join(FIXTURES_DIR, 'input', 'ubi9-scan.json'), 'utf-8');
+      const raw = readFileSync(inputFixturePath('ubi9-scan.json'), 'utf-8');
       const v1 = JSON.parse(raw) as HDFV1Results;
       const v2 = convertV1ToV2(v1);
       const reqs = v2.baselines[0].requirements!;

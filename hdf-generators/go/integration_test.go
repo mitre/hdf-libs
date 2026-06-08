@@ -2,10 +2,10 @@ package generators
 
 import (
 	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,10 +13,8 @@ import (
 
 func loadFixture(t *testing.T) hdf.HDFBaseline {
 	t.Helper()
-	data, err := os.ReadFile("testdata/win2022-stig-baseline.json")
-	require.NoError(t, err, "fixture file must exist (symlink from test/fixtures/)")
 	var baseline hdf.HDFBaseline
-	require.NoError(t, json.Unmarshal(data, &baseline))
+	require.NoError(t, json.Unmarshal(fixtures.Baseline.Win2022Stig, &baseline))
 	return baseline
 }
 

@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"testing"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,8 +25,33 @@ func getOutputDir() string {
 	return filepath.Join(filepath.Dir(filename), "..", "..", "..", "test-output", "differential", "go", "legacyhdf")
 }
 
+// sharedOrLocalInputPath resolves a fixture name to an on-disk path. Fixtures
+// migrated to @mitre/hdf-fixtures (per bead hdf-libs-e95o) get materialized to
+// a per-test temp file from their embedded bytes; others fall through to the
+// converter's local fixtures dir. Keeps the existing `os.ReadFile(inputPath)`
+// pattern at call sites working unchanged.
+func sharedOrLocalInputPath(t *testing.T, name string) string {
+	t.Helper()
+	var data []byte
+	switch name {
+	case "ubi9-scan.json":
+		data = fixtures.Inspec.Ubi9Scan
+	case "container-scan.json":
+		data = fixtures.Inspec.ContainerScan
+	case "three-layer-overlay.json":
+		data = fixtures.Inspec.ThreeLayerOverlay
+	case "wrapper.json":
+		data = fixtures.Inspec.Wrapper
+	default:
+		return filepath.Join(getFixturesDir(), "input", name)
+	}
+	tmpFile := filepath.Join(t.TempDir(), name)
+	require.NoError(t, os.WriteFile(tmpFile, data, 0644))
+	return tmpFile
+}
+
 func TestConvertV1ToV2_Minimal(t *testing.T) {
-	inputPath := filepath.Join(getFixturesDir(), "input", "minimal.json")
+	inputPath := sharedOrLocalInputPath(t, "minimal.json")
 
 	// Load input
 	inputData, err := os.ReadFile(inputPath)
@@ -57,7 +83,7 @@ func TestConvertV1ToV2_Minimal(t *testing.T) {
 }
 
 func TestConvertV1ToV2_Tool(t *testing.T) {
-	inputPath := filepath.Join(getFixturesDir(), "input", "minimal.json")
+	inputPath := sharedOrLocalInputPath(t, "minimal.json")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
 
@@ -75,7 +101,7 @@ func TestConvertV1ToV2_Tool(t *testing.T) {
 }
 
 func TestConvertV1ToV2_ContainerScan(t *testing.T) {
-	inputPath := filepath.Join(getFixturesDir(), "input", "container-scan.json")
+	inputPath := sharedOrLocalInputPath(t, "container-scan.json")
 
 	// Load input
 	inputData, err := os.ReadFile(inputPath)
@@ -105,7 +131,7 @@ func TestConvertV1ToV2_ContainerScan(t *testing.T) {
 }
 
 func TestConvertV1ToV2_Wrapper(t *testing.T) {
-	inputPath := filepath.Join(getFixturesDir(), "input", "wrapper.json")
+	inputPath := sharedOrLocalInputPath(t, "wrapper.json")
 
 	// Load input
 	inputData, err := os.ReadFile(inputPath)
@@ -480,7 +506,7 @@ func TestConvertProfile_AllOptionalFields(t *testing.T) {
 // ── Overlay flattening integration tests ──────────────────
 
 func TestConvertV1ToV2_DeepOverlayFlatten(t *testing.T) {
-	inputPath := filepath.Join(getFixturesDir(), "input", "three-layer-overlay.json")
+	inputPath := sharedOrLocalInputPath(t, "three-layer-overlay.json")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
 
@@ -518,7 +544,7 @@ func TestConvertV1ToV2_DeepOverlayFlatten(t *testing.T) {
 }
 
 func TestConvertV1ToV2_WideWrapperFlatten(t *testing.T) {
-	inputPath := filepath.Join(getFixturesDir(), "input", "wrapper.json")
+	inputPath := sharedOrLocalInputPath(t, "wrapper.json")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
 
@@ -604,7 +630,7 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 	})
 
 	t.Run("classifies 27 impact-0 controls as notApplicable in Three_Layer fixture", func(t *testing.T) {
-		inputPath := filepath.Join(getFixturesDir(), "input", "three-layer-overlay.json")
+		inputPath := sharedOrLocalInputPath(t, "three-layer-overlay.json")
 		inputData, err := os.ReadFile(inputPath)
 		require.NoError(t, err)
 
@@ -697,7 +723,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 	})
 
 	t.Run("every control has effectiveStatus in Three_Layer fixture", func(t *testing.T) {
-		inputPath := filepath.Join(getFixturesDir(), "input", "three-layer-overlay.json")
+		inputPath := sharedOrLocalInputPath(t, "three-layer-overlay.json")
 		inputData, err := os.ReadFile(inputPath)
 		require.NoError(t, err)
 		var v1 HDFV1Results
@@ -710,7 +736,7 @@ func TestConvertV1ToV2_AlwaysComputeEffectiveStatus(t *testing.T) {
 	})
 
 	t.Run("Three_Layer counts: 73 passed, 138 failed, 27 NA, 9 NR", func(t *testing.T) {
-		inputPath := filepath.Join(getFixturesDir(), "input", "three-layer-overlay.json")
+		inputPath := sharedOrLocalInputPath(t, "three-layer-overlay.json")
 		inputData, err := os.ReadFile(inputPath)
 		require.NoError(t, err)
 		var v1 HDFV1Results
@@ -838,7 +864,7 @@ func TestSeverityFromTagsSeverity(t *testing.T) {
 	})
 
 	t.Run("ubi9 fixture: NA controls have severity from tags not none", func(t *testing.T) {
-		inputPath := filepath.Join(getFixturesDir(), "input", "ubi9-scan.json")
+		inputPath := sharedOrLocalInputPath(t, "ubi9-scan.json")
 		inputData, err := os.ReadFile(inputPath)
 		require.NoError(t, err)
 
@@ -880,7 +906,7 @@ func TestParseTime(t *testing.T) {
 }
 
 func TestConvertV1ToV2_ControlType(t *testing.T) {
-	inputPath := filepath.Join(getFixturesDir(), "input", "ubi9-scan.json")
+	inputPath := sharedOrLocalInputPath(t, "ubi9-scan.json")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
 
@@ -908,7 +934,7 @@ func TestConvertV1ToV2_ControlType(t *testing.T) {
 }
 
 func TestConvertV1ToV2_VerificationMethodNotFabricated(t *testing.T) {
-	inputPath := filepath.Join(getFixturesDir(), "input", "ubi9-scan.json")
+	inputPath := sharedOrLocalInputPath(t, "ubi9-scan.json")
 	inputData, err := os.ReadFile(inputPath)
 	require.NoError(t, err)
 

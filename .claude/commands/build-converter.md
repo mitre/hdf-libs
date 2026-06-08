@@ -153,6 +153,19 @@ See "Step 5b — Live Fetch Mode" below for details.
 
 Copy or adapt real samples. Keep them small by truncating arrays, but preserve the real field names, types, and nesting. Name them descriptively (`minimal.<ext>`, `real.<ext>`, `edge-case.<ext>`).
 
+### Fixture location: local vs shared
+
+**Default: keep fixtures in your converter's `fixtures/` dir.** That's the converter's *tested contract* and the natural home for the input/expected pair.
+
+**Promote to `@mitre/hdf-fixtures` only when a second workspace package actively needs to load the same file** (parsers, validators, hdf-extension-graph, hdf-diff, etc.). When that happens:
+1. Move the file to `../hdf-fixtures/<doc-type>/` (e.g. `results/`, `baseline/`, `inspec/`)
+2. Wire it into both `hdf-fixtures/src/index.ts` (TS) and `hdf-fixtures/fixtures.go` (Go) with parallel access
+3. Update both consumers to import from `@mitre/hdf-fixtures` (the converter test loads via `inspec.x.path` / `fixtures.Inspec.X` or similar)
+4. **Delete the original** — no duplicates allowed
+5. Document the move in `hdf-fixtures/README.md` with provenance and current consumers
+
+**The inclusion bar is strict.** "Might be useful someday" or "good for cross-package parity-test breadth" doesn't qualify. Promote only when a second active consumer has materialized. See `../hdf-fixtures/README.md` for examples and the rationale (bead `hdf-libs-e95o`).
+
 ### Fixture size policy
 
 **Committed fixtures should be small** (under ~1 MB per file). Full-size real-world scan outputs (e.g., complete DISA STIG scans, entire NIST 800-53 catalogs) should NOT be committed to the repo — they bloat the git history and caused LFS bandwidth issues.

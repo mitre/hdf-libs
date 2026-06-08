@@ -15,7 +15,7 @@ pnpm security         # pnpm audit + govulncheck
 
 ## Monorepo Layout
 
-pnpm workspace with 10 packages + a VitePress schema documentation site:
+pnpm workspace with 11 packages + a VitePress schema documentation site:
 
 | Package | Purpose | Language |
 |---------|---------|----------|
@@ -28,6 +28,7 @@ pnpm workspace with 10 packages + a VitePress schema documentation site:
 | `hdf-generators` | Generate InSpec profiles from baselines | TS + Go |
 | `hdf-diff` | Structural diff engine for assessments | TS |
 | `hdf-extension-graph` | InSpec overlay/extension chain resolution | TS + Go |
+| `hdf-fixtures` | Shared real-world HDF test data corpus (private; cross-package tests only) | TS + Go |
 | `hdf-cli` | Go CLI wrapping all of the above | Go |
 | `site/` | VitePress schema reference site for GitHub Pages | TS |
 
@@ -151,6 +152,15 @@ Never fabricate fixture data. Every converter fixture must be one of:
 3. Validated against the format's official schema (JSON Schema, XSD, etc.) with proof logged in a comment or commit message
 
 If no real data source exists and no schema exists to validate against, **stop and ask** — do not invent data. A converter tested against fabricated fixtures is untrusted: the fixture determines whether the converter works on real data; if the fixture is fake, the test proves nothing.
+
+### Where fixtures live: local vs shared
+
+- **Single-consumer → stays local.** If only the owning package's tests load the file (a converter's `fixtures/input/` or `fixtures/expected/`, a package's `test/fixtures/`, a Go package's `testdata/`), it stays there as that package's *tested contract*.
+- **Multi-consumer → moves to `hdf-fixtures`.** When two or more workspace packages actively load the same fixture, it moves to `@mitre/hdf-fixtures` (the shared corpus) and every consumer imports it from there. The original location is deleted — **no duplicates**.
+- **Inclusion bar is strict.** "Might be useful someday" or "good for parity-test breadth" are not sufficient justifications for landing a file in `hdf-fixtures`. Promote a fixture only once the second active consumer materializes.
+- **`hdf-fixtures` provenance.** Every entry in `hdf-fixtures/README.md` lists the source AND the current consumers. Adding a fixture requires updating both `src/index.ts` (TS) and `fixtures.go` (Go) plus the README, and deleting the original location.
+
+The architecture rationale lives in bead `hdf-libs-e95o`; `hdf-fixtures/README.md` documents the boundary rule with examples.
 
 ---
 

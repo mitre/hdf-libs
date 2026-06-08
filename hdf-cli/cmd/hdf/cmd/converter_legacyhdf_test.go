@@ -5,12 +5,36 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 )
 
 // legacyhdfFixturePath returns the path to a legacyhdf test fixture.
+// Inputs migrated to @mitre/hdf-fixtures/inspec/ (per bead hdf-libs-e95o)
+// are materialized to a per-test temp file; others fall back to the
+// converter's local fixtures dir.
 func legacyhdfFixturePath(t *testing.T, name string) string {
 	t.Helper()
-	// Navigate from cmd/hdf/cmd to hdf-converters/converters/legacyhdf-to-hdf/fixtures
+	var sharedBytes []byte
+	switch name {
+	case "input/ubi9-scan.json":
+		sharedBytes = fixtures.Inspec.Ubi9Scan
+	case "input/container-scan.json":
+		sharedBytes = fixtures.Inspec.ContainerScan
+	case "input/three-layer-overlay.json":
+		sharedBytes = fixtures.Inspec.ThreeLayerOverlay
+	case "input/wrapper.json":
+		sharedBytes = fixtures.Inspec.Wrapper
+	}
+	if sharedBytes != nil {
+		tmp := filepath.Join(t.TempDir(), filepath.Base(name))
+		if err := os.WriteFile(tmp, sharedBytes, 0644); err != nil {
+			t.Fatalf("failed to write shared fixture: %v", err)
+		}
+		return tmp
+	}
+	// Local fixture, no migration. Navigate from cmd/hdf/cmd to
+	// hdf-converters/converters/legacyhdf-to-hdf/fixtures.
 	path := filepath.Join("..", "..", "..", "..", "hdf-converters", "converters", "legacyhdf-to-hdf", "fixtures", name)
 	absPath, err := filepath.Abs(path)
 	if err != nil {
