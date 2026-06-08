@@ -174,7 +174,8 @@ function buildReason(stmt: OpenVexStatement, poamTemplate: string): string {
   const parts: string[] = [];
   if (stmt.impact_statement) parts.push(stmt.impact_statement);
   if (stmt.action_statement) parts.push(stmt.action_statement);
-  if (stmt.justification) parts.push(`VEX justification: ${stmt.justification}`);
+  // Justification is now a fully structured field (post v3.2.x enum
+  // extension); no longer mirrored into reason.
   const productIds = (stmt.products ?? [])
     .map((p) => p['@id'])
     .filter((id): id is string => Boolean(id));

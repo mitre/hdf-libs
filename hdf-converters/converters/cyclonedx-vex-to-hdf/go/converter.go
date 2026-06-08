@@ -176,6 +176,14 @@ func vulnerabilityToOverride(v *Vulnerability, productLookup map[string]Componen
 
 	products := productIDsForVuln(v, productLookup)
 
+	// componentRef is UUID-constrained on the HDF schema (it identifies an
+	// HDF component by id, not a foreign-format identifier). We therefore
+	// leave it unset and let the resolved product identifier — purl when
+	// available, else name@version — surface via the Products line in
+	// reason. Round-trip preserves product IDENTITY but the textual form
+	// shifts from CycloneDX bom-ref to the more descriptive resolved form
+	// (e.g. "product-ABC" -> "ABC@4.2"). The schema-discussion follow-up
+	// bead tracks whether HDF needs a non-UUID per-override product field.
 	override := hdf.StandaloneOverride{
 		Type:          target.OverrideType,
 		Status:        target.Status,
@@ -229,15 +237,11 @@ func buildReason(v *Vulnerability, products []string) string {
 	if v.Analysis != nil && v.Analysis.Detail != "" {
 		parts = append(parts, v.Analysis.Detail)
 	}
-	if v.Analysis != nil && v.Analysis.Justification != "" {
-		// preserve the raw CycloneDX label so unknown-to-HDF values
-		// (requires_configuration, protected_by_compiler, etc.) are not
-		// silently dropped.
-		parts = append(parts, "VEX justification: "+v.Analysis.Justification)
-	}
-	if v.Analysis != nil && len(v.Analysis.Response) > 0 {
-		parts = append(parts, "Response: "+strings.Join(v.Analysis.Response, ", "))
-	}
+	// Justification is now a fully structured field (post v3.2.x enum
+	// extension covers all current CycloneDX values); no longer mirrored
+	// into reason. Response[] hints are not echoed — POA&M overrides
+	// already carry remediation context via milestones, and other override
+	// types don't act on response semantics.
 	parts = append(parts, "Products: "+strings.Join(products, ", "))
 	return strings.Join(parts, "\n")
 }

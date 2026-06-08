@@ -62,8 +62,8 @@ describe('convertCyclonedxVexToHdf — empty actionable', () => {
   );
 });
 
-describe('convertCyclonedxVexToHdf — unknown justification preserved', () => {
-  it('preserves CycloneDX-specific justifications verbatim in reason', async () => {
+describe('convertCyclonedxVexToHdf — CycloneDX-specific justification', () => {
+  it('lands in the structured justification field (HDF enum extended in v3.2.x)', async () => {
     const input = JSON.stringify({
       bomFormat: 'CycloneDX',
       specVersion: '1.4',
@@ -81,8 +81,8 @@ describe('convertCyclonedxVexToHdf — unknown justification preserved', () => {
       ],
     });
     const result = await convertCyclonedxVexToHdf(input, TEST_VERSION);
-    expect(result.overrides[0].justification).toBeUndefined();
-    expect(result.overrides[0].reason).toContain('VEX justification: requires_configuration');
+    expect(result.overrides[0].justification).toBe(Justification.RequiresConfiguration);
+    expect(result.overrides[0].reason).not.toContain('VEX justification:');
   });
 });
 

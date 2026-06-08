@@ -48,6 +48,13 @@ func TestNormalizeJustification(t *testing.T) {
 		"vulnerable_code_cannot_be_controlled_by_adversary": hdf.VulnerableCodeCannotBeControlledByAdversary,
 		"inline_mitigations_already_exist":                  hdf.InlineMitigationsAlreadyExist,
 		"protected_by_mitigating_control":                   hdf.InlineMitigationsAlreadyExist,
+		// CycloneDX-specific reachability values now in the HDF enum.
+		"requires_configuration": hdf.RequiresConfiguration,
+		"requires_dependency":    hdf.RequiresDependency,
+		"requires_environment":   hdf.RequiresEnvironment,
+		"protected_by_compiler":  hdf.ProtectedByCompiler,
+		"protected_at_runtime":   hdf.ProtectedAtRuntime,
+		"protected_at_perimeter": hdf.ProtectedAtPerimeter,
 	}
 	for raw, want := range cases {
 		got, ok := NormalizeJustification(raw)
@@ -55,9 +62,9 @@ func TestNormalizeJustification(t *testing.T) {
 		assert.Equalf(t, want, got, "for %q", raw)
 	}
 
-	for _, unknown := range []string{"", "requires_configuration", "protected_by_compiler", "garbage"} {
+	for _, unknown := range []string{"", "garbage", "some_future_ecosystem_label"} {
 		_, ok := NormalizeJustification(unknown)
-		assert.Falsef(t, ok, "expected %q to be unknown (importer must preserve raw value)", unknown)
+		assert.Falsef(t, ok, "expected %q to be unknown — future ecosystems should extend the enum, not rely on reason-field passthrough", unknown)
 	}
 }
 
@@ -149,4 +156,35 @@ func TestSupplierEvidence(t *testing.T) {
 
 	assert.Nil(t, SupplierEvidence("", "anything"), "no URI = no evidence; don't fabricate")
 	assert.Nil(t, SupplierEvidence("   ", "anything"))
+}
+
+func TestJustificationForCycloneDX(t *testing.T) {
+	t.Parallel()
+
+	// Long-form HDF -> short-form CycloneDX
+	v, ok := JustificationForCycloneDX(hdf.ComponentNotPresent)
+	require.True(t, ok)
+	assert.Equal(t, "code_not_present", v)
+	v, ok = JustificationForCycloneDX(hdf.VulnerableCodeNotInExecutePath)
+	require.True(t, ok)
+	assert.Equal(t, "code_not_reachable", v)
+	v, ok = JustificationForCycloneDX(hdf.InlineMitigationsAlreadyExist)
+	require.True(t, ok)
+	assert.Equal(t, "protected_by_mitigating_control", v)
+
+	// CycloneDX-specific values pass through unchanged
+	for _, val := range []hdf.Justification{
+		hdf.RequiresConfiguration, hdf.RequiresDependency, hdf.RequiresEnvironment,
+		hdf.ProtectedByCompiler, hdf.ProtectedAtRuntime, hdf.ProtectedAtPerimeter,
+	} {
+		got, gotOK := JustificationForCycloneDX(val)
+		require.Truef(t, gotOK, "%s should pass through", val)
+		assert.Equal(t, string(val), got)
+	}
+
+	// HDF-only values have no CycloneDX equivalent
+	_, ok = JustificationForCycloneDX(hdf.VulnerableCodeNotPresent)
+	assert.False(t, ok, "vulnerable_code_not_present has no CycloneDX equivalent")
+	_, ok = JustificationForCycloneDX(hdf.VulnerableCodeCannotBeControlledByAdversary)
+	assert.False(t, ok, "vulnerable_code_cannot_be_controlled_by_adversary has no CycloneDX equivalent")
 }

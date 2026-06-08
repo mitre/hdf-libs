@@ -1557,9 +1557,15 @@
             "vulnerable_code_not_present",
             "vulnerable_code_not_in_execute_path",
             "vulnerable_code_cannot_be_controlled_by_adversary",
-            "inline_mitigations_already_exist"
+            "inline_mitigations_already_exist",
+            "requires_configuration",
+            "requires_dependency",
+            "requires_environment",
+            "protected_by_compiler",
+            "protected_at_runtime",
+            "protected_at_perimeter"
           ],
-          "description": "Structured controlled-vocabulary reason for an override, complementing the free-text 'reason' field. 'reason' carries the human-readable rationale an auditor reads; 'justification' carries the machine-readable category enabling filtering, aggregation, and lossless round-trip with structured ecosystems (VEX, OSCAL, FedRAMP DR). Both fields may be present simultaneously and are NOT redundant: 'reason' explains the specific circumstance; 'justification' classifies it. Authors SHOULD populate both when a controlled-vocabulary value applies — the enum value alone is not self-explanatory to an auditor. Initial vocabulary (5 values) is from the VEX ecosystem (OpenVEX / CSAF VEX / CycloneDX VEX) where it describes WHY a vulnerability is not_affected on a specific system. The enum is open for additive extension as other ecosystems' controlled vocabularies are integrated. Older readers SHOULD treat unknown values as 'unknown justification' (passthrough) rather than rejecting the document.",
+          "description": "Structured controlled-vocabulary reason for an override, complementing the free-text 'reason' field. 'reason' carries the human-readable rationale an auditor reads; 'justification' carries the machine-readable category enabling filtering, aggregation, and lossless round-trip with structured ecosystems (VEX, OSCAL, FedRAMP DR). Both fields may be present simultaneously and are NOT redundant: 'reason' explains the specific circumstance; 'justification' classifies it. Authors SHOULD populate both when a controlled-vocabulary value applies — the enum value alone is not self-explanatory to an auditor. The vocabulary is drawn from the VEX ecosystem: the first five values are common across OpenVEX, CSAF VEX, and CycloneDX VEX; the remaining six (requires_configuration / requires_dependency / requires_environment / protected_by_compiler / protected_at_runtime / protected_at_perimeter) are CycloneDX-specific and describe why the vulnerable code path is unreachable in the deployed configuration. The enum is open for additive extension as other ecosystems' controlled vocabularies are integrated. Older readers SHOULD treat unknown values as 'unknown justification' (passthrough) rather than rejecting the document.",
           "title": "Justification"
         },
         "Impact_Override": {

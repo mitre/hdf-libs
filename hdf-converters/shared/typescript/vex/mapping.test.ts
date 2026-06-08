@@ -7,6 +7,7 @@ import {
 import {
   exportStatusFor,
   importTargetFor,
+  justificationForCycloneDX,
   normalizeJustification,
   normalizeStatus,
   supplierEvidence,
@@ -62,18 +63,23 @@ describe('normalizeJustification', () => {
       'protected_by_mitigating_control',
       Justification.InlineMitigationsAlreadyExist,
     ],
+    // CycloneDX-specific reachability values now in the HDF enum.
+    ['requires_configuration', Justification.RequiresConfiguration],
+    ['requires_dependency', Justification.RequiresDependency],
+    ['requires_environment', Justification.RequiresEnvironment],
+    ['protected_by_compiler', Justification.ProtectedByCompiler],
+    ['protected_at_runtime', Justification.ProtectedAtRuntime],
+    ['protected_at_perimeter', Justification.ProtectedAtPerimeter],
   ])('maps %s', (raw, expected) => {
     expect(normalizeJustification(raw)).toBe(expected);
   });
 
-  it.each([
-    '',
-    'requires_configuration',
-    'protected_by_compiler',
-    'garbage',
-  ])('returns undefined for %s (importer must preserve raw)', (raw) => {
-    expect(normalizeJustification(raw)).toBeUndefined();
-  });
+  it.each(['', 'garbage', 'some_future_ecosystem_label'])(
+    'returns undefined for %s (future ecosystems should extend the enum)',
+    (raw) => {
+      expect(normalizeJustification(raw)).toBeUndefined();
+    },
+  );
 });
 
 describe('importTargetFor', () => {
@@ -199,5 +205,33 @@ describe('supplierEvidence', () => {
   it('returns undefined for empty URI (no fabrication)', () => {
     expect(supplierEvidence('')).toBeUndefined();
     expect(supplierEvidence('   ')).toBeUndefined();
+  });
+});
+
+describe('justificationForCycloneDX', () => {
+  it.each([
+    [Justification.ComponentNotPresent, 'code_not_present'],
+    [Justification.VulnerableCodeNotInExecutePath, 'code_not_reachable'],
+    [Justification.InlineMitigationsAlreadyExist, 'protected_by_mitigating_control'],
+  ])('translates long-form %s to CycloneDX short-form', (hdfValue, cdxValue) => {
+    expect(justificationForCycloneDX(hdfValue)).toBe(cdxValue);
+  });
+
+  it.each([
+    Justification.RequiresConfiguration,
+    Justification.RequiresDependency,
+    Justification.RequiresEnvironment,
+    Justification.ProtectedByCompiler,
+    Justification.ProtectedAtRuntime,
+    Justification.ProtectedAtPerimeter,
+  ])('passes CycloneDX-specific value %s through unchanged', (v) => {
+    expect(justificationForCycloneDX(v)).toBe(String(v));
+  });
+
+  it.each([
+    Justification.VulnerableCodeNotPresent,
+    Justification.VulnerableCodeCannotBeControlledByAdversary,
+  ])('returns undefined for %s (no CycloneDX equivalent)', (v) => {
+    expect(justificationForCycloneDX(v)).toBeUndefined();
   });
 });

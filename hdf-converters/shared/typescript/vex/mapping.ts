@@ -59,12 +59,16 @@ export function normalizeStatus(raw: string): VexStatus | undefined {
 /**
  * Map an ecosystem-specific justification string to the canonical HDF
  * Justification enum. Returns undefined for unknown values; callers SHOULD
- * preserve the original string in evidence[] or reason instead of dropping
- * it (the schema spec wants pass-through on unknown values, not rejection).
+ * log unknown values rather than silently dropping (the schema spec wants
+ * pass-through, but practically we expect the enum to be extended when a
+ * new vocabulary is integrated rather than carrying raw labels
+ * indefinitely).
  *
- * CycloneDX adds vocabulary HDF does not yet model (requires_configuration,
- * protected_by_compiler, etc.); those are deliberately returned as unknown
- * so the converter has a chance to log + preserve the raw value.
+ * The HDF Justification enum (v3.2.x) covers:
+ *   - the original OpenVEX / CSAF VEX five values
+ *   - CycloneDX-specific reachability values (requires_*, protected_*)
+ *     that describe why a vulnerable code path is unreachable in the
+ *     deployed configuration.
  */
 export function normalizeJustification(raw: string): Justification | undefined {
   switch (raw.trim().toLowerCase()) {
@@ -81,6 +85,50 @@ export function normalizeJustification(raw: string): Justification | undefined {
     case 'inline_mitigations_already_exist':
     case 'protected_by_mitigating_control':
       return Justification.InlineMitigationsAlreadyExist;
+    case 'requires_configuration':
+      return Justification.RequiresConfiguration;
+    case 'requires_dependency':
+      return Justification.RequiresDependency;
+    case 'requires_environment':
+      return Justification.RequiresEnvironment;
+    case 'protected_by_compiler':
+      return Justification.ProtectedByCompiler;
+    case 'protected_at_runtime':
+      return Justification.ProtectedAtRuntime;
+    case 'protected_at_perimeter':
+      return Justification.ProtectedAtPerimeter;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Render an HDF Justification value as the CycloneDX-native vocabulary.
+ * CycloneDX uses short-form names (code_not_present, code_not_reachable,
+ * protected_by_mitigating_control) for the three justifications shared
+ * with OpenVEX/CSAF, and shares the six CycloneDX-specific reachability
+ * values verbatim.
+ *
+ * Returns undefined when the HDF value has no equivalent in CycloneDX's
+ * enum (vulnerable_code_not_present and
+ * vulnerable_code_cannot_be_controlled_by_adversary). Callers should
+ * omit the justification field in that case.
+ */
+export function justificationForCycloneDX(j: Justification): string | undefined {
+  switch (j) {
+    case Justification.ComponentNotPresent:
+      return 'code_not_present';
+    case Justification.VulnerableCodeNotInExecutePath:
+      return 'code_not_reachable';
+    case Justification.InlineMitigationsAlreadyExist:
+      return 'protected_by_mitigating_control';
+    case Justification.RequiresConfiguration:
+    case Justification.RequiresDependency:
+    case Justification.RequiresEnvironment:
+    case Justification.ProtectedByCompiler:
+    case Justification.ProtectedAtRuntime:
+    case Justification.ProtectedAtPerimeter:
+      return String(j);
     default:
       return undefined;
   }
@@ -125,6 +173,7 @@ export function importTargetFor(status: VexStatus): ImportTarget | undefined {
     case VexStatus.Affected:
     case VexStatus.UnderInvestigation:
       return undefined;
+    /* c8 ignore next 2 — every VexStatus has a case above */
     default:
       return undefined;
   }
@@ -163,6 +212,7 @@ export function exportStatusFor(
       return allMilestonesCompleted && closureChained
         ? VexStatus.Fixed
         : VexStatus.Affected;
+    /* c8 ignore next 2 — every OverrideType has a case above */
     default:
       return undefined;
   }

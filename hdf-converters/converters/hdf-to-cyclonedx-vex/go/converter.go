@@ -163,12 +163,14 @@ func overrideToVulnerability(o *hdf.StandaloneOverride, componentRegistry map[st
 	}
 
 	analysis := Analysis{State: state}
-	// Prefer the raw CycloneDX justification preserved in reason
-	// (`requires_configuration` etc.) so unknown-to-HDF labels round-trip.
-	if rawJ := extractRawJustification(o.Reason); rawJ != "" {
-		analysis.Justification = rawJ
-	} else if o.Justification != nil {
-		analysis.Justification = string(*o.Justification)
+	// The HDF Justification enum uses long-form names (component_not_present
+	// etc.) drawn from OpenVEX/CSAF; CycloneDX uses short-form names
+	// (code_not_present, code_not_reachable, protected_by_mitigating_control)
+	// for the same concepts. Translate via the shared helper.
+	if o.Justification != nil {
+		if v, ok := vex.JustificationForCycloneDX(*o.Justification); ok {
+			analysis.Justification = v
+		}
 	}
 	if detail := stripReasonAnnotations(o.Reason); detail != "" {
 		analysis.Detail = detail
@@ -265,21 +267,12 @@ func affectsForProducts(pids []string) []AffectedRef {
 	return out
 }
 
-// extractRawJustification pulls a CycloneDX-specific justification label
-// back out of the 'VEX justification: ...' reason line, preserving
-// values like requires_configuration / protected_by_compiler that don't
-// normalize to the HDF Justification enum on import.
-func extractRawJustification(reason string) string {
-	m := rawJustRegexp.FindStringSubmatch(reason)
-	if len(m) > 1 {
-		return strings.TrimSpace(m[1])
-	}
-	return ""
-}
-
-// stripReasonAnnotations removes the tail lines that import-side
-// converters append ('Products: ...', 'VEX justification: ...',
-// 'Response: ...') so analysis.detail carries only the prose.
+// stripReasonAnnotations removes the 'Products: …' tail line that
+// import-side converters append, so analysis.detail carries only the
+// prose. (The 'VEX justification:' and 'Response:' annotations were
+// removed when the Justification enum was extended to cover the full
+// CycloneDX vocabulary; this stripper also handles any legacy reason
+// strings that still carry them.)
 func stripReasonAnnotations(reason string) string {
 	out := productsRegexp.ReplaceAllString(reason, "")
 	out = rawJustRegexp.ReplaceAllString(out, "")

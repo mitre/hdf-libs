@@ -46,13 +46,16 @@ func NormalizeStatus(raw string) (Status, bool) {
 
 // NormalizeJustification maps an ecosystem-specific justification string to
 // the canonical HDF Justification enum. Returns ("", false) for unknown
-// values; callers SHOULD preserve the original string in evidence[] or
-// reason instead of dropping it (the schema spec wants pass-through on
-// unknown values, not rejection).
+// values; callers SHOULD log unknown values rather than silently dropping
+// (the schema spec wants pass-through on unknown values, not rejection,
+// but practically we expect the enum to be extended when a new vocabulary
+// is integrated rather than carrying raw labels indefinitely).
 //
-// CycloneDX adds vocabulary HDF does not yet model (requires_configuration,
-// protected_by_compiler, etc.); those are deliberately returned as unknown
-// so the converter has a chance to log + preserve the raw value.
+// The HDF Justification enum (v3.2.x) covers:
+//   - the original OpenVEX / CSAF VEX five values
+//   - CycloneDX-specific reachability values (requires_*, protected_*)
+//     that describe why a vulnerable code path is unreachable in the
+//     deployed configuration.
 func NormalizeJustification(raw string) (hdf.Justification, bool) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "component_not_present", "code_not_present":
@@ -65,7 +68,48 @@ func NormalizeJustification(raw string) (hdf.Justification, bool) {
 		return hdf.VulnerableCodeCannotBeControlledByAdversary, true
 	case "inline_mitigations_already_exist", "protected_by_mitigating_control":
 		return hdf.InlineMitigationsAlreadyExist, true
+	case "requires_configuration":
+		return hdf.RequiresConfiguration, true
+	case "requires_dependency":
+		return hdf.RequiresDependency, true
+	case "requires_environment":
+		return hdf.RequiresEnvironment, true
+	case "protected_by_compiler":
+		return hdf.ProtectedByCompiler, true
+	case "protected_at_runtime":
+		return hdf.ProtectedAtRuntime, true
+	case "protected_at_perimeter":
+		return hdf.ProtectedAtPerimeter, true
 	}
+	return "", false
+}
+
+// JustificationForCycloneDX renders an HDF Justification value as the
+// CycloneDX-native vocabulary. CycloneDX uses short-form names
+// (code_not_present, code_not_reachable, protected_by_mitigating_control)
+// for the three justifications shared with OpenVEX/CSAF, and shares the
+// six CycloneDX-specific reachability values verbatim.
+//
+// Returns ("", false) when the HDF value has no equivalent in CycloneDX's
+// enum (vulnerable_code_not_present and
+// vulnerable_code_cannot_be_controlled_by_adversary do not appear in the
+// CycloneDX 1.4 vocabulary). Callers should omit the justification field
+// in that case rather than emit an invalid CycloneDX value.
+func JustificationForCycloneDX(j hdf.Justification) (string, bool) {
+	switch j {
+	case hdf.ComponentNotPresent:
+		return "code_not_present", true
+	case hdf.VulnerableCodeNotInExecutePath:
+		return "code_not_reachable", true
+	case hdf.InlineMitigationsAlreadyExist:
+		return "protected_by_mitigating_control", true
+	case hdf.RequiresConfiguration, hdf.RequiresDependency, hdf.RequiresEnvironment,
+		hdf.ProtectedByCompiler, hdf.ProtectedAtRuntime, hdf.ProtectedAtPerimeter:
+		return string(j), true
+	}
+	// vulnerable_code_not_present and
+	// vulnerable_code_cannot_be_controlled_by_adversary have no CycloneDX
+	// equivalent; caller should omit the field.
 	return "", false
 }
 

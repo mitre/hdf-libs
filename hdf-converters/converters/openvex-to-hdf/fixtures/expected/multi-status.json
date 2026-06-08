@@ -31,7 +31,7 @@
       ],
       "expiresAt": "2027-03-01T12:00:00Z",
       "justification": "component_not_present",
-      "reason": "Internal audit confirmed the vulnerable module is not bundled.\nVEX justification: component_not_present\nProducts: pkg:npm/example-pkg@1.2.3",
+      "reason": "Internal audit confirmed the vulnerable module is not bundled.\nProducts: pkg:npm/example-pkg@1.2.3",
       "requirementId": "CVE-2024-1000",
       "status": "passed",
       "type": "falsePositive"

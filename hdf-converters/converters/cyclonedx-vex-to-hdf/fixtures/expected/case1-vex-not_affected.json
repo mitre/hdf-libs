@@ -25,7 +25,7 @@
       ],
       "expiresAt": "2023-03-03T00:00:00Z",
       "justification": "component_not_present",
-      "reason": "This version of Product ABC is not affected by the vulnerability. Class with vulnerable code was removed before shipping.\nVEX justification: code_not_present\nResponse: will_not_fix\nProducts: ABC@4.2",
+      "reason": "This version of Product ABC is not affected by the vulnerability. Class with vulnerable code was removed before shipping.\nProducts: ABC@4.2",
       "requirementId": "CVE-2021-44228",
       "status": "passed",
       "type": "falsePositive"

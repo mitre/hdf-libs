@@ -197,9 +197,8 @@ func buildReason(stmt *Statement, poamTemplate string) string {
 	if stmt.ActionStatement != "" {
 		parts = append(parts, stmt.ActionStatement)
 	}
-	if stmt.Justification != "" {
-		parts = append(parts, "VEX justification: "+stmt.Justification)
-	}
+	// Justification is now a fully structured field (post v3.2.x enum
+	// extension); no longer mirrored into reason.
 	if len(stmt.Products) > 0 {
 		ids := make([]string, 0, len(stmt.Products))
 		for _, p := range stmt.Products {

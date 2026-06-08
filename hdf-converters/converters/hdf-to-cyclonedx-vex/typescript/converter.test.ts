@@ -13,7 +13,6 @@ import { convertCyclonedxVexToHdf } from '../../cyclonedx-vex-to-hdf/typescript/
 import {
   allMilestonesCompleted,
   convertHdfToCyclonedxVex,
-  extractRawJustification,
   productIDsFor,
   stripReasonAnnotations,
 } from './converter.js';
@@ -114,8 +113,30 @@ describe('convertHdfToCyclonedxVex — round trip', () => {
   });
 });
 
-describe('convertHdfToCyclonedxVex — CycloneDX-specific justification passthrough', () => {
-  it('recovers requires_configuration from the reason annotation', () => {
+describe('convertHdfToCyclonedxVex — HDF-only justification omitted', () => {
+  it('omits analysis.justification when the HDF value has no CycloneDX equivalent', () => {
+    const amendments: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.FalsePositive,
+          requirementId: 'CVE-2026-9999',
+          status: ResultStatus.Passed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'team' },
+          reason: 'No equivalent CycloneDX value\nProducts: pkg:npm/x@1.0',
+          justification: Justification.VulnerableCodeNotPresent,
+        } as never,
+      ],
+    } as never;
+    const out = convertHdfToCyclonedxVex(JSON.stringify(amendments), TEST_VERSION);
+    const bom = JSON.parse(out);
+    expect(bom.vulnerabilities[0].analysis.justification).toBeUndefined();
+  });
+});
+
+describe('convertHdfToCyclonedxVex — CycloneDX-specific justification', () => {
+  it('emits requires_configuration from the structured justification field', () => {
     const amendments: HDFAmendments = {
       overrides: [
         {
@@ -125,8 +146,8 @@ describe('convertHdfToCyclonedxVex — CycloneDX-specific justification passthro
           appliedAt: new Date('2026-01-01T00:00:00Z'),
           expiresAt: new Date('2027-01-01T00:00:00Z'),
           appliedBy: { type: IdentityType.Simple, identifier: 'team' },
-          reason:
-            'Configuration prevents the issue.\nVEX justification: requires_configuration\nProducts: pkg:npm/x@1.0',
+          reason: 'Configuration prevents the issue.\nProducts: pkg:npm/x@1.0',
+          justification: Justification.RequiresConfiguration,
         } as never,
       ],
     } as never;
@@ -264,12 +285,6 @@ describe('helpers', () => {
       ),
     ).toBe('prose');
     expect(stripReasonAnnotations('only prose')).toBe('only prose');
-  });
-  it('extractRawJustification pulls out the label', () => {
-    expect(extractRawJustification('prose\nVEX justification: requires_configuration\nProducts: X')).toBe(
-      'requires_configuration',
-    );
-    expect(extractRawJustification('no annotation')).toBe('');
   });
   it('allMilestonesCompleted handles empty / mixed / all-complete', () => {
     expect(allMilestonesCompleted({} as never)).toBe(false);

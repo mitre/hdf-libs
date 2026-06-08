@@ -163,6 +163,11 @@ function vulnerabilityToOverride(
   const products = productIDsForVuln(v, productLookup);
   const expiresAt = new Date(docTime.getTime() + DEFAULT_EXPIRY_HORIZON_MS);
 
+  // componentRef is UUID-constrained on the HDF schema (it identifies an
+  // HDF component by id, not a foreign-format identifier). We leave it
+  // unset; the resolved product identifier surfaces via the Products
+  // line in reason. Round-trip preserves product IDENTITY but the
+  // textual form shifts from CycloneDX bom-ref to the resolved form.
   const override: StandaloneOverride = {
     type: target.overrideType,
     requirementId: v.id,
@@ -208,12 +213,10 @@ function buildReason(v: Vulnerability, products: string[]): string {
   const parts: string[] = [];
   if (v.description) parts.push(v.description);
   if (v.analysis?.detail) parts.push(v.analysis.detail);
-  if (v.analysis?.justification) {
-    parts.push(`VEX justification: ${v.analysis.justification}`);
-  }
-  if (v.analysis?.response && v.analysis.response.length > 0) {
-    parts.push(`Response: ${v.analysis.response.join(', ')}`);
-  }
+  // Justification is now a fully structured field (post v3.2.x enum
+  // extension covers all current CycloneDX values); no longer mirrored
+  // into reason. Response[] hints are not echoed — POA&M overrides
+  // already carry remediation context via milestones.
   parts.push(`Products: ${products.join(', ')}`);
   return parts.join('\n');
 }

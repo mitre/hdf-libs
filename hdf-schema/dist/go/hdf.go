@@ -2167,16 +2167,25 @@ const (
 // may be present simultaneously and are NOT redundant: 'reason' explains the specific
 // circumstance; 'justification' classifies it. Authors SHOULD populate both when a
 // controlled-vocabulary value applies — the enum value alone is not self-explanatory to an
-// auditor. Initial vocabulary (5 values) is from the VEX ecosystem (OpenVEX / CSAF VEX /
-// CycloneDX VEX) where it describes WHY a vulnerability is not_affected on a specific
-// system. The enum is open for additive extension as other ecosystems' controlled
-// vocabularies are integrated. Older readers SHOULD treat unknown values as 'unknown
-// justification' (passthrough) rather than rejecting the document.
+// auditor. The vocabulary is drawn from the VEX ecosystem: the first five values are common
+// across OpenVEX, CSAF VEX, and CycloneDX VEX; the remaining six (requires_configuration /
+// requires_dependency / requires_environment / protected_by_compiler / protected_at_runtime
+// / protected_at_perimeter) are CycloneDX-specific and describe why the vulnerable code
+// path is unreachable in the deployed configuration. The enum is open for additive
+// extension as other ecosystems' controlled vocabularies are integrated. Older readers
+// SHOULD treat unknown values as 'unknown justification' (passthrough) rather than
+// rejecting the document.
 type Justification string
 
 const (
 	ComponentNotPresent                         Justification = "component_not_present"
 	InlineMitigationsAlreadyExist               Justification = "inline_mitigations_already_exist"
+	ProtectedAtPerimeter                        Justification = "protected_at_perimeter"
+	ProtectedAtRuntime                          Justification = "protected_at_runtime"
+	ProtectedByCompiler                         Justification = "protected_by_compiler"
+	RequiresConfiguration                       Justification = "requires_configuration"
+	RequiresDependency                          Justification = "requires_dependency"
+	RequiresEnvironment                         Justification = "requires_environment"
 	VulnerableCodeCannotBeControlledByAdversary Justification = "vulnerable_code_cannot_be_controlled_by_adversary"
 	VulnerableCodeNotInExecutePath              Justification = "vulnerable_code_not_in_execute_path"
 	VulnerableCodeNotPresent                    Justification = "vulnerable_code_not_present"

@@ -69,10 +69,11 @@ func TestConvertCycloneDXVEX_AffectedAndUnderInvestigationProduceError(t *testin
 	assert.Contains(t, err.Error(), "no actionable VEX statements")
 }
 
-func TestConvertCycloneDXVEX_UnknownJustificationPreservedInReason(t *testing.T) {
+func TestConvertCycloneDXVEX_CycloneDXSpecificJustificationLandsInStructuredField(t *testing.T) {
 	t.Parallel()
-	// requires_configuration / protected_by_compiler etc. don't map to the
-	// HDF Justification enum but must NOT be silently dropped.
+	// requires_configuration / protected_by_compiler etc. are part of the
+	// HDF Justification enum (v3.2.x extension) and populate the structured
+	// field directly — no reason-line passthrough needed.
 	input := []byte(`{
 		"bomFormat": "CycloneDX",
 		"specVersion": "1.4",
@@ -90,9 +91,10 @@ func TestConvertCycloneDXVEX_UnknownJustificationPreservedInReason(t *testing.T)
 	result, err := ConvertCycloneDXVEXToHDF(input, testVersion)
 	require.NoError(t, err)
 	require.Len(t, result.Overrides, 1)
-	assert.Nil(t, result.Overrides[0].Justification, "unknown justification stays unset on the enum")
-	assert.Contains(t, result.Overrides[0].Reason, "VEX justification: requires_configuration",
-		"raw label preserved in reason — passthrough on unknown values")
+	require.NotNil(t, result.Overrides[0].Justification)
+	assert.Equal(t, hdf.RequiresConfiguration, *result.Overrides[0].Justification)
+	assert.NotContains(t, result.Overrides[0].Reason, "VEX justification:",
+		"justification should NOT be mirrored into reason — structured field is authoritative")
 }
 
 func TestConvertCycloneDXVEX_RejectsNonCycloneDX(t *testing.T) {

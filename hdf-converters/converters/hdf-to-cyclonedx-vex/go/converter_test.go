@@ -126,16 +126,17 @@ func TestConvertHDFToCycloneDXVEX_RoundTripPreservesCanonicalFields(t *testing.T
 	assert.NotEmpty(t, v.Affects[0].Ref)
 }
 
-func TestConvertHDFToCycloneDXVEX_PreservesCycloneDXSpecificJustification(t *testing.T) {
+func TestConvertHDFToCycloneDXVEX_EmitsStructuredCycloneDXJustification(t *testing.T) {
 	t.Parallel()
-	// Reason carries the import-side passthrough for a CycloneDX
-	// justification with no HDF enum equivalent. Export must recover
-	// the raw label from the 'VEX justification:' line.
+	// CycloneDX-specific values (requires_configuration etc.) are part of
+	// the HDF Justification enum (v3.2.x extension); the export uses the
+	// structured field directly.
 	now := mustTime(t, "2026-01-01T00:00:00Z")
 	exp := mustTime(t, "2027-01-01T00:00:00Z")
 	passed := hdf.Passed
+	just := hdf.RequiresConfiguration
 	amendments := hdf.HDFAmendments{
-		Name: "Passthrough",
+		Name: "Structured",
 		Overrides: []hdf.StandaloneOverride{{
 			Type:          hdf.FalsePositive,
 			RequirementID: "CVE-2026-1234",
@@ -143,8 +144,8 @@ func TestConvertHDFToCycloneDXVEX_PreservesCycloneDXSpecificJustification(t *tes
 			AppliedAt:     now,
 			ExpiresAt:     exp,
 			AppliedBy:     hdf.Identity{Type: hdf.Simple, Identifier: "team"},
-			// No structured Justification; the raw label lives in reason.
-			Reason: "Configuration prevents the issue.\nVEX justification: requires_configuration\nProducts: pkg:npm/x@1.0",
+			Justification: &just,
+			Reason:        "Configuration prevents the issue.\nProducts: pkg:npm/x@1.0",
 		}},
 	}
 	body, _ := json.Marshal(amendments)
@@ -152,8 +153,7 @@ func TestConvertHDFToCycloneDXVEX_PreservesCycloneDXSpecificJustification(t *tes
 	require.NoError(t, err)
 	bom := parseBOM(t, out)
 	require.Len(t, bom.Vulnerabilities, 1)
-	assert.Equal(t, "requires_configuration", bom.Vulnerabilities[0].Analysis.Justification,
-		"raw CycloneDX label recovered from reason passthrough")
+	assert.Equal(t, "requires_configuration", bom.Vulnerabilities[0].Analysis.Justification)
 }
 
 func TestConvertHDFToCycloneDXVEX_NonCVEOverridesAreSkipped(t *testing.T) {
@@ -232,12 +232,6 @@ func TestStripReasonAnnotations(t *testing.T) {
 	assert.Equal(t, "prose", stripReasonAnnotations("prose\nProducts: A\nVEX justification: code_not_present\nResponse: update"))
 	assert.Equal(t, "only prose", stripReasonAnnotations("only prose"))
 	assert.Equal(t, "", stripReasonAnnotations("Products: A"))
-}
-
-func TestExtractRawJustification(t *testing.T) {
-	t.Parallel()
-	assert.Equal(t, "requires_configuration", extractRawJustification("prose\nVEX justification: requires_configuration\nProducts: X"))
-	assert.Equal(t, "", extractRawJustification("no annotation"))
 }
 
 func TestAllMilestonesCompleted(t *testing.T) {

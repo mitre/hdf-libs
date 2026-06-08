@@ -283,13 +283,8 @@ function buildReason(vuln: CsafVulnerability, products: string[]): string {
     if (ids && ids.length > 0 && !overlap(ids, scope)) continue;
     parts.push(t.details);
   }
-  for (const f of vuln.flags ?? []) {
-    const ids = f.product_ids ?? [];
-    if (overlap(ids, scope) && f.label) {
-      parts.push(`VEX justification: ${f.label}`);
-      break;
-    }
-  }
+  // Justification is now a fully structured field; no longer mirrored
+  // into reason.
   parts.push(`Products: ${products.join(', ')}`);
   return parts.join('\n');
 }

@@ -16,7 +16,11 @@ import {
 } from '@mitre/hdf-schema';
 import { parseJSON } from '@mitre/hdf-utilities';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
-import { exportStatusFor, VexStatus } from '../../../shared/typescript/vex/mapping.js';
+import {
+  exportStatusFor,
+  justificationForCycloneDX,
+  VexStatus,
+} from '../../../shared/typescript/vex/mapping.js';
 
 const CVE_ID_PATTERN = /^CVE-\d{4}-\d{4,}$/;
 const PRODUCTS_LINE = /^Products:\s*(.+)$/m;
@@ -112,11 +116,12 @@ function overrideToVulnerability(
   }
 
   const analysis: Vulnerability['analysis'] = { state: canonicalToCycloneDXState(canonical) };
-  const rawJ = extractRawJustification(o.reason ?? '');
-  if (rawJ) {
-    analysis.justification = rawJ;
-  } else if (o.justification) {
-    analysis.justification = String(o.justification);
+  // HDF Justification uses long-form names from OpenVEX/CSAF; CycloneDX
+  // uses short-form names for the same concepts. Translate via the
+  // shared helper.
+  if (o.justification) {
+    const cdxJust = justificationForCycloneDX(o.justification);
+    if (cdxJust) analysis.justification = cdxJust;
   }
   const detail = stripReasonAnnotations(o.reason ?? '');
   if (detail) analysis.detail = detail;
@@ -179,11 +184,12 @@ export function productIDsFor(o: StandaloneOverride): string[] {
   return [DEFAULT_PRODUCT_ID];
 }
 
-export function extractRawJustification(reason: string): string {
-  const m = RAW_JUST_LINE.exec(reason);
-  return m && m[1] ? m[1].trim() : '';
-}
-
+// stripReasonAnnotations removes the 'Products: …' tail line that
+// import-side converters append, so analysis.detail carries only the
+// prose. (The 'VEX justification:' and 'Response:' annotations were
+// removed when the Justification enum was extended to cover the full
+// CycloneDX vocabulary; this stripper also handles any legacy reason
+// strings that still carry them.)
 export function stripReasonAnnotations(reason: string): string {
   return reason
     .replace(PRODUCTS_LINE, '')

@@ -328,12 +328,8 @@ func buildReason(vuln *Vulnerability, products []string) string {
 		}
 		parts = append(parts, t.Details)
 	}
-	for _, f := range vuln.Flags {
-		if overlap(f.ProductIDs, scope) && f.Label != "" {
-			parts = append(parts, "VEX justification: "+f.Label)
-			break
-		}
-	}
+	// Justification is now a fully structured field; no longer mirrored
+	// into reason.
 	parts = append(parts, "Products: "+strings.Join(products, ", "))
 	return strings.Join(parts, "\n")
 }
