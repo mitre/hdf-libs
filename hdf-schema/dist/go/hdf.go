@@ -2183,10 +2183,11 @@ const (
 // across OpenVEX, CSAF VEX, and CycloneDX VEX; the remaining six (requires_configuration /
 // requires_dependency / requires_environment / protected_by_compiler / protected_at_runtime
 // / protected_at_perimeter) are CycloneDX-specific and describe why the vulnerable code
-// path is unreachable in the deployed configuration. The enum is open for additive
-// extension as other ecosystems' controlled vocabularies are integrated. Older readers
-// SHOULD treat unknown values as 'unknown justification' (passthrough) rather than
-// rejecting the document.
+// path is unreachable in the deployed configuration. The enum is extended additively across
+// schema versions as other ecosystems' controlled vocabularies are integrated; documents
+// using values added in a newer schema version will fail validation against an older
+// schema. Consumers SHOULD validate against the schema version declared by the document
+// ($schema) rather than assume a fixed vocabulary.
 type Justification string
 
 const (
