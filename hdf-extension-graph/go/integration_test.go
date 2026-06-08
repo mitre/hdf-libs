@@ -332,9 +332,9 @@ func TestIntegration_EdgeCases(t *testing.T) {
 //	│   └── redhat-enterprise-linux-9-stig-baseline (parent=wrapper)
 //	└── dep (parent=metawrapper)
 //
-// The fixture is the shared real-world InSpec sample at
-// @mitre/hdf-fixtures/inspec/multilayered.json — same data exercises both
-// implementations so behavior stays aligned.
+// The fixture is the shared real-world HDF Results sample at
+// @mitre/hdf-fixtures/results/inspec-multilayered.json — same data exercises
+// both implementations so behavior stays aligned.
 func TestIntegration_RealMultilayeredFixture(t *testing.T) {
 	data := hdfparsers.NormalizeTimestamps(fixtures.Results.InspecMultilayered)
 

@@ -107,7 +107,7 @@ jobs:
         run: |
           for pkg in hdf-schema hdf-utilities hdf-mappings hdf-validators \
                      hdf-parsers hdf-converters hdf-generators hdf-diff \
-                     hdf-extension-graph; do
+                     hdf-extension-graph hdf-fixtures; do
             [ -d "$pkg/dist" ] && echo "✓ $pkg/dist" || { echo "✗ $pkg/dist missing"; exit 1; }
           done
       - name: Build Go CLI
@@ -126,6 +126,7 @@ jobs:
             hdf-generators/dist/
             hdf-diff/dist/
             hdf-extension-graph/dist/
+            hdf-fixtures/dist/
           retention-days: 1
 
   # ── Test TypeScript ──────────────────────────────────────────────────────

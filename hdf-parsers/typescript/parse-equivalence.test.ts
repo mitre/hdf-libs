@@ -15,7 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { baseline, inspec, results } from '@mitre/hdf-fixtures';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { dumpParseResults } from './parse-equivalence-dump.js';
+import { dumpParse, type ParseKind } from './parse-equivalence-dump.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(__dirname, '..');
@@ -34,8 +34,8 @@ function hasGo(): boolean {
 // in hdf-extension-graph/test/cross-language-equivalence.test.ts.
 let goBinary = '';
 
-function runGoDumper(fixturePath: string): unknown {
-  const out = execFileSync(goBinary, [fixturePath], {
+function runGoDumper(kind: ParseKind, fixturePath: string): unknown {
+  const out = execFileSync(goBinary, [kind, fixturePath], {
     encoding: 'utf-8',
     maxBuffer: 64 * 1024 * 1024,
   });
@@ -43,16 +43,30 @@ function runGoDumper(fixturePath: string): unknown {
 }
 
 // Real-world HDF Results (bug-exhibiting bare-timestamp case) + HDF Baseline
-// + three legacy InSpec inputs (non-HDF). Both parsers should accept the
-// first two and reject the inspec ones the same way. The fixture set is
-// intentionally narrow — additional Results from other producer families
-// don't add bug-catching signal (see hdf-libs-e95o bead discussion).
-const FIXTURES = [
-  { name: 'results inspec-multilayered (bare timestamps)', path: results.inspecMultilayered.path },
-  { name: 'baseline win2022-stig', path: baseline.win2022Stig.path },
-  { name: 'inspec legacy ubi9-scan (non-HDF — both should reject)', path: inspec.ubi9Scan.path },
-  { name: 'inspec legacy container-scan (non-HDF)', path: inspec.containerScan.path },
-  { name: 'inspec legacy three-layer-overlay (non-HDF)', path: inspec.threeLayerOverlay.path },
+// + three legacy InSpec inputs (non-HDF). The baseline fixture is dispatched
+// to parseBaseline so we actually exercise baseline-parse parity (not just
+// "does parseResults reject a baseline doc"). Legacy InSpec inputs go
+// through parseResults — both languages should reject them the same way.
+// The fixture set is intentionally narrow — additional Results from other
+// producer families don't add bug-catching signal (see hdf-libs-e95o).
+const FIXTURES: { name: string; kind: ParseKind; path: string }[] = [
+  {
+    name: 'results inspec-multilayered (bare timestamps)',
+    kind: 'results',
+    path: results.inspecMultilayered.path,
+  },
+  { name: 'baseline win2022-stig', kind: 'baseline', path: baseline.win2022Stig.path },
+  {
+    name: 'inspec legacy ubi9-scan (non-HDF — both should reject)',
+    kind: 'results',
+    path: inspec.ubi9Scan.path,
+  },
+  { name: 'inspec legacy container-scan (non-HDF)', kind: 'results', path: inspec.containerScan.path },
+  {
+    name: 'inspec legacy three-layer-overlay (non-HDF)',
+    kind: 'results',
+    path: inspec.threeLayerOverlay.path,
+  },
 ];
 
 describe.skipIf(!hasGo())('parser cross-language equivalence (Go ↔ TS)', () => {
@@ -65,11 +79,11 @@ describe.skipIf(!hasGo())('parser cross-language equivalence (Go ↔ TS)', () =>
     execFileSync('go', ['build', '-o', goBinary, '.'], { cwd: goCmdDir });
   }, 120_000);
 
-  for (const { name, path: fixturePath } of FIXTURES) {
+  for (const { name, kind, path: fixturePath } of FIXTURES) {
     it(`Go and TS parsers agree on ${name}`, () => {
       const raw = readFileSync(fixturePath, 'utf-8');
-      const tsOutput = dumpParseResults(raw);
-      const goOutput = runGoDumper(fixturePath);
+      const tsOutput = dumpParse(raw, kind);
+      const goOutput = runGoDumper(kind, fixturePath);
       expect(goOutput).toEqual(tsOutput);
     });
   }

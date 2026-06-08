@@ -2,10 +2,9 @@ package hdfparsers
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"testing"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -566,10 +565,8 @@ func TestFlattenOverlays_EdgeCases(t *testing.T) {
 
 // loadV1FixtureAsHDFResults reads an InSpec v1 exec-json fixture and converts
 // it to HDF v2 baselines for testing flattenOverlays with real data.
-func loadV1FixtureAsHDFResults(t *testing.T, path string) hdf.HDFResults {
+func loadV1FixtureAsHDFResults(t *testing.T, data []byte) hdf.HDFResults {
 	t.Helper()
-	data, err := os.ReadFile(path)
-	require.NoError(t, err)
 
 	var raw struct {
 		Profiles []struct {
@@ -641,10 +638,8 @@ func loadV1FixtureAsHDFResults(t *testing.T, path string) hdf.HDFResults {
 }
 
 func TestFlattenOverlays_Integration(t *testing.T) {
-	fixturesDir := filepath.Join("..", "..", "hdf-schema", "test", "fixtures")
-
 	t.Run("Three_Layer_RHEL7 3 profiles to 1 baseline 247 controls", func(t *testing.T) {
-		results := loadV1FixtureAsHDFResults(t, filepath.Join(fixturesDir, "Three_Layer_RHEL7_Overlay_Example.json"))
+		results := loadV1FixtureAsHDFResults(t, fixtures.Inspec.ThreeLayerRhel7)
 		flat := FlattenOverlays(results)
 
 		assert.Len(t, flat.Results.Baselines, 1)
@@ -662,7 +657,7 @@ func TestFlattenOverlays_Integration(t *testing.T) {
 	})
 
 	t.Run("wrapper.json 4 profiles to 1 baseline 534 controls", func(t *testing.T) {
-		results := loadV1FixtureAsHDFResults(t, filepath.Join(fixturesDir, "wrapper.json"))
+		results := loadV1FixtureAsHDFResults(t, fixtures.Inspec.Wrapper)
 		flat := FlattenOverlays(results)
 
 		assert.Len(t, flat.Results.Baselines, 1)
