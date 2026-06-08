@@ -10,7 +10,7 @@
  * Spec: https://cyclonedx.org/use-cases/#vulnerability-exploitability
  */
 
-import { parseTimestamp } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   IdentityType,
   MilestoneStatus,
@@ -105,7 +105,7 @@ export async function convertCyclonedxVexToHdf(
   converterVersion: string,
 ): Promise<HDFAmendments> {
   validateInputSize(input, 'cyclonedx-vex-to-hdf');
-  const bom = JSON.parse(input) as BOM;
+  const bom = parseJSON<BOM>(input);
   if (bom.bomFormat !== 'CycloneDX') {
     throw new Error(
       `cyclonedx-vex-to-hdf: bomFormat is ${JSON.stringify(bom.bomFormat)}; only 'CycloneDX' is supported`,

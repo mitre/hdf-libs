@@ -9,7 +9,7 @@
  * Spec: https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html
  */
 
-import { parseTimestamp } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   IdentityType,
   Justification,
@@ -120,7 +120,7 @@ export async function convertCsafVexToHdf(
   converterVersion: string,
 ): Promise<HDFAmendments> {
   validateInputSize(input, 'csaf-vex-to-hdf');
-  const doc = JSON.parse(input) as CsafDocument;
+  const doc = parseJSON<CsafDocument>(input);
   // CSAF schema requires document + document.category + document.tracking +
   // document.publisher. After this check passes we treat them as present
   // — defensive optional-chaining everywhere bloats the branch surface

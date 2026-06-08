@@ -13,6 +13,7 @@ import {
   type HDFAmendments,
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
+import { parseJSON } from '@mitre/hdf-utilities';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 import { exportStatusFor, VexStatus } from '../../../shared/typescript/vex/mapping.js';
 
@@ -57,7 +58,7 @@ interface Vulnerability {
 
 export function convertHdfToCsafVex(input: string, converterVersion: string): string {
   validateInputSize(input, 'hdf-to-csaf-vex');
-  const amendments = JSON.parse(input) as HDFAmendments;
+  const amendments = parseJSON<HDFAmendments>(input);
   const groups = groupByCVE(amendments.overrides ?? []);
   const productSet = new Map<string, true>();
   const vulnerabilities: Vulnerability[] = [];

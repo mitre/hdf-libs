@@ -6,7 +6,7 @@
  * status, justification) survive round-trip; the rest collapse.
  */
 
-import { sha256 } from '@mitre/hdf-utilities';
+import { parseJSON, sha256 } from '@mitre/hdf-utilities';
 import {
   MilestoneStatus,
   OverrideType,
@@ -47,7 +47,7 @@ export async function convertHdfToOpenVex(
   converterVersion: string,
 ): Promise<string> {
   validateInputSize(input, 'hdf-to-openvex');
-  const amendments = JSON.parse(input) as HDFAmendments;
+  const amendments = parseJSON<HDFAmendments>(input);
 
   const statements: Statement[] = [];
   let earliest: Date | undefined;

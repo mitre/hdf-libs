@@ -22,7 +22,7 @@ import {
   type Milestone,
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
-import { parseTimestamp } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
   inputIntegrity,
   validateInputSize,
@@ -78,7 +78,7 @@ export async function convertOpenVexToHdf(
   converterVersion: string,
 ): Promise<HDFAmendments> {
   validateInputSize(input, 'openvex-to-hdf');
-  const doc = JSON.parse(input) as OpenVexDocument;
+  const doc = parseJSON<OpenVexDocument>(input);
   const docTime = (doc.timestamp ? parseTimestamp(doc.timestamp) : null) ?? new Date();
 
   const overrides: StandaloneOverride[] = [];
