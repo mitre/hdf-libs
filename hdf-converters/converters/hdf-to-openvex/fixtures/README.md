@@ -27,7 +27,8 @@ Round-trip preservation by field:
 | `type=falsePositive` + `justification` | `status=not_affected` + `justification` | yes |
 | `type=poam`, all milestones completed | `status=fixed` + `action_statement` from milestone | yes |
 | `type=poam`, open | `status=affected` + `action_statement` from milestone | yes (status stays affected — supplier-claim invariant) |
-| `componentRef` OR `Products: …` in reason | `statements[].products[].@id` | yes |
+| `affectedPackages[].purl` / `.cpe` / `.name@version` | `statements[].products[].@id` | yes — purl preferred; cpe and name@version fall back in that order |
+| `componentRef` OR legacy `Products: …` reason line (pre-v3.2.x inputs) | `statements[].products[].@id` | yes — backward-compat fallback when no structured `affectedPackages` present |
 | `reason` (free text) | `impact_statement` (for not_affected) or `action_statement` (for affected when no milestones) | partial — first non-empty wins |
 | `appliedBy.identifier` | `author` | yes |
 | `appliedBy.description` | `role` | yes |

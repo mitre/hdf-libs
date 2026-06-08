@@ -27,7 +27,8 @@ Round-trip preservation by field:
 | `type=falsePositive` + `justification` | `product_status.known_not_affected` + `flags[].label` | yes |
 | `type=poam` (open, milestones pending) | `product_status.known_affected` + `remediations[category=workaround]` | yes; lossy on the "vendor claimed fix" provenance (intentional — see below) |
 | `type=poam` (all milestones completed) | `product_status.fixed` + `remediations[category=vendor_fix]` | yes |
-| `componentRef` OR `Products: …` line in reason | `product_status[...]` product ids + `product_tree.full_product_names` | yes; default `HDFPID-0001` synthesized when neither is present |
+| `affectedPackages[].purl` / `.cpe` / `.name@version` | `product_status[...]` product ids + `product_tree.full_product_names` | yes — preferred source of structured product identity |
+| `componentRef` OR legacy `Products: …` reason line (pre-v3.2.x inputs) | `product_status[...]` product ids + `product_tree.full_product_names` | yes — backward-compat fallback; default `HDFPID-0001` synthesized when no source carries product identity |
 | `evidence[type=url]` | `vulnerabilities[].references[]` | yes |
 | `reason` free text | `vulnerabilities[].threats[category=impact].details` (for `affected` cases) or dropped (for `not_affected` — justification + flag carry the structured payload) | partial |
 | `appliedBy.identifier` | `document.publisher.name` | yes |

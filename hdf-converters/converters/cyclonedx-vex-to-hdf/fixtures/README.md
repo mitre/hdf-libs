@@ -26,16 +26,26 @@ specification's documentation, so fixture provenance is route #1
 (real-world publisher data from a public repo) per build-converter.md
 Step 2.
 
-## CycloneDX justification passthrough
+## CycloneDX justification handling
 
-CycloneDX defines justifications beyond the HDF Justification enum's
-vocabulary (`requires_configuration`, `requires_dependency`,
-`requires_environment`, `protected_by_compiler`, `protected_at_runtime`,
-`protected_at_perimeter`). These do NOT silently drop — the raw label
-appears in the reason field with a `VEX justification:` prefix so
-auditors and downstream consumers see what the upstream publisher
-actually said. The structured `justification` field on the override
-remains unset on the HDF enum until a value normalizes.
+CycloneDX-specific justifications (`requires_configuration`,
+`requires_dependency`, `requires_environment`, `protected_by_compiler`,
+`protected_at_runtime`, `protected_at_perimeter`) are first-class HDF
+Justification enum values as of v3.2.x. The shared VEX mapper normalizes
+them directly into the structured `justification` field on the override.
+The legacy `VEX justification:` reason-line annotation has been removed
+— there is no longer any pseudo-structured data smuggled in `reason`.
+
+## Product identity
+
+Product references parsed from CycloneDX `affects[].ref` resolve through
+the BOM's component lookup (purl preferred, then name+version, then
+dropped) into structured `Standalone_Override.affectedPackages[]`
+entries. The schema's `Affected_Package` primitive carries
+purl / cpe / name+version+ecosystem; the loosened anyOf permits
+identifier-only entries when the source provides only a purl or cpe.
+Opaque bom-refs without a component-table match are dropped — the schema
+forbids fabricating identity.
 
 ## Auto-detect collision with cyclonedx-to-hdf
 

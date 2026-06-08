@@ -26,9 +26,10 @@ Round-trip preservation by field:
 | `type=falsePositive` + `justification` | `analysis.state=not_affected` + `analysis.justification` | yes |
 | `type=poam`, all milestones completed | `analysis.state=resolved` + `analysis.response=["update"]` | yes |
 | `type=poam`, open | `analysis.state=exploitable` + `analysis.response=["workaround_available"]` | yes (status invariant — see below) |
-| `componentRef` OR `Products: …` in reason | `affects[].ref` + matching `components[]` entry | yes |
-| `reason` free text (with annotations stripped) | `analysis.detail` | partial — annotation tail lines (`Products: …`, `VEX justification: …`, `Response: …`) are stripped to avoid duplication; the prose survives |
-| Raw CycloneDX-specific justification preserved in reason (e.g. `requires_configuration`) | `analysis.justification` | yes — recovered from the `VEX justification:` reason line |
+| `affectedPackages[]` (purl / cpe / name+version) | `affects[].ref` + matching `components[]` entry (name, version, purl, cpe all preserved as distinct fields) | yes |
+| `componentRef` OR legacy `Products: …` reason line (pre-v3.2.x inputs) | `affects[].ref` + minimal `components[]` entry | yes — backward-compat fallback when no structured `affectedPackages` is present |
+| `reason` free text | `analysis.detail` | yes; defensive strippers still remove any legacy `Products: …` / `VEX justification: …` / `Response: …` lines so they don't double-emit |
+| CycloneDX-specific justification (`requires_configuration`, etc.) | `analysis.justification` | yes — first-class HDF Justification enum value (v3.2.x); `justificationForCycloneDX` translates HDF long-form names back to CycloneDX short-form (`component_not_present` → `code_not_present`) |
 | `evidence[type=url]` | `vulnerabilities[].references[]` | yes |
 | `appliedBy.identifier` | `metadata.authors[0].name` (or `.email` if Email identity) | yes |
 | earliest `appliedAt` | `metadata.timestamp` | yes (whole-document granularity) |
@@ -46,16 +47,19 @@ milestone is in `completed` state. Otherwise the override surfaces as
 remediation in `detail`. This mirrors the OpenVEX `affected` / CSAF
 `known_affected` exports for the same reason.
 
-## Justification passthrough
+## Justification round-trip
 
 CycloneDX-specific justification labels (`requires_configuration`,
 `requires_dependency`, `requires_environment`, `protected_by_compiler`,
-`protected_at_runtime`, `protected_at_perimeter`) do NOT normalize to
-the HDF Justification enum on import — the shared VEX helper preserves
-the raw label in the override's reason field as a
-`VEX justification: <label>` line. This converter recovers that label
-back into `analysis.justification` on export, so CycloneDX-shaped
-documents round-trip the full vocabulary.
+`protected_at_runtime`, `protected_at_perimeter`) are first-class HDF
+Justification enum values (v3.2.x). The shared mapper normalizes them
+on import and `justificationForCycloneDX` translates HDF long-form
+canonical names back to CycloneDX short-form on export
+(`component_not_present` → `code_not_present`, etc.). Two HDF-only
+values (`vulnerable_code_not_present`,
+`vulnerable_code_cannot_be_controlled_by_adversary`) have no CycloneDX
+equivalent; the exporter omits the justification field in that case
+rather than emit an invalid CycloneDX value.
 
 ## Expected
 

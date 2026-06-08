@@ -33,7 +33,6 @@ export default defineConfig({
     logo: '/saf-logo.svg',
     nav: [
       { text: 'Schemas', link: '/schemas/' },
-      { text: 'Guides', link: '/docs/cve-ecosystem' },
       { text: 'GitHub', link: 'https://github.com/mitre/hdf-libs' },
     ],
 
@@ -44,21 +43,12 @@ export default defineConfig({
           items: getSchemaNavItems(),
         },
       ],
-      '/docs/': [
-        {
-          text: 'Guides',
-          items: [
-            { text: 'CVE Ecosystem', link: '/docs/cve-ecosystem' },
-          ],
-        },
-      ],
       '/': [
         {
           text: 'Guide',
           items: [
             { text: 'Overview', link: '/' },
             { text: 'Schema Reference', link: '/schemas/' },
-            { text: 'CVE Ecosystem', link: '/docs/cve-ecosystem' },
           ],
         },
       ],
