@@ -46,16 +46,14 @@ type BaselineParseResult struct {
 
 // ParseResults parses HDF Results document from JSON bytes
 func ParseResults(input []byte) ResultsParseResult {
-	// Check for empty input
-	if len(strings.TrimSpace(string(input))) == 0 {
+	input = NormalizeTimestamps(input)
+	trimmed := strings.TrimSpace(string(input))
+	if len(trimmed) == 0 {
 		return ResultsParseResult{
 			Success: false,
 			Error:   "Input is empty",
 		}
 	}
-
-	input = NormalizeTimestamps(input)
-	trimmed := strings.TrimSpace(string(input))
 
 	// Validate against schema first
 	validationResult := validators.ValidateResults(input)
@@ -92,16 +90,14 @@ func ParseResults(input []byte) ResultsParseResult {
 
 // ParseBaseline parses HDF Baseline document from JSON bytes
 func ParseBaseline(input []byte) BaselineParseResult {
-	// Check for empty input
-	if len(strings.TrimSpace(string(input))) == 0 {
+	input = NormalizeTimestamps(input)
+	trimmed := strings.TrimSpace(string(input))
+	if len(trimmed) == 0 {
 		return BaselineParseResult{
 			Success: false,
 			Error:   "Input is empty",
 		}
 	}
-
-	input = NormalizeTimestamps(input)
-	trimmed := strings.TrimSpace(string(input))
 
 	// Validate against schema first
 	validationResult := validators.ValidateBaseline(input)
