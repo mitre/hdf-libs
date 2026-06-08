@@ -19,6 +19,12 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# NODE_VERSION pinned to the current LTS (22). Matches each published
+# package's `engines.node: ">=22.0.0"` and the version used by ci.yml,
+# pre-release.yml, and release.yml.
+env:
+  NODE_VERSION: '22'
+
 jobs:
   deploy:
     name: Build and deploy schema site
@@ -31,6 +37,8 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Build schemas
         run: cd hdf-schema && pnpm build:schemas
