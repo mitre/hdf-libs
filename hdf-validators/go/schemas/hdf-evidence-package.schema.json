@@ -1718,6 +1718,13 @@
               "type": "string",
               "format": "uuid",
               "description": "componentId of the component this amendment is scoped to. When set, the amendment only applies to the specified component. When omitted, the amendment applies system-wide."
+            },
+            "affectedPackages": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.2.0#/$defs/Affected_Package"
+              },
+              "description": "Software packages this amendment is scoped to, distinct from componentRef (which scopes to an HDF-internal Component by UUID). Use when the source amendment format references packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M `subjects[]`, FedRAMP component-aware amendments. Symmetric with Evaluated_Requirement.affectedPackages, which scopes findings to the same package vocabulary. When omitted, the amendment applies system-wide (or only to componentRef when that is set)."
             }
           },
           "examples": [
@@ -1819,6 +1826,29 @@
               },
               "appliedAt": "2026-03-26T10:00:00Z",
               "expiresAt": "2026-09-26T00:00:00Z"
+            },
+            {
+              "$comment": "VEX-style import — falsePositive scoped to specific packages by purl. The affectedPackages array carries structured product identity instead of squeezing 'Products: …' into the reason free-text field.",
+              "type": "falsePositive",
+              "requirementId": "CVE-2026-12345",
+              "status": "notApplicable",
+              "reason": "Vulnerable code path is not present in our build — dependency compiled with the affected module disabled",
+              "justification": "vulnerable_code_not_present",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "secops@org.gov"
+              },
+              "appliedAt": "2026-05-01T10:00:00Z",
+              "expiresAt": "2027-05-01T00:00:00Z",
+              "affectedPackages": [
+                {
+                  "purl": "pkg:npm/lodash@4.17.20"
+                },
+                {
+                  "purl": "pkg:rpm/openssl@1.1.1k-2.el8",
+                  "fixedInVersion": "1.1.1k-3.el8"
+                }
+              ]
             }
           ],
           "title": "Standalone Override"
@@ -2159,6 +2189,121 @@
           ],
           "description": "A CVSS (Common Vulnerability Scoring System) score record for a vulnerability finding. Captures the vendor-supplied Base metric group and optional consumer-supplied Threat, Environmental, and Supplemental metric groups. Supports all four CVSS major versions (2.0, 3.0, 3.1, 4.0). Vector strings are validated against a permissive umbrella grammar; semantic validation (correct metrics per version, correct values per metric) is performed by the hdf-utilities `validateCvssVector` helper rather than at the schema layer.",
           "title": "CVSS"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.2.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.2.0",
+      "title": "HDF Affected Package Primitives",
+      "description": "Types for representing the software package(s) affected by a vulnerability finding.",
+      "$defs": {
+        "Affected_Package": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "anyOf": [
+            {
+              "required": [
+                "name",
+                "version",
+                "ecosystem"
+              ]
+            },
+            {
+              "required": [
+                "purl"
+              ]
+            },
+            {
+              "required": [
+                "cpe"
+              ]
+            }
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The package name as published in its ecosystem. Examples: 'openssl' (rpm), 'lodash' (npm), 'org.apache.logging.log4j:log4j-core' (maven, group:artifact)."
+            },
+            "version": {
+              "type": "string",
+              "description": "The exact version of the package that the vulnerability scanner observed. Use the ecosystem's native version string verbatim (e.g., '1.1.1k-7.el8_4' for rpm, '4.17.20' for npm)."
+            },
+            "ecosystem": {
+              "type": "string",
+              "enum": [
+                "npm",
+                "pypi",
+                "rpm",
+                "deb",
+                "maven",
+                "gem",
+                "nuget",
+                "go",
+                "cargo",
+                "generic"
+              ],
+              "description": "The packaging ecosystem the package belongs to. Use 'generic' for hardware, firmware, or anything outside the listed language/OS package managers."
+            },
+            "cpe": {
+              "type": "string",
+              "pattern": "^cpe:2\\.3:[aho]:.*",
+              "description": "Optional CPE 2.3 URI identifying the affected product. Validated leniently: only the 'cpe:2.3:' prefix and the part-type letter ('a' application, 'h' hardware, 'o' operating system) are enforced here. Use `hdf-utilities.parseCpe` for full-grammar parsing. Example: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*'."
+            },
+            "purl": {
+              "type": "string",
+              "pattern": "^pkg:[A-Za-z0-9.+-]+/.+",
+              "description": "Optional Package URL (PURL) identifying the affected package. Validated leniently: only the 'pkg:TYPE/' scheme prefix is enforced here, where TYPE follows the PURL grammar (a letter followed by letters, digits, '.', '+', or '-') and is matched case-insensitively to mirror `hdf-utilities.parsePurl`'s accept-and-warn behavior. Use `parsePurl` for full PURL parsing. Example: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'."
+            },
+            "fixedInVersion": {
+              "type": "string",
+              "description": "Optional version string identifying the first release that contains the fix for the vulnerability. Use the same version syntax as `version`. Example: '1.1.1l' fixes 'openssl@1.1.1k'."
+            }
+          },
+          "examples": [
+            {
+              "$comment": "RPM ecosystem with full CPE + PURL — typical Grype/Trivy output for a RHEL host scan.",
+              "name": "openssl",
+              "version": "1.1.1k-7.el8_4",
+              "ecosystem": "rpm",
+              "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*",
+              "purl": "pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64",
+              "fixedInVersion": "1.1.1l"
+            },
+            {
+              "$comment": "NPM ecosystem with PURL only — the JavaScript world rarely emits CPEs; PURL is the canonical identifier.",
+              "name": "lodash",
+              "version": "4.17.20",
+              "ecosystem": "npm",
+              "purl": "pkg:npm/lodash@4.17.20",
+              "fixedInVersion": "4.17.21"
+            },
+            {
+              "$comment": "Minimal valid AffectedPackage — only the three required fields. Use when the scanner reports a package by name+version without emitting CPE or PURL strings.",
+              "name": "requests",
+              "version": "2.28.1",
+              "ecosystem": "pypi"
+            },
+            {
+              "$comment": "Maven ecosystem with full identifiers + fixedInVersion — log4j Log4Shell-style finding showing the patch path from vulnerable to fixed.",
+              "name": "org.apache.logging.log4j:log4j-core",
+              "version": "2.14.1",
+              "ecosystem": "maven",
+              "cpe": "cpe:2.3:a:apache:log4j:2.14.1:*:*:*:*:*:*:*",
+              "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+              "fixedInVersion": "2.17.1"
+            },
+            {
+              "$comment": "purl-only — VEX import path where the source format gives a purl and we choose not to decompose it. Valid because purl encodes name/version/ecosystem implicitly.",
+              "purl": "pkg:npm/lodash@4.17.20"
+            },
+            {
+              "$comment": "cpe-only — NIST-flavored scopes where the consumer carries a CPE 2.3 string and no purl. Valid because cpe encodes vendor/product/version.",
+              "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*"
+            }
+          ],
+          "description": "Represents a package referenced by a vulnerability finding or by an amendment's scope. On Evaluated_Requirement.affectedPackages it says 'this CVE affects these package versions'. On Standalone_Override.affectedPackages it says 'this amendment is scoped to these packages' (used by VEX, OSCAL POA&M, FedRAMP component-aware amendments). NOT a system-level component identifier — see `components[]` on hdf-system for those. Validity requires at least one of: (name + version + ecosystem), purl alone, or cpe alone. purl and cpe are self-describing identifiers that encode name/version implicitly, so either may stand on its own; the name+version+ecosystem combination is the explicit form for sources without formal identifiers.",
+          "title": "Affected Package"
         }
       }
     }

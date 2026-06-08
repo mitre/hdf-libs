@@ -5,6 +5,9 @@ import {
   ResultStatus,
 } from '@mitre/hdf-schema';
 import {
+  affectedPackageFromIdentifier,
+  affectedPackageToIdentifier,
+  affectedPackagesFromIdentifiers,
   exportStatusFor,
   importTargetFor,
   justificationForCycloneDX,
@@ -233,5 +236,92 @@ describe('justificationForCycloneDX', () => {
     Justification.VulnerableCodeCannotBeControlledByAdversary,
   ])('returns undefined for %s (no CycloneDX equivalent)', (v) => {
     expect(justificationForCycloneDX(v)).toBeUndefined();
+  });
+});
+
+describe('affectedPackageFromIdentifier', () => {
+  it('parses a purl into name+version+ecosystem', () => {
+    const pkg = affectedPackageFromIdentifier('pkg:npm/lodash@4.17.20');
+    expect(pkg).toEqual({
+      purl: 'pkg:npm/lodash@4.17.20',
+      name: 'lodash',
+      version: '4.17.20',
+      ecosystem: 'npm',
+    });
+  });
+
+  it('falls back to ecosystem=generic for unknown purl type segments', () => {
+    const pkg = affectedPackageFromIdentifier('pkg:apk/wolfi/git@2.39.0-r1');
+    expect(pkg?.purl).toBe('pkg:apk/wolfi/git@2.39.0-r1');
+    expect(pkg?.ecosystem).toBe('generic');
+  });
+
+  it('preserves a malformed pkg: identifier as purl-only', () => {
+    // parsePurl returns null when the type segment is missing — preserve
+    // the raw string verbatim rather than dropping the entry.
+    const pkg = affectedPackageFromIdentifier('pkg:');
+    expect(pkg).toEqual({ purl: 'pkg:' });
+  });
+
+  it('recognizes a CPE 2.3 identifier and emits cpe-only', () => {
+    const pkg = affectedPackageFromIdentifier(
+      'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*',
+    );
+    expect(pkg).toEqual({
+      cpe: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*',
+    });
+  });
+
+  it('returns undefined for opaque identifiers (schema forbids fabricating identity)', () => {
+    expect(affectedPackageFromIdentifier('acme-internal-lib')).toBeUndefined();
+    expect(affectedPackageFromIdentifier('')).toBeUndefined();
+  });
+});
+
+describe('affectedPackagesFromIdentifiers', () => {
+  it('dedupes by purl/cpe key and drops unresolvable entries', () => {
+    const out = affectedPackagesFromIdentifiers([
+      'pkg:npm/lodash@4.17.20',
+      'pkg:npm/lodash@4.17.20', // dedup
+      'opaque-string', // dropped
+      '', // dropped
+      'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*',
+    ]);
+    expect(out).toHaveLength(2);
+    expect(out[0].purl).toBe('pkg:npm/lodash@4.17.20');
+    expect(out[1].cpe).toBe('cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*');
+  });
+});
+
+describe('affectedPackageToIdentifier', () => {
+  it('prefers purl over cpe and name+version', () => {
+    expect(
+      affectedPackageToIdentifier({
+        purl: 'pkg:npm/x@1.0',
+        cpe: 'cpe:2.3:a:vendor:x:1.0:*:*:*:*:*:*:*',
+        name: 'x',
+        version: '1.0',
+      }),
+    ).toBe('pkg:npm/x@1.0');
+  });
+
+  it('uses cpe when purl is absent', () => {
+    expect(
+      affectedPackageToIdentifier({
+        cpe: 'cpe:2.3:a:vendor:x:1.0:*:*:*:*:*:*:*',
+      }),
+    ).toBe('cpe:2.3:a:vendor:x:1.0:*:*:*:*:*:*:*');
+  });
+
+  it('falls back to name@version when neither purl nor cpe is set', () => {
+    expect(affectedPackageToIdentifier({ name: 'x', version: '1.0' })).toBe('x@1.0');
+  });
+
+  it('returns name alone when version is missing', () => {
+    expect(affectedPackageToIdentifier({ name: 'x' })).toBe('x');
+  });
+
+  it('returns undefined for an empty AffectedPackage', () => {
+    expect(affectedPackageToIdentifier({})).toBeUndefined();
   });
 });

@@ -16,6 +16,14 @@
   "name": "OpenVEX statements from Spring Builds \u003cspring-builds@users.noreply.github.com\u003e",
   "overrides": [
     {
+      "affectedPackages": [
+        {
+          "ecosystem": "maven",
+          "name": "spring-boot",
+          "purl": "pkg:maven/org.springframework.boot/spring-boot@2.6.0-M3",
+          "version": "2.6.0-M3"
+        }
+      ],
       "appliedAt": "2023-01-16T19:07:16.853479631-06:00",
       "appliedBy": {
         "description": "Project Release Bot",
@@ -31,7 +39,7 @@
       ],
       "expiresAt": "2024-01-16T19:07:16.853479631-06:00",
       "justification": "vulnerable_code_not_in_execute_path",
-      "reason": "Spring Boot users are only affected by this vulnerability if they have switched the default logging system to Log4J2.\nProducts: pkg:maven/org.springframework.boot/spring-boot@2.6.0-M3",
+      "reason": "Spring Boot users are only affected by this vulnerability if they have switched the default logging system to Log4J2.",
       "requirementId": "CVE-2021-44228",
       "status": "passed",
       "type": "falsePositive"

@@ -529,9 +529,12 @@ func TestConvertTwistlock_AffectedPackagesMavenEcosystem(t *testing.T) {
 	require.NotNil(t, req)
 	require.Len(t, req.AffectedPackages, 1)
 	pkg := req.AffectedPackages[0]
-	assert.Equal(t, "org.apache.logging.log4j_log4j-core", pkg.Name)
-	assert.Equal(t, "2.14.1", pkg.Version)
-	assert.Equal(t, hdf.Maven, pkg.Ecosystem)
+	require.NotNil(t, pkg.Name)
+	require.NotNil(t, pkg.Version)
+	require.NotNil(t, pkg.Ecosystem)
+	assert.Equal(t, "org.apache.logging.log4j_log4j-core", *pkg.Name)
+	assert.Equal(t, "2.14.1", *pkg.Version)
+	assert.Equal(t, hdf.Maven, *pkg.Ecosystem)
 	require.NotNil(t, pkg.FixedInVersion)
 	assert.Equal(t, "2.15.0", *pkg.FixedInVersion)
 }
@@ -546,8 +549,10 @@ func TestConvertTwistlock_AffectedPackagesRpmEcosystem(t *testing.T) {
 	require.NotNil(t, req)
 	require.Len(t, req.AffectedPackages, 1)
 	pkg := req.AffectedPackages[0]
-	assert.Equal(t, "nss-util", pkg.Name)
-	assert.Equal(t, hdf.RPM, pkg.Ecosystem)
+	require.NotNil(t, pkg.Name)
+	require.NotNil(t, pkg.Ecosystem)
+	assert.Equal(t, "nss-util", *pkg.Name)
+	assert.Equal(t, hdf.RPM, *pkg.Ecosystem)
 }
 
 func TestConvertTwistlock_AffectedPackageOmittedWhenNoName(t *testing.T) {

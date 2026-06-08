@@ -11,6 +11,13 @@
   "name": "CycloneDX VEX statements",
   "overrides": [
     {
+      "affectedPackages": [
+        {
+          "ecosystem": "generic",
+          "name": "DEF",
+          "version": "1.1"
+        }
+      ],
       "appliedAt": "2022-03-03T00:00:00Z",
       "appliedBy": {
         "identifier": "cyclonedx-vex-import",
@@ -31,7 +38,7 @@
           "status": "pending"
         }
       ],
-      "reason": "This version of Product DEF has been fixed.\nProducts: DEF@1.1",
+      "reason": "This version of Product DEF has been fixed.",
       "requirementId": "CVE-2021-44228",
       "status": "failed",
       "type": "poam"

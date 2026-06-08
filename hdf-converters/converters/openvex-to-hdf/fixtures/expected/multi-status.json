@@ -16,6 +16,14 @@
   "name": "OpenVEX statements from Acme Security Team \u003csecurity@acme.example\u003e",
   "overrides": [
     {
+      "affectedPackages": [
+        {
+          "ecosystem": "npm",
+          "name": "example-pkg",
+          "purl": "pkg:npm/example-pkg@1.2.3",
+          "version": "1.2.3"
+        }
+      ],
       "appliedAt": "2026-03-01T12:00:00Z",
       "appliedBy": {
         "description": "Security Engineer",
@@ -31,12 +39,20 @@
       ],
       "expiresAt": "2027-03-01T12:00:00Z",
       "justification": "component_not_present",
-      "reason": "Internal audit confirmed the vulnerable module is not bundled.\nProducts: pkg:npm/example-pkg@1.2.3",
+      "reason": "Internal audit confirmed the vulnerable module is not bundled.",
       "requirementId": "CVE-2024-1000",
       "status": "passed",
       "type": "falsePositive"
     },
     {
+      "affectedPackages": [
+        {
+          "ecosystem": "npm",
+          "name": "example-pkg",
+          "purl": "pkg:npm/example-pkg@1.2.3",
+          "version": "1.2.3"
+        }
+      ],
       "appliedAt": "2026-03-01T12:00:00Z",
       "appliedBy": {
         "description": "Security Engineer",
@@ -58,7 +74,7 @@
           "status": "pending"
         }
       ],
-      "reason": "Upgrade to 1.2.4 or later\nProducts: pkg:npm/example-pkg@1.2.3",
+      "reason": "Upgrade to 1.2.4 or later",
       "requirementId": "CVE-2024-2000",
       "status": "failed",
       "type": "poam"

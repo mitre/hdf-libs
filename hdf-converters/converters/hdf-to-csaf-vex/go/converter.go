@@ -402,8 +402,21 @@ func allMilestonesCompleted(o *hdf.StandaloneOverride) bool {
 }
 
 // productIDsFor extracts product identifiers from an override. Preference
-// order: explicit componentRef, parsed 'Products:' line in reason, default.
+// order: structured affectedPackages (v3.2.x+ source of truth), then
+// componentRef, then the legacy 'Products:' reason-line annotation
+// (backward compat), then the default placeholder.
 func productIDsFor(o *hdf.StandaloneOverride) []string {
+	if len(o.AffectedPackages) > 0 {
+		ids := make([]string, 0, len(o.AffectedPackages))
+		for _, p := range o.AffectedPackages {
+			if id, ok := vex.AffectedPackageToIdentifier(p); ok {
+				ids = append(ids, id)
+			}
+		}
+		if len(ids) > 0 {
+			return ids
+		}
+	}
 	if o.ComponentRef != nil && *o.ComponentRef != "" {
 		return []string{*o.ComponentRef}
 	}

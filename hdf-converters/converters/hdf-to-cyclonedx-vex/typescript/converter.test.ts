@@ -267,7 +267,21 @@ describe('convertHdfToCyclonedxVex — edge cases', () => {
 });
 
 describe('helpers', () => {
-  it('productIDsFor prefers componentRef', () => {
+  it('productIDsFor prefers affectedPackages over componentRef and reason', () => {
+    expect(
+      productIDsFor({
+        affectedPackages: [{ purl: 'pkg:npm/x@1.0' }],
+        componentRef: 'COMP-IGNORED',
+        reason: 'Products: ALSO-IGNORED',
+      } as never),
+    ).toEqual(['pkg:npm/x@1.0']);
+  });
+  it('productIDsFor skips affectedPackages entries with no identifying field', () => {
+    expect(
+      productIDsFor({ affectedPackages: [{}], reason: 'prose\nProducts: X' } as never),
+    ).toEqual(['X']);
+  });
+  it('productIDsFor prefers componentRef when affectedPackages is unset', () => {
     expect(productIDsFor({ componentRef: 'pkg:npm/x@1.0', reason: 'Products: IGNORED' } as never)).toEqual([
       'pkg:npm/x@1.0',
     ]);

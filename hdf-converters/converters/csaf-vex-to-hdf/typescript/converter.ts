@@ -11,10 +11,12 @@
 
 import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
+  Ecosystem,
   IdentityType,
   Justification,
   MilestoneStatus,
   OverrideType,
+  type AffectedPackage,
   type Evidence,
   type HDFAmendments,
   type Identity,
@@ -26,6 +28,7 @@ import {
   validateInputSize,
 } from '../../../shared/typescript/converterutil.js';
 import {
+  affectedPackageFromIdentifier,
   importTargetFor,
   normalizeJustification,
   supplierEvidence,
@@ -110,8 +113,32 @@ interface CsafVulnerability {
   references?: CsafReference[];
 }
 
+interface CsafProductIdentificationHelper {
+  purl?: string;
+  cpe?: string;
+}
+
+interface CsafFullProductName {
+  name?: string;
+  product_id?: string;
+  product_identification_helper?: CsafProductIdentificationHelper;
+}
+
+interface CsafBranch {
+  category?: string;
+  name?: string;
+  product?: CsafFullProductName;
+  branches?: CsafBranch[];
+}
+
+interface CsafProductTree {
+  branches?: CsafBranch[];
+  full_product_names?: CsafFullProductName[];
+}
+
 interface CsafDocument {
   document?: CsafDocumentMeta;
+  product_tree?: CsafProductTree;
   vulnerabilities?: CsafVulnerability[];
 }
 
@@ -139,9 +166,11 @@ export async function convertCsafVexToHdf(
     (tracking.current_release_date ? parseTimestamp(tracking.current_release_date) : null) ??
     new Date();
 
+  const productLookup = buildProductLookup(doc.product_tree);
+
   const overrides: StandaloneOverride[] = [];
   for (const v of doc.vulnerabilities ?? []) {
-    overrides.push(...vulnerabilityToOverrides(v, publisher, tracking, docTime));
+    overrides.push(...vulnerabilityToOverrides(v, publisher, tracking, docTime, productLookup));
   }
 
   if (overrides.length === 0) {
@@ -167,6 +196,7 @@ function vulnerabilityToOverrides(
   publisher: CsafPublisher,
   tracking: CsafTracking,
   docTime: Date,
+  productLookup: Map<string, AffectedPackage>,
 ): StandaloneOverride[] {
   if (!vuln.cve) return [];
   const ps = vuln.product_status;
@@ -174,12 +204,12 @@ function vulnerabilityToOverrides(
 
   const out: StandaloneOverride[] = [];
   if (ps.known_not_affected?.length) {
-    const o = buildOverride(vuln, publisher, tracking, docTime, VexStatus.NotAffected, ps.known_not_affected);
+    const o = buildOverride(vuln, publisher, tracking, docTime, VexStatus.NotAffected, ps.known_not_affected, productLookup);
     if (o) out.push(o);
   }
   const fixedProducts = [...(ps.fixed ?? []), ...(ps.first_fixed ?? [])];
   if (fixedProducts.length > 0) {
-    const o = buildOverride(vuln, publisher, tracking, docTime, VexStatus.Fixed, fixedProducts);
+    const o = buildOverride(vuln, publisher, tracking, docTime, VexStatus.Fixed, fixedProducts, productLookup);
     if (o) out.push(o);
   }
   // known_affected / first_affected / last_affected / under_investigation /
@@ -194,6 +224,7 @@ function buildOverride(
   docTime: Date,
   canonical: VexStatus,
   products: string[],
+  productLookup: Map<string, AffectedPackage>,
 ): StandaloneOverride | undefined {
   const target = importTargetFor(canonical);
   if (!target) return undefined;
@@ -207,6 +238,11 @@ function buildOverride(
     appliedBy: identityFor(publisher),
     reason: buildReason(vuln, products),
   } as StandaloneOverride;
+
+  const affectedPackages = resolveAffectedPackages(products, productLookup);
+  if (affectedPackages.length > 0) {
+    override.affectedPackages = affectedPackages;
+  }
 
   if (target.status !== undefined) override.status = target.status;
 
@@ -268,9 +304,12 @@ function firstActionRemediation(vuln: CsafVulnerability, products: string[]): st
   return '';
 }
 
-// buildReason composes the override reason. products is non-empty by
-// construction (we only reach here from a status bucket that contained
-// product IDs), so the Products: line always guarantees a non-empty result.
+// buildReason composes the override reason from CSAF prose (description
+// note + product-scoped threat details). Justification and product list
+// are fully structured fields now (Justification enum +
+// Standalone_Override.affectedPackages); neither is mirrored into reason.
+// Falls back to a status synopsis when CSAF carries no prose, so the
+// schema's required `reason` string is never empty.
 function buildReason(vuln: CsafVulnerability, products: string[]): string {
   const parts: string[] = [];
   const scope = new Set(products);
@@ -283,10 +322,117 @@ function buildReason(vuln: CsafVulnerability, products: string[]): string {
     if (ids && ids.length > 0 && !overlap(ids, scope)) continue;
     parts.push(t.details);
   }
-  // Justification is now a fully structured field; no longer mirrored
-  // into reason.
-  parts.push(`Products: ${products.join(', ')}`);
+  if (parts.length === 0) {
+    return `Imported from CSAF VEX (${vuln.cve ?? 'unknown CVE'})`;
+  }
   return parts.join('\n');
+}
+
+/**
+ * Walk a CSAF product_tree and build a lookup from product_id to a
+ * structured AffectedPackage. Prefers product_identification_helper.purl,
+ * then .cpe, then the full_product_name's `name` (used for matching only
+ * — name+version is hard to derive from CSAF reliably, so we drop entries
+ * with no purl and no cpe).
+ */
+export function buildProductLookup(
+  tree: CsafProductTree | undefined,
+): Map<string, AffectedPackage> {
+  const lookup = new Map<string, AffectedPackage>();
+  if (!tree) return lookup;
+  if (tree.full_product_names) {
+    for (const fp of tree.full_product_names) {
+      registerProduct(fp, lookup);
+    }
+  }
+  if (tree.branches) {
+    walkBranches(tree.branches, lookup);
+  }
+  return lookup;
+}
+
+interface BranchContext {
+  productName?: string;
+  version?: string;
+}
+
+function walkBranches(
+  branches: CsafBranch[],
+  lookup: Map<string, AffectedPackage>,
+  ctx: BranchContext = {},
+): void {
+  for (const b of branches) {
+    // Track product_name and product_version branches so leaf products can
+    // recover name+version even when no product_identification_helper is set.
+    const next: BranchContext = { ...ctx };
+    /* c8 ignore next 2 — falsy branches require a malformed CSAF branch
+       node (category set but name empty) which we don't fixture. */
+    if (b.category === 'product_name' && b.name) next.productName = b.name;
+    if (b.category === 'product_version' && b.name) next.version = b.name;
+    if (b.product) registerProduct(b.product, lookup, next);
+    if (b.branches) walkBranches(b.branches, lookup, next);
+  }
+}
+
+function registerProduct(
+  fp: CsafFullProductName,
+  lookup: Map<string, AffectedPackage>,
+  ctx: BranchContext = {},
+): void {
+  /* c8 ignore next — defensive against a malformed CSAF full_product_name
+     missing its required product_id field; not fixtured. */
+  if (!fp.product_id) return;
+  const helper = fp.product_identification_helper;
+  if (helper?.purl) {
+    const pkg = affectedPackageFromIdentifier(helper.purl);
+    /* c8 ignore next 4 — affectedPackageFromIdentifier always returns a
+       non-null value for an input that starts with 'pkg:' (preserves
+       malformed input as purl-only). The null branch is unreachable from
+       this callsite. */
+    if (pkg) {
+      lookup.set(fp.product_id, pkg);
+      return;
+    }
+  }
+  if (helper?.cpe) {
+    const pkg = affectedPackageFromIdentifier(helper.cpe);
+    /* c8 ignore next 4 — same as above; identifiers starting with
+       'cpe:2.3:' always produce a cpe-only AffectedPackage. */
+    if (pkg) {
+      lookup.set(fp.product_id, pkg);
+      return;
+    }
+  }
+  // No portable identifier — fall back to ancestor product_name +
+  // product_version branches if both are present. Ecosystem stays generic
+  // since CSAF doesn't disambiguate package managers; the structured triple
+  // is still useful for downstream matching.
+  if (ctx.productName && ctx.version) {
+    lookup.set(fp.product_id, {
+      name: ctx.productName,
+      version: ctx.version,
+      ecosystem: Ecosystem.Generic,
+    });
+  }
+  // Otherwise drop the entry — schema requires name+version+ecosystem OR
+  // purl OR cpe; fabricating identity is the anti-pattern Step 1b forbids.
+}
+
+function resolveAffectedPackages(
+  productIds: string[],
+  lookup: Map<string, AffectedPackage>,
+): AffectedPackage[] {
+  const out: AffectedPackage[] = [];
+  const seenKeys = new Set<string>();
+  for (const id of productIds) {
+    const pkg = lookup.get(id);
+    if (!pkg) continue;
+    const key = pkg.purl ?? pkg.cpe ?? `${pkg.name ?? ''}@${pkg.version ?? ''}`;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    out.push(pkg);
+  }
+  return out;
 }
 
 function identityFor(p: CsafPublisher): Identity {

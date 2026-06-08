@@ -84,10 +84,35 @@ type Reference struct {
 	URL      string `json:"url"`
 }
 
-// ProductTree describes the product taxonomy. We do not fully materialize
-// it; product IDs in vulnerabilities are quoted as opaque strings.
+// ProductTree describes the product taxonomy. We resolve product_ids
+// through it on import to surface structured AffectedPackage entries
+// instead of opaque CSAFPID-XYZ strings.
 type ProductTree struct {
-	Branches []json.RawMessage `json:"branches,omitempty"`
+	Branches         []Branch          `json:"branches,omitempty"`
+	FullProductNames []FullProductName `json:"full_product_names,omitempty"`
+}
+
+// Branch is one node in the (recursive) product_tree.branches array.
+type Branch struct {
+	Category string           `json:"category,omitempty"`
+	Name     string           `json:"name,omitempty"`
+	Product  *FullProductName `json:"product,omitempty"`
+	Branches []Branch         `json:"branches,omitempty"`
+}
+
+// FullProductName carries a CSAF product leaf — a name plus an opaque
+// product_id used inside the document.
+type FullProductName struct {
+	Name                        string                       `json:"name,omitempty"`
+	ProductID                   string                       `json:"product_id,omitempty"`
+	ProductIdentificationHelper *ProductIdentificationHelper `json:"product_identification_helper,omitempty"`
+}
+
+// ProductIdentificationHelper carries portable identifiers attached to a
+// CSAF product. We extract purl (preferred) and cpe (fallback).
+type ProductIdentificationHelper struct {
+	Purl string `json:"purl,omitempty"`
+	CPE  string `json:"cpe,omitempty"`
 }
 
 // Vulnerability is one CVE-scoped entry.
@@ -163,9 +188,11 @@ func ConvertCSAFVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendme
 		docTime = time.Now().UTC()
 	}
 
+	productLookup := buildProductLookup(doc.ProductTree)
+
 	overrides := make([]hdf.StandaloneOverride, 0)
 	for i := range doc.Vulnerabilities {
-		overrides = append(overrides, vulnerabilityToOverrides(&doc.Vulnerabilities[i], &doc, docTime)...)
+		overrides = append(overrides, vulnerabilityToOverrides(&doc.Vulnerabilities[i], &doc, docTime, productLookup)...)
 	}
 
 	if len(overrides) == 0 {
@@ -202,7 +229,7 @@ func ConvertCSAFVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendme
 // on the vulnerability. A vuln with both known_not_affected and fixed
 // buckets produces TWO overrides (one falsePositive, one POA&M). Buckets
 // with no canonical mapping are skipped.
-func vulnerabilityToOverrides(vuln *Vulnerability, doc *Document, docTime time.Time) []hdf.StandaloneOverride {
+func vulnerabilityToOverrides(vuln *Vulnerability, doc *Document, docTime time.Time, productLookup map[string]hdf.AffectedPackage) []hdf.StandaloneOverride {
 	if vuln.CVE == "" {
 		return nil
 	}
@@ -213,13 +240,13 @@ func vulnerabilityToOverrides(vuln *Vulnerability, doc *Document, docTime time.T
 
 	var out []hdf.StandaloneOverride
 	if len(status.KnownNotAffected) > 0 {
-		if o, ok := buildOverride(vuln, doc, docTime, vex.StatusNotAffected, status.KnownNotAffected); ok {
+		if o, ok := buildOverride(vuln, doc, docTime, vex.StatusNotAffected, status.KnownNotAffected, productLookup); ok {
 			out = append(out, o)
 		}
 	}
 	fixedProducts := append(append([]string{}, status.Fixed...), status.FirstFixed...)
 	if len(fixedProducts) > 0 {
-		if o, ok := buildOverride(vuln, doc, docTime, vex.StatusFixed, fixedProducts); ok {
+		if o, ok := buildOverride(vuln, doc, docTime, vex.StatusFixed, fixedProducts, productLookup); ok {
 			out = append(out, o)
 		}
 	}
@@ -229,19 +256,20 @@ func vulnerabilityToOverrides(vuln *Vulnerability, doc *Document, docTime time.T
 	return out
 }
 
-func buildOverride(vuln *Vulnerability, doc *Document, docTime time.Time, canonical vex.Status, products []string) (hdf.StandaloneOverride, bool) {
+func buildOverride(vuln *Vulnerability, doc *Document, docTime time.Time, canonical vex.Status, products []string, productLookup map[string]hdf.AffectedPackage) (hdf.StandaloneOverride, bool) {
 	target, ok := vex.ImportTargetFor(canonical)
 	if !ok {
 		return hdf.StandaloneOverride{}, false
 	}
 	override := hdf.StandaloneOverride{
-		Type:          target.OverrideType,
-		Status:        target.Status,
-		RequirementID: vuln.CVE,
-		AppliedAt:     docTime,
-		ExpiresAt:     docTime.Add(defaultExpiryHorizon),
-		AppliedBy:     *identityFor(doc.Document.Publisher),
-		Reason:        buildReason(vuln, products),
+		Type:             target.OverrideType,
+		Status:           target.Status,
+		RequirementID:    vuln.CVE,
+		AppliedAt:        docTime,
+		ExpiresAt:        docTime.Add(defaultExpiryHorizon),
+		AppliedBy:        *identityFor(doc.Document.Publisher),
+		Reason:           buildReason(vuln, products),
+		AffectedPackages: resolveAffectedPackages(products, productLookup),
 	}
 
 	if target.SetJustification {
@@ -308,9 +336,12 @@ func firstActionRemediation(vuln *Vulnerability, products []string) string {
 	return ""
 }
 
-// buildReason composes the override reason. products is non-empty by
-// construction (we only reach here from a status bucket that contained
-// product IDs), so the Products: line always guarantees a non-empty result.
+// buildReason composes the override reason from CSAF prose (description
+// note + product-scoped threat details). Justification and product list
+// are fully structured fields now (Justification enum +
+// Standalone_Override.affectedPackages); neither is mirrored into reason.
+// Falls back to a status synopsis when CSAF carries no prose so the
+// schema-required `reason` string is never empty.
 func buildReason(vuln *Vulnerability, products []string) string {
 	parts := make([]string, 0, 4)
 	scope := setFrom(products)
@@ -328,9 +359,9 @@ func buildReason(vuln *Vulnerability, products []string) string {
 		}
 		parts = append(parts, t.Details)
 	}
-	// Justification is now a fully structured field; no longer mirrored
-	// into reason.
-	parts = append(parts, "Products: "+strings.Join(products, ", "))
+	if len(parts) == 0 {
+		return fmt.Sprintf("Imported from CSAF VEX (%s)", vuln.CVE)
+	}
 	return strings.Join(parts, "\n")
 }
 
@@ -369,4 +400,117 @@ func overlap(ids []string, scope map[string]struct{}) bool {
 		}
 	}
 	return false
+}
+
+// buildProductLookup walks a CSAF product_tree and returns a lookup from
+// product_id to a structured AffectedPackage. Prefers
+// product_identification_helper.purl, then .cpe. Entries without a portable
+// identifier (purl/cpe) are dropped — the CSAF `name` field is human-readable
+// and rarely decomposes cleanly to name+version+ecosystem.
+func buildProductLookup(tree *ProductTree) map[string]hdf.AffectedPackage {
+	lookup := make(map[string]hdf.AffectedPackage)
+	if tree == nil {
+		return lookup
+	}
+	for _, fp := range tree.FullProductNames {
+		registerProduct(fp, lookup, branchContext{})
+	}
+	walkBranches(tree.Branches, lookup, branchContext{})
+	return lookup
+}
+
+type branchContext struct {
+	productName string
+	version     string
+}
+
+func walkBranches(branches []Branch, lookup map[string]hdf.AffectedPackage, ctx branchContext) {
+	for _, b := range branches {
+		// Track product_name and product_version branches so leaf products
+		// can recover name+version even when no
+		// product_identification_helper is set.
+		next := ctx
+		switch b.Category {
+		case "product_name":
+			if b.Name != "" {
+				next.productName = b.Name
+			}
+		case "product_version":
+			if b.Name != "" {
+				next.version = b.Name
+			}
+		}
+		if b.Product != nil {
+			registerProduct(*b.Product, lookup, next)
+		}
+		if len(b.Branches) > 0 {
+			walkBranches(b.Branches, lookup, next)
+		}
+	}
+}
+
+func registerProduct(fp FullProductName, lookup map[string]hdf.AffectedPackage, ctx branchContext) {
+	if fp.ProductID == "" {
+		return
+	}
+	helper := fp.ProductIdentificationHelper
+	if helper != nil && helper.Purl != "" {
+		if pkg := vex.AffectedPackageFromIdentifier(helper.Purl); pkg != nil {
+			lookup[fp.ProductID] = *pkg
+			return
+		}
+	}
+	if helper != nil && helper.CPE != "" {
+		if pkg := vex.AffectedPackageFromIdentifier(helper.CPE); pkg != nil {
+			lookup[fp.ProductID] = *pkg
+			return
+		}
+	}
+	// No portable identifier — fall back to ancestor product_name +
+	// product_version branches when both are present. Ecosystem stays
+	// generic; CSAF doesn't disambiguate package managers.
+	if ctx.productName != "" && ctx.version != "" {
+		name := ctx.productName
+		version := ctx.version
+		eco := hdf.Generic
+		lookup[fp.ProductID] = hdf.AffectedPackage{
+			Name:      &name,
+			Version:   &version,
+			Ecosystem: &eco,
+		}
+	}
+}
+
+func resolveAffectedPackages(productIDs []string, lookup map[string]hdf.AffectedPackage) []hdf.AffectedPackage {
+	out := make([]hdf.AffectedPackage, 0, len(productIDs))
+	seen := map[string]bool{}
+	for _, id := range productIDs {
+		pkg, ok := lookup[id]
+		if !ok {
+			continue
+		}
+		var key string
+		switch {
+		case pkg.Purl != nil:
+			key = "purl:" + *pkg.Purl
+		case pkg.Cpe != nil:
+			key = "cpe:" + *pkg.Cpe
+		default:
+			name := ""
+			ver := ""
+			if pkg.Name != nil {
+				name = *pkg.Name
+			}
+			if pkg.Version != nil {
+				ver = *pkg.Version
+			}
+			key = "nv:" + name + "@" + ver
+		}
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, pkg)
+	}
+	return out
 }

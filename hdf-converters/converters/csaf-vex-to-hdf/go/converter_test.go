@@ -34,7 +34,14 @@ func TestConvertCSAFVEX_NotAffectedUseCase(t *testing.T) {
 	assert.Equal(t, hdf.Passed, *o.Status)
 	assert.Nil(t, o.Justification, "uc-01-na has no flags; justification should be unset")
 	assert.Contains(t, o.Reason, "Class with vulnerable code was removed")
-	assert.Contains(t, o.Reason, "CSAFPID-0001")
+	assert.NotContains(t, o.Reason, "CSAFPID-0001")
+	// CSAFPID-0001 resolves through product_tree's vendor/product_name/
+	// product_version branch hierarchy → name "ABC", version "4.2".
+	require.Len(t, o.AffectedPackages, 1)
+	require.NotNil(t, o.AffectedPackages[0].Name)
+	require.NotNil(t, o.AffectedPackages[0].Version)
+	assert.Equal(t, "ABC", *o.AffectedPackages[0].Name)
+	assert.Equal(t, "4.2", *o.AffectedPackages[0].Version)
 
 	body, err := json.Marshal(result)
 	require.NoError(t, err)

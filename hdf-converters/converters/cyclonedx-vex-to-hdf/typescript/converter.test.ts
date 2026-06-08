@@ -8,10 +8,10 @@ import {
   ResultStatus,
 } from '@mitre/hdf-schema';
 import {
-  bestProductID,
+  affectedPackageFromComponent,
+  affectedPackagesForVuln,
   convertCyclonedxVexToHdf,
   firstActionFromResponse,
-  productIDsForVuln,
 } from './converter.js';
 
 const TEST_VERSION = 'test';
@@ -32,8 +32,11 @@ describe('convertCyclonedxVexToHdf — not_affected', () => {
     expect(o.type).toBe(OverrideType.FalsePositive);
     expect(o.status).toBe(ResultStatus.Passed);
     expect(o.justification).toBe(Justification.ComponentNotPresent);
-    expect(o.reason).toContain('Products: ABC@4.2');
+    expect(o.affectedPackages).toBeDefined();
+    expect(o.affectedPackages?.map((p) => p.name)).toContain('ABC');
+    expect(o.affectedPackages?.map((p) => p.version)).toContain('4.2');
     expect(o.reason).toContain('Class with vulnerable code was removed');
+    expect(o.reason).not.toContain('Products:');
   });
 });
 
@@ -122,10 +125,13 @@ describe('convertCyclonedxVexToHdf — vulnerability description + affects edge 
       ],
     });
     const result = await convertCyclonedxVexToHdf(input, TEST_VERSION);
-    const reason = result.overrides[0].reason;
-    expect(reason).toContain('top-level description text');
-    expect(reason).toContain('Products: product-A');
-    expect(reason).not.toContain('product-A, product-A');
+    const o = result.overrides[0];
+    expect(o.reason).toContain('top-level description text');
+    expect(o.reason).not.toContain('Products:');
+    // Opaque bom-ref 'product-A' has no component-table entry — schema
+    // forbids fabricating identity, so the entry is dropped. Scope
+    // information lives in the reason / componentRef for those cases.
+    expect(o.affectedPackages ?? []).toHaveLength(0);
   });
 });
 
@@ -151,9 +157,12 @@ describe('convertCyclonedxVexToHdf — additional references and components', ()
       ],
     });
     const result = await convertCyclonedxVexToHdf(input, TEST_VERSION);
-    const evidence = result.overrides[0].evidence ?? [];
+    const o = result.overrides[0];
+    const evidence = o.evidence ?? [];
     expect(evidence.some((e) => e.data === 'https://github.com/advisories/GHSA-xxx')).toBe(true);
-    expect(result.overrides[0].reason).toContain('Products: pkg:npm/libfoo@1.0.0');
+    expect(o.affectedPackages).toHaveLength(1);
+    expect(o.affectedPackages?.[0].purl).toBe('pkg:npm/libfoo@1.0.0');
+    expect(o.reason).not.toContain('Products:');
   });
 });
 
@@ -274,15 +283,28 @@ describe('helpers', () => {
     expect(firstActionFromResponse([])).toBe('');
   });
 
-  it('bestProductID prefers purl, then name@version, then name, then bom-ref, then fallback', () => {
-    expect(bestProductID({ purl: 'pkg:npm/x@1.0', name: 'x', version: '1.0' }, 'f')).toBe('pkg:npm/x@1.0');
-    expect(bestProductID({ name: 'x', version: '1.0' }, 'f')).toBe('x@1.0');
-    expect(bestProductID({ name: 'x' }, 'f')).toBe('x');
-    expect(bestProductID({ 'bom-ref': 'B' }, 'f')).toBe('B');
-    expect(bestProductID({}, 'f')).toBe('f');
+  it('affectedPackageFromComponent decomposes purl into name+version+ecosystem', () => {
+    const pkg = affectedPackageFromComponent({ purl: 'pkg:npm/x@1.0', name: 'x', version: '1.0' });
+    expect(pkg?.purl).toBe('pkg:npm/x@1.0');
+    expect(pkg?.name).toBe('x');
+    expect(pkg?.version).toBe('1.0');
+    expect(pkg?.ecosystem).toBe('npm');
   });
 
-  it('productIDsForVuln falls back to unknown-product when no affects', () => {
-    expect(productIDsForVuln({ id: 'CVE-X' }, new Map())).toEqual(['unknown-product']);
+  it('affectedPackageFromComponent falls back to name+version+generic when no purl', () => {
+    const pkg = affectedPackageFromComponent({ name: 'x', version: '1.0' });
+    expect(pkg?.purl).toBeUndefined();
+    expect(pkg?.name).toBe('x');
+    expect(pkg?.version).toBe('1.0');
+    expect(pkg?.ecosystem).toBe('generic');
+  });
+
+  it('affectedPackageFromComponent returns undefined when the component has no purl and no name+version pair', () => {
+    expect(affectedPackageFromComponent({ name: 'name-only' })).toBeUndefined();
+    expect(affectedPackageFromComponent({})).toBeUndefined();
+  });
+
+  it('affectedPackagesForVuln returns empty list when there are no affects', () => {
+    expect(affectedPackagesForVuln({ id: 'CVE-X' }, new Map())).toEqual([]);
   });
 });

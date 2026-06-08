@@ -28,7 +28,12 @@ describe('convertCsafVexToHdf — not_affected use case', () => {
     expect(o.status).toBe(ResultStatus.Passed);
     expect(o.justification).toBeUndefined();
     expect(o.reason).toContain('Class with vulnerable code was removed');
-    expect(o.reason).toContain('CSAFPID-0001');
+    expect(o.reason).not.toContain('CSAFPID-0001');
+    // CSAFPID-0001 resolves through product_tree's vendor/product_name/
+    // product_version branch hierarchy → name "ABC", version "4.2".
+    expect(o.affectedPackages).toBeDefined();
+    expect(o.affectedPackages?.[0]?.name).toBe('ABC');
+    expect(o.affectedPackages?.[0]?.version).toBe('4.2');
   });
 });
 
@@ -113,7 +118,8 @@ describe('convertCsafVexToHdf — sparse field fallbacks', () => {
 
   it('reason falls through to default template when no notes/threats/flags', async () => {
     const result = await convertCsafVexToHdf(JSON.stringify(sparse), TEST_VERSION);
-    expect(result.overrides[0].reason).toContain('Products: P1');
+    expect(result.overrides[0].reason).toMatch(/Imported from CSAF VEX/);
+    expect(result.overrides[0].reason).not.toContain('Products:');
   });
 
   it('POAM milestone uses default action template when no remediation prose', async () => {
@@ -152,6 +158,76 @@ describe('convertCsafVexToHdf — sparse field fallbacks', () => {
     await expect(convertCsafVexToHdf(JSON.stringify(noProducts), TEST_VERSION)).rejects.toThrow(
       /no actionable statements/,
     );
+  });
+
+  it('product_tree purl in product_identification_helper resolves to a purl-only AffectedPackage', async () => {
+    const withHelperPurl = {
+      ...sparse,
+      product_tree: {
+        full_product_names: [
+          {
+            name: 'OpenSSL 1.1.1k',
+            product_id: 'P1',
+            product_identification_helper: { purl: 'pkg:rpm/openssl@1.1.1k' },
+          },
+        ],
+      },
+    };
+    const result = await convertCsafVexToHdf(JSON.stringify(withHelperPurl), TEST_VERSION);
+    expect(result.overrides[0].affectedPackages).toBeDefined();
+    expect(result.overrides[0].affectedPackages?.[0].purl).toBe('pkg:rpm/openssl@1.1.1k');
+  });
+
+  it('product_tree cpe in product_identification_helper resolves to a cpe-only AffectedPackage', async () => {
+    const withHelperCpe = {
+      ...sparse,
+      product_tree: {
+        full_product_names: [
+          {
+            name: 'OpenSSL 1.1.1k',
+            product_id: 'P1',
+            product_identification_helper: {
+              cpe: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*',
+            },
+          },
+        ],
+      },
+    };
+    const result = await convertCsafVexToHdf(JSON.stringify(withHelperCpe), TEST_VERSION);
+    expect(result.overrides[0].affectedPackages?.[0].cpe).toBe(
+      'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*',
+    );
+  });
+
+  it('product_tree leaf with no helper and no version-ancestor is dropped from affectedPackages', async () => {
+    const noHelperNoAncestor = {
+      ...sparse,
+      product_tree: {
+        full_product_names: [{ name: 'X', product_id: 'P1' }],
+      },
+    };
+    const result = await convertCsafVexToHdf(JSON.stringify(noHelperNoAncestor), TEST_VERSION);
+    expect(result.overrides[0].affectedPackages ?? []).toHaveLength(0);
+  });
+
+  it('product_tree resolves productIDs unknown to the tree as missing (no entry)', async () => {
+    const referencedButMissing = {
+      ...sparse,
+      product_tree: {
+        full_product_names: [
+          {
+            name: 'OpenSSL',
+            product_id: 'OTHER',
+            product_identification_helper: { purl: 'pkg:rpm/openssl@1.0' },
+          },
+        ],
+      },
+      vulnerabilities: [
+        { cve: 'CVE-2026-1', product_status: { known_not_affected: ['P1'] } },
+      ],
+    };
+    const result = await convertCsafVexToHdf(JSON.stringify(referencedButMissing), TEST_VERSION);
+    expect(result.overrides[0].affectedPackages ?? []).toHaveLength(0);
   });
 
   it('flag with non-overlapping product_ids does not contribute a justification line', async () => {

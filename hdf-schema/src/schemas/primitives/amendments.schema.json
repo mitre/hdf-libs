@@ -145,6 +145,13 @@
           "type": "string",
           "format": "uuid",
           "description": "componentId of the component this amendment is scoped to. When set, the amendment only applies to the specified component. When omitted, the amendment applies system-wide."
+        },
+        "affectedPackages": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.2.0#/$defs/Affected_Package"
+          },
+          "description": "Software packages this amendment is scoped to, distinct from componentRef (which scopes to an HDF-internal Component by UUID). Use when the source amendment format references packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M `subjects[]`, FedRAMP component-aware amendments. Symmetric with Evaluated_Requirement.affectedPackages, which scopes findings to the same package vocabulary. When omitted, the amendment applies system-wide (or only to componentRef when that is set)."
         }
       },
       "examples": [
@@ -226,6 +233,21 @@
           "appliedBy": { "type": "email", "identifier": "issm@agency.gov" },
           "appliedAt": "2026-03-26T10:00:00Z",
           "expiresAt": "2026-09-26T00:00:00Z"
+        },
+        {
+          "$comment": "VEX-style import — falsePositive scoped to specific packages by purl. The affectedPackages array carries structured product identity instead of squeezing 'Products: …' into the reason free-text field.",
+          "type": "falsePositive",
+          "requirementId": "CVE-2026-12345",
+          "status": "notApplicable",
+          "reason": "Vulnerable code path is not present in our build — dependency compiled with the affected module disabled",
+          "justification": "vulnerable_code_not_present",
+          "appliedBy": { "type": "email", "identifier": "secops@org.gov" },
+          "appliedAt": "2026-05-01T10:00:00Z",
+          "expiresAt": "2027-05-01T00:00:00Z",
+          "affectedPackages": [
+            { "purl": "pkg:npm/lodash@4.17.20" },
+            { "purl": "pkg:rpm/openssl@1.1.1k-2.el8", "fixedInVersion": "1.1.1k-3.el8" }
+          ]
         }
       ],
       "title": "Standalone Override"

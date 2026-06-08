@@ -67,7 +67,13 @@ describe('convertHdfToCsafVex — round trip', () => {
       'CVE-2021-45105',
     ]);
     for (const v of round.vulnerabilities) {
-      expect(v.product_status.known_not_affected).toContain('CSAFPID-0001');
+      // CSAFPID-0001 in the source resolved against a
+      // product_version_range branch (no specific version), so the
+      // structured AffectedPackage walker drops it — the schema requires a
+      // concrete name+version+ecosystem, purl, or cpe. On re-export, the
+      // exporter falls back to the HDFPID-0001 placeholder; CVE identity,
+      // status, and justification all still round-trip.
+      expect(v.product_status.known_not_affected).toContain('HDFPID-0001');
       expect(v.flags[0].label).toBe('component_not_present');
     }
   });
@@ -244,7 +250,22 @@ describe('convertHdfToCsafVex — edge cases', () => {
 });
 
 describe('helpers', () => {
-  it('productIDsFor prefers componentRef', () => {
+  it('productIDsFor prefers affectedPackages over componentRef and reason', () => {
+    expect(
+      productIDsFor({
+        affectedPackages: [{ purl: 'pkg:npm/x@1.0' }],
+        componentRef: 'COMP-IGNORED',
+        reason: 'Products: ALSO-IGNORED',
+      } as never),
+    ).toEqual(['pkg:npm/x@1.0']);
+  });
+  it('productIDsFor skips affectedPackages entries with no identifying field', () => {
+    // Empty affectedPackages array → falls through to legacy fallback.
+    expect(
+      productIDsFor({ affectedPackages: [{}], reason: 'prose\nProducts: X' } as never),
+    ).toEqual(['X']);
+  });
+  it('productIDsFor prefers componentRef when affectedPackages is unset', () => {
     expect(productIDsFor({ componentRef: 'COMP-1', reason: 'Products: IGNORED' } as never)).toEqual([
       'COMP-1',
     ]);

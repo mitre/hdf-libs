@@ -28,6 +28,7 @@ import {
   validateInputSize,
 } from '../../../shared/typescript/converterutil.js';
 import {
+  affectedPackagesFromIdentifiers,
   importTargetFor,
   normalizeJustification,
   normalizeStatus,
@@ -142,6 +143,14 @@ function statementToOverride(
     reason: buildReason(stmt, target.poamActionTemplate),
   } as StandaloneOverride;
 
+  const productIds = (stmt.products ?? [])
+    .map((p) => p['@id'])
+    .filter((id): id is string => Boolean(id));
+  const affectedPackages = affectedPackagesFromIdentifiers(productIds);
+  if (affectedPackages.length > 0) {
+    override.affectedPackages = affectedPackages;
+  }
+
   if (target.status !== undefined) {
     override.status = target.status;
   }
@@ -174,12 +183,9 @@ function buildReason(stmt: OpenVexStatement, poamTemplate: string): string {
   const parts: string[] = [];
   if (stmt.impact_statement) parts.push(stmt.impact_statement);
   if (stmt.action_statement) parts.push(stmt.action_statement);
-  // Justification is now a fully structured field (post v3.2.x enum
-  // extension); no longer mirrored into reason.
-  const productIds = (stmt.products ?? [])
-    .map((p) => p['@id'])
-    .filter((id): id is string => Boolean(id));
-  if (productIds.length > 0) parts.push(`Products: ${productIds.join(', ')}`);
+  // Justification and product list are fully structured fields now
+  // (Justification enum + Standalone_Override.affectedPackages); neither
+  // is mirrored into reason.
   if (parts.length === 0) {
     return poamTemplate || `Imported from OpenVEX status "${stmt.status ?? ''}"`;
   }

@@ -1,6 +1,6 @@
 {
   "@context": "https://openvex.dev/ns/v0.2.0",
-  "@id": "https://openvex.dev/docs/public/vex-70e248b9901690cbeae9b79c889bec281de7e2694eafe0fa3e431907d736af7f",
+  "@id": "https://openvex.dev/docs/public/vex-7046e5fafbdff163129767960ef2bb4318f5176510080906263c56e83a07401f",
   "author": "Acme Security Team \u003csecurity@acme.example\u003e",
   "role": "Security Engineer",
   "timestamp": "2026-03-01T12:00:00Z",

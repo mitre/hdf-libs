@@ -312,10 +312,13 @@ func buildAffectedPackage(vuln TwistlockVuln, packageTypes map[string]string, di
 	if pkgType == "" {
 		pkgType = packageTypes[vuln.PackageName]
 	}
+	name := vuln.PackageName
+	version := vuln.PackageVersion
+	ecosystem := resolveEcosystem(pkgType, distro)
 	pkg := hdf.AffectedPackage{
-		Name:      vuln.PackageName,
-		Version:   vuln.PackageVersion,
-		Ecosystem: resolveEcosystem(pkgType, distro),
+		Name:      &name,
+		Version:   &version,
+		Ecosystem: &ecosystem,
 	}
 	if fixed := extractFixedInVersion(vuln); fixed != "" {
 		pkg.FixedInVersion = &fixed

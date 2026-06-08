@@ -38,7 +38,12 @@ func TestConvertOpenVEXToHDF_SpringBootLog4j(t *testing.T) {
 	require.NotNil(t, o.Justification)
 	assert.Equal(t, hdf.VulnerableCodeNotInExecutePath, *o.Justification)
 	assert.Contains(t, o.Reason, "Spring Boot users")
-	assert.Contains(t, o.Reason, "pkg:maven/org.springframework.boot/spring-boot@2.6.0-M3")
+	assert.NotContains(t, o.Reason, "Products:")
+	require.NotEmpty(t, o.AffectedPackages)
+	require.NotNil(t, o.AffectedPackages[0].Purl)
+	assert.Equal(t,
+		"pkg:maven/org.springframework.boot/spring-boot@2.6.0-M3",
+		*o.AffectedPackages[0].Purl)
 	require.Len(t, o.Evidence, 1)
 	assert.Equal(t, hdf.URL, o.Evidence[0].Type)
 

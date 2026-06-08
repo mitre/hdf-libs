@@ -12,9 +12,11 @@
 
 import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import {
+  Ecosystem,
   IdentityType,
   MilestoneStatus,
   OverrideType,
+  type AffectedPackage,
   type Evidence,
   type HDFAmendments,
   type Identity,
@@ -26,6 +28,7 @@ import {
   validateInputSize,
 } from '../../../shared/typescript/converterutil.js';
 import {
+  affectedPackageFromIdentifier,
   importTargetFor,
   normalizeJustification,
   normalizeStatus,
@@ -160,22 +163,25 @@ function vulnerabilityToOverride(
   const target = importTargetFor(canonical);
   if (!target) return undefined;
 
-  const products = productIDsForVuln(v, productLookup);
+  const affectedPackages = affectedPackagesForVuln(v, productLookup);
   const expiresAt = new Date(docTime.getTime() + DEFAULT_EXPIRY_HORIZON_MS);
 
   // componentRef is UUID-constrained on the HDF schema (it identifies an
-  // HDF component by id, not a foreign-format identifier). We leave it
-  // unset; the resolved product identifier surfaces via the Products
-  // line in reason. Round-trip preserves product IDENTITY but the
-  // textual form shifts from CycloneDX bom-ref to the resolved form.
+  // HDF component by id, not a foreign-format identifier). Multi-product
+  // VEX scoping lands in affectedPackages[] (structured) rather than in
+  // the reason free-text field.
   const override: StandaloneOverride = {
     type: target.overrideType,
     requirementId: v.id,
     appliedAt: docTime,
     expiresAt,
     appliedBy: publisher,
-    reason: buildReason(v, products),
+    reason: buildReason(v),
   } as StandaloneOverride;
+
+  if (affectedPackages.length > 0) {
+    override.affectedPackages = affectedPackages;
+  }
 
   if (target.status !== undefined) override.status = target.status;
 
@@ -209,38 +215,61 @@ function vulnerabilityToOverride(
   return override;
 }
 
-function buildReason(v: Vulnerability, products: string[]): string {
+function buildReason(v: Vulnerability): string {
   const parts: string[] = [];
   if (v.description) parts.push(v.description);
   if (v.analysis?.detail) parts.push(v.analysis.detail);
-  // Justification is now a fully structured field (post v3.2.x enum
-  // extension covers all current CycloneDX values); no longer mirrored
-  // into reason. Response[] hints are not echoed — POA&M overrides
-  // already carry remediation context via milestones.
-  parts.push(`Products: ${products.join(', ')}`);
+  // Justification and product list are fully structured fields now
+  // (Justification enum + Standalone_Override.affectedPackages); neither
+  // is mirrored into reason. Response[] hints are not echoed either —
+  // POA&M overrides carry remediation context via milestones.
   return parts.join('\n');
 }
 
-export function productIDsForVuln(v: Vulnerability, lookup: Map<string, Component>): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
+/**
+ * Resolve CycloneDX affects[].ref entries to structured AffectedPackage
+ * entries. Looks up the bom-ref in the component table to recover purl,
+ * name/version. Opaque bom-refs with no component-table match are dropped
+ * (the schema forbids fabricating name+version, and bom-refs aren't
+ * portable identifiers outside their source BOM).
+ */
+export function affectedPackagesForVuln(
+  v: Vulnerability,
+  lookup: Map<string, Component>,
+): AffectedPackage[] {
+  const out: AffectedPackage[] = [];
+  const seenKeys = new Set<string>();
   for (const a of v.affects ?? []) {
     if (!a.ref) continue;
     const comp = lookup.get(a.ref);
-    const id = comp ? bestProductID(comp, a.ref) : a.ref;
-    if (!seen.has(id)) {
-      seen.add(id);
-      out.push(id);
-    }
+    const pkg = comp ? affectedPackageFromComponent(comp) : affectedPackageFromIdentifier(a.ref);
+    if (!pkg) continue;
+    const key = pkg.purl ?? pkg.cpe ?? `${pkg.name ?? ''}@${pkg.version ?? ''}`;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    out.push(pkg);
   }
-  return out.length > 0 ? out : ['unknown-product'];
+  return out;
 }
 
-export function bestProductID(c: Component, fallback: string): string {
-  if (c.purl) return c.purl;
-  if (c.name) return c.version ? `${c.name}@${c.version}` : c.name;
-  if (c['bom-ref']) return c['bom-ref'];
-  return fallback;
+/**
+ * Build an AffectedPackage from a CycloneDX Component. Prefers structured
+ * purl decomposition via the shared helper (so name/version/ecosystem are
+ * also populated when the purl is parseable); falls back to the component's
+ * name+version when no purl is set. Returns undefined when the component
+ * carries neither a purl nor a name+version pair (schema requires at least
+ * name+version+ecosystem, purl, or cpe).
+ */
+export function affectedPackageFromComponent(c: Component): AffectedPackage | undefined {
+  if (c.purl) return affectedPackageFromIdentifier(c.purl);
+  if (c.name && c.version) {
+    return {
+      name: c.name,
+      version: c.version,
+      ecosystem: Ecosystem.Generic,
+    };
+  }
+  return undefined;
 }
 
 function buildProductLookup(bom: BOM): Map<string, Component> {

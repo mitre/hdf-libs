@@ -240,6 +240,19 @@ func componentsFromRegistry(reg map[string]Component) []Component {
 }
 
 func productIDsFor(o *hdf.StandaloneOverride) []string {
+	// Structured affectedPackages is the source of truth (v3.2.x and later).
+	if len(o.AffectedPackages) > 0 {
+		ids := make([]string, 0, len(o.AffectedPackages))
+		for _, p := range o.AffectedPackages {
+			if id, ok := vex.AffectedPackageToIdentifier(p); ok {
+				ids = append(ids, id)
+			}
+		}
+		if len(ids) > 0 {
+			return ids
+		}
+	}
+	// Backward-compat fallbacks for pre-affectedPackages HDF inputs.
 	if o.ComponentRef != nil && *o.ComponentRef != "" {
 		return []string{*o.ComponentRef}
 	}

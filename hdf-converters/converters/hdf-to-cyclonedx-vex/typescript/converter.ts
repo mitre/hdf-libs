@@ -17,6 +17,7 @@ import {
 import { parseJSON } from '@mitre/hdf-utilities';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
 import {
+  affectedPackageToIdentifier,
   exportStatusFor,
   justificationForCycloneDX,
   VexStatus,
@@ -175,6 +176,14 @@ function componentFor(pid: string): { type: string; name: string; 'bom-ref': str
 }
 
 export function productIDsFor(o: StandaloneOverride): string[] {
+  // Structured affectedPackages is the source of truth (v3.2.x and later).
+  if (o.affectedPackages && o.affectedPackages.length > 0) {
+    const ids = o.affectedPackages
+      .map((p) => affectedPackageToIdentifier(p))
+      .filter((id): id is string => Boolean(id));
+    if (ids.length > 0) return ids;
+  }
+  // Backward-compat fallbacks for pre-affectedPackages HDF inputs.
   if (o.componentRef) return [o.componentRef];
   const m = PRODUCTS_LINE.exec(o.reason ?? '');
   if (m && m[1]) {

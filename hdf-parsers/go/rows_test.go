@@ -8,8 +8,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func ptrFloat(f float64) *float64 { return &f }
-func ptrStr(s string) *string     { return &s }
+func ptrFloat(f float64) *float64        { return &f }
+func ptrStr(s string) *string            { return &s }
+func ptrEco(e hdf.Ecosystem) *hdf.Ecosystem { return &e }
 
 // withCveStruct installs structured CVE-ecosystem data (cvss[], epss, kev,
 // cwe[], affectedPackages[]) directly on the typed Evaluated_Requirement
@@ -76,7 +77,7 @@ func TestFlattenToRows_FullStructuredCveData(t *testing.T) {
 				kev:  &hdf.Kev{InKev: true},
 				cwe:  []string{"CWE-79", "CWE-89"},
 				affectedPackages: []hdf.AffectedPackage{
-					{Name: "openssl", Version: "1.1.1k", Ecosystem: hdf.RPM},
+					{Name: ptrStr("openssl"), Version: ptrStr("1.1.1k"), Ecosystem: ptrEco(hdf.RPM)},
 				},
 			})),
 		}),
@@ -159,8 +160,8 @@ func TestFlattenToRows_AffectedPackagesJoined(t *testing.T) {
 		makeBaseline("base", []hdf.EvaluatedRequirement{
 			makeReq("CVE-Pkg", withCveStruct(cveData{
 				affectedPackages: []hdf.AffectedPackage{
-					{Name: "openssl", Version: "1.1.1k", Ecosystem: hdf.RPM},
-					{Name: "libcurl", Version: "7.81.0", Ecosystem: hdf.RPM},
+					{Name: ptrStr("openssl"), Version: ptrStr("1.1.1k"), Ecosystem: ptrEco(hdf.RPM)},
+					{Name: ptrStr("libcurl"), Version: ptrStr("7.81.0"), Ecosystem: ptrEco(hdf.RPM)},
 				},
 			})),
 		}),
@@ -178,7 +179,7 @@ func TestFlattenToRows_AffectedPackageMissingVersion(t *testing.T) {
 		makeBaseline("base", []hdf.EvaluatedRequirement{
 			makeReq("CVE-NoVer", withCveStruct(cveData{
 				affectedPackages: []hdf.AffectedPackage{
-					{Name: "openssl", Version: "", Ecosystem: hdf.RPM},
+					{Name: ptrStr("openssl"), Version: ptrStr(""), Ecosystem: ptrEco(hdf.RPM)},
 				},
 			})),
 		}),

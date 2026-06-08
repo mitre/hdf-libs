@@ -15,7 +15,11 @@ import {
 } from '@mitre/hdf-schema';
 import { parseJSON } from '@mitre/hdf-utilities';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
-import { exportStatusFor, VexStatus } from '../../../shared/typescript/vex/mapping.js';
+import {
+  affectedPackageToIdentifier,
+  exportStatusFor,
+  VexStatus,
+} from '../../../shared/typescript/vex/mapping.js';
 
 const CVE_ID_PATTERN = /^CVE-\d{4}-\d{4,}$/;
 const PRODUCTS_LINE = /^Products:\s*(.+)$/m;
@@ -115,6 +119,14 @@ function productIDsForGroup(group: CveGroup): string[] {
 }
 
 export function productIDsFor(o: StandaloneOverride): string[] {
+  // Structured affectedPackages is the source of truth (v3.2.x and later).
+  if (o.affectedPackages && o.affectedPackages.length > 0) {
+    const ids = o.affectedPackages
+      .map((p) => affectedPackageToIdentifier(p))
+      .filter((id): id is string => Boolean(id));
+    if (ids.length > 0) return ids;
+  }
+  // Backward-compat fallbacks for pre-affectedPackages HDF inputs.
   if (o.componentRef) return [o.componentRef];
   const m = PRODUCTS_LINE.exec(o.reason ?? '');
   if (m && m[1]) {

@@ -223,7 +223,21 @@ describe('convertHdfToOpenVex — edge cases', () => {
 });
 
 describe('helpers', () => {
-  it('productsFor prefers componentRef', () => {
+  it('productsFor prefers affectedPackages over componentRef and reason', () => {
+    expect(
+      productsFor({
+        affectedPackages: [{ purl: 'pkg:npm/x@1.0' }],
+        componentRef: 'COMP-IGNORED',
+        reason: 'Products: ALSO-IGNORED',
+      } as never),
+    ).toEqual([{ '@id': 'pkg:npm/x@1.0' }]);
+  });
+  it('productsFor skips affectedPackages entries with no identifying field', () => {
+    expect(
+      productsFor({ affectedPackages: [{}], reason: 'prose\nProducts: X' } as never),
+    ).toEqual([{ '@id': 'X' }]);
+  });
+  it('productsFor prefers componentRef when affectedPackages is unset', () => {
     expect(productsFor({ componentRef: 'COMP-1', reason: 'Products: IGNORED' } as never)).toEqual([
       { '@id': 'COMP-1' },
     ]);

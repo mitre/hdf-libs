@@ -174,24 +174,21 @@ func vulnerabilityToOverride(v *Vulnerability, productLookup map[string]Componen
 		return hdf.StandaloneOverride{}, false
 	}
 
-	products := productIDsForVuln(v, productLookup)
+	affectedPackages := affectedPackagesForVuln(v, productLookup)
 
 	// componentRef is UUID-constrained on the HDF schema (it identifies an
-	// HDF component by id, not a foreign-format identifier). We therefore
-	// leave it unset and let the resolved product identifier — purl when
-	// available, else name@version — surface via the Products line in
-	// reason. Round-trip preserves product IDENTITY but the textual form
-	// shifts from CycloneDX bom-ref to the more descriptive resolved form
-	// (e.g. "product-ABC" -> "ABC@4.2"). The schema-discussion follow-up
-	// bead tracks whether HDF needs a non-UUID per-override product field.
+	// HDF component by id, not a foreign-format identifier). Multi-product
+	// VEX scoping lands in affectedPackages[] (structured) rather than in
+	// the reason free-text field.
 	override := hdf.StandaloneOverride{
-		Type:          target.OverrideType,
-		Status:        target.Status,
-		RequirementID: v.ID,
-		AppliedAt:     docTime,
-		ExpiresAt:     docTime.Add(defaultExpiryHorizon),
-		AppliedBy:     *publisherIdentityOrDefault(bom),
-		Reason:        buildReason(v, products),
+		Type:             target.OverrideType,
+		Status:           target.Status,
+		RequirementID:    v.ID,
+		AppliedAt:        docTime,
+		ExpiresAt:        docTime.Add(defaultExpiryHorizon),
+		AppliedBy:        *publisherIdentityOrDefault(bom),
+		Reason:           buildReason(v),
+		AffectedPackages: affectedPackages,
 	}
 
 	if target.SetJustification && v.Analysis.Justification != "" {
@@ -229,59 +226,90 @@ func vulnerabilityToOverride(v *Vulnerability, productLookup map[string]Componen
 	return override, true
 }
 
-func buildReason(v *Vulnerability, products []string) string {
-	parts := make([]string, 0, 4)
+func buildReason(v *Vulnerability) string {
+	parts := make([]string, 0, 2)
 	if v.Description != "" {
 		parts = append(parts, v.Description)
 	}
 	if v.Analysis != nil && v.Analysis.Detail != "" {
 		parts = append(parts, v.Analysis.Detail)
 	}
-	// Justification is now a fully structured field (post v3.2.x enum
-	// extension covers all current CycloneDX values); no longer mirrored
-	// into reason. Response[] hints are not echoed — POA&M overrides
-	// already carry remediation context via milestones, and other override
-	// types don't act on response semantics.
-	parts = append(parts, "Products: "+strings.Join(products, ", "))
+	// Justification and product list are fully structured fields now
+	// (Justification enum + Standalone_Override.affectedPackages); neither
+	// is mirrored into reason. Response[] hints are not echoed either —
+	// POA&M overrides carry remediation context via milestones.
 	return strings.Join(parts, "\n")
 }
 
-// productIDsForVuln resolves affects[].ref against the BOM's component
-// lookup, returning the most descriptive identifier each component
-// carries (purl preferred, then name@version, then bom-ref, then ref).
-func productIDsForVuln(v *Vulnerability, lookup map[string]Component) []string {
+// affectedPackagesForVuln resolves CycloneDX affects[].ref entries into
+// structured AffectedPackage entries. Looks up each bom-ref in the
+// component table to recover purl, name and version. Opaque bom-refs
+// without a component-table match are dropped — the schema forbids
+// fabricating name+version, and bom-refs aren't portable outside the
+// source BOM.
+func affectedPackagesForVuln(v *Vulnerability, lookup map[string]Component) []hdf.AffectedPackage {
+	out := make([]hdf.AffectedPackage, 0, len(v.Affects))
 	seen := map[string]bool{}
-	var out []string
 	for _, a := range v.Affects {
-		id := a.Ref
+		if a.Ref == "" {
+			continue
+		}
+		var pkg *hdf.AffectedPackage
 		if comp, ok := lookup[a.Ref]; ok {
-			id = bestProductID(comp, a.Ref)
+			pkg = affectedPackageFromComponent(comp)
+		} else {
+			pkg = vex.AffectedPackageFromIdentifier(a.Ref)
 		}
-		if !seen[id] {
-			seen[id] = true
-			out = append(out, id)
+		if pkg == nil {
+			continue
 		}
-	}
-	if len(out) == 0 {
-		out = []string{"unknown-product"}
+		key := affectedPackageKey(*pkg)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, *pkg)
 	}
 	return out
 }
 
-func bestProductID(c Component, fallback string) string {
+func affectedPackageKey(pkg hdf.AffectedPackage) string {
+	if pkg.Purl != nil {
+		return "purl:" + *pkg.Purl
+	}
+	if pkg.Cpe != nil {
+		return "cpe:" + *pkg.Cpe
+	}
+	name := ""
+	ver := ""
+	if pkg.Name != nil {
+		name = *pkg.Name
+	}
+	if pkg.Version != nil {
+		ver = *pkg.Version
+	}
+	return "nv:" + name + "@" + ver
+}
+
+// affectedPackageFromComponent builds an AffectedPackage from a CycloneDX
+// component. Prefers structured purl decomposition; falls back to the
+// component's name+version. Returns nil for components with neither a
+// purl nor a name+version pair (schema forbids fabricating identity).
+func affectedPackageFromComponent(c Component) *hdf.AffectedPackage {
 	if c.Purl != "" {
-		return c.Purl
+		return vex.AffectedPackageFromIdentifier(c.Purl)
 	}
-	if c.Name != "" {
-		if c.Version != "" {
-			return c.Name + "@" + c.Version
+	if c.Name != "" && c.Version != "" {
+		name := c.Name
+		version := c.Version
+		eco := hdf.Generic
+		return &hdf.AffectedPackage{
+			Name:      &name,
+			Version:   &version,
+			Ecosystem: &eco,
 		}
-		return c.Name
 	}
-	if c.BOMRef != "" {
-		return c.BOMRef
-	}
-	return fallback
+	return nil
 }
 
 // buildProductLookup indexes components by bom-ref so affects[].ref can

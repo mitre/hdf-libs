@@ -34,7 +34,12 @@ func TestConvertCycloneDXVEX_NotAffected(t *testing.T) {
 	require.NotNil(t, o.Justification)
 	assert.Equal(t, hdf.ComponentNotPresent, *o.Justification, "code_not_present normalizes to component_not_present")
 	assert.Contains(t, o.Reason, "Class with vulnerable code was removed")
-	assert.Contains(t, o.Reason, "Products: ABC@4.2", "product bom-ref resolves via metadata.component lookup")
+	assert.NotContains(t, o.Reason, "Products:")
+	require.Len(t, o.AffectedPackages, 1, "product bom-ref resolves via metadata.component lookup")
+	require.NotNil(t, o.AffectedPackages[0].Name)
+	require.NotNil(t, o.AffectedPackages[0].Version)
+	assert.Equal(t, "ABC", *o.AffectedPackages[0].Name)
+	assert.Equal(t, "4.2", *o.AffectedPackages[0].Version)
 
 	body, _ := json.Marshal(result)
 	v := validators.ValidateAmendments(body)
@@ -126,11 +131,36 @@ func TestFirstActionFromResponse(t *testing.T) {
 	assert.Equal(t, "", firstActionFromResponse(nil))
 }
 
-func TestBestProductID_PrefersPurl(t *testing.T) {
+func TestAffectedPackageFromComponent_PrefersPurl(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, "pkg:npm/x@1.0", bestProductID(Component{Purl: "pkg:npm/x@1.0", Name: "x", Version: "1.0"}, "fallback"))
-	assert.Equal(t, "x@1.0", bestProductID(Component{Name: "x", Version: "1.0"}, "fallback"))
-	assert.Equal(t, "x", bestProductID(Component{Name: "x"}, "fallback"))
-	assert.Equal(t, "bom-ref-1", bestProductID(Component{BOMRef: "bom-ref-1"}, "fallback"))
-	assert.Equal(t, "fallback", bestProductID(Component{}, "fallback"))
+	pkg := affectedPackageFromComponent(Component{Purl: "pkg:npm/x@1.0", Name: "x", Version: "1.0"})
+	require.NotNil(t, pkg)
+	require.NotNil(t, pkg.Purl)
+	assert.Equal(t, "pkg:npm/x@1.0", *pkg.Purl)
+	require.NotNil(t, pkg.Name)
+	assert.Equal(t, "x", *pkg.Name)
+	require.NotNil(t, pkg.Ecosystem)
+	assert.Equal(t, hdf.Npm, *pkg.Ecosystem)
+}
+
+func TestAffectedPackageFromComponent_FallsBackToNameVersionGeneric(t *testing.T) {
+	t.Parallel()
+	pkg := affectedPackageFromComponent(Component{Name: "x", Version: "1.0"})
+	require.NotNil(t, pkg)
+	assert.Nil(t, pkg.Purl)
+	require.NotNil(t, pkg.Name)
+	assert.Equal(t, "x", *pkg.Name)
+	require.NotNil(t, pkg.Version)
+	assert.Equal(t, "1.0", *pkg.Version)
+	require.NotNil(t, pkg.Ecosystem)
+	assert.Equal(t, hdf.Generic, *pkg.Ecosystem)
+}
+
+func TestAffectedPackageFromComponent_DropsNameOnlyAndEmptyComponents(t *testing.T) {
+	t.Parallel()
+	assert.Nil(t, affectedPackageFromComponent(Component{Name: "x"}),
+		"schema requires name+version+ecosystem OR purl OR cpe — name alone fails")
+	assert.Nil(t, affectedPackageFromComponent(Component{BOMRef: "bom-ref-1"}),
+		"a bom-ref alone isn't a portable identifier — drop")
+	assert.Nil(t, affectedPackageFromComponent(Component{}))
 }

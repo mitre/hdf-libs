@@ -7,10 +7,10 @@
     "Affected_Package": {
       "type": "object",
       "unevaluatedProperties": false,
-      "required": [
-        "name",
-        "version",
-        "ecosystem"
+      "anyOf": [
+        { "required": ["name", "version", "ecosystem"] },
+        { "required": ["purl"] },
+        { "required": ["cpe"] }
       ],
       "properties": {
         "name": {
@@ -84,9 +84,17 @@
           "cpe": "cpe:2.3:a:apache:log4j:2.14.1:*:*:*:*:*:*:*",
           "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
           "fixedInVersion": "2.17.1"
+        },
+        {
+          "$comment": "purl-only — VEX import path where the source format gives a purl and we choose not to decompose it. Valid because purl encodes name/version/ecosystem implicitly.",
+          "purl": "pkg:npm/lodash@4.17.20"
+        },
+        {
+          "$comment": "cpe-only — NIST-flavored scopes where the consumer carries a CPE 2.3 string and no purl. Valid because cpe encodes vendor/product/version.",
+          "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*"
         }
       ],
-      "description": "Represents a package affected by a vulnerability finding. Scoped to the vulnerability — this lives on Evaluated_Requirement to say 'this CVE affects this package version'. NOT a component identifier (see `components[]` on hdf-system for those). One Evaluated_Requirement may have multiple AffectedPackage entries when the CVE matches multiple package signatures.",
+      "description": "Represents a package referenced by a vulnerability finding or by an amendment's scope. On Evaluated_Requirement.affectedPackages it says 'this CVE affects these package versions'. On Standalone_Override.affectedPackages it says 'this amendment is scoped to these packages' (used by VEX, OSCAL POA&M, FedRAMP component-aware amendments). NOT a system-level component identifier — see `components[]` on hdf-system for those. Validity requires at least one of: (name + version + ecosystem), purl alone, or cpe alone. purl and cpe are self-describing identifiers that encode name/version implicitly, so either may stand on its own; the name+version+ecosystem combination is the explicit form for sources without formal identifiers.",
       "title": "Affected Package"
     }
   }

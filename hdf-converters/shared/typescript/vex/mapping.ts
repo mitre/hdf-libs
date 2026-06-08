@@ -10,13 +10,15 @@
  * open POA&M (real-system vs abstract-vuln distinction).
  */
 
-import type { Evidence, StandaloneOverride } from '@mitre/hdf-schema';
+import type { AffectedPackage, Evidence, StandaloneOverride } from '@mitre/hdf-schema';
 import {
+  Ecosystem,
   EvidenceType,
   Justification,
   OverrideType,
   ResultStatus,
 } from '@mitre/hdf-schema';
+import { parsePurl } from '@mitre/hdf-utilities';
 
 /** Canonical VEX status across OpenVEX / CSAF / CycloneDX. */
 export const VexStatus = {
@@ -216,6 +218,93 @@ export function exportStatusFor(
     default:
       return undefined;
   }
+}
+
+// Maps PURL `type` segment → AffectedPackage.ecosystem. Unknown types fall
+// back to `generic`, which the schema enum permits as a catch-all.
+const ECOSYSTEM_FROM_PURL_TYPE: Record<string, Ecosystem> = {
+  npm: Ecosystem.Npm,
+  pypi: Ecosystem.Pypi,
+  rpm: Ecosystem.RPM,
+  deb: Ecosystem.Deb,
+  maven: Ecosystem.Maven,
+  gem: Ecosystem.Gem,
+  nuget: Ecosystem.Nuget,
+  golang: Ecosystem.Go,
+  go: Ecosystem.Go,
+  cargo: Ecosystem.Cargo,
+};
+
+/**
+ * Build an AffectedPackage from a single product identifier string emitted
+ * by a VEX format. Recognizes PURLs and CPE 2.3 strings; returns undefined
+ * for opaque identifiers (importer should drop the entry — schema additions
+ * forbid fabricating name+version).
+ */
+export function affectedPackageFromIdentifier(
+  identifier: string,
+): AffectedPackage | undefined {
+  if (!identifier) return undefined;
+  if (identifier.startsWith('pkg:')) {
+    const parsed = parsePurl(identifier);
+    if (parsed) {
+      const pkg: AffectedPackage = { purl: identifier };
+      /* c8 ignore next 2 — parsePurl populates name/version when the
+         identifier was a well-formed purl; the absent branches require a
+         malformed-but-prefixed input that loses these fields without
+         triggering the outer null return. Defensive. */
+      if (parsed.name) pkg.name = parsed.name;
+      if (parsed.version) pkg.version = parsed.version;
+      pkg.ecosystem = ECOSYSTEM_FROM_PURL_TYPE[parsed.type] ?? Ecosystem.Generic;
+      return pkg;
+    }
+    // Malformed purl with the prefix — preserve as purl-only.
+    return { purl: identifier };
+  }
+  if (identifier.startsWith('cpe:2.3:')) {
+    return { cpe: identifier };
+  }
+  return undefined;
+}
+
+/**
+ * Build a unique list of AffectedPackage entries from a sequence of product
+ * identifier strings. Empty / unresolvable identifiers are dropped; duplicate
+ * purls/cpes/names are collapsed.
+ */
+export function affectedPackagesFromIdentifiers(
+  identifiers: readonly string[],
+): AffectedPackage[] {
+  const out: AffectedPackage[] = [];
+  const seen = new Set<string>();
+  for (const id of identifiers) {
+    const pkg = affectedPackageFromIdentifier(id);
+    if (!pkg) continue;
+    /* c8 ignore next — affectedPackageFromIdentifier always emits either
+       purl or cpe, so the name fallback branch isn't reachable through
+       this caller. Kept for safety if a hand-built AffectedPackage flows
+       through a future caller. */
+    const key = pkg.purl ?? pkg.cpe ?? `${pkg.name ?? ''}@${pkg.version ?? ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(pkg);
+  }
+  return out;
+}
+
+/**
+ * Render an AffectedPackage as a single identifier string suitable for
+ * round-tripping into a VEX format. Prefers purl > cpe > name@version.
+ * Returns undefined when nothing identifying is set.
+ */
+export function affectedPackageToIdentifier(
+  pkg: AffectedPackage,
+): string | undefined {
+  if (pkg.purl) return pkg.purl;
+  if (pkg.cpe) return pkg.cpe;
+  if (pkg.name && pkg.version) return `${pkg.name}@${pkg.version}`;
+  if (pkg.name) return pkg.name;
+  return undefined;
 }
 
 /**

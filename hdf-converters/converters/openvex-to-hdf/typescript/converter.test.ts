@@ -30,7 +30,11 @@ describe('convertOpenVexToHdf — Spring Boot Log4j example', () => {
     expect(o.status).toBe(ResultStatus.Passed);
     expect(o.justification).toBe(Justification.VulnerableCodeNotInExecutePath);
     expect(o.reason).toContain('Spring Boot users');
-    expect(o.reason).toContain('pkg:maven/org.springframework.boot/spring-boot@2.6.0-M3');
+    expect(o.reason).not.toContain('Products:');
+    expect(o.affectedPackages).toBeDefined();
+    expect(o.affectedPackages?.map((p) => p.purl)).toContain(
+      'pkg:maven/org.springframework.boot/spring-boot@2.6.0-M3',
+    );
     expect(o.evidence).toHaveLength(1);
     expect(o.evidence?.[0].type).toBe('url');
   });

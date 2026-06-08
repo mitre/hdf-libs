@@ -432,37 +432,41 @@ type EvaluatedRequirement struct {
 	VerificationMethod                                                                          *VerificationMethodEnum `json:"verificationMethod,omitempty"`
 }
 
-// Represents a package affected by a vulnerability finding. Scoped to the vulnerability —
-// this lives on Evaluated_Requirement to say 'this CVE affects this package version'. NOT a
-// component identifier (see `components[]` on hdf-system for those). One
-// Evaluated_Requirement may have multiple AffectedPackage entries when the CVE matches
-// multiple package signatures.
+// Represents a package referenced by a vulnerability finding or by an amendment's scope. On
+// Evaluated_Requirement.affectedPackages it says 'this CVE affects these package versions'.
+// On Standalone_Override.affectedPackages it says 'this amendment is scoped to these
+// packages' (used by VEX, OSCAL POA&M, FedRAMP component-aware amendments). NOT a
+// system-level component identifier — see `components[]` on hdf-system for those. Validity
+// requires at least one of: (name + version + ecosystem), purl alone, or cpe alone. purl
+// and cpe are self-describing identifiers that encode name/version implicitly, so either
+// may stand on its own; the name+version+ecosystem combination is the explicit form for
+// sources without formal identifiers.
 type AffectedPackage struct {
-	// Optional CPE 2.3 URI identifying the affected product. Validated leniently: only the               
-	// 'cpe:2.3:' prefix and the part-type letter ('a' application, 'h' hardware, 'o' operating           
-	// system) are enforced here. Use `hdf-utilities.parseCpe` for full-grammar parsing.                  
-	// Example: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*'.                                         
-	Cpe                                                                                         *string   `json:"cpe,omitempty"`
-	// The packaging ecosystem the package belongs to. Use 'generic' for hardware, firmware, or           
-	// anything outside the listed language/OS package managers.                                          
-	Ecosystem                                                                                   Ecosystem `json:"ecosystem"`
-	// Optional version string identifying the first release that contains the fix for the                
-	// vulnerability. Use the same version syntax as `version`. Example: '1.1.1l' fixes                   
-	// 'openssl@1.1.1k'.                                                                                  
-	FixedInVersion                                                                              *string   `json:"fixedInVersion,omitempty"`
-	// The package name as published in its ecosystem. Examples: 'openssl' (rpm), 'lodash'                
-	// (npm), 'org.apache.logging.log4j:log4j-core' (maven, group:artifact).                              
-	Name                                                                                        string    `json:"name"`
-	// Optional Package URL (PURL) identifying the affected package. Validated leniently: only            
-	// the 'pkg:TYPE/' scheme prefix is enforced here, where TYPE follows the PURL grammar (a             
-	// letter followed by letters, digits, '.', '+', or '-') and is matched case-insensitively            
-	// to mirror `hdf-utilities.parsePurl`'s accept-and-warn behavior. Use `parsePurl` for full           
-	// PURL parsing. Example: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'.                        
-	Purl                                                                                        *string   `json:"purl,omitempty"`
-	// The exact version of the package that the vulnerability scanner observed. Use the                  
-	// ecosystem's native version string verbatim (e.g., '1.1.1k-7.el8_4' for rpm, '4.17.20' for          
-	// npm).                                                                                              
-	Version                                                                                     string    `json:"version"`
+	// Optional CPE 2.3 URI identifying the affected product. Validated leniently: only the                
+	// 'cpe:2.3:' prefix and the part-type letter ('a' application, 'h' hardware, 'o' operating            
+	// system) are enforced here. Use `hdf-utilities.parseCpe` for full-grammar parsing.                   
+	// Example: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*'.                                          
+	Cpe                                                                                         *string    `json:"cpe,omitempty"`
+	// The packaging ecosystem the package belongs to. Use 'generic' for hardware, firmware, or            
+	// anything outside the listed language/OS package managers.                                           
+	Ecosystem                                                                                   *Ecosystem `json:"ecosystem,omitempty"`
+	// Optional version string identifying the first release that contains the fix for the                 
+	// vulnerability. Use the same version syntax as `version`. Example: '1.1.1l' fixes                    
+	// 'openssl@1.1.1k'.                                                                                   
+	FixedInVersion                                                                              *string    `json:"fixedInVersion,omitempty"`
+	// The package name as published in its ecosystem. Examples: 'openssl' (rpm), 'lodash'                 
+	// (npm), 'org.apache.logging.log4j:log4j-core' (maven, group:artifact).                               
+	Name                                                                                        *string    `json:"name,omitempty"`
+	// Optional Package URL (PURL) identifying the affected package. Validated leniently: only             
+	// the 'pkg:TYPE/' scheme prefix is enforced here, where TYPE follows the PURL grammar (a              
+	// letter followed by letters, digits, '.', '+', or '-') and is matched case-insensitively             
+	// to mirror `hdf-utilities.parsePurl`'s accept-and-warn behavior. Use `parsePurl` for full            
+	// PURL parsing. Example: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'.                         
+	Purl                                                                                        *string    `json:"purl,omitempty"`
+	// The exact version of the package that the vulnerability scanner observed. Use the                   
+	// ecosystem's native version string verbatim (e.g., '1.1.1k-7.el8_4' for rpm, '4.17.20' for           
+	// npm).                                                                                               
+	Version                                                                                     *string    `json:"version,omitempty"`
 }
 
 // Structured CVSS scoring data backing this override. Captures the rubric (which
@@ -1782,53 +1786,61 @@ type HDFAmendments struct {
 // NIST SP 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from
 // control assessment status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).
 type StandaloneOverride struct {
-	// When this amendment was applied. ISO 8601 format.                                                        
-	AppliedAt                                                                                   time.Time       `json:"appliedAt"`
-	// Identity of who applied this amendment.                                                                  
-	AppliedBy                                                                                   Identity        `json:"appliedBy"`
-	// Name of the baseline containing the requirement. Required when the system has multiple                   
-	// baselines with potentially overlapping requirement IDs.                                                  
-	BaselineRef                                                                                 *string         `json:"baselineRef,omitempty"`
-	// componentId of the component this amendment is scoped to. When set, the amendment only                   
-	// applies to the specified component. When omitted, the amendment applies system-wide.                     
-	ComponentRef                                                                                *string         `json:"componentRef,omitempty"`
-	// Structured CVSS scoring data backing this override. Captures the rubric (which                           
-	// Environmental/Threat metrics the consumer modified, the recomputed score) used to justify                
-	// a riskAdjustment. For other override types this is optional context.                                     
-	Cvss                                                                                        *Cvss           `json:"cvss,omitempty"`
-	// Supporting evidence (screenshots, logs, URLs, documents).                                                
-	Evidence                                                                                    []Evidence      `json:"evidence,omitempty"`
-	// When this amendment expires and must be reviewed. No permanent amendments. ISO 8601                      
-	// format.                                                                                                  
-	ExpiresAt                                                                                   time.Time       `json:"expiresAt"`
-	// Override to the requirement's impact score. At least one of status or impact must be set.                
-	Impact                                                                                      *ImpactOverride `json:"impact,omitempty"`
-	// componentId of the local component that provides this control. Set when the provider is                  
-	// in the same system. Omit for external or cross-system providers; the reason field                        
-	// explains the source. Primarily used with type 'inherited'.                                               
-	InheritedFrom                                                                               *string         `json:"inheritedFrom,omitempty"`
-	// Structured controlled-vocabulary classification for why this override applies.                           
-	// Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive                
-	// and attestation overrides where the structured category enables filtering and lossless                   
-	// round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the                        
-	// precedent vocabulary and rationale.                                                                      
-	Justification                                                                               *Justification  `json:"justification,omitempty"`
-	// Remediation milestones (primarily for POA&M type amendments).                                            
-	Milestones                                                                                  []Milestone     `json:"milestones,omitempty"`
-	// Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null                 
-	// for the first amendment.                                                                                 
-	PreviousChecksum                                                                            *Checksum       `json:"previousChecksum,omitempty"`
-	// Justification for this amendment.                                                                        
-	Reason                                                                                      string          `json:"reason"`
-	// The ID of the requirement being amended. Must match a requirement ID in the referenced                   
-	// baseline.                                                                                                
-	RequirementID                                                                               string          `json:"requirementId"`
-	// Digital signature for non-repudiation.                                                                   
-	Signature                                                                                   *Signature      `json:"signature,omitempty"`
-	// The new status this amendment sets. Optional when only impact is being overridden.                       
-	Status                                                                                      *ResultStatus   `json:"status,omitempty"`
-	// The type of amendment.                                                                                   
-	Type                                                                                        OverrideType    `json:"type"`
+	// Software packages this amendment is scoped to, distinct from componentRef (which scopes                    
+	// to an HDF-internal Component by UUID). Use when the source amendment format references                     
+	// packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M                      
+	// `subjects[]`, FedRAMP component-aware amendments. Symmetric with                                           
+	// Evaluated_Requirement.affectedPackages, which scopes findings to the same package                          
+	// vocabulary. When omitted, the amendment applies system-wide (or only to componentRef when                  
+	// that is set).                                                                                              
+	AffectedPackages                                                                            []AffectedPackage `json:"affectedPackages,omitempty"`
+	// When this amendment was applied. ISO 8601 format.                                                          
+	AppliedAt                                                                                   time.Time         `json:"appliedAt"`
+	// Identity of who applied this amendment.                                                                    
+	AppliedBy                                                                                   Identity          `json:"appliedBy"`
+	// Name of the baseline containing the requirement. Required when the system has multiple                     
+	// baselines with potentially overlapping requirement IDs.                                                    
+	BaselineRef                                                                                 *string           `json:"baselineRef,omitempty"`
+	// componentId of the component this amendment is scoped to. When set, the amendment only                     
+	// applies to the specified component. When omitted, the amendment applies system-wide.                       
+	ComponentRef                                                                                *string           `json:"componentRef,omitempty"`
+	// Structured CVSS scoring data backing this override. Captures the rubric (which                             
+	// Environmental/Threat metrics the consumer modified, the recomputed score) used to justify                  
+	// a riskAdjustment. For other override types this is optional context.                                       
+	Cvss                                                                                        *Cvss             `json:"cvss,omitempty"`
+	// Supporting evidence (screenshots, logs, URLs, documents).                                                  
+	Evidence                                                                                    []Evidence        `json:"evidence,omitempty"`
+	// When this amendment expires and must be reviewed. No permanent amendments. ISO 8601                        
+	// format.                                                                                                    
+	ExpiresAt                                                                                   time.Time         `json:"expiresAt"`
+	// Override to the requirement's impact score. At least one of status or impact must be set.                  
+	Impact                                                                                      *ImpactOverride   `json:"impact,omitempty"`
+	// componentId of the local component that provides this control. Set when the provider is                    
+	// in the same system. Omit for external or cross-system providers; the reason field                          
+	// explains the source. Primarily used with type 'inherited'.                                                 
+	InheritedFrom                                                                               *string           `json:"inheritedFrom,omitempty"`
+	// Structured controlled-vocabulary classification for why this override applies.                             
+	// Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive                  
+	// and attestation overrides where the structured category enables filtering and lossless                     
+	// round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the                          
+	// precedent vocabulary and rationale.                                                                        
+	Justification                                                                               *Justification    `json:"justification,omitempty"`
+	// Remediation milestones (primarily for POA&M type amendments).                                              
+	Milestones                                                                                  []Milestone       `json:"milestones,omitempty"`
+	// Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null                   
+	// for the first amendment.                                                                                   
+	PreviousChecksum                                                                            *Checksum         `json:"previousChecksum,omitempty"`
+	// Justification for this amendment.                                                                          
+	Reason                                                                                      string            `json:"reason"`
+	// The ID of the requirement being amended. Must match a requirement ID in the referenced                     
+	// baseline.                                                                                                  
+	RequirementID                                                                               string            `json:"requirementId"`
+	// Digital signature for non-repudiation.                                                                     
+	Signature                                                                                   *Signature        `json:"signature,omitempty"`
+	// The new status this amendment sets. Optional when only impact is being overridden.                         
+	Status                                                                                      *ResultStatus     `json:"status,omitempty"`
+	// The type of amendment.                                                                                     
+	Type                                                                                        OverrideType      `json:"type"`
 }
 
 // Bundles references to all HDF documents for audit, authorization, and compliance review.

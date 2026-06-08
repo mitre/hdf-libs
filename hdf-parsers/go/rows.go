@@ -75,17 +75,26 @@ func fillCveColumns(row Row, r hdf.EvaluatedRequirement) {
 		row["cwe"] = strings.Join(r.Cwe, ";")
 	}
 
-	// affectedPackages[] — joined "name@version;name@version"
+	// affectedPackages[] — joined "name@version;name@version".
+	// Fall back to purl or cpe when name+version aren't both set, since
+	// the loosened Affected_Package schema permits identifier-only entries.
 	if len(r.AffectedPackages) > 0 {
 		parts := make([]string, 0, len(r.AffectedPackages))
 		for _, p := range r.AffectedPackages {
-			if p.Name == "" {
+			if p.Name != nil && *p.Name != "" {
+				if p.Version != nil && *p.Version != "" {
+					parts = append(parts, *p.Name+"@"+*p.Version)
+				} else {
+					parts = append(parts, *p.Name)
+				}
 				continue
 			}
-			if p.Version == "" {
-				parts = append(parts, p.Name)
-			} else {
-				parts = append(parts, p.Name+"@"+p.Version)
+			if p.Purl != nil && *p.Purl != "" {
+				parts = append(parts, *p.Purl)
+				continue
+			}
+			if p.Cpe != nil && *p.Cpe != "" {
+				parts = append(parts, *p.Cpe)
 			}
 		}
 		if len(parts) > 0 {

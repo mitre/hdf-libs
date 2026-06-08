@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // Status is the canonical VEX status. The three ecosystems use slightly
@@ -190,6 +191,119 @@ func ExportStatusFor(override *hdf.StandaloneOverride, allMilestonesCompleted, c
 			return StatusFixed, true
 		}
 		return StatusAffected, true
+	}
+	return "", false
+}
+
+// ecosystemFromPurlType maps a PURL `type` segment to the AffectedPackage
+// ecosystem enum. Unknown types fall back to Generic, which the schema enum
+// permits as a catch-all.
+var ecosystemFromPurlType = map[string]hdf.Ecosystem{
+	"npm":    hdf.Npm,
+	"pypi":   hdf.Pypi,
+	"rpm":    hdf.RPM,
+	"deb":    hdf.Deb,
+	"maven":  hdf.Maven,
+	"gem":    hdf.Gem,
+	"nuget":  hdf.Nuget,
+	"golang": hdf.Go,
+	"go":     hdf.Go,
+	"cargo":  hdf.Cargo,
+}
+
+// AffectedPackageFromIdentifier builds an AffectedPackage from a single
+// product identifier string emitted by a VEX format. Recognizes PURLs and
+// CPE 2.3 strings; returns nil for opaque identifiers (importer should drop
+// the entry — schema additions forbid fabricating name+version).
+func AffectedPackageFromIdentifier(identifier string) *hdf.AffectedPackage {
+	if identifier == "" {
+		return nil
+	}
+	if strings.HasPrefix(identifier, "pkg:") {
+		parsed := hdfutil.ParsePurl(identifier)
+		if parsed != nil {
+			pkg := &hdf.AffectedPackage{}
+			purl := identifier
+			pkg.Purl = &purl
+			if parsed.Name != "" {
+				name := parsed.Name
+				pkg.Name = &name
+			}
+			if parsed.Version != nil && *parsed.Version != "" {
+				v := *parsed.Version
+				pkg.Version = &v
+			}
+			eco, ok := ecosystemFromPurlType[parsed.Type]
+			if !ok {
+				eco = hdf.Generic
+			}
+			pkg.Ecosystem = &eco
+			return pkg
+		}
+		// Malformed purl with the prefix — preserve as purl-only.
+		purl := identifier
+		return &hdf.AffectedPackage{Purl: &purl}
+	}
+	if strings.HasPrefix(identifier, "cpe:2.3:") {
+		cpe := identifier
+		return &hdf.AffectedPackage{Cpe: &cpe}
+	}
+	return nil
+}
+
+// AffectedPackagesFromIdentifiers builds a deduplicated list of
+// AffectedPackage entries from a sequence of identifier strings. Empty or
+// unresolvable entries are dropped.
+func AffectedPackagesFromIdentifiers(identifiers []string) []hdf.AffectedPackage {
+	out := make([]hdf.AffectedPackage, 0, len(identifiers))
+	seen := make(map[string]bool, len(identifiers))
+	for _, id := range identifiers {
+		pkg := AffectedPackageFromIdentifier(id)
+		if pkg == nil {
+			continue
+		}
+		var key string
+		switch {
+		case pkg.Purl != nil:
+			key = "purl:" + *pkg.Purl
+		case pkg.Cpe != nil:
+			key = "cpe:" + *pkg.Cpe
+		default:
+			name := ""
+			ver := ""
+			if pkg.Name != nil {
+				name = *pkg.Name
+			}
+			if pkg.Version != nil {
+				ver = *pkg.Version
+			}
+			key = "nv:" + name + "@" + ver
+		}
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, *pkg)
+	}
+	return out
+}
+
+// AffectedPackageToIdentifier renders an AffectedPackage as a single
+// identifier string suitable for round-tripping into a VEX format. Prefers
+// purl > cpe > name@version. Returns ("", false) when nothing identifying
+// is set.
+func AffectedPackageToIdentifier(pkg hdf.AffectedPackage) (string, bool) {
+	if pkg.Purl != nil && *pkg.Purl != "" {
+		return *pkg.Purl, true
+	}
+	if pkg.Cpe != nil && *pkg.Cpe != "" {
+		return *pkg.Cpe, true
+	}
+	if pkg.Name != nil && *pkg.Name != "" {
+		if pkg.Version != nil && *pkg.Version != "" {
+			return *pkg.Name + "@" + *pkg.Version, true
+		}
+		return *pkg.Name, true
 	}
 	return "", false
 }

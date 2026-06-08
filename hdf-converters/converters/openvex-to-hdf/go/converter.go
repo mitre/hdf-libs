@@ -155,14 +155,23 @@ func statementToOverride(stmt *Statement, doc *Document, docTime time.Time) (hdf
 		author = doc.Author
 	}
 
+	productIDs := make([]string, 0, len(stmt.Products))
+	for _, p := range stmt.Products {
+		if p.ID != "" {
+			productIDs = append(productIDs, p.ID)
+		}
+	}
+	affectedPackages := vex.AffectedPackagesFromIdentifiers(productIDs)
+
 	override := hdf.StandaloneOverride{
-		Type:          target.OverrideType,
-		Status:        target.Status,
-		RequirementID: requirementID,
-		AppliedAt:     stmtTime,
-		ExpiresAt:     stmtTime.Add(defaultExpiryHorizon),
-		AppliedBy:     *identityFor(author, doc.Role),
-		Reason:        buildReason(stmt, target.POAMActionTemplate),
+		Type:             target.OverrideType,
+		Status:           target.Status,
+		RequirementID:    requirementID,
+		AppliedAt:        stmtTime,
+		ExpiresAt:        stmtTime.Add(defaultExpiryHorizon),
+		AppliedBy:        *identityFor(author, doc.Role),
+		Reason:           buildReason(stmt, target.POAMActionTemplate),
+		AffectedPackages: affectedPackages,
 	}
 
 	if target.SetJustification && stmt.Justification != "" {
@@ -189,26 +198,16 @@ func statementToOverride(stmt *Statement, doc *Document, docTime time.Time) (hdf
 // buildReason composes the override reason from VEX free-text fields.
 // Falls back to a status-derived stub when the upstream document has no
 // human prose — never an empty string (reason is required).
+// Justification and product list are fully structured fields now
+// (Justification enum + Standalone_Override.affectedPackages); neither
+// is mirrored into reason.
 func buildReason(stmt *Statement, poamTemplate string) string {
-	parts := make([]string, 0, 4)
+	parts := make([]string, 0, 2)
 	if stmt.ImpactStatement != "" {
 		parts = append(parts, stmt.ImpactStatement)
 	}
 	if stmt.ActionStatement != "" {
 		parts = append(parts, stmt.ActionStatement)
-	}
-	// Justification is now a fully structured field (post v3.2.x enum
-	// extension); no longer mirrored into reason.
-	if len(stmt.Products) > 0 {
-		ids := make([]string, 0, len(stmt.Products))
-		for _, p := range stmt.Products {
-			if p.ID != "" {
-				ids = append(ids, p.ID)
-			}
-		}
-		if len(ids) > 0 {
-			parts = append(parts, "Products: "+strings.Join(ids, ", "))
-		}
 	}
 	if len(parts) == 0 {
 		if poamTemplate != "" {

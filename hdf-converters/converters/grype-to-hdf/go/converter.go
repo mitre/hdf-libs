@@ -363,10 +363,13 @@ func mapGrypeTypeToEcosystem(grypeType string) hdf.Ecosystem {
 // matching the package's primary vendor:product identity).
 func buildAffectedPackages(match GrypeMatch) []hdf.AffectedPackage {
 	artifact := match.Artifact
+	name := artifact.Name
+	version := artifact.Version
+	ecosystem := mapGrypeTypeToEcosystem(artifact.Type)
 	pkg := hdf.AffectedPackage{
-		Name:      artifact.Name,
-		Version:   artifact.Version,
-		Ecosystem: mapGrypeTypeToEcosystem(artifact.Type),
+		Name:      &name,
+		Version:   &version,
+		Ecosystem: &ecosystem,
 	}
 	if len(artifact.CPEs) > 0 && artifact.CPEs[0] != "" {
 		cpe := artifact.CPEs[0]

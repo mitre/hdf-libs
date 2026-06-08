@@ -4119,43 +4119,31 @@ describe('Primitive Schema Validation', () => {
         },
       );
 
-      it('should reject Affected_Package missing required name', () => {
-        const invalid = {
-          version: '1.0.0',
-          ecosystem: 'npm',
-        };
-        expect(validate(invalid)).toBe(false);
-        expect(validate.errors).toMatchObject([
-          expect.objectContaining({
-            params: expect.objectContaining({ missingProperty: 'name' }),
-          }),
-        ]);
+      it('should reject Affected_Package with no identifier at all (empty object)', () => {
+        expect(validate({})).toBe(false);
+        expect(validate.errors).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ keyword: 'anyOf' }),
+          ]),
+        );
       });
 
-      it('should reject Affected_Package missing required version', () => {
-        const invalid = {
-          name: 'openssl',
-          ecosystem: 'rpm',
-        };
-        expect(validate(invalid)).toBe(false);
-        expect(validate.errors).toMatchObject([
-          expect.objectContaining({
-            params: expect.objectContaining({ missingProperty: 'version' }),
-          }),
-        ]);
+      it('should reject Affected_Package with name only (no version, no ecosystem, no purl, no cpe)', () => {
+        expect(validate({ name: 'openssl' })).toBe(false);
       });
 
-      it('should reject Affected_Package missing required ecosystem', () => {
-        const invalid = {
-          name: 'openssl',
-          version: '1.1.1k',
-        };
-        expect(validate(invalid)).toBe(false);
-        expect(validate.errors).toMatchObject([
-          expect.objectContaining({
-            params: expect.objectContaining({ missingProperty: 'ecosystem' }),
-          }),
-        ]);
+      it('should reject Affected_Package with name + version but no ecosystem (and no purl/cpe fallback)', () => {
+        expect(validate({ name: 'openssl', version: '1.1.1k' })).toBe(false);
+      });
+
+      it('should accept Affected_Package with purl alone (anyOf branch 2 — purl encodes name/version/ecosystem)', () => {
+        expect(validate({ purl: 'pkg:npm/lodash@4.17.20' })).toBe(true);
+      });
+
+      it('should accept Affected_Package with cpe alone (anyOf branch 3 — cpe encodes vendor/product/version)', () => {
+        expect(
+          validate({ cpe: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*' }),
+        ).toBe(true);
       });
 
       it('should reject Affected_Package with unknown ecosystem', () => {

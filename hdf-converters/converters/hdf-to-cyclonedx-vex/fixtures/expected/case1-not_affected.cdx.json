@@ -1,7 +1,7 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.4",
-  "serialNumber": "urn:uuid:8b59a3f7f2c9c5bd1c5f0df08b46a89f",
+  "serialNumber": "urn:uuid:305e3d44fdd63d8a3660228b9f7ad2fd",
   "version": 1,
   "metadata": {
     "timestamp": "2022-03-03T00:00:00Z",
@@ -38,7 +38,7 @@
       ],
       "analysis": {
         "state": "not_affected",
-        "justification": "component_not_present",
+        "justification": "code_not_present",
         "detail": "This version of Product ABC is not affected by the vulnerability. Class with vulnerable code was removed before shipping."
       },
       "affects": [

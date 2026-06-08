@@ -95,14 +95,14 @@ func TestAffectedPackages_FromArtifact(t *testing.T) {
 	}
 
 	pkg := req.AffectedPackages[0]
-	if pkg.Name != "ca-certificates" {
-		t.Errorf("Expected name ca-certificates, got %q", pkg.Name)
+	if pkg.Name == nil || *pkg.Name != "ca-certificates" {
+		t.Errorf("Expected name ca-certificates, got %v", pkg.Name)
 	}
-	if pkg.Version != "2023.2.64-1.amzn2.0.1" {
-		t.Errorf("Expected version 2023.2.64-1.amzn2.0.1, got %q", pkg.Version)
+	if pkg.Version == nil || *pkg.Version != "2023.2.64-1.amzn2.0.1" {
+		t.Errorf("Expected version 2023.2.64-1.amzn2.0.1, got %v", pkg.Version)
 	}
-	if pkg.Ecosystem != hdf.RPM {
-		t.Errorf("Expected ecosystem rpm, got %q", pkg.Ecosystem)
+	if pkg.Ecosystem == nil || *pkg.Ecosystem != hdf.RPM {
+		t.Errorf("Expected ecosystem rpm, got %v", pkg.Ecosystem)
 	}
 	if pkg.Cpe == nil || !strings.HasPrefix(*pkg.Cpe, "cpe:2.3:a:ca-certificates:ca-certificates:") {
 		t.Errorf("Expected first canonical CPE entry, got %v", pkg.Cpe)
@@ -137,8 +137,8 @@ func TestAffectedPackages_NoFixWhenStateUnknown(t *testing.T) {
 		t.Errorf("Expected fixedInVersion nil (fix state=unknown), got %q", *pkg.FixedInVersion)
 	}
 	// Artifact.type is "binary" which has no specific schema ecosystem; should be generic.
-	if pkg.Ecosystem != hdf.Generic {
-		t.Errorf("Expected ecosystem generic for 'binary' artifact, got %q", pkg.Ecosystem)
+	if pkg.Ecosystem == nil || *pkg.Ecosystem != hdf.Generic {
+		t.Errorf("Expected ecosystem generic for 'binary' artifact, got %v", pkg.Ecosystem)
 	}
 }
 
@@ -403,7 +403,7 @@ func TestAffectedPackages_NoCpesArray(t *testing.T) {
 	if pkg.Purl != nil {
 		t.Errorf("Expected nil PURL, got %q", *pkg.Purl)
 	}
-	if pkg.Ecosystem != hdf.Npm {
-		t.Errorf("Expected ecosystem npm, got %q", pkg.Ecosystem)
+	if pkg.Ecosystem == nil || *pkg.Ecosystem != hdf.Npm {
+		t.Errorf("Expected ecosystem npm, got %v", pkg.Ecosystem)
 	}
 }

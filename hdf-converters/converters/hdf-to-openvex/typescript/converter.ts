@@ -14,7 +14,11 @@ import {
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
 import { validateInputSize } from '../../../shared/typescript/converterutil.js';
-import { exportStatusFor, VexStatus } from '../../../shared/typescript/vex/mapping.js';
+import {
+  affectedPackageToIdentifier,
+  exportStatusFor,
+  VexStatus,
+} from '../../../shared/typescript/vex/mapping.js';
 
 const CVE_ID_PATTERN = /^CVE-\d{4}-\d{4,}$/;
 const PRODUCTS_LINE = /^Products:\s*(.+)$/m;
@@ -121,6 +125,16 @@ function overrideToStatement(o: StandaloneOverride): Statement | undefined {
 }
 
 export function productsFor(o: StandaloneOverride): { '@id': string }[] {
+  // Structured affectedPackages is the source of truth (v3.2.x and later).
+  if (o.affectedPackages && o.affectedPackages.length > 0) {
+    const ids = o.affectedPackages
+      .map((p) => affectedPackageToIdentifier(p))
+      .filter((id): id is string => Boolean(id));
+    if (ids.length > 0) return ids.map((id) => ({ '@id': id }));
+  }
+  // Backward-compat fallbacks for pre-affectedPackages HDF inputs:
+  // 1. componentRef (HDF-internal UUID — emit verbatim)
+  // 2. legacy 'Products:' reason-line annotation
   let ids: string[] = [];
   if (o.componentRef) {
     ids = [o.componentRef];
