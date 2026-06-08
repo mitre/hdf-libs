@@ -1,0 +1,34 @@
+{
+  "description": "Imported CycloneDX VEX",
+  "generator": {
+    "name": "cyclonedx-vex-to-hdf",
+    "version": "dev"
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "e237c1ad4961d811912e79c676bdd66248ec686b036a5271b4828cb5ac922595"
+  },
+  "name": "CycloneDX VEX statements",
+  "overrides": [
+    {
+      "appliedAt": "2022-03-03T00:00:00Z",
+      "appliedBy": {
+        "identifier": "cyclonedx-vex-import",
+        "type": "system"
+      },
+      "evidence": [
+        {
+          "data": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+          "description": "NVD",
+          "type": "url"
+        }
+      ],
+      "expiresAt": "2023-03-03T00:00:00Z",
+      "justification": "component_not_present",
+      "reason": "This version of Product ABC is not affected by the vulnerability. Class with vulnerable code was removed before shipping.\nVEX justification: code_not_present\nResponse: will_not_fix\nProducts: ABC@4.2",
+      "requirementId": "CVE-2021-44228",
+      "status": "passed",
+      "type": "falsePositive"
+    }
+  ]
+}

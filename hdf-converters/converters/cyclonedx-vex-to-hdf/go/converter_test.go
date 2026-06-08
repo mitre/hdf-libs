@@ -1,0 +1,134 @@
+package cyclonedxvex
+
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+const testVersion = "test"
+
+func loadInput(t *testing.T, name string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "fixtures", "input", name))
+	require.NoError(t, err)
+	return data
+}
+
+func TestConvertCycloneDXVEX_NotAffected(t *testing.T) {
+	t.Parallel()
+	result, err := ConvertCycloneDXVEXToHDF(loadInput(t, "case1-vex-not_affected.json"), testVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Overrides, 1)
+	o := result.Overrides[0]
+	assert.Equal(t, "CVE-2021-44228", o.RequirementID)
+	assert.Equal(t, hdf.FalsePositive, o.Type)
+	require.NotNil(t, o.Status)
+	assert.Equal(t, hdf.Passed, *o.Status)
+	require.NotNil(t, o.Justification)
+	assert.Equal(t, hdf.ComponentNotPresent, *o.Justification, "code_not_present normalizes to component_not_present")
+	assert.Contains(t, o.Reason, "Class with vulnerable code was removed")
+	assert.Contains(t, o.Reason, "Products: ABC@4.2", "product bom-ref resolves via metadata.component lookup")
+
+	body, _ := json.Marshal(result)
+	v := validators.ValidateAmendments(body)
+	require.True(t, v.Valid, "amendments output must validate: %s", v.Error())
+}
+
+func TestConvertCycloneDXVEX_Resolved(t *testing.T) {
+	t.Parallel()
+	result, err := ConvertCycloneDXVEXToHDF(loadInput(t, "case1-vex-fixed.json"), testVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Overrides, 1)
+	o := result.Overrides[0]
+	assert.Equal(t, hdf.Poam, o.Type)
+	require.NotNil(t, o.Status)
+	assert.Equal(t, hdf.Failed, *o.Status, "supplier 'resolved' becomes open POA&M pinned to failed")
+	require.Len(t, o.Milestones, 1)
+	assert.Equal(t, hdf.Pending, o.Milestones[0].Status)
+
+	body, _ := json.Marshal(result)
+	v := validators.ValidateAmendments(body)
+	require.True(t, v.Valid)
+}
+
+func TestConvertCycloneDXVEX_AffectedAndUnderInvestigationProduceError(t *testing.T) {
+	t.Parallel()
+	_, err := ConvertCycloneDXVEXToHDF(loadInput(t, "case1-vex-affected.json"), testVersion)
+	require.Error(t, err, "exploitable / affected = informational; no amendment")
+	assert.Contains(t, err.Error(), "no actionable VEX statements")
+
+	_, err = ConvertCycloneDXVEXToHDF(loadInput(t, "case1-vex-under_investigation.json"), testVersion)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no actionable VEX statements")
+}
+
+func TestConvertCycloneDXVEX_UnknownJustificationPreservedInReason(t *testing.T) {
+	t.Parallel()
+	// requires_configuration / protected_by_compiler etc. don't map to the
+	// HDF Justification enum but must NOT be silently dropped.
+	input := []byte(`{
+		"bomFormat": "CycloneDX",
+		"specVersion": "1.4",
+		"metadata": {"timestamp": "2026-01-01T00:00:00Z", "component": {"name": "X", "version": "1", "bom-ref": "px"}},
+		"vulnerabilities": [{
+			"id": "CVE-2026-1234",
+			"analysis": {
+				"state": "not_affected",
+				"justification": "requires_configuration",
+				"detail": "Needs explicit opt-in"
+			},
+			"affects": [{"ref": "px"}]
+		}]
+	}`)
+	result, err := ConvertCycloneDXVEXToHDF(input, testVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Overrides, 1)
+	assert.Nil(t, result.Overrides[0].Justification, "unknown justification stays unset on the enum")
+	assert.Contains(t, result.Overrides[0].Reason, "VEX justification: requires_configuration",
+		"raw label preserved in reason — passthrough on unknown values")
+}
+
+func TestConvertCycloneDXVEX_RejectsNonCycloneDX(t *testing.T) {
+	t.Parallel()
+	input := []byte(`{"bomFormat": "SPDX", "specVersion": "2.3"}`)
+	_, err := ConvertCycloneDXVEXToHDF(input, testVersion)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "CycloneDX")
+}
+
+func TestConvertCycloneDXVEX_RejectsInvalidJSON(t *testing.T) {
+	t.Parallel()
+	_, err := ConvertCycloneDXVEXToHDF([]byte("not json"), testVersion)
+	require.Error(t, err)
+}
+
+func TestConvertCycloneDXVEX_RejectsOversizedInput(t *testing.T) {
+	t.Parallel()
+	_, err := ConvertCycloneDXVEXToHDF(make([]byte, 51*1024*1024), testVersion)
+	require.Error(t, err)
+}
+
+func TestFirstActionFromResponse(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "Apply vendor update and re-scan to verify.", firstActionFromResponse([]string{"update"}))
+	assert.Equal(t, "Roll back to the unaffected version and re-scan to verify.", firstActionFromResponse([]string{"rollback"}))
+	assert.Equal(t, "Apply the documented workaround.", firstActionFromResponse([]string{"workaround_available"}))
+	assert.Equal(t, "", firstActionFromResponse([]string{"will_not_fix"}), "unmapped responses fall to empty so the caller uses the default action template")
+	assert.Equal(t, "", firstActionFromResponse(nil))
+}
+
+func TestBestProductID_PrefersPurl(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "pkg:npm/x@1.0", bestProductID(Component{Purl: "pkg:npm/x@1.0", Name: "x", Version: "1.0"}, "fallback"))
+	assert.Equal(t, "x@1.0", bestProductID(Component{Name: "x", Version: "1.0"}, "fallback"))
+	assert.Equal(t, "x", bestProductID(Component{Name: "x"}, "fallback"))
+	assert.Equal(t, "bom-ref-1", bestProductID(Component{BOMRef: "bom-ref-1"}, "fallback"))
+	assert.Equal(t, "fallback", bestProductID(Component{}, "fallback"))
+}

@@ -13,6 +13,7 @@ import { checkovFingerprint } from '../../converters/checkov-to-hdf/typescript/f
 import { conveyorFingerprint } from '../../converters/conveyor-to-hdf/typescript/fingerprint.js';
 import { csafVexFingerprint } from '../../converters/csaf-vex-to-hdf/typescript/fingerprint.js';
 import { cyclonedxFingerprint } from '../../converters/cyclonedx-to-hdf/typescript/fingerprint.js';
+import { cyclonedxVexFingerprint } from '../../converters/cyclonedx-vex-to-hdf/typescript/fingerprint.js';
 import { deptrackFingerprint } from '../../converters/deptrack-to-hdf/typescript/fingerprint.js';
 import { gitlabFingerprint } from '../../converters/gitlab-to-hdf/typescript/fingerprint.js';
 import { gosecFingerprint } from '../../converters/gosec-to-hdf/typescript/fingerprint.js';
@@ -72,6 +73,7 @@ const allFingerprints: ConverterFingerprint[] = [
   conveyorFingerprint,
   csafVexFingerprint,
   cyclonedxFingerprint,
+  cyclonedxVexFingerprint,
   deptrackFingerprint,
   gitlabFingerprint,
   gosecFingerprint,

@@ -142,6 +142,9 @@ export { convertOpenVexToHdf } from '../converters/openvex-to-hdf/typescript/ind
 // CSAF VEX to HDF Amendments converter
 export { convertCsafVexToHdf } from '../converters/csaf-vex-to-hdf/typescript/index.js';
 
+// CycloneDX VEX to HDF Amendments converter
+export { convertCyclonedxVexToHdf } from '../converters/cyclonedx-vex-to-hdf/typescript/index.js';
+
 // HDF Amendments to CSAF VEX converter (export side; partial-fidelity by design)
 export { convertHdfToCsafVex } from '../converters/hdf-to-csaf-vex/typescript/index.js';
 

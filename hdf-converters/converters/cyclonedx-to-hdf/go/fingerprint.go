@@ -16,6 +16,20 @@ func init() {
 			}
 			if fmt, exists := obj["bomFormat"]; exists {
 				if s, isStr := fmt.(string); isStr && s == "CycloneDX" {
+					// Defer to cyclonedx-vex-to-hdf when the BOM carries
+					// VEX analysis statements — the amendment-output target
+					// is more specific than the SBOM-as-results mapping.
+					if vulns, ok := obj["vulnerabilities"].([]any); ok {
+						for _, v := range vulns {
+							vm, ok := v.(map[string]any)
+							if !ok {
+								continue
+							}
+							if _, has := vm["analysis"]; has {
+								return 0.8
+							}
+						}
+					}
 					return 1.0
 				}
 			}

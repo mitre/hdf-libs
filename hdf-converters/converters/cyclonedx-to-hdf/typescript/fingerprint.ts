@@ -16,8 +16,17 @@ export const cyclonedxFingerprint: ConverterFingerprint = {
   fingerprint: (input: unknown): number => {
     if (typeof input !== 'object' || input === null) return 0;
     const obj = input as Record<string, unknown>;
-    if (obj.bomFormat === 'CycloneDX') return 1.0;
-    return 0;
+    if (obj.bomFormat !== 'CycloneDX') return 0;
+    // Defer to cyclonedx-vex-to-hdf when the BOM carries VEX analysis
+    // statements — the amendment-output target is more specific than the
+    // SBOM-as-results mapping.
+    const vulns = obj.vulnerabilities;
+    if (Array.isArray(vulns)) {
+      for (const v of vulns) {
+        if (typeof v === 'object' && v !== null && 'analysis' in v) return 0.8;
+      }
+    }
+    return 1.0;
   },
   detectVersion: (input: unknown): string => {
     if (typeof input !== 'object' || input === null) return '';

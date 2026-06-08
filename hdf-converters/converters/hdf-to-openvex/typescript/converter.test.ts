@@ -188,6 +188,31 @@ describe('convertHdfToOpenVex — amendmentId becomes document @id', () => {
   });
 });
 
+describe('convertHdfToOpenVex — closed POA&M with empty milestone description', () => {
+  it('falls back to default action_statement when milestone has no description', async () => {
+    const closed: HDFAmendments = {
+      overrides: [
+        {
+          type: OverrideType.Poam,
+          requirementId: 'CVE-2027-5000',
+          status: ResultStatus.Failed,
+          appliedAt: new Date('2026-01-01T00:00:00Z'),
+          expiresAt: new Date('2027-01-01T00:00:00Z'),
+          appliedBy: { type: IdentityType.Simple, identifier: 'ops' },
+          reason: 'Patch applied',
+          milestones: [
+            { description: '', status: MilestoneStatus.Completed, estimatedCompletion: new Date('2026-02-01T00:00:00Z') },
+          ],
+        } as never,
+      ],
+    } as never;
+    const out = await convertHdfToOpenVex(JSON.stringify(closed), TEST_VERSION);
+    const doc = JSON.parse(out);
+    expect(doc.statements[0].status).toBe('fixed');
+    expect(doc.statements[0].action_statement).toMatch(/Fix applied/);
+  });
+});
+
 describe('convertHdfToOpenVex — edge cases', () => {
   it('rejects invalid JSON', async () => {
     await expect(convertHdfToOpenVex('not json', TEST_VERSION)).rejects.toThrow();
