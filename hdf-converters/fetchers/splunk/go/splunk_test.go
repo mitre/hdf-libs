@@ -1,4 +1,4 @@
-package fetchers
+package splunk
 
 import (
 	"context"
@@ -13,6 +13,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/shared/go"
 )
 
 // ---- helpers ----
@@ -26,7 +28,7 @@ func splunkServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 
 func newTestSplunkFetcher(t *testing.T, serverURL string) *SplunkFetcher {
 	t.Helper()
-	f, err := newSplunkFetcherWithClient(SplunkParams{
+	f, err := NewSplunkFetcherWithClient(SplunkParams{
 		URL:   serverURL,
 		Index: "test-index",
 		GUID:  "test-guid",
@@ -71,7 +73,7 @@ func TestNewSplunkFetcher_URLValidation(t *testing.T) { //nolint:dupl // URL val
 	}
 	for _, u := range valid {
 		t.Run("valid/"+u, func(t *testing.T) {
-			_, err := NewSplunkFetcher(SplunkParams{URL: u, Index: "idx", GUID: "guid"}, TLSOptions{})
+			_, err := NewSplunkFetcher(SplunkParams{URL: u, Index: "idx", GUID: "guid"}, shared.TLSOptions{})
 			assert.NoError(t, err, "URL %q should be valid", u)
 		})
 	}
@@ -85,7 +87,7 @@ func TestNewSplunkFetcher_URLValidation(t *testing.T) { //nolint:dupl // URL val
 	}
 	for _, u := range invalid {
 		t.Run("invalid/"+u, func(t *testing.T) {
-			_, err := NewSplunkFetcher(SplunkParams{URL: u, Index: "idx", GUID: "guid"}, TLSOptions{})
+			_, err := NewSplunkFetcher(SplunkParams{URL: u, Index: "idx", GUID: "guid"}, shared.TLSOptions{})
 			require.Error(t, err)
 		})
 	}
@@ -106,11 +108,11 @@ func TestNewSplunkFetcher_IdentifierValidation(t *testing.T) {
 	}
 	for _, id := range validIDs {
 		t.Run("valid-index/"+id, func(t *testing.T) {
-			_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: id, GUID: "guid123"}, TLSOptions{})
+			_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: id, GUID: "guid123"}, shared.TLSOptions{})
 			assert.NoError(t, err)
 		})
 		t.Run("valid-guid/"+id, func(t *testing.T) {
-			_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: "idx", GUID: id}, TLSOptions{})
+			_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: "idx", GUID: id}, shared.TLSOptions{})
 			assert.NoError(t, err)
 		})
 	}
@@ -127,12 +129,12 @@ func TestNewSplunkFetcher_IdentifierValidation(t *testing.T) {
 	}
 	for _, id := range invalidIDs {
 		t.Run("invalid-index/"+id, func(t *testing.T) {
-			_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: id, GUID: "guid"}, TLSOptions{})
+			_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: id, GUID: "guid"}, shared.TLSOptions{})
 			require.Error(t, err, "index %q should be rejected", id)
 		})
 		if id != "" { // GUID="" is tested by the index case
 			t.Run("invalid-guid/"+id, func(t *testing.T) {
-				_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: "idx", GUID: id}, TLSOptions{})
+				_, err := NewSplunkFetcher(SplunkParams{URL: baseURL, Index: "idx", GUID: id}, shared.TLSOptions{})
 				require.Error(t, err, "GUID %q should be rejected", id)
 			})
 		}
@@ -389,28 +391,4 @@ func TestSplunkFetcher_Timeout(t *testing.T) {
 	_, err := f.Fetch(ctx)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, context.Canceled)
-}
-
-// ---- readLimitedBody tests ----
-
-func TestReadLimitedBody(t *testing.T) {
-	t.Run("reads body within limit", func(t *testing.T) {
-		body, err := readLimitedBody(strings.NewReader("hello"), 100)
-		require.NoError(t, err)
-		assert.Equal(t, "hello", string(body))
-	})
-
-	t.Run("reads body at exact limit", func(t *testing.T) {
-		data := strings.Repeat("x", 100)
-		body, err := readLimitedBody(strings.NewReader(data), 100)
-		require.NoError(t, err)
-		assert.Len(t, body, 100)
-	})
-
-	t.Run("rejects body exceeding limit", func(t *testing.T) {
-		data := strings.Repeat("x", 101)
-		_, err := readLimitedBody(strings.NewReader(data), 100)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "exceeded")
-	})
 }

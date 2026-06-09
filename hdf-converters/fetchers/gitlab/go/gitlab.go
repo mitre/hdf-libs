@@ -1,4 +1,6 @@
-package fetchers
+// Package gitlab fetches CI job artifacts from a GitLab instance and returns
+// them as raw bytes, ready for the appropriate format-specific HDF converter.
+package gitlab
 
 import (
 	"context"
@@ -13,6 +15,8 @@ import (
 
 	"github.com/adrg/xdg"
 	"gopkg.in/yaml.v3"
+
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/shared/go"
 )
 
 const (
@@ -51,11 +55,11 @@ type GitLabFetcher struct {
 
 // NewGitLabFetcher creates a fetcher after validating the server URL.
 // The token is resolved at Fetch time from environment variables or glab CLI config.
-func NewGitLabFetcher(params GitLabParams, tlsOpts TLSOptions) (*GitLabFetcher, error) {
+func NewGitLabFetcher(params GitLabParams, tlsOpts shared.TLSOptions) (*GitLabFetcher, error) {
 	if err := validateGitLabURL(params.URL); err != nil {
 		return nil, err
 	}
-	client, err := NewHTTPClient(tlsOpts)
+	client, err := shared.NewHTTPClient(tlsOpts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to configure TLS: %w", err)
 	}
@@ -65,9 +69,11 @@ func NewGitLabFetcher(params GitLabParams, tlsOpts TLSOptions) (*GitLabFetcher, 
 	}, nil
 }
 
-// newGitLabFetcherWithClient creates a fetcher with an injected HTTP client.
-// Intended for testing only.
-func newGitLabFetcherWithClient(params GitLabParams, client *http.Client) (*GitLabFetcher, error) {
+// NewGitLabFetcherWithClient creates a fetcher with an injected HTTP client.
+// Use this constructor when the caller wants to handle TLS/auth/transport
+// configuration in the application layer rather than relying on default
+// discovery via TLSOptions.
+func NewGitLabFetcherWithClient(params GitLabParams, client *http.Client) (*GitLabFetcher, error) {
 	if err := validateGitLabURL(params.URL); err != nil {
 		return nil, err
 	}
@@ -97,10 +103,10 @@ func buildGitLabBaseURL(rawURL string) (*url.URL, error) {
 	// SSRF prevention: only allow http/https schemes
 	var scheme string
 	switch parsed.Scheme {
-	case schemeHTTPS:
-		scheme = schemeHTTPS
-	case schemeHTTP:
-		scheme = schemeHTTP
+	case "https":
+		scheme = "https"
+	case "http":
+		scheme = "http"
 	default:
 		return nil, fmt.Errorf("invalid GitLab URL scheme %q: must use http or https", parsed.Scheme)
 	}
@@ -195,7 +201,7 @@ func (f *GitLabFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		maxSize = f.params.MaxResponseSize
 	}
 
-	body, err := readLimitedBody(resp.Body, maxSize)
+	body, err := shared.ReadLimitedBody(resp.Body, maxSize)
 	if err != nil {
 		return nil, fmt.Errorf("reading response body: %w", err)
 	}

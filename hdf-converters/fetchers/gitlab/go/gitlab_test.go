@@ -1,4 +1,4 @@
-package fetchers
+package gitlab
 
 import (
 	"context"
@@ -12,6 +12,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/shared/go"
 )
 
 // ---- helpers ----
@@ -25,7 +27,7 @@ func gitlabServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 
 func newTestGitLabFetcher(t *testing.T, serverURL string) *GitLabFetcher {
 	t.Helper()
-	f, err := newGitLabFetcherWithClient(GitLabParams{
+	f, err := NewGitLabFetcherWithClient(GitLabParams{
 		URL:       serverURL,
 		ProjectID: "test-project",
 		Ref:       "main",
@@ -106,7 +108,7 @@ func TestNewGitLabFetcher_URLValidation(t *testing.T) { //nolint:dupl // URL val
 	}
 	for _, u := range valid {
 		t.Run("valid/"+u, func(t *testing.T) {
-			_, err := NewGitLabFetcher(GitLabParams{URL: u, ProjectID: "proj", JobName: "job"}, TLSOptions{})
+			_, err := NewGitLabFetcher(GitLabParams{URL: u, ProjectID: "proj", JobName: "job"}, shared.TLSOptions{})
 			assert.NoError(t, err, "URL %q should be valid", u)
 		})
 	}
@@ -120,7 +122,7 @@ func TestNewGitLabFetcher_URLValidation(t *testing.T) { //nolint:dupl // URL val
 	}
 	for _, u := range invalid {
 		t.Run("invalid/"+u, func(t *testing.T) {
-			_, err := NewGitLabFetcher(GitLabParams{URL: u, ProjectID: "proj", JobName: "job"}, TLSOptions{})
+			_, err := NewGitLabFetcher(GitLabParams{URL: u, ProjectID: "proj", JobName: "job"}, shared.TLSOptions{})
 			require.Error(t, err)
 		})
 	}
@@ -195,7 +197,7 @@ func TestGitLabFetcher_TokenFromGlabConfig(t *testing.T) {
 		configContent := fmt.Sprintf("hosts:\n  %s:\n    token: port-config-value\n", srvURL.Host) //nolint:gosec // test-only credential
 		require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0o600))                 //#nosec G703 -- test fixture in t.TempDir()
 
-		f, err := newGitLabFetcherWithClient(GitLabParams{
+		f, err := NewGitLabFetcherWithClient(GitLabParams{
 			URL:       srv.URL,
 			ProjectID: "test-project",
 			Ref:       "main",
@@ -297,7 +299,7 @@ func TestGitLabFetcher_ResponseSizeLimit(t *testing.T) {
 	})
 
 	t.Run("exceeds limit", func(t *testing.T) {
-		f, err := newGitLabFetcherWithClient(GitLabParams{
+		f, err := NewGitLabFetcherWithClient(GitLabParams{
 			URL:             srv.URL,
 			ProjectID:       "proj",
 			Ref:             "main",
@@ -314,7 +316,7 @@ func TestGitLabFetcher_ResponseSizeLimit(t *testing.T) {
 	})
 
 	t.Run("no limit allows large response", func(t *testing.T) {
-		f, err := newGitLabFetcherWithClient(GitLabParams{
+		f, err := NewGitLabFetcherWithClient(GitLabParams{
 			URL:             srv.URL,
 			ProjectID:       "proj",
 			Ref:             "main",
@@ -331,7 +333,7 @@ func TestGitLabFetcher_ResponseSizeLimit(t *testing.T) {
 	})
 
 	t.Run("custom higher limit allows response", func(t *testing.T) {
-		f, err := newGitLabFetcherWithClient(GitLabParams{
+		f, err := NewGitLabFetcherWithClient(GitLabParams{
 			URL:             srv.URL,
 			ProjectID:       "proj",
 			Ref:             "main",
@@ -365,7 +367,7 @@ func TestGitLabFetcher_DefaultTimeoutApplied(t *testing.T) {
 	})
 
 	capturingTransport := &contextCapturingGitLabTransport{inner: http.DefaultTransport}
-	f, err := newGitLabFetcherWithClient(GitLabParams{
+	f, err := NewGitLabFetcherWithClient(GitLabParams{
 		URL:       srv.URL,
 		ProjectID: "test-project",
 		Ref:       "main",
@@ -420,7 +422,7 @@ func TestGitLabFetcher_URLPathConstruction(t *testing.T) {
 			_, _ = fmt.Fprint(w, minimalGitLabReport)
 		})
 
-		f, err := newGitLabFetcherWithClient(GitLabParams{
+		f, err := NewGitLabFetcherWithClient(GitLabParams{
 			URL:          srv.URL,
 			ProjectID:    "my-project",
 			Ref:          "main",
@@ -445,7 +447,7 @@ func TestGitLabFetcher_URLPathConstruction(t *testing.T) {
 			_, _ = fmt.Fprint(w, minimalGitLabReport)
 		})
 
-		f, err := newGitLabFetcherWithClient(GitLabParams{
+		f, err := NewGitLabFetcherWithClient(GitLabParams{
 			URL:       srv.URL,
 			ProjectID: "namespace/project",
 			Ref:       "main",
@@ -470,7 +472,7 @@ func TestGitLabFetcher_URLPathConstruction(t *testing.T) {
 			_, _ = fmt.Fprint(w, minimalGitLabReport)
 		})
 
-		f, err := newGitLabFetcherWithClient(GitLabParams{
+		f, err := NewGitLabFetcherWithClient(GitLabParams{
 			URL:       srv.URL,
 			ProjectID: "my-project",
 			ScanType:  "sast",

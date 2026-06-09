@@ -1,8 +1,6 @@
-// Package fetchers implements live API fetch for security tools that have no
-// static export format. Each fetcher retrieves data from a remote API and
-// marshals it into the same JSON format that the corresponding file-based
-// converter already reads.
-package fetchers
+// Package awsconfig fetches compliance evaluations from AWS Config and pipes
+// them through the aws-config-to-hdf converter.
+package awsconfig
 
 import (
 	"context"
@@ -17,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/configservice/types"
 
 	awsconfigconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/aws-config-to-hdf/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/shared/go"
 )
 
 const (
@@ -67,7 +66,7 @@ type AWSConfigParams struct {
 	// default profile → IAM instance role).
 	Profile string
 	// TLS configures custom CA certificates or insecure mode.
-	TLS TLSOptions
+	TLS shared.TLSOptions
 }
 
 // AWSConfigFetcher fetches AWS Config compliance data from the AWS API and
@@ -92,7 +91,7 @@ func NewAWSConfigFetcher(ctx context.Context, params AWSConfigParams) (*AWSConfi
 
 	// Inject custom HTTP client for TLS configuration (--ca-cert, --insecure).
 	if params.TLS.CACertPath != "" || params.TLS.Insecure {
-		httpClient, tlsErr := NewHTTPClient(params.TLS)
+		httpClient, tlsErr := shared.NewHTTPClient(params.TLS)
 		if tlsErr != nil {
 			return nil, fmt.Errorf("failed to configure TLS: %w", tlsErr)
 		}

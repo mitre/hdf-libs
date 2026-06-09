@@ -1,4 +1,6 @@
-package fetchers
+// Package splunk fetches HDF events from a live Splunk instance and returns
+// them as a JSON array of parsed events, ready for ConvertSplunkToHDF.
+package splunk
 
 import (
 	"context"
@@ -11,6 +13,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/shared/go"
 )
 
 const (
@@ -50,11 +54,11 @@ type SplunkFetcher struct {
 
 // NewSplunkFetcher creates a fetcher after validating the server URL and parameters.
 // The token is read from the SPLUNK_TOKEN environment variable at Fetch time.
-func NewSplunkFetcher(params SplunkParams, tlsOpts TLSOptions) (*SplunkFetcher, error) {
+func NewSplunkFetcher(params SplunkParams, tlsOpts shared.TLSOptions) (*SplunkFetcher, error) {
 	if err := validateSplunkParams(params); err != nil {
 		return nil, err
 	}
-	client, err := NewHTTPClient(tlsOpts)
+	client, err := shared.NewHTTPClient(tlsOpts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to configure TLS: %w", err)
 	}
@@ -64,9 +68,11 @@ func NewSplunkFetcher(params SplunkParams, tlsOpts TLSOptions) (*SplunkFetcher, 
 	}, nil
 }
 
-// newSplunkFetcherWithClient creates a fetcher with an injected HTTP client.
-// Intended for testing only.
-func newSplunkFetcherWithClient(params SplunkParams, client *http.Client) (*SplunkFetcher, error) {
+// NewSplunkFetcherWithClient creates a fetcher with an injected HTTP client.
+// Use this constructor when the caller wants to handle TLS/auth/transport
+// configuration in the application layer rather than relying on default
+// discovery via TLSOptions.
+func NewSplunkFetcherWithClient(params SplunkParams, client *http.Client) (*SplunkFetcher, error) {
 	if err := validateSplunkParams(params); err != nil {
 		return nil, err
 	}
@@ -112,7 +118,7 @@ func validateSplunkIdentifier(name, value string) error {
 
 // buildSplunkAPIURL validates the base URL and constructs a safe API endpoint URL.
 func buildSplunkAPIURL(rawURL, path string) (*url.URL, error) {
-	return ValidateAndBuildAPIURL(rawURL, path, "splunk")
+	return shared.ValidateAndBuildAPIURL(rawURL, path, "splunk")
 }
 
 // splunkSearchResponse represents the JSON response from a Splunk search job creation.
@@ -203,7 +209,7 @@ func (f *SplunkFetcher) createSearchJob(ctx context.Context, token string) (stri
 		return "", fmt.Errorf("splunk API returned HTTP %d", resp.StatusCode)
 	}
 
-	body, err := readLimitedBody(resp.Body, splunkMaxResponseSize)
+	body, err := shared.ReadLimitedBody(resp.Body, splunkMaxResponseSize)
 	if err != nil {
 		return "", fmt.Errorf("reading search response body: %w", err)
 	}
@@ -261,7 +267,7 @@ func (f *SplunkFetcher) fetchResults(ctx context.Context, token, sid string) ([]
 		return nil, fmt.Errorf("splunk results API returned HTTP %d", resp.StatusCode)
 	}
 
-	body, err := readLimitedBody(resp.Body, splunkMaxResponseSize)
+	body, err := shared.ReadLimitedBody(resp.Body, splunkMaxResponseSize)
 	if err != nil {
 		return nil, fmt.Errorf("reading results response body: %w", err)
 	}
