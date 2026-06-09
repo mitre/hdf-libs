@@ -10,6 +10,7 @@ import {
   convertHdfToCklb,
   convertSnykToHdf,
   convertGrypeToHdf,
+  convertAsffToHdf,
   convertNessusToHdf,
   convertSonarqubeToHdf,
   convertAwsConfigToHdf,
@@ -121,6 +122,11 @@ describe('Main exports', () => {
   it('should export convertGrypeToHdf from main index', () => {
     expect(convertGrypeToHdf).toBeDefined();
     expect(typeof convertGrypeToHdf).toBe('function');
+  });
+
+  it('should export convertAsffToHdf from main index', () => {
+    expect(convertAsffToHdf).toBeDefined();
+    expect(typeof convertAsffToHdf).toBe('function');
   });
 
   it('should export convertNessusToHdf from main index', () => {

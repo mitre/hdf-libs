@@ -37,6 +37,9 @@ export { convertSnykToHdf } from '../converters/snyk-to-hdf/typescript/index.js'
 // Grype to HDF converter
 export { convertGrypeToHdf } from '../converters/grype-to-hdf/typescript/index.js';
 
+// ASFF (AWS Security Finding Format) to HDF converter
+export { convertAsffToHdf } from '../converters/asff-to-hdf/typescript/index.js';
+
 // Nessus to HDF converter
 export { convertNessusToHdf } from '../converters/nessus-to-hdf/typescript/index.js';
 
