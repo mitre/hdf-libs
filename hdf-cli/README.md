@@ -440,6 +440,7 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | `hdf-amendments` | `csaf-vex` | Export HDF Amendments as CSAF VEX advisory (partial-fidelity round-trip) |
 | `hdf-amendments` | `openvex` | Export HDF Amendments as OpenVEX statements (partial-fidelity round-trip) |
 | `hdf-amendments` | `cyclonedx-vex` | Export HDF Amendments as CycloneDX BOM with VEX analysis (partial-fidelity round-trip) |
+| `hdf` | `splunk` | Export to Splunk records JSON (Heimdall Splunk dashboard wire format, `hdf_splunk_schema 1.1`) |
 
 ## Credential Handling
 

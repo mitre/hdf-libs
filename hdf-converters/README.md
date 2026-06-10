@@ -71,6 +71,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | CSAF VEX (HDF Amendments → advisory, partial-fidelity) | `convertHdfToCsafVex` |
 | OpenVEX (HDF Amendments → statements, partial-fidelity) | `convertHdfToOpenVex` |
 | CycloneDX VEX (HDF Amendments → BOM, partial-fidelity) | `convertHdfToCyclonedxVex` |
+| Splunk records (Heimdall Splunk dashboard wire format, `hdf_splunk_schema 1.1`) | `convertHdfToSplunk` |
 
 ### Format Migration
 

@@ -20,6 +20,7 @@ import {
   convertCyclonedxToHdf,
   convertSplunkToHdf,
   convertHdfToCsv,
+  convertHdfToSplunk,
   convertHdfToXml,
   convertGitlabToHdf,
   convertTrufflehogToHdf,
@@ -171,6 +172,11 @@ describe('Main exports', () => {
   it('should export convertHdfToCsv from main index', () => {
     expect(convertHdfToCsv).toBeDefined();
     expect(typeof convertHdfToCsv).toBe('function');
+  });
+
+  it('should export convertHdfToSplunk from main index', () => {
+    expect(convertHdfToSplunk).toBeDefined();
+    expect(typeof convertHdfToSplunk).toBe('function');
   });
 
   it('should export convertHdfToXml from main index', () => {
