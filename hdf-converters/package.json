@@ -51,13 +51,22 @@
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
   "dependencies": {
+    "@mitre/hdf-mappings": "workspace:^",
     "@mitre/hdf-parsers": "workspace:^",
     "@mitre/hdf-schema": "workspace:^",
-    "@mitre/hdf-utilities": "workspace:^",
-    "@mitre/hdf-mappings": "workspace:^"
+    "@mitre/hdf-utilities": "workspace:^"
   },
   "devDependencies": {
-    "@mitre/hdf-fixtures": "workspace:^"
+    "@mitre/hdf-fixtures": "workspace:^",
+    "splunk-sdk": "^2.0.2"
+  },
+  "peerDependencies": {
+    "splunk-sdk": "^2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "splunk-sdk": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=22.0.0"

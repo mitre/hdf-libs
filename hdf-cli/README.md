@@ -20,6 +20,10 @@ HDF (Heimdall Data Format) is a standardized JSON format for security assessment
     - [fetch gitlab](#fetch-gitlab) -- GitLab CI/CD security artifacts
     - [fetch sonarqube](#fetch-sonarqube) -- SonarQube issues
     - [fetch splunk](#fetch-splunk) -- Splunk HDF events
+  - [push](#push) -- Push HDF to a backend
+    - [push splunk](#push-splunk) -- Push HDF as Splunk records
+  - [verify](#verify) -- Verify backend credentials
+    - [verify splunk](#verify-splunk) -- Verify SPLUNK_TOKEN
   - [version](#version) -- Print version information
 - [Global Flags](#global-flags)
 - [Supported Conversions](#supported-conversions)
@@ -346,6 +350,65 @@ EXAMPLES
   hdf fetch splunk --url https://splunk.example.com --index hdf --guid abc123 | jq .
 ```
 
+### push
+
+Push HDF Results to a backend that stores HDF-shaped data. Currently supports Splunk.
+
+```
+USAGE
+  hdf push <destination> [flags]
+```
+
+#### push splunk
+
+Convert an HDF Results file to Splunk records (`HDF2Splunk` sourcetype) and upload to the target index. The target index is verified to exist before any upload. Controls chunk at 100 records per request.
+
+Token must be set via the `SPLUNK_TOKEN` environment variable.
+
+```
+USAGE
+  hdf push splunk <hdf-input> [flags]
+
+FLAGS
+  -u, --url string       (required) Splunk server URL
+  -i, --index string     (required) Splunk index to push records into
+      --ca-cert string   PEM CA certificate bundle for custom/corporate CAs
+      --insecure         Skip TLS certificate verification (prints warning)
+
+EXAMPLES
+  export SPLUNK_TOKEN=your-splunk-token
+  hdf push splunk --url https://splunk.example.com --index hdf results.json
+```
+
+### verify
+
+Probe a backend with the configured credentials to confirm authentication succeeds. Useful in CI scripts before invoking `hdf fetch` or `hdf push`.
+
+```
+USAGE
+  hdf verify <destination> [flags]
+```
+
+#### verify splunk
+
+GET `/services/server/info` with the configured token. 200 ⇒ success; 401/403 ⇒ failed verification; other codes are surfaced in the error message.
+
+Exits 0 on success, non-zero on any verification failure (and the SPLUNK_TOKEN value never appears in error output).
+
+```
+USAGE
+  hdf verify splunk [flags]
+
+FLAGS
+  -u, --url string       (required) Splunk server URL
+      --ca-cert string   PEM CA certificate bundle for custom/corporate CAs
+      --insecure         Skip TLS certificate verification (prints warning)
+
+EXAMPLES
+  export SPLUNK_TOKEN=your-splunk-token
+  hdf verify splunk --url https://splunk.example.com
+```
+
 ### version
 
 Print version, commit hash, build date, and Go version.
@@ -444,7 +507,7 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 
 ## Credential Handling
 
-The `fetch` commands connect to live APIs. Credentials are **never** accepted as CLI flags to prevent exposure in shell history, process listings, and CI logs.
+The `fetch`, `push`, and `verify` commands connect to live APIs. Credentials are **never** accepted as CLI flags to prevent exposure in shell history, process listings, and CI logs. `SPLUNK_TOKEN` is reused across `fetch splunk`, `push splunk`, and `verify splunk`.
 
 | Service | Environment Variable | Config File Fallback |
 |---------|---------------------|---------------------|

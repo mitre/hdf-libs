@@ -130,6 +130,8 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.AddCommand(NewLabelCmd())
 	cmd.AddCommand(NewGenerateCmd())
 	cmd.AddCommand(NewFetchCmd())
+	cmd.AddCommand(NewPushCmd())
+	cmd.AddCommand(NewVerifyCmd())
 	cmd.AddCommand(NewVersionCmd())
 
 	return cmd

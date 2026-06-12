@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	hdftosplunk "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-splunk/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/shared/go"
 )
 
@@ -82,15 +83,13 @@ func NewSplunkFetcherWithClient(params SplunkParams, client *http.Client) (*Splu
 	}, nil
 }
 
-// validateSplunkParams validates the URL, index, and GUID.
+// validateSplunkParams runs at construction time. Only URL is required at
+// construction; Index and GUID are validated per-method (Fetch needs both,
+// PushHDF needs only Index, VerifyCredentials needs neither). This keeps a
+// single Params struct usable across all three methods without forcing
+// callers to supply fields the method they're about to call won't use.
 func validateSplunkParams(params SplunkParams) error {
-	if err := validateSplunkURL(params.URL); err != nil {
-		return err
-	}
-	if err := validateSplunkIdentifier("index", params.Index); err != nil {
-		return err
-	}
-	return validateSplunkIdentifier("GUID", params.GUID)
+	return validateSplunkURL(params.URL)
 }
 
 // validateSplunkURL ensures the URL parses and uses only http or https.
@@ -140,6 +139,12 @@ type splunkField struct {
 // Fetch retrieves HDF events from a Splunk index by GUID and returns them as
 // a JSON array of parsed event objects. The SPLUNK_TOKEN environment variable must be set.
 func (f *SplunkFetcher) Fetch(ctx context.Context) ([]byte, error) {
+	if err := validateSplunkIdentifier("index", f.params.Index); err != nil {
+		return nil, err
+	}
+	if err := validateSplunkIdentifier("GUID", f.params.GUID); err != nil {
+		return nil, err
+	}
 	token := os.Getenv("SPLUNK_TOKEN")
 	if token == "" {
 		return nil, fmt.Errorf(
@@ -310,4 +315,239 @@ func (f *SplunkFetcher) fetchResults(ctx context.Context, token, sid string) ([]
 	}
 
 	return events, nil
+}
+
+// =============================================================================
+// PushHDF — convert HDF Results to Splunk records and upload them.
+// =============================================================================
+
+const (
+	// pushSourcetype matches the heimdall2 hdf2splunk sourcetype so existing
+	// Splunk dashboards and saved searches keep working.
+	pushSourcetype = "HDF2Splunk"
+
+	// pushReceiverPath is Splunk's simple HTTP receiver endpoint. We choose
+	// it over HEC (`/services/collector`) because HEC uses a separate token
+	// type (HEC tokens, not user tokens), which would require changing the
+	// auth model we share with Fetch / Verify.
+	pushReceiverPath = "/services/receivers/simple"
+
+	// pushChunkSize bounds how many control records we ship in one HTTP
+	// POST. Matches heimdall2's UPLOAD_CHUNK_SIZE.
+	pushChunkSize = 100
+)
+
+// PushHDF converts the provided HDF Results JSON into Splunk records (via
+// the hdf-to-splunk converter) and uploads them to the configured index.
+// SPLUNK_TOKEN must be set. Returns an error if the index doesn't exist on
+// the target Splunk instance, if any upload POST fails, or if the input
+// isn't valid HDF.
+func (f *SplunkFetcher) PushHDF(ctx context.Context, hdfBytes []byte) error {
+	if err := validateSplunkIdentifier("index", f.params.Index); err != nil {
+		return err
+	}
+	token := os.Getenv("SPLUNK_TOKEN")
+	if token == "" {
+		return fmt.Errorf(
+			"SPLUNK_TOKEN environment variable is not set; " +
+				"set it to your Splunk Bearer token before running this command",
+		)
+	}
+
+	// Apply a default deadline when the caller has not set one.
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, splunkFetchTimeout)
+		defer cancel()
+	}
+
+	// Convert HDF -> Splunk records BEFORE the network preflight so a
+	// malformed input fails fast.
+	splunkBytes, err := hdftosplunk.ConvertHDFToSplunk(hdfBytes)
+	if err != nil {
+		return fmt.Errorf("splunk: converting HDF for push: %w", err)
+	}
+	var data hdftosplunk.SplunkData
+	if err := json.Unmarshal(splunkBytes, &data); err != nil {
+		return fmt.Errorf("splunk: parsing converted records: %w", err)
+	}
+
+	// Pre-flight: confirm the target index exists.
+	if err := f.checkIndexExists(ctx, token); err != nil {
+		return err
+	}
+
+	// Report (one per HDF doc) → one POST.
+	for _, rec := range data.Reports {
+		if err := f.postRecords(ctx, token, []any{rec}); err != nil {
+			return fmt.Errorf("splunk: uploading report: %w", err)
+		}
+	}
+
+	// Profiles → one POST as NDJSON.
+	if len(data.Profiles) > 0 {
+		batch := make([]any, 0, len(data.Profiles))
+		for _, p := range data.Profiles {
+			batch = append(batch, p)
+		}
+		if err := f.postRecords(ctx, token, batch); err != nil {
+			return fmt.Errorf("splunk: uploading profiles: %w", err)
+		}
+	}
+
+	// Controls → N POSTs in chunks of pushChunkSize.
+	for i := 0; i < len(data.Controls); i += pushChunkSize {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		end := i + pushChunkSize
+		if end > len(data.Controls) {
+			end = len(data.Controls)
+		}
+		batch := make([]any, 0, end-i)
+		for _, c := range data.Controls[i:end] {
+			batch = append(batch, c)
+		}
+		if err := f.postRecords(ctx, token, batch); err != nil {
+			return fmt.Errorf("splunk: uploading control chunk %d-%d: %w", i, end, err)
+		}
+	}
+	return nil
+}
+
+// checkIndexExists confirms the target index is present on the Splunk
+// instance. If not, surface a clear "index <name> not found" error instead
+// of letting the upload fail with a cryptic message.
+func (f *SplunkFetcher) checkIndexExists(ctx context.Context, token string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	apiURL, err := buildSplunkAPIURL(f.params.URL, "/services/data/indexes/"+f.params.Index)
+	if err != nil {
+		return err
+	}
+	q := url.Values{}
+	q.Set("output_mode", "json")
+	apiURL.RawQuery = q.Encode()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL.String(), http.NoBody)
+	if err != nil {
+		return fmt.Errorf("building index preflight request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "application/json")
+	resp, err := f.client.Do(req) //#nosec G704 -- host validated in buildSplunkAPIURL
+	if err != nil {
+		return fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close() //nolint:errcheck
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return fmt.Errorf("splunk: index %q does not exist on the target Splunk instance", f.params.Index)
+	default:
+		return fmt.Errorf("splunk: index preflight returned HTTP %d", resp.StatusCode)
+	}
+}
+
+// postRecords serializes records as NDJSON (one JSON object per line) and
+// POSTs them to /services/receivers/simple. One-element batches are sent as
+// a single JSON object rather than NDJSON (heimdall2 parity).
+func (f *SplunkFetcher) postRecords(ctx context.Context, token string, records []any) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if len(records) == 0 {
+		return nil
+	}
+	apiURL, err := buildSplunkAPIURL(f.params.URL, pushReceiverPath)
+	if err != nil {
+		return err
+	}
+	q := url.Values{}
+	q.Set("sourcetype", pushSourcetype)
+	q.Set("index", f.params.Index)
+	q.Set("output_mode", "json")
+	apiURL.RawQuery = q.Encode()
+
+	var body strings.Builder
+	for i, rec := range records {
+		if i > 0 {
+			body.WriteByte('\n')
+		}
+		encoded, err := json.Marshal(rec)
+		if err != nil {
+			return fmt.Errorf("marshaling record %d: %w", i, err)
+		}
+		body.Write(encoded)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL.String(), strings.NewReader(body.String()))
+	if err != nil {
+		return fmt.Errorf("building upload request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := f.client.Do(req) //#nosec G704 -- host validated in buildSplunkAPIURL
+	if err != nil {
+		return fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close() //nolint:errcheck
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("splunk receivers/simple returned HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// =============================================================================
+// VerifyCredentials — confirm SPLUNK_TOKEN authenticates against the server.
+// =============================================================================
+
+// VerifyCredentials hits /services/server/info with the configured token. A
+// 200 response means the token authenticates; anything else returns an
+// error (without leaking the token value).
+func (f *SplunkFetcher) VerifyCredentials(ctx context.Context) error {
+	token := os.Getenv("SPLUNK_TOKEN")
+	if token == "" {
+		return fmt.Errorf(
+			"SPLUNK_TOKEN environment variable is not set; " +
+				"set it to your Splunk Bearer token before running this command",
+		)
+	}
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, splunkFetchTimeout)
+		defer cancel()
+	}
+
+	apiURL, err := buildSplunkAPIURL(f.params.URL, "/services/server/info")
+	if err != nil {
+		return err
+	}
+	q := url.Values{}
+	q.Set("output_mode", "json")
+	apiURL.RawQuery = q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL.String(), http.NoBody)
+	if err != nil {
+		return fmt.Errorf("building verify request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := f.client.Do(req) //#nosec G704 -- host validated in buildSplunkAPIURL
+	if err != nil {
+		return fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close() //nolint:errcheck
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusUnauthorized, http.StatusForbidden:
+		return fmt.Errorf("splunk: credential verification failed (HTTP %d)", resp.StatusCode)
+	default:
+		return fmt.Errorf("splunk: server/info returned HTTP %d", resp.StatusCode)
+	}
 }

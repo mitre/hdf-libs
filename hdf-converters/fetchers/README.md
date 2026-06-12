@@ -18,7 +18,14 @@ fetchers/
 └── README.md
 ```
 
-Currently in tree: `awsconfig`, `gitlab`, `sonarqube`, `splunk`.
+Currently in tree:
+
+| Tool | Go | TS | Capabilities |
+|---|---|---|---|
+| `awsconfig` | ✓ | — | fetch |
+| `gitlab` | ✓ | — | fetch |
+| `sonarqube` | ✓ | — | fetch |
+| `splunk` | ✓ | ✓ | fetch, push, verify |
 
 ## Go fetcher convention — two constructors
 
