@@ -1,4 +1,4 @@
-package fetchers
+package shared
 
 import (
 	"crypto/ecdsa"
@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -241,4 +242,26 @@ func generateServerCert(t *testing.T, caKey *ecdsa.PrivateKey, caCert *x509.Cert
 		PrivateKey:  serverKey,
 		Leaf:        cert,
 	}
+}
+
+func TestReadLimitedBody(t *testing.T) {
+	t.Run("reads body within limit", func(t *testing.T) {
+		body, err := ReadLimitedBody(strings.NewReader("hello"), 100)
+		require.NoError(t, err)
+		assert.Equal(t, "hello", string(body))
+	})
+
+	t.Run("reads body at exact limit", func(t *testing.T) {
+		data := strings.Repeat("x", 100)
+		body, err := ReadLimitedBody(strings.NewReader(data), 100)
+		require.NoError(t, err)
+		assert.Len(t, body, 100)
+	})
+
+	t.Run("rejects body exceeding limit", func(t *testing.T) {
+		data := strings.Repeat("x", 101)
+		_, err := ReadLimitedBody(strings.NewReader(data), 100)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "exceeded")
+	})
 }

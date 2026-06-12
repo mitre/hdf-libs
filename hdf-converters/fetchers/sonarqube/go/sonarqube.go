@@ -1,4 +1,6 @@
-package fetchers
+// Package sonarqube fetches issues from a SonarQube instance and pipes them
+// through the sonarqube-to-hdf converter.
+package sonarqube
 
 import (
 	"context"
@@ -14,6 +16,7 @@ import (
 	"time"
 
 	sonarqubeconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sonarqube-to-hdf/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/shared/go"
 )
 
 const (
@@ -59,11 +62,11 @@ type SonarqubeFetcher struct {
 
 // NewSonarqubeFetcher creates a fetcher after validating the server URL.
 // The token is read from the SONARQUBE_TOKEN environment variable at Fetch time.
-func NewSonarqubeFetcher(params SonarqubeParams, tlsOpts TLSOptions) (*SonarqubeFetcher, error) {
+func NewSonarqubeFetcher(params SonarqubeParams, tlsOpts shared.TLSOptions) (*SonarqubeFetcher, error) {
 	if err := validateSonarqubeURL(params.URL); err != nil {
 		return nil, err
 	}
-	client, err := NewHTTPClient(tlsOpts)
+	client, err := shared.NewHTTPClient(tlsOpts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to configure TLS: %w", err)
 	}
@@ -73,9 +76,11 @@ func NewSonarqubeFetcher(params SonarqubeParams, tlsOpts TLSOptions) (*Sonarqube
 	}, nil
 }
 
-// newSonarqubeFetcherWithClient creates a fetcher with an injected HTTP client.
-// Intended for testing only.
-func newSonarqubeFetcherWithClient(params SonarqubeParams, client *http.Client) (*SonarqubeFetcher, error) {
+// NewSonarqubeFetcherWithClient creates a fetcher with an injected HTTP client.
+// Use this constructor when the caller wants to handle TLS/auth/transport
+// configuration in the application layer rather than relying on default
+// discovery via TLSOptions.
+func NewSonarqubeFetcherWithClient(params SonarqubeParams, client *http.Client) (*SonarqubeFetcher, error) {
 	if err := validateSonarqubeURL(params.URL); err != nil {
 		return nil, err
 	}
@@ -96,8 +101,8 @@ func validateSonarqubeURL(rawURL string) error {
 	if rawURL == "" {
 		return fmt.Errorf("SonarQube URL is required")
 	}
-	// Reuse ValidateAndBuildAPIURL for scheme validation (single source of truth)
-	if _, err := ValidateAndBuildAPIURL(rawURL, "/", "SonarQube"); err != nil {
+	// Reuse shared.ValidateAndBuildAPIURL for scheme validation (single source of truth)
+	if _, err := shared.ValidateAndBuildAPIURL(rawURL, "/", "SonarQube"); err != nil {
 		return err
 	}
 	return nil
@@ -133,7 +138,7 @@ func sonarqubeMajorVersion(version string) int {
 // server version. Returns empty string on failure (non-fatal — version
 // detection is best-effort).
 func (f *SonarqubeFetcher) fetchServerVersion(ctx context.Context, token string) string {
-	apiURL, err := ValidateAndBuildAPIURL(f.params.URL, "/api/server/version", "SonarQube")
+	apiURL, err := shared.ValidateAndBuildAPIURL(f.params.URL, "/api/server/version", "SonarQube")
 	if err != nil {
 		return ""
 	}
@@ -385,7 +390,7 @@ func (f *SonarqubeFetcher) fetchChildComponents(ctx context.Context, token, comp
 			break
 		}
 
-		apiURL, err := ValidateAndBuildAPIURL(f.params.URL, "/api/components/tree", "SonarQube")
+		apiURL, err := shared.ValidateAndBuildAPIURL(f.params.URL, "/api/components/tree", "SonarQube")
 		if err != nil {
 			return nil, err
 		}
@@ -416,7 +421,7 @@ func (f *SonarqubeFetcher) fetchChildComponents(ctx context.Context, token, comp
 		}
 
 		const maxSize = 10 * 1024 * 1024
-		body, err := readLimitedBody(resp.Body, maxSize)
+		body, err := shared.ReadLimitedBody(resp.Body, maxSize)
 		resp.Body.Close() //nolint:errcheck
 		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("components/tree API returned HTTP %d", resp.StatusCode)
@@ -443,7 +448,7 @@ func (f *SonarqubeFetcher) fetchChildComponents(ctx context.Context, token, comp
 }
 
 func (f *SonarqubeFetcher) fetchIssuePage(ctx context.Context, token string, page int, componentKey string) (*sonarqubeconv.IssuesResponse, error) {
-	apiURL, err := ValidateAndBuildAPIURL(f.params.URL, "/api/issues/search", "SonarQube")
+	apiURL, err := shared.ValidateAndBuildAPIURL(f.params.URL, "/api/issues/search", "SonarQube")
 	if err != nil {
 		return nil, err
 	}
@@ -474,7 +479,7 @@ func (f *SonarqubeFetcher) fetchIssuePage(ctx context.Context, token string, pag
 	f.setAuthHeader(req, token)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := f.client.Do(req) //#nosec G704 -- host is user-configured SonarQube server; scheme validated in ValidateAndBuildAPIURL
+	resp, err := f.client.Do(req) //#nosec G704 -- host is user-configured SonarQube server; scheme validated in shared.ValidateAndBuildAPIURL
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
@@ -485,10 +490,10 @@ func (f *SonarqubeFetcher) fetchIssuePage(ctx context.Context, token string, pag
 	}
 
 	// Limit response body to 10MB to prevent memory exhaustion from malicious servers.
-	// Uses readLimitedBody (shared with Splunk fetcher) which reads maxSize+1 bytes
+	// Uses shared.ReadLimitedBody (shared with Splunk fetcher) which reads maxSize+1 bytes
 	// and returns an explicit error on overflow, rather than silently truncating.
 	const maxResponseSize = 10 * 1024 * 1024
-	body, err := readLimitedBody(resp.Body, maxResponseSize)
+	body, err := shared.ReadLimitedBody(resp.Body, maxResponseSize)
 	if err != nil {
 		return nil, fmt.Errorf("reading response body: %w", err)
 	}
@@ -545,7 +550,7 @@ func (f *SonarqubeFetcher) enrichRulesWithDetails(ctx context.Context, token str
 
 // fetchRuleDetail fetches a single rule's details from /api/rules/show.
 func (f *SonarqubeFetcher) fetchRuleDetail(ctx context.Context, token, ruleKey string) (*sonarqubeconv.Rule, error) {
-	apiURL, err := ValidateAndBuildAPIURL(f.params.URL, "/api/rules/show", "SonarQube")
+	apiURL, err := shared.ValidateAndBuildAPIURL(f.params.URL, "/api/rules/show", "SonarQube")
 	if err != nil {
 		return nil, err
 	}
@@ -573,7 +578,7 @@ func (f *SonarqubeFetcher) fetchRuleDetail(ctx context.Context, token, ruleKey s
 	}
 
 	const maxRuleResponseSize = 1 * 1024 * 1024
-	body, err := readLimitedBody(resp.Body, maxRuleResponseSize)
+	body, err := shared.ReadLimitedBody(resp.Body, maxRuleResponseSize)
 	if err != nil {
 		return nil, fmt.Errorf("reading rule response: %w", err)
 	}

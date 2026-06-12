@@ -84,3 +84,9 @@ hdf-cli/SAF_CLI_COMPARISON.md
 
 # Local development smoke test docs (not part of release artifact)
 *-smoke-test.md
+
+# Claude Code worktree workspaces (created per agent run, not for commit)
+.claude/worktrees/
+
+# VitePress build cache (regenerated locally; not part of release artifact)
+site/.vitepress/cache/

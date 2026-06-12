@@ -1,0 +1,78 @@
+{
+  "Findings": [
+    {
+      "SchemaVersion": "2018-10-08",
+      "Id": "arn:aws:securityhub:us-east-1:123456789123:subscription/cis-aws-foundations-benchmark/v/1.2.0/1.1/finding/564b8d35-d697-475e-8a02-dfb23552dc24",
+      "ProductArn": "arn:aws:securityhub:us-east-1::product/aws/securityhub",
+      "ProductName": "Security Hub",
+      "CompanyName": "AWS",
+      "Region": "us-east-1",
+      "GeneratorId": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0/rule/1.1",
+      "AwsAccountId": "123456789123",
+      "Types": [
+        "Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
+      ],
+      "FirstObservedAt": "2021-07-23T23:39:05.607Z",
+      "LastObservedAt": "2021-08-09T11:28:16.331Z",
+      "CreatedAt": "2021-07-23T23:39:05.607Z",
+      "UpdatedAt": "2021-08-09T11:28:13.288Z",
+      "Severity": {
+        "Product": 30,
+        "Label": "LOW",
+        "Normalized": 30,
+        "Original": "LOW"
+      },
+      "Title": "1.1 Avoid the use of the \"root\" account",
+      "Description": "The \"root\" account has unrestricted access to all resources in the AWS account. It is highly recommended that the use of this account be avoided.",
+      "Remediation": {
+        "Recommendation": {
+          "Text": "For directions on how to fix this issue, please consult the AWS Security Hub CIS documentation.",
+          "Url": "https://docs.aws.amazon.com/console/securityhub/standards-cis-1.1/remediation"
+        }
+      },
+      "ProductFields": {
+        "StandardsGuideArn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "StandardsGuideSubscriptionArn": "arn:aws:securityhub:us-east-1:123456789123:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+        "RuleId": "1.1",
+        "RecommendationUrl": "https://docs.aws.amazon.com/console/securityhub/standards-cis-1.1/remediation",
+        "StandardsControlArn": "arn:aws:securityhub:us-east-1:123456789123:control/cis-aws-foundations-benchmark/v/1.2.0/1.1",
+        "aws/securityhub/ProductName": "Security Hub",
+        "aws/securityhub/CompanyName": "AWS",
+        "aws/securityhub/annotation": "Multi region CloudTrail with the required configuration does not exist in the account",
+        "Resources:0/Id": "arn:aws:iam::123456789123:root",
+        "aws/securityhub/FindingId": "arn:aws:securityhub:us-east-1::product/aws/securityhub/arn:aws:securityhub:us-east-1:123456789123:subscription/cis-aws-foundations-benchmark/v/1.2.0/1.1/finding/564b8d35-d697-475e-8a02-dfb23552dc24"
+      },
+      "Resources": [
+        {
+          "Type": "AwsAccount",
+          "Id": "AWS::::Account:123456789123",
+          "Partition": "aws",
+          "Region": "us-east-1"
+        }
+      ],
+      "Compliance": {
+        "Status": "FAILED",
+        "StatusReasons": [
+          {
+            "ReasonCode": "CLOUDTRAIL_MULTI_REGION_NOT_PRESENT",
+            "Description": "Multi region CloudTrail with the required configuration does not exist in the account"
+          }
+        ]
+      },
+      "WorkflowState": "NEW",
+      "Workflow": {
+        "Status": "SUPPRESSED"
+      },
+      "RecordState": "ACTIVE",
+      "FindingProviderFields": {
+        "Severity": {
+          "Label": "LOW",
+          "Original": "LOW"
+        },
+        "Types": [
+          "Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
+        ]
+      }
+    }
+  ]
+}

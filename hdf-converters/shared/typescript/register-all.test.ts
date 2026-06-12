@@ -15,10 +15,10 @@ describe('registerAllFingerprints', () => {
     expect(sarif!.outputType).toBe('results');
   });
 
-  it('registers all 50 fingerprints (39 ingest + 7 OSCAL sub-types + 4 export)', () => {
+  it('registers all 51 fingerprints (40 ingest + 7 OSCAL sub-types + 4 export)', () => {
     registerAllFingerprints();
-    // 39 single ingest + 7 OSCAL + 4 export = 50 total
-    expect(getFingerprints().length).toBe(50);
+    // 40 single ingest + 7 OSCAL + 4 export = 51 total
+    expect(getFingerprints().length).toBe(51);
   });
 
   it('is idempotent — calling twice does not duplicate', () => {

@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/fetchers"
-	sonarqube "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sonarqube-to-hdf/go"
+	sonarqubeconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sonarqube-to-hdf/go"
+	sonarqube "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/sonarqube/go"
 )
 
 func newFetchSonarqubeCmd() *cobra.Command {
@@ -76,7 +76,7 @@ Output defaults to stdout when no output path is given.`,
 				)
 			}
 
-			f, err := fetchers.NewSonarqubeFetcher(fetchers.SonarqubeParams{
+			f, err := sonarqube.NewSonarqubeFetcher(sonarqube.SonarqubeParams{
 				URL:           serverURL,
 				ProjectKey:    projectKey,
 				Branch:        branch,
@@ -101,7 +101,7 @@ Output defaults to stdout when no output path is given.`,
 				return writeConvertOutput(raw, outputPath)
 			}
 
-			result, err := sonarqube.ConvertSonarqubeToHDF(raw, version)
+			result, err := sonarqubeconv.ConvertSonarqubeToHDF(raw, version)
 			if err != nil {
 				return fmt.Errorf("sonarqube conversion failed: %w", err)
 			}

@@ -379,6 +379,7 @@ These flags apply to all commands.
 
 | Source Format | Aliases | Description |
 |--------------|---------|-------------|
+| `asff` | | AWS Security Finding Format / Security Hub findings (JSON) |
 | `aws-config` | | AWS Config compliance evaluation results (JSON) |
 | `burpsuite` | | PortSwigger BurpSuite web scanner (XML) |
 | `ckl` | | DISA STIG Viewer checklist (`.ckl` XML) |

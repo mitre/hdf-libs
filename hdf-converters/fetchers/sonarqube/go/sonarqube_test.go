@@ -1,4 +1,4 @@
-package fetchers
+package sonarqube
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	sonarqubeconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sonarqube-to-hdf/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/shared/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,7 +41,7 @@ func sonarqubeServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 
 func newTestFetcher(t *testing.T, serverURL string) *SonarqubeFetcher {
 	t.Helper()
-	f, err := newSonarqubeFetcherWithClient(SonarqubeParams{
+	f, err := NewSonarqubeFetcherWithClient(SonarqubeParams{
 		URL:        serverURL,
 		ProjectKey: "test-project",
 	}, &http.Client{})
@@ -59,7 +60,7 @@ func TestNewSonarqubeFetcher_URLValidation(t *testing.T) {
 	}
 	for _, u := range valid {
 		t.Run("valid/"+u, func(t *testing.T) {
-			_, err := NewSonarqubeFetcher(SonarqubeParams{URL: u, ProjectKey: "key"}, TLSOptions{})
+			_, err := NewSonarqubeFetcher(SonarqubeParams{URL: u, ProjectKey: "key"}, shared.TLSOptions{})
 			assert.NoError(t, err, "URL %q should be valid", u)
 		})
 	}
@@ -73,7 +74,7 @@ func TestNewSonarqubeFetcher_URLValidation(t *testing.T) {
 	}
 	for _, u := range invalid {
 		t.Run("invalid/"+u, func(t *testing.T) {
-			_, err := NewSonarqubeFetcher(SonarqubeParams{URL: u, ProjectKey: "key"}, TLSOptions{})
+			_, err := NewSonarqubeFetcher(SonarqubeParams{URL: u, ProjectKey: "key"}, shared.TLSOptions{})
 			require.Error(t, err)
 		})
 	}
@@ -259,7 +260,7 @@ func TestSonarqubeFetcher_DefaultTimeoutApplied(t *testing.T) {
 	})
 
 	capturingTransport := &contextCapturingSonarqubeTransport{inner: http.DefaultTransport}
-	f, err := newSonarqubeFetcherWithClient(SonarqubeParams{
+	f, err := NewSonarqubeFetcherWithClient(SonarqubeParams{
 		URL:        srv.URL,
 		ProjectKey: "test-project",
 	}, &http.Client{Transport: capturingTransport})
@@ -337,7 +338,7 @@ func TestSonarqubeFetcher_OptionalParams(t *testing.T) {
 		writeIssuesPage(w, nil, nil, nil, 0, 1)
 	})
 
-	f, err := newSonarqubeFetcherWithClient(SonarqubeParams{
+	f, err := NewSonarqubeFetcherWithClient(SonarqubeParams{
 		URL:          srv.URL,
 		ProjectKey:   "my-project",
 		Branch:       "main",

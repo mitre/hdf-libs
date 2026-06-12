@@ -11,6 +11,7 @@ package all
 // Blank imports below register converter fingerprints via package init().
 import (
 	// JSON ingest converters.
+	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/asff-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/aws-config-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/cklb-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/conveyor-to-hdf/go"
