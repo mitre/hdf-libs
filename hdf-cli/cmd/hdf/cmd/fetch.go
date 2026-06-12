@@ -70,12 +70,14 @@ Available sources:
   gitlab        GitLab pipeline security scan artifacts
   sonarqube     SonarQube static analysis issues
   splunk        Splunk HDF evaluation events
+  tenable-sc    Tenable.SC scan results (piped through nessus-to-hdf)
 
 Examples:
   hdf fetch aws-config --region us-east-1 output.json
   hdf fetch gitlab --project my-org/my-project --job semgrep-sast output.json
   hdf fetch sonarqube --url https://sonarqube.example.com --project-key my-project output.json
   hdf fetch splunk --url https://splunk.example.com --index hdf --guid <guid> output.json
+  hdf fetch tenable-sc --url https://tsc.example.com --scan-id 42 output.json
 
   # Custom CA certificate for internal instances
   hdf fetch sonarqube --ca-cert /path/to/internal-ca.pem --url https://sonar.internal ...
@@ -92,6 +94,7 @@ Examples:
 	cmd.AddCommand(newFetchGitlabCmd())
 	cmd.AddCommand(newFetchSonarqubeCmd())
 	cmd.AddCommand(newFetchSplunkCmd())
+	cmd.AddCommand(newFetchTenableSCCmd())
 
 	return cmd
 }

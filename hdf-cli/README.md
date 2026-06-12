@@ -20,10 +20,12 @@ HDF (Heimdall Data Format) is a standardized JSON format for security assessment
     - [fetch gitlab](#fetch-gitlab) -- GitLab CI/CD security artifacts
     - [fetch sonarqube](#fetch-sonarqube) -- SonarQube issues
     - [fetch splunk](#fetch-splunk) -- Splunk HDF events
+    - [fetch tenable-sc](#fetch-tenable-sc) -- Tenable.SC scan results
   - [push](#push) -- Push HDF to a backend
     - [push splunk](#push-splunk) -- Push HDF as Splunk records
   - [verify](#verify) -- Verify backend credentials
     - [verify splunk](#verify-splunk) -- Verify SPLUNK_TOKEN
+    - [verify tenable-sc](#verify-tenable-sc) -- Verify Tenable.SC API keys
   - [version](#version) -- Print version information
 - [Global Flags](#global-flags)
 - [Supported Conversions](#supported-conversions)
@@ -350,6 +352,32 @@ EXAMPLES
   hdf fetch splunk --url https://splunk.example.com --index hdf --guid abc123 | jq .
 ```
 
+#### fetch tenable-sc
+
+Download a Tenable.SC scan result (downloadType=v2) and convert it to HDF via the `nessus-to-hdf` converter. Tenable.SC returns either a raw `.nessus` XML payload or a zip wrapping one; the fetcher unwraps the zip transparently. `--format raw` writes the unzipped XML directly without conversion.
+
+API keys must be set via the `TENABLE_SC_ACCESS_KEY` and `TENABLE_SC_SECRET_KEY` environment variables.
+
+Response body size is capped by the persistent `--max-size <MB>` root flag (default 50). Override on the command line if a real scan exceeds this.
+
+```
+USAGE
+  hdf fetch tenable-sc [output] [flags]
+
+FLAGS
+  -u, --url string       (required) Tenable.SC server URL
+  -s, --scan-id string   (required) Tenable.SC scan result ID (positive integer)
+  -f, --format string    Output format: hdf or raw (default "hdf")
+  -o, --output string    Output file path (default: stdout)
+
+EXAMPLES
+  export TENABLE_SC_ACCESS_KEY=<your-access-key>
+  export TENABLE_SC_SECRET_KEY=<your-secret-key>
+  hdf fetch tenable-sc --url https://tsc.example.com --scan-id 42 -o output.json
+  hdf fetch tenable-sc --url https://tsc.example.com --scan-id 42 --format raw -o scan.nessus
+  hdf --max-size 200 fetch tenable-sc --url https://tsc.example.com --scan-id 42 -o output.json
+```
+
 ### push
 
 Push HDF Results to a backend that stores HDF-shaped data. Currently supports Splunk.
@@ -407,6 +435,27 @@ FLAGS
 EXAMPLES
   export SPLUNK_TOKEN=your-splunk-token
   hdf verify splunk --url https://splunk.example.com
+```
+
+#### verify tenable-sc
+
+GET `/rest/currentUser` with the configured `x-apikey` header. 200 ⇒ success; 401/403 ⇒ failed verification; other codes are surfaced in the error message.
+
+Exits 0 on success, non-zero on any verification failure. The access key and secret key values never appear in error output.
+
+```
+USAGE
+  hdf verify tenable-sc [flags]
+
+FLAGS
+  -u, --url string       (required) Tenable.SC server URL
+      --ca-cert string   PEM CA certificate bundle for custom/corporate CAs
+      --insecure         Skip TLS certificate verification (prints warning)
+
+EXAMPLES
+  export TENABLE_SC_ACCESS_KEY=<your-access-key>
+  export TENABLE_SC_SECRET_KEY=<your-secret-key>
+  hdf verify tenable-sc --url https://tsc.example.com
 ```
 
 ### version
@@ -515,6 +564,7 @@ The `fetch`, `push`, and `verify` commands connect to live APIs. Credentials are
 | GitLab | `GITLAB_TOKEN` or `GLAB_TOKEN` | glab CLI config (`glab auth login`) |
 | SonarQube | `SONARQUBE_TOKEN` | None |
 | Splunk | `SPLUNK_TOKEN` | None |
+| Tenable.SC | `TENABLE_SC_ACCESS_KEY` + `TENABLE_SC_SECRET_KEY` | None |
 
 For GitLab, the glab CLI config is read from the platform's standard config directory:
 

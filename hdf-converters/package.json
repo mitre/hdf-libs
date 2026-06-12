@@ -54,7 +54,8 @@
     "@mitre/hdf-mappings": "workspace:^",
     "@mitre/hdf-parsers": "workspace:^",
     "@mitre/hdf-schema": "workspace:^",
-    "@mitre/hdf-utilities": "workspace:^"
+    "@mitre/hdf-utilities": "workspace:^",
+    "fflate": "^0.8.2"
   },
   "devDependencies": {
     "@mitre/hdf-fixtures": "workspace:^",

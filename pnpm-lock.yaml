@@ -91,6 +91,9 @@ importers:
       '@mitre/hdf-utilities':
         specifier: workspace:^
         version: link:../hdf-utilities
+      fflate:
+        specifier: 0.8.2
+        version: 0.8.2
     devDependencies:
       '@mitre/hdf-fixtures':
         specifier: workspace:^

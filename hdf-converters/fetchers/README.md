@@ -26,6 +26,7 @@ Currently in tree:
 | `gitlab` | ✓ | — | fetch |
 | `sonarqube` | ✓ | — | fetch |
 | `splunk` | ✓ | ✓ | fetch, push, verify |
+| `tenable-sc` | ✓ | ✓ | fetch, verify, list (library-only) |
 
 ## Go fetcher convention — two constructors
 

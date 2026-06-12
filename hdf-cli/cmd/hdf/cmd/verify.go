@@ -22,17 +22,22 @@ TLS options (inherited by all subcommands):
 Environment variables: HDF_CA_CERT, HDF_INSECURE=true
 
 Available destinations:
-  splunk     Verify SPLUNK_TOKEN authenticates against the server
+  splunk       Verify SPLUNK_TOKEN authenticates against the server
+  tenable-sc   Verify TENABLE_SC_ACCESS_KEY + TENABLE_SC_SECRET_KEY authenticate against the server
 
 Examples:
   export SPLUNK_TOKEN=<your-bearer-token>
-  hdf verify splunk --url https://splunk.example.com`,
+  hdf verify splunk --url https://splunk.example.com
+
+  export TENABLE_SC_ACCESS_KEY=<ak>; export TENABLE_SC_SECRET_KEY=<sk>
+  hdf verify tenable-sc --url https://tsc.example.com`,
 	}
 
 	cmd.PersistentFlags().String("ca-cert", "", "Path to PEM CA certificate bundle for custom/corporate CAs")
 	cmd.PersistentFlags().Bool("insecure", false, "Skip TLS certificate verification (prints warning)")
 
 	cmd.AddCommand(newVerifySplunkCmd())
+	cmd.AddCommand(newVerifyTenableSCCmd())
 
 	return cmd
 }
