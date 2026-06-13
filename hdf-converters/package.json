@@ -57,6 +57,7 @@
     "@mitre/hdf-mappings": "workspace:^"
   },
   "devDependencies": {
+    "@aws-sdk/client-securityhub": "^3",
     "@mitre/hdf-fixtures": "workspace:^",
     "@mitre/hdf-validators": "workspace:^",
     "ajv": "^8.17.0",
@@ -72,5 +73,13 @@
     "security",
     "compliance",
     "inspec"
-  ]
+  ],
+  "peerDependencies": {
+    "@aws-sdk/client-securityhub": "^3"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-securityhub": {
+      "optional": true
+    }
+  }
 }

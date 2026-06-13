@@ -22,6 +22,7 @@ HDF (Heimdall Data Format) is a standardized JSON format for security assessment
   - [generate](#generate) -- Generate InSpec profiles, thresholds, and baseline upgrades
   - [fetch](#fetch) -- Fetch from live APIs
     - [fetch aws-config](#fetch-aws-config) -- AWS Config compliance data
+    - [fetch aws-securityhub](#fetch-aws-securityhub) -- AWS Security Hub ASFF findings
     - [fetch gitlab](#fetch-gitlab) -- GitLab CI/CD security artifacts
     - [fetch sonarqube](#fetch-sonarqube) -- SonarQube issues
     - [fetch splunk](#fetch-splunk) -- Splunk HDF events
@@ -549,6 +550,37 @@ EXAMPLES
   hdf fetch aws-config --region us-east-1 --profile my-audit-account output.json
   hdf fetch aws-config --region us-east-1 --format raw | jq '.rules | length'
   hdf fetch aws-config --region us-east-1 | jq '.baselines[0].requirements | length'
+```
+
+#### fetch aws-securityhub
+
+Fetch ASFF findings from AWS Security Hub and convert to HDF via the `asff-to-hdf` converter. Use `--check` to verify credentials without downloading findings.
+
+Credentials are resolved via the same AWS chain as `fetch aws-config` (env vars, `~/.aws/credentials` / `~/.aws/config`, IAM instance role, AssumeRole).
+
+```
+USAGE
+  hdf fetch aws-securityhub [output] [flags]
+
+FLAGS
+  -r, --region string     (required) AWS region (e.g., us-east-1)
+  -p, --profile string    AWS CLI named profile
+      --format string     Output format: hdf or raw (default "hdf")
+  -o, --output string     Output file path (default: stdout)
+      --check             Verify credentials only; skip findings download
+
+EXAMPLES
+  # Fetch all findings in a region
+  hdf fetch aws-securityhub --region us-east-1 output.json
+
+  # Use a named AWS CLI profile
+  hdf fetch aws-securityhub --region us-east-1 --profile my-audit-account output.json
+
+  # Save raw ASFF JSON instead of HDF
+  hdf fetch aws-securityhub --region us-east-1 --format raw asff.json
+
+  # Verify credentials only -- exits 0 on success, non-zero on auth failure
+  hdf fetch aws-securityhub --region us-east-1 --check
 ```
 
 #### fetch gitlab
