@@ -18,7 +18,20 @@ fetchers/
 └── README.md
 ```
 
-Currently in tree: `awsconfig`, `gitlab`, `sonarqube`, `splunk`.
+Currently in tree:
+
+| Tool | Go | TS | Capabilities |
+|---|---|---|---|
+| `awsconfig` | ✓ | — | fetch |
+| `aws-securityhub` | ✓ | ✓ | fetch, verify |
+| `gitlab` | ✓ | — | fetch |
+| `sonarqube` | ✓ | — | fetch |
+| `splunk` | ✓ | — | fetch |
+
+`aws-securityhub` is the first fetcher to ship both Go and TS sides
+together; its TS contract takes a caller-supplied
+`@aws-sdk/client-securityhub` `SecurityHubClient` (auth-agnostic — the
+library never sees credentials).
 
 ## Go fetcher convention — two constructors
 

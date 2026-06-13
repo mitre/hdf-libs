@@ -51,12 +51,13 @@
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
   "dependencies": {
+    "@mitre/hdf-mappings": "workspace:^",
     "@mitre/hdf-parsers": "workspace:^",
     "@mitre/hdf-schema": "workspace:^",
-    "@mitre/hdf-utilities": "workspace:^",
-    "@mitre/hdf-mappings": "workspace:^"
+    "@mitre/hdf-utilities": "workspace:^"
   },
   "devDependencies": {
+    "@aws-sdk/client-securityhub": "^3",
     "@mitre/hdf-fixtures": "workspace:^"
   },
   "engines": {
@@ -69,5 +70,13 @@
     "security",
     "compliance",
     "inspec"
-  ]
+  ],
+  "peerDependencies": {
+    "@aws-sdk/client-securityhub": "^3"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-securityhub": {
+      "optional": true
+    }
+  }
 }

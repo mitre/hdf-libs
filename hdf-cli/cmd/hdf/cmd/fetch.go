@@ -66,13 +66,16 @@ TLS options (inherited by all subcommands):
 Environment variables: HDF_CA_CERT, HDF_INSECURE=true
 
 Available sources:
-  aws-config    AWS Config compliance evaluation results
-  gitlab        GitLab pipeline security scan artifacts
-  sonarqube     SonarQube static analysis issues
-  splunk        Splunk HDF evaluation events
+  aws-config        AWS Config compliance evaluation results
+  aws-securityhub   AWS Security Hub ASFF findings (supports --check for credential verification)
+  gitlab            GitLab pipeline security scan artifacts
+  sonarqube         SonarQube static analysis issues
+  splunk            Splunk HDF evaluation events
 
 Examples:
   hdf fetch aws-config --region us-east-1 output.json
+  hdf fetch aws-securityhub --region us-east-1 output.json
+  hdf fetch aws-securityhub --region us-east-1 --check       # verify creds only
   hdf fetch gitlab --project my-org/my-project --job semgrep-sast output.json
   hdf fetch sonarqube --url https://sonarqube.example.com --project-key my-project output.json
   hdf fetch splunk --url https://splunk.example.com --index hdf --guid <guid> output.json
@@ -89,6 +92,7 @@ Examples:
 	cmd.PersistentFlags().Bool("insecure", false, "Skip TLS certificate verification (prints warning)")
 
 	cmd.AddCommand(newFetchAWSConfigCmd())
+	cmd.AddCommand(newFetchAWSSecurityHubCmd())
 	cmd.AddCommand(newFetchGitlabCmd())
 	cmd.AddCommand(newFetchSonarqubeCmd())
 	cmd.AddCommand(newFetchSplunkCmd())

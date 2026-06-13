@@ -14,11 +14,13 @@ export default defineConfig({
       'converters/**/*.spec.ts',
       'shared/**/*.test.ts',
       'shared/**/*.spec.ts',
+      'fetchers/**/*.test.ts',
+      'fetchers/**/*.spec.ts',
     ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/**/*.ts', 'converters/**/*.ts'],
+      include: ['src/**/*.ts', 'converters/**/*.ts', 'fetchers/**/*.ts'],
       exclude: [
         'src/**/*.d.ts',
         'dist/**',
