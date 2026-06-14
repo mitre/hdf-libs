@@ -226,7 +226,14 @@ for (const { name, schema } of schemas) {
 
     for (const embeddedId of embeddedKeys.sort()) {
       const embedded = embeddedDefs[embeddedId];
-      const shortId = embeddedId.replace('https://mitre.github.io/hdf-libs/schemas/primitives/', '');
+      // Drop both the URL prefix AND the trailing /v3.x.y so the rendered
+      // heading (and its derived anchor + right-rail TOC entry) stays stable
+      // across releases. The version is already shown in the page's Version
+      // metadata row; the canonical $id URL of the primitive schema preserves
+      // the version in the underlying file mapping under /public/schemas/.
+      const shortId = embeddedId
+        .replace('https://mitre.github.io/hdf-libs/schemas/primitives/', '')
+        .replace(/\/v\d+\.\d+\.\d+$/, '');
       lines.push(`### ${shortId}`);
       lines.push('');
 
