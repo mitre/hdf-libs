@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.2.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.3.0",
   "title": "HDF CVSS Primitives",
   "description": "Types for representing CVSS (Common Vulnerability Scoring System) data attached to assessment findings. Supports CVSS v2.0, v3.0, v3.1, and v4.0 metric groups (Base, Threat, Environmental, Supplemental).",
   "$defs": {

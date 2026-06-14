@@ -11,13 +11,13 @@ require (
 	github.com/charmbracelet/huh v1.0.0
 	github.com/dlclark/regexp2 v1.12.0
 	github.com/google/uuid v1.6.0
-	github.com/mitre/hdf-libs/hdf-converters/v3 v3.2.0
-	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.2.0
-	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.2.0
-	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.2.0
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.2.0
-	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.2.0
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.2.0
+	github.com/mitre/hdf-libs/hdf-converters/v3 v3.3.0
+	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.3.0
+	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.3.0
+	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.3.0
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.3.0
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.3.0
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.3.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/term v0.43.0
@@ -65,7 +65,7 @@ require (
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
-	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.2.0 // indirect
+	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.3.0 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect

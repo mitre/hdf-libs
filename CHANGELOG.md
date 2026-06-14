@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-06-14
+
+### New Features
+
+- **CVE ecosystem fields on `Evaluated_Requirement` and `Baseline_Requirement`** — five new optional, structured fields capture the data ecosystem around a vulnerability finding that previously lived in free-form `tags`:
+  - **`cvss[]`** — typed CVSS scoring for all four major versions (v2, v3.0, v3.1, v4.0). Multi-entry to handle multi-CVE findings.
+  - **`epss`** — EPSS exploit-probability data (percentile + score).
+  - **`kev`** — CISA Known Exploited Vulnerabilities catalog status.
+  - **`cwe[]`** — CWE classification IDs.
+  - **`affectedPackages[]`** — affected-package identifiers (ecosystem + name + version) with a typed `ecosystem` enum: `npm | pypi | gem | maven | nuget | cargo | go | deb | rpm | generic`.
+  - Four new primitive schemas back the additions: `affected-package`, `cvss`, `epss`, `kev`. See `docs/guides/cve-ecosystem.md` for the migration path away from `tags.cvss_base_score`/`tags.cve` and the multi-release deprecation timeline. (#75)
+- **`justification` enum on `Standalone_Override` and `Status_Override`** — 5-value enum from the VEX ecosystem (`component_not_present`, `vulnerable_code_not_present`, `vulnerable_code_not_in_execute_path`, `vulnerable_code_cannot_be_controlled_by_adversary`, `inline_mitigations_already_exist`). Complements the existing free-text `reason` field: `reason` is the auditor-readable rationale, `justification` is the machine-readable category for filtering / aggregation / lossless round-trip with structured ecosystems (CSAF VEX, OpenVEX, CycloneDX VEX). Open for additive extension as OSCAL / FedRAMP DR vocabularies are integrated. (#88)
+- **CVSS enrichment on `riskAdjustment` amendments** — `hdf amend draft` auto-scaffolds a `cvss` block on `riskAdjustment` stubs when the source requirement is a CVE-ecosystem finding. Headless validation: syntactic CVSS-vector check via `hdf-utilities.ValidateCvssVector`; soft stderr warning when `impact.value` and `cvss.computedScore / 10` disagree by more than 0.05 (never blocks). (#82)
+- **`@mitre/hdf-extension-graph` Go port** — 1:1 mirror of the TypeScript implementation: same four-phase `BuildExtensionGraph`, same five derived methods on `ContextualizedRequirement` (`Root`, `IsRedundant`, `FullCode`, `ExtensionChain`, `Modifications`). 100% test coverage. Cross-language equivalence test runs both implementations against the same fixture and diffs their canonical JSON dumps, pinning Go↔TS parity going forward. (#84)
+- **`@mitre/hdf-fixtures` workspace package** — shared real-world fixture corpus (private; cross-package tests only) with both TS and Go APIs. Owns wild-data references for cross-package consumers. Inclusion bar is strict: at least two workspace packages must actively consume a file before it lands here, and the original location's copy is deleted (no duplicates). Initial corpus: `multilayered-inspec.json` promoted from hdf-extension-graph (now also consumed by hdf-parsers). (#90)
+- **`hdf convert` / `hdf fetch` validate Amendments output** — `detectHDFDocType` recognizes amendments (top-level `overrides[]`) alongside results/baseline; `validateHDFOutput` calls `ValidateAmendments` for the amendments doc type. Schema-invalid amendments output is blocked before writing to disk. (#88)
+
+### Fixes
+
+- **InSpec timestamp normalization in `hdf-parsers`** — the InSpec runner emits ISO 8601 timestamps without a timezone designator (e.g. `"2026-03-25T22:56:27.736808"`), which the HDF schema's `date-time` format check and Go's `time.Time` JSON unmarshal both reject. Real-world result: any Go HDF consumer reading actual InSpec output got zero-valued or partial `HDFResults`. The new `normalizeTimestamps` helper in `hdf-parsers` finds JSON-quoted bare ISO timestamps via regex and appends `Z` (treating them as UTC, matching what JS `Date.parse` and InSpec itself assume). Applied at the top of `ParseResults` and `ParseBaseline` before schema validation and `json.Decode`. Already-RFC3339 strings and timestamp-shaped substrings inside prose values are left alone. (Closes `hdf-libs-2nm0`; #83)
+- **`hdf-cli` parse + normalize now delegate to `hdf-parsers`** — `parseHDFResults` / `parseHDFBaseline` in `input.go` previously re-implemented the parser pipeline, bypassing #83's bare-timestamp normalization. Every CLI command that loaded HDF (`list`, `query`, `diff`) crashed on real InSpec output; `validate.go` had the same problem on a separate code path. CLI now delegates to `hdfparsers.ParseResults` / `ParseBaseline`; `validate.go` runs `hdfparsers.NormalizeTimestamps` before `validators.Validate`. Verified end-to-end against `multilayered-inspec.json` (1603 reqs, all timestamps lack TZ). (Closes `hdf-libs-mccc`; #89)
+- **AWS Config converter synthesizes `notApplicable` for zero-evaluation rules** — `hdf fetch aws-config` previously wrote requirements with `results: []` when a deployed Config rule evaluated zero in-scope resources, violating the schema's `minItems: 1` invariant. Both Go and TS converters now synthesize a single `notApplicable` result in that case, with a `codeDesc` explaining the rule's check ran but had no scope. Matches AWS Config's own console depiction (a dash, not "Compliant") — auditors see that no determination was made, not a vacuous "passed". (Fixes #80; #81)
+- **`hdf-schema/helpers.d.ts` import path** — `helpers.d.ts` imported from `../dist/ts/hdf-results.js`, which was the per-document file removed by #77's combined-output refactor. Every attw entry that re-exports from `./helpers.js` failed type resolution post-merge, breaking the Pre-release checks workflow on main. Repointed to the consolidated `../dist/ts/hdf.js`. Also moved `publint` + `arethetypeswrong` from `pre-release.yml` into `ci.yml` so packaging defects surface on the PR that introduces them, not after merge to main. (#85, #87)
+
 ### Breaking Changes — TypeScript
 
 - **Generated enum type renames** (no deprecation aliases provided). External code that imports any of the following from `@mitre/hdf-schema` must update the identifier:
@@ -52,6 +76,21 @@ All notable changes to this project will be documented in this file.
 - Identity type deduplication achieved via combined TypeScript output (`dist/ts/hdf.ts`) — same approach as the existing Go output. Fixes the long-standing bug where `Identity` in a per-file output was nominally incompatible with `Identity` in another. (Fixes #76.)
 - Schema source-of-truth for inline enum naming is now the `title` property on each enum. Quicktype derives stable, predictable names from titles instead of inventing them from context.
 - `generate-types.ts` simplified: 287 → 153 lines (47% reduction). Dead `toOutputFilename`, dead outer `schemaInput` builder, error-recovery fallback paths, and the "other languages" loop all removed.
+- `hdf-parsers` deduped `TrimSpace` and `[]byte → string` conversions. `ParseResults` / `ParseBaseline` previously did two conversions and two trim passes per call (once for the empty-check, once for the decoder); reordered so `NormalizeTimestamps` runs first and a single `TrimSpace` covers both purposes. (Closes `hdf-libs-komt`; #90)
+- `computeCompleteness` in `hdf-cli`'s `evidence_build.go` uses raw `json.Unmarshal` walking instead of typed parsing — documented as intentional for a best-effort summary metric over arbitrary HDF where forward-compat with future schema additions matters more than type fidelity. (`c250ff1`)
+- Build-pipeline CI hygiene: include `hdf-generators` and `hdf-extension-graph` `dist/` in the build artifact (verify-packages was failing on these two missing dirs); wire Node 22 through every workflow's setup-action call. (#85, #87)
+- Dev-dependency CVE management: added pnpm override for `shell-quote@<1.8.4` (transitive critical: GHSA-w7jw-789q-3m8p via `concurrently`); added `pnpm.auditConfig.ignoreGhsas` for esbuild `GHSA-gv7w-rqvm-qjhr` (Deno-specific advisory; doesn't apply to our Node-only usage, and bumping past 0.28.1 breaks vitepress).
+- Spec doc Override table corrected: shows the actual schema field names — `reason` (required free-text) and `justification` (optional VEX-aligned enum, new in v3.3.0). The previous table conflated the two by labeling the required string field as `justification`.
+
+### Architecture Changes
+
+- Schema version bumped from v3.2.0 to v3.3.0 across all `$id`/`$ref` URLs.
+
+### Compatibility
+
+- New schema fields (CVE ecosystem on requirements, `justification` on overrides) are all optional and additive — v3.2.x documents validate cleanly under v3.3.0.
+- Breaking changes (enum type renames, document root type renames with deprecation aliases, narrowed subpath imports) require TypeScript and Go consumer updates. See Breaking Changes sections above.
+- Stricter validation (closed `Component.type` enum, `operationalRequirement` without `status`/`impact`) may reject documents that previously passed. See Validation Changes above.
 
 ## [3.2.0] - 2026-05-11
 

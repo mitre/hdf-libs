@@ -140,8 +140,8 @@ Full rationale documented in CHANGELOG.md.
 ### $ref URI Pattern
 
 ```
-https://mitre.github.io/hdf-libs/schemas/primitives/<name>/v3.2.0#/$defs/<Type>
-https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.2.0#/$defs/<Type>
+https://mitre.github.io/hdf-libs/schemas/primitives/<name>/v3.3.0#/$defs/<Type>
+https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.3.0#/$defs/<Type>
 ```
 
 ---
