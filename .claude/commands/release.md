@@ -11,6 +11,25 @@ Run this skill whenever the workspace is moving to a new minor or major version 
 
 The current ("from") version is whatever the workspace `package.json` files agree on; mismatch between them means a prior release was incomplete and is itself a finding (treat as a separate cleanup before bumping).
 
+## Version-bump policy (project rule)
+
+The bump tier is determined by **what changed in the schema**, not by feature volume or perceived impact:
+
+- **Schema changed in any way** (new field, new enum value, new `$defs` type, modified validation, modified `$id` URL) → **minor bump** (`3.x.0`). Schema changes are forwards-compatible by default but may break consumers that did exhaustive type matching, so they're always at least a minor.
+- **No schema changes** (converter additions/fixes, CLI work, docs, fetcher additions, dep bumps, refactors) → **patch bump** (`3.x.y`). Even substantial feature work that doesn't touch the schema is a patch.
+- **Major bump** (`4.0.0` and up) → **only when the user explicitly says so**. Do not infer a major bump from breaking changes, removed features, or `!` markers in commit messages. If you see signs of a breaking change and the user hasn't said "major," surface it as a question (could this be a patch with a breaking-change call-out instead?) — don't unilaterally jump to a major.
+
+Practical signal at Phase 0:
+
+```bash
+# Did anything under hdf-schema/src/schemas/ change since the last release tag?
+git diff --name-only "$(git describe --tags --abbrev=0)..HEAD" -- hdf-schema/src/schemas/
+# If output is non-empty → minor.
+# If output is empty → patch (or skip this skill entirely).
+```
+
+Even within "minor," walk the schema diff before settling on the tier — a single new optional field is a minor; a removed `$defs` type or tightened required-list might warrant the user-flagged major.
+
 ## Lessons learned from prior releases
 
 These are the traps this skill exists to prevent. Real failure modes from the 3.2.0 release:
@@ -26,9 +45,16 @@ These are the traps this skill exists to prevent. Real failure modes from the 3.
 
 ### Phase 0 — Confirm scope
 
-1. Ask the user for the target version (e.g. `3.3.0`). Capture it as `NEW_VERSION`.
-2. Determine `OLD_VERSION` by reading `hdf-schema/package.json` → `version`. Confirm with the user if it doesn't match the other workspace `package.json` files (drift = pre-existing bug, surface before continuing).
-3. If `NEW_VERSION` is a patch bump of `OLD_VERSION` (only the third segment changed), warn the user that this skill is for minor/major bumps and ask if they want to continue anyway. For pure patches, just bump `package.json` files + add a CHANGELOG entry; the rest of this skill does not apply.
+1. Determine `OLD_VERSION` by reading `hdf-schema/package.json` → `version`. Confirm with the user if it doesn't match the other workspace `package.json` files (drift = pre-existing bug, surface before continuing).
+2. **Compute the recommended tier from the schema diff** before asking the user. Run:
+   ```bash
+   git diff --name-only "$(git describe --tags --abbrev=0)..HEAD" -- hdf-schema/src/schemas/
+   ```
+   - Non-empty → minor (next `3.x.0`). Recommend that to the user.
+   - Empty → patch. The skill probably does not apply; warn the user and ask whether to continue anyway or fall back to the minimal patch workflow (bump 10 `package.json` files + CHANGELOG entry only).
+   - **Never recommend a major bump.** Per project rule, major bumps happen only when the user explicitly says "this is a major." If the user picks major without saying so, ask them to confirm.
+3. Ask the user for the target version, presenting the schema-diff-derived recommendation as the default. Capture it as `NEW_VERSION`.
+4. If `NEW_VERSION` is a patch bump of `OLD_VERSION` (only the third segment changed), warn the user that this skill is for minor/major bumps and ask if they want to continue anyway. For pure patches, just bump `package.json` files + add a CHANGELOG entry; the rest of this skill does not apply.
 
 ### Phase 1 — Mechanical version sweep
 
