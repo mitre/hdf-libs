@@ -309,7 +309,6 @@
             },
             "designation": {
               "type": "string",
-              "title": "Designation",
               "enum": [
                 "common",
                 "system-specific",
@@ -630,7 +629,6 @@
             },
             "type": {
               "type": "string",
-              "title": "Identity Type",
               "enum": [
                 "email",
                 "username",
@@ -674,7 +672,6 @@
           "properties": {
             "type": {
               "type": "string",
-              "title": "Evidence Type",
               "enum": [
                 "screenshot",
                 "code",
@@ -851,7 +848,6 @@
             },
             "status": {
               "type": "string",
-              "title": "Milestone Status",
               "enum": [
                 "pending",
                 "inProgress",
@@ -1119,7 +1115,6 @@
             },
             "controlType": {
               "type": "string",
-              "title": "Control Type",
               "enum": [
                 "policy",
                 "procedure",
@@ -1135,7 +1130,6 @@
             },
             "applicability": {
               "type": "string",
-              "title": "Applicability",
               "enum": [
                 "required",
                 "optional",
@@ -1356,15 +1350,6 @@
             "previousChecksum": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
-            },
-            "cvss": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.2.0#/$defs/Cvss",
-              "$comment": "When present alongside impact.value on a riskAdjustment override, impact.value should be approximately cvss.computedScore / 10.0. Soft consistency rule — validators may warn but should not error. The cvss block makes Environmental/Threat enrichment auditable.",
-              "description": "Structured CVSS scoring data backing this override. Captures the rubric (which Environmental/Threat metrics the consumer modified, the recomputed score) used to justify a riskAdjustment. For other override types this is optional context."
-            },
-            "justification": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.2.0#/$defs/Justification",
-              "description": "Structured controlled-vocabulary classification for why this override applies. Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive and attestation overrides where the structured category enables filtering and lossless round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the precedent vocabulary and rationale."
             }
           },
           "examples": [
@@ -1456,7 +1441,6 @@
           "properties": {
             "type": {
               "type": "string",
-              "title": "POAM Type",
               "enum": [
                 "remediation",
                 "mitigation",
@@ -1706,24 +1690,6 @@
           "description": "The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam': remediation tracked (no status change). 'inherited': control provided by another component or system. 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set to 'notApplicable'. The disposition field on the requirement distinguishes false positives from genuinely not-applicable findings. 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field. 'operationalRequirement': deviation required by operational constraints (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires the affected functionality. Remains an open risk. Migration note: 'exception' was removed in v3.1.0 — use 'waiver' with status 'notApplicable' instead.",
           "title": "Override Type"
         },
-        "Justification": {
-          "type": "string",
-          "enum": [
-            "component_not_present",
-            "vulnerable_code_not_present",
-            "vulnerable_code_not_in_execute_path",
-            "vulnerable_code_cannot_be_controlled_by_adversary",
-            "inline_mitigations_already_exist",
-            "requires_configuration",
-            "requires_dependency",
-            "requires_environment",
-            "protected_by_compiler",
-            "protected_at_runtime",
-            "protected_at_perimeter"
-          ],
-          "description": "Structured controlled-vocabulary reason for an override, complementing the free-text 'reason' field. 'reason' carries the human-readable rationale an auditor reads; 'justification' carries the machine-readable category enabling filtering, aggregation, and lossless round-trip with structured ecosystems (VEX, OSCAL, FedRAMP DR). Both fields may be present simultaneously and are NOT redundant: 'reason' explains the specific circumstance; 'justification' classifies it. Authors SHOULD populate both when a controlled-vocabulary value applies — the enum value alone is not self-explanatory to an auditor. The vocabulary is drawn from the VEX ecosystem: the first five values are common across OpenVEX, CSAF VEX, and CycloneDX VEX; the remaining six (requires_configuration / requires_dependency / requires_environment / protected_by_compiler / protected_at_runtime / protected_at_perimeter) are CycloneDX-specific and describe why the vulnerable code path is unreachable in the deployed configuration. The enum is extended additively across schema versions as other ecosystems' controlled vocabularies are integrated; documents using values added in a newer schema version will fail validation against an older schema. Consumers SHOULD validate against the schema version declared by the document ($schema) rather than assume a fixed vocabulary.",
-          "title": "Justification"
-        },
         "Impact_Override": {
           "type": "object",
           "required": [
@@ -1743,7 +1709,6 @@
         },
         "Standalone_Override": {
           "type": "object",
-          "description": "A standalone override to a requirement's compliance status or risk impact. Validation has two branches gated on 'type': when type is 'operationalRequirement', neither 'status' nor 'impact' may be set — the override records accepted risk without changing the finding (documentation-only). For all other types, at least one of 'status' or 'impact' must be set. This rule aligns with: (1) OSCAL Assessment Results — finding.target.status and finding.associated-risk[].facet[] are separate axes (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/); (2) FedRAMP deviation request types — Risk Adjustment changes impact only, Operational Requirement documents acceptance only, False Positive changes status (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/); (3) NIST SP 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from control assessment status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).",
           "unevaluatedProperties": false,
           "required": [
             "type",
@@ -1753,48 +1718,18 @@
             "appliedAt",
             "expiresAt"
           ],
-          "if": {
-            "properties": {
-              "type": {
-                "enum": [
-                  "operationalRequirement"
-                ]
-              }
+          "anyOf": [
+            {
+              "required": [
+                "status"
+              ]
             },
-            "required": [
-              "type"
-            ]
-          },
-          "then": {
-            "not": {
-              "anyOf": [
-                {
-                  "required": [
-                    "status"
-                  ]
-                },
-                {
-                  "required": [
-                    "impact"
-                  ]
-                }
+            {
+              "required": [
+                "impact"
               ]
             }
-          },
-          "else": {
-            "anyOf": [
-              {
-                "required": [
-                  "status"
-                ]
-              },
-              {
-                "required": [
-                  "impact"
-                ]
-              }
-            ]
-          },
+          ],
           "properties": {
             "type": {
               "$ref": "#/$defs/Override_Type",
@@ -1849,15 +1784,6 @@
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Checksum",
               "description": "Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null for the first amendment."
             },
-            "cvss": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.2.0#/$defs/Cvss",
-              "$comment": "When present alongside impact.value on a riskAdjustment override, impact.value should be approximately cvss.computedScore / 10.0. Soft consistency rule — validators may warn but should not error. The cvss block makes Environmental/Threat enrichment auditable.",
-              "description": "Structured CVSS scoring data backing this override. Captures the rubric (which Environmental/Threat metrics the consumer modified, the recomputed score) used to justify a riskAdjustment. For other override types this is optional context."
-            },
-            "justification": {
-              "$ref": "#/$defs/Justification",
-              "description": "Structured controlled-vocabulary classification for why this override applies. Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive and attestation overrides where the structured category enables filtering and lossless round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the precedent vocabulary and rationale."
-            },
             "milestones": {
               "type": "array",
               "items": {
@@ -1874,13 +1800,6 @@
               "type": "string",
               "format": "uuid",
               "description": "componentId of the component this amendment is scoped to. When set, the amendment only applies to the specified component. When omitted, the amendment applies system-wide."
-            },
-            "affectedPackages": {
-              "type": "array",
-              "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.2.0#/$defs/Affected_Package"
-              },
-              "description": "Software packages this amendment is scoped to, distinct from componentRef (which scopes to an HDF-internal Component by UUID). Use when the source amendment format references packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M `subjects[]`, FedRAMP component-aware amendments. Symmetric with Evaluated_Requirement.affectedPackages, which scopes findings to the same package vocabulary. When omitted, the amendment applies system-wide (or only to componentRef when that is set)."
             }
           },
           "examples": [
@@ -1982,31 +1901,9 @@
               },
               "appliedAt": "2026-03-26T10:00:00Z",
               "expiresAt": "2026-09-26T00:00:00Z"
-            },
-            {
-              "$comment": "VEX-style import — falsePositive scoped to specific packages by purl. The affectedPackages array carries structured product identity instead of squeezing 'Products: …' into the reason free-text field.",
-              "type": "falsePositive",
-              "requirementId": "CVE-2026-12345",
-              "status": "notApplicable",
-              "reason": "Vulnerable code path is not present in our build — dependency compiled with the affected module disabled",
-              "justification": "vulnerable_code_not_present",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "secops@org.gov"
-              },
-              "appliedAt": "2026-05-01T10:00:00Z",
-              "expiresAt": "2027-05-01T00:00:00Z",
-              "affectedPackages": [
-                {
-                  "purl": "pkg:npm/lodash@4.17.20"
-                },
-                {
-                  "purl": "pkg:rpm/openssl@1.1.1k-2.el8",
-                  "fixedInVersion": "1.1.1k-3.el8"
-                }
-              ]
             }
           ],
+          "description": "A standalone amendment that modifies a requirement's compliance status and/or impact score. At least one of status or impact must be set. Extends the inline Override concept with requirementId and baselineRef for use outside of results documents.",
           "title": "Standalone Override"
         }
       }
@@ -2141,325 +2038,6 @@
           ],
           "description": "A labeled description for a requirement, such as fix text or check instructions.",
           "title": "Requirement Description"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.2.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.2.0",
-      "title": "HDF CVSS Primitives",
-      "description": "Types for representing CVSS (Common Vulnerability Scoring System) data attached to assessment findings. Supports CVSS v2.0, v3.0, v3.1, and v4.0 metric groups (Base, Threat, Environmental, Supplemental).",
-      "$defs": {
-        "Cvss_Severity": {
-          "type": "string",
-          "enum": [
-            "none",
-            "low",
-            "medium",
-            "high",
-            "critical"
-          ],
-          "description": "Qualitative CVSS severity band. Aligns with FIRST/NVD bands: none=0.0, low=0.1-3.9, medium=4.0-6.9, high=7.0-8.9, critical=9.0-10.0. Distinct from the broader Severity enum used on Requirement_Core (which includes 'informational').",
-          "title": "CVSS Severity"
-        },
-        "Cvss": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "version"
-          ],
-          "anyOf": [
-            {
-              "required": [
-                "baseScore"
-              ]
-            },
-            {
-              "required": [
-                "baseVector"
-              ]
-            },
-            {
-              "required": [
-                "threatVector"
-              ]
-            },
-            {
-              "required": [
-                "threatScore"
-              ]
-            },
-            {
-              "required": [
-                "environmentalVector"
-              ]
-            },
-            {
-              "required": [
-                "environmentalScore"
-              ]
-            },
-            {
-              "required": [
-                "supplementalVector"
-              ]
-            },
-            {
-              "required": [
-                "computedScore"
-              ]
-            }
-          ],
-          "$comment": "Only `version` is required; every metric/score field is optional because a single Cvss instance may represent vendor-supplied Base data (on a finding's cvss[]), consumer-supplied enrichment (on a riskAdjustment override — Environmental/Threat/Supplemental deltas with NO base, since base is the finding's scan-specific vendor data), or a fully-resolved effectiveCvss. The Base/Threat/Environmental/Supplemental groups do not partition cleanly into vendor-vs-consumer (Threat straddles: vendor temporal data and consumer exploit-maturity both live here), so a single permissive type is more honest than separate vendor/consumer types. The anyOf guardrail rejects a content-free object (e.g. {version} alone) by requiring at least one substantive metric or score. baseVector remains optional even when baseScore is present: some vendor tools (Twistlock/Prisma Cloud) emit a final score without the vector that derived it — that score is captured structurally rather than lost.",
-          "properties": {
-            "version": {
-              "type": "string",
-              "enum": [
-                "2.0",
-                "3.0",
-                "3.1",
-                "4.0"
-              ],
-              "description": "The CVSS specification version this entry conforms to. Vendor scanners typically emit 3.1 or 4.0; legacy data may use 2.0 or 3.0."
-            },
-            "source": {
-              "type": "string",
-              "description": "Optional identifier the CVSS data is associated with — most commonly a CVE ID (e.g., 'CVE-2024-12345'), but may also be a vendor advisory ID, GHSA, or similar.",
-              "examples": [
-                "CVE-2024-12345",
-                "GHSA-9hjg-9r4m-mvj7",
-                "RHSA-2024:0123"
-              ]
-            },
-            "baseVector": {
-              "type": "string",
-              "$comment": "Optional. Permissive umbrella pattern accepting any FIRST CVSS vector shape — version prefix is optional (CVSS 2.0 has no prefix), metric tokens are alphanumeric uppercase pairs separated by '/'. Strict per-version semantic validation belongs in a separate utility (hdf-utilities `validateCvssVector`), not in the schema. See https://www.first.org/cvss/v4.0/specification-document for the v4 grammar and earlier-version documents for v2/v3.",
-              "pattern": "^(CVSS:[234]\\.[01]/)?[A-Za-z]+:[A-Za-z]+(/[A-Za-z]+:[A-Za-z]+)*$",
-              "description": "Optional Base metric group vector string as emitted by the source (e.g., 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'). For CVSS 2.0 the version prefix is omitted. Some vendor tools emit a final baseScore without the vector — in that case this field is absent and the score cannot be recomputed or decomposed. The pattern accepts any version-prefixed or prefix-less metric token sequence; semantic validity of individual metrics is checked by hdf-utilities, not by the schema."
-            },
-            "baseScore": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10,
-              "description": "The Base score (0.0–10.0) computed from the base vector. Reflects the intrinsic, vendor-published severity before consumer enrichment."
-            },
-            "baseSeverity": {
-              "$ref": "#/$defs/Cvss_Severity",
-              "description": "Qualitative severity band corresponding to baseScore. CVSS 2.0 does not natively use 'none' or 'critical' bands; map accordingly when populating."
-            },
-            "threatVector": {
-              "type": "string",
-              "$comment": "Threat (formerly Temporal in v3.x) metric group. Consumer-side metrics: Exploit Maturity, Remediation Level, Report Confidence (v3 added E/RL/RC; v4 keeps E only). Same permissive grammar as baseVector but the CVSS version prefix is rarely repeated here.",
-              "pattern": "^(CVSS:[234]\\.[01]/)?[A-Za-z]+:[A-Za-z]+(/[A-Za-z]+:[A-Za-z]+)*$",
-              "description": "Optional Threat metric group vector segment (e.g., 'E:U/RL:O/RC:C' for CVSS 3.1, or 'E:A' for CVSS 4.0). Consumer-supplied — captures real-world exploitation and remediation context the vendor cannot know."
-            },
-            "threatScore": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10,
-              "description": "Optional score (0.0–10.0) recomputed after applying Threat metrics. Always less than or equal to baseScore in practice."
-            },
-            "environmentalVector": {
-              "type": "string",
-              "$comment": "Environmental metric group. Consumer-side: Modified Base metrics (MAV, MAC, MC, MI, MA, ...) plus Security Requirements (CR, IR, AR). Captures how a particular consumer's environment changes the impact of the vulnerability.",
-              "pattern": "^(CVSS:[234]\\.[01]/)?[A-Za-z]+:[A-Za-z]+(/[A-Za-z]+:[A-Za-z]+)*$",
-              "description": "Optional Environmental metric group vector segment (e.g., 'MAV:N/CR:H/IR:H/AR:H'). Consumer-supplied — reflects the deployment context (criticality, mitigations, network exposure)."
-            },
-            "environmentalScore": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10,
-              "description": "Optional score (0.0–10.0) recomputed after applying Environmental metrics."
-            },
-            "supplementalVector": {
-              "type": "string",
-              "$comment": "Supplemental metric group is unique to CVSS 4.0. It conveys context (Safety, Automatable, Recovery, Value Density, Vulnerability Response Effort, Provider Urgency) but by spec does NOT affect any score — purely informational.",
-              "pattern": "^(CVSS:[234]\\.[01]/)?[A-Za-z]+:[A-Za-z]+(/[A-Za-z]+:[A-Za-z]+)*$",
-              "description": "Optional Supplemental metric group vector segment (CVSS 4.0 only). Examples: 'S:P/AU:N/V:C/RE:M/U:Amber'. Per CVSS 4.0 spec, supplemental metrics convey additional context but have no impact on the computed score."
-            },
-            "computedScore": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 10,
-              "description": "Optional final score after combining Base + Threat + Environmental metrics. This is the score consumers should treat as authoritative for risk decisions when present."
-            },
-            "computedSeverity": {
-              "$ref": "#/$defs/Cvss_Severity",
-              "description": "Qualitative severity band corresponding to computedScore. Same band convention as baseSeverity."
-            }
-          },
-          "examples": [
-            {
-              "$comment": "Base-only: vendor-supplied CVSS 3.1 data exactly as a scanner (e.g., Nessus, Grype) would emit it. No consumer enrichment yet.",
-              "version": "3.1",
-              "source": "CVE-2024-12345",
-              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-              "baseScore": 9.8,
-              "baseSeverity": "critical"
-            },
-            {
-              "$comment": "Base + Threat: consumer added Exploit Maturity ('E:U' = Unproven) and Remediation Level ('RL:O' = Official Fix) to a HTTP/2 'Rapid Reset' DoS finding. Threat score drops from base 7.5 to 5.5.",
-              "version": "3.1",
-              "source": "CVE-2023-44487",
-              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
-              "baseScore": 7.5,
-              "baseSeverity": "high",
-              "threatVector": "E:U/RL:O/RC:C",
-              "threatScore": 5.5
-            },
-            {
-              "$comment": "Base + Environmental: consumer asserts the affected system is high-criticality (CR:H, IR:H, AR:H) AND network-reachable in their environment (MAV:N). Environmental score reflects deployment risk for the xz-utils backdoor.",
-              "version": "3.1",
-              "source": "CVE-2024-3094",
-              "baseVector": "CVSS:3.1/AV:L/AC:H/PR:H/UI:N/S:U/C:H/I:H/A:H",
-              "baseScore": 6.7,
-              "baseSeverity": "medium",
-              "environmentalVector": "MAV:N/CR:H/IR:H/AR:H",
-              "environmentalScore": 9,
-              "computedScore": 9,
-              "computedSeverity": "critical"
-            },
-            {
-              "$comment": "Full CVSS 4.0: vendor base + consumer threat (E:A = Attacked, exploits seen in the wild) + environmental (high CIA requirements) + supplemental context (S:P = present safety impact, AU:N = no autonomous spread, RE:M = moderate response effort) for the Fortinet FortiOS pre-auth RCE. computedScore reflects post-mitigation final risk.",
-              "version": "4.0",
-              "source": "CVE-2024-21762",
-              "baseVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
-              "baseScore": 9.8,
-              "baseSeverity": "critical",
-              "threatVector": "E:A",
-              "threatScore": 9.3,
-              "environmentalVector": "MAV:N/CR:H/IR:H/AR:H",
-              "environmentalScore": 9.5,
-              "supplementalVector": "S:P/AU:N/V:C/RE:M",
-              "computedScore": 4.2,
-              "computedSeverity": "medium"
-            },
-            {
-              "$comment": "CVSS 2.0 legacy: Heartbleed (CVE-2014-0160) as still reported by older scanner output and legacy NVD data. CVSS 2.0 vectors have no 'CVSS:2.0/' prefix.",
-              "version": "2.0",
-              "source": "CVE-2014-0160",
-              "baseVector": "AV:N/AC:L/Au:N/C:P/I:N/A:N",
-              "baseScore": 5,
-              "baseSeverity": "medium"
-            }
-          ],
-          "description": "A CVSS (Common Vulnerability Scoring System) score record for a vulnerability finding. Captures the vendor-supplied Base metric group and optional consumer-supplied Threat, Environmental, and Supplemental metric groups. Supports all four CVSS major versions (2.0, 3.0, 3.1, 4.0). Vector strings are validated against a permissive umbrella grammar; semantic validation (correct metrics per version, correct values per metric) is performed by the hdf-utilities `validateCvssVector` helper rather than at the schema layer.",
-          "title": "CVSS"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.2.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.2.0",
-      "title": "HDF Affected Package Primitives",
-      "description": "Types for representing the software package(s) affected by a vulnerability finding.",
-      "$defs": {
-        "Affected_Package": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "anyOf": [
-            {
-              "required": [
-                "name",
-                "version",
-                "ecosystem"
-              ]
-            },
-            {
-              "required": [
-                "purl"
-              ]
-            },
-            {
-              "required": [
-                "cpe"
-              ]
-            }
-          ],
-          "properties": {
-            "name": {
-              "type": "string",
-              "description": "The package name as published in its ecosystem. Examples: 'openssl' (rpm), 'lodash' (npm), 'org.apache.logging.log4j:log4j-core' (maven, group:artifact)."
-            },
-            "version": {
-              "type": "string",
-              "description": "The exact version of the package that the vulnerability scanner observed. Use the ecosystem's native version string verbatim (e.g., '1.1.1k-7.el8_4' for rpm, '4.17.20' for npm)."
-            },
-            "ecosystem": {
-              "type": "string",
-              "enum": [
-                "npm",
-                "pypi",
-                "rpm",
-                "deb",
-                "maven",
-                "gem",
-                "nuget",
-                "go",
-                "cargo",
-                "generic"
-              ],
-              "description": "The packaging ecosystem the package belongs to. Use 'generic' for hardware, firmware, or anything outside the listed language/OS package managers."
-            },
-            "cpe": {
-              "type": "string",
-              "pattern": "^cpe:2\\.3:[aho]:.*",
-              "description": "Optional CPE 2.3 URI identifying the affected product. Validated leniently: only the 'cpe:2.3:' prefix and the part-type letter ('a' application, 'h' hardware, 'o' operating system) are enforced here. Use `hdf-utilities.parseCpe` for full-grammar parsing. Example: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*'."
-            },
-            "purl": {
-              "type": "string",
-              "pattern": "^pkg:[A-Za-z0-9.+-]+/.+",
-              "description": "Optional Package URL (PURL) identifying the affected package. Validated leniently: only the 'pkg:TYPE/' scheme prefix is enforced here, where TYPE follows the PURL grammar (a letter followed by letters, digits, '.', '+', or '-') and is matched case-insensitively to mirror `hdf-utilities.parsePurl`'s accept-and-warn behavior. Use `parsePurl` for full PURL parsing. Example: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'."
-            },
-            "fixedInVersion": {
-              "type": "string",
-              "description": "Optional version string identifying the first release that contains the fix for the vulnerability. Use the same version syntax as `version`. Example: '1.1.1l' fixes 'openssl@1.1.1k'."
-            }
-          },
-          "examples": [
-            {
-              "$comment": "RPM ecosystem with full CPE + PURL — typical Grype/Trivy output for a RHEL host scan.",
-              "name": "openssl",
-              "version": "1.1.1k-7.el8_4",
-              "ecosystem": "rpm",
-              "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*",
-              "purl": "pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64",
-              "fixedInVersion": "1.1.1l"
-            },
-            {
-              "$comment": "NPM ecosystem with PURL only — the JavaScript world rarely emits CPEs; PURL is the canonical identifier.",
-              "name": "lodash",
-              "version": "4.17.20",
-              "ecosystem": "npm",
-              "purl": "pkg:npm/lodash@4.17.20",
-              "fixedInVersion": "4.17.21"
-            },
-            {
-              "$comment": "Minimal valid AffectedPackage — only the three required fields. Use when the scanner reports a package by name+version without emitting CPE or PURL strings.",
-              "name": "requests",
-              "version": "2.28.1",
-              "ecosystem": "pypi"
-            },
-            {
-              "$comment": "Maven ecosystem with full identifiers + fixedInVersion — log4j Log4Shell-style finding showing the patch path from vulnerable to fixed.",
-              "name": "org.apache.logging.log4j:log4j-core",
-              "version": "2.14.1",
-              "ecosystem": "maven",
-              "cpe": "cpe:2.3:a:apache:log4j:2.14.1:*:*:*:*:*:*:*",
-              "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
-              "fixedInVersion": "2.17.1"
-            },
-            {
-              "$comment": "purl-only — VEX import path where the source format gives a purl and we choose not to decompose it. Valid because purl encodes name/version/ecosystem implicitly.",
-              "purl": "pkg:npm/lodash@4.17.20"
-            },
-            {
-              "$comment": "cpe-only — NIST-flavored scopes where the consumer carries a CPE 2.3 string and no purl. Valid because cpe encodes vendor/product/version.",
-              "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*"
-            }
-          ],
-          "description": "Represents a package referenced by a vulnerability finding or by an amendment's scope. On Evaluated_Requirement.affectedPackages it says 'this CVE affects these package versions'. On Standalone_Override.affectedPackages it says 'this amendment is scoped to these packages' (used by VEX, OSCAL POA&M, FedRAMP component-aware amendments). NOT a system-level component identifier — see `components[]` on hdf-system for those. Validity requires at least one of: (name + version + ecosystem), purl alone, or cpe alone. purl and cpe are self-describing identifiers that encode name/version implicitly, so either may stand on its own; the name+version+ecosystem combination is the explicit form for sources without formal identifiers.",
-          "title": "Affected Package"
         }
       }
     }
