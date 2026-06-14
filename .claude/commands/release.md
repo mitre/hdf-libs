@@ -71,6 +71,23 @@ These edits are uniform across the workspace and safe to script. Use a small Pyt
 
 Use `git status` after the script run to spot-check no `node_modules`, `dist/`, or `.git/` paths got touched.
 
+### Phase 1.5 — Site archive: stage the new version's raw schema files
+
+The docs site at mitre.github.io/hdf-libs/ archives every released schema version under `site/public/schemas/<name>/v<X.Y.Z>/index.json`. The archive backs both the canonical `$id` URL (consumers fetching `.../schemas/hdf-amendments/v3.2.0/` get the right file forever) and the per-version rendered docs at `/v3.2.0/schemas/`. New version files for THIS release must be added to the archive as part of this commit.
+
+```bash
+# Rebuild bundled schemas at the new version
+cd hdf-schema && pnpm build:schemas && cd ..
+# Generator writes the current version's archive entries as a side effect
+cd site && pnpm generate && cd ..
+# Confirm the new files appear (7 schemas × 1 new version dir each)
+ls site/public/schemas/*/v$NEW/index.json
+# Stage them with the rest of the release commit
+git add 'site/public/schemas/*/v$NEW/'
+```
+
+If you forget this step, the archive 404s as soon as the next release ships and the rendered v$NEW snapshot is missing from the docs site. The site `pnpm exec vitepress build` smoke job in `ci.yml` won't catch this (it builds whatever's on disk locally) — only the post-deploy archive coverage suffers. Treat it as a release-time checklist item.
+
 ### Phase 2 — Current-version doc sweep
 
 These claims are not URL-pattern uniform — they're prose ("All schemas are at vX") or pedagogical examples. Each must be inspected. Verified targets:
@@ -156,6 +173,7 @@ If anything lags, surface it; don't paper over.
 - [ ] 10 `package.json` files at NEW
 - [ ] 7 schema `$id` URLs at NEW
 - [ ] 5 `go.mod` files: every `hdf-libs/<x>/v3 vNEW` (no stragglers)
+- [ ] 7 new archive files staged: `site/public/schemas/<name>/vNEW/index.json` (one per main schema). `cd site && pnpm generate` writes them; `git add 'site/public/schemas/*/vNEW/'` stages them. See Phase 1.5.
 - [ ] Root `README.md` current-version claims updated
 - [ ] `docs/specification/hdf-specification.md`: title + version metadata + 6 `Schema ID` URLs + new-field rows in every affected requirement/type table
 - [ ] `docs/design/developer-guide.md` `$ref` URI pattern at NEW

@@ -86,9 +86,12 @@ for (const name of MAIN_SCHEMAS) {
 
   // Per-version archive write for the current version. (Historical
   // versions are written by site/seed-archive.mjs; we don't touch them.)
+  // Trailing newline matches the seed-archive.mjs write pattern so the
+  // archive byte-format is consistent regardless of which writer produced it.
   const archiveDir = path.join(PUBLIC_DIR, name, version);
   fs.mkdirSync(archiveDir, { recursive: true });
-  fs.writeFileSync(path.join(archiveDir, 'index.json'), raw);
+  const archiveJson = raw.endsWith('\n') ? raw : raw + '\n';
+  fs.writeFileSync(path.join(archiveDir, 'index.json'), archiveJson);
 
   currentSchemas.push({ name, schema, version });
 }
