@@ -17,8 +17,22 @@ import (
 func TestEvidenceBuildBasic(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	systemDoc := `{"name": "test-system", "components": []}`
-	resultsDoc := `{"baselines": [], "platform": {}, "statistics": {}, "version": "2.0"}`
+	systemDoc := `{"name": "test-system", "components": [{"name": "WebTier", "type": "application", "baselineRefs": ["RHEL9-STIG"]}]}`
+	resultsDoc := `{
+		"baselines": [{
+			"name": "B1",
+			"integrity": {"algorithm": "sha256", "checksum": "abc"},
+			"requirements": [{
+				"id": "REQ-1",
+				"impact": 0.5,
+				"tags": {},
+				"descriptions": [{"label": "default", "data": "x"}],
+				"results": [{"status": "passed", "codeDesc": "ok", "startTime": "2026-01-01T00:00:00Z"}]
+			}]
+		}],
+		"components": [],
+		"statistics": {}
+	}`
 
 	systemPath := filepath.Join(tmpDir, "system.json")
 	resultsPath := filepath.Join(tmpDir, "results.json")
@@ -108,10 +122,27 @@ func TestEvidenceBuildBasic(t *testing.T) {
 func TestEvidenceBuildWithOptionalDocs(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	systemDoc := `{"name": "my-system"}`
+	systemDoc := `{"name": "my-system", "components": [{"name": "WebTier", "type": "application", "baselineRefs": ["RHEL9-STIG"]}]}`
 	resultsDoc := noTargetsJSON
-	amendDoc := `{"amendments": []}`
-	compDoc := `{"comparison": {}}`
+	amendDoc := `{
+		"name": "test-amend",
+		"overrides": [{
+			"type": "waiver",
+			"requirementId": "REQ-1",
+			"status": "notApplicable",
+			"reason": "test",
+			"appliedBy": {"type": "username", "identifier": "tester"},
+			"appliedAt": "2026-01-01T00:00:00Z",
+			"expiresAt": "2027-01-01T00:00:00Z"
+		}]
+	}`
+	compDoc := `{
+		"formatVersion": "1.0.0",
+		"comparisonMode": "temporal",
+		"sources": [{"role": "old", "label": "a"}, {"role": "new", "label": "b"}],
+		"summary": {"total": 0, "matchedCount": 0, "unmatchedOldCount": 0, "unmatchedNewCount": 0},
+		"requirementDiffs": []
+	}`
 
 	systemPath := filepath.Join(tmpDir, "system.json")
 	resultsPath := filepath.Join(tmpDir, "results.json")
@@ -150,10 +181,12 @@ func TestEvidenceBuildWithOptionalDocs(t *testing.T) {
 	assert.Equal(t, []string{"hdf-system", "hdf-results", "hdf-amendments", "hdf-comparison"}, types)
 }
 
-func TestEvidenceBuildUnnamedSystem(t *testing.T) {
+func TestEvidenceBuildRejectsUnnamedSystem(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// System doc without a "name" field
+	// System doc without a "name" field — schema requires name + components.
+	// Confirms the input validation gate rejects the doc before the
+	// "unnamed-system" fallback is reached.
 	systemDoc := `{"components": []}`
 	resultsDoc := noTargetsJSON
 
@@ -163,15 +196,12 @@ func TestEvidenceBuildUnnamedSystem(t *testing.T) {
 	require.NoError(t, os.WriteFile(systemPath, []byte(systemDoc), 0o600))
 	require.NoError(t, os.WriteFile(resultsPath, []byte(resultsDoc), 0o600))
 
-	stdout, _, err := executeCommand("evidence", "build",
+	_, _, err := executeCommand("evidence", "build",
 		"--system", systemPath,
 		"--results", resultsPath,
 	)
-	require.NoError(t, err)
-
-	var pkg map[string]interface{}
-	require.NoError(t, json.Unmarshal([]byte(stdout), &pkg))
-	assert.Equal(t, "unnamed-system-evidence-package", pkg["name"])
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid system document")
 }
 
 func TestEvidenceBuildAmendmentMissing(t *testing.T) {
@@ -878,8 +908,22 @@ func TestEvidenceVerifyNoPackageName(t *testing.T) {
 func TestEvidenceBuildVerifyRoundTrip(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	systemDoc := `{"name": "roundtrip-system"}`
-	resultsDoc := `{"baselines": [{"name": "b1", "requirements": [{"results": [{"status": "passed"}]}]}]}`
+	systemDoc := `{"name": "roundtrip-system", "components": [{"name": "WebTier", "type": "application", "baselineRefs": ["RHEL9-STIG"]}]}`
+	resultsDoc := `{
+		"baselines": [{
+			"name": "b1",
+			"integrity": {"algorithm": "sha256", "checksum": "abc"},
+			"requirements": [{
+				"id": "REQ-1",
+				"impact": 0.5,
+				"tags": {},
+				"descriptions": [{"label": "default", "data": "x"}],
+				"results": [{"status": "passed", "codeDesc": "ok", "startTime": "2026-01-01T00:00:00Z"}]
+			}]
+		}],
+		"components": [],
+		"statistics": {}
+	}`
 
 	systemPath := filepath.Join(tmpDir, "system.json")
 	resultsPath := filepath.Join(tmpDir, "results.json")

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func ptrFloat(f float64) *float64        { return &f }
-func ptrStr(s string) *string            { return &s }
+func ptrFloat(f float64) *float64           { return &f }
+func ptrStr(s string) *string               { return &s }
 func ptrEco(e hdf.Ecosystem) *hdf.Ecosystem { return &e }
 
 // withCveStruct installs structured CVE-ecosystem data (cvss[], epss, kev,

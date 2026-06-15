@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
   parseResults,
   parseBaseline,
+  parseSystem,
+  parsePlan,
+  parseEvidencePackage,
+  parseComparison,
   parse,
   normalizeTimestamps
 } from './index.js';
@@ -578,5 +582,161 @@ describe('parseResults accepts InSpec no-tz timestamps', () => {
     const result = parseResults(input);
     expect(result.success, `expected success, got error: ${result.error}`).toBe(true);
     expect(result.data).toBeDefined();
+  });
+});
+
+// Minimal valid fixtures — match the Go-side const fixtures in parsers_test.go.
+const validSystemJSON = JSON.stringify({
+  systemId: 'aaaaaaaa-1111-2222-3333-444444444444',
+  name: 'Portal Prod',
+  components: [{ name: 'WebTier', type: 'application', baselineRefs: ['RHEL9-STIG'] }],
+});
+
+const validPlanJSON = JSON.stringify({
+  name: 'portal-prod-assessment-plan',
+  planId: '4737569f-8bb5-49b1-8e3a-3586a88d092e',
+  type: 'automated',
+  systemRef: '/tmp/system.json',
+  createdAt: '2026-03-31T02:19:54Z',
+  generator: { name: 'hdf-cli', version: 'dev' },
+  assessments: [{ baselineRef: 'RHEL9-STIG' }],
+});
+
+const validEvidencePackageJSON = JSON.stringify({
+  name: 'Portal Prod Q1 Evidence',
+  systemRef: 'system.json',
+  planRef: 'plan.json',
+  contents: [
+    {
+      type: 'hdf-system',
+      uri: 'system.json',
+      checksum: {
+        algorithm: 'sha256',
+        value: 'f25bcb45fcb364b927a3023e4fc3cae91f4ed98b3325234fe70e1360dde61255',
+      },
+    },
+  ],
+});
+
+const validComparisonJSON = JSON.stringify({
+  formatVersion: '1.0.0',
+  comparisonMode: 'temporal',
+  sources: [
+    { role: 'old', label: 'Before scan' },
+    { role: 'new', label: 'After scan' },
+  ],
+  summary: { total: 0, matchedCount: 0, unmatchedOldCount: 0, unmatchedNewCount: 0 },
+  requirementDiffs: [],
+});
+
+describe('parseSystem', () => {
+  it('parses a minimal valid system', () => {
+    const result = parseSystem(validSystemJSON);
+    expect(result.success, `error: ${result.error}`).toBe(true);
+    expect(result.data?.name).toBe('Portal Prod');
+    expect(result.data?.components).toHaveLength(1);
+  });
+  it('rejects empty input', () => {
+    expect(parseSystem('').success).toBe(false);
+  });
+  it('rejects missing components', () => {
+    const result = parseSystem(JSON.stringify({ name: 'x' }));
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/components/);
+  });
+  it('rejects invalid JSON', () => {
+    expect(parseSystem('{ not valid }').success).toBe(false);
+  });
+});
+
+describe('parsePlan', () => {
+  it('parses a minimal valid plan', () => {
+    const result = parsePlan(validPlanJSON);
+    expect(result.success, `error: ${result.error}`).toBe(true);
+    expect(result.data?.name).toBe('portal-prod-assessment-plan');
+    expect(result.data?.assessments).toHaveLength(1);
+  });
+  it('rejects empty input', () => {
+    expect(parsePlan('').success).toBe(false);
+  });
+  it('rejects missing assessments', () => {
+    const result = parsePlan(JSON.stringify({ name: 'x' }));
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/assessments/);
+  });
+  it('rejects invalid JSON', () => {
+    expect(parsePlan('{ not valid }').success).toBe(false);
+  });
+});
+
+describe('parseEvidencePackage', () => {
+  it('parses a minimal valid evidence package', () => {
+    const result = parseEvidencePackage(validEvidencePackageJSON);
+    expect(result.success, `error: ${result.error}`).toBe(true);
+    expect(result.data?.name).toBe('Portal Prod Q1 Evidence');
+    expect(result.data?.contents).toHaveLength(1);
+  });
+  it('rejects empty input', () => {
+    expect(parseEvidencePackage('').success).toBe(false);
+  });
+  it('rejects missing contents', () => {
+    const result = parseEvidencePackage(JSON.stringify({ name: 'x' }));
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/contents/);
+  });
+  it('rejects invalid JSON', () => {
+    expect(parseEvidencePackage('{ not valid }').success).toBe(false);
+  });
+});
+
+describe('parseComparison', () => {
+  it('parses a minimal valid comparison', () => {
+    const result = parseComparison(validComparisonJSON);
+    expect(result.success, `error: ${result.error}`).toBe(true);
+    expect(result.data?.sources).toHaveLength(2);
+  });
+  it('rejects empty input', () => {
+    expect(parseComparison('').success).toBe(false);
+  });
+  it('rejects missing requirementDiffs', () => {
+    const result = parseComparison(
+      JSON.stringify({
+        formatVersion: '1.0.0',
+        comparisonMode: 'temporal',
+        sources: [
+          { role: 'old', label: 'a' },
+          { role: 'new', label: 'b' },
+        ],
+        summary: { total: 0, matchedCount: 0, unmatchedOldCount: 0, unmatchedNewCount: 0 },
+      }),
+    );
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/requirementDiffs/);
+  });
+  it('rejects invalid JSON', () => {
+    expect(parseComparison('{ not valid }').success).toBe(false);
+  });
+});
+
+describe('parse() auto-detection for new doc types', () => {
+  it('detects system', () => {
+    const result = parse(validSystemJSON);
+    expect(result.success, `error: ${result.error}`).toBe(true);
+    expect(result.type).toBe('system');
+  });
+  it('detects plan', () => {
+    const result = parse(validPlanJSON);
+    expect(result.success, `error: ${result.error}`).toBe(true);
+    expect(result.type).toBe('plan');
+  });
+  it('detects evidence package', () => {
+    const result = parse(validEvidencePackageJSON);
+    expect(result.success, `error: ${result.error}`).toBe(true);
+    expect(result.type).toBe('evidencePackage');
+  });
+  it('detects comparison', () => {
+    const result = parse(validComparisonJSON);
+    expect(result.success, `error: ${result.error}`).toBe(true);
+    expect(result.type).toBe('comparison');
   });
 });

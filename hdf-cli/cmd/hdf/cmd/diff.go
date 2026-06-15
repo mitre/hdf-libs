@@ -550,6 +550,11 @@ func outputDiffJSON(result diffResult) error {
 	if err != nil {
 		return err
 	}
+	// NOTE: validateHDFOutput is intentionally NOT called here. The CLI's
+	// diff JSON uses field names matching hdf-comparison but several shapes
+	// drift from the schema (componentDiffs holds per-component summaries
+	// without a `state` field; nil arrays serialize as `null` instead of
+	// `[]`). See follow-up bead for the schema-conformance work.
 	fmt.Println(string(output))
 	return nil
 }

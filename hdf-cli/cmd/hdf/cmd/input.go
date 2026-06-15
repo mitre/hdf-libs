@@ -161,6 +161,53 @@ func parseHDFBaseline(data []byte) (hdf.HDFBaseline, error) {
 	return *r.Data, nil
 }
 
+// Most CLI consumers of System/Plan/EvidencePackage/Comparison docs still
+// edit them as map[string]interface{}; they call the parseHDF* gate to
+// validate and discard the typed struct. Available typed for any future
+// caller that wants it.
+func parseHDFSystem(data []byte) (hdf.HDFSystem, error) {
+	r := hdfparsers.ParseSystem(data)
+	if !r.Success {
+		return hdf.HDFSystem{}, errors.New(translateParserError(r.Error))
+	}
+	return *r.Data, nil
+}
+
+// Plan/EvidencePackage/Comparison reads currently flow through
+// runGenericDocSet → validateHDFOutput (auto-detect by root keys), so these
+// typed helpers are not yet called from anywhere. They are kept so future
+// callers wanting typed-struct access don't have to re-derive the schema
+// gate — same shape as parseHDFResults / parseHDFBaseline.
+var (
+	_ = parseHDFPlan
+	_ = parseHDFEvidencePackage
+	_ = parseHDFComparison
+)
+
+func parseHDFPlan(data []byte) (hdf.HDFPlan, error) {
+	r := hdfparsers.ParsePlan(data)
+	if !r.Success {
+		return hdf.HDFPlan{}, errors.New(translateParserError(r.Error))
+	}
+	return *r.Data, nil
+}
+
+func parseHDFEvidencePackage(data []byte) (hdf.HDFEvidencePackage, error) {
+	r := hdfparsers.ParseEvidencePackage(data)
+	if !r.Success {
+		return hdf.HDFEvidencePackage{}, errors.New(translateParserError(r.Error))
+	}
+	return *r.Data, nil
+}
+
+func parseHDFComparison(data []byte) (hdf.HDFComparison, error) {
+	r := hdfparsers.ParseComparison(data)
+	if !r.Success {
+		return hdf.HDFComparison{}, errors.New(translateParserError(r.Error))
+	}
+	return *r.Data, nil
+}
+
 // translateParserError rewrites hdf-parsers' error strings into the CLI's
 // existing lowercase phrasing so user-facing messages stay consistent
 // across every CLI command and existing test assertions keep working.

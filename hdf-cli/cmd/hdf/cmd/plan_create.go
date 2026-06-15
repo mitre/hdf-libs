@@ -83,6 +83,10 @@ func runPlanCreateFromSystem(systemFile, planID, outputPath string) error {
 		return fmt.Errorf("failed to read system file: %w", err)
 	}
 
+	if _, err := parseHDFSystem(data); err != nil {
+		return fmt.Errorf("invalid system document: %w", err)
+	}
+
 	var sysDoc map[string]interface{}
 	if err := json.Unmarshal(data, &sysDoc); err != nil {
 		return fmt.Errorf("failed to parse system document: %w", err)
@@ -149,6 +153,10 @@ func writePlanOutput(plan map[string]interface{}, outputPath string) error {
 	output, err := json.MarshalIndent(plan, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize plan: %w", err)
+	}
+
+	if err := validateHDFOutput(output); err != nil {
+		return fmt.Errorf("generated plan is invalid: %w", err)
 	}
 
 	if outputPath == "" {

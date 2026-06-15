@@ -54,24 +54,58 @@ func validateHDFOutput(data []byte) error {
 		if !result.Valid {
 			return fmt.Errorf("output failed HDF Amendments schema validation: %s", result.Error())
 		}
+	case "system":
+		result := validators.ValidateSystem(data)
+		if !result.Valid {
+			return fmt.Errorf("output failed HDF System schema validation: %s", result.Error())
+		}
+	case "plan":
+		result := validators.ValidatePlan(data)
+		if !result.Valid {
+			return fmt.Errorf("output failed HDF Plan schema validation: %s", result.Error())
+		}
+	case "evidencePackage":
+		result := validators.ValidateEvidencePackage(data)
+		if !result.Valid {
+			return fmt.Errorf("output failed HDF Evidence Package schema validation: %s", result.Error())
+		}
+	case "comparison":
+		result := validators.ValidateComparison(data)
+		if !result.Valid {
+			return fmt.Errorf("output failed HDF Comparison schema validation: %s", result.Error())
+		}
 	}
 	return nil
 }
 
-// detectHDFDocType inspects the top-level JSON shape: `baselines[]` -> results;
-// `overrides[]` -> amendments; `requirements[]` -> baseline. ok=false otherwise.
+// detectHDFDocType inspects the top-level JSON shape. Each HDF doc type
+// has a uniquely-named required key after `name`/`baselines`, so probing
+// for that key disambiguates without ambiguity. Ordered most-distinctive
+// first to handle hybrid documents safely.
 func detectHDFDocType(data []byte) (string, bool) {
 	var probe map[string]json.RawMessage
 	if err := json.Unmarshal(data, &probe); err != nil {
 		return "", false
 	}
-	if _, hasBaselines := probe["baselines"]; hasBaselines {
+	if _, has := probe["requirementDiffs"]; has {
+		return "comparison", true
+	}
+	if _, has := probe["baselines"]; has {
 		return "results", true
 	}
-	if _, hasOverrides := probe["overrides"]; hasOverrides {
+	if _, has := probe["overrides"]; has {
 		return "amendments", true
 	}
-	if _, hasRequirements := probe["requirements"]; hasRequirements {
+	if _, has := probe["assessments"]; has {
+		return "plan", true
+	}
+	if _, has := probe["components"]; has {
+		return "system", true
+	}
+	if _, has := probe["contents"]; has {
+		return "evidencePackage", true
+	}
+	if _, has := probe["requirements"]; has {
 		return "baseline", true
 	}
 	return "", false

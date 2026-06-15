@@ -12,6 +12,6 @@
     "@mitre/hdf-schema": "workspace:^"
   },
   "devDependencies": {
-    "vitepress": "^1.6.3"
+    "vitepress": "^1.6.4"
   }
 }

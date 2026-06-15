@@ -108,6 +108,9 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 	if err != nil {
 		return fmt.Errorf("failed to re-read system file: %w", err)
 	}
+	if _, err := parseHDFSystem(sysData); err != nil {
+		return fmt.Errorf("invalid system document: %w", err)
+	}
 	var sysDoc map[string]interface{}
 	_ = json.Unmarshal(sysData, &sysDoc)
 	sysName, _ := sysDoc["name"].(string)
@@ -129,6 +132,10 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 	output, err := json.MarshalIndent(pkg, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize evidence package: %w", err)
+	}
+
+	if err := validateHDFOutput(output); err != nil {
+		return fmt.Errorf("generated evidence package is invalid: %w", err)
 	}
 
 	if outputPath == "" {

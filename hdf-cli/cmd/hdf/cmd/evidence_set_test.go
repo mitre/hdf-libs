@@ -13,7 +13,11 @@ import (
 
 const testEvidencePackage = `{
 	"name": "Test Evidence",
-	"contents": [{"type": "results", "uri": "results.json"}]
+	"contents": [{
+		"type": "hdf-results",
+		"uri": "results.json",
+		"checksum": {"algorithm": "sha256", "value": "f25bcb45fcb364b927a3023e4fc3cae91f4ed98b3325234fe70e1360dde61255"}
+	}]
 }`
 
 func writeTestEvidence(t *testing.T) string {

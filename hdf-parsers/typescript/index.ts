@@ -1,7 +1,22 @@
-import type { HDFResults, HDFBaseline } from '@mitre/hdf-schema';
+import type {
+  HDFResults,
+  HDFBaseline,
+  HDFSystem,
+  HDFPlan,
+  HDFEvidencePackage,
+  HDFComparison,
+} from '@mitre/hdf-schema';
 export { flattenOverlays } from './flatten.js';
 export type { FlattenResult, FlattenMetadata, BaselineMerge } from './flatten.js';
-import { validateResults, validateBaseline, validate as autoValidate } from '@mitre/hdf-validators';
+import {
+  validateResults,
+  validateBaseline,
+  validateSystem,
+  validatePlan,
+  validateEvidencePackage,
+  validateComparison,
+  validate as autoValidate,
+} from '@mitre/hdf-validators';
 
 // JSON-quoted ISO 8601 timestamp with no trailing timezone — InSpec emits
 // these (e.g. "2026-03-25T22:56:27.736808"). ajv-formats requires RFC 3339
@@ -25,7 +40,7 @@ export interface ParseResult<T> {
   success: boolean;
   data?: T;
   error?: string;
-  type?: 'results' | 'baseline';
+  type?: 'results' | 'baseline' | 'system' | 'plan' | 'evidencePackage' | 'comparison';
 }
 
 /**
@@ -126,12 +141,69 @@ export function parseBaseline(input: string | Uint8Array): ParseResult<HDFBaseli
   };
 }
 
+function parseJsonStrict<T>(
+  input: string | Uint8Array,
+  validate: (data: unknown) => { valid: boolean; getErrorMessage(): string },
+): ParseResult<T> {
+  const decoded = typeof input === 'string' ? input : new TextDecoder().decode(input);
+  const jsonStr = normalizeTimestamps(decoded);
+  if (jsonStr.trim().length === 0) {
+    return { success: false, error: 'Input is empty' };
+  }
+  let data: unknown;
+  try {
+    data = JSON.parse(jsonStr);
+  } catch (err) {
+    return {
+      success: false,
+      error: `Invalid JSON: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+  const v = validate(data);
+  if (!v.valid) {
+    return { success: false, error: `Schema validation failed: ${v.getErrorMessage()}` };
+  }
+  return { success: true, data: data as T };
+}
+
+/**
+ * Parse HDF System document. Mirrors parseResults/parseBaseline.
+ */
+export function parseSystem(input: string | Uint8Array): ParseResult<HDFSystem> {
+  return parseJsonStrict<HDFSystem>(input, validateSystem);
+}
+
+/**
+ * Parse HDF Plan document. Mirrors parseResults/parseBaseline.
+ */
+export function parsePlan(input: string | Uint8Array): ParseResult<HDFPlan> {
+  return parseJsonStrict<HDFPlan>(input, validatePlan);
+}
+
+/**
+ * Parse HDF Evidence Package document. Mirrors parseResults/parseBaseline.
+ */
+export function parseEvidencePackage(
+  input: string | Uint8Array,
+): ParseResult<HDFEvidencePackage> {
+  return parseJsonStrict<HDFEvidencePackage>(input, validateEvidencePackage);
+}
+
+/**
+ * Parse HDF Comparison document. Mirrors parseResults/parseBaseline.
+ */
+export function parseComparison(input: string | Uint8Array): ParseResult<HDFComparison> {
+  return parseJsonStrict<HDFComparison>(input, validateComparison);
+}
+
 /**
  * Parse HDF document with auto-detection of type
  * @param input - JSON string or Uint8Array to parse
  * @returns ParseResult with parsed data, type indicator, or error
  */
-export function parse(input: string | Uint8Array): ParseResult<HDFResults | HDFBaseline> {
+export function parse(
+  input: string | Uint8Array,
+): ParseResult<HDFResults | HDFBaseline | HDFSystem | HDFPlan | HDFEvidencePackage | HDFComparison> {
   // Convert Uint8Array to string if needed
   const decoded = typeof input === 'string' ? input : new TextDecoder().decode(input);
   const jsonStr = normalizeTimestamps(decoded);
@@ -167,26 +239,31 @@ export function parse(input: string | Uint8Array): ParseResult<HDFResults | HDFB
     };
   }
 
-  // Determine type based on structure
+  // Determine type by the uniquely-named second required key on each schema
+  // (components→system, assessments→plan, requirementDiffs→comparison, etc.).
+  // Mirrors hdf-parsers/go/parsers.go Parse().
   if (typeof data === 'object' && data !== null) {
     const obj = data as Record<string, unknown>;
 
-    // HDF Results has 'baselines' array at root
-    if ('baselines' in obj) {
-      return {
-        success: true,
-        data: data as HDFResults,
-        type: 'results'
-      };
+    if ('requirementDiffs' in obj) {
+      return { success: true, data: data as HDFComparison, type: 'comparison' };
     }
-
-    // HDF Baseline has 'name' and 'requirements' at root
-    if ('name' in obj && 'requirements' in obj) {
-      return {
-        success: true,
-        data: data as HDFBaseline,
-        type: 'baseline'
-      };
+    if ('baselines' in obj) {
+      return { success: true, data: data as HDFResults, type: 'results' };
+    }
+    if ('name' in obj) {
+      if ('requirements' in obj) {
+        return { success: true, data: data as HDFBaseline, type: 'baseline' };
+      }
+      if ('components' in obj) {
+        return { success: true, data: data as HDFSystem, type: 'system' };
+      }
+      if ('assessments' in obj) {
+        return { success: true, data: data as HDFPlan, type: 'plan' };
+      }
+      if ('contents' in obj) {
+        return { success: true, data: data as HDFEvidencePackage, type: 'evidencePackage' };
+      }
     }
   }
 

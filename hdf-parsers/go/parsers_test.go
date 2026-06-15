@@ -244,6 +244,156 @@ func TestParseBaseline_Invalid(t *testing.T) {
 	})
 }
 
+// Minimal valid fixtures for the non-Results doc types. The CLI consumes
+// these shapes via the new ParseSystem/ParsePlan/ParseEvidencePackage/
+// ParseComparison entry points; tests pin the success path + the most-
+// likely-to-regress failure mode for each (empty input, missing required
+// root key, schema-invalid sub-shape).
+const validSystemJSON = `{
+	"systemId": "aaaaaaaa-1111-2222-3333-444444444444",
+	"name": "Portal Prod",
+	"components": [
+		{"name": "WebTier", "type": "application", "baselineRefs": ["RHEL9-STIG"]}
+	]
+}`
+
+const validPlanJSON = `{
+	"name": "portal-prod-assessment-plan",
+	"planId": "4737569f-8bb5-49b1-8e3a-3586a88d092e",
+	"type": "automated",
+	"systemRef": "/tmp/system.json",
+	"createdAt": "2026-03-31T02:19:54Z",
+	"generator": {"name": "hdf-cli", "version": "dev"},
+	"assessments": [{"baselineRef": "RHEL9-STIG"}]
+}`
+
+const validEvidencePackageJSON = `{
+	"name": "Portal Prod Q1 Evidence",
+	"systemRef": "system.json",
+	"planRef": "plan.json",
+	"contents": [
+		{
+			"type": "hdf-system",
+			"uri": "system.json",
+			"checksum": {"algorithm": "sha256", "value": "f25bcb45fcb364b927a3023e4fc3cae91f4ed98b3325234fe70e1360dde61255"}
+		}
+	]
+}`
+
+const validComparisonJSON = `{
+	"formatVersion": "1.0.0",
+	"comparisonMode": "temporal",
+	"sources": [
+		{"role": "old", "label": "Before scan"},
+		{"role": "new", "label": "After scan"}
+	],
+	"summary": {"total": 0, "matchedCount": 0, "unmatchedOldCount": 0, "unmatchedNewCount": 0},
+	"requirementDiffs": []
+}`
+
+func TestParseSystem(t *testing.T) {
+	t.Run("parses minimal valid system", func(t *testing.T) {
+		result := ParseSystem([]byte(validSystemJSON))
+		assert.True(t, result.Success, "error: %s", result.Error)
+		assert.NotNil(t, result.Data)
+		assert.Equal(t, "Portal Prod", result.Data.Name)
+		assert.Len(t, result.Data.Components, 1)
+	})
+	t.Run("rejects empty input", func(t *testing.T) {
+		result := ParseSystem([]byte(""))
+		assert.False(t, result.Success)
+		assert.NotEmpty(t, result.Error)
+	})
+	t.Run("rejects missing components", func(t *testing.T) {
+		result := ParseSystem([]byte(`{"name": "x"}`))
+		assert.False(t, result.Success)
+		assert.Contains(t, result.Error, "components")
+	})
+	t.Run("rejects invalid JSON", func(t *testing.T) {
+		result := ParseSystem([]byte(`{ not valid }`))
+		assert.False(t, result.Success)
+	})
+	t.Run("rejects trailing garbage", func(t *testing.T) {
+		// Schema validator + JSON decoder paths both reject this, but the
+		// outcome only needs to be: not Success.
+		result := ParseSystem([]byte(validSystemJSON + "{}"))
+		assert.False(t, result.Success)
+	})
+}
+
+func TestParsePlan(t *testing.T) {
+	t.Run("parses minimal valid plan", func(t *testing.T) {
+		result := ParsePlan([]byte(validPlanJSON))
+		assert.True(t, result.Success, "error: %s", result.Error)
+		assert.NotNil(t, result.Data)
+		assert.Equal(t, "portal-prod-assessment-plan", result.Data.Name)
+		assert.Len(t, result.Data.Assessments, 1)
+	})
+	t.Run("rejects empty input", func(t *testing.T) {
+		result := ParsePlan([]byte(""))
+		assert.False(t, result.Success)
+	})
+	t.Run("rejects missing assessments", func(t *testing.T) {
+		result := ParsePlan([]byte(`{"name": "x"}`))
+		assert.False(t, result.Success)
+		assert.Contains(t, result.Error, "assessments")
+	})
+	t.Run("rejects invalid JSON", func(t *testing.T) {
+		result := ParsePlan([]byte(`{ not valid }`))
+		assert.False(t, result.Success)
+	})
+}
+
+func TestParseEvidencePackage(t *testing.T) {
+	t.Run("parses minimal valid evidence package", func(t *testing.T) {
+		result := ParseEvidencePackage([]byte(validEvidencePackageJSON))
+		assert.True(t, result.Success, "error: %s", result.Error)
+		assert.NotNil(t, result.Data)
+		assert.Equal(t, "Portal Prod Q1 Evidence", result.Data.Name)
+		assert.Len(t, result.Data.Contents, 1)
+	})
+	t.Run("rejects empty input", func(t *testing.T) {
+		result := ParseEvidencePackage([]byte(""))
+		assert.False(t, result.Success)
+	})
+	t.Run("rejects missing contents", func(t *testing.T) {
+		result := ParseEvidencePackage([]byte(`{"name": "x"}`))
+		assert.False(t, result.Success)
+		assert.Contains(t, result.Error, "contents")
+	})
+	t.Run("rejects invalid JSON", func(t *testing.T) {
+		result := ParseEvidencePackage([]byte(`{ not valid }`))
+		assert.False(t, result.Success)
+	})
+}
+
+func TestParseComparison(t *testing.T) {
+	t.Run("parses minimal valid comparison", func(t *testing.T) {
+		result := ParseComparison([]byte(validComparisonJSON))
+		assert.True(t, result.Success, "error: %s", result.Error)
+		assert.NotNil(t, result.Data)
+		assert.Len(t, result.Data.Sources, 2)
+	})
+	t.Run("rejects empty input", func(t *testing.T) {
+		result := ParseComparison([]byte(""))
+		assert.False(t, result.Success)
+	})
+	t.Run("rejects missing requirementDiffs", func(t *testing.T) {
+		result := ParseComparison([]byte(`{
+			"formatVersion": "1.0.0",
+			"comparisonMode": "temporal",
+			"sources": [{"role":"old","label":"a"},{"role":"new","label":"b"}],
+			"summary": {"total":0,"matchedCount":0,"unmatchedOldCount":0,"unmatchedNewCount":0}
+		}`))
+		assert.False(t, result.Success)
+		assert.Contains(t, result.Error, "requirementDiffs")
+	})
+	t.Run("rejects invalid JSON", func(t *testing.T) {
+		result := ParseComparison([]byte(`{ not valid }`))
+		assert.False(t, result.Success)
+	})
+}
+
 func TestParse_AutoDetection(t *testing.T) {
 	t.Run("should auto-detect and parse HDF Results", func(t *testing.T) {
 		resultsJSON := []byte(`{
@@ -288,6 +438,30 @@ func TestParse_AutoDetection(t *testing.T) {
 		assert.True(t, result.Success)
 		assert.Equal(t, "baseline", result.Type)
 		assert.NotNil(t, result.Data)
+	})
+
+	t.Run("should auto-detect and parse HDF System", func(t *testing.T) {
+		result := Parse([]byte(validSystemJSON))
+		assert.True(t, result.Success, "error: %s", result.Error)
+		assert.Equal(t, "system", result.Type)
+	})
+
+	t.Run("should auto-detect and parse HDF Plan", func(t *testing.T) {
+		result := Parse([]byte(validPlanJSON))
+		assert.True(t, result.Success, "error: %s", result.Error)
+		assert.Equal(t, "plan", result.Type)
+	})
+
+	t.Run("should auto-detect and parse HDF Evidence Package", func(t *testing.T) {
+		result := Parse([]byte(validEvidencePackageJSON))
+		assert.True(t, result.Success, "error: %s", result.Error)
+		assert.Equal(t, "evidencePackage", result.Type)
+	})
+
+	t.Run("should auto-detect and parse HDF Comparison", func(t *testing.T) {
+		result := Parse([]byte(validComparisonJSON))
+		assert.True(t, result.Success, "error: %s", result.Error)
+		assert.Equal(t, "comparison", result.Type)
 	})
 
 	t.Run("should return error for ambiguous document", func(t *testing.T) {

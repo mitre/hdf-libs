@@ -71,20 +71,16 @@ Examples:
 }
 
 // targetTypeToComponentType maps HDF target types to system component types.
+// The schema's Component.type enum mirrors Target.type one-for-one, so this
+// is an identity for known values and falls back to "application" otherwise.
 func targetTypeToComponentType(targetType string) string {
 	switch targetType {
-	case "host", "containerImage", "containerInstance", "containerPlatform":
-		return compTypeCompute
-	case "application":
-		return compTypeApplication
-	case "database":
-		return "database"
-	case "network":
-		return "network"
-	case "repository", "artifact":
-		return "storage"
+	case "host", "containerImage", "containerInstance", "containerPlatform",
+		"cloudAccount", "cloudResource", "repository", "application", "artifact",
+		"network", "database":
+		return targetType
 	default:
-		return "other"
+		return compTypeApplication
 	}
 }
 
@@ -269,6 +265,7 @@ func extractSBOMComponentName(doc map[string]interface{}, format string) string 
 }
 
 // extractSBOMComponentType maps SBOM component type to HDF system component type.
+// CycloneDX component types map onto the schema's Component.type enum.
 func extractSBOMComponentType(doc map[string]interface{}, format string) string {
 	if format == sbomFormatCycloneDX {
 		if meta, ok := doc["metadata"].(map[string]interface{}); ok {
@@ -276,8 +273,10 @@ func extractSBOMComponentType(doc map[string]interface{}, format string) string 
 				switch comp["type"] {
 				case "application", "library", "framework":
 					return compTypeApplication
-				case "container", "firmware", "device", "operating-system", "platform":
-					return compTypeCompute
+				case "container":
+					return "containerImage"
+				case "firmware", "device", "operating-system", "platform":
+					return "host"
 				}
 			}
 		}
@@ -342,6 +341,10 @@ func writeSystemDoc(systemName string, components []map[string]interface{}, outp
 	output, err := json.MarshalIndent(sysDoc, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize system document: %w", err)
+	}
+
+	if err := validateHDFOutput(output); err != nil {
+		return fmt.Errorf("generated system document is invalid: %w", err)
 	}
 
 	if outputPath == "" {

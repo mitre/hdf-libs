@@ -15,6 +15,10 @@ func runGenericDocSet(inputPath, outputPath string, unsetFields []string, requir
 		return fmt.Errorf("failed to read document: %w", err)
 	}
 
+	if err := validateHDFOutput(data); err != nil {
+		return fmt.Errorf("invalid document: %w", err)
+	}
+
 	var doc map[string]interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return fmt.Errorf("failed to parse document: %w", err)
@@ -38,6 +42,10 @@ func runGenericDocSet(inputPath, outputPath string, unsetFields []string, requir
 	output, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize document: %w", err)
+	}
+
+	if err := validateHDFOutput(output); err != nil {
+		return fmt.Errorf("modified document is invalid: %w", err)
 	}
 
 	target := inputPath
