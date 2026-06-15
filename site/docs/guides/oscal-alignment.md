@@ -113,10 +113,14 @@ Key field correspondences:
 
 **CLI:** `hdf convert --from oscal-poam poam.json -o amendments.json`
 
+`oscal-poam-to-hdf` emits an HDF **Amendments** document (top-level `overrides[]`), not Results — joining the VEX family (`openvex`, `csaf-vex`, `cyclonedx-vex`) as the second class of amendment-output converters. Consumer-attached remediation context is an amendment act, not a scan finding.
+
 Key field correspondences:
-- OSCAL `poam-items[]` map to HDF `overrides[]`
-- OSCAL risk responses (mitigate, transfer, accept) map to HDF override types (waiver, riskAdjustment, operationalRequirement, poam)
-- Remediation milestones map to evidence and justification fields
+- OSCAL `plan-of-action-and-milestones.poam-items[]` map to HDF `overrides[]`, each with `type: "poam"`
+- OSCAL `import-ssp.href` maps to HDF `systemRef`
+- OSCAL metadata `responsible-parties[role-id=prepared-by]` maps to HDF `appliedBy`
+- OSCAL `risks[]` referenced by a `poam-item.related-risks[]` populate the override's `requirementId` (from `impacted-control-id` props) and `status` (`open`/`investigating` → `failed`, `closed`/`risk-accepted` → `passed`)
+- OSCAL `risks[].remediations[lifecycle=planned]` map to HDF `Milestone[]` entries on the override (`description`, `status: "pending"`, `estimatedCompletion`)
 
 ### Amendments to POA&M (reverse)
 
@@ -124,8 +128,8 @@ Key field correspondences:
 
 Key field correspondences:
 - HDF `overrides[]` map to OSCAL `poam-items[]`
-- HDF override types map to OSCAL risk response types
-- HDF evidence and justification fields map to remediation milestones
+- HDF `Milestone[]` entries on each override map to OSCAL remediation tasks
+- HDF `appliedBy` populates OSCAL responsible-party entries
 
 ## Limitations
 
