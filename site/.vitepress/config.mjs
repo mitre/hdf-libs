@@ -31,19 +31,39 @@ function getSchemaNavItems(schemasDir, urlPrefix) {
     });
 }
 
+// Discover markdown pages in a docs subdirectory (specification, guides,
+// architecture, contributing). Each page's display name is its first
+// heading; the sidebar link is the path-without-extension.
+function getDocsItems(subdir) {
+  const dir = path.resolve(__dirname, `../docs/${subdir}`);
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter((f) => f.endsWith('.md') && f !== 'index.md')
+    .sort()
+    .map((f) => {
+      const name = f.replace('.md', '');
+      const content = fs.readFileSync(path.join(dir, f), 'utf-8');
+      const match = content.match(/^#\s+(.+)/m);
+      const text = match ? match[1] : name;
+      return { text, link: `/docs/${subdir}/${name}` };
+    });
+}
+
 const VERSIONS = loadVersionsManifest();
 
 // Sidebar config — one entry per URL prefix. The empty-prefix entry
 // (`/schemas/`) serves the current version. Each historical version
-// gets its own (`/v3.X.Y/schemas/`).
+// gets its own (`/v3.X.Y/schemas/`). The `/docs/` tree gets its own
+// sidebar grouped by subdirectory.
 function buildSidebar() {
   const sidebar = {
     '/': [
       {
-        text: 'Guide',
+        text: 'Resources',
         items: [
           { text: 'Overview', link: '/' },
           { text: 'Schema Reference', link: '/schemas/' },
+          { text: 'Documentation', link: '/docs/' },
         ],
       },
     ],
@@ -51,6 +71,31 @@ function buildSidebar() {
       {
         text: `Document Types (${VERSIONS.current})`,
         items: getSchemaNavItems(path.resolve(__dirname, '../schemas'), ''),
+      },
+    ],
+    '/docs/': [
+      {
+        text: 'Start here',
+        items: [
+          { text: 'Documentation home', link: '/docs/' },
+          { text: 'HDF Readers\' Guide', link: '/docs/architecture/hdf-readers-guide' },
+        ],
+      },
+      {
+        text: 'Specification',
+        items: getDocsItems('specification'),
+      },
+      {
+        text: 'Architecture',
+        items: getDocsItems('architecture'),
+      },
+      {
+        text: 'Guides',
+        items: getDocsItems('guides'),
+      },
+      {
+        text: 'Contributing',
+        items: getDocsItems('contributing'),
       },
     ],
   };
@@ -69,12 +114,14 @@ function buildSidebar() {
   return sidebar;
 }
 
-// Nav: Schemas link plus a version dropdown on the right (last item
-// before the social GitHub icon). The dropdown shows every released
-// version; selecting one switches the URL prefix.
+// Nav: Schemas + Documentation + version dropdown (last item before the
+// social GitHub icon). The dropdown shows every released schema version;
+// selecting one switches the schema-page URL prefix. The Documentation
+// link points at the docs landing (specification, guides, architecture).
 function buildNav() {
   return [
     { text: 'Schemas', link: '/schemas/' },
+    { text: 'Documentation', link: '/docs/' },
     {
       text: VERSIONS.current,
       items: VERSIONS.versions.map((v) => ({

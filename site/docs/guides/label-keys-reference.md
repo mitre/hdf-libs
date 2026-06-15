@@ -87,15 +87,14 @@ This means any component with `labels.component = "WebTier"` is automatically in
 
 ## How Converters Populate Labels
 
-Several converters automatically extract labels from source tool metadata during conversion:
+A small number of converters automatically extract labels from source tool metadata during conversion:
 
 | Converter | Labels populated | Source of data |
 |---|---|---|
-| `aws-config` | `labels.account`, `labels.region` | AWS resource ARN |
-| `nessus` | `labels.hostgroup`, `labels.network` | Nessus host properties |
-| `grype` / `trivy` | `labels.image`, `labels.registry` | Container image reference |
-| `oscal-sar` | Populates `systemRef` (not labels directly) | OSCAL `import-ap` href |
-All other converters produce results without labels. Labels can be added after conversion using the CLI.
+| `aws-config` | `labels.account`, `labels.region`, `labels.provider` | AWS resource ARN |
+| `oscal-sar` | Populates `planRef` (not labels directly) | OSCAL `import-ap` href |
+
+Most converters produce results without labels. Labels can be added after conversion using the CLI.
 
 ## Applying Labels via CLI
 
@@ -157,7 +156,7 @@ hdf convert --from nessus scan.nessus -o results.json \
   --labels system="Enterprise Portal",environment=production,region=us-gov-west-1
 ```
 
-The converter extracts `labels.account` and `labels.region` from the Nessus data. The `--labels` flag adds the system and environment labels on top.
+The `--labels` flag applies the supplied labels to every component in the output.
 
 ### 2. Add component label
 

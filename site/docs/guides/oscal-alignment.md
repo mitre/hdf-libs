@@ -52,7 +52,7 @@ Key field correspondences:
 - Selected controls are converted using the same logic as catalog conversion
 - The resulting baseline contains only the controls referenced by the profile
 
-**Limitation:** The profile resolver handles `include-controls` and `exclude-controls` but does not apply `modify.alters` (parameter setting, additions). Complex profile tailoring should be resolved externally before conversion.
+The profile resolver also applies `modify.set-parameters` (parameter overrides) and `modify.alters` (part/prop adds and removes) before emitting the baseline. Multi-level profile chains (profile → profile → catalog) and `import-resource` references are not yet supported — those should be pre-resolved externally.
 
 ### Component Definition to Baseline
 
@@ -80,10 +80,10 @@ Key field correspondences:
 **CLI:** `hdf convert --from oscal-assessment-plan sap.json -o plan.json`
 
 Key field correspondences:
-- OSCAL assessment activities map to HDF `assessments[]`
+- OSCAL `reviewed-controls.control-selections[]` and `control-objective-selections[]` map to HDF `assessments[]`
 - OSCAL `import-ssp.href` maps to HDF `systemRef`
-- OSCAL assessment subjects map to HDF target selectors
-- Schedule information is extracted from assessment metadata
+- OSCAL `assessment-subjects[]` map to HDF assessment `targetSelector`
+- OSCAL `assessment-assets` is inspected for runner configuration metadata
 
 ### Assessment Results (SAR) to Results
 
@@ -129,7 +129,7 @@ Key field correspondences:
 
 ## Limitations
 
-1. **Profile resolution is simplified.** The converter handles `include-controls` and `exclude-controls` but does not process `modify.alters` (parameter constraints, additions to control text). For complex profiles, resolve them using the OSCAL resolver tooling first.
+1. **Profile resolution is partial.** The converter handles `include-controls`, `exclude-controls`, `modify.set-parameters`, and `modify.alters` (adds/removes on parts and props), but does not resolve multi-level profile chains or `import-resource` references. For deeply chained profiles, resolve them using the OSCAL resolver tooling first.
 
 2. **Field loss in some directions.** OSCAL documents often contain metadata (responsible parties, roles, locations, back-matter) that has no direct HDF equivalent. This metadata is not preserved in the OSCAL-to-HDF direction. Similarly, HDF fields like `effectiveStatus` and `statusOverrides` have no direct OSCAL SAR equivalent.
 

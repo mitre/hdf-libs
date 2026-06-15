@@ -330,9 +330,8 @@ cat > /tmp/example-hdf-rhel9-results.json << 'EOF'
   "baselines": [{"name": "RHEL9-STIG", "requirements": [
     {"id": "SV-257777", "title": "Vendor support", "descriptions": [{"label": "default", "data": "check"}],
      "impact": 0.7, "tags": {}, "results": [{"status": "passed", "codeDesc": "check", "startTime": "2026-03-30T00:00:00Z"}]}
-  ], "supports": [], "groups": []}],
-  "platform": {"name": "rhel9", "release": "9.2"},
-  "statistics": {"duration": 12.5}, "version": "2.0.0"
+  ]}],
+  "statistics": {"duration": 12.5}
 }
 EOF
 hdf validate --type results /tmp/example-hdf-rhel9-results.json
@@ -342,9 +341,8 @@ cat > /tmp/example-hdf-postgres-results.json << 'EOF'
   "baselines": [{"name": "PostgreSQL-STIG", "requirements": [
     {"id": "SV-233512", "title": "Access control", "descriptions": [{"label": "default", "data": "check"}],
      "impact": 0.5, "tags": {}, "results": [{"status": "passed", "codeDesc": "check", "startTime": "2026-03-30T00:00:00Z"}]}
-  ], "supports": [], "groups": []}],
-  "platform": {"name": "postgresql", "release": "15.4"},
-  "statistics": {"duration": 8.2}, "version": "2.0.0"
+  ]}],
+  "statistics": {"duration": 8.2}
 }
 EOF
 hdf validate --type results /tmp/example-hdf-postgres-results.json
@@ -385,7 +383,7 @@ hdf validate --type evidence-package /tmp/example-hdf-evidence.json
 - `evidence verify --checksums-only`: all SHA-256 checksums match.
 - `evidence verify` (default): completeness check reports missing baselines.
 - `evidence set --plan-ref`: links evidence to the assessment plan.
-- `evidence info`: displays package name, planRef, systemRef, contents list.
+- `evidence info`: displays package name, preparer, timestamp, systemRef, contents list with checksum status, and completeness summary.
 
 ---
 

@@ -36,7 +36,7 @@ The fingerprint registry is a two-layer system:
 │  sarif:   version(string) + runs(array) →0.9 │
 │  gosec:   GosecVersion + Issues[]       →1.0 │
 │  nessus:  <NessusClientData_v2>         →1.0 │
-│  ...32 more converters                       │
+│  ...50+ more converters                      │
 └──────────────────────────────────────────────┘
 ```
 

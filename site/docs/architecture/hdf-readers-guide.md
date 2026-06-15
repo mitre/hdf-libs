@@ -45,6 +45,10 @@ principle of keeping concerns separate.
 
 ---
 
+## Walkthroughs
+
+> **Note on CLI output.** The output blocks below are conceptual — they show what each command answers, not byte-exact CLI output. For exact column shapes and formats, run `hdf <command> --help` or see [CLI user-story examples](../guides/cli-user-story-examples.md).
+
 ## Walkthrough 1: Monthly Compliance Scan
 
 *The most common use case — scanning a system monthly and tracking changes.*
@@ -131,17 +135,11 @@ baseline default (3) → system override (5) → scan value (5) → observed (7)
 
 ```bash
 hdf diff feb-scan.json mar-scan.json --format table
+```
 
-  State       Count   Examples
-  ─────       ─────   ────────
-  fixed         12    SV-230387, SV-230401, ...
-  regressed      3    SV-257777, SV-258001, SV-258042
-  unchanged    498
-  new            2    SV-260101, SV-260102
-  absent         0
+Produces a per-requirement diff table (`ID | Title | Old Status | New Status | State`) followed by a one-line summary of the counts: `Summary: 12 fixed, 3 regressed, 2 new, 0 absent, 498 unchanged, 0 updated (515 total)`. Use `-f markdown` for a markdown-friendly version, `-f json` for machine consumption, or `--stat` for just the counts.
 
-  Compliance: 94.2% → 93.1% (Δ -1.1%)
-
+```bash
 hdf diff --detailed-exitcode feb-scan.json mar-scan.json
 # Exit code 12 (mixed fixes and regressions)
 ```
@@ -221,28 +219,19 @@ A month later, the team adds an API Gateway, upgrades the web tier SBOM, and get
 full ATO:
 
 ```bash
+# Diff two system documents — captures component add/remove/modify + field-level changes
 hdf diff old-system.json new-system.json
-
-Component changes:
-  + Added:    "APIGateway" (type: application)
-  ~ Modified: "WebTier"
-      sbomRef: webtier-2026-02.cdx.json → webtier-2026-03.cdx.json
-      SBOM changes:
-        + Added:   pkg:npm/express@5.0.0
-        - Removed: pkg:npm/express@4.18.2
-        ~ Updated: pkg:deb/openssl@3.0.2 → 3.0.15
-        CVE impact:
-          - Resolved: CVE-2024-1234 (openssl patched)
-          + New:      CVE-2026-5678 (express 5.0.0, no fix yet)
-
-Authorization:
-  ~ Status: conditionallyAuthorized → authorized
-  ~ Date: 2025-06-15 → 2026-03-01
 ```
 
-The diff engine reads both SBOMs (CycloneDX or SPDX — both supported), indexes
-packages by PURL, and reports what changed. An auditor sees the complete picture:
-architectural changes + software supply chain changes + authorization changes.
+Conceptually, the diff covers:
+
+- **Components** — what was added, removed, or modified (with per-field `add`/`remove`/`replace` ops).
+- **SBOMs** — when components reference SBOMs (CycloneDX or SPDX), `hdf diff --sbom old.cdx.json new.cdx.json` reports added/removed/updated packages indexed by PURL. Output is a `Package | Old Version | New Version | State` table.
+- **Authorization metadata** — `authorizationStatus`, `authorizationDate`, and `categorizationLevel` changes surface in the field-level diff.
+
+CVE-impact analysis (which CVEs are resolved or introduced when a package version moves) is not built into `hdf diff` directly — feed the SBOM diff into a vulnerability-database tool (e.g. Grype, Trivy, OSS-Index) to get that view.
+
+An auditor sees the complete picture: architectural changes + software supply chain changes + authorization changes.
 
 ---
 
@@ -256,27 +245,17 @@ any two systems or environments:
 ```bash
 # Are dev and prod running the same config?
 hdf diff dev-results.json prod-results.json
+# Per-requirement diff table + one-line summary:
+#   Summary: 0 fixed, 5 regressed, 3 new, 0 absent, 487 unchanged, 28 updated (523 total)
 
-  State       Count
-  ─────       ─────
-  unchanged    487
-  updated       28    # Different input values (dev uses relaxed thresholds)
-  regressed      5    # Prod has failures that dev doesn't
-  new            3    # Dev has controls not yet deployed to prod
-
-# Group by component to find where the drift is
+# --group-by adds a column to the per-requirement table so you can scan
+# which component (or baseline, or any label key) each diff belongs to.
 hdf diff --group-by labels.component dev-results.json prod-results.json
-
-  Component     Fixed   Regressed   Unchanged
-  ─────────     ─────   ─────────   ─────────
-  WebTier         0         3          245
-  DatabaseTier    0         2          242
-  APIGateway      0         0          (not in prod yet)
 ```
 
 This answers: "Is production configured the same as what we tested in dev?" If not,
-the comparison shows exactly where the drift is, grouped by whatever label dimension
-matters to you.
+the per-requirement diff shows exactly which controls drifted; the group-by column lets
+you scan by whatever label dimension matters to you (component, environment, region, etc).
 
 ---
 
@@ -329,6 +308,11 @@ creates a tamper-evident linked list of modifications.
         "created": "2026-01-15T10:00:00Z",
         "creator": { "type": "email", "identifier": "ao@agency.gov" },
         "proofPurpose": "attestation",
+        "verificationMethod": {
+          "id": "did:web:agency.gov#ao-key-1",
+          "type": "Ed25519VerificationKey2020",
+          "controller": "did:web:agency.gov"
+        },
         "signatureValue": "z3FXq7..."
       },
       "previousChecksum": { "algorithm": "sha256", "value": "abc123..." }
@@ -341,19 +325,21 @@ creates a tamper-evident linked list of modifications.
 
 ```bash
 # Merge amendments into scan results
-hdf amend apply portal-scan.json portal-waivers.json -o merged.json
-
-# The merged results have:
-# - SV-257777: effectiveStatus changed from "failed" to "passed" (waiver applied)
-# - statusOverrides[] populated with the waiver entry
-# - Amendment chain intact: previousChecksum links back to original results
-
-# Verify the chain
-hdf amend verify merged.json
-# ✓ Signature valid (AO: ao@agency.gov)
-# ✓ Amendment chain intact (2 links verified)
-# ⚠ 1 waiver expires in 107 days (SV-257777, 2026-06-30)
+hdf amend apply --results portal-scan.json --amendments portal-waivers.json -o merged.json
 ```
+
+The merged results have:
+
+- `SV-257777`'s `effectiveStatus` changed from `failed` to `passed` (waiver applied).
+- `statusOverrides[]` populated with the waiver entry.
+- Amendment chain intact: `previousChecksum` links back to the original results.
+
+```bash
+# Validate the amendments document on its own (chain integrity, signature shape, expirations)
+hdf amend verify portal-waivers.json
+```
+
+`hdf amend verify` reports signature validity, amendment-chain integrity (each `previousChecksum` links to the prior state), and whether any waivers are expired or near-expiration.
 
 The chain of trust:
 ```
@@ -370,24 +356,9 @@ Original results  ──checksum──→  Waiver document  ──signature─�
 
 ```bash
 hdf diff rhel9-stig-v1r1.json rhel9-stig-v1r2.json
-
-Requirement changes (V1R1 → V1R2):
-  + Added:   5 new requirements
-      SV-260101: "RHEL 9 must implement FIPS-validated cryptography"
-      SV-260102: "RHEL 9 must disable USB storage"
-      ...
-  - Removed: 2 deprecated requirements
-      SV-230210: (superseded by SV-260101)
-      SV-230211: (merged into SV-257777)
-  ~ Modified: 8 requirements
-      SV-257777: impact changed 0.5 → 0.7
-      SV-258001: fix text updated
-      ...
-
-  Input changes:
-      max_concurrent_sessions: default 3 → 2 (tightened)
-      password_min_length: default 15 → 20 (tightened)
 ```
+
+`hdf diff` works on baseline documents the same way it works on results — per-requirement state (`new` requirements added in V1R2, `absent` for removed ones, `updated` for modified — e.g. impact bumped from 0.5 to 0.7, fix text rewritten) and a one-line summary. The diff also captures changes to baseline `inputs` and `groups`.
 
 This answers: "What do I need to update in my system to comply with the new STIG?"
 Without this, organizations manually diff PDF documents or XCCDF XML — error-prone
@@ -436,25 +407,31 @@ not embedded content:
     "compliancePercent": 95.8,
     "sbomCoverage": { "componentsWithSbom": 3, "totalComponents": 5 }
   },
-  "signature": { "type": "Ed25519Signature2020", "signatureValue": "z4GH..." }
+  "signature": {
+    "type": "Ed25519Signature2020",
+    "created": "2026-03-31T17:00:00Z",
+    "creator": { "type": "email", "identifier": "compliance@agency.gov" },
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": {
+      "id": "did:web:agency.gov#compliance-key-1",
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:web:agency.gov"
+    },
+    "signatureValue": "z4GH..."
+  }
 }
 ```
 
 ```bash
-hdf evidence validate portal-ato-evidence-q1-2026.json
-# ✓ All baselines assessed
-# ✓ All components covered (5/5)
-# ✓ No expired waivers
-# ⚠ 2 unresolved POA&Ms
-# ℹ SBOM coverage: 3 of 5 components (60%)
-# Overall: 95.8% compliant
+# Quick summary: package name, preparer, contents-with-checksum-status, completeness summary
+hdf evidence info portal-ato-evidence-q1-2026.json
 
+# Cryptographic verification: referenced documents resolve and their checksums match,
+# any embedded signature is valid, amendment chains intact across the referenced amendments doc
 hdf evidence verify portal-ato-evidence-q1-2026.json
-# ✓ All checksums match
-# ✓ Amendment signatures valid
-# ✓ Amendment chain intact (3 links)
-# ✓ Package signature valid
 ```
+
+`hdf evidence info` summarizes what's in the package and surfaces the `completenessCheck` content. `hdf evidence verify` performs the cryptographic checks: each referenced document still resolves at its URI, its checksum matches what the package declared, and any signature on the package itself validates.
 
 ---
 
@@ -580,7 +557,7 @@ A converter producing bare results with no labels works fine. A system doc with
 no SBOMs works fine. An evidence package with partial coverage is informational,
 not invalid. The schema never rejects a document for missing enrichment.
 
-**Cardinality is the one non-optional contract.** `requirements`, `results`, and `descriptions` arrays declare `minItems: 1` — clean scans synthesize a `passed` placeholder rather than emitting empty arrays. See `docs/specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale, shape, and the `passed` vs. `notApplicable` distinction. This is a deliberate v3 tightening over legacy InSpec-ExecJSON, which tolerated empty arrays.
+**Cardinality is the one non-optional contract.** `requirements`, `results`, and `descriptions` arrays declare `minItems: 1` — clean scans synthesize a `passed` placeholder rather than emitting empty arrays. See `../specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale, shape, and the `passed` vs. `notApplicable` distinction. This is a deliberate v3 tightening over legacy InSpec-ExecJSON, which tolerated empty arrays.
 
 ---
 

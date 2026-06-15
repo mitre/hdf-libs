@@ -1,7 +1,7 @@
 # HDF Document Type Ecosystem
 
 > **Status:** Design vision + ecosystem overview. The authoritative field-level
-> contract is `docs/specification/hdf-specification.md`. As of 2026-06-05, all 7
+> contract is `../specification/hdf-specification.md`. As of 2026-06-05, all 7
 > schemas are in place, all 7 document types have CLI surfaces (`hdf system` /
 > `plan` / `amend` / `evidence` etc.), v3.2 classification fields and v3.3
 > CVE-ecosystem primitives are live, and the 30+ scanner converters are
@@ -284,6 +284,8 @@ An assessor creates a signed waiver with evidence.
       "baselineRef": "RHEL9-STIG",
       "status": "passed",
       "reason": "Compensating control: session timeout set to 15 min",
+      "appliedBy": { "type": "email", "identifier": "ao@agency.gov" },
+      "appliedAt": "2026-01-15T10:00:00Z",
       "expiresAt": "2026-06-30T00:00:00Z",
       "evidence": [
         {
@@ -297,7 +299,12 @@ An assessor creates a signed waiver with evidence.
         "created": "2026-01-15T10:00:00Z",
         "creator": { "type": "email", "identifier": "ao@agency.gov" },
         "proofPurpose": "attestation",
-        "signatureValue": "z3FXq7..."
+        "signatureValue": "z3FXq7...",
+        "verificationMethod": {
+          "type": "Ed25519VerificationKey2020",
+          "controller": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+          "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
+        }
       },
       "previousChecksum": { "algorithm": "sha256", "value": "abc123..." }
     }
@@ -307,7 +314,7 @@ An assessor creates a signed waiver with evidence.
 
 **Merge operation:**
 ```bash
-hdf amend apply portal-scan.json portal-waivers.json -o merged.json
+hdf amend apply --results portal-scan.json --amendments portal-waivers.json -o merged.json
 ```
 
 ### Phase 7: PROVE — hdf-evidence-package
@@ -335,21 +342,31 @@ Everything bundled for the auditor with integrity verification.
     "compliancePercent": 95.8,
     "sbomCoverage": { "componentsWithSbom": 3, "totalComponents": 5 }
   },
-  "signature": { "type": "Ed25519Signature2020", "signatureValue": "z4GHyq8..." }
+  "signature": {
+    "type": "Ed25519Signature2020",
+    "created": "2026-04-01T12:00:00Z",
+    "creator": { "type": "email", "identifier": "compliance@agency.gov" },
+    "signatureValue": "z4GHyq8...",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": {
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+      "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
+    }
+  }
 }
 ```
 
 ```bash
-hdf evidence validate portal-evidence.json
-# ✓ All baselines assessed
-# ✓ All components covered
-# ⚠ 2 unresolved POA&Ms
-# Overall: 95.8% compliant
+hdf evidence info portal-evidence.json
+# Summarizes contents and the embedded completenessCheck
+# (allBaselinesAssessed, allComponentsCovered, expiredWaivers,
+#  unresolvedPoams, compliancePercent, sbomCoverage).
 
 hdf evidence verify portal-evidence.json
-# ✓ All checksums match
-# ✓ Amendment signatures valid
-# ✓ Amendment chain intact
+# Re-reads every content reference, recomputes its checksum, and
+# reports mismatches. Also verifies the document-level signature
+# (when present) and the amendment chain on referenced amendments.
 ```
 
 ---
@@ -640,18 +657,21 @@ All seven use the same `hdf-amendments` document type with a `type` discriminato
 ```
 hdf
 ├── validate <file>               # Validate any HDF document against its schema
-├── info <file>                   # Display summary of any HDF document
-├── stats <results-file>          # Assessment statistics
-├── list <file>                   # List requirements, baselines, components, etc.
-├── query <results-file>          # Search / filter controls
+├── list <file>                   # Show contents of any HDF document
+├── query <file>                  # Search / filter requirements
 ├── convert <file>                # Convert between formats (30+ converters; auto-validates output)
 ├── fetch <source>                # Pull from live APIs (aws-config, splunk, sonarqube, gitlab)
 ├── version                       # Print version info
 │
+├── label                         # Manage labels on any HDF document
+│   ├── show <file>               # Display labels
+│   ├── set <file> <k>=<v>...     # Add or update labels
+│   └── remove <file> <k>...      # Remove labels
+│
 ├── diff <old> <new>              # Compare any two HDF docs of same type
 │   ├── --group-by <label>        # Group by any label
 │   ├── --detailed-exitcode       # Nuanced exit codes (10-14)
-│   └── --format json|md|table    # Output format
+│   └── --format json|markdown|table  # Output format
 │   # Examples:
 │   #   hdf diff old-results.json new-results.json   (temporal)
 │   #   hdf diff old-system.json new-system.json     (system drift)
@@ -863,7 +883,7 @@ a record of the intent behind v3's shape.
 - Add Input type definition (or new parameter.schema.json) — **shipped** (lives in `parameter.schema.json`)
 
 ### v3 cardinality tightening (not in the original v2→v3 plan)
-- `requirements`, `results`, and `descriptions` arrays now declare `minItems: 1`. Legacy InSpec-ExecJSON tolerated empty arrays; v3 requires producers to commit to a non-empty record. Converters synthesize a `passed` placeholder for clean scans. See `docs/specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale and shape.
+- `requirements`, `results`, and `descriptions` arrays now declare `minItems: 1`. Legacy InSpec-ExecJSON tolerated empty arrays; v3 requires producers to commit to a non-empty record. Converters synthesize a `passed` placeholder for clean scans. See `../specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale and shape.
 
 ---
 
@@ -1064,10 +1084,10 @@ generator backends.
 
 | Document | Purpose |
 |----------|---------|
-| `docs/architecture/hdf-readers-guide.md` | **Start here** — narrative guide with walkthroughs |
-| `docs/architecture/hdf-document-ecosystem.md` | This file — full ecosystem vision |
+| `./hdf-readers-guide.md` | **Start here** — narrative guide with walkthroughs |
+| `./hdf-document-ecosystem.md` | This file — full ecosystem vision |
 | Design decisions | (archived) — 12 design decisions with research rationale |
-| `docs/contributing/developer-guide.md` | Patterns for contributors (dual impl, testing, cross-platform) |
+| `../contributing/developer-guide.md` | Patterns for contributors (dual impl, testing, cross-platform) |
 | SBOM library research | (archived) |
 | Docs consistency review | (archived) |
 | Memory audit | (archived) |

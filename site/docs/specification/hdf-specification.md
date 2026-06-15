@@ -382,16 +382,24 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| requirementId | string | **yes** | ID of requirement being overridden |
 | type | OverrideType | **yes** | Override category |
-| status | ResultStatus | **yes** | New effective status |
+| requirementId | string | **yes** | ID of requirement being overridden |
 | reason | string | **yes** | Free-text auditor-readable rationale for the override |
-| authority | Identity | no | Authorizing entity |
-| expiration | date-time | no | When override expires |
-| componentRef | UUID | no | Scopes override to a specific component |
-| inheritedFrom | UUID | no | componentId of local control provider |
-| previousChecksum | Checksum | no | Links to prior state (amendment chain) |
-| justification | Justification | no | Structured controlled-vocabulary classification (VEX-aligned: `component_not_present`, `vulnerable_code_not_present`, `vulnerable_code_not_in_execute_path`, `vulnerable_code_cannot_be_controlled_by_adversary`, `inline_mitigations_already_exist`). Complements (does not replace) `reason` — `reason` is human-readable, `justification` is machine-readable for filtering / aggregation / lossless round-trip with VEX, OSCAL, and FedRAMP DR ecosystems *(v3.3.0)* |
+| appliedBy | Identity | **yes** | Identity of who applied this amendment |
+| appliedAt | date-time | **yes** | When this amendment was applied |
+| expiresAt | date-time | **yes** | When this amendment expires. No permanent amendments |
+| status | ResultStatus | conditional | New effective status. At least one of `status` or `impact` must be set, **except** when `type: operationalRequirement` (which forbids both) |
+| impact | Impact_Override | conditional | Override to the requirement's impact score (`{value: 0.0–1.0}`). At least one of `status` or `impact` must be set; forbidden when `type: operationalRequirement` |
+| baselineRef | string | no | Name of the baseline containing the requirement; needed when the system has multiple baselines with overlapping IDs |
+| componentRef | UUID | no | componentId this amendment is scoped to; omit for system-wide |
+| inheritedFrom | UUID | no | componentId of the local control provider; primarily used with `type: inherited` |
+| affectedPackages | Affected_Package[] | no | Software packages this amendment is scoped to (purl/cpe/name+version), distinct from componentRef |
+| evidence | Evidence[] | no | Supporting evidence (screenshots, logs, URLs, documents) |
+| signature | Signature | no | Digital signature for non-repudiation |
+| previousChecksum | Checksum | no | Checksum of the prior amendment in the chain (tamper-evident linked list) |
+| cvss | CVSS | no | Structured CVSS scoring backing this override; on `riskAdjustment`, `impact.value` should be approximately `cvss.computedScore / 10.0` *(v3.3.0)* |
+| justification | Justification | no | Structured controlled-vocabulary classification (VEX-aligned: `component_not_present`, `vulnerable_code_not_present`, `vulnerable_code_not_in_execute_path`, `vulnerable_code_cannot_be_controlled_by_adversary`, `inline_mitigations_already_exist`). Complements (does not replace) `reason` *(v3.3.0)* |
+| milestones | Milestone[] | no | Remediation milestones (primarily for `poam` type) |
 
 ---
 
