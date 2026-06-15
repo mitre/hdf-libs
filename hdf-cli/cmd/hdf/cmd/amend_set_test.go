@@ -13,7 +13,17 @@ import (
 
 const testAmendmentsForSet = `{
 	"name": "Test Waivers",
-	"overrides": [{"requirementId": "SV-001", "status": "notApplicable", "justification": "N/A", "type": "waiver", "expiration": "2027-01-01T00:00:00Z"}]
+	"overrides": [
+		{
+			"type": "waiver",
+			"requirementId": "SV-001",
+			"status": "notApplicable",
+			"reason": "Test waiver",
+			"appliedBy": {"type": "email", "identifier": "test@example.org"},
+			"appliedAt": "2026-01-01T00:00:00Z",
+			"expiresAt": "2027-01-01T00:00:00Z"
+		}
+	]
 }`
 
 func writeTestAmendments(t *testing.T) string {

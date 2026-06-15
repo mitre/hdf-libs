@@ -205,15 +205,21 @@ func TestListErrorCases(t *testing.T) {
 }
 
 func TestListSystemDataFlows(t *testing.T) {
+	// componentId / dataFlows.from / dataFlows.to are UUID-formatted per
+	// the hdf-system schema; using non-UUID literals fails the input gate.
+	const (
+		webUUID = "11111111-1111-1111-1111-111111111111"
+		dbUUID  = "22222222-2222-2222-2222-222222222222"
+	)
 	sysJSON := `{
 		"name": "Portal-Prod",
 		"components": [
-			{"name": "WebTier", "type": "application", "componentId": "comp-1"},
-			{"name": "DB", "type": "database", "componentId": "comp-2"}
+			{"name": "WebTier", "type": "application", "componentId": "` + webUUID + `"},
+			{"name": "DB", "type": "database", "componentId": "` + dbUUID + `"}
 		],
 		"dataFlows": [
-			{"from": "comp-1", "to": "comp-2", "protocol": "JDBC", "port": 5432, "description": "Web to database"},
-			{"from": "comp-2", "to": "comp-1", "protocol": "JDBC", "description": "Query results"}
+			{"from": "` + webUUID + `", "to": "` + dbUUID + `", "protocol": "JDBC", "port": 5432, "description": "Web to database"},
+			{"from": "` + dbUUID + `", "to": "` + webUUID + `", "protocol": "JDBC", "description": "Query results"}
 		]
 	}`
 	path := filepath.Join(t.TempDir(), "system.json")
@@ -223,15 +229,15 @@ func TestListSystemDataFlows(t *testing.T) {
 		stdout, _, err := executeCommand("list", path, "--detail", "dataFlows")
 		require.NoError(t, err)
 		assert.Contains(t, stdout, "Data Flows: 2")
-		assert.Contains(t, stdout, "comp-1")
-		assert.Contains(t, stdout, "comp-2")
+		assert.Contains(t, stdout, webUUID)
+		assert.Contains(t, stdout, dbUUID)
 		assert.Contains(t, stdout, "JDBC")
 	})
 
 	t.Run("detail dataFlows JSON output", func(t *testing.T) {
 		stdout, _, err := executeCommand("list", path, "--detail", "dataFlows", "--json")
 		require.NoError(t, err)
-		assert.Contains(t, stdout, "comp-1")
+		assert.Contains(t, stdout, webUUID)
 	})
 
 	t.Run("alias d maps to dataFlows", func(t *testing.T) {

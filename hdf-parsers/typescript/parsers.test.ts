@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
   parseResults,
   parseBaseline,
+  parseSystem,
+  parsePlan,
+  parseEvidencePackage,
+  parseComparison,
   parse,
   normalizeTimestamps
 } from './index.js';
@@ -578,5 +582,117 @@ describe('parseResults accepts InSpec no-tz timestamps', () => {
     const result = parseResults(input);
     expect(result.success, `expected success, got error: ${result.error}`).toBe(true);
     expect(result.data).toBeDefined();
+  });
+});
+
+describe('HDF System Parsing', () => {
+  it('should parse minimal valid HDF System', () => {
+    const valid = JSON.stringify({
+      name: 'test-system',
+      components: [{ name: 'web', type: 'application' }],
+    });
+    const result = parseSystem(valid);
+    expect(result.success, `expected success, got error: ${result.error}`).toBe(true);
+    expect(result.data).toBeDefined();
+    expect(result.data!.name).toBe('test-system');
+    expect(result.data!.components).toHaveLength(1);
+  });
+
+  it('should reject empty input', () => {
+    const result = parseSystem('');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/empty/i);
+  });
+
+  it('should reject docs missing required components', () => {
+    const result = parseSystem(JSON.stringify({ name: 'no-components' }));
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/schema|components|required/i);
+  });
+});
+
+describe('HDF Plan Parsing', () => {
+  it('should parse minimal valid HDF Plan', () => {
+    const valid = JSON.stringify({
+      name: 'test-plan',
+      assessments: [{ baselineRef: 'RHEL9-STIG' }],
+    });
+    const result = parsePlan(valid);
+    expect(result.success, `expected success, got error: ${result.error}`).toBe(true);
+    expect(result.data).toBeDefined();
+    expect(result.data!.name).toBe('test-plan');
+    expect(result.data!.assessments).toHaveLength(1);
+  });
+
+  it('should reject docs missing assessments', () => {
+    const result = parsePlan(JSON.stringify({ name: 'no-assessments' }));
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/schema|assessments|required/i);
+  });
+});
+
+describe('HDF Evidence Package Parsing', () => {
+  it('should parse minimal valid HDF Evidence Package', () => {
+    const valid = JSON.stringify({
+      name: 'test-evidence',
+      contents: [
+        {
+          type: 'hdf-results',
+          uri: 'results.json',
+          checksum: { algorithm: 'sha256', value: 'abc' },
+        },
+      ],
+    });
+    const result = parseEvidencePackage(valid);
+    expect(result.success, `expected success, got error: ${result.error}`).toBe(true);
+    expect(result.data).toBeDefined();
+    expect(result.data!.name).toBe('test-evidence');
+    expect(result.data!.contents).toHaveLength(1);
+  });
+
+  it('should reject docs missing contents', () => {
+    const result = parseEvidencePackage(JSON.stringify({ name: 'no-contents' }));
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/schema|contents|required/i);
+  });
+});
+
+describe('HDF Comparison Parsing', () => {
+  it('should parse minimal valid HDF Comparison', () => {
+    const valid = JSON.stringify({
+      formatVersion: '1.0.0',
+      comparisonMode: 'temporal',
+      sources: [
+        { role: 'old', label: 'v1' },
+        { role: 'new', label: 'v2' },
+      ],
+      summary: {
+        total: 0,
+        matchedCount: 0,
+        unmatchedOldCount: 0,
+        unmatchedNewCount: 0,
+      },
+      requirementDiffs: [],
+    });
+    const result = parseComparison(valid);
+    expect(result.success, `expected success, got error: ${result.error}`).toBe(true);
+    expect(result.data).toBeDefined();
+    expect(result.data!.formatVersion).toBe('1.0.0');
+    expect(result.data!.sources).toHaveLength(2);
+  });
+
+  it('should reject docs missing requirementDiffs', () => {
+    const invalid = JSON.stringify({
+      formatVersion: '1.0.0',
+      comparisonMode: 'temporal',
+      sources: [
+        { role: 'old', label: 'a' },
+        { role: 'new', label: 'b' },
+      ],
+      summary: { total: 0, matchedCount: 0, unmatchedOldCount: 0, unmatchedNewCount: 0 },
+    });
+    const result = parseComparison(invalid);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/schema|requirementDiffs|required/i);
   });
 });

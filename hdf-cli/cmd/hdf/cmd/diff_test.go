@@ -717,12 +717,12 @@ func syntheticSystemDoc() map[string]interface{} {
 		"components": []interface{}{
 			map[string]interface{}{
 				"name":         "WebTier",
-				"type":         "software",
+				"type":         "application",
 				"baselineRefs": []interface{}{"RHEL9-STIG"},
 			},
 			map[string]interface{}{
 				"name":         "DatabaseTier",
-				"type":         "software",
+				"type":         "application",
 				"baselineRefs": []interface{}{"PostgreSQL-STIG"},
 			},
 		},
@@ -781,10 +781,11 @@ func TestDiffCommand_SystemFlag_JSON(t *testing.T) {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, stdout)
 	}
 
-	// Should have componentSummaries
-	cs, ok := output["componentDiffs"].([]interface{})
+	// Should have componentSummaries (the CLI's per-component aggregation,
+	// distinct from the schema's componentDiffs[]: Component_Diff[] array).
+	cs, ok := output["componentSummaries"].([]interface{})
 	if !ok {
-		t.Fatalf("expected 'componentDiffs' array in JSON output, got: %v", output["componentDiffs"])
+		t.Fatalf("expected 'componentSummaries' array in JSON output, got: %v", output["componentSummaries"])
 	}
 	if len(cs) != 2 {
 		t.Errorf("expected 2 component summaries, got %d", len(cs))

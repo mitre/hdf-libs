@@ -99,7 +99,11 @@ func stripNulls(v any) any {
 	}
 }
 
-// componentSummary holds per-component compliance information for system-aware diffs.
+// componentSummary holds per-component compliance information for system-aware
+// diffs. This is a CLI-specific aggregation view, NOT the schema's
+// Component_Diff (which records per-component-change records with a `state`
+// enum). The CLI's view goes into `componentSummaries`; the schema's
+// `componentDiffs[]` stays absent in CLI output.
 type componentSummary struct {
 	Name            string                 `json:"name"`
 	BaselineRefs    []string               `json:"baselineRefs"`
@@ -118,7 +122,7 @@ type diffResult struct {
 	Summary          diff.ComparisonSummary `json:"summary"`
 	RequirementDiffs []diffRequirement      `json:"requirementDiffs"`
 	BaselineDiffs    []any                  `json:"baselineDiffs"`
-	ComponentDiffs   []componentSummary     `json:"componentDiffs,omitempty"`
+	ComponentDiffs   []componentSummary     `json:"componentSummaries,omitempty"`
 
 	// groupLabel is the column header for the grouping table (presentation-only, not serialized).
 	// Set to "Component" for --system, or the group-by key for --group-by.
@@ -549,6 +553,9 @@ func outputDiffJSON(result diffResult) error {
 	output, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		return err
+	}
+	if err := validateHDFOutput(output); err != nil {
+		return fmt.Errorf("diff output failed Comparison schema validation: %w", err)
 	}
 	fmt.Println(string(output))
 	return nil

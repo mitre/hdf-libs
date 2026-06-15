@@ -69,7 +69,7 @@ func TestSystemCreate_Basic(t *testing.T) {
 	c0, ok := components[0].(map[string]interface{})
 	require.True(t, ok)
 	assert.Equal(t, "web-server-01", c0["name"])
-	assert.Equal(t, "compute", c0["type"]) // host -> compute
+	assert.Equal(t, "host", c0["type"]) // identity mapping post-v3.3.0
 
 	// Check baselineRefs are set from baselines
 	refs0, ok := c0["baselineRefs"].([]interface{})
@@ -80,7 +80,7 @@ func TestSystemCreate_Basic(t *testing.T) {
 	c1, ok := components[1].(map[string]interface{})
 	require.True(t, ok)
 	assert.Equal(t, "my-container", c1["name"])
-	assert.Equal(t, "compute", c1["type"]) // containerImage -> compute
+	assert.Equal(t, "containerImage", c1["type"]) // identity mapping post-v3.3.0
 
 	// DataFlows should be empty array
 	dataFlows, ok := sys["dataFlows"].([]interface{})
@@ -702,22 +702,24 @@ func TestSystemUpdateComponent_Embed(t *testing.T) {
 }
 
 func TestSystemCreate_TypeMapping(t *testing.T) {
-	// Test various target type -> component type mappings
+	// As of v3.3.0, Component.type is a closed 11-value enum that matches
+	// Target.type; the mapping in system_create.go is therefore identity for
+	// all 11 known types. This test pins that contract.
 	tests := []struct {
 		targetType    string
 		componentType string
 	}{
-		{"host", "compute"},
-		{"containerImage", "compute"},
-		{"containerInstance", "compute"},
-		{"containerPlatform", "compute"},
-		{"cloudAccount", "other"},
-		{"cloudResource", "other"},
+		{"host", "host"},
+		{"containerImage", "containerImage"},
+		{"containerInstance", "containerInstance"},
+		{"containerPlatform", "containerPlatform"},
+		{"cloudAccount", "cloudAccount"},
+		{"cloudResource", "cloudResource"},
 		{"application", "application"},
 		{"database", "database"},
 		{"network", "network"},
-		{"repository", "storage"},
-		{"artifact", "storage"},
+		{"repository", "repository"},
+		{"artifact", "artifact"},
 	}
 
 	for _, tt := range tests {

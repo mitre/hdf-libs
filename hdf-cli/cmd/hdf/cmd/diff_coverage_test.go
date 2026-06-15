@@ -164,13 +164,27 @@ func TestDiffCoverage_ResolveGroupValues(t *testing.T) {
 // --- Unit tests for renderDiffOutput ---
 
 func TestDiffCoverage_RenderDiffOutput(t *testing.T) {
+	// Sources is populated with the minimum 2 entries required by the
+	// hdf-comparison schema; the json sub-test below routes through
+	// outputDiffJSON which now validates output against the schema.
+	// changeReasons / fieldChanges / baselineDiffs are required arrays —
+	// initialize non-nil to avoid null marshaling that the schema rejects.
 	filtered := diffResult{
 		FormatVersion:  "1.0.0",
 		ComparisonMode: "temporal",
-		Summary:        diff.ComparisonSummary{Total: 1, Fixed: 1},
-		RequirementDiffs: []diffRequirement{
-			{ID: "REQ-001", State: diff.StateFixed, OldStatus: "failed", NewStatus: "passed", Title: "Test Requirement"},
+		Sources: []diff.Source{
+			{Role: diff.RoleOld, Label: "old.json"},
+			{Role: diff.RoleNew, Label: "new.json"},
 		},
+		Summary: diff.ComparisonSummary{Total: 1, Fixed: 1},
+		RequirementDiffs: []diffRequirement{
+			{
+				ID: "REQ-001", State: diff.StateFixed,
+				OldStatus: "failed", NewStatus: "passed", Title: "Test Requirement",
+				ChangeReasons: []string{}, FieldChanges: []any{},
+			},
+		},
+		BaselineDiffs: []any{},
 	}
 
 	t.Run("name-only output", func(t *testing.T) {

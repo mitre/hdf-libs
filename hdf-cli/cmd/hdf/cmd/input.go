@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -159,6 +160,76 @@ func parseHDFBaseline(data []byte) (hdf.HDFBaseline, error) {
 		return hdf.HDFBaseline{}, errors.New(translateParserError(r.Error))
 	}
 	return *r.Data, nil
+}
+
+// parseHDFSystem validates and parses JSON data into HDFSystem via hdf-parsers.
+// Mirrors parseHDFResults / parseHDFBaseline; provided for CLI sites that
+// want typed-struct access. Sites that operate on the doc as a generic map
+// can call loadAndValidateHDFDoc instead. Kept for parity with the
+// Go and TS hdf-parsers Parse* exports per project policy
+// (memory: feedback_ts_go_library_parity).
+//
+//nolint:unused // CLI-internal helper; published as TS/Go API parity surface
+func parseHDFSystem(data []byte) (hdf.HDFSystem, error) {
+	r := hdfparsers.ParseSystem(data)
+	if !r.Success {
+		return hdf.HDFSystem{}, errors.New(translateParserError(r.Error))
+	}
+	return *r.Data, nil
+}
+
+// parseHDFPlan validates and parses JSON data into HDFPlan via hdf-parsers.
+//
+//nolint:unused // see parseHDFSystem
+func parseHDFPlan(data []byte) (hdf.HDFPlan, error) {
+	r := hdfparsers.ParsePlan(data)
+	if !r.Success {
+		return hdf.HDFPlan{}, errors.New(translateParserError(r.Error))
+	}
+	return *r.Data, nil
+}
+
+// parseHDFEvidencePackage validates and parses JSON data into HDFEvidencePackage via hdf-parsers.
+//
+//nolint:unused // see parseHDFSystem
+func parseHDFEvidencePackage(data []byte) (hdf.HDFEvidencePackage, error) {
+	r := hdfparsers.ParseEvidencePackage(data)
+	if !r.Success {
+		return hdf.HDFEvidencePackage{}, errors.New(translateParserError(r.Error))
+	}
+	return *r.Data, nil
+}
+
+// parseHDFComparison validates and parses JSON data into HDFComparison via hdf-parsers.
+//
+//nolint:unused // see parseHDFSystem
+func parseHDFComparison(data []byte) (hdf.HDFComparison, error) {
+	r := hdfparsers.ParseComparison(data)
+	if !r.Success {
+		return hdf.HDFComparison{}, errors.New(translateParserError(r.Error))
+	}
+	return *r.Data, nil
+}
+
+// loadAndValidateHDFDoc reads + schema-validates + unmarshals to a generic
+// map[string]any. Used by consumer sites that perform load → map mutate →
+// re-marshal flows (system.go, labels.go, doc_set.go, evidence_build.go's
+// System read) where typed-struct access is not the goal but the load-side
+// schema gate IS.
+//
+// Returns a wrapped error when the input is not schema-valid; the doc type
+// is auto-detected from the top-level JSON shape via detectHDFDocType.
+// Schema-shapeless inputs are passed through (the load gate is best-effort
+// when the doc type cannot be determined).
+func loadAndValidateHDFDoc(data []byte) (map[string]any, error) {
+	if err := validateHDFOutput(data); err != nil {
+		return nil, fmt.Errorf("input failed schema validation: %w", err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("parse JSON: %w", err)
+	}
+	return doc, nil
 }
 
 // translateParserError rewrites hdf-parsers' error strings into the CLI's

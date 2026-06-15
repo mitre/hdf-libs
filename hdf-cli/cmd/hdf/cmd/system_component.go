@@ -89,9 +89,9 @@ func runSystemAddComponent(systemFile, fromFile, componentName, outputPath strin
 	if err != nil {
 		return fmt.Errorf("failed to read system file: %w", err)
 	}
-	var sysDoc map[string]interface{}
-	if err := json.Unmarshal(sysData, &sysDoc); err != nil {
-		return fmt.Errorf("failed to parse system file: %w", err)
+	sysDoc, err := loadAndValidateHDFDoc(sysData)
+	if err != nil {
+		return fmt.Errorf("system file %s: %w", systemFile, err)
 	}
 
 	// Load and parse SBOM (or handle URL)
@@ -164,9 +164,9 @@ func runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath st
 	if err != nil {
 		return fmt.Errorf("failed to read system file: %w", err)
 	}
-	var sysDoc map[string]interface{}
-	if err := json.Unmarshal(sysData, &sysDoc); err != nil {
-		return fmt.Errorf("failed to parse system file: %w", err)
+	sysDoc, err := loadAndValidateHDFDoc(sysData)
+	if err != nil {
+		return fmt.Errorf("system file %s: %w", systemFile, err)
 	}
 
 	// Load and parse SBOM (or handle URL)
@@ -219,7 +219,6 @@ const (
 	sbomFormatCycloneDX = "cyclonedx"
 	sbomFormatSPDX      = "spdx"
 	compTypeApplication = "application"
-	compTypeCompute     = "compute"
 )
 
 // loadSBOM reads and parses an SBOM file, or returns nil doc with a guessed
@@ -261,6 +260,10 @@ func writeSystemJSON(sysDoc map[string]interface{}, outputPath, componentName, a
 	output, err := json.MarshalIndent(sysDoc, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize system document: %w", err)
+	}
+
+	if err := validateHDFOutput(output); err != nil {
+		return fmt.Errorf("system document failed validation before write: %w", err)
 	}
 
 	if err := os.WriteFile(outputPath, output, 0o600); err != nil {
