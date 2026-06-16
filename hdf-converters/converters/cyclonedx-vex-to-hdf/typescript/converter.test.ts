@@ -7,6 +7,7 @@ import {
   OverrideType,
   ResultStatus,
 } from '@mitre/hdf-schema';
+import { expectValidAmendments } from '../../../test/helpers/expectValidHdf.js';
 import {
   affectedPackageFromComponent,
   affectedPackagesForVuln,
@@ -26,6 +27,7 @@ describe('convertCyclonedxVexToHdf — not_affected', () => {
       loadInput('case1-vex-not_affected.json'),
       TEST_VERSION,
     );
+    expectValidAmendments(result);
     expect(result.overrides).toHaveLength(1);
     const o = result.overrides[0];
     expect(o.requirementId).toBe('CVE-2021-44228');

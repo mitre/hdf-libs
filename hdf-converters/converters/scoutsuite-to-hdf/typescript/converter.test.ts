@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertScoutsuiteToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -66,6 +67,7 @@ describe('ScoutSuite to HDF Converter', () => {
       const input = loadFixture('input/scoutsuite_sample.js');
       const output = await convertScoutsuiteToHdf(input);
       const parsed = parseOutput(output);
+      expectValidResults(parsed);
       const baselines = parsed.baselines as Array<Record<string, unknown>>;
       expect(baselines).toHaveLength(1);
     });

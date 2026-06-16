@@ -3,6 +3,7 @@ import {join} from 'path';
 import {describe, expect, it} from 'vitest';
 import {convertNiktoToHdf} from './converter';
 import {runConverterContractTests} from '../../../shared/typescript/converter-contract.js';
+import {expectValidResults} from '../../../test/helpers/expectValidHdf.js';
 import {parseJSON} from '@mitre/hdf-utilities';
 import type {HDFResults} from '@mitre/hdf-schema';
 
@@ -35,6 +36,7 @@ describe('Nikto Converter', async () => {
       const input = loadFixture('minimal.json');
       const output = await convertNiktoToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
+      expectValidResults(hdf);
 
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0].requirements).toHaveLength(4);

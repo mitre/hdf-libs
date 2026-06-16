@@ -13,6 +13,7 @@ import {
   buildAffectedPackage,
 } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import { CVSSSeverity, Ecosystem, Version as CvssVersion, type HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -33,6 +34,7 @@ describe('twistlock to HDF converter', async () => {
     it('should produce 1 baseline from sample-1', async () => {
       const output = await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json'));
       const hdf = JSON.parse(output) as HDFResults;
+      expectValidResults(hdf);
 
       expect(hdf.baselines).toHaveLength(1);
     });

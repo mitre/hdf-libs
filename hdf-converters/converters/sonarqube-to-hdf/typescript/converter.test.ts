@@ -4,6 +4,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { convertSonarqubeToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,7 @@ describe('SonarQube to HDF Converter', async () => {
       expect(result).toBeTruthy();
 
       const hdf: HDFResults = JSON.parse(result);
+      expectValidResults(hdf);
 
       // Verify HDF structure
       expect(hdf.timestamp).toBeTruthy();

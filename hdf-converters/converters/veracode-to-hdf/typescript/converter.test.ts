@@ -4,6 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { convertVeracodeToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -30,6 +31,7 @@ describe('Veracode to HDF converter', () => {
     const input = loadFixture('veracode.xml');
     const outputStr = await convert(input);
     const output: HDFResults = JSON.parse(outputStr);
+    expectValidResults(output);
 
     expect(output.baselines).toBeDefined();
     expect(output.baselines.length).toBe(1);

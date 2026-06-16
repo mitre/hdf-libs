@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { convertSarifToHdf } from './converter.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = join(__dirname, '..', 'fixtures');
@@ -18,6 +19,7 @@ describe('SARIF Converter', async () => {
     it('should convert real Flawfinder SARIF to HDF', async () => {
       const input = loadFixture('input', 'sarif_input.sarif');
       const result = JSON.parse(await convertSarifToHdf(input));
+      expectValidResults(result);
 
       expect(result.tool?.format).toBe('SARIF');
       expect(result.tool?.name).toBe('Flawfinder');

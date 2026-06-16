@@ -209,7 +209,7 @@ function parseSourceCompID(s: string | undefined):
   return { scheme, name: rest };
 }
 
-function buildAffectedPackageFromEntry(entry: XrayEntry) {
+function buildAffectedPackageFromEntry(entry: XrayEntry): ReturnType<typeof buildAffectedPackage> {
   const parsed = parseSourceCompID(entry.source_comp_id ?? entry.source_id);
   let name = entry.component ?? '';
   let version: string | undefined;

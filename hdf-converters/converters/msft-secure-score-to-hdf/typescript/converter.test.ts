@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertMsftSecureScoreToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -34,6 +35,7 @@ describe('msft-secure-score to HDF converter', async () => {
     it('should produce valid HDF from minimal fixture', async () => {
       const output = await convertMsftSecureScoreToHdf(loadFixture('minimal.json'));
       const hdf = JSON.parse(output) as HDFResults;
+      expectValidResults(hdf);
 
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('msft-secure-score-to-hdf');

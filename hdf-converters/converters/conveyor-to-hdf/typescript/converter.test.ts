@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertConveyorToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -29,6 +30,7 @@ describe('conveyor to HDF converter', async () => {
   describe('multi-baseline output (grouped by scanner)', async () => {
     it('should produce multiple baselines (one per scanner type)', async () => {
       const hdf = JSON.parse(await convertConveyorToHdf(loadFixture('sample-results.json'))) as HDFResults;
+      expectValidResults(hdf);
       // Fixture has 4 scanner types: Clamav, CodeQuality, Stigma, Moldy
       expect(hdf.baselines.length).toBeGreaterThanOrEqual(4);
     });
