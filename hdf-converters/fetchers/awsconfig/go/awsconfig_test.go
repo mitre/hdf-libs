@@ -1,4 +1,4 @@
-package fetchers
+package awsconfig
 
 import (
 	"context"

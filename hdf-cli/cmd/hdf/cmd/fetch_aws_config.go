@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/fetchers"
-	awsconfig "github.com/mitre/hdf-libs/hdf-converters/v3/converters/aws-config-to-hdf/go"
+	awsconfigconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/aws-config-to-hdf/go"
+	awsconfig "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/awsconfig/go"
 )
 
 func newFetchAWSConfigCmd() *cobra.Command {
@@ -50,7 +50,7 @@ Output defaults to stdout when no output path is given.`,
 				return err
 			}
 
-			f, err := fetchers.NewAWSConfigFetcher(cmd.Context(), fetchers.AWSConfigParams{
+			f, err := awsconfig.NewAWSConfigFetcher(cmd.Context(), awsconfig.AWSConfigParams{
 				Region:  region,
 				Profile: profile,
 				TLS:     fetchTLSOptions(cmd),
@@ -70,7 +70,7 @@ Output defaults to stdout when no output path is given.`,
 				return writeConvertOutput(raw, outputPath)
 			}
 
-			result, err := awsconfig.ConvertAWSConfigToHDF(raw, version)
+			result, err := awsconfigconv.ConvertAWSConfigToHDF(raw, version)
 			if err != nil {
 				return fmt.Errorf("aws-config conversion failed: %w", err)
 			}

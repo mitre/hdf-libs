@@ -1,4 +1,9 @@
-package fetchers
+// Package shared provides cross-tool HTTP/TLS utilities for Go fetchers.
+//
+// Each tool fetcher (splunk, awsconfig, gitlab, sonarqube, etc.) lives in its
+// own package under hdf-converters/fetchers/<tool>/go/ and depends on this
+// package for TLS configuration, URL validation, and bounded response reading.
+package shared
 
 import (
 	"crypto/tls"
@@ -116,10 +121,10 @@ func ValidateAndBuildAPIURL(rawURL, path, toolName string) (*url.URL, error) {
 	}, nil
 }
 
-// readLimitedBody reads up to maxSize bytes from r. If the response body exceeds
+// ReadLimitedBody reads up to maxSize bytes from r. If the response body exceeds
 // maxSize, it returns an error instead of silently truncating, which would cause
 // confusing JSON parse errors downstream.
-func readLimitedBody(r io.Reader, maxSize int64) ([]byte, error) {
+func ReadLimitedBody(r io.Reader, maxSize int64) ([]byte, error) {
 	// Read one extra byte to detect truncation.
 	body, err := io.ReadAll(io.LimitReader(r, maxSize+1))
 	if err != nil {
