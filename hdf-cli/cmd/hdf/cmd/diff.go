@@ -122,7 +122,13 @@ type diffResult struct {
 	Summary          diff.ComparisonSummary `json:"summary"`
 	RequirementDiffs []diffRequirement      `json:"requirementDiffs"`
 	BaselineDiffs    []any                  `json:"baselineDiffs"`
-	ComponentDiffs   []componentSummary     `json:"componentSummaries,omitempty"`
+	// ComponentDiffs holds the CLI's per-component compliance aggregation.
+	// It's NOT the schema's componentDiffs[]: Component_Diff[] array (which
+	// records state changes with a `state` enum). To satisfy hdf-comparison's
+	// unevaluatedProperties:false constraint, it ships inside the schema's
+	// `extensions` tool-data slot at marshal time — see outputDiffJSON.
+	ComponentDiffs []componentSummary `json:"-"`
+	Extensions     map[string]any     `json:"extensions,omitempty"`
 
 	// groupLabel is the column header for the grouping table (presentation-only, not serialized).
 	// Set to "Component" for --system, or the group-by key for --group-by.
@@ -550,6 +556,15 @@ func applyDiffFilters(result diffResult, flags *diffFlags) diffResult {
 // --- Output formatters ---
 
 func outputDiffJSON(result diffResult) error {
+	// hdf-comparison's unevaluatedProperties:false rejects any top-level
+	// field outside the schema. Wrap CLI-only data (per-component compliance
+	// summaries) into the schema's `extensions` slot before marshal.
+	if len(result.ComponentDiffs) > 0 {
+		if result.Extensions == nil {
+			result.Extensions = map[string]any{}
+		}
+		result.Extensions["componentSummaries"] = result.ComponentDiffs
+	}
 	output, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		return err

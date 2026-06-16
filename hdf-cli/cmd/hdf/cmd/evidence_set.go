@@ -38,7 +38,7 @@ Examples:
 			if name == "" && description == "" && packageID == "" && systemRef == "" && planRef == "" && docVersion == "" && len(unsetFields) == 0 {
 				return fmt.Errorf("at least one field flag is required (--name, --description, --package-id, --system-ref, --plan-ref, --version, --unset)")
 			}
-			return runGenericDocSet(args[0], outputPath, unsetFields, requiredEvidenceFields, map[string]string{
+			return runGenericDocSet(args[0], outputPath, "evidencePackage", unsetFields, requiredEvidenceFields, map[string]string{
 				"name":        name,
 				"description": description,
 				"packageId":   packageID,

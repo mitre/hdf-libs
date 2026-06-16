@@ -36,7 +36,7 @@ Examples:
 			if name == "" && description == "" && amendmentID == "" && systemRef == "" && docVersion == "" && len(unsetFields) == 0 {
 				return fmt.Errorf("at least one field flag is required (--name, --description, --amendment-id, --system-ref, --version, --unset)")
 			}
-			return runGenericDocSet(args[0], outputPath, unsetFields, requiredAmendFields, map[string]string{
+			return runGenericDocSet(args[0], outputPath, "amendments", unsetFields, requiredAmendFields, map[string]string{
 				"name":        name,
 				"description": description,
 				"amendmentId": amendmentID,

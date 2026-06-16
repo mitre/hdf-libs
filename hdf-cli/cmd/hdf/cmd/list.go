@@ -131,7 +131,7 @@ func runList(_ *cobra.Command, filename, detail string) error {
 }
 
 func runListSystem(data []byte, detail string) error {
-	doc, err := loadAndValidateHDFDoc(data)
+	doc, err := loadAndValidateHDFDoc(data, "system")
 	if err != nil {
 		return fmt.Errorf("system document: %w", err)
 	}

@@ -6,16 +6,17 @@ import (
 	"os"
 )
 
-// runGenericDocSet is a shared implementation for set commands across document types.
-// It reads a JSON document, applies field updates, processes --unset flags,
-// and writes the result back.
-func runGenericDocSet(inputPath, outputPath string, unsetFields []string, requiredFields map[string]bool, updates map[string]string) error {
+// runGenericDocSet is a shared implementation for set commands across document
+// types. It reads a JSON document, schema-validates against the caller-declared
+// expectedDocType ("plan", "evidencePackage", "amendments", "system"), applies
+// field updates, processes --unset flags, and writes the result back.
+func runGenericDocSet(inputPath, outputPath, expectedDocType string, unsetFields []string, requiredFields map[string]bool, updates map[string]string) error {
 	data, err := os.ReadFile(inputPath) //nolint:gosec // CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read document: %w", err)
 	}
 
-	doc, err := loadAndValidateHDFDoc(data)
+	doc, err := loadAndValidateHDFDoc(data, expectedDocType)
 	if err != nil {
 		return fmt.Errorf("document %s: %w", inputPath, err)
 	}

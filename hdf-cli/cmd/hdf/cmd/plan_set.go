@@ -38,7 +38,7 @@ Examples:
 			if name == "" && description == "" && planID == "" && systemRef == "" && planVersion == "" && len(unsetFields) == 0 {
 				return fmt.Errorf("at least one field flag is required (--name, --description, --plan-id, --system-ref, --version, --unset)")
 			}
-			return runGenericDocSet(args[0], outputPath, unsetFields, requiredPlanFields, map[string]string{
+			return runGenericDocSet(args[0], outputPath, "plan", unsetFields, requiredPlanFields, map[string]string{
 				"name":        name,
 				"description": description,
 				"planId":      planID,

@@ -108,7 +108,7 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 	if err != nil {
 		return fmt.Errorf("failed to re-read system file: %w", err)
 	}
-	sysDoc, err := loadAndValidateHDFDoc(sysData)
+	sysDoc, err := loadAndValidateHDFDoc(sysData, "system")
 	if err != nil {
 		return fmt.Errorf("system file %s: %w", systemPath, err)
 	}

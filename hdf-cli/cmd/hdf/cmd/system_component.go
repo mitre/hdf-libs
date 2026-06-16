@@ -89,7 +89,7 @@ func runSystemAddComponent(systemFile, fromFile, componentName, outputPath strin
 	if err != nil {
 		return fmt.Errorf("failed to read system file: %w", err)
 	}
-	sysDoc, err := loadAndValidateHDFDoc(sysData)
+	sysDoc, err := loadAndValidateHDFDoc(sysData, "system")
 	if err != nil {
 		return fmt.Errorf("system file %s: %w", systemFile, err)
 	}
@@ -164,7 +164,7 @@ func runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath st
 	if err != nil {
 		return fmt.Errorf("failed to read system file: %w", err)
 	}
-	sysDoc, err := loadAndValidateHDFDoc(sysData)
+	sysDoc, err := loadAndValidateHDFDoc(sysData, "system")
 	if err != nil {
 		return fmt.Errorf("system file %s: %w", systemFile, err)
 	}

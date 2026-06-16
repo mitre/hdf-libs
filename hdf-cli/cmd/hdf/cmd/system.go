@@ -163,7 +163,7 @@ func runSystemSet(inputPath, outputPath, owner, description, name, systemID stri
 		return fmt.Errorf("failed to read system document: %w", err)
 	}
 
-	doc, err := loadAndValidateHDFDoc(data)
+	doc, err := loadAndValidateHDFDoc(data, "system")
 	if err != nil {
 		return fmt.Errorf("system document %s: %w", inputPath, err)
 	}
