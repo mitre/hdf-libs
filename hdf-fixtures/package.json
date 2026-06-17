@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-fixtures",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Shared real-world HDF reference fixtures for cross-package consumers (parsers, validators, extension-graph)",
   "private": true,
   "type": "module",
