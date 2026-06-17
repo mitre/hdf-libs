@@ -36,6 +36,7 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking Changes — CLI
 
+- **Converter `generator.name` now identifies each converter individually.** Previously ~9 converters (`nessus`, all 5 `oscal-*` sub-converters, `trufflehog`, `junit`, `xccdf-results`, plus `ckl` / `cklb` via a shared helper) emitted the generic literal `'hdf-converters'`. They now emit their own name (e.g. `'nessus-to-hdf'`, `'oscal-poam-to-hdf'`). Downstream tools that pivot on `generator.name == 'hdf-converters'` to detect "any HDF converter output" must broaden the check (e.g. match against the substring `-to-hdf`).
 - **`hdf diff --json` renames `componentDiffs` → `extensions.componentSummaries`.** The CLI's per-component compliance aggregation reused the schema's `componentDiffs[]` JSON key for a structurally different shape (it carried compliance metrics, not Component_Diff state-change records, and lacked the schema-required `state` field). To satisfy `hdf-comparison`'s `unevaluatedProperties: false` constraint, the aggregation now ships under the schema's tool-data `extensions` slot at `extensions.componentSummaries`. Downstream consumers parsing `componentDiffs` from `hdf diff --json --system` output must update the JSON path. (#100)
 
 ### Breaking Changes — Converters
