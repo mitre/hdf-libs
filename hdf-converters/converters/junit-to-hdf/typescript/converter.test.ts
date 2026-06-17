@@ -49,7 +49,7 @@ describe('junit to HDF converter', async () => {
       const hdf = await parseHdf('surefire-failing.xml');
 
       expect(hdf.timestamp).toBeTruthy();
-      expect(hdf.generator?.name).toBe('hdf-converters');
+      expect(hdf.generator?.name).toBe('junit-to-hdf');
       expect(hdf.generator?.version).toBeTruthy();
       expect(hdf.baselines).toHaveLength(1);
     });
@@ -309,7 +309,7 @@ describe('junit to HDF converter', async () => {
     it('should produce valid JSON that re-parses', async () => {
       const output = await convertJunitToHdf(loadFixture('surefire-failing.xml'));
       const hdf = JSON.parse(output) as HDFResults;
-      expect(hdf.generator?.name).toBe('hdf-converters');
+      expect(hdf.generator?.name).toBe('junit-to-hdf');
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0]!.requirements).toHaveLength(2);
     });

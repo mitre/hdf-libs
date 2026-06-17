@@ -51,7 +51,7 @@ func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, conve
 	// Build appliedBy from metadata responsible-parties
 	appliedBy := extractAppliedBy(poam.Metadata)
 
-	genName := "hdf-converters"
+	genName := "oscal-poam-to-hdf"
 	amendments := &hdf.HDFAmendments{
 		Name:      ToKebabCase(poam.Metadata.Title, "oscal-poam"),
 		Overrides: overrides,

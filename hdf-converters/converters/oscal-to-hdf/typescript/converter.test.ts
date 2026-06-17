@@ -114,7 +114,7 @@ describe('convertOscalCatalogToHdf', () => {
     expect(baseline.version).toBe('5.2.0');
     expect(baseline.status).toBe('loaded');
 
-    expect(baseline.generator?.name).toBe('hdf-converters');
+    expect(baseline.generator?.name).toBe('oscal-catalog-to-hdf');
     expect(baseline.integrity?.algorithm).toBe('sha256');
   });
 
@@ -285,7 +285,7 @@ describe('convertOscalComponentToHdf', () => {
 
     expect(baseline.name).toBeTruthy();
     expect(baseline.status).toBe('loaded');
-    expect(baseline.generator?.name).toBe('hdf-converters');
+    expect(baseline.generator?.name).toBe('oscal-component-to-hdf');
     expect(baseline.integrity?.algorithm).toBe('sha256');
     expect(baseline.requirements.length).toBeGreaterThan(0);
 
@@ -316,7 +316,7 @@ describe('convertOscalSspToHdf', () => {
 
     expect(system.name).toBeTruthy();
     expect(system.integrity?.algorithm).toBe('sha256');
-    expect(system.generator?.name).toBe('hdf-converters');
+    expect(system.generator?.name).toBe('oscal-ssp-to-hdf');
     expect(system.components).toBeDefined();
   });
 
@@ -348,7 +348,7 @@ describe('convertOscalSapToHdf', () => {
 
     expect(plan.name).toBeTruthy();
     expect(plan.integrity?.algorithm).toBe('sha256');
-    expect(plan.generator?.name).toBe('hdf-converters');
+    expect(plan.generator?.name).toBe('oscal-sap-to-hdf');
     expect(plan.assessments).toBeDefined();
     expect(plan.assessments.length).toBeGreaterThan(0);
   });
@@ -373,7 +373,7 @@ describe('convertOscalPoamToHdf', () => {
 
     expect(amendments.name).toBeTruthy();
     expect(amendments.integrity?.algorithm).toBe('sha256');
-    expect(amendments.generator?.name).toBe('hdf-converters');
+    expect(amendments.generator?.name).toBe('oscal-poam-to-hdf');
     expect(amendments.overrides).toBeDefined();
     expect(amendments.overrides.length).toBeGreaterThan(0);
 

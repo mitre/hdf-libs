@@ -24,7 +24,7 @@ func ConvertSSPToHDF(input []byte, converterVersion string) (*hdf.HDFSystem, err
 		Name:      sspSystemName(ssp),
 		Integrity: integrity,
 		Generator: &hdf.Generator{
-			Name:    "hdf-converters",
+			Name:    "oscal-ssp-to-hdf",
 			Version: converterVersion,
 		},
 	}

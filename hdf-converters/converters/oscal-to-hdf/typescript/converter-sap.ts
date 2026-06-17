@@ -73,7 +73,7 @@ export async function convertOscalSapToHdf(input: string): Promise<string> {
     type: planType,
     description,
     generator: {
-      name: 'hdf-converters',
+      name: 'oscal-sap-to-hdf',
       version: '1.0.0',
     },
   };

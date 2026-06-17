@@ -403,7 +403,7 @@ async function convertBenchmarkResultsToHdf(
 
   const hdf: HDFResults = {
     baselines: [baseline],
-    generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
+    generator: { name: 'xccdf-results-to-hdf', version: CONVERTER_VERSION },
     tool: { name: 'XCCDF Results', format: 'XML' },
     components,
     timestamp,
@@ -466,7 +466,7 @@ async function convertBenchmarkToBaselineJson(
     integrity,
     requirements,
     groups,
-    generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
+    generator: { name: 'xccdf-results-to-hdf', version: CONVERTER_VERSION },
   };
 
   return JSON.stringify(baseline, null, 2);
@@ -673,7 +673,7 @@ async function convertArfCollection(
 
   const hdf: HDFResults = {
     baselines,
-    generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
+    generator: { name: 'xccdf-results-to-hdf', version: CONVERTER_VERSION },
     tool: { name: 'ARF', format: 'ARF' },
     components,
     timestamp: firstTimestamp ?? new Date(),

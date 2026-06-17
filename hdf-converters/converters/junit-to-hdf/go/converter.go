@@ -101,7 +101,7 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:    "hdf-converters",
+		GeneratorName:    "junit-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "JUnit XML",
 		ToolFormat:       "XML",

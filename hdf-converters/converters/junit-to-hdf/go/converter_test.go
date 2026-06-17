@@ -36,7 +36,7 @@ func TestConvertJUnitToHDF_SurefireFailing(t *testing.T) {
 	require.NotNil(t, result)
 
 	require.NotNil(t, result.Generator)
-	assert.Equal(t, "hdf-converters", result.Generator.Name)
+	assert.Equal(t, "junit-to-hdf", result.Generator.Name)
 	assert.Equal(t, converterVersion, result.Generator.Version)
 	require.NotNil(t, result.Timestamp)
 	assert.Len(t, result.Baselines, 1)

@@ -124,19 +124,19 @@ describe('checklist shared model', () => {
 
   it('strips HTML from descriptions (parity with the Go mapping)', () => {
     const ckl = `<?xml version="1.0"?><CHECKLIST><ASSET><HOST_NAME>H</HOST_NAME></ASSET><STIGS><iSTIG><STIG_INFO><SI_DATA><SID_NAME>stigid</SID_NAME><SID_DATA>S</SID_DATA></SI_DATA></STIG_INFO><VULN><STIG_DATA><VULN_ATTRIBUTE>Vuln_Num</VULN_ATTRIBUTE><ATTRIBUTE_DATA>V-1</ATTRIBUTE_DATA></STIG_DATA><STIG_DATA><VULN_ATTRIBUTE>Vuln_Discuss</VULN_ATTRIBUTE><ATTRIBUTE_DATA>Use &lt;b&gt;bold&lt;/b&gt; markup.</ATTRIBUTE_DATA></STIG_DATA><STATUS>Open</STATUS></VULN></iSTIG></STIGS></CHECKLIST>`;
-    const hdf = checklistToHdf(parseCkl(ckl), CHECKSUM);
+    const hdf = checklistToHdf(parseCkl(ckl), CHECKSUM, 'test-converter');
     const data = hdf.baselines[0].requirements[0].descriptions[0].data;
     expect(data).toBe('Use bold markup.');
     expect(data).not.toContain('<b>');
   });
 
   it('omits a per-finding startTime (CKL has no timestamp; deterministic)', () => {
-    const hdf = checklistToHdf(parseCkl(SAMPLE_CKL), CHECKSUM);
+    const hdf = checklistToHdf(parseCkl(SAMPLE_CKL), CHECKSUM, 'test-converter');
     expect(hdf.baselines[0].requirements[0].results[0].startTime).toBeUndefined();
   });
 
   it('maps checklist to HDF with controlType and no verificationMethod', () => {
-    const hdf = checklistToHdf(parseCkl(SAMPLE_CKL), CHECKSUM);
+    const hdf = checklistToHdf(parseCkl(SAMPLE_CKL), CHECKSUM, 'test-converter');
     expect(hdf.baselines).toHaveLength(1);
     const bl = hdf.baselines[0];
     expect(bl.name).toBe('STIG Checklist Scan');
@@ -155,7 +155,7 @@ describe('checklist shared model', () => {
 
   it('round-trips CKL -> HDF -> model -> CKL', () => {
     const cl = parseCkl(SAMPLE_CKL);
-    const hdf = checklistToHdf(cl, CHECKSUM);
+    const hdf = checklistToHdf(cl, CHECKSUM, 'test-converter');
     const rt = hdfToChecklist(JSON.stringify(hdf));
     expect(rt.asset.hostName).toBe(cl.asset.hostName);
     expect(rt.stigs[0].stigID).toBe(cl.stigs[0].stigID);
@@ -182,7 +182,7 @@ describe('checklist shared model', () => {
 
   it('round-trips CKLB -> HDF -> model -> CKLB with snake_case status', () => {
     const cl = parseCklb(SAMPLE_CKLB);
-    const hdf = checklistToHdf(cl, CHECKSUM);
+    const hdf = checklistToHdf(cl, CHECKSUM, 'test-converter');
     const rt = hdfToChecklist(JSON.stringify(hdf));
     expect(rt.format).toBe('cklb');
     const out = serializeCklb(rt);
@@ -235,18 +235,20 @@ describe('checklist shared model', () => {
     const fqdnOnly = checklistToHdf(
       { format: 'ckl', asset: { hostFQDN: 'h.example.com' }, stigs: [{ vulns: [] }] },
       CHECKSUM,
+      'test-converter',
     );
     expect(fqdnOnly.components?.[0].name).toBe('h.example.com');
 
     const ipOnly = checklistToHdf(
       { format: 'ckl', asset: { hostIP: '192.0.2.10' }, stigs: [{ vulns: [] }] },
       CHECKSUM,
+      'test-converter',
     );
     expect(ipOnly.components?.[0].name).toBe('192.0.2.10');
   });
 
   it('omits the component when the asset has no host identity', () => {
-    const hdf = checklistToHdf({ format: 'ckl', asset: {}, stigs: [{ vulns: [] }] }, CHECKSUM);
+    const hdf = checklistToHdf({ format: 'ckl', asset: {}, stigs: [{ vulns: [] }] }, CHECKSUM, 'test-converter');
     expect(hdf.components).toBeUndefined();
   });
 
@@ -335,7 +337,7 @@ describe('checklist shared model', () => {
         vulns: [{ vulnNum: 'V-1', ccis: [], status: CheckStatus.Open }],
       }],
     };
-    const hdf = checklistToHdf(cl, CHECKSUM);
+    const hdf = checklistToHdf(cl, CHECKSUM, 'test-converter');
     const ext = hdf.extensions as Record<string, unknown>;
     expect((ext.assetExtras as Record<string, unknown>).marking).toBe('CUI');
     expect((ext.assetExtras as Record<string, unknown>).webOrDatabase).toBe(true);

@@ -35,5 +35,5 @@ func ConvertCKLToHDF(input []byte, converterVersion string) (*hdf.HDFResults, er
 	if err != nil {
 		return nil, fmt.Errorf("ckl: %w", err)
 	}
-	return checklist.ChecklistToHDF(cl, shared.InputChecksum(input), converterVersion), nil
+	return checklist.ChecklistToHDF(cl, shared.InputChecksum(input), converterVersion, "ckl-to-hdf"), nil
 }

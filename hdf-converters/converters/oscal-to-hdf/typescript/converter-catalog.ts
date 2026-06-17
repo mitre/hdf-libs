@@ -101,7 +101,7 @@ export async function catalogToBaseline(
     requirements,
     groups,
     generator: {
-      name: 'hdf-converters',
+      name: 'oscal-catalog-to-hdf',
       version: '1.0.0',
     },
   };

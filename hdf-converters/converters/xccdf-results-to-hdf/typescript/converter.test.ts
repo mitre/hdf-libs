@@ -173,7 +173,7 @@ describe('xccdf-results-to-hdf converter', async () => {
 
     it('should set generator fields', async () => {
       const hdf = await parseHdf('stig-rhel7.xml');
-      expect(hdf.generator?.name).toBe('hdf-converters');
+      expect(hdf.generator?.name).toBe('xccdf-results-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 
@@ -483,7 +483,7 @@ describe('xccdf-results-to-hdf converter', async () => {
         loadFixture('stig-rhel7.xml')
       );
       const hdf = JSON.parse(output) as HDFResults;
-      expect(hdf.generator?.name).toBe('hdf-converters');
+      expect(hdf.generator?.name).toBe('xccdf-results-to-hdf');
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0]!.requirements).toHaveLength(5);
     });
@@ -734,7 +734,7 @@ describe('xccdf-benchmark-to-hdf converter', async () => {
 
     it('should include generator', async () => {
       const baseline = await parseBaseline('benchmark-minimal-1.1.xml');
-      expect(baseline.generator?.name).toBe('hdf-converters');
+      expect(baseline.generator?.name).toBe('xccdf-results-to-hdf');
       expect(baseline.generator?.version).toBe('1.0.0');
     });
 

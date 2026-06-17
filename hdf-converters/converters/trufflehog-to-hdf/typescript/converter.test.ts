@@ -106,9 +106,9 @@ describe('trufflehog to HDF converter', async () => {
       expect(checksum?.value).toMatch(/^[a-f0-9]{64}$/);
     });
 
-    it('should set generator name to "hdf-converters"', async () => {
+    it('should set generator name to "trufflehog-to-hdf"', async () => {
       const hdf = JSON.parse(await convertTrufflehogToHdf(loadFixture('minimal.json'))) as HDFResults;
-      expect(hdf.generator?.name).toBe('hdf-converters');
+      expect(hdf.generator?.name).toBe('trufflehog-to-hdf');
       expect(hdf.generator?.version).toBe('1.0.0');
     });
 

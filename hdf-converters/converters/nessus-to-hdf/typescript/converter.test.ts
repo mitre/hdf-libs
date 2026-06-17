@@ -239,7 +239,7 @@ describe('Nessus to HDF Converter', async () => {
       const result = await convertNessusToHdf(nessusXml);
 
       expect(result.generator).toBeDefined();
-      expect(result.generator?.name).toBe('hdf-converters');
+      expect(result.generator?.name).toBe('nessus-to-hdf');
       expect(result.generator?.version).toBeDefined();
     });
 

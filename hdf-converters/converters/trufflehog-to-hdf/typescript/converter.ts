@@ -290,7 +290,7 @@ export async function convertTrufflehogToHdf(input: string): Promise<string> {
   const hdf: HDFResults = {
     baselines: [baseline],
     generator: {
-      name: 'hdf-converters',
+      name: 'trufflehog-to-hdf',
       version: '1.0.0',
     },
     tool,

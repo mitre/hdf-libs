@@ -20,7 +20,7 @@ import (
 //
 // Original-format metadata is stashed in HDF extensions/tags so a subsequent
 // HDFToChecklist can reproduce the checklist losslessly (round-trip).
-func ChecklistToHDF(cl *Checklist, resultsChecksum *hdf.Checksum, converterVersion string) *hdf.HDFResults {
+func ChecklistToHDF(cl *Checklist, resultsChecksum *hdf.Checksum, converterVersion, generatorName string) *hdf.HDFResults {
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(cl.Stigs))
 	for i := range cl.Stigs {
 		baselines = append(baselines, stigToBaseline(&cl.Stigs[i], resultsChecksum))
@@ -33,7 +33,7 @@ func ChecklistToHDF(cl *Checklist, resultsChecksum *hdf.Checksum, converterVersi
 	}
 
 	opts := shared.HDFResultsOptions{
-		GeneratorName:    "hdf-converters",
+		GeneratorName:    generatorName,
 		ConverterVersion: converterVersion,
 		ToolName:         toolName,
 		ToolFormat:       toolFormat,

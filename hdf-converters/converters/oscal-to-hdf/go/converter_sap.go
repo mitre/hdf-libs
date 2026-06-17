@@ -40,7 +40,7 @@ func assessmentPlanToHDFPlan(ap *AssessmentPlan, rawInput []byte, converterVersi
 	// Build description from metadata remarks and terms-and-conditions
 	description := buildPlanDescription(ap)
 
-	genName := "hdf-converters"
+	genName := "oscal-sap-to-hdf"
 	plan := &hdf.HDFPlan{
 		Name:        ToKebabCase(ap.Metadata.Title, "oscal-assessment-plan"),
 		Assessments: assessments,

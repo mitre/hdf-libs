@@ -156,7 +156,7 @@ func TestCKLandCKLBEquivalentModel(t *testing.T) {
 func TestChecklistToHDF(t *testing.T) {
 	cl, err := ParseCKL([]byte(sampleCKL))
 	require.NoError(t, err)
-	results := ChecklistToHDF(cl, shared.InputChecksum([]byte(sampleCKL)), "1.0.0")
+	results := ChecklistToHDF(cl, shared.InputChecksum([]byte(sampleCKL)), "1.0.0", "test-converter")
 
 	require.Len(t, results.Baselines, 1)
 	bl := results.Baselines[0]
@@ -184,7 +184,7 @@ func TestChecklistToHDF(t *testing.T) {
 func TestRoundTripCKL(t *testing.T) {
 	cl, err := ParseCKL([]byte(sampleCKL))
 	require.NoError(t, err)
-	results := ChecklistToHDF(cl, shared.InputChecksum([]byte(sampleCKL)), "1.0.0")
+	results := ChecklistToHDF(cl, shared.InputChecksum([]byte(sampleCKL)), "1.0.0", "test-converter")
 	hdfBytes, err := json.Marshal(results)
 	require.NoError(t, err)
 
@@ -219,7 +219,7 @@ func TestRoundTripCKL(t *testing.T) {
 func TestRoundTripCKLB(t *testing.T) {
 	cl, err := ParseCKLB([]byte(sampleCKLB))
 	require.NoError(t, err)
-	results := ChecklistToHDF(cl, shared.InputChecksum([]byte(sampleCKLB)), "1.0.0")
+	results := ChecklistToHDF(cl, shared.InputChecksum([]byte(sampleCKLB)), "1.0.0", "test-converter")
 	hdfBytes, err := json.Marshal(results)
 	require.NoError(t, err)
 
@@ -311,7 +311,7 @@ func TestRoundTripPreservesExtrasAndAssetFlags(t *testing.T) {
 			}},
 		}},
 	}
-	results := ChecklistToHDF(cl, shared.InputChecksum([]byte("x")), "1.0.0")
+	results := ChecklistToHDF(cl, shared.InputChecksum([]byte("x")), "1.0.0", "test-converter")
 	b, err := json.Marshal(results)
 	require.NoError(t, err)
 	rt, err := HDFToChecklist(b)
@@ -330,7 +330,7 @@ func TestRoundTripPreservesExtrasAndAssetFlags(t *testing.T) {
 func TestComponentNameFallback(t *testing.T) {
 	mk := func(a Asset) *hdf.Component {
 		cl := &Checklist{Asset: a, Stigs: []Stig{{Vulns: []Vuln{{VulnNum: "V-1", Status: StatusOpen}}}}}
-		r := ChecklistToHDF(cl, shared.InputChecksum([]byte("x")), "1.0.0")
+		r := ChecklistToHDF(cl, shared.InputChecksum([]byte("x")), "1.0.0", "test-converter")
 		if len(r.Components) == 0 {
 			return nil
 		}

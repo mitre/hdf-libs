@@ -81,7 +81,7 @@ func catalogToBaseline(catalog *Catalog, rawInput []byte, converterVersion strin
 		Requirements: requirements,
 		Groups:       groups,
 		Generator: &hdf.Generator{
-			Name:    "hdf-converters",
+			Name:    "oscal-catalog-to-hdf",
 			Version: converterVersion,
 		},
 	}

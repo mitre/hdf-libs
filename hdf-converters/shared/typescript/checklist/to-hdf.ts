@@ -27,12 +27,12 @@ const CONVERTER_VERSION = '1.0.0';
  * applicability are omitted (the checklist format cannot substantiate them).
  * Original-format metadata is stashed in extensions/tags for round-trip.
  */
-export function checklistToHdf(cl: Checklist, resultsChecksum: Checksum): HDFResults {
+export function checklistToHdf(cl: Checklist, resultsChecksum: Checksum, generatorName: string): HDFResults {
   const baselines = cl.stigs.map((s) => stigToBaseline(s, resultsChecksum));
 
   const hdf: HDFResults = {
     baselines,
-    generator: { name: 'hdf-converters', version: CONVERTER_VERSION },
+    generator: { name: generatorName, version: CONVERTER_VERSION },
     tool: { name: 'DISA STIG Viewer', format: cl.format === 'cklb' ? 'CKLB' : 'CKL' },
     timestamp: new Date(),
   };

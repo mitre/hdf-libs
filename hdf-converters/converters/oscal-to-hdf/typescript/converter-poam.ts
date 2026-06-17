@@ -82,7 +82,7 @@ export async function convertOscalPoamToHdf(input: string): Promise<string> {
     version: meta.version,
     appliedBy,
     generator: {
-      name: 'hdf-converters',
+      name: 'oscal-poam-to-hdf',
       version: '1.0.0',
     },
   };

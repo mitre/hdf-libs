@@ -340,7 +340,7 @@ func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:    "hdf-converters",
+		GeneratorName:    "trufflehog-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "TruffleHog",
 		ToolFormat:       "JSON",

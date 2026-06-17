@@ -96,7 +96,7 @@ export async function convertJunitToHdf(input: string): Promise<string> {
   }) as EvaluatedBaseline;
 
   return buildHdfResults({
-    generatorName: 'hdf-converters',
+    generatorName: 'junit-to-hdf',
     converterVersion: CONVERTER_VERSION,
     toolName: 'JUnit XML',
     toolFormat: 'XML',

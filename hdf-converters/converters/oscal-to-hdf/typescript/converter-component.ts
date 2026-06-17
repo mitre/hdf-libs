@@ -58,7 +58,7 @@ export async function convertOscalComponentToHdf(input: string): Promise<string>
     integrity,
     requirements,
     generator: {
-      name: 'hdf-converters',
+      name: 'oscal-component-to-hdf',
       version: '1.0.0',
     },
   };

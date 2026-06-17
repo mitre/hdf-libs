@@ -1,6 +1,6 @@
 {
   "generator": {
-    "name": "hdf-converters",
+    "name": "xccdf-results-to-hdf",
     "version": "0.1.0"
   },
   "groups": [

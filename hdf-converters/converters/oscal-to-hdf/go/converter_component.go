@@ -55,7 +55,7 @@ func ConvertComponentDefinitionToHDF(input []byte, converterVersion string) (*hd
 		Integrity:    integrity,
 		Requirements: requirements,
 		Generator: &hdf.Generator{
-			Name:    "hdf-converters",
+			Name:    "oscal-component-to-hdf",
 			Version: converterVersion,
 		},
 	}

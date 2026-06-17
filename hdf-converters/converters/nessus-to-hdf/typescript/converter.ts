@@ -163,7 +163,7 @@ export async function convertNessusToHdf(nessusXml: string): Promise<HDFResults>
       duration,
     },
     generator: {
-      name: 'hdf-converters',
+      name: 'nessus-to-hdf',
       version: converterVersion,
     },
     tool,

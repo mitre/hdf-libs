@@ -384,7 +384,7 @@ func TestConvertXccdfResultsToHDF_Generator(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotNil(t, result.Generator)
-	assert.Equal(t, "hdf-converters", result.Generator.Name)
+	assert.Equal(t, "xccdf-results-to-hdf", result.Generator.Name)
 	assert.Equal(t, converterVersion, result.Generator.Version)
 }
 
@@ -637,7 +637,7 @@ func TestConvertARF_Generator(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotNil(t, result.Generator)
-	assert.Equal(t, "hdf-converters", result.Generator.Name)
+	assert.Equal(t, "xccdf-results-to-hdf", result.Generator.Name)
 	assert.Equal(t, converterVersion, result.Generator.Version)
 }
 
@@ -839,7 +839,7 @@ func TestConvertXccdfBenchmarkToHDF_Generator(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotNil(t, result.Generator)
-	assert.Equal(t, "hdf-converters", result.Generator.Name)
+	assert.Equal(t, "xccdf-results-to-hdf", result.Generator.Name)
 	assert.Equal(t, converterVersion, result.Generator.Version)
 }
 

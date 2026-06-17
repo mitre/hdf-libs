@@ -458,7 +458,7 @@ func convertBenchmarkResultsToHDF(input []byte, converterVersion string, results
 	target := buildTarget(&benchmark.TestResult)
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:    "hdf-converters",
+		GeneratorName:    "xccdf-results-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "XCCDF",
 		ToolFormat:       "XCCDF",
@@ -518,7 +518,7 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 		Requirements: requirements,
 		Groups:       groups,
 		Generator: &hdf.Generator{
-			Name:    "hdf-converters",
+			Name:    "xccdf-results-to-hdf",
 			Version: converterVersion,
 		},
 	}
@@ -796,7 +796,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
-		GeneratorName:    "hdf-converters",
+		GeneratorName:    "xccdf-results-to-hdf",
 		ConverterVersion: converterVersion,
 		ToolName:         "ARF",
 		ToolFormat:       "ARF",

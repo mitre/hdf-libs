@@ -42,7 +42,7 @@ func TestConvertCKLBToHDF_Structure(t *testing.T) {
 	require.NotNil(t, result)
 
 	require.NotNil(t, result.Generator)
-	assert.Equal(t, "hdf-converters", result.Generator.Name)
+	assert.Equal(t, "cklb-to-hdf", result.Generator.Name)
 	assert.Equal(t, converterVersion, result.Generator.Version)
 	require.NotNil(t, result.Tool)
 	require.NotNil(t, result.Tool.Name)

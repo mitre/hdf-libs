@@ -15,5 +15,5 @@ export async function convertCklbToHdf(input: string): Promise<string> {
   validateInputSize(input, 'cklb-to-hdf');
   const resultsChecksum: Checksum = await inputChecksum(input);
   const checklist = parseCklb(input);
-  return JSON.stringify(checklistToHdf(checklist, resultsChecksum), null, 2);
+  return JSON.stringify(checklistToHdf(checklist, resultsChecksum, 'cklb-to-hdf'), null, 2);
 }

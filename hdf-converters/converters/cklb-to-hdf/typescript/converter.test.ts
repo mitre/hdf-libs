@@ -33,7 +33,7 @@ describe('cklb-to-hdf converter', () => {
     const hdf = JSON.parse(await convertCklbToHdf(loadFixture('firefox-stig.cklb'))) as HDFResults;
 
     expect(hdf.timestamp).toBeTruthy();
-    expect(hdf.generator?.name).toBe('hdf-converters');
+    expect(hdf.generator?.name).toBe('cklb-to-hdf');
     expect(hdf.tool?.name).toBe('DISA STIG Viewer');
     expect(hdf.tool?.format).toBe('CKLB');
     expect(hdf.baselines).toHaveLength(1);

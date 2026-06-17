@@ -51,7 +51,7 @@ export async function convertOscalSspToHdf(input: string): Promise<string> {
     integrity,
     components: [],
     generator: {
-      name: 'hdf-converters',
+      name: 'oscal-ssp-to-hdf',
       version: '1.0.0',
     },
   };
