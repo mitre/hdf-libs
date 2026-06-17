@@ -386,9 +386,9 @@ func runAmendDraft(resultsPath, amendType, statusFilter, selectStr, expires, out
 	if err != nil {
 		return fmt.Errorf("failed to read results file: %w", err)
 	}
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return fmt.Errorf("failed to parse results: %w", err)
+	doc, err := loadAndValidateHDFDoc(data, "results")
+	if err != nil {
+		return fmt.Errorf("results file %s: %w", resultsPath, err)
 	}
 
 	draft, err := buildDraftFromResults(doc, amendType, statusFilter, selectStr, expires, time.Now().UTC())

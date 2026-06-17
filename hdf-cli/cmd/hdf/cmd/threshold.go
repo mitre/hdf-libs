@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 
@@ -31,8 +30,8 @@ type StatusCounts struct {
 // countControlsByStatusSeverity parses HDF results JSON and counts
 // requirements by their overall status and severity.
 func countControlsByStatusSeverity(data []byte) (*StatusCounts, error) {
-	var results hdf.HDFResults
-	if err := json.Unmarshal(data, &results); err != nil {
+	results, err := parseHDFResults(data)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse HDF results: %w", err)
 	}
 
@@ -60,8 +59,8 @@ type ControlIDMapping struct {
 // mapControlIDs builds a list of control ID → status/severity mappings
 // from HDF results.
 func mapControlIDs(data []byte) ([]ControlIDMapping, error) {
-	var results hdf.HDFResults
-	if err := json.Unmarshal(data, &results); err != nil {
+	results, err := parseHDFResults(data)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse HDF results: %w", err)
 	}
 

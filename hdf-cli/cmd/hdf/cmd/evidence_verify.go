@@ -73,9 +73,9 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 		return fmt.Errorf("failed to read evidence package: %w", err)
 	}
 
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return fmt.Errorf("failed to parse evidence package: %w", err)
+	doc, err := loadAndValidateHDFDoc(data, "evidencePackage")
+	if err != nil {
+		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}
 
 	pkgDir := filepath.Dir(pkgPath)
@@ -158,9 +158,9 @@ func verifyCompleteness(pkgDir, planRef string, contents []interface{}) error { 
 			continue // checksum verification already reported this
 		}
 
-		var results map[string]interface{}
-		if json.Unmarshal(resultsData, &results) != nil {
-			continue
+		results, validateErr := loadAndValidateHDFDoc(resultsData, "results")
+		if validateErr != nil {
+			continue // schema-invalid results doc; checksum step already reported it
 		}
 
 		baselines, _ := results["baselines"].([]interface{})

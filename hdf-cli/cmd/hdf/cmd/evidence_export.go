@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -48,9 +47,9 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 		return fmt.Errorf("failed to read evidence package: %w", err)
 	}
 
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return fmt.Errorf("failed to parse evidence package: %w", err)
+	doc, err := loadAndValidateHDFDoc(data, "evidencePackage")
+	if err != nil {
+		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}
 
 	if err := os.MkdirAll(outputDir, 0o750); err != nil { // #nosec G301 -- CLI creates user-specified directory

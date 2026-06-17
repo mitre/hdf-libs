@@ -84,9 +84,9 @@ func runPlanCreateFromSystem(systemFile, planID, outputPath string) error {
 		return fmt.Errorf("failed to read system file: %w", err)
 	}
 
-	var sysDoc map[string]interface{}
-	if err := json.Unmarshal(data, &sysDoc); err != nil {
-		return fmt.Errorf("failed to parse system document: %w", err)
+	sysDoc, err := loadAndValidateHDFDoc(data, "system")
+	if err != nil {
+		return fmt.Errorf("system file %s: %w", systemFile, err)
 	}
 
 	sysName, _ := sysDoc["name"].(string)
