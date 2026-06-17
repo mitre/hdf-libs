@@ -160,7 +160,13 @@ func verifyCompleteness(pkgDir, planRef string, contents []interface{}) error { 
 
 		results, validateErr := loadAndValidateHDFDoc(resultsData, "results")
 		if validateErr != nil {
-			continue // schema-invalid results doc; checksum step already reported it
+			// Checksum verification only confirms the bytes match the recorded
+			// hash; it does not validate schema. If we silently skip a
+			// schema-invalid results doc here, the user sees a downstream
+			// "missing results for baseline X" error and can't tell that the
+			// real cause is the malformed doc. Surface it explicitly.
+			fmt.Fprintf(os.Stderr, "Warning: results doc %q failed schema validation; skipping for completeness check: %v\n", uri, validateErr)
+			continue
 		}
 
 		baselines, _ := results["baselines"].([]interface{})
