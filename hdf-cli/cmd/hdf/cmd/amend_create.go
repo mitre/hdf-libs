@@ -157,9 +157,9 @@ func amendFromResults(resultsPath string) ([]amendOverride, error) {
 		return nil, fmt.Errorf("failed to read results file: %w", err)
 	}
 
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse results: %w", err)
+	doc, err := loadAndValidateHDFDoc(data, "results")
+	if err != nil {
+		return nil, fmt.Errorf("results file %s: %w", resultsPath, err)
 	}
 
 	allReqs := extractAllRequirements(doc)

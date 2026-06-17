@@ -498,6 +498,7 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		pkg := map[string]interface{}{
+			"name": "test-evidence",
 			"contents": []interface{}{
 				map[string]interface{}{
 					"type": "hdf-results",
@@ -530,7 +531,8 @@ func TestEvidenceVerifyCommand(t *testing.T) {
 
 		_, _, err := executeCommand("evidence", "verify", pkgPath)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "parse")
+		// The load gate now rejects non-HDF-shaped input before json.Unmarshal.
+		assert.Contains(t, err.Error(), "not a recognized HDF document")
 	})
 
 	t.Run("requires exactly one argument", func(t *testing.T) {
@@ -692,7 +694,8 @@ func TestEvidenceExportCommand(t *testing.T) {
 
 		_, _, err := executeCommand("evidence", "export", pkgPath)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "parse")
+		// The load gate now rejects non-HDF-shaped input before json.Unmarshal.
+		assert.Contains(t, err.Error(), "not a recognized HDF document")
 	})
 
 	t.Run("requires exactly one argument", func(t *testing.T) {
@@ -705,14 +708,23 @@ func TestEvidenceExportCommand(t *testing.T) {
 		outDir := filepath.Join(tmpDir, "out")
 
 		pkg := map[string]interface{}{
+			"name": "test-evidence",
 			"contents": []interface{}{
 				map[string]interface{}{
 					"type": "hdf-system",
 					"uri":  "system.json",
+					"checksum": map[string]interface{}{
+						"algorithm": "sha256",
+						"value":     "abc",
+					},
 				},
 				map[string]interface{}{
 					"type": "hdf-baseline",
 					"uri":  "baseline.json",
+					"checksum": map[string]interface{}{
+						"algorithm": "sha256",
+						"value":     "def",
+					},
 				},
 			},
 		}
@@ -730,10 +742,15 @@ func TestEvidenceExportCommand(t *testing.T) {
 		outDir := filepath.Join(tmpDir, "out")
 
 		pkg := map[string]interface{}{
+			"name": "test-evidence",
 			"contents": []interface{}{
 				map[string]interface{}{
 					"type": "hdf-results",
 					"uri":  "nonexistent-results.json",
+					"checksum": map[string]interface{}{
+						"algorithm": "sha256",
+						"value":     "abc",
+					},
 				},
 			},
 		}
@@ -756,10 +773,15 @@ func TestEvidenceExportCommand(t *testing.T) {
 		require.NoError(t, os.WriteFile(resultsPath, []byte(resultsDoc), 0o600))
 
 		pkg := map[string]interface{}{
+			"name": "test-evidence",
 			"contents": []interface{}{
 				map[string]interface{}{
 					"type": "hdf-results",
 					"uri":  "results.json",
+					"checksum": map[string]interface{}{
+						"algorithm": "sha256",
+						"value":     "abc",
+					},
 				},
 			},
 		}
@@ -778,11 +800,16 @@ func TestEvidenceExportCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("handles non-map content entries gracefully", func(t *testing.T) {
+	t.Run("rejects schema-invalid content entries via load gate", func(t *testing.T) {
+		// Previously this test verified defensive handling of non-object
+		// content entries inside the evidence_export.go loop. With the m58u
+		// load gate (PR #100) and the gate-uniformity work, the whole doc is
+		// rejected by loadAndValidateHDFDoc before the loop runs.
 		tmpDir := t.TempDir()
 		outDir := filepath.Join(tmpDir, "out")
 
 		pkg := map[string]interface{}{
+			"name": "test-evidence",
 			"contents": []interface{}{
 				"not-a-map",
 				42,
@@ -792,9 +819,9 @@ func TestEvidenceExportCommand(t *testing.T) {
 		pkgPath := filepath.Join(tmpDir, "evidence.json")
 		require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-		_, stderr, err := executeCommand("evidence", "export", pkgPath, "-o", outDir)
-		require.NoError(t, err)
-		assert.Contains(t, stderr, "No documents exported")
+		_, _, err := executeCommand("evidence", "export", pkgPath, "-o", outDir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "schema validation")
 	})
 }
 
@@ -849,16 +876,18 @@ func TestEvidenceVerifyMultipleDocuments(t *testing.T) {
 
 // --- renderVerifyOutput coverage: package with no name ---
 
-func TestEvidenceVerifyNoPackageName(t *testing.T) {
+func TestEvidenceVerifyRejectsNoPackageName(t *testing.T) {
+	// As of wu8p, the input gate validates evidence packages before they
+	// reach the verify flow. A package without the required "name" field
+	// is rejected at load; the previous "empty-name skip-render" path in
+	// runEvidenceVerify is now unreachable. Pin the new behavior.
 	tmpDir := t.TempDir()
 
-	// Package with no "name" field
 	pkg := map[string]interface{}{
 		"contents": []interface{}{
 			map[string]interface{}{
 				"type": "hdf-system",
 				"uri":  "system.json",
-				// no checksum
 			},
 		},
 	}
@@ -866,12 +895,10 @@ func TestEvidenceVerifyNoPackageName(t *testing.T) {
 	pkgPath := filepath.Join(tmpDir, "evidence.json")
 	require.NoError(t, os.WriteFile(pkgPath, pkgData, 0o600))
 
-	stdout, _, err := executeCommand("evidence", "verify", pkgPath)
-	require.NoError(t, err)
-	// Should not contain "Verifying evidence package:" with empty name
-	assert.Contains(t, stdout, "no checksum")
-	assert.Contains(t, stdout, "0/0 checksums valid")
-	assert.Contains(t, stdout, "1 skipped")
+	_, _, err := executeCommand("evidence", "verify", pkgPath)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "schema validation")
+	assert.Contains(t, err.Error(), "name")
 }
 
 // --- evidence build + verify round-trip ---

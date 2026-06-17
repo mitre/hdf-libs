@@ -73,9 +73,9 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 		return fmt.Errorf("failed to read evidence package: %w", err)
 	}
 
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return fmt.Errorf("failed to parse evidence package: %w", err)
+	doc, err := loadAndValidateHDFDoc(data, "evidencePackage")
+	if err != nil {
+		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}
 
 	pkgDir := filepath.Dir(pkgPath)
@@ -158,8 +158,14 @@ func verifyCompleteness(pkgDir, planRef string, contents []interface{}) error { 
 			continue // checksum verification already reported this
 		}
 
-		var results map[string]interface{}
-		if json.Unmarshal(resultsData, &results) != nil {
+		results, validateErr := loadAndValidateHDFDoc(resultsData, "results")
+		if validateErr != nil {
+			// Checksum verification only confirms the bytes match the recorded
+			// hash; it does not validate schema. If we silently skip a
+			// schema-invalid results doc here, the user sees a downstream
+			// "missing results for baseline X" error and can't tell that the
+			// real cause is the malformed doc. Surface it explicitly.
+			fmt.Fprintf(os.Stderr, "Warning: results doc %q failed schema validation; skipping for completeness check: %v\n", uri, validateErr)
 			continue
 		}
 

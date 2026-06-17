@@ -27,7 +27,6 @@ const testResults = `{
       "descriptions": [{"label": "default", "data": "test"}],
       "results": [{"status": "failed", "codeDesc": "test", "startTime": "2026-01-01T00:00:00Z", "backtrace": []}],
       "tags": {},
-      "code": null,
       "refs": [],
       "sourceLocation": {"line": 1, "ref": "test.rb"},
       "statusOverrides": [],
