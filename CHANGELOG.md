@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [3.3.0] - 2026-06-14
+## [3.3.0] - 2026-06-17
 
 ### New Features
 
@@ -20,6 +20,9 @@ All notable changes to this project will be documented in this file.
 - **`@mitre/hdf-extension-graph` Go port** — 1:1 mirror of the TypeScript implementation: same four-phase `BuildExtensionGraph`, same five derived methods on `ContextualizedRequirement` (`Root`, `IsRedundant`, `FullCode`, `ExtensionChain`, `Modifications`). 100% test coverage. Cross-language equivalence test runs both implementations against the same fixture and diffs their canonical JSON dumps, pinning Go↔TS parity going forward. (#84)
 - **`@mitre/hdf-fixtures` workspace package** — shared real-world fixture corpus (private; cross-package tests only) with both TS and Go APIs. Owns wild-data references for cross-package consumers. Inclusion bar is strict: at least two workspace packages must actively consume a file before it lands here, and the original location's copy is deleted (no duplicates). Initial corpus: `multilayered-inspec.json` promoted from hdf-extension-graph (now also consumed by hdf-parsers). (#90)
 - **`hdf convert` / `hdf fetch` validate Amendments output** — `detectHDFDocType` recognizes amendments (top-level `overrides[]`) alongside results/baseline; `validateHDFOutput` calls `ValidateAmendments` for the amendments doc type. Schema-invalid amendments output is blocked before writing to disk. (#88)
+- **Uniform CLI schema validation gate across all 7 HDF doc types** — `hdf-cli`'s input/output gate previously covered Results, Baseline, and Amendments; System, Plan, Evidence Package, and Comparison now route through the same gate at every load and write site (`system.go`, `list.go`, `system_create.go`, `system_component.go`, `plan_create.go`, `doc_set.go` shared helper, `evidence_build.go`, `diff.go`). Schema-invalid HDF docs are rejected before mutation or disk write; load sites refuse undetected-type input. (Closes `hdf-libs-m58u`; #100)
+- **`hdf-parsers` gains `ParseSystem` / `ParsePlan` / `ParseEvidencePackage` / `ParseComparison`** in both Go and TypeScript, mirroring the existing `ParseResults` / `ParseBaseline` shape (normalize-timestamps, schema-validate, decode, trailing-garbage check). The auto-detect `Parse` / `parse` extends to all 7 doc types. Library-API parity, not just CLI internal scaffolding — downstream consumers (heimdall2, saf-cli) get the symmetric surface. (#100)
+- **TS-side schema validation harness for converter importer tests** — `hdf-converters/test/helpers/expectValidHdf.ts` adds `expectValidResults` / `expectValidBaseline` / `expectValidAmendments` helpers backed by `@mitre/hdf-validators`. 26 converter test suites now assert schema validity on at least one success path, matching the Go-side discipline. (Closes `hdf-libs-nrr4`; #101)
 
 ### Fixes
 
@@ -27,6 +30,13 @@ All notable changes to this project will be documented in this file.
 - **`hdf-cli` parse + normalize now delegate to `hdf-parsers`** — `parseHDFResults` / `parseHDFBaseline` in `input.go` previously re-implemented the parser pipeline, bypassing #83's bare-timestamp normalization. Every CLI command that loaded HDF (`list`, `query`, `diff`) crashed on real InSpec output; `validate.go` had the same problem on a separate code path. CLI now delegates to `hdfparsers.ParseResults` / `ParseBaseline`; `validate.go` runs `hdfparsers.NormalizeTimestamps` before `validators.Validate`. Verified end-to-end against `multilayered-inspec.json` (1603 reqs, all timestamps lack TZ). (Closes `hdf-libs-mccc`; #89)
 - **AWS Config converter synthesizes `notApplicable` for zero-evaluation rules** — `hdf fetch aws-config` previously wrote requirements with `results: []` when a deployed Config rule evaluated zero in-scope resources, violating the schema's `minItems: 1` invariant. Both Go and TS converters now synthesize a single `notApplicable` result in that case, with a `codeDesc` explaining the rule's check ran but had no scope. Matches AWS Config's own console depiction (a dash, not "Compliant") — auditors see that no determination was made, not a vacuous "passed". (Fixes #80; #81)
 - **`hdf-schema/helpers.d.ts` import path** — `helpers.d.ts` imported from `../dist/ts/hdf-results.js`, which was the per-document file removed by #77's combined-output refactor. Every attw entry that re-exports from `./helpers.js` failed type resolution post-merge, breaking the Pre-release checks workflow on main. Repointed to the consolidated `../dist/ts/hdf.js`. Also moved `publint` + `arethetypeswrong` from `pre-release.yml` into `ci.yml` so packaging defects surface on the PR that introduces them, not after merge to main. (#85, #87)
+- **`sbomRef` / `systemRef` produced by `hdf system` and `hdf plan create` were schema-invalid on Windows.** The HDF System and Plan schemas require these fields to be `uri-reference`-formatted, but the CLI wrote the raw OS path. On Windows, backslashes in `C:\Users\…\foo.json` violate the format. Apply `filepath.ToSlash` at the four write sites (`system_create.go` FromSBOM, `system_component.go` add + update, `plan_create.go`). No behavior change on POSIX. Pre-existing cross-platform bug, surfaced by the new schema gate.
+- **CLI test isolation: `TestSchemaDirFlag` no longer leaks `validators.schemaDir` to other tests in the package.** Adds `t.Cleanup` to reset the package-global after the test runs. Previously caused later tests to load schemas from disk instead of the embedded copy, which manifested as missing-schema failures on the CI Coverage job whenever the build artifact's `hdf-schema/dist/schemas/` was incomplete.
+- **System-create / SBOM-import component-type mapping was producing schema-invalid `Component.type`** values (`compute`, `storage`, `other`). With the v3.3.0 closed 11-value enum (see Validation Changes below), the mapping is now identity for the 11 valid types; CycloneDX SBOM mappings updated accordingly. Surfaced by the new CLI schema gate.
+
+### Breaking Changes — CLI
+
+- **`hdf diff --json` renames `componentDiffs` → `extensions.componentSummaries`.** The CLI's per-component compliance aggregation reused the schema's `componentDiffs[]` JSON key for a structurally different shape (it carried compliance metrics, not Component_Diff state-change records, and lacked the schema-required `state` field). To satisfy `hdf-comparison`'s `unevaluatedProperties: false` constraint, the aggregation now ships under the schema's tool-data `extensions` slot at `extensions.componentSummaries`. Downstream consumers parsing `componentDiffs` from `hdf diff --json --system` output must update the JSON path. (#100)
 
 ### Breaking Changes — Converters
 
@@ -69,6 +79,12 @@ All notable changes to this project will be documented in this file.
 
 - **`@mitre/hdf-converters`**: `hdf-version.ts` and its test removed. Use the `legacyhdf-to-hdf` converter for v1→current overlay flattening.
 - **`@mitre/hdf-converters` `shared/typescript/converterutil.ts`**: re-exports of `Applicability`, `ControlType`, `VerificationMethodEnum`, `DEFAULT_MAX_ITEMS`, and `deriveControlType` removed. Import these directly from `@mitre/hdf-schema` (the first three) or use `deriveControlTypeFromTags` (the public API).
+
+### Documentation
+
+- **Prose docs reorganized into the VitePress site.** `docs/` (specification, architecture, guides, contributing) moved to `site/docs/` and now ships as part of the documentation site at `https://mitre.github.io/hdf-libs/`. (#99)
+- **Per-version schema archive on the docs site.** `site/public/schemas/<name>/v<X.Y.Z>/index.json` now snapshots the bundled schema at every release tag, keyed by `$id` (handles the historical v3.0.0 release-tag-vs-$id discrepancy). A version dropdown in the nav surfaces the prior versions. Release skill Phase 1.5 documents the archive-staging step so future bumps include the snapshot. (#99)
+- **CI smoke-builds the docs site on every PR.** New `site-build` job in `ci.yml` runs `pnpm generate && vitepress build` after the main build job, catching site config breakage before merge. (#99)
 
 ### Build Pipeline
 
