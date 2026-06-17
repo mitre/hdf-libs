@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertNessusToHdf } from './index.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -23,6 +24,7 @@ describe('Nessus to HDF Converter', async () => {
       );
 
       const result = await convertNessusToHdf(nessusXml);
+      expectValidResults(result);
 
       // Should return valid HDF Results
       expect(result).toBeDefined();

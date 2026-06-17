@@ -4,6 +4,7 @@ import {fileURLToPath} from 'url';
 import {describe, expect, it} from 'vitest';
 import {convertZapToHdf} from './converter';
 import {runConverterContractTests} from '../../../shared/typescript/converter-contract.js';
+import {expectValidResults} from '../../../test/helpers/expectValidHdf.js';
 import {parseJSON} from '@mitre/hdf-utilities';
 import type {HDFResults} from '@mitre/hdf-schema';
 
@@ -65,6 +66,7 @@ describe('ZAP Converter', () => {
       const input = loadFixture('minimal.json');
       const output = await convertZapToHdf(input);
       const hdf = parseJSON<HDFResults>(output);
+      expectValidResults(hdf);
 
       expect(hdf.baselines).toHaveLength(1);
       expect(hdf.baselines[0].requirements).toHaveLength(2);

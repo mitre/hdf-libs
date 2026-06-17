@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertBurpsuiteToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -63,6 +64,7 @@ describe('BurpSuite to HDF Converter', () => {
       output = await convertBurpsuiteToHdf(xml);
       parsed = parseOutput(output);
       baselines = parsed.baselines as Array<Record<string, unknown>>;
+      expectValidResults(parsed);
 
       expect(parsed).toBeDefined();
       expect(baselines).toBeDefined();

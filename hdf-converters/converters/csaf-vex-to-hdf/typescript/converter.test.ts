@@ -7,6 +7,7 @@ import {
   OverrideType,
   ResultStatus,
 } from '@mitre/hdf-schema';
+import { expectValidAmendments } from '../../../test/helpers/expectValidHdf.js';
 import { convertCsafVexToHdf } from './converter.js';
 
 const TEST_VERSION = 'test';
@@ -21,6 +22,7 @@ describe('convertCsafVexToHdf — not_affected use case', () => {
       loadInput('2022-evd-uc-01-na-001.json'),
       TEST_VERSION,
     );
+    expectValidAmendments(result);
     expect(result.overrides).toHaveLength(1);
     const o = result.overrides[0];
     expect(o.requirementId).toBe('CVE-2021-44228');

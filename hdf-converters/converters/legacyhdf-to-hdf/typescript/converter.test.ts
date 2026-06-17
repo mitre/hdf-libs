@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { inspec } from '@mitre/hdf-fixtures';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import { convertV1ToV2, isHDFV1, HDFV1Results } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -602,6 +603,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
 
     it('should produce one baseline from one profile', () => {
       const v2 = convertV1ToV2(v1);
+      expectValidResults(v2);
       expect(v2.baselines).toHaveLength(1);
       expect(v2.baselines[0].name).toBe(
         'redhat-enterprise-linux-9-stig-baseline'

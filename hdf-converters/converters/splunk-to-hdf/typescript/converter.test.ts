@@ -4,6 +4,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { convertSplunkToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -26,6 +27,7 @@ describe('Splunk to HDF Converter', () => {
       expect(result).toBeTruthy();
 
       const hdf: HDFResults = JSON.parse(result);
+      expectValidResults(hdf);
       expect(hdf.baselines).toBeInstanceOf(Array);
       expect(hdf.baselines.length).toBe(1);
       expect(hdf.generator?.name).toBe('splunk-to-hdf');

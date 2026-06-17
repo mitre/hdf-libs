@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { convertNetsparkerToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 function loadFixture(name: string): string {
@@ -45,6 +46,7 @@ describe('Netsparker to HDF converter', () => {
   it('should produce exactly one baseline', async () => {
     const input = loadFixture('input/sample-netsparker-invicti.xml');
     const hdf = parseResult(await convertNetsparkerToHdf(input));
+    expectValidResults(hdf);
     expect(hdf.baselines).toHaveLength(1);
   });
 

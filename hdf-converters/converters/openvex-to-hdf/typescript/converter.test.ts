@@ -8,6 +8,7 @@ import {
   OverrideType,
   ResultStatus,
 } from '@mitre/hdf-schema';
+import { expectValidAmendments } from '../../../test/helpers/expectValidHdf.js';
 import { convertOpenVexToHdf } from './converter.js';
 
 const TEST_VERSION = 'test';
@@ -20,6 +21,8 @@ describe('convertOpenVexToHdf — Spring Boot Log4j example', () => {
   it('produces a falsePositive override with justification + supplier evidence', async () => {
     const input = loadInput('spring-boot-log4j.openvex.json');
     const result = await convertOpenVexToHdf(input, TEST_VERSION);
+
+    expectValidAmendments(result);
 
     expect(result.name).toContain('Spring Builds');
     expect(result.overrides).toHaveLength(1);

@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { convertIonchannelToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { DEFAULT_MAX_INPUT_SIZE } from '../../../shared/typescript/converterutil.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -32,6 +33,7 @@ describe('ionchannel to HDF converter', async () => {
     it('should produce valid HDF from minimal fixture', async () => {
       const output = await convertIonchannelToHdf(loadFixture('minimal.json'));
       const hdf = JSON.parse(output) as HDFResults;
+      expectValidResults(hdf);
 
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('ionchannel-to-hdf');

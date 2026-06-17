@@ -344,7 +344,7 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
  * packageName+packageVersion / name+version. Returns undefined for
  * SAST results that lack any package identity.
  */
-function packageFromSarifProperties(props: SarifResult['properties']) {
+function packageFromSarifProperties(props: SarifResult['properties']): ReturnType<typeof buildAffectedPackage> {
   if (!props) return undefined;
   const name = props.packageName ?? props.name;
   const version = props.packageVersion ?? props.version;
