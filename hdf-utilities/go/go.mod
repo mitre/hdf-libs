@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-libs/hdf-utilities/go/v3
 
-go 1.26.3
+go 1.26.4
 
 require github.com/stretchr/testify v1.11.1
 

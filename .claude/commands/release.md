@@ -36,8 +36,8 @@ These are the traps this skill exists to prevent. Real failure modes from the 3.
 
 1. **Only the schema bumped.** `hdf-schema/package.json` and the seven schema `$id` URLs moved to 3.2.0, but the other nine workspace packages and every `go.mod` require line stayed at the old version. Result: schema released as 3.2.0, consumers shipped as 3.1.1.
 2. **A README claimed the wrong version.** Root `README.md` said *"All schemas are at v3.1.0"* after schemas had moved to 3.2.0 — a flat-out wrong claim that survives unless you sweep for current-version assertions, not just literal old-version strings.
-3. **The formal spec doc lagged the schema.** `docs/specification/hdf-specification.md` titled itself "v3.1.0 Specification", carried six stale `Schema ID:` URLs, AND was missing the new requirement fields entirely. A version-string substitution would have caught the URLs but left the canonical spec missing the content it's supposed to describe.
-4. **`$ref` URI pattern examples in `docs/design/developer-guide.md` froze at the version they were written against.** These are shown as the canonical lookup pattern, not historical examples, so they need to track the current schema version.
+3. **The formal spec doc lagged the schema.** `site/docs/specification/hdf-specification.md` titled itself "v3.1.0 Specification", carried six stale `Schema ID:` URLs, AND was missing the new requirement fields entirely. A version-string substitution would have caught the URLs but left the canonical spec missing the content it's supposed to describe.
+4. **`$ref` URI pattern examples in `site/docs/contributing/developer-guide.md` froze at the version they were written against.** These are shown as the canonical lookup pattern, not historical examples, so they need to track the current schema version.
 5. **`go.work.sum` churn appears mid-release.** The Go toolchain speculatively adds checksum entries (`golang.org/x/sys`, AWS SDK, etc.) during builds. These are NOT part of the release — exclude them from the commit.
 6. **Historical CHANGELOG entries are NOT version-string substitutions.** Lines like `## [3.1.0]` or `Schema version bumped from v3.0.0 to v3.1.0` are factual history. Touching them rewrites the past.
 
@@ -71,6 +71,23 @@ These edits are uniform across the workspace and safe to script. Use a small Pyt
 
 Use `git status` after the script run to spot-check no `node_modules`, `dist/`, or `.git/` paths got touched.
 
+### Phase 1.5 — Site archive: stage the new version's raw schema files
+
+The docs site at mitre.github.io/hdf-libs/ archives every released schema version under `site/public/schemas/<name>/v<X.Y.Z>/index.json`. The archive backs both the canonical `$id` URL (consumers fetching `.../schemas/hdf-amendments/v3.2.0/` get the right file forever) and the per-version rendered docs at `/v3.2.0/schemas/`. New version files for THIS release must be added to the archive as part of this commit.
+
+```bash
+# Rebuild bundled schemas at the new version
+cd hdf-schema && pnpm build:schemas && cd ..
+# Generator writes the current version's archive entries as a side effect
+cd site && pnpm generate && cd ..
+# Confirm the new files appear (7 schemas × 1 new version dir each)
+ls site/public/schemas/*/v$NEW/index.json
+# Stage them with the rest of the release commit
+git add 'site/public/schemas/*/v$NEW/'
+```
+
+If you forget this step, the archive 404s as soon as the next release ships and the rendered v$NEW snapshot is missing from the docs site. The site `pnpm exec vitepress build` smoke job in `ci.yml` won't catch this (it builds whatever's on disk locally) — only the post-deploy archive coverage suffers. Treat it as a release-time checklist item.
+
 ### Phase 2 — Current-version doc sweep
 
 These claims are not URL-pattern uniform — they're prose ("All schemas are at vX") or pedagogical examples. Each must be inspected. Verified targets:
@@ -78,8 +95,8 @@ These claims are not URL-pattern uniform — they're prose ("All schemas are at 
 | File | What to look for |
 |---|---|
 | `README.md` (root) | Any *"schemas are at vX"* / *"current schema vX"* / *"latest vX"* sentences. Update to NEW. |
-| `docs/specification/hdf-specification.md` | (a) **Document title** (line 1) `# Heimdall Data Format (HDF) vX Specification`. (b) **Version metadata** (`**Version**: X`). (c) **Every `**Schema ID**: …/vX` line** — there's one per top-level document type (currently 6: results, baseline, system, plan, amendments, comparison). |
-| `docs/design/developer-guide.md` | `$ref` URI pattern examples (currently around line 143). These show the canonical URL pattern, not historical examples, so they bump. |
+| `site/docs/specification/hdf-specification.md` | (a) **Document title** (line 1) `# Heimdall Data Format (HDF) vX Specification`. (b) **Version metadata** (`**Version**: X`). (c) **Every `**Schema ID**: …/vX` line** — there's one per top-level document type (currently 6: results, baseline, system, plan, amendments, comparison). |
+| `site/docs/contributing/developer-guide.md` | `$ref` URI pattern examples (currently around line 143). These show the canonical URL pattern, not historical examples, so they bump. |
 | `hdf-cli/README.md` | Archive-naming example `hdf_<version>_<os>_<arch>.tar.gz (e.g., hdf_X_darwin_arm64.tar.gz)`. Bump the example. |
 | `hdf-schema/README.md` | **Add a new `### What's new in vNEW` subsection** above the existing `### What's new in vOLD`. Keep the old "What's new" sections — they're historical. |
 | `CLAUDE.md` (root) | Any field annotations marked `*(vX)*` are historical and stay. New 3.2-style annotations for fields added in this release should be added if applicable. |
@@ -100,7 +117,7 @@ This is the step that the 3.2.0 release missed. **The formal spec doc must list 
 
 1. `grep` the schema source (`hdf-schema/src/schemas/primitives/*.json` and the root schemas) for fields added since OLD.
 2. For each new field, identify which `$defs` type it lives on (commonly `Requirement_Core`, `Override_Type`, etc.).
-3. In `docs/specification/hdf-specification.md`, find every spec-doc table that documents that `$defs` type. Some types appear in multiple tables (e.g. `Requirement_Core` fields surface in BOTH `Evaluated_Requirement` and `Baseline_Requirement`).
+3. In `site/docs/specification/hdf-specification.md`, find every spec-doc table that documents that `$defs` type. Some types appear in multiple tables (e.g. `Requirement_Core` fields surface in BOTH `Evaluated_Requirement` and `Baseline_Requirement`).
 4. Add a new row per new field: `| name | TypeName | no | one-line description |`. Use the same type-name convention the table already uses (PascalCase without `_Enum` suffix — e.g. `Severity`, `ControlType`, not `Severity_Enum`).
 5. Update field-set-overview prose anywhere it enumerates the fields explicitly.
 
@@ -156,9 +173,10 @@ If anything lags, surface it; don't paper over.
 - [ ] 10 `package.json` files at NEW
 - [ ] 7 schema `$id` URLs at NEW
 - [ ] 5 `go.mod` files: every `hdf-libs/<x>/v3 vNEW` (no stragglers)
+- [ ] 7 new archive files staged: `site/public/schemas/<name>/vNEW/index.json` (one per main schema). `cd site && pnpm generate` writes them; `git add 'site/public/schemas/*/vNEW/'` stages them. See Phase 1.5.
 - [ ] Root `README.md` current-version claims updated
-- [ ] `docs/specification/hdf-specification.md`: title + version metadata + 6 `Schema ID` URLs + new-field rows in every affected requirement/type table
-- [ ] `docs/design/developer-guide.md` `$ref` URI pattern at NEW
+- [ ] `site/docs/specification/hdf-specification.md`: title + version metadata + 6 `Schema ID` URLs + new-field rows in every affected requirement/type table
+- [ ] `site/docs/contributing/developer-guide.md` `$ref` URI pattern at NEW
 - [ ] `hdf-cli/README.md` archive example at NEW
 - [ ] `hdf-schema/README.md` new "What's new in vNEW" section added
 - [ ] `CHANGELOG.md` has a new `## [NEW] - YYYY-MM-DD` entry; historical entries untouched

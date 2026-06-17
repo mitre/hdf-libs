@@ -7,9 +7,14 @@ import { fileURLToPath, pathToFileURL } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const SCHEMAS_DIR = join(__dirname, 'schemas');
+// Path overrides via env vars enable bundling source files from arbitrary
+// locations — used by site/seed-archive.mjs to bundle older releases'
+// source schemas (extracted from git tags into a temp dir) into the
+// per-version archive without checking out the tag in a worktree.
+// Default values match the in-tree layout when invoked normally.
+const SCHEMAS_DIR = process.env.HDF_SCHEMA_SCHEMAS_DIR ?? join(__dirname, 'schemas');
 const PRIMITIVES_DIR = join(SCHEMAS_DIR, 'primitives');
-const DIST_DIR = join(__dirname, '..', 'dist', 'schemas');
+const DIST_DIR = process.env.HDF_SCHEMA_DIST_DIR ?? join(__dirname, '..', 'dist', 'schemas');
 
 // Main schemas to bundle (these have $ref to primitives)
 const MAIN_SCHEMAS = ['hdf-results.schema.json', 'hdf-baseline.schema.json', 'hdf-comparison.schema.json', 'hdf-system.schema.json', 'hdf-plan.schema.json', 'hdf-amendments.schema.json', 'hdf-evidence-package.schema.json'];

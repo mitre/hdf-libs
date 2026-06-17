@@ -1,13 +1,22 @@
-/**
- * Generate VitePress markdown pages from HDF JSON Schema files.
- *
- * Reads bundled schemas from hdf-schema/dist/schemas/ and produces:
- * - schemas/index.md — overview with links to all document types
- * - schemas/<name>.md — per-schema reference page with types, properties, examples
- * - public/schemas/ — raw .schema.json files served as static assets
- *
- * Run: node generate-schema-docs.mjs
- */
+// Generate VitePress markdown pages from HDF JSON Schema files.
+//
+// Reads bundled schemas from hdf-schema/dist/schemas/ (current version)
+// AND the per-version archive at site/public/schemas/<name>/v<X.Y.Z>/
+// index.json (historical versions), then produces:
+//
+// - schemas/index.md — overview for the current version
+// - schemas/<name>.md — current-version per-schema reference pages
+// - v<X.Y.Z>/schemas/index.md — overview for each historical version
+// - v<X.Y.Z>/schemas/<name>.md — historical per-schema pages
+// - public/schemas/ — current-version raw .schema.json (top-level)
+// - public/schemas/<name>/<version>/index.json — written for the current
+//   version. Historical entries are seeded by site/seed-archive.mjs and
+//   are NOT touched here (existing files preserved).
+// - .vitepress/versions.json — manifest listing versions found, with the
+//   current version marked. Consumed by config.mjs to build the nav
+//   dropdown and per-version sidebars.
+//
+// Run: node generate-schema-docs.mjs
 
 import fs from 'fs';
 import path from 'path';
@@ -17,10 +26,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMAS_DIR = path.resolve(__dirname, '../hdf-schema/dist/schemas');
 const OUTPUT_DIR = path.resolve(__dirname, 'schemas');
 const PUBLIC_DIR = path.resolve(__dirname, 'public/schemas');
-
-// Ensure output dirs exist
-fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+const VITEPRESS_DIR = path.resolve(__dirname, '.vitepress');
+const SITE_DIR = __dirname;
 
 // Document type display names and descriptions
 const SCHEMA_META = {
@@ -54,77 +61,182 @@ const SCHEMA_META = {
   },
 };
 
-// Read all bundled schemas
-const schemaFiles = fs.readdirSync(SCHEMAS_DIR)
-  .filter(f => f.endsWith('.schema.json'))
-  .sort();
+const MAIN_SCHEMAS = Object.keys(SCHEMA_META);
 
-const schemas = schemaFiles.map(f => {
-  const raw = fs.readFileSync(path.join(SCHEMAS_DIR, f), 'utf-8');
+// --- 1. Read current schemas from dist/ -----------------------------------
+
+fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+
+const currentSchemas = [];
+for (const name of MAIN_SCHEMAS) {
+  const file = `${name}.schema.json`;
+  const filePath = path.join(SCHEMAS_DIR, file);
+  if (!fs.existsSync(filePath)) {
+    console.warn(`Warning: ${file} missing from ${SCHEMAS_DIR} — skipping`);
+    continue;
+  }
+  const raw = fs.readFileSync(filePath, 'utf-8');
   const schema = JSON.parse(raw);
-  const name = f.replace('.schema.json', '');
-  // Copy to public dir for direct download
-  fs.copyFileSync(path.join(SCHEMAS_DIR, f), path.join(PUBLIC_DIR, f));
-  // Also create versioned path
-  const version = schema.$id.split('/').pop();
-  const versionDir = path.join(PUBLIC_DIR, name, version);
+  const version = idVersion(schema.$id);
+
+  // Top-level public copy (current version only) — preserves existing
+  // /schemas/<name>.schema.json URL pattern.
+  fs.copyFileSync(filePath, path.join(PUBLIC_DIR, file));
+
+  // Per-version archive write for the current version. (Historical
+  // versions are written by site/seed-archive.mjs; we don't touch them.)
+  // Trailing newline matches the seed-archive.mjs write pattern so the
+  // archive byte-format is consistent regardless of which writer produced it.
+  const archiveDir = path.join(PUBLIC_DIR, name, version);
+  fs.mkdirSync(archiveDir, { recursive: true });
+  const archiveJson = raw.endsWith('\n') ? raw : raw + '\n';
+  fs.writeFileSync(path.join(archiveDir, 'index.json'), archiveJson);
+
+  currentSchemas.push({ name, schema, version });
+}
+
+const currentVersion = currentSchemas[0]?.version;
+if (!currentVersion) {
+  throw new Error(`No current schemas read from ${SCHEMAS_DIR}; run 'cd hdf-schema && pnpm build:schemas' first`);
+}
+
+// --- 2. Discover historical archive versions ------------------------------
+
+// Walk public/schemas/<name>/v*/ and gather every (name, version) pair.
+// The CURRENT version's archive entry was just written above; we skip it
+// when collecting historical ones.
+const archiveBySchema = {};
+for (const name of MAIN_SCHEMAS) {
+  const dir = path.join(PUBLIC_DIR, name);
+  if (!fs.existsSync(dir)) continue;
+  const versions = fs.readdirSync(dir)
+    .filter((f) => f.startsWith('v') && fs.existsSync(path.join(dir, f, 'index.json')));
+  archiveBySchema[name] = versions;
+}
+
+// Build the cross-schema set of historical versions. A version counts as
+// "historical" if it isn't the current version AND at least one main
+// schema has an archive entry for it.
+const historicalVersions = new Set();
+for (const versions of Object.values(archiveBySchema)) {
+  for (const v of versions) {
+    if (v !== currentVersion) historicalVersions.add(v);
+  }
+}
+
+const historicalVersionList = Array.from(historicalVersions).sort(semverCompareDesc);
+
+// --- 3. Render current-version pages --------------------------------------
+
+writeIndexPage(OUTPUT_DIR, currentSchemas, /* urlPrefix= */ '');
+for (const entry of currentSchemas) {
+  const md = renderSchemaPage(entry.schema, entry.name, '');
+  fs.writeFileSync(path.join(OUTPUT_DIR, `${entry.name}.md`), md);
+}
+
+// --- 4. Render historical-version pages -----------------------------------
+
+for (const version of historicalVersionList) {
+  const versionedSchemas = [];
+  for (const name of MAIN_SCHEMAS) {
+    const versions = archiveBySchema[name] || [];
+    if (!versions.includes(version)) continue;
+    const archivePath = path.join(PUBLIC_DIR, name, version, 'index.json');
+    const schema = JSON.parse(fs.readFileSync(archivePath, 'utf-8'));
+    versionedSchemas.push({ name, schema, version });
+  }
+  if (versionedSchemas.length === 0) continue;
+
+  const versionDir = path.join(SITE_DIR, version, 'schemas');
   fs.mkdirSync(versionDir, { recursive: true });
-  fs.writeFileSync(path.join(versionDir, 'index.json'), raw);
-  return { name, schema, filename: f };
-});
 
-// --- Generate index page ---
-
-const indexLines = [
-  '---',
-  'outline: deep',
-  '---',
-  '',
-  '# HDF Schema Reference',
-  '',
-  'The Heimdall Data Format (HDF) defines 7 JSON document types for security assessment data.',
-  'Each schema is self-contained — all referenced types are embedded, no external fetches needed.',
-  '',
-  '## Document Types',
-  '',
-];
-
-for (const { name, schema } of schemas) {
-  const meta = SCHEMA_META[name] || { title: name, description: schema.description || '' };
-  const version = schema.$id.split('/').pop();
-  indexLines.push(`### [${meta.title}](/schemas/${name})`);
-  indexLines.push('');
-  indexLines.push(meta.description);
-  indexLines.push('');
-  indexLines.push(`- **Version**: \`${version}\``);
-  indexLines.push(`- **Schema**: [\`${name}.schema.json\`](/schemas/${name}.schema.json)`);
-  indexLines.push(`- **\`$id\`**: \`${schema.$id}\``);
-  indexLines.push('');
+  const urlPrefix = `/${version}`;
+  writeIndexPage(versionDir, versionedSchemas, urlPrefix);
+  for (const entry of versionedSchemas) {
+    const md = renderSchemaPage(entry.schema, entry.name, urlPrefix);
+    fs.writeFileSync(path.join(versionDir, `${entry.name}.md`), md);
+  }
 }
 
-indexLines.push('## Downloads');
-indexLines.push('');
-indexLines.push('| Schema | Version | Download |');
-indexLines.push('|--------|---------|----------|');
-for (const { name, schema } of schemas) {
-  const version = schema.$id.split('/').pop();
-  const meta = SCHEMA_META[name] || { title: name };
-  indexLines.push(`| ${meta.title} | ${version} | [${name}.schema.json](/schemas/${name}.schema.json) |`);
-}
+// --- 5. Emit the versions manifest for config.mjs --------------------------
 
-fs.writeFileSync(path.join(OUTPUT_DIR, 'index.md'), indexLines.join('\n'));
+fs.mkdirSync(VITEPRESS_DIR, { recursive: true });
+const manifest = {
+  current: currentVersion,
+  versions: [currentVersion, ...historicalVersionList],
+};
+fs.writeFileSync(
+  path.join(VITEPRESS_DIR, 'versions.json'),
+  JSON.stringify(manifest, null, 2) + '\n',
+);
 
-// --- Generate per-schema pages ---
+console.log(
+  `Generated ${currentSchemas.length} current pages (${currentVersion}) + ${historicalVersionList.length} historical version sets`,
+);
 
-for (const { name, schema } of schemas) {
-  const meta = SCHEMA_META[name] || { title: name, description: '' };
-  const version = schema.$id.split('/').pop();
+// === Page rendering helpers ================================================
+
+function writeIndexPage(outputDir, schemas, urlPrefix) {
+  const isHistorical = urlPrefix !== '';
   const lines = [
     '---',
     'outline: deep',
     '---',
     '',
-    `# ${meta.title}`,
+    isHistorical
+      ? `# HDF Schema Reference — ${schemas[0]?.version}`
+      : '# HDF Schema Reference',
+    '',
+    isHistorical
+      ? `Historical snapshot of HDF documents as of release ${schemas[0]?.version}. For the current version see [/schemas/](/schemas/).`
+      : 'The Heimdall Data Format (HDF) defines 7 JSON document types for security assessment data. Each schema is self-contained — all referenced types are embedded, no external fetches needed.',
+    '',
+    '## Document Types',
+    '',
+  ];
+
+  for (const { name, schema } of schemas) {
+    const meta = SCHEMA_META[name] || { title: name, description: schema.description || '' };
+    lines.push(`### [${meta.title}](${urlPrefix}/schemas/${name})`);
+    lines.push('');
+    lines.push(meta.description);
+    lines.push('');
+    lines.push(`- **Version**: \`${idVersion(schema.$id)}\``);
+    lines.push(`- **\`$id\`**: \`${schema.$id}\``);
+    lines.push('');
+  }
+
+  lines.push('## Downloads');
+  lines.push('');
+  lines.push('| Schema | Version | Download |');
+  lines.push('|--------|---------|----------|');
+  for (const { name, schema } of schemas) {
+    const meta = SCHEMA_META[name] || { title: name };
+    const version = idVersion(schema.$id);
+    const downloadUrl = isHistorical
+      ? `/schemas/${name}/${version}/index.json`
+      : `/schemas/${name}.schema.json`;
+    lines.push(`| ${meta.title} | ${version} | [\`${name}.schema.json\`](${downloadUrl}) |`);
+  }
+
+  fs.writeFileSync(path.join(outputDir, 'index.md'), lines.join('\n'));
+}
+
+function renderSchemaPage(schema, name, urlPrefix) {
+  const isHistorical = urlPrefix !== '';
+  const meta = SCHEMA_META[name] || { title: name, description: '' };
+  const version = idVersion(schema.$id);
+  const downloadUrl = isHistorical
+    ? `/schemas/${name}/${version}/index.json`
+    : `/schemas/${name}.schema.json`;
+
+  const lines = [
+    '---',
+    'outline: deep',
+    '---',
+    '',
+    `# ${meta.title}${isHistorical ? ` — ${version}` : ''}`,
     '',
     schema.description || meta.description,
     '',
@@ -132,17 +244,15 @@ for (const { name, schema } of schemas) {
     `|---|---|`,
     `| **Version** | \`${version}\` |`,
     `| **\`$id\`** | \`${schema.$id}\` |`,
-    `| **Download** | [${name}.schema.json](/schemas/${name}.schema.json) |`,
+    `| **Download** | [${name}.schema.json](${downloadUrl}) |`,
     '',
   ];
 
-  // Root-level properties
   if (schema.properties) {
     lines.push('## Properties');
     lines.push('');
     lines.push('| Field | Type | Required | Description |');
     lines.push('|-------|------|----------|-------------|');
-
     const required = new Set(schema.required || []);
     for (const [field, prop] of Object.entries(schema.properties)) {
       const type = resolveTypeName(prop);
@@ -153,7 +263,6 @@ for (const { name, schema } of schemas) {
     lines.push('');
   }
 
-  // Root-level examples
   if (schema.examples && schema.examples.length > 0) {
     lines.push('## Example');
     lines.push('');
@@ -167,7 +276,6 @@ for (const { name, schema } of schemas) {
   const defs = schema.$defs || {};
   const localDefs = {};
   const embeddedDefs = {};
-
   for (const [key, defn] of Object.entries(defs)) {
     if (key.startsWith('https://')) {
       embeddedDefs[key] = defn;
@@ -176,11 +284,9 @@ for (const { name, schema } of schemas) {
     }
   }
 
-  // Local definitions (types defined in this schema)
   if (Object.keys(localDefs).length > 0) {
     lines.push('## Types');
     lines.push('');
-
     for (const [typeName, defn] of Object.entries(localDefs)) {
       lines.push(`### ${typeName.replace(/_/g, '\\_')}`);
       lines.push('');
@@ -188,8 +294,6 @@ for (const { name, schema } of schemas) {
         lines.push(defn.description);
         lines.push('');
       }
-
-      // Properties from the type itself or from allOf composition
       const props = collectProperties(defn);
       if (Object.keys(props).length > 0) {
         const req = collectRequired(defn);
@@ -203,8 +307,6 @@ for (const { name, schema } of schemas) {
         }
         lines.push('');
       }
-
-      // Examples for this type
       if (defn.examples && defn.examples.length > 0) {
         lines.push('::: details Example');
         lines.push('```json');
@@ -216,20 +318,22 @@ for (const { name, schema } of schemas) {
     }
   }
 
-  // Embedded primitive schemas (collapsed by default)
   const embeddedKeys = Object.keys(embeddedDefs);
   if (embeddedKeys.length > 0) {
     lines.push('## Embedded Primitives');
     lines.push('');
     lines.push('These types are embedded from shared primitive schemas.');
     lines.push('');
-
     for (const embeddedId of embeddedKeys.sort()) {
       const embedded = embeddedDefs[embeddedId];
-      const shortId = embeddedId.replace('https://mitre.github.io/hdf-libs/schemas/primitives/', '');
+      // Drop both the URL prefix AND the trailing /vX.Y.Z so the rendered
+      // heading (and its derived anchor + right-rail TOC entry) stays stable
+      // across releases.
+      const shortId = embeddedId
+        .replace('https://mitre.github.io/hdf-libs/schemas/primitives/', '')
+        .replace(/\/v\d+\.\d+\.\d+$/, '');
       lines.push(`### ${shortId}`);
       lines.push('');
-
       const innerDefs = embedded.$defs || {};
       if (Object.keys(innerDefs).length > 0) {
         for (const [typeName, defn] of Object.entries(innerDefs)) {
@@ -239,7 +343,6 @@ for (const { name, schema } of schemas) {
             lines.push(defn.description);
             lines.push('');
           }
-
           const props = collectProperties(defn);
           if (Object.keys(props).length > 0) {
             const req = collectRequired(defn);
@@ -253,7 +356,6 @@ for (const { name, schema } of schemas) {
             }
             lines.push('');
           }
-
           if (defn.examples && defn.examples.length > 0) {
             lines.push('::: details Example');
             lines.push('```json');
@@ -267,22 +369,32 @@ for (const { name, schema } of schemas) {
     }
   }
 
-  fs.writeFileSync(path.join(OUTPUT_DIR, `${name}.md`), lines.join('\n'));
+  return lines.join('\n');
 }
 
-console.log(`Generated ${schemas.length} schema pages + index in ${OUTPUT_DIR}`);
+// === Misc helpers ==========================================================
 
-// --- Helpers ---
+function idVersion(schemaId) {
+  if (!schemaId) return 'unknown';
+  const match = schemaId.match(/\/v\d+\.\d+\.\d+$/);
+  return match ? match[0].slice(1) : 'unknown';
+}
+
+function semverCompareDesc(a, b) {
+  const [maja, mina, pata] = a.replace(/^v/, '').split('.').map(Number);
+  const [majb, minb, patb] = b.replace(/^v/, '').split('.').map(Number);
+  if (maja !== majb) return majb - maja;
+  if (mina !== minb) return minb - mina;
+  return patb - pata;
+}
 
 function resolveTypeName(prop) {
   if (!prop) return 'any';
   if (prop.$ref) {
     const ref = prop.$ref;
     if (ref.startsWith('#/$defs/')) return `\`${ref.replace('#/$defs/', '')}\``;
-    // External ref — extract type name from end
     const parts = ref.split('/');
     const typePart = parts[parts.length - 1];
-    const schemaPart = parts[parts.length - 3] || '';
     return `\`${typePart}\``;
   }
   if (prop.const) return `\`"${prop.const}"\``;
@@ -303,12 +415,9 @@ function resolveTypeName(prop) {
 
 function collectProperties(defn) {
   const props = { ...(defn.properties || {}) };
-  // Collect from allOf
   if (defn.allOf) {
     for (const sub of defn.allOf) {
-      if (sub.properties) {
-        Object.assign(props, sub.properties);
-      }
+      if (sub.properties) Object.assign(props, sub.properties);
     }
   }
   return props;
