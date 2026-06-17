@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
 // testFixturePath returns the path to a test fixture file.
@@ -347,6 +349,11 @@ func TestDebugFlag(t *testing.T) {
 
 // TestSchemaDirFlag tests the --schema-dir flag.
 func TestSchemaDirFlag(t *testing.T) {
+	// validators.schemaDir is package-global; reset on cleanup so later
+	// tests in this package use embedded schemas instead of inheriting the
+	// disk-loading state set by the CLI's --schema-dir flag.
+	t.Cleanup(func() { validators.SetSchemaDir("") })
+
 	fixture := testFixturePath(t, "minimal-v2.json")
 	schemaDir := filepath.Join("..", "..", "..", "..", "hdf-schema", "dist", "schemas")
 

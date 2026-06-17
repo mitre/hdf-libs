@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -133,7 +134,7 @@ func runPlanCreateFromSystem(systemFile, planID, outputPath string) error {
 	plan := map[string]interface{}{
 		"planId":      planID,
 		"name":        planName,
-		"systemRef":   systemFile,
+		"systemRef":   filepath.ToSlash(systemFile), // schema requires uri-reference
 		"assessments": assessments,
 		"generator": map[string]interface{}{
 			"name":    "hdf-cli",
