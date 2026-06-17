@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -228,7 +229,7 @@ func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, c
 	comp := map[string]interface{}{
 		"name":       componentName,
 		"type":       compType,
-		"sbomRef":    filePath,
+		"sbomRef":    filepath.ToSlash(filePath), // schema requires uri-reference; Windows backslashes are invalid
 		"sbomFormat": sbomFormat,
 	}
 

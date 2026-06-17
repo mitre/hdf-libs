@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
@@ -128,7 +129,7 @@ func runSystemAddComponent(systemFile, fromFile, componentName, outputPath strin
 	comp := map[string]interface{}{
 		"name":    componentName,
 		"type":    compType,
-		"sbomRef": fromFile,
+		"sbomRef": filepath.ToSlash(fromFile), // schema requires uri-reference; Windows backslashes are invalid
 	}
 	if sbomFormat != "" {
 		comp["sbomFormat"] = sbomFormat
@@ -184,7 +185,7 @@ func runSystemUpdateComponent(systemFile, fromFile, componentName, outputPath st
 			continue
 		}
 		if comp["name"] == componentName {
-			comp["sbomRef"] = fromFile
+			comp["sbomRef"] = filepath.ToSlash(fromFile) // schema requires uri-reference
 			if sbomFormat != "" {
 				comp["sbomFormat"] = sbomFormat
 			}
