@@ -306,7 +306,7 @@ describe('<name> to HDF converter', () => {
     expectValidResults(hdf); // schema gate — required on at least one success path
 
     expect(hdf.timestamp).toBeTruthy();
-    expect(hdf.generator?.name).toBe('hdf-converters');
+    expect(hdf.generator?.name).toBe('<source>-to-hdf'); // e.g. 'splunk-to-hdf'
     expect(hdf.baselines).toHaveLength(1);
   });
 
