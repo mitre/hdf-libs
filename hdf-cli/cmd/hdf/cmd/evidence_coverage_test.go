@@ -17,7 +17,7 @@ import (
 func TestEvidenceBuildBasic(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	systemDoc := `{"name": "test-system", "components": []}`
+	systemDoc := `{"name": "test-system", "components": [{"name": "c1", "type": "application"}]}`
 	resultsDoc := `{"baselines": [], "platform": {}, "statistics": {}, "version": "2.0"}`
 
 	systemPath := filepath.Join(tmpDir, "system.json")
@@ -108,7 +108,7 @@ func TestEvidenceBuildBasic(t *testing.T) {
 func TestEvidenceBuildWithOptionalDocs(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	systemDoc := `{"name": "my-system"}`
+	systemDoc := `{"name": "my-system", "components": [{"name": "c1", "type": "application"}]}`
 	resultsDoc := noTargetsJSON
 	amendDoc := `{"amendments": []}`
 	compDoc := `{"comparison": {}}`
@@ -150,11 +150,14 @@ func TestEvidenceBuildWithOptionalDocs(t *testing.T) {
 	assert.Equal(t, []string{"hdf-system", "hdf-results", "hdf-amendments", "hdf-comparison"}, types)
 }
 
-func TestEvidenceBuildUnnamedSystem(t *testing.T) {
+func TestEvidenceBuildRejectsNoNameSystem(t *testing.T) {
+	// As of m58u, the input gate validates System docs before they reach the
+	// evidence-build flow. A System without the required "name" field is
+	// rejected; the previous "unnamed-system" fallback in runEvidenceBuild is
+	// unreachable. This test pins the new behavior.
 	tmpDir := t.TempDir()
 
-	// System doc without a "name" field
-	systemDoc := `{"components": []}`
+	systemDoc := `{"components": [{"name": "c1", "type": "application"}]}`
 	resultsDoc := noTargetsJSON
 
 	systemPath := filepath.Join(tmpDir, "system.json")
@@ -163,21 +166,19 @@ func TestEvidenceBuildUnnamedSystem(t *testing.T) {
 	require.NoError(t, os.WriteFile(systemPath, []byte(systemDoc), 0o600))
 	require.NoError(t, os.WriteFile(resultsPath, []byte(resultsDoc), 0o600))
 
-	stdout, _, err := executeCommand("evidence", "build",
+	_, _, err := executeCommand("evidence", "build",
 		"--system", systemPath,
 		"--results", resultsPath,
 	)
-	require.NoError(t, err)
-
-	var pkg map[string]interface{}
-	require.NoError(t, json.Unmarshal([]byte(stdout), &pkg))
-	assert.Equal(t, "unnamed-system-evidence-package", pkg["name"])
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "schema validation")
+	assert.Contains(t, err.Error(), "name")
 }
 
 func TestEvidenceBuildAmendmentMissing(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	systemDoc := `{"name": "sys"}`
+	systemDoc := `{"name": "sys", "components": [{"name": "c1", "type": "application"}]}`
 	resultsDoc := noTargetsJSON
 
 	systemPath := filepath.Join(tmpDir, "system.json")
@@ -197,7 +198,7 @@ func TestEvidenceBuildAmendmentMissing(t *testing.T) {
 func TestEvidenceBuildComparisonMissing(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	systemDoc := `{"name": "sys"}`
+	systemDoc := `{"name": "sys", "components": [{"name": "c1", "type": "application"}]}`
 	resultsDoc := noTargetsJSON
 
 	systemPath := filepath.Join(tmpDir, "system.json")
@@ -878,7 +879,7 @@ func TestEvidenceVerifyNoPackageName(t *testing.T) {
 func TestEvidenceBuildVerifyRoundTrip(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	systemDoc := `{"name": "roundtrip-system"}`
+	systemDoc := `{"name": "roundtrip-system", "components": [{"name": "c1", "type": "application"}]}`
 	resultsDoc := `{"baselines": [{"name": "b1", "requirements": [{"results": [{"status": "passed"}]}]}]}`
 
 	systemPath := filepath.Join(tmpDir, "system.json")

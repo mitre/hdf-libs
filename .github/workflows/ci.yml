@@ -291,3 +291,29 @@ jobs:
             echo "::endgroup::"
           done
           exit $FAIL
+
+  # ── Site smoke build ─────────────────────────────────────────────────────
+  # Builds the VitePress schema reference site against the just-built
+  # schemas. Catches generator script breakage, broken sidebar config,
+  # missing markdown links, and other site-config defects on the PR that
+  # introduces them — not at release-tag time when deploy-schemas.yml runs
+  # for the first time and fails on a production deploy.
+  #
+  # Output not uploaded; this is a smoke test, not the deploy.
+  site-build:
+    name: Build schema site (smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: build-artifacts
+      - name: Generate schema pages
+        run: cd site && pnpm generate
+      - name: VitePress build
+        run: cd site && pnpm exec vitepress build

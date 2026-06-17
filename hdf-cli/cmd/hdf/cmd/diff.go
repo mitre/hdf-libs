@@ -99,7 +99,11 @@ func stripNulls(v any) any {
 	}
 }
 
-// componentSummary holds per-component compliance information for system-aware diffs.
+// componentSummary holds per-component compliance information for system-aware
+// diffs. This is a CLI-specific aggregation view, NOT the schema's
+// Component_Diff (which records per-component-change records with a `state`
+// enum). The CLI's view goes into `componentSummaries`; the schema's
+// `componentDiffs[]` stays absent in CLI output.
 type componentSummary struct {
 	Name            string                 `json:"name"`
 	BaselineRefs    []string               `json:"baselineRefs"`
@@ -118,7 +122,13 @@ type diffResult struct {
 	Summary          diff.ComparisonSummary `json:"summary"`
 	RequirementDiffs []diffRequirement      `json:"requirementDiffs"`
 	BaselineDiffs    []any                  `json:"baselineDiffs"`
-	ComponentDiffs   []componentSummary     `json:"componentDiffs,omitempty"`
+	// ComponentDiffs holds the CLI's per-component compliance aggregation.
+	// It's NOT the schema's componentDiffs[]: Component_Diff[] array (which
+	// records state changes with a `state` enum). To satisfy hdf-comparison's
+	// unevaluatedProperties:false constraint, it ships inside the schema's
+	// `extensions` tool-data slot at marshal time — see outputDiffJSON.
+	ComponentDiffs []componentSummary `json:"-"`
+	Extensions     map[string]any     `json:"extensions,omitempty"`
 
 	// groupLabel is the column header for the grouping table (presentation-only, not serialized).
 	// Set to "Component" for --system, or the group-by key for --group-by.
@@ -546,9 +556,21 @@ func applyDiffFilters(result diffResult, flags *diffFlags) diffResult {
 // --- Output formatters ---
 
 func outputDiffJSON(result diffResult) error {
+	// hdf-comparison's unevaluatedProperties:false rejects any top-level
+	// field outside the schema. Wrap CLI-only data (per-component compliance
+	// summaries) into the schema's `extensions` slot before marshal.
+	if len(result.ComponentDiffs) > 0 {
+		if result.Extensions == nil {
+			result.Extensions = map[string]any{}
+		}
+		result.Extensions["componentSummaries"] = result.ComponentDiffs
+	}
 	output, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		return err
+	}
+	if err := validateHDFOutput(output); err != nil {
+		return fmt.Errorf("diff output failed Comparison schema validation: %w", err)
 	}
 	fmt.Println(string(output))
 	return nil

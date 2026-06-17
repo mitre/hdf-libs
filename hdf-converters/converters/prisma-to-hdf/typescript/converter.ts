@@ -230,7 +230,7 @@ function ecosystemFromDistro(distro: string | undefined): Ecosystem {
 
 const FIX_VERSION_PATTERN = /fixed in\s+([^\s,;]+)/i;
 
-function buildAffectedPackageFromRecord(rec: PrismaRecord) {
+function buildAffectedPackageFromRecord(rec: PrismaRecord): ReturnType<typeof buildAffectedPackage> {
   const name = rec['Source Package'] || rec.Packages;
   const version = rec['Package Version'];
   if (!name || !version) return undefined;

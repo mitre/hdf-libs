@@ -37,7 +37,10 @@ func TestPlanCreate(t *testing.T) {
 
 	assert.Contains(t, plan["name"], "portal-prod")
 	assert.Nil(t, plan["type"]) // type is optional, not assumed
-	assert.Equal(t, sysFile, plan["systemRef"])
+	// plan_create normalizes systemRef via filepath.ToSlash so the schema's
+	// uri-reference format check passes on Windows; assert against the
+	// slash-normalized form.
+	assert.Equal(t, filepath.ToSlash(sysFile), plan["systemRef"])
 	// planId should be auto-generated
 	sysCreatePlanID, ok := plan["planId"].(string)
 	assert.True(t, ok, "planId should be present")

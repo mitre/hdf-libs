@@ -6,18 +6,19 @@ import (
 	"os"
 )
 
-// runGenericDocSet is a shared implementation for set commands across document types.
-// It reads a JSON document, applies field updates, processes --unset flags,
-// and writes the result back.
-func runGenericDocSet(inputPath, outputPath string, unsetFields []string, requiredFields map[string]bool, updates map[string]string) error {
+// runGenericDocSet is a shared implementation for set commands across document
+// types. It reads a JSON document, schema-validates against the caller-declared
+// expectedDocType ("plan", "evidencePackage", "amendments", "system"), applies
+// field updates, processes --unset flags, and writes the result back.
+func runGenericDocSet(inputPath, outputPath, expectedDocType string, unsetFields []string, requiredFields map[string]bool, updates map[string]string) error {
 	data, err := os.ReadFile(inputPath) //nolint:gosec // CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read document: %w", err)
 	}
 
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return fmt.Errorf("failed to parse document: %w", err)
+	doc, err := loadAndValidateHDFDoc(data, expectedDocType)
+	if err != nil {
+		return fmt.Errorf("document %s: %w", inputPath, err)
 	}
 
 	// Apply updates (skip empty values)
@@ -38,6 +39,10 @@ func runGenericDocSet(inputPath, outputPath string, unsetFields []string, requir
 	output, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize document: %w", err)
+	}
+
+	if err := validateHDFOutput(output); err != nil {
+		return fmt.Errorf("document failed validation before write: %w", err)
 	}
 
 	target := inputPath

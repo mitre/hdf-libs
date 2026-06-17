@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/fetchers"
-	gitlab "github.com/mitre/hdf-libs/hdf-converters/v3/converters/gitlab-to-hdf/go"
+	gitlabconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/gitlab-to-hdf/go"
+	gitlab "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/gitlab/go"
 )
 
 func newFetchGitlabCmd() *cobra.Command {
@@ -88,7 +88,7 @@ Output defaults to stdout when no output path is given.`,
 				printDebug("No GITLAB_TOKEN or GLAB_TOKEN set; will check glab CLI config")
 			}
 
-			f, err := fetchers.NewGitLabFetcher(fetchers.GitLabParams{
+			f, err := gitlab.NewGitLabFetcher(gitlab.GitLabParams{
 				URL:             serverURL,
 				ProjectID:       projectID,
 				Ref:             ref,
@@ -112,7 +112,7 @@ Output defaults to stdout when no output path is given.`,
 				return writeConvertOutput(raw, outputPath)
 			}
 
-			result, err := gitlab.ConvertGitlabToHDF(raw, version)
+			result, err := gitlabconv.ConvertGitlabToHDF(raw, version)
 			if err != nil {
 				return fmt.Errorf("gitlab conversion failed: %w", err)
 			}

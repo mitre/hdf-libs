@@ -33,6 +33,11 @@ func applyLabels(data []byte, labels map[string]string) ([]byte, error) {
 		return data, nil
 	}
 
+	// applyLabels is a doc-type-agnostic mutation helper consumed by
+	// `convert` and `hdf label`. Both callers route the result through the
+	// writeValidatedHDFOutput gate downstream, so input validation here
+	// would either duplicate that work or reject legitimate partial inputs
+	// (e.g. a CKL-shaped doc that's not HDF). Skip the input gate here.
 	var doc map[string]interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON for label application: %w", err)

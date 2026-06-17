@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.2.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.3.0",
   "title": "HDF Amendments",
   "description": "Waivers, attestations, and POA&Ms that modify requirement compliance status or impact. Amendments are standalone documents that can be applied to results via merge operations.",
   "type": "object",
@@ -29,18 +29,18 @@
       "description": "URI to the hdf-system document these amendments apply to."
     },
     "appliedBy": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Identity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Identity",
       "description": "Default identity of who created this amendments document. Individual overrides may specify their own appliedBy."
     },
     "approvedBy": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Identity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Identity",
       "description": "Identity of the authorizing official who approved these amendments."
     },
     "overrides": {
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.2.0#/$defs/Standalone_Override"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.3.0#/$defs/Standalone_Override"
       },
       "description": "The set of amendments (waivers, attestations, POA&Ms, and other overrides)."
     },
@@ -52,11 +52,11 @@
       "description": "Optional key-value labels for grouping and querying amendments."
     },
     "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.2.0#/$defs/Integrity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.3.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this amendments document has not been tampered with."
     },
     "signature": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Signature",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Signature",
       "description": "Document-level digital signature covering all amendments."
     },
     "version": {
@@ -64,7 +64,7 @@
       "description": "Version of this amendments document."
     },
     "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.2.0#/$defs/Generator",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.3.0#/$defs/Generator",
       "description": "Information about the tool that generated this document."
     }
   },

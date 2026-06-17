@@ -717,12 +717,12 @@ func syntheticSystemDoc() map[string]interface{} {
 		"components": []interface{}{
 			map[string]interface{}{
 				"name":         "WebTier",
-				"type":         "software",
+				"type":         "application",
 				"baselineRefs": []interface{}{"RHEL9-STIG"},
 			},
 			map[string]interface{}{
 				"name":         "DatabaseTier",
-				"type":         "software",
+				"type":         "application",
 				"baselineRefs": []interface{}{"PostgreSQL-STIG"},
 			},
 		},
@@ -781,10 +781,15 @@ func TestDiffCommand_SystemFlag_JSON(t *testing.T) {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, stdout)
 	}
 
-	// Should have componentSummaries
-	cs, ok := output["componentDiffs"].([]interface{})
+	// CLI-specific per-component aggregation lives under extensions.componentSummaries
+	// per hdf-comparison's unevaluatedProperties:false constraint.
+	ext, ok := output["extensions"].(map[string]interface{})
 	if !ok {
-		t.Fatalf("expected 'componentDiffs' array in JSON output, got: %v", output["componentDiffs"])
+		t.Fatalf("expected 'extensions' object in JSON output, got: %v", output["extensions"])
+	}
+	cs, ok := ext["componentSummaries"].([]interface{})
+	if !ok {
+		t.Fatalf("expected 'extensions.componentSummaries' array, got: %v", ext["componentSummaries"])
 	}
 	if len(cs) != 2 {
 		t.Errorf("expected 2 component summaries, got %d", len(cs))
@@ -863,19 +868,21 @@ func TestDiffCommand_SystemFlag_ComplianceValues(t *testing.T) {
 	allowExitCode(t, err, stderr)
 
 	var output struct {
-		ComponentSummaries []struct {
-			Name            string  `json:"name"`
-			OldCompliance   float64 `json:"oldCompliance"`
-			NewCompliance   float64 `json:"newCompliance"`
-			ComplianceDelta float64 `json:"complianceDelta"`
-		} `json:"componentSummaries"`
+		Extensions struct {
+			ComponentSummaries []struct {
+				Name            string  `json:"name"`
+				OldCompliance   float64 `json:"oldCompliance"`
+				NewCompliance   float64 `json:"newCompliance"`
+				ComplianceDelta float64 `json:"complianceDelta"`
+			} `json:"componentSummaries"`
+		} `json:"extensions"`
 	}
 	if err := json.Unmarshal([]byte(stdout), &output); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
 
 	// WebTier (RHEL9-STIG): old = 1/2 passed = 50%, new = 2/2 passed = 100%
-	for _, cs := range output.ComponentSummaries {
+	for _, cs := range output.Extensions.ComponentSummaries {
 		switch cs.Name {
 		case "WebTier":
 			if cs.OldCompliance != 50 {

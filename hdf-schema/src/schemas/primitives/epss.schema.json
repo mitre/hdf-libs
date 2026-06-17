@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.2.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.3.0",
   "title": "HDF EPSS Primitive",
   "description": "Type for representing FIRST.org's Exploit Prediction Scoring System (EPSS) data for a vulnerability. EPSS estimates the probability that a CVE will be exploited in the wild in the next 30 days. See https://www.first.org/epss/ for the underlying model and methodology.",
   "$defs": {

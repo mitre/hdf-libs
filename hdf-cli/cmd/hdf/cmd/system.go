@@ -163,9 +163,9 @@ func runSystemSet(inputPath, outputPath, owner, description, name, systemID stri
 		return fmt.Errorf("failed to read system document: %w", err)
 	}
 
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return fmt.Errorf("failed to parse system document: %w", err)
+	doc, err := loadAndValidateHDFDoc(data, "system")
+	if err != nil {
+		return fmt.Errorf("system document %s: %w", inputPath, err)
 	}
 
 	if name != "" {
@@ -196,6 +196,10 @@ func runSystemSet(inputPath, outputPath, owner, description, name, systemID stri
 	output, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize system document: %w", err)
+	}
+
+	if err := validateHDFOutput(output); err != nil {
+		return fmt.Errorf("system document failed validation before write: %w", err)
 	}
 
 	target := inputPath

@@ -204,3 +204,101 @@ func TestValidateHDFOutput_AcceptsValidAmendments(t *testing.T) {
 	err := validateHDFOutput(valid)
 	assert.NoError(t, err)
 }
+
+// --- System / Plan / EvidencePackage / Comparison detection + validation ---
+
+func TestDetectHDFDocType_DetectsSystemPlanEvidenceComparison(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"system via components", `{"name":"s","components":[{"name":"c","type":"application"}]}`, "system"},
+		{"plan via assessments", `{"name":"p","assessments":[{"baselineRef":"x"}]}`, "plan"},
+		{"evidence via contents", `{"name":"e","contents":[{"type":"hdf-results","uri":"a","checksum":{"algorithm":"sha256","value":"abc"}}]}`, "evidencePackage"},
+		{"comparison via requirementDiffs", `{"formatVersion":"1.0.0","requirementDiffs":[]}`, "comparison"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got, ok := detectHDFDocType([]byte(tc.input))
+			assert.True(t, ok)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestValidateHDFOutput_AcceptsValidSystem(t *testing.T) {
+	t.Parallel()
+	valid := []byte(`{"name":"sys","components":[{"name":"c","type":"application"}]}`)
+	assert.NoError(t, validateHDFOutput(valid))
+}
+
+func TestValidateHDFOutput_RejectsInvalidSystem(t *testing.T) {
+	t.Parallel()
+	// components is required and minItems=1; the discriminator probe still
+	// sees the (empty) components key so detection succeeds, but validation
+	// rejects the doc.
+	invalid := []byte(`{"name":"sys","components":[]}`)
+	err := validateHDFOutput(invalid)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "System")
+}
+
+func TestValidateHDFOutput_AcceptsValidPlan(t *testing.T) {
+	t.Parallel()
+	valid := []byte(`{"name":"plan","assessments":[{"baselineRef":"RHEL9-STIG"}]}`)
+	assert.NoError(t, validateHDFOutput(valid))
+}
+
+func TestValidateHDFOutput_RejectsInvalidPlan(t *testing.T) {
+	t.Parallel()
+	invalid := []byte(`{"assessments":[]}`)
+	err := validateHDFOutput(invalid)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Plan")
+}
+
+func TestValidateHDFOutput_AcceptsValidEvidencePackage(t *testing.T) {
+	t.Parallel()
+	valid := []byte(`{
+		"name": "ep",
+		"contents": [
+			{"type":"hdf-results","uri":"a.json","checksum":{"algorithm":"sha256","value":"abc"}}
+		]
+	}`)
+	assert.NoError(t, validateHDFOutput(valid))
+}
+
+func TestValidateHDFOutput_RejectsInvalidEvidencePackage(t *testing.T) {
+	t.Parallel()
+	invalid := []byte(`{"contents":[]}`)
+	err := validateHDFOutput(invalid)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Evidence Package")
+}
+
+func TestValidateHDFOutput_AcceptsValidComparison(t *testing.T) {
+	t.Parallel()
+	valid := []byte(`{
+		"formatVersion": "1.0.0",
+		"comparisonMode": "temporal",
+		"sources": [
+			{"role": "old", "label": "v1"},
+			{"role": "new", "label": "v2"}
+		],
+		"summary": {"total":0,"matchedCount":0,"unmatchedOldCount":0,"unmatchedNewCount":0},
+		"requirementDiffs": []
+	}`)
+	assert.NoError(t, validateHDFOutput(valid))
+}
+
+func TestValidateHDFOutput_RejectsInvalidComparison(t *testing.T) {
+	t.Parallel()
+	// requirementDiffs present (detection passes) but formatVersion is wrong.
+	invalid := []byte(`{"formatVersion":"0.0.1","requirementDiffs":[]}`)
+	err := validateHDFOutput(invalid)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Comparison")
+}

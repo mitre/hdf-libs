@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.2.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.3.0",
   "title": "HDF Parameter Primitives",
   "description": "Input/parameter type definitions for typed, traceable configuration values that bridge governance prose and scanner automation.",
   "$defs": {

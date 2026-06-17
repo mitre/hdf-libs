@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -133,7 +134,7 @@ func runPlanCreateFromSystem(systemFile, planID, outputPath string) error {
 	plan := map[string]interface{}{
 		"planId":      planID,
 		"name":        planName,
-		"systemRef":   systemFile,
+		"systemRef":   filepath.ToSlash(systemFile), // schema requires uri-reference
 		"assessments": assessments,
 		"generator": map[string]interface{}{
 			"name":    "hdf-cli",
@@ -149,6 +150,10 @@ func writePlanOutput(plan map[string]interface{}, outputPath string) error {
 	output, err := json.MarshalIndent(plan, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize plan: %w", err)
+	}
+
+	if err := validateHDFOutput(output); err != nil {
+		return fmt.Errorf("plan document failed validation before write: %w", err)
 	}
 
 	if outputPath == "" {

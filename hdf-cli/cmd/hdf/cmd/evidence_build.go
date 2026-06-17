@@ -108,8 +108,10 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 	if err != nil {
 		return fmt.Errorf("failed to re-read system file: %w", err)
 	}
-	var sysDoc map[string]interface{}
-	_ = json.Unmarshal(sysData, &sysDoc)
+	sysDoc, err := loadAndValidateHDFDoc(sysData, "system")
+	if err != nil {
+		return fmt.Errorf("system file %s: %w", systemPath, err)
+	}
 	sysName, _ := sysDoc["name"].(string)
 	if sysName == "" {
 		sysName = "unnamed-system"
@@ -129,6 +131,10 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 	output, err := json.MarshalIndent(pkg, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize evidence package: %w", err)
+	}
+
+	if err := validateHDFOutput(output); err != nil {
+		return fmt.Errorf("evidence package failed validation before write: %w", err)
 	}
 
 	if outputPath == "" {
@@ -160,6 +166,13 @@ func buildContentEntry(docType, filePath string) (map[string]interface{}, error)
 	}, nil
 }
 
+// computeCompleteness is a best-effort courtesy metric. It deliberately
+// walks results as raw JSON (rather than going through parseHDFResults)
+// so a partial / not-yet-schema-valid results file still produces a
+// useful number for an evidence package summary. The evidence-build
+// command is not the validation gate for its inputs — `hdf validate`
+// is. Audit hdf-libs-qio1 confirmed this is intentional, not
+// wheel-reinvention.
 func computeCompleteness(sysDoc map[string]interface{}, resultsPaths []string) map[string]interface{} { //nolint:gocognit // nested JSON traversal
 	cc := map[string]interface{}{
 		"allBaselinesAssessed": false,

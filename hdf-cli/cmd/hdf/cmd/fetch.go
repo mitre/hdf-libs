@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/fetchers"
+	fetchershared "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/shared/go"
 )
 
 // Valid values for the --format flag on fetch subcommands.
@@ -27,7 +27,7 @@ func validateFetchFormat(format string) error {
 
 // fetchTLSOptions reads TLS flags from the command's persistent flags and
 // returns a TLSOptions. Falls back to HDF_CA_CERT and HDF_INSECURE env vars.
-func fetchTLSOptions(cmd *cobra.Command) fetchers.TLSOptions {
+func fetchTLSOptions(cmd *cobra.Command) fetchershared.TLSOptions {
 	caCert, _ := cmd.Flags().GetString("ca-cert")
 	insecure, _ := cmd.Flags().GetBool("insecure")
 
@@ -39,7 +39,7 @@ func fetchTLSOptions(cmd *cobra.Command) fetchers.TLSOptions {
 		insecure = true
 	}
 
-	return fetchers.TLSOptions{
+	return fetchershared.TLSOptions{
 		CACertPath: caCert,
 		Insecure:   insecure,
 	}

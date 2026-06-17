@@ -320,8 +320,8 @@ export function validate(data: unknown): ValidationResult {
       return validateAmendments(data);
     }
 
-    // HDF Comparison has 'mode' and 'sources' at root
-    if ('mode' in obj && 'sources' in obj) {
+    // HDF Comparison has 'requirementDiffs' at root (unique discriminator)
+    if ('requirementDiffs' in obj) {
       return validateComparison(data);
     }
 

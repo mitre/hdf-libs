@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -70,21 +71,18 @@ Examples:
 	return cmd
 }
 
-// targetTypeToComponentType maps HDF target types to system component types.
+// targetTypeToComponentType maps HDF Target.type to HDF Component.type. As of
+// v3.3.0, Component.type is a closed 11-value enum and shares the same values
+// with Target.type, so the mapping is identity for known values. Unknown
+// values fall back to "application" (the most generic valid type).
 func targetTypeToComponentType(targetType string) string {
 	switch targetType {
-	case "host", "containerImage", "containerInstance", "containerPlatform":
-		return compTypeCompute
-	case "application":
-		return compTypeApplication
-	case "database":
-		return "database"
-	case "network":
-		return "network"
-	case "repository", "artifact":
-		return "storage"
+	case "host", "containerImage", "containerInstance", "containerPlatform",
+		"cloudAccount", "cloudResource", "application", "database",
+		"network", "repository", "artifact":
+		return targetType
 	default:
-		return "other"
+		return compTypeApplication
 	}
 }
 
@@ -231,7 +229,7 @@ func runSystemCreateFromSBOM(doc map[string]interface{}, filePath, systemName, c
 	comp := map[string]interface{}{
 		"name":       componentName,
 		"type":       compType,
-		"sbomRef":    filePath,
+		"sbomRef":    filepath.ToSlash(filePath), // schema requires uri-reference; Windows backslashes are invalid
 		"sbomFormat": sbomFormat,
 	}
 
@@ -268,7 +266,9 @@ func extractSBOMComponentName(doc map[string]interface{}, format string) string 
 	return ""
 }
 
-// extractSBOMComponentType maps SBOM component type to HDF system component type.
+// extractSBOMComponentType maps SBOM component type to HDF Component.type
+// (the closed 11-value enum). CycloneDX uses a different vocabulary than
+// HDF, so we map across.
 func extractSBOMComponentType(doc map[string]interface{}, format string) string {
 	if format == sbomFormatCycloneDX {
 		if meta, ok := doc["metadata"].(map[string]interface{}); ok {
@@ -276,8 +276,10 @@ func extractSBOMComponentType(doc map[string]interface{}, format string) string 
 				switch comp["type"] {
 				case "application", "library", "framework":
 					return compTypeApplication
-				case "container", "firmware", "device", "operating-system", "platform":
-					return compTypeCompute
+				case "container":
+					return "containerImage"
+				case "firmware", "device", "operating-system", "platform":
+					return "host"
 				}
 			}
 		}
@@ -342,6 +344,10 @@ func writeSystemDoc(systemName string, components []map[string]interface{}, outp
 	output, err := json.MarshalIndent(sysDoc, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize system document: %w", err)
+	}
+
+	if err := validateHDFOutput(output); err != nil {
+		return fmt.Errorf("system document failed validation before write: %w", err)
 	}
 
 	if outputPath == "" {

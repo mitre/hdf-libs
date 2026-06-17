@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/fetchers"
-	splunk "github.com/mitre/hdf-libs/hdf-converters/v3/converters/splunk-to-hdf/go"
+	splunkconv "github.com/mitre/hdf-libs/hdf-converters/v3/converters/splunk-to-hdf/go"
+	splunk "github.com/mitre/hdf-libs/hdf-converters/v3/fetchers/splunk/go"
 )
 
 func newFetchSplunkCmd() *cobra.Command {
@@ -58,7 +58,7 @@ Output defaults to stdout when no output path is given.`,
 				fmt.Fprintln(os.Stderr, "WARNING: using HTTP; bearer token will be sent in plaintext. Consider using HTTPS.")
 			}
 
-			f, err := fetchers.NewSplunkFetcher(fetchers.SplunkParams{
+			f, err := splunk.NewSplunkFetcher(splunk.SplunkParams{
 				URL:   serverURL,
 				Index: index,
 				GUID:  guid,
@@ -74,7 +74,7 @@ Output defaults to stdout when no output path is given.`,
 			}
 			printDebug("Fetched %d bytes of raw Splunk data", len(raw))
 
-			result, err := splunk.ConvertSplunkToHDF(raw, version)
+			result, err := splunkconv.ConvertSplunkToHDF(raw, version)
 			if err != nil {
 				return fmt.Errorf("splunk conversion failed: %w", err)
 			}

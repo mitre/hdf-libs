@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.2.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.3.0",
   "title": "HDF Runner Primitive",
   "description": "Information about the test execution environment where the security tool/scanner was executed.",
   "$defs": {
@@ -34,7 +34,7 @@
           "description": "The container instance identifier. Example: 'a1b2c3d4e5f6', 'security-scan-job-xyz123'. Can be a Docker container ID, Kubernetes pod name, or other container runtime identifier."
         },
         "operator": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.2.0#/$defs/Identity",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.3.0#/$defs/Identity",
           "description": "The identity of the person or system responsible for executing the test. This could be a human auditor manually completing a checklist, an automated CI/CD system, or a security tool. Optional field to support both automated and manual HDF generation."
         }
       },

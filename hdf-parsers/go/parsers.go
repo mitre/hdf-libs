@@ -44,6 +44,34 @@ type BaselineParseResult struct {
 	Error   string           `json:"error,omitempty"`
 }
 
+// SystemParseResult is a specialized parse result for HDF System
+type SystemParseResult struct {
+	Success bool           `json:"success"`
+	Data    *hdf.HDFSystem `json:"data,omitempty"`
+	Error   string         `json:"error,omitempty"`
+}
+
+// PlanParseResult is a specialized parse result for HDF Plan
+type PlanParseResult struct {
+	Success bool         `json:"success"`
+	Data    *hdf.HDFPlan `json:"data,omitempty"`
+	Error   string       `json:"error,omitempty"`
+}
+
+// EvidencePackageParseResult is a specialized parse result for HDF Evidence Package
+type EvidencePackageParseResult struct {
+	Success bool                    `json:"success"`
+	Data    *hdf.HDFEvidencePackage `json:"data,omitempty"`
+	Error   string                  `json:"error,omitempty"`
+}
+
+// ComparisonParseResult is a specialized parse result for HDF Comparison
+type ComparisonParseResult struct {
+	Success bool               `json:"success"`
+	Data    *hdf.HDFComparison `json:"data,omitempty"`
+	Error   string             `json:"error,omitempty"`
+}
+
 // ParseResults parses HDF Results document from JSON bytes
 func ParseResults(input []byte) ResultsParseResult {
 	input = NormalizeTimestamps(input)
@@ -132,6 +160,170 @@ func ParseBaseline(input []byte) BaselineParseResult {
 	}
 }
 
+// ParseSystem parses HDF System document from JSON bytes
+func ParseSystem(input []byte) SystemParseResult {
+	input = NormalizeTimestamps(input)
+	trimmed := strings.TrimSpace(string(input))
+	if len(trimmed) == 0 {
+		return SystemParseResult{
+			Success: false,
+			Error:   "Input is empty",
+		}
+	}
+
+	validationResult := validators.ValidateSystem(input)
+	if !validationResult.Valid {
+		return SystemParseResult{
+			Success: false,
+			Error:   fmt.Sprintf("Schema validation failed: %s", validationResult.Error()),
+		}
+	}
+
+	var data hdf.HDFSystem
+	decoder := json.NewDecoder(strings.NewReader(trimmed))
+	if err := decoder.Decode(&data); err != nil {
+		return SystemParseResult{
+			Success: false,
+			Error:   fmt.Sprintf("Invalid JSON: %s", err.Error()),
+		}
+	}
+
+	if decoder.More() {
+		return SystemParseResult{
+			Success: false,
+			Error:   "Invalid JSON: unexpected trailing data after end of object",
+		}
+	}
+
+	return SystemParseResult{
+		Success: true,
+		Data:    &data,
+	}
+}
+
+// ParsePlan parses HDF Plan document from JSON bytes
+func ParsePlan(input []byte) PlanParseResult {
+	input = NormalizeTimestamps(input)
+	trimmed := strings.TrimSpace(string(input))
+	if len(trimmed) == 0 {
+		return PlanParseResult{
+			Success: false,
+			Error:   "Input is empty",
+		}
+	}
+
+	validationResult := validators.ValidatePlan(input)
+	if !validationResult.Valid {
+		return PlanParseResult{
+			Success: false,
+			Error:   fmt.Sprintf("Schema validation failed: %s", validationResult.Error()),
+		}
+	}
+
+	var data hdf.HDFPlan
+	decoder := json.NewDecoder(strings.NewReader(trimmed))
+	if err := decoder.Decode(&data); err != nil {
+		return PlanParseResult{
+			Success: false,
+			Error:   fmt.Sprintf("Invalid JSON: %s", err.Error()),
+		}
+	}
+
+	if decoder.More() {
+		return PlanParseResult{
+			Success: false,
+			Error:   "Invalid JSON: unexpected trailing data after end of object",
+		}
+	}
+
+	return PlanParseResult{
+		Success: true,
+		Data:    &data,
+	}
+}
+
+// ParseEvidencePackage parses HDF Evidence Package document from JSON bytes
+func ParseEvidencePackage(input []byte) EvidencePackageParseResult {
+	input = NormalizeTimestamps(input)
+	trimmed := strings.TrimSpace(string(input))
+	if len(trimmed) == 0 {
+		return EvidencePackageParseResult{
+			Success: false,
+			Error:   "Input is empty",
+		}
+	}
+
+	validationResult := validators.ValidateEvidencePackage(input)
+	if !validationResult.Valid {
+		return EvidencePackageParseResult{
+			Success: false,
+			Error:   fmt.Sprintf("Schema validation failed: %s", validationResult.Error()),
+		}
+	}
+
+	var data hdf.HDFEvidencePackage
+	decoder := json.NewDecoder(strings.NewReader(trimmed))
+	if err := decoder.Decode(&data); err != nil {
+		return EvidencePackageParseResult{
+			Success: false,
+			Error:   fmt.Sprintf("Invalid JSON: %s", err.Error()),
+		}
+	}
+
+	if decoder.More() {
+		return EvidencePackageParseResult{
+			Success: false,
+			Error:   "Invalid JSON: unexpected trailing data after end of object",
+		}
+	}
+
+	return EvidencePackageParseResult{
+		Success: true,
+		Data:    &data,
+	}
+}
+
+// ParseComparison parses HDF Comparison document from JSON bytes
+func ParseComparison(input []byte) ComparisonParseResult {
+	input = NormalizeTimestamps(input)
+	trimmed := strings.TrimSpace(string(input))
+	if len(trimmed) == 0 {
+		return ComparisonParseResult{
+			Success: false,
+			Error:   "Input is empty",
+		}
+	}
+
+	validationResult := validators.ValidateComparison(input)
+	if !validationResult.Valid {
+		return ComparisonParseResult{
+			Success: false,
+			Error:   fmt.Sprintf("Schema validation failed: %s", validationResult.Error()),
+		}
+	}
+
+	var data hdf.HDFComparison
+	decoder := json.NewDecoder(strings.NewReader(trimmed))
+	if err := decoder.Decode(&data); err != nil {
+		return ComparisonParseResult{
+			Success: false,
+			Error:   fmt.Sprintf("Invalid JSON: %s", err.Error()),
+		}
+	}
+
+	if decoder.More() {
+		return ComparisonParseResult{
+			Success: false,
+			Error:   "Invalid JSON: unexpected trailing data after end of object",
+		}
+	}
+
+	return ComparisonParseResult{
+		Success: true,
+		Data:    &data,
+	}
+}
+
 // Parse parses an HDF document with auto-detection of type
 func Parse(input []byte) ParseResult {
 	// Check for empty input
@@ -169,6 +361,33 @@ func Parse(input []byte) ParseResult {
 		}
 	}
 
+	// HDF Comparison has 'requirementDiffs' at root (unique discriminator)
+	if _, hasReqDiffs := generic["requirementDiffs"]; hasReqDiffs {
+		result := ParseComparison(input)
+		if !result.Success {
+			return ParseResult{Success: false, Error: result.Error}
+		}
+		return ParseResult{Success: true, Data: result.Data, Type: "comparison"}
+	}
+
+	// HDF Plan has 'assessments' at root
+	if _, hasAssessments := generic["assessments"]; hasAssessments {
+		result := ParsePlan(input)
+		if !result.Success {
+			return ParseResult{Success: false, Error: result.Error}
+		}
+		return ParseResult{Success: true, Data: result.Data, Type: "plan"}
+	}
+
+	// HDF Evidence Package has 'contents' at root
+	if _, hasContents := generic["contents"]; hasContents {
+		result := ParseEvidencePackage(input)
+		if !result.Success {
+			return ParseResult{Success: false, Error: result.Error}
+		}
+		return ParseResult{Success: true, Data: result.Data, Type: "evidencePackage"}
+	}
+
 	// HDF Baseline has 'name' and 'requirements' at root
 	if _, hasName := generic["name"]; hasName {
 		if _, hasRequirements := generic["requirements"]; hasRequirements {
@@ -185,6 +404,15 @@ func Parse(input []byte) ParseResult {
 				Type:    "baseline",
 			}
 		}
+	}
+
+	// HDF System has 'name' + 'components' at root (after Results' baselines check ruled out)
+	if _, hasComponents := generic["components"]; hasComponents {
+		result := ParseSystem(input)
+		if !result.Success {
+			return ParseResult{Success: false, Error: result.Error}
+		}
+		return ParseResult{Success: true, Data: result.Data, Type: "system"}
 	}
 
 	return ParseResult{

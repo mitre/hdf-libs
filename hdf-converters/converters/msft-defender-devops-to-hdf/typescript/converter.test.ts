@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertMsftDefenderDevopsToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 function loadFixture(name: string): string {
@@ -30,6 +31,7 @@ describe('msft-defender-devops-to-hdf', () => {
     it('should produce 2 baselines from 2 runs', async () => {
       const input = loadFixture('input/minimal.sarif');
       const result = JSON.parse(await convertMsftDefenderDevopsToHdf(input)) as HDFResults;
+      expectValidResults(result);
 
       expect(result.baselines).toHaveLength(2);
       expect(result.baselines![0]!.requirements!.length).toBeGreaterThan(0);

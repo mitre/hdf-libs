@@ -131,9 +131,9 @@ func runList(_ *cobra.Command, filename, detail string) error {
 }
 
 func runListSystem(data []byte, detail string) error {
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return fmt.Errorf("failed to parse system document: %w", err)
+	doc, err := loadAndValidateHDFDoc(data, "system")
+	if err != nil {
+		return fmt.Errorf("system document: %w", err)
 	}
 
 	if detail == "" {

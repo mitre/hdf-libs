@@ -421,3 +421,164 @@ func TestParseResults_AcceptsInSpecNoTzTimestamps(t *testing.T) {
 	require(result.Data.Timestamp != nil, "Timestamp pointer is nil after parse")
 	assert.Equal(t, "2026-03-25T22:56:27.736808Z", result.Data.Timestamp.Format("2006-01-02T15:04:05.999999Z07:00"))
 }
+
+func TestParseSystem_Valid(t *testing.T) {
+	t.Run("should parse minimal valid HDF System", func(t *testing.T) {
+		valid := []byte(`{
+			"name": "test-system",
+			"components": [
+				{"name": "web", "type": "application"}
+			]
+		}`)
+		result := ParseSystem(valid)
+		assert.True(t, result.Success, "expected success; error: %s", result.Error)
+		assert.Empty(t, result.Error)
+		assert.NotNil(t, result.Data)
+		assert.Equal(t, "test-system", result.Data.Name)
+		assert.Equal(t, 1, len(result.Data.Components))
+	})
+}
+
+func TestParseSystem_Invalid(t *testing.T) {
+	t.Run("should reject empty input", func(t *testing.T) {
+		result := ParseSystem([]byte(""))
+		assert.False(t, result.Success)
+		assert.Contains(t, result.Error, "empty")
+	})
+	t.Run("should reject invalid JSON syntax", func(t *testing.T) {
+		result := ParseSystem([]byte(`{ "name": [bogus json`))
+		assert.False(t, result.Success)
+		assert.NotEmpty(t, result.Error)
+	})
+	t.Run("should reject docs missing required components field", func(t *testing.T) {
+		result := ParseSystem([]byte(`{"name": "no-components"}`))
+		assert.False(t, result.Success)
+		assert.Regexp(t, "(?i)(schema|components|required)", result.Error)
+	})
+	t.Run("should reject trailing garbage after object", func(t *testing.T) {
+		result := ParseSystem([]byte(`{"name":"x","components":[{"name":"c","type":"application"}]} EXTRA`))
+		assert.False(t, result.Success)
+		assert.Contains(t, result.Error, "trailing data")
+	})
+}
+
+func TestParsePlan_Valid(t *testing.T) {
+	t.Run("should parse minimal valid HDF Plan", func(t *testing.T) {
+		valid := []byte(`{
+			"name": "test-plan",
+			"assessments": [
+				{"baselineRef": "RHEL9-STIG"}
+			]
+		}`)
+		result := ParsePlan(valid)
+		assert.True(t, result.Success, "expected success; error: %s", result.Error)
+		assert.Empty(t, result.Error)
+		assert.NotNil(t, result.Data)
+		assert.Equal(t, "test-plan", result.Data.Name)
+		assert.Equal(t, 1, len(result.Data.Assessments))
+	})
+}
+
+func TestParsePlan_Invalid(t *testing.T) {
+	t.Run("should reject empty input", func(t *testing.T) {
+		result := ParsePlan([]byte(""))
+		assert.False(t, result.Success)
+		assert.Contains(t, result.Error, "empty")
+	})
+	t.Run("should reject docs missing required assessments field", func(t *testing.T) {
+		result := ParsePlan([]byte(`{"name": "no-assessments"}`))
+		assert.False(t, result.Success)
+		assert.Regexp(t, "(?i)(schema|assessments|required)", result.Error)
+	})
+}
+
+func TestParseEvidencePackage_Valid(t *testing.T) {
+	t.Run("should parse minimal valid HDF EvidencePackage", func(t *testing.T) {
+		valid := []byte(`{
+			"name": "test-evidence",
+			"contents": [
+				{
+					"type": "hdf-results",
+					"uri": "results.json",
+					"checksum": {"algorithm": "sha256", "value": "abc"}
+				}
+			]
+		}`)
+		result := ParseEvidencePackage(valid)
+		assert.True(t, result.Success, "expected success; error: %s", result.Error)
+		assert.Empty(t, result.Error)
+		assert.NotNil(t, result.Data)
+		assert.Equal(t, "test-evidence", result.Data.Name)
+		assert.Equal(t, 1, len(result.Data.Contents))
+	})
+}
+
+func TestParseEvidencePackage_Invalid(t *testing.T) {
+	t.Run("should reject empty input", func(t *testing.T) {
+		result := ParseEvidencePackage([]byte(""))
+		assert.False(t, result.Success)
+		assert.Contains(t, result.Error, "empty")
+	})
+	t.Run("should reject docs missing required contents field", func(t *testing.T) {
+		result := ParseEvidencePackage([]byte(`{"name": "no-contents"}`))
+		assert.False(t, result.Success)
+		assert.Regexp(t, "(?i)(schema|contents|required)", result.Error)
+	})
+}
+
+func TestParseComparison_Valid(t *testing.T) {
+	t.Run("should parse minimal valid HDF Comparison", func(t *testing.T) {
+		valid := []byte(`{
+			"formatVersion": "1.0.0",
+			"comparisonMode": "temporal",
+			"sources": [
+				{"role": "old", "label": "v1"},
+				{"role": "new", "label": "v2"}
+			],
+			"summary": {
+				"total": 0,
+				"matchedCount": 0,
+				"unmatchedOldCount": 0,
+				"unmatchedNewCount": 0
+			},
+			"requirementDiffs": []
+		}`)
+		result := ParseComparison(valid)
+		assert.True(t, result.Success, "expected success; error: %s", result.Error)
+		assert.Empty(t, result.Error)
+		assert.NotNil(t, result.Data)
+		assert.Equal(t, "1.0.0", string(result.Data.FormatVersion))
+		assert.Equal(t, 2, len(result.Data.Sources))
+	})
+}
+
+func TestParseComparison_Invalid(t *testing.T) {
+	t.Run("should reject empty input", func(t *testing.T) {
+		result := ParseComparison([]byte(""))
+		assert.False(t, result.Success)
+		assert.Contains(t, result.Error, "empty")
+	})
+	t.Run("should reject docs with wrong formatVersion", func(t *testing.T) {
+		invalid := []byte(`{
+			"formatVersion": "0.0.1",
+			"comparisonMode": "temporal",
+			"sources": [{"role":"old","label":"a"},{"role":"new","label":"b"}],
+			"summary": {"total":0,"matchedCount":0,"unmatchedOldCount":0,"unmatchedNewCount":0},
+			"requirementDiffs": []
+		}`)
+		result := ParseComparison(invalid)
+		assert.False(t, result.Success)
+		assert.Regexp(t, "(?i)(schema|version)", result.Error)
+	})
+	t.Run("should reject docs missing required requirementDiffs", func(t *testing.T) {
+		invalid := []byte(`{
+			"formatVersion": "1.0.0",
+			"comparisonMode": "temporal",
+			"sources": [{"role":"old","label":"a"},{"role":"new","label":"b"}],
+			"summary": {"total":0,"matchedCount":0,"unmatchedOldCount":0,"unmatchedNewCount":0}
+		}`)
+		result := ParseComparison(invalid)
+		assert.False(t, result.Success)
+		assert.Regexp(t, "(?i)(schema|requirementDiffs|required)", result.Error)
+	})
+}

@@ -279,6 +279,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import { convert<Name>ToHdf } from './converter.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
@@ -302,8 +303,10 @@ describe('<name> to HDF converter', () => {
     const output = convert<Name>ToHdf(loadFixture('minimal.<ext>'));
     const hdf = JSON.parse(output) as HDFResults;
 
+    expectValidResults(hdf); // schema gate — required on at least one success path
+
     expect(hdf.timestamp).toBeTruthy();
-    expect(hdf.generator?.name).toBe('hdf-converters');
+    expect(hdf.generator?.name).toBe('<source>-to-hdf'); // e.g. 'splunk-to-hdf'
     expect(hdf.baselines).toHaveLength(1);
   });
 
@@ -312,6 +315,14 @@ describe('<name> to HDF converter', () => {
 ```
 
 Mirror the same scenarios as the Go tests. Tests use vitest (not Jest) — syntax is nearly identical.
+
+**Schema validation is required.** Every TS importer test file must call the
+matching helper from `hdf-converters/test/helpers/expectValidHdf.ts` on at least
+one success-path test. Choose the helper by output type: `expectValidResults`
+for HDF Results, `expectValidBaseline` for HDF Baseline, `expectValidAmendments`
+for HDF Amendments (VEX importers). This mirrors the Go pattern (`validators.
+ValidateResults` after `json.Marshal`) and prevents schema-invalid output
+from passing unit tests silently.
 
 ---
 
