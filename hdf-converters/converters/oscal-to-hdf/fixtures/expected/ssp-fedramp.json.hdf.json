@@ -166,7 +166,7 @@
   ],
   "description": "[Insert CSO Name] is delivered as [a/an] [insert based on the Service Model above] offering using a multi-tenant [insert based on the Deployment Model above] cloud computing environment. It is available to [Insert scope of customers in accordance with instructions above (for example, the public, federal, state, local, and tribal governments, as well as research institutions, federal contractors, government contractors etc.)].\n\nNOTE: Additional description, including the purpose and functions of this system may be added here. This includes any narrative text usually included in section 9.1 of the SSP.\n\nNOTE: The description is expected to be at least 32 words in length.\n\nAuthorization Boundary: A holistic, top-level explanation of the FedRAMP authorization boundary.",
   "generator": {
-    "name": "hdf-converters",
+    "name": "oscal-ssp-to-hdf",
     "version": "dev"
   },
   "identifier": "F00000000",

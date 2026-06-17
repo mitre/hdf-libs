@@ -52,7 +52,7 @@ func TestConvertAssessmentPlanToHDF_FedRAMPFixture(t *testing.T) {
 
 	// Generator
 	assert.NotNil(t, plan.Generator)
-	assert.Equal(t, "hdf-converters", plan.Generator.Name)
+	assert.Equal(t, "oscal-sap-to-hdf", plan.Generator.Name)
 	assert.Equal(t, "1.0.0-test", plan.Generator.Version)
 
 	// Integrity

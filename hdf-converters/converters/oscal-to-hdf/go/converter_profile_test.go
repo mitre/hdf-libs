@@ -36,7 +36,7 @@ func TestConvertProfileToHDF_ModerateBaseline(t *testing.T) {
 
 	// Generator
 	assert.NotNil(t, baseline.Generator)
-	assert.Equal(t, "hdf-converters", baseline.Generator.Name)
+	assert.Equal(t, "oscal-catalog-to-hdf", baseline.Generator.Name)
 
 	// Integrity based on profile input (not catalog)
 	assert.NotNil(t, baseline.Integrity)

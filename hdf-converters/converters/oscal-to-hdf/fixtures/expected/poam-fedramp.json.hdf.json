@@ -4,7 +4,7 @@
     "type": "simple"
   },
   "generator": {
-    "name": "hdf-converters",
+    "name": "oscal-poam-to-hdf",
     "version": "dev"
   },
   "integrity": {

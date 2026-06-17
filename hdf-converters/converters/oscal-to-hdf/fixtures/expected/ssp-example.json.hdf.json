@@ -48,7 +48,7 @@
   ],
   "description": "This is an example of a system that provides enterprise logging and log auditing capabilities.\n\nAuthorization Boundary: The description of the authorization boundary would go here.",
   "generator": {
-    "name": "hdf-converters",
+    "name": "oscal-ssp-to-hdf",
     "version": "dev"
   },
   "identifier": "d7456980-9277-4dcb-83cf-f8ff0442623b",

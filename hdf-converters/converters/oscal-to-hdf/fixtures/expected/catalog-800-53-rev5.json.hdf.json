@@ -1,6 +1,6 @@
 {
   "generator": {
-    "name": "hdf-converters",
+    "name": "oscal-catalog-to-hdf",
     "version": "dev"
   },
   "groups": [

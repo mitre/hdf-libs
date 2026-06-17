@@ -56,7 +56,7 @@ func TestConvertSSPToHDF_Fixture(t *testing.T) {
 
 	// Generator
 	assert.NotNil(t, system.Generator)
-	assert.Equal(t, "hdf-converters", system.Generator.Name)
+	assert.Equal(t, "oscal-ssp-to-hdf", system.Generator.Name)
 	assert.Equal(t, "1.0.0-test", system.Generator.Version)
 }
 

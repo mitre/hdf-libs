@@ -94,7 +94,7 @@
     }
   ],
   "generator": {
-    "name": "hdf-converters",
+    "name": "trufflehog-to-hdf",
     "version": "0.1.0"
   },
   "timestamp": "2026-05-15T03:18:17.805830543Z",
