@@ -57,7 +57,8 @@
     "@mitre/hdf-mappings": "workspace:^"
   },
   "devDependencies": {
-    "@mitre/hdf-fixtures": "workspace:^"
+    "@mitre/hdf-fixtures": "workspace:^",
+    "@mitre/hdf-validators": "workspace:^"
   },
   "engines": {
     "node": ">=22.0.0"

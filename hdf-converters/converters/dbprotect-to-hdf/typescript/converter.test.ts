@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertDbprotectToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,7 @@ describe('dbprotect to HDF converter', () => {
     it('should produce valid HDF from check results fixture', async () => {
       const output = await convertDbprotectToHdf(loadFixture('sample-check-results.xml'));
       const hdf = JSON.parse(output) as HDFResults;
+      expectValidResults(hdf);
 
       expect(hdf.timestamp).toBeTruthy();
       expect(hdf.generator?.name).toBe('dbprotect-to-hdf');

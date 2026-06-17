@@ -212,7 +212,7 @@ function buildRequirement(finding: DeptrackFinding, timestamp: string | undefine
  * augments with name/version/ecosystem when available. Returns undefined
  * when the component carries no schema-acceptable identifier.
  */
-function buildAffectedPackageFromComponent(c: DeptrackComponent) {
+function buildAffectedPackageFromComponent(c: DeptrackComponent): ReturnType<typeof buildAffectedPackage> {
   // Derive ecosystem from the purl scheme when possible; falls back to
   // generic so the name+version+ecosystem branch stays valid for
   // components Dependency-Track left without a purl.

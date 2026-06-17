@@ -95,6 +95,9 @@ importers:
       '@mitre/hdf-fixtures':
         specifier: workspace:^
         version: link:../hdf-fixtures
+      '@mitre/hdf-validators':
+        specifier: workspace:^
+        version: link:../hdf-validators
 
   hdf-diff:
     dependencies:

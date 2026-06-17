@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { convertFortifyToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
+import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -37,6 +38,7 @@ describe('Fortify to HDF Converter', () => {
       const fvdl = loadFixture('input/fortify_webgoat_results.fvdl');
       const output = await convertFortifyToHdf(fvdl);
       const parsed = parseOutput(output);
+      expectValidResults(parsed);
 
       expect(parsed).toBeDefined();
       const baselines = parsed.baselines as Array<Record<string, unknown>>;
