@@ -371,6 +371,18 @@ func Convert<Name>(input []byte, converterVersion string) (*hdf.HDFResults, erro
 }
 ```
 
+### Input parsing — handle NDJSON when the tool can emit it
+
+Some tools emit **NDJSON** (one JSON object per line) rather than a JSON array — typically behind a streaming `--json` flag (e.g. `trufflehog --json`). If the source tool can produce NDJSON, `Convert()` must accept all three input shapes, in this order:
+
+1. Whole-input JSON array (`json.Unmarshal` into `[]Finding`)
+2. Single JSON object (`json.Unmarshal` into one `Finding`)
+3. Line-by-line NDJSON: split on `\n`, skip blank lines, `json.Unmarshal` each line
+
+Reference implementation: `trufflehog-to-hdf/go/converter.go` (`parseFindings`) and its TS counterpart `typescript/converter.ts`. Mirror the same fallback in both languages.
+
+**Why this is mandatory, not optional:** registry auto-detect (`registry/fingerprint.go`, `shared/typescript/fingerprint.ts`) fingerprints the **first line** when a whole-input parse fails, so NDJSON input now auto-detects correctly. If your `Convert()` only handles the array/single-object shapes, auto-detect will *succeed* and then conversion will *fail* — a worse failure mode than a clean "could not auto-detect." Handle NDJSON in `Convert()` whenever the tool can emit it, and add an `*.ndjson` fixture + test (including a CLI auto-detect test) to lock it in.
+
 ### HDF Type Reference
 
 ```go
@@ -1298,6 +1310,12 @@ cat output.json | head -40
 - [ ] All security findings addressed before marking done
 - [ ] `--live` flag wired into CLI converter command, file-based path still works
 - [ ] Spot-checked live mode output (or documented why a live spot-check isn't possible)
+
+**Converters for tools that can emit NDJSON / line-delimited JSON (review Step 4 — Input parsing):**
+- [ ] `Convert()` handles all shapes the tool emits: JSON array, single object, AND line-by-line NDJSON
+- [ ] `*.ndjson` fixture from real `--json`/streaming output exists in `fixtures/input/`
+- [ ] Go + TS tests convert the NDJSON fixture to valid HDF
+- [ ] CLI auto-detect test: `convert <fixture>.ndjson` with no `--from` detects the tool (guards the registry first-line fingerprint path)
 
 **Converters for tools with SARIF/JUnit/CycloneDX/XCCDF support (review Step 4c):**
 - [ ] Format detection added at top of converter function (Go + TypeScript)
