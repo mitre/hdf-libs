@@ -48,7 +48,15 @@ export function detectConverterAll(input: string): DetectionResult[] {
     ? input.slice(0, MAX_XML_PREAMBLE)
     : input;
 
-  const parsed = family === 'json' ? tryParseJSON(input) : effectiveInput;
+  let parsed: unknown;
+  if (family === 'json') {
+    parsed = tryParseJSON(input);
+    // Tools like `trufflehog --json` emit NDJSON (one object per line), which
+    // fails a whole-input parse. Fingerprint the first line instead.
+    if (parsed === undefined) parsed = tryParseFirstJSONLine(input);
+  } else {
+    parsed = effectiveInput;
+  }
   if (parsed === undefined) return [];
 
   const results: DetectionResult[] = [];
@@ -91,4 +99,21 @@ function tryParseJSON(input: string): unknown | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Parses the first non-blank line of NDJSON input as a single JSON value.
+ * Only the first line is scanned — detection needs one representative object,
+ * not the whole stream. Returns undefined if that line is not valid JSON.
+ */
+function tryParseFirstJSONLine(input: string): unknown | undefined {
+  let start = 0;
+  while (start < input.length) {
+    let end = input.indexOf('\n', start);
+    if (end === -1) end = input.length;
+    const line = input.slice(start, end).trim();
+    if (line) return tryParseJSON(line);
+    start = end + 1;
+  }
+  return undefined;
 }

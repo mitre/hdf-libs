@@ -46,6 +46,14 @@ func TestTrufflehogConverter_Convert_NDJSON(t *testing.T) {
 	assertHDFOutput(t, output)
 }
 
+func TestTrufflehogConverter_AutoDetect_NDJSON(t *testing.T) {
+	fixture := converterFixturePath(t, "trufflehog-to-hdf", "input/ndjson-input.ndjson")
+	stdout, stderr, err := executeCommand("convert", fixture)
+	require.NoErrorf(t, err, "auto-detect of trufflehog NDJSON should succeed (stderr: %s)", stderr)
+	assert.Contains(t, stderr, "Detected: TruffleHog")
+	assertHDFOutput(t, []byte(stdout))
+}
+
 func TestTrufflehogConverter_Convert_EmptyArray(t *testing.T) {
 	converter, err := GetConverter("trufflehog", "hdf")
 	require.NoError(t, err)

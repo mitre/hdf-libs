@@ -66,7 +66,13 @@ func DetectConverterAll(input []byte) []DetectionResult {
 	var parsed any
 	if family == FamilyJSON {
 		if err := json.Unmarshal(input, &parsed); err != nil {
-			return nil
+			// Tools like `trufflehog --json` emit NDJSON (one object per line),
+			// which fails a whole-input Unmarshal. Fingerprint the first line.
+			first, ok := firstJSONLine(input)
+			if !ok {
+				return nil
+			}
+			parsed = first
 		}
 	} else {
 		// For XML/text, only pass the preamble to fingerprints
@@ -104,6 +110,31 @@ func DetectConverterAll(input []byte) []DetectionResult {
 		return results[i].Fingerprint.ID < results[j].Fingerprint.ID
 	})
 	return results
+}
+
+// firstJSONLine parses the first non-blank line of NDJSON input as a single
+// JSON value. Only the first line is scanned — detection needs one
+// representative object, not the whole stream. Returns ok=false if that line is
+// not valid JSON (i.e. the input is genuinely malformed, not NDJSON).
+func firstJSONLine(input []byte) (any, bool) {
+	for len(input) > 0 {
+		var line []byte
+		if nl := bytes.IndexByte(input, '\n'); nl >= 0 {
+			line, input = input[:nl], input[nl+1:]
+		} else {
+			line, input = input, nil
+		}
+		line = bytes.TrimSpace(line)
+		if len(line) == 0 {
+			continue
+		}
+		var obj any
+		if err := json.Unmarshal(line, &obj); err != nil {
+			return nil, false
+		}
+		return obj, true
+	}
+	return nil, false
 }
 
 // safeFingerprint calls a fingerprint function, recovering from panics.
