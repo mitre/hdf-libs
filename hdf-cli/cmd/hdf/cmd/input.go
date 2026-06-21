@@ -52,7 +52,14 @@ func readInputFile(path string) ([]byte, error) {
 	// Strip a leading UTF-8 BOM so every downstream consumer — auto-detect,
 	// converters, schema validation — sees clean bytes regardless of whether
 	// the file was produced on Windows.
-	return bytes.TrimPrefix(data, utf8BOM), nil
+	data = bytes.TrimPrefix(data, utf8BOM)
+	if len(data) == 0 {
+		// A file/stdin containing only a BOM passes the upstream non-empty
+		// checks but has no real content; report it clearly instead of letting
+		// downstream parsing emit a confusing "could not auto-detect" error.
+		return nil, fmt.Errorf("no input provided")
+	}
+	return data, nil
 }
 
 // readFromStdin reads from stdin with a size limit.

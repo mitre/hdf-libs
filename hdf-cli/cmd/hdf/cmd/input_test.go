@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -89,6 +90,22 @@ func TestReadInputFile_NoBOMUnchanged(t *testing.T) {
 	}
 	if string(data) != string(content) {
 		t.Errorf("content altered: got %q, want %q", data, content)
+	}
+}
+
+func TestReadInputFile_BOMOnly(t *testing.T) {
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "bomonly.json")
+	if err := os.WriteFile(tmpFile, []byte{0xEF, 0xBB, 0xBF}, 0o600); err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+
+	_, err := readInputFile(tmpFile)
+	if err == nil {
+		t.Fatal("expected error for a file containing only a BOM")
+	}
+	if !strings.Contains(err.Error(), "no input provided") {
+		t.Errorf("unexpected error message: %v", err)
 	}
 }
 
