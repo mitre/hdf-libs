@@ -203,6 +203,14 @@ func TestDetectConverter_BOM(t *testing.T) {
 		require.NotNil(t, result)
 		assert.Equal(t, "junit-to-hdf", result.Fingerprint.ID)
 	})
+
+	t.Run("detects BOM-prefixed NDJSON", func(t *testing.T) {
+		ResetRegistry()
+		registerTestFingerprints()
+		result := DetectConverter(withBOM(gosecInput + "\n" + gosecInput))
+		require.NotNil(t, result)
+		assert.Equal(t, "gosec-to-hdf", result.Fingerprint.ID)
+	})
 }
 
 func TestDetectConverterAll(t *testing.T) {

@@ -267,6 +267,13 @@ describe('BOM-prefixed input', () => {
     expect(result).toBeDefined();
     expect(result!.fingerprint.id).toBe('junit-to-hdf');
   });
+
+  it('detects BOM-prefixed NDJSON', () => {
+    registerFingerprint(gosecFP);
+    const result = detectConverter(`\uFEFF${GOSEC_INPUT}\n${GOSEC_INPUT}`);
+    expect(result).toBeDefined();
+    expect(result!.fingerprint.id).toBe('gosec-to-hdf');
+  });
 });
 
 describe('version detection', () => {

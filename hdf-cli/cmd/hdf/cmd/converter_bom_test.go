@@ -32,6 +32,17 @@ func TestBOM_JSON_AutoDetectConvert(t *testing.T) {
 	assertHDFOutput(t, []byte(stdout))
 }
 
+// Combined case: a BOM-prefixed NDJSON file exercises both fixes together —
+// the chokepoint strips the BOM, then the registry first-line fallback
+// fingerprints the line-delimited JSON (see hdf-libs-o7ud).
+func TestBOM_NDJSON_AutoDetectConvert(t *testing.T) {
+	bomFile := writeBOMCopy(t, converterFixturePath(t, "trufflehog-to-hdf", "input/ndjson-input.ndjson"))
+	stdout, stderr, err := executeCommand("convert", bomFile)
+	require.NoErrorf(t, err, "BOM-prefixed NDJSON should auto-detect and convert (stderr: %s)", stderr)
+	assert.Contains(t, stderr, "Detected: TruffleHog")
+	assertHDFOutput(t, []byte(stdout))
+}
+
 func TestBOM_XML_AutoDetectConvert(t *testing.T) {
 	bomFile := writeBOMCopy(t, converterFixturePath(t, "junit-to-hdf", "input/testsuites-mixed.xml"))
 	stdout, stderr, err := executeCommand("convert", bomFile)
