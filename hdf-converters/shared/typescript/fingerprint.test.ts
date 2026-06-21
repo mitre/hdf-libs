@@ -244,7 +244,7 @@ describe('NDJSON detection', () => {
     expect(result!.fingerprint.id).toBe('gosec-to-hdf');
   });
 
-  it('returns undefined when the first line is malformed', () => {
+  it('returns no matches when the first line is malformed', () => {
     registerFingerprint(gosecFP);
     expect(detectConverterAll('{broken\n{also broken')).toHaveLength(0);
   });
