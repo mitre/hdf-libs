@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +20,11 @@ const (
 	DefaultMaxSizeMB = 50
 )
 
+// utf8BOM is the UTF-8 byte-order-mark sequence that some Windows tools prepend.
+// Go/JS JSON parsers and CSV header matching choke on it, so it is stripped at
+// the input boundary before any downstream consumer sees the bytes.
+var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
+
 // getMaxFileSize returns the maximum allowed file size in bytes.
 // Uses the --max-size flag if set, otherwise defaults to 50MB.
 func getMaxFileSize() int64 {
@@ -32,11 +38,21 @@ func getMaxFileSize() int64 {
 // It enforces size limits and validates the input is a regular file.
 func readInputFile(path string) ([]byte, error) {
 	// Handle stdin
+	var data []byte
+	var err error
 	if path == "" || path == "-" {
-		return readFromStdin()
+		data, err = readFromStdin()
+	} else {
+		data, err = readFromFile(path)
+	}
+	if err != nil {
+		return nil, err
 	}
 
-	return readFromFile(path)
+	// Strip a leading UTF-8 BOM so every downstream consumer — auto-detect,
+	// converters, schema validation — sees clean bytes regardless of whether
+	// the file was produced on Windows.
+	return bytes.TrimPrefix(data, utf8BOM), nil
 }
 
 // readFromStdin reads from stdin with a size limit.

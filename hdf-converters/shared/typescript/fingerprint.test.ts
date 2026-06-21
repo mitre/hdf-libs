@@ -224,6 +224,25 @@ describe('detectConverterAll', () => {
   });
 });
 
+describe('BOM-prefixed input', () => {
+  beforeEach(() => _resetRegistry());
+
+  it('detects BOM-prefixed JSON', () => {
+    registerFingerprint(gosecFP);
+    const result = detectConverter(`\uFEFF${GOSEC_INPUT}`);
+    expect(result).toBeDefined();
+    expect(result!.fingerprint.id).toBe('gosec-to-hdf');
+  });
+
+  it('detects BOM-prefixed XML', () => {
+    registerFingerprint(junitFP);
+    registerFingerprint(xccdfFP);
+    const result = detectConverter(`\uFEFF${JUNIT_INPUT}`);
+    expect(result).toBeDefined();
+    expect(result!.fingerprint.id).toBe('junit-to-hdf');
+  });
+});
+
 describe('version detection', () => {
   beforeEach(() => _resetRegistry());
 

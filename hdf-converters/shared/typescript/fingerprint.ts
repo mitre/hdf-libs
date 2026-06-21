@@ -36,6 +36,10 @@ const MAX_XML_PREAMBLE = 8 * 1024;
 export function detectConverterAll(input: string): DetectionResult[] {
   if (!input || input.length > MAX_DETECT_SIZE) return [];
 
+  // Strip a leading UTF-8 BOM so direct library callers (e.g. heimdall passing
+  // raw input) detect BOM-prefixed JSON/XML; the CLI strips it earlier too.
+  input = input.replace(/^\uFEFF/, '');
+
   const family = detectFamily(input);
   if (!family) return [];
 

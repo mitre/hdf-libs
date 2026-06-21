@@ -54,6 +54,10 @@ func DetectConverterAll(input []byte) []DetectionResult {
 		return nil
 	}
 
+	// Strip a leading UTF-8 BOM so direct library callers (e.g. heimdall passing
+	// raw input) detect BOM-prefixed JSON/XML; the CLI strips it earlier too.
+	input = bytes.TrimPrefix(input, utf8BOM)
+
 	family := DetectFamily(input)
 	if family == "" {
 		return nil

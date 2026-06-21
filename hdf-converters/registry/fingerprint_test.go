@@ -183,6 +183,28 @@ func TestDetectConverter(t *testing.T) {
 	})
 }
 
+func TestDetectConverter_BOM(t *testing.T) {
+	withBOM := func(s string) []byte {
+		return append(append([]byte{}, utf8BOM...), []byte(s)...)
+	}
+
+	t.Run("detects BOM-prefixed JSON", func(t *testing.T) {
+		ResetRegistry()
+		registerTestFingerprints()
+		result := DetectConverter(withBOM(gosecInput))
+		require.NotNil(t, result)
+		assert.Equal(t, "gosec-to-hdf", result.Fingerprint.ID)
+	})
+
+	t.Run("detects BOM-prefixed XML", func(t *testing.T) {
+		ResetRegistry()
+		registerTestFingerprints()
+		result := DetectConverter(withBOM(junitInput))
+		require.NotNil(t, result)
+		assert.Equal(t, "junit-to-hdf", result.Fingerprint.ID)
+	})
+}
+
 func TestDetectConverterAll(t *testing.T) {
 	t.Run("returns sorted by confidence", func(t *testing.T) {
 		ResetRegistry()
