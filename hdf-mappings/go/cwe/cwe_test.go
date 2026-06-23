@@ -114,3 +114,26 @@ func TestLoadCWEData_InvalidJSON(t *testing.T) {
 		t.Errorf("expected empty map on JSON error, got %d entries", len(result))
 	}
 }
+
+func contains(s []string, want string) bool {
+	for _, v := range s {
+		if v == want {
+			return true
+		}
+	}
+	return false
+}
+
+func TestRevisionAwareLookup(t *testing.T) {
+	// CWE-5 maps to SC-8 in both revisions (base control unchanged in Rev 5).
+	if !contains(NISTControlsForRevision("CWE-5", 4), "SC-8") {
+		t.Error("expected SC-8 for CWE-5 at Rev 4")
+	}
+	if !contains(NISTControlsForRevision("5", 5), "SC-8") {
+		t.Error("expected SC-8 for CWE-5 at Rev 5")
+	}
+	// Unknown revision yields no mapping.
+	if NISTControlsForRevision("5", 99) != nil {
+		t.Error("expected nil for unknown revision")
+	}
+}

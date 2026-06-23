@@ -7,43 +7,54 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 )
 
 // cweMapping represents one row in the CWE→NIST mapping table.
 type cweMapping struct {
 	CWEID  int    `json:"CWE-ID"`
 	NISTID string `json:"NIST-ID"`
+	Rev    int    `json:"Rev"`
 }
 
 //go:embed cwe-nist-mappings.json
 var cweMappingsData []byte
 
 var (
-	cweData     map[int][]string // CWE numeric ID → NIST controls
+	cweData     map[int]map[int][]string // revision → CWE numeric ID → NIST controls
 	cweDataOnce sync.Once
 )
 
-func loadCWEData() map[int][]string {
+func loadCWEData() map[int]map[int][]string {
 	cweDataOnce.Do(func() {
+		cweData = make(map[int]map[int][]string)
 		var list []cweMapping
 		if err := json.Unmarshal(cweMappingsData, &list); err != nil {
-			cweData = make(map[int][]string)
 			return
 		}
-		cweData = make(map[int][]string, len(list))
 		for _, m := range list {
-			if m.NISTID != "" {
-				cweData[m.CWEID] = append(cweData[m.CWEID], m.NISTID)
+			if m.NISTID == "" {
+				continue
 			}
+			if cweData[m.Rev] == nil {
+				cweData[m.Rev] = make(map[int][]string)
+			}
+			cweData[m.Rev][m.CWEID] = append(cweData[m.Rev][m.CWEID], m.NISTID)
 		}
 	})
 	return cweData
 }
 
-// NISTControls returns NIST 800-53 controls for a CWE ID.
-// Accepts "CWE-476" or "476" — both forms are handled.
-// Returns nil if the CWE ID is unknown or the input is empty.
+// NISTControls returns NIST 800-53 controls for a CWE ID at the default NIST
+// revision. Accepts "CWE-476" or "476". Returns nil if unknown or empty.
 func NISTControls(cweID string) []string {
+	return NISTControlsForRevision(cweID, nist.CurrentRevision)
+}
+
+// NISTControlsForRevision returns NIST 800-53 controls for a CWE ID at the
+// requested NIST revision. Accepts "CWE-476" or "476". Returns nil if unknown.
+func NISTControlsForRevision(cweID string, rev int) []string {
 	if cweID == "" {
 		return nil
 	}
@@ -59,8 +70,7 @@ func NISTControls(cweID string) []string {
 		return nil
 	}
 
-	data := loadCWEData()
-	controls, ok := data[id]
+	controls, ok := loadCWEData()[rev][id]
 	if !ok {
 		return nil
 	}

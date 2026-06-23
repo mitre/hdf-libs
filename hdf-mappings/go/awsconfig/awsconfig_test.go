@@ -247,3 +247,35 @@ func TestLoadWithCorruptJSON(t *testing.T) {
 		t.Errorf("Expected nil from NISTControls with corrupt JSON, got %v", controls)
 	}
 }
+
+func has(s []string, want string) bool {
+	for _, v := range s {
+		if v == want {
+			return true
+		}
+	}
+	return false
+}
+
+func TestRevisionAwareLookup(t *testing.T) {
+	// access-keys-rotated maps to different controls per NIST revision.
+	rev4 := NISTControlsForRevision("access-keys-rotated", 4)
+	if !has(rev4, "AC-2(1)") || has(rev4, "AC-3(15)") {
+		t.Errorf("Rev 4 controls unexpected: %v", rev4)
+	}
+	rev5 := NISTControlsForRevision("access-keys-rotated", 5)
+	if !has(rev5, "AC-3(15)") || has(rev5, "AC-2(1)") {
+		t.Errorf("Rev 5 controls unexpected: %v", rev5)
+	}
+	// Default (no rev) tracks the repo-wide CurrentRevision (currently 4).
+	if got := NISTControls("access-keys-rotated"); !has(got, "AC-2(1)") {
+		t.Errorf("default revision should match Rev 4, got %v", got)
+	}
+	// Unknown revision yields no mapping; identifier lookup is rev-aware.
+	if NISTControlsForRevision("access-keys-rotated", 99) != nil {
+		t.Error("expected nil for unknown revision")
+	}
+	if GetByIdentifierForRevision("ACCESS_KEYS_ROTATED", 5) == nil {
+		t.Error("expected Rev 5 identifier lookup to resolve")
+	}
+}
