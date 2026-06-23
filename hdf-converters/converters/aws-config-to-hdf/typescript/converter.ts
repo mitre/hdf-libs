@@ -2,8 +2,9 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import {
   getAwsConfigNistControlByIdentifier,
   getAwsConfigNistControlByName,
+  nistToCci,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNistCciTags, deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import {
   TargetType,
   type EvaluatedBaseline,
@@ -84,11 +85,12 @@ function mapComplianceStatus(complianceType: string): ResultStatus {
 }
 
 function buildNistTags(sourceIdentifier: string, ruleName: string): string[] {
-  const byIdentifier = getAwsConfigNistControlByIdentifier(sourceIdentifier);
-  if (byIdentifier) return [byIdentifier];
-  const byName = getAwsConfigNistControlByName(ruleName);
-  if (byName) return [byName];
-  return [];
+  // The mapping stores controls as a pipe-delimited string ("SC-13|SC-28");
+  // split into individual controls so -nist filtering and CCI derivation work
+  // (matching the Go converter).
+  const raw = getAwsConfigNistControlByIdentifier(sourceIdentifier) ?? getAwsConfigNistControlByName(ruleName);
+  if (!raw) return [];
+  return raw.split('|').map((c) => c.trim()).filter(Boolean);
 }
 
 function buildCheckText(rule: ConfigRule): string {
@@ -147,7 +149,10 @@ function buildNotApplicableResult(rule: ConfigRule): RequirementResult {
 
 function buildRequirement(rule: ConfigRule): EvaluatedRequirement {
   const nist = buildNistTags(rule.Source.SourceIdentifier, rule.ConfigRuleName);
-  const tags: Record<string, unknown> = nist.length > 0 ? { nist } : {};
+  // AWS Config rules carry no native CCI references; derive them from the mapped
+  // NIST controls so -cci filtering works downstream, matching the other
+  // NIST-mapped converters.
+  const tags: Record<string, unknown> = nist.length > 0 ? buildNistCciTags(nist, nistToCci(nist)) : {};
 
   const descriptions: Description[] = [
     { label: 'default', data: rule.Description },

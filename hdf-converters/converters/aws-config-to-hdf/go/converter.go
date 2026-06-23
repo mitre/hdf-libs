@@ -10,6 +10,7 @@ import (
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	awsconfigmap "github.com/mitre/hdf-libs/hdf-mappings/go/v3/awsconfig"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
@@ -137,7 +138,10 @@ func buildRequirement(rule ConfigRule) hdf.EvaluatedRequirement {
 	nistControls := buildNISTTags(rule.Source.SourceIdentifier, rule.ConfigRuleName)
 	tags := map[string]interface{}{}
 	if len(nistControls) > 0 {
-		tags["nist"] = nistControls
+		// AWS Config rules carry no native CCI references; derive them from the
+		// mapped NIST controls so -cci filtering works downstream, matching the
+		// other NIST-mapped converters.
+		tags = shared.BuildNISTCCITags(nistControls, cci.NISTToCCI(nistControls))
 	}
 
 	reqResults := make([]hdf.RequirementResult, 0, len(rule.EvaluationResults))

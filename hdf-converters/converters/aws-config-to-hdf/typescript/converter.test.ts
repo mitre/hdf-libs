@@ -116,8 +116,21 @@ describe('AWS Config to HDF converter', async () => {
       // ACCESS_KEYS_ROTATED should have a NIST mapping
       const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('minimal.json'))) as HDFResults;
       const req = hdf.baselines[0]!.requirements[0]!;
-      expect(req.tags?.['nist']).toBeDefined();
-      expect((req.tags?.['nist'] as string[]).length).toBeGreaterThan(0);
+      const nist = req.tags?.['nist'] as string[];
+      expect(nist).toBeDefined();
+      expect(nist.length).toBeGreaterThan(0);
+      // Controls must be split into individual entries, not a pipe-joined blob.
+      expect(nist.some((c) => c.includes('|'))).toBe(false);
+    });
+
+    it('should derive CCI tags from the NIST controls (issue #96)', async () => {
+      // Coverage is partial — only rules whose NIST controls are in the curated
+      // NIST→CCI table emit cci (e.g. the SC-13/SC-28 encryption rule).
+      const hdf = JSON.parse(await convertAwsConfigToHdf(loadFixture('multi-rule.json'))) as HDFResults;
+      const reqs = hdf.baselines.flatMap((b) => b.requirements);
+      const withCci = reqs.find((r) => r.tags?.['cci'] !== undefined);
+      expect(withCci, 'at least one requirement should derive cci from its NIST controls').toBeDefined();
+      expect((withCci!.tags!['cci'] as string[]).length).toBeGreaterThan(0);
     });
 
     it('should map COMPLIANT to passed', async () => {

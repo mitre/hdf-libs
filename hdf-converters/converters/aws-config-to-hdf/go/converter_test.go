@@ -44,9 +44,34 @@ func TestConvertAWSConfigToHDF_Minimal(t *testing.T) {
 	// Verify NIST tags populated from SourceIdentifier
 	nist, ok := req.Tags["nist"]
 	assert.True(t, ok, "Should have nist tags")
-	nistSlice, ok := nist.([]string)
+	nistSlice, ok := nist.([]interface{})
 	assert.True(t, ok)
 	assert.NotEmpty(t, nistSlice)
+}
+
+// Issue #96: CCI tags are derived from the mapped NIST controls. Coverage is
+// partial — only rules whose NIST controls are in the curated NIST→CCI table
+// emit cci (e.g. the SC-13/SC-28 encryption rule), matching the other
+// NIST-mapped converters.
+func TestConvertAWSConfigToHDF_DerivesCCIFromNIST(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "aws-config-to-hdf", "fixtures", "input", "multi-rule.json")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	result, err := ConvertAWSConfigToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	var withCCI *hdf.EvaluatedRequirement
+	for i := range result.Baselines[0].Requirements {
+		if _, ok := result.Baselines[0].Requirements[i].Tags["cci"]; ok {
+			withCCI = &result.Baselines[0].Requirements[i]
+			break
+		}
+	}
+	require.NotNil(t, withCCI, "at least one requirement should derive cci from its NIST controls")
+	cciSlice, ok := withCCI.Tags["cci"].([]interface{})
+	assert.True(t, ok)
+	assert.NotEmpty(t, cciSlice)
 }
 
 func TestConvertAWSConfigToHDF_Tool(t *testing.T) {

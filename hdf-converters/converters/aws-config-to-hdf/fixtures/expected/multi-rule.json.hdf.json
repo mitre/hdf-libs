@@ -75,6 +75,10 @@
           "id": "config-rule-def456",
           "impact": 0.5,
           "tags": {
+            "cci": [
+              "CCI-001199",
+              "CCI-002450"
+            ],
             "nist": [
               "SC-13",
               "SC-28"
@@ -110,6 +114,9 @@
           "id": "config-rule-ghi789",
           "impact": 0.5,
           "tags": {
+            "cci": [
+              "CCI-000172"
+            ],
             "nist": [
               "AC-2(4)",
               "AC-2(g)",
