@@ -26,7 +26,13 @@ export {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   DEFAULT_REMEDIATION_NIST_TAGS,
   DEFAULT_COMPONENT_MANAGEMENT_NIST_TAGS,
-  CURRENT_NIST_REVISION,
+  DEFAULT_NIST_REVISION,
+  SUPPORTED_NIST_REVISIONS,
+  getCurrentNistRevision,
+  setCurrentNistRevision,
+  resetNistRevision,
+  isNistStrict,
+  setNistStrict,
 } from './nist/index.js';
 
 export type { NISTDescriptions } from './nist/types.js';
@@ -97,6 +103,7 @@ export {
   getAllAwsConfigRuleNames,
   awsConfigIdentifierExists,
   awsConfigRuleNameExists,
+  awsConfigMappedRevisions,
   getAllAwsConfigMappings,
 } from './awsconfig/index.js';
 

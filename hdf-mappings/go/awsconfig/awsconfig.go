@@ -51,7 +51,7 @@ func load() {
 // GetByRuleName returns the mapping for the given kebab-case rule name at the
 // default NIST revision, or nil if not found.
 func GetByRuleName(name string) *Mapping {
-	return GetByRuleNameForRevision(name, nist.CurrentRevision)
+	return GetByRuleNameForRevision(name, nist.Revision())
 }
 
 // GetByRuleNameForRevision returns the mapping for the given rule name at the
@@ -64,7 +64,7 @@ func GetByRuleNameForRevision(name string, rev int) *Mapping {
 // GetByIdentifier returns the mapping for the given UPPERCASE source identifier
 // at the default NIST revision, or nil if not found.
 func GetByIdentifier(id string) *Mapping {
-	return GetByIdentifierForRevision(id, nist.CurrentRevision)
+	return GetByIdentifierForRevision(id, nist.Revision())
 }
 
 // GetByIdentifierForRevision returns the mapping for the given source identifier
@@ -77,7 +77,7 @@ func GetByIdentifierForRevision(id string, rev int) *Mapping {
 // NISTControls returns the NIST control IDs for the given rule name at the
 // default NIST revision. Returns nil if the rule is not in the mapping.
 func NISTControls(ruleName string) []string {
-	return NISTControlsForRevision(ruleName, nist.CurrentRevision)
+	return NISTControlsForRevision(ruleName, nist.Revision())
 }
 
 // NISTControlsForRevision returns the NIST control IDs for the given rule name
@@ -95,4 +95,29 @@ func NISTControlsForRevision(ruleName string, rev int) []string {
 		}
 	}
 	return controls
+}
+
+// MappedRevisions returns the supported NIST revisions at which the rule
+// resolves to a non-empty control list, sorted ascending. It mirrors the
+// resolution NISTControls performs (rule-name keyed, trying the source
+// identifier then the rule name), so a revision is included exactly when a
+// conversion at that revision would emit NIST tags for the rule. An empty
+// result means the rule is unmapped at every revision (not a revision mismatch).
+func MappedRevisions(sourceIdentifier, ruleName string) []int {
+	load()
+	var revs []int
+	for _, rev := range nist.SupportedRevisions() {
+		if mappedAtRevision(rev, sourceIdentifier) || mappedAtRevision(rev, ruleName) {
+			revs = append(revs, rev)
+		}
+	}
+	return revs
+}
+
+func mappedAtRevision(rev int, key string) bool {
+	if key == "" {
+		return false
+	}
+	m := byRuleName[rev][key]
+	return m != nil && m.NISTID != ""
 }

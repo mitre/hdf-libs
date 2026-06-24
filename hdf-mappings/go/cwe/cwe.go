@@ -49,7 +49,7 @@ func loadCWEData() map[int]map[int][]string {
 // NISTControls returns NIST 800-53 controls for a CWE ID at the default NIST
 // revision. Accepts "CWE-476" or "476". Returns nil if unknown or empty.
 func NISTControls(cweID string) []string {
-	return NISTControlsForRevision(cweID, nist.CurrentRevision)
+	return NISTControlsForRevision(cweID, nist.Revision())
 }
 
 // NISTControlsForRevision returns NIST 800-53 controls for a CWE ID at the

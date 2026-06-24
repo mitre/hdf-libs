@@ -10,6 +10,7 @@ import (
 	hdfpassthrough "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-passthrough/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/registry/all" // register all fingerprints via init()
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 	"github.com/spf13/cobra"
 )
 
@@ -44,6 +45,8 @@ func NewConvertCmd() *cobra.Command {
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
 	cmd.Flags().StringSlice("labels", nil, "Labels to apply to all targets (key=value pairs, e.g., --labels system=Portal,environment=production)")
 	cmd.Flags().String("component-id", "", "Set componentId on all components in the output")
+	cmd.Flags().Int("nist-rev", 0, "NIST 800-53 revision for emitted control tags (4 or 5; default 4)")
+	cmd.Flags().Bool("nist-strict", false, "Fail if input references rules mapped only at a different NIST revision")
 	addNoValidateFlag(cmd)
 
 	// Converter-specific flags
@@ -94,6 +97,7 @@ Examples:
   hdf convert scan.nessus -o results.json              # Write to file
   hdf convert --from nessus --to hdf scan.nessus       # Explicit formats
   hdf convert --from sarif@2.0 scan.sarif              # Explicit version
+  hdf convert scan.json --nist-rev 5                   # Emit NIST 800-53 Rev 5 control tags
   hdf convert scan1.nessus scan2.xml -o output-dir/    # Bulk convert to directory
   hdf convert *.sarif -o converted/                     # Bulk, continues past failures
   hdf convert *.sarif -o converted/ -F                 # Bulk, abort on first failure
@@ -109,6 +113,14 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 	// Parse version specifiers from format flags (e.g. "sarif@2.0" → "sarif", "2.0")
 	fromFormat, fromVersion := parseFormatVersion(fromFormat)
 	toFormat, toVersion := parseFormatVersion(toFormat)
+
+	// Select the NIST revision converters emit control tags for, restoring the
+	// defaults afterward so one invocation can't leak into the next.
+	if reset, err := applyNistOptions(cmd); err != nil {
+		return err
+	} else if reset != nil {
+		defer reset()
+	}
 
 	// Check if output would overwrite input
 	if outputPath != "" && outputPath != "-" && inputPath != "-" {
@@ -195,6 +207,32 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		return writeValidatedHDFOutput(cmd, output, outputPath)
 	}
 	return writeConvertOutput(output, outputPath)
+}
+
+// applyNistOptions reads the --nist-rev and --nist-strict flags and sets the
+// matching process-global NIST options the mapping/converter packages consult.
+// It returns a reset func to restore the defaults (nil when neither flag was
+// set), or an error for an unsupported revision.
+func applyNistOptions(cmd *cobra.Command) (reset func(), err error) {
+	rev, _ := cmd.Flags().GetInt("nist-rev")
+	strict, _ := cmd.Flags().GetBool("nist-strict")
+	if rev == 0 && !strict {
+		return nil, nil
+	}
+	if rev != 0 {
+		if err := nist.SetRevision(rev); err != nil {
+			return nil, err
+		}
+		printDebug("Emitting NIST 800-53 Rev %d control tags", rev)
+	}
+	if strict {
+		nist.SetStrict(true)
+		printDebug("Strict NIST revision alignment enabled")
+	}
+	return func() {
+		nist.ResetRevision()
+		nist.SetStrict(false)
+	}, nil
 }
 
 // runVersionedConvert passes version specifiers to the converter and runs

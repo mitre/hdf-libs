@@ -2,6 +2,9 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import {
   getAwsConfigNistControlByIdentifier,
   getAwsConfigNistControlByName,
+  awsConfigMappedRevisions,
+  getCurrentNistRevision,
+  isNistStrict,
 } from '@mitre/hdf-mappings';
 import { deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import {
@@ -89,6 +92,37 @@ function buildNistTags(sourceIdentifier: string, ruleName: string): string[] {
   const byName = getAwsConfigNistControlByName(ruleName);
   if (byName) return [byName];
   return [];
+}
+
+/**
+ * Flag rules whose NIST mappings exist at a revision other than the one
+ * currently selected — they emit no NIST tags here even though a mapping
+ * exists elsewhere, a likely sign of a wrong revision selection. Rules
+ * unmapped at every revision are not flagged. Throws in strict mode; otherwise
+ * logs a single aggregated warning.
+ */
+function checkRevisionAlignment(rules: ConfigRule[]): void {
+  const rev = getCurrentNistRevision();
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  for (const rule of rules) {
+    const covered = awsConfigMappedRevisions(rule.Source.SourceIdentifier, rule.ConfigRuleName);
+    if (covered.length === 0 || covered.includes(rev) || seen.has(rule.ConfigRuleName)) continue;
+    seen.add(rule.ConfigRuleName);
+    lines.push(`  - ${rule.ConfigRuleName} (mapped at Rev ${covered.join(', ')})`);
+  }
+  if (lines.length === 0) return;
+
+  const detail =
+    `${lines.length} AWS Config rule(s) have NIST 800-53 mappings at a different revision ` +
+    `than the requested Rev ${rev}; their NIST tags were omitted:\n${lines.join('\n')}`;
+  if (isNistStrict()) {
+    throw new Error(
+      `aws-config: ${detail}\nre-run with a matching revision, or disable strict mode to convert with the gaps`
+    );
+  }
+  // eslint-disable-next-line no-console
+  console.warn(`WARNING: ${detail}`);
 }
 
 function buildCheckText(rule: ConfigRule): string {
@@ -205,6 +239,8 @@ export async function convertAwsConfigToHdf(input: string): Promise<string> {
   if (!Array.isArray(data.ConfigRules)) {
     throw new Error('Invalid AWS Config export: ConfigRules field is required');
   }
+
+  checkRevisionAlignment(data.ConfigRules);
 
   const { items: limitedRules, truncated: truncatedRules } = limitArray(data.ConfigRules);
   /* v8 ignore next -- truncation only triggers with >100K items */

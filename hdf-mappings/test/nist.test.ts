@@ -1,10 +1,56 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   getNISTDescription,
   getAllNISTIds,
   nistExists,
   getNISTFamily,
+  DEFAULT_NIST_REVISION,
+  SUPPORTED_NIST_REVISIONS,
+  getCurrentNistRevision,
+  setCurrentNistRevision,
+  resetNistRevision,
+  isNistStrict,
+  setNistStrict,
 } from '../src/nist/index.js';
+
+describe('NIST revision selection', () => {
+  afterEach(() => {
+    resetNistRevision();
+  });
+
+  it('defaults to revision 4', () => {
+    expect(DEFAULT_NIST_REVISION).toBe(4);
+    expect(getCurrentNistRevision()).toBe(4);
+  });
+
+  it('lists supported revisions', () => {
+    expect([...SUPPORTED_NIST_REVISIONS]).toEqual([4, 5]);
+  });
+
+  it('sets a supported revision', () => {
+    setCurrentNistRevision(5);
+    expect(getCurrentNistRevision()).toBe(5);
+  });
+
+  it('rejects an unsupported revision without mutating state', () => {
+    expect(() => setCurrentNistRevision(99)).toThrow(/unsupported NIST revision 99/);
+    expect(getCurrentNistRevision()).toBe(DEFAULT_NIST_REVISION);
+  });
+
+  it('resets to the default revision', () => {
+    setCurrentNistRevision(5);
+    resetNistRevision();
+    expect(getCurrentNistRevision()).toBe(DEFAULT_NIST_REVISION);
+  });
+
+  it('toggles strict revision alignment', () => {
+    expect(isNistStrict()).toBe(false);
+    setNistStrict(true);
+    expect(isNistStrict()).toBe(true);
+    setNistStrict(false);
+    expect(isNistStrict()).toBe(false);
+  });
+});
 
 describe('NIST Mapping Functions', () => {
   describe('getNISTDescription', () => {

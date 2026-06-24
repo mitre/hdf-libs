@@ -1,7 +1,8 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { setCurrentNistRevision, resetNistRevision, setNistStrict } from '@mitre/hdf-mappings';
 import { convertAwsConfigToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
@@ -18,6 +19,62 @@ runConverterContractTests({
   converterName: 'aws-config-to-hdf',
   convertFn: convertAwsConfigToHdf,
   minimalFixture: 'minimal.json',
+});
+
+// api-gw-ssl-enabled is mapped only at Rev 5; cloudtrail-enabled at both.
+const REV_MIX_INPUT = JSON.stringify({
+  ConfigRules: [
+    {
+      ConfigRuleId: 'r1',
+      ConfigRuleName: 'api-gw-ssl-enabled',
+      ConfigRuleArn: 'arn:aws:config:us-east-1:123456789012:config-rule/r1',
+      Source: { Owner: 'AWS', SourceIdentifier: 'API_GW_SSL_ENABLED' },
+      EvaluationResults: [
+        {
+          EvaluationResultIdentifier: {
+            EvaluationResultQualifier: {
+              ConfigRuleName: 'api-gw-ssl-enabled',
+              ResourceType: 'AWS::ApiGateway::Stage',
+              ResourceId: 's1',
+            },
+          },
+          ComplianceType: 'NON_COMPLIANT',
+          ResultRecordedTime: '2024-02-19T00:00:05Z',
+          ConfigRuleInvokedTime: '2024-02-19T00:00:05Z',
+        },
+      ],
+    },
+  ],
+});
+
+describe('AWS Config revision alignment', () => {
+  afterEach(() => {
+    resetNistRevision();
+    setNistStrict(false);
+    vi.restoreAllMocks();
+  });
+
+  it('warns (without failing) when a rule is mapped only at another revision', async () => {
+    setCurrentNistRevision(4);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await convertAwsConfigToHdf(REV_MIX_INPUT);
+    const msg = warn.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(msg).toContain('api-gw-ssl-enabled');
+    expect(msg).toContain('Rev 5');
+  });
+
+  it('throws in strict mode on a revision mismatch', async () => {
+    setCurrentNistRevision(4);
+    setNistStrict(true);
+    await expect(convertAwsConfigToHdf(REV_MIX_INPUT)).rejects.toThrow('api-gw-ssl-enabled');
+  });
+
+  it('does not warn when every rule is mapped at the requested revision', async () => {
+    setCurrentNistRevision(5);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await convertAwsConfigToHdf(REV_MIX_INPUT);
+    expect(warn).not.toHaveBeenCalled();
+  });
 });
 
 describe('AWS Config to HDF converter', async () => {

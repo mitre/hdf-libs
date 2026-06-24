@@ -257,6 +257,29 @@ func has(s []string, want string) bool {
 	return false
 }
 
+func TestMappedRevisions(t *testing.T) {
+	// cloudtrail-enabled is mapped at both revisions.
+	if got := MappedRevisions("CLOUD_TRAIL_ENABLED", "cloudtrail-enabled"); len(got) != 2 || got[0] != 4 || got[1] != 5 {
+		t.Errorf("expected [4 5] for cloudtrail-enabled, got %v", got)
+	}
+	// api-gw-ssl-enabled exists only in the Rev 5 table.
+	if got := MappedRevisions("API_GW_SSL_ENABLED", "api-gw-ssl-enabled"); len(got) != 1 || got[0] != 5 {
+		t.Errorf("expected [5] for api-gw-ssl-enabled, got %v", got)
+	}
+	// secretsmanager-scheduled-rotation-success-check exists only in Rev 4.
+	if got := MappedRevisions("SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK", "secretsmanager-scheduled-rotation-success-check"); len(got) != 1 || got[0] != 4 {
+		t.Errorf("expected [4] for secretsmanager rule, got %v", got)
+	}
+	// An unknown rule maps at no revision.
+	if got := MappedRevisions("NOPE", "no-such-rule"); len(got) != 0 {
+		t.Errorf("expected empty for unknown rule, got %v", got)
+	}
+	// Resolution works by rule name alone (identifier empty).
+	if got := MappedRevisions("", "cloudtrail-enabled"); len(got) != 2 {
+		t.Errorf("expected rule-name-only resolution to find both revisions, got %v", got)
+	}
+}
+
 func TestRevisionAwareLookup(t *testing.T) {
 	// access-keys-rotated maps to different controls per NIST revision.
 	rev4 := NISTControlsForRevision("access-keys-rotated", 4)

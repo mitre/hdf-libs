@@ -8,6 +8,7 @@ import {
   getAllAwsConfigRuleNames,
   awsConfigIdentifierExists,
   awsConfigRuleNameExists,
+  awsConfigMappedRevisions,
   getAllAwsConfigMappings,
 } from '../src/awsconfig/index.js';
 
@@ -163,6 +164,29 @@ describe('AWS Config Mapping Functions', () => {
       const identifiers = mappings.map((m) => m.AwsConfigRuleSourceIdentifier);
       expect(identifiers).toContain('SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK');
       expect(identifiers).toContain('IAM_USER_GROUP_MEMBERSHIP_CHECK');
+    });
+  });
+
+  describe('awsConfigMappedRevisions', () => {
+    it('returns both revisions for a rule mapped at each', () => {
+      expect(awsConfigMappedRevisions('CLOUD_TRAIL_ENABLED', 'cloudtrail-enabled')).toEqual([4, 5]);
+    });
+
+    it('returns only Rev 5 for a Rev5-only rule', () => {
+      expect(awsConfigMappedRevisions('API_GW_SSL_ENABLED', 'api-gw-ssl-enabled')).toEqual([5]);
+    });
+
+    it('returns only Rev 4 for a Rev4-only rule', () => {
+      expect(
+        awsConfigMappedRevisions(
+          'SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK',
+          'secretsmanager-scheduled-rotation-success-check'
+        )
+      ).toEqual([4]);
+    });
+
+    it('returns empty for an unmapped rule', () => {
+      expect(awsConfigMappedRevisions('NOPE', 'no-such-rule')).toEqual([]);
     });
   });
 });

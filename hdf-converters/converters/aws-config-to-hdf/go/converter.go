@@ -4,12 +4,15 @@ package awsconfig
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	awsconfigmap "github.com/mitre/hdf-libs/hdf-mappings/go/v3/awsconfig"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
@@ -81,6 +84,10 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}
 	if data.ConfigRules == nil {
 		return nil, fmt.Errorf("invalid AWS Config export: ConfigRules field is required")
+	}
+
+	if err := checkRevisionAlignment(data.ConfigRules); err != nil {
+		return nil, err
 	}
 
 	baseline := buildBaseline(data.ConfigRules, integrity)
@@ -220,6 +227,54 @@ func mapComplianceStatus(compliance string) hdf.ResultStatus {
 	default: // INSUFFICIENT_DATA and unknown values
 		return hdf.NotReviewed
 	}
+}
+
+// checkRevisionAlignment flags rules whose NIST mappings exist at a revision
+// other than the one currently selected. Such rules emit no NIST tags at the
+// selected revision even though a mapping exists elsewhere — a likely sign the
+// wrong --nist-rev was chosen for the input. Rules unmapped at every revision
+// are not flagged; they are a coverage gap, not a revision mismatch. In strict
+// mode this is a hard error; otherwise it logs a single aggregated warning.
+func checkRevisionAlignment(rules []ConfigRule) error {
+	rev := nist.Revision()
+	seen := make(map[string]bool)
+	var lines []string
+	for _, rule := range rules {
+		covered := awsconfigmap.MappedRevisions(rule.Source.SourceIdentifier, rule.ConfigRuleName)
+		if len(covered) == 0 || containsInt(covered, rev) || seen[rule.ConfigRuleName] {
+			continue
+		}
+		seen[rule.ConfigRuleName] = true
+		lines = append(lines, fmt.Sprintf("  - %s (mapped at Rev %s)", rule.ConfigRuleName, joinInts(covered)))
+	}
+	if len(lines) == 0 {
+		return nil
+	}
+
+	detail := fmt.Sprintf("%d AWS Config rule(s) have NIST 800-53 mappings at a different revision than the requested Rev %d; their NIST tags were omitted:\n%s",
+		len(lines), rev, strings.Join(lines, "\n"))
+	if nist.Strict() {
+		return fmt.Errorf("aws-config: %s\nre-run with a matching --nist-rev, or drop --nist-strict to convert with the gaps", detail)
+	}
+	log.Printf("WARNING: %s", detail)
+	return nil
+}
+
+func containsInt(s []int, v int) bool {
+	for _, x := range s {
+		if x == v {
+			return true
+		}
+	}
+	return false
+}
+
+func joinInts(s []int) string {
+	parts := make([]string, len(s))
+	for i, v := range s {
+		parts[i] = strconv.Itoa(v)
+	}
+	return strings.Join(parts, ", ")
 }
 
 // buildNISTTags looks up NIST controls for the rule, preferring SourceIdentifier.
