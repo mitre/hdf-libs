@@ -1,65 +1,60 @@
 /**
- * Query functions for CWE to NIST mappings
+ * Query functions for CWE to NIST mappings.
+ *
+ * Lookups are revision-aware: each accepts an optional `rev` defaulting to
+ * CURRENT_NIST_REVISION, so existing callers keep getting the default revision.
  */
 
 import type { CweNistMapping, CweNistMappings } from './types.js';
+import { CURRENT_NIST_REVISION } from '../nist/index.js';
 import rawMappings from '../data/cwe-nist-mappings.json';
 
 const mappings = rawMappings as CweNistMappings;
-const indexById = new Map<number, CweNistMapping>(
-  mappings.map(m => [m['CWE-ID'], m])
-);
 
-/**
- * Get the full mapping for a CWE ID
- * @param cweId - The CWE ID (number)
- * @returns The mapping object or undefined if not found
- */
-export function getCweNistMapping(cweId: number): CweNistMapping | undefined {
-  return indexById.get(cweId);
+// revision → (CWE-ID → mapping)
+const byRev = new Map<number, Map<number, CweNistMapping>>();
+for (const m of mappings) {
+  let idx = byRev.get(m.Rev);
+  if (!idx) {
+    idx = new Map<number, CweNistMapping>();
+    byRev.set(m.Rev, idx);
+  }
+  idx.set(m['CWE-ID'], m);
 }
 
-/**
- * Get the NIST control ID for a CWE ID
- * @param cweId - The CWE ID (number)
- * @returns The NIST control ID or undefined if not found
- */
-export function getCweNistControl(cweId: number): string | undefined {
-  const mapping = getCweNistMapping(cweId);
-  return mapping?.['NIST-ID'];
+function indexFor(rev: number): Map<number, CweNistMapping> {
+  return byRev.get(rev) ?? new Map<number, CweNistMapping>();
 }
 
-/**
- * Get the CWE name for a CWE ID
- * @param cweId - The CWE ID (number)
- * @returns The CWE name or undefined if not found
- */
-export function getCweName(cweId: number): string | undefined {
-  const mapping = getCweNistMapping(cweId);
-  return mapping?.['CWE Name'];
+/** Get the full mapping for a CWE ID at the given NIST revision. */
+export function getCweNistMapping(
+  cweId: number,
+  rev: number = CURRENT_NIST_REVISION
+): CweNistMapping | undefined {
+  return indexFor(rev).get(cweId);
 }
 
-/**
- * Get all CWE IDs
- * @returns Array of all CWE IDs
- */
-export function getAllCweIds(): number[] {
-  return Array.from(indexById.keys());
+/** Get the NIST control ID for a CWE ID at the given NIST revision. */
+export function getCweNistControl(cweId: number, rev: number = CURRENT_NIST_REVISION): string | undefined {
+  return getCweNistMapping(cweId, rev)?.['NIST-ID'];
 }
 
-/**
- * Check if a CWE ID exists in the mappings
- * @param cweId - The CWE ID to check
- * @returns True if the CWE ID exists
- */
-export function cweExists(cweId: number): boolean {
-  return indexById.has(cweId);
+/** Get the CWE name for a CWE ID at the given NIST revision. */
+export function getCweName(cweId: number, rev: number = CURRENT_NIST_REVISION): string | undefined {
+  return getCweNistMapping(cweId, rev)?.['CWE Name'];
 }
 
-/**
- * Get all CWE to NIST mappings
- * @returns Array of all mappings
- */
+/** Get all CWE IDs present at the given NIST revision. */
+export function getAllCweIds(rev: number = CURRENT_NIST_REVISION): number[] {
+  return Array.from(indexFor(rev).keys());
+}
+
+/** Check whether a CWE ID exists at the given NIST revision. */
+export function cweExists(cweId: number, rev: number = CURRENT_NIST_REVISION): boolean {
+  return indexFor(rev).has(cweId);
+}
+
+/** Get all CWE to NIST mappings (all revisions). */
 export function getAllCweMappings(): CweNistMappings {
   return [...mappings];
 }

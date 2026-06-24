@@ -634,5 +634,767 @@
     "AwsConfigRuleName": "cloud-trail-log-file-validation-enabled",
     "NIST-ID": "SI-7|SI-7(1)",
     "Rev": 4
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ACCESS_KEYS_ROTATED",
+    "AwsConfigRuleName": "access-keys-rotated",
+    "NIST-ID": "AC-3(15)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ACCOUNT_PART_OF_ORGANIZATIONS",
+    "AwsConfigRuleName": "account-part-of-organizations",
+    "NIST-ID": "CA-9(1)|CM-2",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ACM_CERTIFICATE_EXPIRATION_CHECK",
+    "AwsConfigRuleName": "acm-certificate-expiration-check",
+    "NIST-ID": "SC-28(3)|SC-7(16)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ALB_HTTP_TO_HTTPS_REDIRECTION_CHECK",
+    "AwsConfigRuleName": "alb-http-to-https-redirection-check",
+    "NIST-ID": "AC-17(2)|IA-5(1)|SC-12(3)|SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "API_GW_CACHE_ENABLED_AND_ENCRYPTED",
+    "AwsConfigRuleName": "api-gw-cache-enabled-and-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "API_GW_EXECUTION_LOGGING_ENABLED",
+    "AwsConfigRuleName": "api-gw-execution-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "API_GW_SSL_ENABLED",
+    "AwsConfigRuleName": "api-gw-ssl-enabled",
+    "NIST-ID": "AC-17(2)|IA-5(1)|SC-12(3)|SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "AUTOSCALING_GROUP_ELB_HEALTHCHECK_REQUIRED",
+    "AwsConfigRuleName": "autoscaling-group-elb-healthcheck-required",
+    "NIST-ID": "CA-7|CP-2(2)|SI-2",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "AUTOSCALING_LAUNCH_CONFIG_PUBLIC_IP_DISABLED",
+    "AwsConfigRuleName": "autoscaling-launch-config-public-ip-disabled",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "BEANSTALK_ENHANCED_HEALTH_REPORTING_ENABLED",
+    "AwsConfigRuleName": "beanstalk-enhanced-health-reporting-enabled",
+    "NIST-ID": "CA-7|SI-2",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CLOUD_TRAIL_CLOUD_WATCH_LOGS_ENABLED",
+    "AwsConfigRuleName": "cloud-trail-cloud-watch-logs-enabled",
+    "NIST-ID": "AC-2(4)|AC-4(26)|AC-6(9)|AU-10|AU-12|AU-2|AU-3|AU-6(1)|AU-6(3)|AU-6(4)|AU-6(5)|AU-7(1)|AU-9(7)|CA-7|SC-7(9)|SI-20|SI-3(8)|SI-4(20)|SI-4(5)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CLOUD_TRAIL_ENCRYPTION_ENABLED",
+    "AwsConfigRuleName": "cloud-trail-encryption-enabled",
+    "NIST-ID": "AU-9|CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CLOUD_TRAIL_LOG_FILE_VALIDATION_ENABLED",
+    "AwsConfigRuleName": "cloud-trail-log-file-validation-enabled",
+    "NIST-ID": "AU-9|SI-4|SI-7(1)|SI-7(3)|SI-7(7)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CLOUD_TRAIL_ENABLED",
+    "AwsConfigRuleName": "cloudtrail-enabled",
+    "NIST-ID": "AC-2(4)|AC-4(26)|AC-6(9)|AU-10|AU-12|AU-14(1)|AU-2|AU-3|AU-6(3)|AU-6(4)|AU-9|CA-7|SA-8(22)|SC-7(9)|SI-3(8)|SI-4(20)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CLOUDTRAIL_S3_DATAEVENTS_ENABLED",
+    "AwsConfigRuleName": "cloudtrail-s3-dataevents-enabled",
+    "NIST-ID": "AC-2(4)|AC-4(26)|AC-6(9)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-3(8)|SI-4(20)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CLOUDWATCH_ALARM_ACTION_CHECK",
+    "AwsConfigRuleName": "cloudwatch-alarm-action-check",
+    "NIST-ID": "AU-6(1)|AU-6(5)|CA-7|IR-4(1)|IR-4(5)|SI-2|SI-20|SI-4(12)|SI-4(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CMK_BACKING_KEY_ROTATION_ENABLED",
+    "AwsConfigRuleName": "cmk-backing-key-rotation-enabled",
+    "NIST-ID": "SC-12|SC-12(2)|SC-28(3)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CODEBUILD_PROJECT_ARTIFACT_ENCRYPTION",
+    "AwsConfigRuleName": "codebuild-project-artifact-encryption",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "CODEBUILD_PROJECT_ENVVAR_AWSCRED_CHECK",
+    "AwsConfigRuleName": "codebuild-project-envvar-awscred-check",
+    "NIST-ID": "IA-5(7)|SA-3",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "DB_INSTANCE_BACKUP_ENABLED",
+    "AwsConfigRuleName": "db-instance-backup-enabled",
+    "NIST-ID": "CP-10|CP-6|CP-6(1)|CP-6(2)|CP-9|SC-5(2)|SI-12|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "DMS_REPLICATION_NOT_PUBLIC",
+    "AwsConfigRuleName": "dms-replication-not-public",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "DYNAMODB_AUTOSCALING_ENABLED",
+    "AwsConfigRuleName": "dynamodb-autoscaling-enabled",
+    "NIST-ID": "CP-10|CP-2(2)|CP-6(2)|SC-36|SC-5(2)|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "DYNAMODB_IN_BACKUP_PLAN",
+    "AwsConfigRuleName": "dynamodb-in-backup-plan",
+    "NIST-ID": "CP-10|CP-6|CP-6(1)|CP-6(2)|CP-9|SC-5(2)|SI-12|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "DYNAMODB_PITR_ENABLED",
+    "AwsConfigRuleName": "dynamodb-pitr-enabled",
+    "NIST-ID": "CP-10|CP-6(2)|CP-9|SC-5(2)|SI-12|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "DYNAMODB_TABLE_ENCRYPTED_KMS",
+    "AwsConfigRuleName": "dynamodb-table-encrypted-kms",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "DYNAMODB_THROUGHPUT_LIMIT_CHECK",
+    "AwsConfigRuleName": "dynamodb-throughput-limit-check",
+    "NIST-ID": "CA-7|SI-2",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EBS_IN_BACKUP_PLAN",
+    "AwsConfigRuleName": "ebs-in-backup-plan",
+    "NIST-ID": "CP-10|CP-6|CP-6(1)|CP-6(2)|CP-9|SC-5(2)|SI-12|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EBS_OPTIMIZED_INSTANCE",
+    "AwsConfigRuleName": "ebs-optimized-instance",
+    "NIST-ID": "CP-10|CP-9|SC-5(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EBS_SNAPSHOT_PUBLIC_RESTORABLE_CHECK",
+    "AwsConfigRuleName": "ebs-snapshot-public-restorable-check",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EC2_EBS_ENCRYPTION_BY_DEFAULT",
+    "AwsConfigRuleName": "ec2-ebs-encryption-by-default",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EC2_IMDSV2_CHECK",
+    "AwsConfigRuleName": "ec2-imdsv2-check",
+    "NIST-ID": "AC-3|AC-3(15)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EC2_INSTANCE_MANAGED_BY_SSM",
+    "AwsConfigRuleName": "ec2-instance-managed-by-systems-manager",
+    "NIST-ID": "CA-9(1)|CM-2|CM-2(2)|CM-8|CM-8(1)|CM-8(2)|CM-8(3)|SA-15(2)|SA-15(8)|SA-3|SI-2(3)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EC2_INSTANCE_NO_PUBLIC_IP",
+    "AwsConfigRuleName": "ec2-instance-no-public-ip",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EC2_INSTANCE_PROFILE_ATTACHED",
+    "AwsConfigRuleName": "ec2-instance-profile-attached",
+    "NIST-ID": "AC-3|AC-3(15)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "INSTANCES_IN_VPC",
+    "AwsConfigRuleName": "ec2-instances-in-vpc",
+    "NIST-ID": "AC-21|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EC2_MANAGEDINSTANCE_ASSOCIATION_COMPLIANCE_STATUS_CHECK",
+    "AwsConfigRuleName": "ec2-managedinstance-association-compliance-status-check",
+    "NIST-ID": "CA-9(1)|CM-2|CM-2(2)|CM-8|CM-8(1)|CM-8(3)|SI-2(3)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EC2_MANAGEDINSTANCE_PATCH_COMPLIANCE_STATUS_CHECK",
+    "AwsConfigRuleName": "ec2-managedinstance-patch-compliance-status-check",
+    "NIST-ID": "CM-8(3)|SI-2|SI-2(2)|SI-2(3)|SI-2(4)|SI-2(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EC2_STOPPED_INSTANCE",
+    "AwsConfigRuleName": "ec2-stopped-instance",
+    "NIST-ID": "CA-9(1)|CM-2|CM-2(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EC2_VOLUME_INUSE_CHECK",
+    "AwsConfigRuleName": "ec2-volume-inuse-check",
+    "NIST-ID": "CA-9(1)|CM-2|CM-2(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ECS_CONTAINERS_READONLY_ACCESS",
+    "AwsConfigRuleName": "ecs-containers-readonly-access",
+    "NIST-ID": "AC-3|AC-3(15)|AC-5",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ECS_TASK_DEFINITION_USER_FOR_HOST_MODE_CHECK",
+    "AwsConfigRuleName": "ecs-task-definition-user-for-host-mode-check",
+    "NIST-ID": "AC-3|AC-3(15)|AC-5",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EFS_ENCRYPTED_CHECK",
+    "AwsConfigRuleName": "efs-encrypted-check",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EFS_IN_BACKUP_PLAN",
+    "AwsConfigRuleName": "efs-in-backup-plan",
+    "NIST-ID": "CP-10|CP-6|CP-6(1)|CP-6(2)|CP-9|SC-5(2)|SI-12|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELASTIC_BEANSTALK_MANAGED_UPDATES_ENABLED",
+    "AwsConfigRuleName": "elastic-beanstalk-managed-updates-enabled",
+    "NIST-ID": "SI-2|SI-2(2)|SI-2(4)|SI-2(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELASTICACHE_REDIS_CLUSTER_AUTOMATIC_BACKUP_CHECK",
+    "AwsConfigRuleName": "elasticache-redis-cluster-automatic-backup-check",
+    "NIST-ID": "CP-10|CP-6|CP-6(1)|CP-6(2)|CP-9|SC-5(2)|SI-12|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELASTICSEARCH_ENCRYPTED_AT_REST",
+    "AwsConfigRuleName": "elasticsearch-encrypted-at-rest",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELASTICSEARCH_IN_VPC_ONLY",
+    "AwsConfigRuleName": "elasticsearch-in-vpc-only",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELASTICSEARCH_LOGS_TO_CLOUDWATCH",
+    "AwsConfigRuleName": "elasticsearch-logs-to-cloudwatch",
+    "NIST-ID": "AC-2(4)|AC-4(26)|AC-6(9)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-3(8)|SI-4(20)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELASTICSEARCH_NODE_TO_NODE_ENCRYPTION_CHECK",
+    "AwsConfigRuleName": "elasticsearch-node-to-node-encryption-check",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELB_ACM_CERTIFICATE_REQUIRED",
+    "AwsConfigRuleName": "elb-acm-certificate-required",
+    "NIST-ID": "AC-17(2)|IA-5(1)|SC-12(3)|SC-13|SC-23|SC-23(5)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELB_CROSS_ZONE_LOAD_BALANCING_ENABLED",
+    "AwsConfigRuleName": "elb-cross-zone-load-balancing-enabled",
+    "NIST-ID": "CP-10|CP-6(2)|SC-36|SC-5(2)|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELB_DELETION_PROTECTION_ENABLED",
+    "AwsConfigRuleName": "elb-deletion-protection-enabled",
+    "NIST-ID": "CA-9(1)|CM-2|CM-2(2)|CM-3|SC-5(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELB_LOGGING_ENABLED",
+    "AwsConfigRuleName": "elb-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELB_TLS_HTTPS_LISTENERS_ONLY",
+    "AwsConfigRuleName": "elb-tls-https-listeners-only",
+    "NIST-ID": "AC-17(2)|IA-5(1)|SC-12(3)|SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ELBV2_ACM_CERTIFICATE_REQUIRED",
+    "AwsConfigRuleName": "elbv2-acm-certificate-required",
+    "NIST-ID": "AC-17(2)|IA-5(1)|SC-12(3)|SC-13|SC-23|SC-23(3)|SC-23(5)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "EMR_MASTER_NO_PUBLIC_IP",
+    "AwsConfigRuleName": "emr-master-no-public-ip",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ENCRYPTED_VOLUMES",
+    "AwsConfigRuleName": "encrypted-volumes",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "GUARDDUTY_ENABLED_CENTRALIZED",
+    "AwsConfigRuleName": "guardduty-enabled-centralized",
+    "NIST-ID": "AC-2(12)|AU-6(1)|AU-6(5)|CA-7|CM-8(3)|RA-3(4)|SA-11(1)|SA-11(6)|SA-15(2)|SA-15(8)|SA-8(19)|SA-8(21)|SA-8(25)|SC-5|SC-5(1)|SC-5(3)|SI-20|SI-3(8)|SI-4|SI-4(1)|SI-4(13)|SI-4(2)|SI-4(22)|SI-4(25)|SI-4(4)|SI-4(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "IAM_CUSTOMER_POLICY_BLOCKED_KMS_ACTIONS",
+    "AwsConfigRuleName": "iam-customer-policy-blocked-kms-actions",
+    "NIST-ID": "AC-2|AC-3|AC-3(15)|AC-5|AC-6(3)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "IAM_INLINE_POLICY_BLOCKED_KMS_ACTIONS",
+    "AwsConfigRuleName": "iam-inline-policy-blocked-kms-actions",
+    "NIST-ID": "AC-2|AC-3|AC-3(15)|AC-5|AC-6(3)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "IAM_NO_INLINE_POLICY_CHECK",
+    "AwsConfigRuleName": "iam-no-inline-policy-check",
+    "NIST-ID": "AC-2|AC-3|AC-3(15)|AC-6(3)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "IAM_PASSWORD_POLICY",
+    "AwsConfigRuleName": "iam-password-policy",
+    "NIST-ID": "AC-3(15)|IA-5(1)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "IAM_POLICY_NO_STATEMENTS_WITH_ADMIN_ACCESS",
+    "AwsConfigRuleName": "iam-policy-no-statements-with-admin-access",
+    "NIST-ID": "AC-2|AC-3|AC-3(15)|AC-5|AC-6(10)|AC-6(2)|AC-6(3)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "IAM_POLICY_NO_STATEMENTS_WITH_FULL_ACCESS",
+    "AwsConfigRuleName": "iam-policy-no-statements-with-full-access",
+    "NIST-ID": "AC-2|AC-3|AC-3(15)|AC-5|AC-6(10)|AC-6(2)|AC-6(3)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "IAM_ROOT_ACCESS_KEY_CHECK",
+    "AwsConfigRuleName": "iam-root-access-key-check",
+    "NIST-ID": "AC-3(15)|AC-6(10)|AC-6(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "IAM_USER_GROUP_MEMBERSHIP_CHECK",
+    "AwsConfigRuleName": "iam-user-group-membership-check",
+    "NIST-ID": "AC-2|AC-3|AC-3(15)|AC-6(3)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "IAM_USER_MFA_ENABLED",
+    "AwsConfigRuleName": "iam-user-mfa-enabled",
+    "NIST-ID": "AC-3(15)|IA-2(1)|IA-2(2)|IA-2(6)|IA-2(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "IAM_USER_UNUSED_CREDENTIALS_CHECK",
+    "AwsConfigRuleName": "iam-user-unused-credentials-check",
+    "NIST-ID": "AC-2|AC-3|AC-3(15)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "KINESIS_STREAM_ENCRYPTED",
+    "AwsConfigRuleName": "kinesis-stream-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "KMS_CMK_NOT_SCHEDULED_FOR_DELETION",
+    "AwsConfigRuleName": "kms-cmk-not-scheduled-for-deletion",
+    "NIST-ID": "SC-12|SC-12(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "LAMBDA_DLQ_CHECK",
+    "AwsConfigRuleName": "lambda-dlq-check",
+    "NIST-ID": "CA-7|SI-2",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "LAMBDA_FUNCTION_PUBLIC_ACCESS_PROHIBITED",
+    "AwsConfigRuleName": "lambda-function-public-access-prohibited",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "MFA_ENABLED_FOR_IAM_CONSOLE_ACCESS",
+    "AwsConfigRuleName": "mfa-enabled-for-iam-console-access",
+    "NIST-ID": "AC-3(15)|IA-2(1)|IA-2(2)|IA-2(6)|IA-2(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "MULTI_REGION_CLOUD_TRAIL_ENABLED",
+    "AwsConfigRuleName": "multi-region-cloudtrail-enabled",
+    "NIST-ID": "AC-2(4)|AC-4(26)|AC-6(9)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-3(8)|SI-4(20)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "NO_UNRESTRICTED_ROUTE_TO_IGW",
+    "AwsConfigRuleName": "no-unrestricted-route-to-igw",
+    "NIST-ID": "CM-7|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(4)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "OPENSEARCH_ENCRYPTED_AT_REST",
+    "AwsConfigRuleName": "opensearch-encrypted-at-rest",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "OPENSEARCH_HTTPS_REQUIRED",
+    "AwsConfigRuleName": "opensearch-https-required",
+    "NIST-ID": "AC-17(2)|IA-5(1)|SC-12(3)|SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "OPENSEARCH_IN_VPC_ONLY",
+    "AwsConfigRuleName": "opensearch-in-vpc-only",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "OPENSEARCH_LOGS_TO_CLOUDWATCH",
+    "AwsConfigRuleName": "opensearch-logs-to-cloudwatch",
+    "NIST-ID": "AC-2(4)|AC-4(26)|AC-6(9)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-3(8)|SI-4(20)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "OPENSEARCH_NODE_TO_NODE_ENCRYPTION_CHECK",
+    "AwsConfigRuleName": "opensearch-node-to-node-encryption-check",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_ENHANCED_MONITORING_ENABLED",
+    "AwsConfigRuleName": "rds-enhanced-monitoring-enabled",
+    "NIST-ID": "CA-7|SI-2",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_INSTANCE_DEFAULT_ADMIN_CHECK",
+    "AwsConfigRuleName": "rds-instance-default-admin-check",
+    "NIST-ID": "CA-9(1)|CM-2",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_INSTANCE_DELETION_PROTECTION_ENABLED",
+    "AwsConfigRuleName": "rds-instance-deletion-protection-enabled",
+    "NIST-ID": "CM-3|SC-5(2)|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_INSTANCE_PUBLIC_ACCESS_CHECK",
+    "AwsConfigRuleName": "rds-instance-public-access-check",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_LOGGING_ENABLED",
+    "AwsConfigRuleName": "rds-logging-enabled",
+    "NIST-ID": "AC-2(4)|AC-4(26)|AC-6(9)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(10)|SC-7(9)|SI-3(8)|SI-4(20)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_MULTI_AZ_SUPPORT",
+    "AwsConfigRuleName": "rds-multi-az-support",
+    "NIST-ID": "CP-10|CP-6(2)|SC-36|SC-5(2)|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_SNAPSHOT_ENCRYPTED",
+    "AwsConfigRuleName": "rds-snapshot-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_SNAPSHOTS_PUBLIC_PROHIBITED",
+    "AwsConfigRuleName": "rds-snapshots-public-prohibited",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RDS_STORAGE_ENCRYPTED",
+    "AwsConfigRuleName": "rds-storage-encrypted",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "REDSHIFT_BACKUP_ENABLED",
+    "AwsConfigRuleName": "redshift-backup-enabled",
+    "NIST-ID": "CP-10|CP-6|CP-6(1)|CP-6(2)|CP-9|SC-5(2)|SC-7(10)|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "REDSHIFT_CLUSTER_CONFIGURATION_CHECK",
+    "AwsConfigRuleName": "redshift-cluster-configuration-check",
+    "NIST-ID": "AC-2(4)|AC-4(26)|AC-6(9)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SC-7(9)|SI-3(8)|SI-4(20)|SI-7(6)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "REDSHIFT_CLUSTER_KMS_ENABLED",
+    "AwsConfigRuleName": "redshift-cluster-kms-enabled",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "REDSHIFT_CLUSTER_MAINTENANCESETTINGS_CHECK",
+    "AwsConfigRuleName": "redshift-cluster-maintenancesettings-check",
+    "NIST-ID": "CA-9(1)|CM-2|CP-9|SC-5(2)|SI-2|SI-2(2)|SI-2(4)|SI-2(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "REDSHIFT_CLUSTER_PUBLIC_ACCESS_CHECK",
+    "AwsConfigRuleName": "redshift-cluster-public-access-check",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "REDSHIFT_DEFAULT_ADMIN_CHECK",
+    "AwsConfigRuleName": "redshift-default-admin-check",
+    "NIST-ID": "CA-9(1)|CM-2",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "REDSHIFT_ENHANCED_VPC_ROUTING_ENABLED",
+    "AwsConfigRuleName": "redshift-enhanced-vpc-routing-enabled",
+    "NIST-ID": "SC-7|SC-7(11)|SC-7(21)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "REDSHIFT_REQUIRE_TLS_SSL",
+    "AwsConfigRuleName": "redshift-require-tls-ssl",
+    "NIST-ID": "SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "RESTRICTED_INCOMING_TRAFFIC",
+    "AwsConfigRuleName": "restricted-common-ports",
+    "NIST-ID": "CA-9(1)|CM-2|CM-2(2)|CM-7|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(4)|SC-7(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "INCOMING_SSH_DISABLED",
+    "AwsConfigRuleName": "restricted-ssh",
+    "NIST-ID": "CM-7|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(4)|SC-7(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ROOT_ACCOUNT_HARDWARE_MFA_ENABLED",
+    "AwsConfigRuleName": "root-account-hardware-mfa-enabled",
+    "NIST-ID": "AC-3(15)|IA-2(1)|IA-2(2)|IA-2(6)|IA-2(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "ROOT_ACCOUNT_MFA_ENABLED",
+    "AwsConfigRuleName": "root-account-mfa-enabled",
+    "NIST-ID": "AC-3(15)|IA-2(1)|IA-2(2)|IA-2(6)|IA-2(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCKS_PERIODIC",
+    "AwsConfigRuleName": "s3-account-level-public-access-blocks-periodic",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_BUCKET_LEVEL_PUBLIC_ACCESS_PROHIBITED",
+    "AwsConfigRuleName": "s3-bucket-level-public-access-prohibited",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_BUCKET_LOGGING_ENABLED",
+    "AwsConfigRuleName": "s3-bucket-logging-enabled",
+    "NIST-ID": "AC-2(4)|AC-4(26)|AC-6(9)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-3(8)|SI-4(20)|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_BUCKET_PUBLIC_READ_PROHIBITED",
+    "AwsConfigRuleName": "s3-bucket-public-read-prohibited",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_BUCKET_PUBLIC_WRITE_PROHIBITED",
+    "AwsConfigRuleName": "s3-bucket-public-write-prohibited",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_BUCKET_REPLICATION_ENABLED",
+    "AwsConfigRuleName": "s3-bucket-replication-enabled",
+    "NIST-ID": "AU-9(2)|CP-10|CP-6|CP-6(1)|CP-6(2)|CP-9|SC-36(2)|SC-5(2)|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_BUCKET_SERVER_SIDE_ENCRYPTION_ENABLED",
+    "AwsConfigRuleName": "s3-bucket-server-side-encryption-enabled",
+    "NIST-ID": "AU-9|CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_BUCKET_SSL_REQUESTS_ONLY",
+    "AwsConfigRuleName": "s3-bucket-ssl-requests-only",
+    "NIST-ID": "AC-17(2)|IA-5(1)|SC-12(3)|SC-13|SC-23|SC-23(3)|SC-7(4)|SC-8|SC-8(1)|SC-8(2)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_BUCKET_VERSIONING_ENABLED",
+    "AwsConfigRuleName": "s3-bucket-versioning-enabled",
+    "NIST-ID": "AU-9(2)|CP-10|CP-6|CP-6(1)|CP-6(2)|CP-9|SC-5(2)|SI-12|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_DEFAULT_ENCRYPTION_KMS",
+    "AwsConfigRuleName": "s3-default-encryption-kms",
+    "NIST-ID": "AU-9|CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_EVENT_NOTIFICATIONS_ENABLED",
+    "AwsConfigRuleName": "s3-event-notifications-enabled",
+    "NIST-ID": "CA-7|SI-3(8)|SI-4|SI-4(4)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "S3_VERSION_LIFECYCLE_POLICY_CHECK",
+    "AwsConfigRuleName": "s3-version-lifecycle-policy-check",
+    "NIST-ID": "AU-9(2)|CP-10|CP-6(2)|CP-9|SC-5(2)|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_ENDPOINT_CONFIGURATION_KMS_KEY_CONFIGURED",
+    "AwsConfigRuleName": "sagemaker-endpoint-configuration-kms-key-configured",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_NOTEBOOK_INSTANCE_KMS_KEY_CONFIGURED",
+    "AwsConfigRuleName": "sagemaker-notebook-instance-kms-key-configured",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SAGEMAKER_NOTEBOOK_NO_DIRECT_INTERNET_ACCESS",
+    "AwsConfigRuleName": "sagemaker-notebook-no-direct-internet-access",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SECRETSMANAGER_ROTATION_ENABLED_CHECK",
+    "AwsConfigRuleName": "secretsmanager-rotation-enabled-check",
+    "NIST-ID": "AC-3(15)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SECRETSMANAGER_USING_CMK",
+    "AwsConfigRuleName": "secretsmanager-using-cmk",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SECURITYHUB_ENABLED",
+    "AwsConfigRuleName": "securityhub-enabled",
+    "NIST-ID": "AU-6(1)|AU-6(5)|CA-7",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SNS_ENCRYPTED_KMS",
+    "AwsConfigRuleName": "sns-encrypted-kms",
+    "NIST-ID": "CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7(10)|SI-7(6)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SSM_DOCUMENT_NOT_PUBLIC",
+    "AwsConfigRuleName": "ssm-document-not-public",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "SUBNET_AUTO_ASSIGN_PUBLIC_IP_DISABLED",
+    "AwsConfigRuleName": "subnet-auto-assign-public-ip-disabled",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "VPC_DEFAULT_SECURITY_GROUP_CLOSED",
+    "AwsConfigRuleName": "vpc-default-security-group-closed",
+    "NIST-ID": "SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(4)|SC-7(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "VPC_FLOW_LOGS_ENABLED",
+    "AwsConfigRuleName": "vpc-flow-logs-enabled",
+    "NIST-ID": "AC-4(26)|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SI-7(8)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "VPC_SG_OPEN_ONLY_TO_AUTHORIZED_PORTS",
+    "AwsConfigRuleName": "vpc-sg-open-only-to-authorized-ports",
+    "NIST-ID": "SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(4)|SC-7(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "VPC_VPN_2_TUNNELS_UP",
+    "AwsConfigRuleName": "vpc-vpn-2-tunnels-up",
+    "NIST-ID": "CP-10|CP-6(2)|SC-36|SC-5(2)|SI-13(5)",
+    "Rev": 5
+  },
+  {
+    "AwsConfigRuleSourceIdentifier": "WAFV2_LOGGING_ENABLED",
+    "AwsConfigRuleName": "wafv2-logging-enabled",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(10)|SC-7(9)|SI-7(8)",
+    "Rev": 5
   }
 ]

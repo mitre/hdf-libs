@@ -8,6 +8,13 @@ import rawNistData from '../data/nist-descriptions.json';
 const nistData = rawNistData as NISTDescriptions;
 
 /**
+ * The NIST SP 800-53 revision that all mappings emit by default. To change the
+ * repo-wide default, bump this — but only once every NIST-emitting mapping has
+ * rows for the new revision. Per-call overrides pass an explicit `rev`.
+ */
+export const CURRENT_NIST_REVISION = 4;
+
+/**
  * Get the description for a NIST control ID.
  *
  * @param nistId - The NIST control ID (e.g., 'AC-01', 'AC-01 a', 'AC-01 a 01')

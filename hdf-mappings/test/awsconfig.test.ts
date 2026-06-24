@@ -166,3 +166,20 @@ describe('AWS Config Mapping Functions', () => {
     });
   });
 });
+
+describe('revision-aware lookup', () => {
+  it('returns Rev 4 by default and Rev 5 when requested', () => {
+    expect(getAwsConfigNistControlByName('access-keys-rotated')).toBe('AC-2(1)|AC-2(j)');
+    expect(getAwsConfigNistControlByName('access-keys-rotated', 4)).toBe('AC-2(1)|AC-2(j)');
+    expect(getAwsConfigNistControlByName('access-keys-rotated', 5)).toBe('AC-3(15)');
+  });
+
+  it('identifier lookup is revision-aware', () => {
+    expect(getAwsConfigNistMappingByIdentifier('ACCESS_KEYS_ROTATED')?.Rev).toBe(4);
+    expect(getAwsConfigNistMappingByIdentifier('ACCESS_KEYS_ROTATED', 5)?.Rev).toBe(5);
+  });
+
+  it('returns undefined for an unknown revision', () => {
+    expect(getAwsConfigNistControlByName('access-keys-rotated', 99)).toBeUndefined();
+  });
+});

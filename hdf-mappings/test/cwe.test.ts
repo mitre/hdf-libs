@@ -108,3 +108,20 @@ describe('CWE Mapping Functions', () => {
     });
   });
 });
+
+describe('revision-aware lookup', () => {
+  it('resolves the same base control across revisions', () => {
+    expect(getCweNistControl(5)).toBe('SC-8');       // default (Rev 4)
+    expect(getCweNistControl(5, 4)).toBe('SC-8');
+    expect(getCweNistControl(5, 5)).toBe('SC-8');
+  });
+
+  it('reports the mapping revision', () => {
+    expect(getCweNistMapping(5, 4)?.Rev).toBe(4);
+    expect(getCweNistMapping(5, 5)?.Rev).toBe(5);
+  });
+
+  it('returns undefined for an unknown revision', () => {
+    expect(getCweNistControl(5, 99)).toBeUndefined();
+  });
+});
