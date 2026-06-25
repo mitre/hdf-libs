@@ -111,7 +111,7 @@ describe('CWE Mapping Functions', () => {
 
 describe('revision-aware lookup', () => {
   it('resolves the same base control across revisions', () => {
-    expect(getCweNistControl(5)).toBe('SC-8');       // default (Rev 4)
+    expect(getCweNistControl(5)).toBe('SC-8');       // default (Rev 5)
     expect(getCweNistControl(5, 4)).toBe('SC-8');
     expect(getCweNistControl(5, 5)).toBe('SC-8');
   });

@@ -23,8 +23,9 @@ func TestRevisionAlignment_WarnsOnMismatch(t *testing.T) {
 	defer nist.ResetRevision()
 
 	var buf bytes.Buffer
+	prevOutput := log.Writer()
 	log.SetOutput(&buf)
-	defer log.SetOutput(nil)
+	defer log.SetOutput(prevOutput)
 
 	_, err := ConvertAWSConfigToHDF([]byte(revMixInput), converterVersion)
 	require.NoError(t, err, "a revision mismatch must not fail conversion outside strict mode")
@@ -56,8 +57,9 @@ func TestRevisionAlignment_NoWarningWhenAligned(t *testing.T) {
 	defer nist.ResetRevision()
 
 	var buf bytes.Buffer
+	prevOutput := log.Writer()
 	log.SetOutput(&buf)
-	defer log.SetOutput(nil)
+	defer log.SetOutput(prevOutput)
 
 	_, err := ConvertAWSConfigToHDF([]byte(revMixInput), converterVersion)
 	require.NoError(t, err)
