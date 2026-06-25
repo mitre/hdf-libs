@@ -196,10 +196,10 @@ func TestMapComplianceStatus(t *testing.T) {
 // ---- buildNISTTags ----
 
 func TestBuildNISTTags_BySourceIdentifier(t *testing.T) {
-	// ACCESS_KEYS_ROTATED is in the mapping
+	// ACCESS_KEYS_ROTATED is in the mapping; tags follow the default revision (Rev 5).
 	tags := buildNISTTags("ACCESS_KEYS_ROTATED", "access-keys-rotated")
 	assert.NotEmpty(t, tags)
-	assert.Contains(t, tags, "AC-2(1)")
+	assert.Contains(t, tags, "AC-3(15)")
 }
 
 func TestBuildNISTTags_ByRuleNameFallback(t *testing.T) {

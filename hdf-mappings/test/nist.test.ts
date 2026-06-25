@@ -18,9 +18,9 @@ describe('NIST revision selection', () => {
     resetNistRevision();
   });
 
-  it('defaults to revision 4', () => {
-    expect(DEFAULT_NIST_REVISION).toBe(4);
-    expect(getCurrentNistRevision()).toBe(4);
+  it('defaults to revision 5', () => {
+    expect(DEFAULT_NIST_REVISION).toBe(5);
+    expect(getCurrentNistRevision()).toBe(5);
   });
 
   it('lists supported revisions', () => {

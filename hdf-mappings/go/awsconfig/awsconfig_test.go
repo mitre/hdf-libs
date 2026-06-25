@@ -8,7 +8,7 @@ import (
 // TestGetByRuleName tests the GetByRuleName function.
 func TestGetByRuleName(t *testing.T) {
 	t.Run("known rule name returns non-nil mapping with expected fields", func(t *testing.T) {
-		m := GetByRuleName("iam-password-policy")
+		m := GetByRuleNameForRevision("iam-password-policy", 4)
 		if m == nil {
 			t.Fatal("Expected non-nil mapping for 'iam-password-policy'")
 		}
@@ -67,7 +67,8 @@ func TestGetByIdentifier(t *testing.T) {
 	})
 
 	t.Run("another known identifier returns non-nil mapping", func(t *testing.T) {
-		m := GetByIdentifier("SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK")
+		// Rev4-only rule; pin the lookup so it is unaffected by the default revision.
+		m := GetByIdentifierForRevision("SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK", 4)
 		if m == nil {
 			t.Fatal("Expected non-nil mapping for 'SECRETSMANAGER_SCHEDULED_ROTATION_SUCCESS_CHECK'")
 		}
@@ -108,8 +109,8 @@ func TestNISTControls(t *testing.T) {
 	})
 
 	t.Run("known rule with two pipe-separated controls returns correct slice", func(t *testing.T) {
-		// secretsmanager-scheduled-rotation-success-check has "AC-2(1)|AC-2(j)"
-		controls := NISTControls("secretsmanager-scheduled-rotation-success-check")
+		// secretsmanager-scheduled-rotation-success-check has "AC-2(1)|AC-2(j)" at Rev 4
+		controls := NISTControlsForRevision("secretsmanager-scheduled-rotation-success-check", 4)
 		if len(controls) != 2 {
 			t.Fatalf("Expected 2 controls, got %d: %v", len(controls), controls)
 		}
@@ -122,8 +123,8 @@ func TestNISTControls(t *testing.T) {
 	})
 
 	t.Run("known rule with many pipe-separated controls returns all entries", func(t *testing.T) {
-		// iam-password-policy has 6 pipe-separated controls
-		controls := NISTControls("iam-password-policy")
+		// iam-password-policy has 6 pipe-separated controls at Rev 4
+		controls := NISTControlsForRevision("iam-password-policy", 4)
 		if len(controls) < 2 {
 			t.Fatalf("Expected multiple controls for 'iam-password-policy', got %d: %v", len(controls), controls)
 		}
@@ -135,8 +136,8 @@ func TestNISTControls(t *testing.T) {
 	})
 
 	t.Run("known rule with four controls splits correctly", func(t *testing.T) {
-		// iam-user-group-membership-check has "AC-2(1)|AC-2(j)|AC-3|AC-6"
-		controls := NISTControls("iam-user-group-membership-check")
+		// iam-user-group-membership-check has "AC-2(1)|AC-2(j)|AC-3|AC-6" at Rev 4
+		controls := NISTControlsForRevision("iam-user-group-membership-check", 4)
 		if len(controls) != 4 {
 			t.Fatalf("Expected 4 controls, got %d: %v", len(controls), controls)
 		}
@@ -290,9 +291,9 @@ func TestRevisionAwareLookup(t *testing.T) {
 	if !has(rev5, "AC-3(15)") || has(rev5, "AC-2(1)") {
 		t.Errorf("Rev 5 controls unexpected: %v", rev5)
 	}
-	// Default (no rev) tracks the repo-wide CurrentRevision (currently 4).
-	if got := NISTControls("access-keys-rotated"); !has(got, "AC-2(1)") {
-		t.Errorf("default revision should match Rev 4, got %v", got)
+	// Default (no rev) tracks the repo-wide CurrentRevision (now Rev 5).
+	if got := NISTControls("access-keys-rotated"); !has(got, "AC-3(15)") {
+		t.Errorf("default revision should match Rev 5, got %v", got)
 	}
 	// Unknown revision yields no mapping; identifier lookup is rev-aware.
 	if NISTControlsForRevision("access-keys-rotated", 99) != nil {

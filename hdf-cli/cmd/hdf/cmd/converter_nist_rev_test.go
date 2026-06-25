@@ -30,8 +30,8 @@ func convertAWSConfigFixture(t *testing.T, extraArgs ...string) string {
 // only at Rev 5, so each tag cleanly discriminates which catalog was emitted.
 func TestConvertNISTRevDefault(t *testing.T) {
 	out := convertAWSConfigFixture(t)
-	assert.Contains(t, out, "AC-2(j)", "default conversion should emit Rev 4 tags")
-	assert.NotContains(t, out, "AC-3(15)", "default conversion must not emit Rev 5-only tags")
+	assert.Contains(t, out, "AC-3(15)", "default conversion should emit Rev 5 tags")
+	assert.NotContains(t, out, "AC-2(j)", "default conversion must not emit Rev 4-only tags")
 }
 
 func TestConvertNISTRev5(t *testing.T) {
@@ -89,10 +89,10 @@ func TestConvertNISTStrictPassesWhenAligned(t *testing.T) {
 // TestConvertNISTRevNoLeak verifies the revision selection is reset after a
 // conversion, so a Rev 5 run does not bleed into a subsequent default run.
 func TestConvertNISTRevNoLeak(t *testing.T) {
-	rev5 := convertAWSConfigFixture(t, "--nist-rev", "5")
-	assert.Contains(t, rev5, "AC-3(15)")
+	rev4 := convertAWSConfigFixture(t, "--nist-rev", "4")
+	assert.Contains(t, rev4, "AC-2(j)")
 
 	deflt := convertAWSConfigFixture(t)
-	assert.Contains(t, deflt, "AC-2(j)", "default run after a Rev 5 run should be back to Rev 4")
-	assert.NotContains(t, deflt, "AC-3(15)", "Rev 5 selection leaked into a later default run")
+	assert.Contains(t, deflt, "AC-3(15)", "default run after a Rev 4 run should be back to Rev 5")
+	assert.NotContains(t, deflt, "AC-2(j)", "Rev 4 selection leaked into a later default run")
 }

@@ -12,7 +12,7 @@ import "fmt"
 // DefaultRevision is the NIST SP 800-53 revision mappings emit when nothing
 // overrides it. Bump it only once every mapping table has rows for the new
 // revision (a consumer-visible change that must be release-noted).
-const DefaultRevision = 4
+const DefaultRevision = 5
 
 // supportedRevisions lists the revisions every NIST-emitting mapping table has
 // rows for. Keep in sync with the Rev values present in the mapping JSON.

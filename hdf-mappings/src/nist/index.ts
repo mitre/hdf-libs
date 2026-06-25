@@ -18,7 +18,7 @@ const nistData = rawNistData as NISTDescriptions;
  */
 
 /** The revision mappings emit when nothing overrides it. */
-export const DEFAULT_NIST_REVISION = 4;
+export const DEFAULT_NIST_REVISION = 5;
 
 /** Revisions every NIST-emitting mapping table has rows for. */
 export const SUPPORTED_NIST_REVISIONS: readonly number[] = [4, 5];

@@ -7,8 +7,8 @@ func TestDefaultRevision(t *testing.T) {
 	if Revision() != DefaultRevision {
 		t.Errorf("expected default revision %d, got %d", DefaultRevision, Revision())
 	}
-	if DefaultRevision != 4 {
-		t.Errorf("expected DefaultRevision to be 4, got %d", DefaultRevision)
+	if DefaultRevision != 5 {
+		t.Errorf("expected DefaultRevision to be 5, got %d", DefaultRevision)
 	}
 }
 

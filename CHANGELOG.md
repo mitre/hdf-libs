@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### New Features
+
+- **Selectable NIST SP 800-53 revision.** NIST-emitting mappings are now revision-aware, carrying both Rev 4 and Rev 5 data. A process-global default revision drives every converter that emits NIST control tags; `hdf convert --nist-rev <4|5>` overrides it per invocation. For explicit, side-effect-free selection the libraries expose per-call `*ForRevision` lookups (Go) and an optional `rev` argument on each lookup (TS). (hdf-libs-9sh5)
+- **AWS Config revision-alignment guard.** When an AWS Config export references managed rules that are mapped only at a NIST revision other than the one selected, `aws-config-to-hdf` logs one aggregated warning naming the rules and the revision that covers them — their NIST tags are omitted rather than silently dropped without explanation. `hdf convert --nist-strict` promotes that warning to a hard error. Rules unmapped at every revision are not flagged (a coverage gap, not a revision mismatch). (hdf-libs-9sh5)
+
+### Breaking Changes
+
+- **The default NIST SP 800-53 revision is now Rev 5 (was Rev 4).** Rev 4 was withdrawn in September 2023; Rev 5 is the current catalog. Converters that emit NIST control tags — most visibly `aws-config-to-hdf` — now emit Rev 5 control identifiers by default. For example, the `access-keys-rotated` rule maps to `AC-3(15)` instead of `AC-2(1) | AC-2(j)`. CWE→NIST mappings are unaffected: the control identifiers are identical across revisions (only control names were refreshed), so CWE-based converters produce the same tags as before. To retain Rev 4 output, pass `--nist-rev 4`. (hdf-libs-9sh5)
+
 ## [3.3.0] - 2026-06-17
 
 ### New Features
