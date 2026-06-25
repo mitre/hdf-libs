@@ -5,7 +5,7 @@ import "github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 func init() {
 	registry.Register(registry.ConverterFingerprint{
 		ID:          "legacyhdf-to-hdf",
-		Label:       "Legacy InSpec exec-json",
+		Label:       "InSpec exec-json",
 		Direction:   registry.DirectionIngest,
 		InputFamily: registry.FamilyJSON,
 		OutputType:  registry.OutputResults,
@@ -20,7 +20,7 @@ func init() {
 					return 0
 				}
 			}
-			// Legacy structure: profiles[] + platform object + version string
+			// HDF v1 (InSpec exec-json) structure: profiles[] + platform object + version string
 			_, hasVersion := obj["version"].(string)
 			profiles, hasProfiles := obj["profiles"]
 			platform, hasPlatform := obj["platform"]

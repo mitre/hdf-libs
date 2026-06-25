@@ -43,9 +43,9 @@ function runGoDumper(kind: ParseKind, fixturePath: string): unknown {
 }
 
 // Real-world HDF Results (bug-exhibiting bare-timestamp case) + HDF Baseline
-// + three legacy InSpec inputs (non-HDF). The baseline fixture is dispatched
+// + three InSpec runner-output inputs (non-HDF). The baseline fixture is dispatched
 // to parseBaseline so we actually exercise baseline-parse parity (not just
-// "does parseResults reject a baseline doc"). Legacy InSpec inputs go
+// "does parseResults reject a baseline doc"). InSpec runner-output inputs go
 // through parseResults — both languages should reject them the same way.
 // The fixture set is intentionally narrow — additional Results from other
 // producer families don't add bug-catching signal (see hdf-libs-e95o).

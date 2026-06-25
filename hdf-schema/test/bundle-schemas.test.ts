@@ -107,7 +107,7 @@ describe('bundle-schemas', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it.skip('should validate legacy InSpec output - REQUIRES CONVERTER', () => {
+    it.skip('should validate InSpec exec-json output - REQUIRES CONVERTER', () => {
       // v1 InSpec files must be converted
       const validate = ajv.compile(schema);
       const legacyDoc = loadFixture('legacy-inspec-exec.json');

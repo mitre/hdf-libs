@@ -428,7 +428,7 @@ through the result ("found 7") through the risk acceptance ("waiver approved by 
 ### Rename: attributes → inputs
 
 The `Evaluated_Baseline.attributes` field in hdf-results is renamed to `inputs` in v2.
-This normalizes the legacy InSpec v3/v4 naming. InSpec itself renamed "attributes" to
+This normalizes the older InSpec v3/v4 `attributes` naming. InSpec itself renamed "attributes" to
 "inputs" because "attributes" was ambiguous. Both schemas (baseline and results) now
 use `inputs` consistently.
 
@@ -865,7 +865,7 @@ was being designed. All listed changes have shipped; the section is preserved as
 a record of the intent behind v3's shape.
 
 ### hdf-results.schema.json
-- Rename `attributes` to `inputs` on Evaluated_Baseline (normalize legacy InSpec naming) — **shipped**
+- Rename `attributes` to `inputs` on Evaluated_Baseline (normalize older InSpec naming) — **shipped**
 - Add optional `labels: Record<string, string>` to Component via component.schema.json — **shipped**
 - Add optional `labels: Record<string, string>` to Evaluated_Baseline — **shipped**
 - Add optional `systemRef: string` (URI to hdf-system document) — **shipped**
@@ -883,7 +883,7 @@ a record of the intent behind v3's shape.
 - Add Input type definition (or new parameter.schema.json) — **shipped** (lives in `parameter.schema.json`)
 
 ### v3 cardinality tightening (not in the original v2→v3 plan)
-- `requirements`, `results`, and `descriptions` arrays now declare `minItems: 1`. Legacy InSpec-ExecJSON tolerated empty arrays; v3 requires producers to commit to a non-empty record. Converters synthesize a `passed` placeholder for clean scans. See `../specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale and shape.
+- `requirements`, `results`, and `descriptions` arrays now declare `minItems: 1`. Legacy HDF v1 (InSpec-ExecJSON-shaped) tolerated empty arrays; v3 requires producers to commit to a non-empty record. Converters synthesize a `passed` placeholder for clean scans. See `../specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale and shape.
 
 ---
 

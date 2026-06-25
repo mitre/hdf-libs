@@ -40,7 +40,7 @@ func TransformHDF(input []byte, fromVersion, toVersion string) ([]byte, error) {
 	return transform(input)
 }
 
-// upgradeV1ToV2 converts HDF v1.0 (legacy InSpec JSON) to HDF v2.0.
+// upgradeV1ToV2 converts HDF v1.0 (InSpec exec-json) to HDF v2.0.
 // Delegates to the existing legacyhdf converter.
 func upgradeV1ToV2(input []byte) ([]byte, error) {
 	if !legacyhdf.IsHDFV1(input) {
@@ -56,7 +56,7 @@ func upgradeV1ToV2(input []byte) ([]byte, error) {
 	return json.MarshalIndent(v2, "", "  ")
 }
 
-// downgradeV2ToV1 converts HDF v2.0 to HDF v1.0 (legacy InSpec JSON).
+// downgradeV2ToV1 converts HDF v2.0 to HDF v1.0 (InSpec exec-json).
 // This is a lossy transformation — v2 fields without v1 equivalents are dropped.
 //
 // Lossy fields: dataSource, generator, labels, amendments, checksum metadata,

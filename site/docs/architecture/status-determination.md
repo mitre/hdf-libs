@@ -45,7 +45,7 @@ When a control has multiple test results with different statuses, the overall st
 | `[]` (empty)*  | 0.0 | `notApplicable` |
 | `[]` (empty)*  | 0.5 | `notReviewed` |
 
-\* The v3 HDF schema enforces `results.minItems=1`, so empty results arrays should not appear in schema-valid HDF documents — converters synthesize a `passed` placeholder for clean scans (see `../specification/hdf-specification.md` § "Clean-scan convention"). The empty-results rows above remain a safety net for legacy InSpec-ExecJSON-shaped input that did not enforce the invariant.
+\* The v3 HDF schema enforces `results.minItems=1`, so empty results arrays should not appear in schema-valid HDF documents — converters synthesize a `passed` placeholder for clean scans (see `../specification/hdf-specification.md` § "Clean-scan convention"). The empty-results rows above remain a safety net for legacy HDF v1 (InSpec-ExecJSON-shaped) input that did not enforce the invariant.
 
 ## Where Status Is Computed
 

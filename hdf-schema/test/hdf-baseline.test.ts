@@ -358,7 +358,7 @@ describe('hdf-baseline.schema.json (refactored)', () => {
 
   describe('backward compatibility (v1 format)', () => {
     // NOTE: v1 baseline files use object for descriptions, v2 uses array
-    it.skip('should accept legacy InSpec profile JSON structure - REQUIRES CONVERTER', () => {
+    it.skip('should accept InSpec profile JSON structure - REQUIRES CONVERTER', () => {
       const legacyDoc = {
         name: 'ubuntu-stig-baseline',
         title: 'Ubuntu 20.04 STIG Baseline',

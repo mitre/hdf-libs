@@ -10,13 +10,13 @@ import (
 func TestLegacyHdfFingerprint(t *testing.T) {
 	fptest.RunFingerprintTests(t, fptest.FingerprintSpec{
 		ID:          "legacyhdf-to-hdf",
-		Label:       "Legacy InSpec exec-json",
+		Label:       "InSpec exec-json",
 		Direction:   registry.DirectionIngest,
 		InputFamily: registry.FamilyJSON,
 		OutputType:  registry.OutputResults,
 		Positive: []fptest.DetectionCase{
 			{
-				Name:       "detects legacy InSpec structure at confidence 1.0",
+				Name:       "detects InSpec exec-json structure at confidence 1.0",
 				Input:      map[string]any{"version": "1.0.0", "profiles": []any{map[string]any{"name": "profile1"}}, "platform": map[string]any{"name": "ubuntu", "release": "20.04"}},
 				Confidence: 1.0,
 			},

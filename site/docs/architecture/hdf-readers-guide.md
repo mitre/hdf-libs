@@ -557,7 +557,7 @@ A converter producing bare results with no labels works fine. A system doc with
 no SBOMs works fine. An evidence package with partial coverage is informational,
 not invalid. The schema never rejects a document for missing enrichment.
 
-**Cardinality is the one non-optional contract.** `requirements`, `results`, and `descriptions` arrays declare `minItems: 1` — clean scans synthesize a `passed` placeholder rather than emitting empty arrays. See `../specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale, shape, and the `passed` vs. `notApplicable` distinction. This is a deliberate v3 tightening over legacy InSpec-ExecJSON, which tolerated empty arrays.
+**Cardinality is the one non-optional contract.** `requirements`, `results`, and `descriptions` arrays declare `minItems: 1` — clean scans synthesize a `passed` placeholder rather than emitting empty arrays. See `../specification/hdf-specification.md` § "Cardinality invariants" and § "Clean-scan convention" for the rationale, shape, and the `passed` vs. `notApplicable` distinction. This is a deliberate v3 tightening over legacy HDF v1 (InSpec-ExecJSON-shaped), which tolerated empty arrays.
 
 ---
 

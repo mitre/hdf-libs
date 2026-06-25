@@ -1,7 +1,7 @@
 /**
  * Legacy HDF (v1.0) to HDF v2.0 converter.
  *
- * Converts HDF files from the legacy InSpec native format (v1.0)
+ * Converts InSpec exec-json (the legacy HDF v1.0 format)
  * to the current HDF v2.0 schema.
  */
 

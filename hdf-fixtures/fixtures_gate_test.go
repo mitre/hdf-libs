@@ -1,6 +1,6 @@
 // Self-contained validation gate for the hdf-fixtures corpus. Every fixture
 // in results/ must validate as HDF Results, baseline/* as HDF Baseline.
-// inspec/* is exempt — those files are legacy InSpec runner output (NOT
+// inspec/* is exempt — those files are InSpec runner output (NOT
 // HDF), kept here as input for the legacyhdf-to-hdf converter and as the
 // negative-case feed for the cross-language parser parity test.
 package fixtures

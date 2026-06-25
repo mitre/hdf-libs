@@ -86,8 +86,8 @@ Output defaults to stdout if not specified.
 
 Use format@version to specify a format version:
   --from sarif@2.0    Convert SARIF 2.0 input
-  --from hdf@1        Convert from legacy InSpec exec-json
-  --to hdf@1          Downgrade output to legacy InSpec format
+  --from hdf@1        Convert from InSpec exec-json (legacy HDF v1)
+  --to hdf@1          Downgrade output to InSpec exec-json (legacy HDF v1)
 
 Examples:
   hdf convert scan.nessus                              # Auto-detect, convert to HDF

@@ -1426,7 +1426,7 @@ describe('hdf-results.schema.json (refactored)', () => {
 
   describe('backward compatibility (v1 format)', () => {
     // NOTE: v1 files must be converted
-    it.skip('should accept legacy InSpec output structure (inline) - REQUIRES CONVERTER', () => {
+    it.skip('should accept InSpec exec-json output structure (inline) - REQUIRES CONVERTER', () => {
       const legacyDoc = {
         platform: { name: 'ubuntu', release: '20.04', targetId: 'web-server-01' },
         profiles: [

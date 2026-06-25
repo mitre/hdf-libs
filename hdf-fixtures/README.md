@@ -33,10 +33,10 @@ See bead `hdf-libs-e95o` for the architecture rationale.
 hdf-fixtures/
 ├── results/    — HDF Results docs
 ├── baseline/   — HDF Baseline docs
-└── inspec/     — legacy InSpec runner output (non-HDF)
+└── inspec/     — InSpec runner output (non-HDF)
 ```
 
-The `inspec/` directory holds legacy InSpec runner output (the input
+The `inspec/` directory holds InSpec runner output (the input
 format for `legacyhdf-to-hdf` — *not* HDF), kept here for cross-language
 parser parity tests that verify both languages reject non-HDF inputs the
 same way, AND for the legacyhdf-to-hdf converter's own tests (which load
@@ -60,7 +60,7 @@ CLAUDE.md's fixture-integrity rule).
 |------|--------|-----------|
 | `win2022-stig.json` | Windows Server 2022 STIG | hdf-generators TS + Go integration tests + hdf-parsers parser parity test. Was previously duplicated across `hdf-generators/go/testdata/` and `hdf-generators/test/fixtures/`. |
 
-### `inspec/` — legacy InSpec runner output (NOT HDF)
+### `inspec/` — InSpec runner output (NOT HDF)
 
 The input format for `legacyhdf-to-hdf` (which converts these to HDF). Kept
 here because both that converter's tests AND the cross-language parser

@@ -288,7 +288,7 @@ func TestConverterCoverage_LegacyHDF_ValidJSONNotV1(t *testing.T) {
 	out, err := conv.Convert(input)
 	assert.Error(t, err)
 	assert.Nil(t, out)
-	assert.Contains(t, err.Error(), "not valid legacy InSpec")
+	assert.Contains(t, err.Error(), "not valid InSpec")
 }
 
 func TestConverterCoverage_LegacyHDF_MalformedV1(t *testing.T) {

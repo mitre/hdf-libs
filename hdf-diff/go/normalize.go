@@ -1,4 +1,4 @@
-// Package diff provides legacy InSpec exec-json to HDF normalization.
+// Package diff provides InSpec exec-json (legacy HDF v1) to HDF normalization.
 //
 // Legacy format uses profiles[].controls[] with snake_case fields.
 // Current HDF format uses baselines[].requirements[] with camelCase fields.
@@ -12,7 +12,7 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
-// IsV1Format detects whether a JSON document is legacy InSpec exec-json format.
+// IsV1Format detects whether a JSON document is InSpec exec-json (legacy HDF v1) format.
 // Legacy format has "profiles" at top level; current HDF has "baselines".
 func IsV1Format(data map[string]any) bool {
 	_, hasProfiles := data["profiles"]
@@ -30,7 +30,7 @@ func IsV1Format(data map[string]any) bool {
 	return !hasBaselines
 }
 
-// ToV2 converts a legacy InSpec exec-json document to an HdfResults struct.
+// ToV2 converts an InSpec exec-json (legacy HDF v1) document to an HdfResults struct.
 // If the input is already current HDF format, parses directly. If legacy,
 // converts profiles→baselines, controls→requirements, snake_case→camelCase.
 // The returned warnings slice contains messages for skipped profiles/controls
@@ -227,7 +227,7 @@ func normalizeResult(result map[string]any) hdf.RequirementResult {
 	return r
 }
 
-// normalizeResultStatus maps legacy InSpec status values to HDF ResultStatus values.
+// normalizeResultStatus maps InSpec status values to HDF ResultStatus values.
 func normalizeResultStatus(status string) string {
 	switch status {
 	case "skipped":

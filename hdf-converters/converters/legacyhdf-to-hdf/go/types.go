@@ -1,5 +1,5 @@
-// Package legacyhdf converts legacy InSpec exec-json (profiles/controls format)
-// to the current HDF format (baselines/requirements).
+// Package legacyhdf converts InSpec exec-json (the legacy HDF v1 format:
+// profiles/controls) to the current HDF format (baselines/requirements).
 //
 // Legacy types are defined here manually. The official exec-json schema
 // exists in heimdall2/libs/inspecjs/schemas/ but is not yet integrated into
