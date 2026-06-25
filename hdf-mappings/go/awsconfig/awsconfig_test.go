@@ -279,6 +279,10 @@ func TestMappedRevisions(t *testing.T) {
 	if got := MappedRevisions("", "cloudtrail-enabled"); len(got) != 2 {
 		t.Errorf("expected rule-name-only resolution to find both revisions, got %v", got)
 	}
+	// Resolution works by source identifier alone (rule name empty).
+	if got := MappedRevisions("CLOUD_TRAIL_ENABLED", ""); len(got) != 2 {
+		t.Errorf("expected identifier-only resolution to find both revisions, got %v", got)
+	}
 }
 
 func TestRevisionAwareLookup(t *testing.T) {
@@ -301,5 +305,23 @@ func TestRevisionAwareLookup(t *testing.T) {
 	}
 	if GetByIdentifierForRevision("ACCESS_KEYS_ROTATED", 5) == nil {
 		t.Error("expected Rev 5 identifier lookup to resolve")
+	}
+}
+
+func TestNISTControlsByIdentifier(t *testing.T) {
+	// Source-identifier lookups must resolve the same controls as rule-name lookups.
+	if got := NISTControlsByIdentifierForRevision("ACCESS_KEYS_ROTATED", 4); !has(got, "AC-2(1)") {
+		t.Errorf("expected Rev 4 controls via identifier, got %v", got)
+	}
+	if got := NISTControlsByIdentifierForRevision("ACCESS_KEYS_ROTATED", 5); !has(got, "AC-3(15)") {
+		t.Errorf("expected Rev 5 controls via identifier, got %v", got)
+	}
+	// Default (no rev) tracks the repo-wide CurrentRevision (now Rev 5).
+	if got := NISTControlsByIdentifier("ACCESS_KEYS_ROTATED"); !has(got, "AC-3(15)") {
+		t.Errorf("default identifier lookup should match Rev 5, got %v", got)
+	}
+	// Unknown identifier yields no mapping.
+	if NISTControlsByIdentifier("NOPE") != nil {
+		t.Error("expected nil for unknown identifier")
 	}
 }

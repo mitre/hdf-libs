@@ -86,17 +86,19 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		return nil, fmt.Errorf("invalid AWS Config export: ConfigRules field is required")
 	}
 
-	if err := checkRevisionAlignment(data.ConfigRules); err != nil {
+	limitedRules := shared.LimitSliceWithWarning(data.ConfigRules, 0, "rule")
+
+	if err := checkRevisionAlignment(limitedRules); err != nil {
 		return nil, err
 	}
 
-	baseline := buildBaseline(data.ConfigRules, integrity)
+	baseline := buildBaseline(limitedRules, integrity)
 	now := time.Now().UTC()
 
 	// Extract account/region from first rule's ARN for target labels
 	firstArn := ""
-	if len(data.ConfigRules) > 0 {
-		firstArn = data.ConfigRules[0].ConfigRuleArn
+	if len(limitedRules) > 0 {
+		firstArn = limitedRules[0].ConfigRuleArn
 	}
 	accountID := getAccountID(firstArn)
 	region := getRegion(firstArn)
@@ -121,11 +123,10 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}), nil
 }
 
-// buildBaseline creates one EvaluatedBaseline from all ConfigRules.
+// buildBaseline creates one EvaluatedBaseline from the (already size-limited) ConfigRules.
 func buildBaseline(rules []ConfigRule, integrity *hdf.Integrity) hdf.EvaluatedBaseline {
-	limitedRules := shared.LimitSliceWithWarning(rules, 0, "rule")
-	requirements := make([]hdf.EvaluatedRequirement, 0, len(limitedRules))
-	for _, rule := range limitedRules {
+	requirements := make([]hdf.EvaluatedRequirement, 0, len(rules))
+	for _, rule := range rules {
 		requirements = append(requirements, buildRequirement(rule))
 	}
 

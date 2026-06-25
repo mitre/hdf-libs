@@ -240,14 +240,14 @@ export async function convertAwsConfigToHdf(input: string): Promise<string> {
     throw new Error('Invalid AWS Config export: ConfigRules field is required');
   }
 
-  checkRevisionAlignment(data.ConfigRules);
-
   const { items: limitedRules, truncated: truncatedRules } = limitArray(data.ConfigRules);
   /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedRules) {
     // eslint-disable-next-line no-console
     console.warn(`WARNING: Input truncated at ${limitedRules.length} ConfigRule items (original: ${data.ConfigRules.length})`);
   }
+
+  checkRevisionAlignment(limitedRules);
   const requirements = limitedRules.map(buildRequirement);
 
   const baseline: EvaluatedBaseline = {
