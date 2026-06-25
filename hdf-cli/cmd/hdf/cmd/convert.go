@@ -8,8 +8,10 @@ import (
 	"strings"
 
 	hdfpassthrough "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-passthrough/go"
+	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/registry/all" // register all fingerprints via init()
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/hdfversion"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 	"github.com/spf13/cobra"
 )
@@ -165,6 +167,15 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		}
 	}
 
+	// Legacy HDF v1 (InSpec exec-json shape) carries no `baselines`, which every
+	// HDF-export converter requires. The hdf→hdf path upgrades it implicitly;
+	// mirror that for all other export targets so legacy input converts in one
+	// step instead of failing on the missing field.
+	data, fromFormat, fromVersion, err = normalizeLegacyHDFInput(data, fromFormat, fromVersion, toFormat)
+	if err != nil {
+		return err
+	}
+
 	// Get converter
 	converter, err := GetConverter(fromFormat, toFormat)
 	if err != nil {
@@ -233,6 +244,39 @@ func applyNistOptions(cmd *cobra.Command) (reset func(), err error) {
 		nist.ResetRevision()
 		nist.SetStrict(false)
 	}, nil
+}
+
+// normalizeLegacyHDFInput upgrades legacy HDF v1 input (the InSpec exec-json
+// shape, which has no `baselines`) to modern HDF before a non-hdf export
+// converter consumes it. Conversions to hdf are left untouched — the hdf→hdf
+// converter handles version transforms itself. Returns the (possibly upgraded)
+// data along with the source format/version to use downstream; on upgrade the
+// source becomes plain modern hdf.
+func normalizeLegacyHDFInput(data []byte, fromFormat, fromVersion, toFormat string) ([]byte, string, string, error) {
+	if strings.EqualFold(toFormat, "hdf") {
+		return data, fromFormat, fromVersion, nil
+	}
+	// Only HDF-source conversions are candidates: explicit --from hdf, the
+	// auto-detected legacyhdf fingerprint, or an explicit hdf@1.
+	if !strings.EqualFold(fromFormat, "hdf") && !strings.EqualFold(fromFormat, "legacyhdf") {
+		return data, fromFormat, fromVersion, nil
+	}
+	// Skip when there is no hdf→target export converter to feed — let the normal
+	// "no converter found" error report against the original source format.
+	if _, err := GetConverter("hdf", toFormat); err != nil {
+		return data, fromFormat, fromVersion, nil //nolint:nilerr // absence of a converter is not an error here; fall through to the standard not-found path
+	}
+	// Detect v1 by content so `--from hdf`, `--from hdf@1`, and auto-detected
+	// legacyhdf input are all handled; modern HDF is left untouched.
+	if !legacyhdf.IsHDFV1(data) {
+		return data, fromFormat, fromVersion, nil
+	}
+	upgraded, err := hdfversion.TransformHDF(data, "1", "2")
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to upgrade legacy HDF v1 input for %s conversion: %w", toFormat, err)
+	}
+	printDebug("Upgraded legacy HDF v1 input to modern HDF for %s conversion", toFormat)
+	return upgraded, "hdf", "", nil
 }
 
 // runVersionedConvert passes version specifiers to the converter and runs
